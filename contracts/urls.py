@@ -6,6 +6,9 @@ app_name = 'contracts'
 urlpatterns = [
     path('', views.ContractListView.as_view(), name='contract_list'),
     path('trademarks/', views.TrademarkRequestListView.as_view(), name='trademark_request_list'),
+    path('trademarks/new/', views.TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
+    path('trademarks/<int:pk>/', views.TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
+    path('trademarks/<int:pk>/edit/', views.TrademarkRequestUpdateView.as_view(), name='trademark_request_update'),
 
     # Risk Logs
     path('risks/', views.RiskLogListView.as_view(), name='risk_log_list'),

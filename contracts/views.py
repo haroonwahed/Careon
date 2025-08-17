@@ -134,6 +134,36 @@ class TrademarkRequestListView(LoginRequiredMixin, ListView):
         return TrademarkRequest.objects.filter(owner=self.request.user)
 
 
+class TrademarkRequestDetailView(LoginRequiredMixin, DetailView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_detail.html'
+    context_object_name = 'trademark_request'
+
+    def get_queryset(self):
+        return TrademarkRequest.objects.filter(owner=self.request.user)
+
+
+class TrademarkRequestCreateView(LoginRequiredMixin, CreateView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_form.html'
+    fields = ['region', 'class_number', 'status', 'documents', 'renewal_deadline']
+    success_url = reverse_lazy('contracts:trademark_request_list')
+
+    def form_valid(self, form):
+        form.instance.owner = self.request.user
+        return super().form_valid(form)
+
+
+class TrademarkRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_form.html'
+    fields = ['region', 'class_number', 'status', 'documents', 'renewal_deadline']
+    success_url = reverse_lazy('contracts:trademark_request_list')
+
+    def get_queryset(self):
+        return TrademarkRequest.objects.filter(owner=self.request.user)
+
+
 # --- Legal Task Views ---
 class LegalTaskKanbanView(LoginRequiredMixin, TemplateView):
     template_name = 'contracts/legal_task_board.html'
