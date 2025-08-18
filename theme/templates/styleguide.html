@@ -1,0 +1,123 @@
+
+{% extends "base.html" %}
+
+{% block title %}Bolton Button Styleguide{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-8">
+    <div class="card-section mb-8">
+        <h1 class="text-3xl font-bold text-primary-700 mb-2">Bolton Adhesives Button Styleguide</h1>
+        <p class="text-muted">Visual verification of all button variants and states</p>
+    </div>
+
+    <!-- Primary Buttons -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Primary Buttons</h2>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-primary btn-sm">Small Primary</button>
+            <button class="btn-primary btn-md">Medium Primary</button>
+            <button class="btn-primary btn-lg">Large Primary</button>
+            <button class="btn-primary btn-xl">Extra Large Primary</button>
+            <button class="btn-primary" disabled>Disabled</button>
+        </div>
+    </div>
+
+    <!-- Accent Buttons -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Accent Buttons (Bolton Yellow)</h2>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-accent btn-sm">Small Accent</button>
+            <button class="btn-accent btn-md">Medium Accent</button>
+            <button class="btn-accent btn-lg">Large Accent</button>
+            <button class="btn-accent btn-xl">Extra Large Accent</button>
+            <button class="btn-accent" disabled>Disabled</button>
+        </div>
+    </div>
+
+    <!-- Outline Buttons -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Outline Buttons</h2>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-outline btn-sm">Small Outline</button>
+            <button class="btn-outline btn-md">Medium Outline</button>
+            <button class="btn-outline btn-lg">Large Outline</button>
+            <button class="btn-outline btn-xl">Extra Large Outline</button>
+            <button class="btn-outline" disabled>Disabled</button>
+        </div>
+    </div>
+
+    <!-- Ghost Buttons -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Ghost Buttons</h2>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-ghost btn-sm">Small Ghost</button>
+            <button class="btn-ghost btn-md">Medium Ghost</button>
+            <button class="btn-ghost btn-lg">Large Ghost</button>
+            <button class="btn-ghost btn-xl">Extra Large Ghost</button>
+            <button class="btn-ghost" disabled>Disabled</button>
+        </div>
+    </div>
+
+    <!-- Buttons with Icons -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Buttons with Icons</h2>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-primary btn-lg flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                </svg>
+                <span>New Contract</span>
+            </button>
+            <button class="btn-accent btn-lg flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <span>Start Workflow</span>
+            </button>
+            <button class="btn-outline btn-lg flex items-center space-x-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Download</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Interactive State Demo -->
+    <div class="card-section mb-8">
+        <h2 class="text-xl font-semibold text-primary-700 mb-4">Interactive States</h2>
+        <p class="text-sm text-muted mb-4">Hover and focus on the buttons below to see state changes</p>
+        <div class="flex flex-wrap gap-4 items-center">
+            <button class="btn-primary btn-lg" onclick="alert('Primary button clicked!')">Click Me (Primary)</button>
+            <button class="btn-accent btn-lg" onclick="alert('Accent button clicked!')">Click Me (Accent)</button>
+            <button class="btn-outline btn-lg" onclick="alert('Outline button clicked!')">Click Me (Outline)</button>
+        </div>
+    </div>
+
+    <!-- Back to Dashboard -->
+    <div class="card-section">
+        <a href="{% url 'dashboard' %}" class="btn-ghost">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<script>
+// Simple button interaction test
+document.addEventListener('DOMContentLoaded', function() {
+    const buttons = document.querySelectorAll('button[class*="btn-"]');
+    console.log(`Found ${buttons.length} Bolton-style buttons`);
+    
+    buttons.forEach((button, index) => {
+        button.addEventListener('click', function(e) {
+            if (!button.disabled && !button.onclick) {
+                console.log(`Button ${index + 1} clicked successfully`);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

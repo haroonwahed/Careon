@@ -6,13 +6,13 @@ module.exports = {
       colors: {
         primary: {
           900: "var(--primary-900)",
-          800: "var(--primary-800)",
-          700: "var(--primary-700)",
-          600: "var(--primary-600)",
+          800: "var(--bolton-blue-800)",
+          700: "var(--bolton-blue-700)",
+          600: "var(--bolton-blue-600)",
           500: "var(--primary-500)",
           400: "var(--primary-400)",
         },
-        accent: { 500: "var(--accent-500)" },
+        accent: { 500: "var(--bolton-yellow-500)" },
         bg: "var(--bg)",
         card: "var(--card)",
         border: "var(--border)",
@@ -25,10 +25,12 @@ module.exports = {
         lg: "var(--radius-lg)",
         xl: "var(--radius-xl)",
         "2xl": "var(--radius-2xl)",
+        full: "var(--radius-full)",
       },
       boxShadow: {
         sm: "var(--shadow-sm)",
         md: "var(--shadow-md)",
+        btn: "var(--shadow-btn)",
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "Segoe UI", "Arial", "sans-serif"],
