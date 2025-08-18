@@ -7,6 +7,40 @@ from decimal import Decimal
 User = get_user_model()
 
 
+class Contract(models.Model):
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'Under Review'
+        APPROVED = 'APPROVED', 'Approved'
+        EXECUTED = 'EXECUTED', 'Executed'
+        EXPIRED = 'EXPIRED', 'Expired'
+
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class NegotiationThread(models.Model):
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='negotiation_threads')
+    round_number = models.PositiveIntegerField()
+    internal_note = models.TextField(blank=True)
+    external_note = models.TextField(blank=True)
+    attachment = models.FileField(upload_to='negotiation_attachments/', blank=True, null=True)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='negotiation_posts')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['timestamp']
+
+    def __str__(self):
+        return f"{self.contract.title} - Round {self.round_number}"
+
+
 class Tag(models.Model):
     name = models.CharField(max_length=50, unique=True)
 
