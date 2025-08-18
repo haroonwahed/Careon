@@ -12,7 +12,7 @@ from .views import (
     ContractDetailView, ContractCreateView, ContractUpdateView,
     AddNegotiationNoteView, WorkflowDashboardView, WorkflowDetailView,
     WorkflowCreateView, WorkflowStepUpdateView, WorkflowStepCompleteView,
-    WorkflowTemplateListView
+    WorkflowTemplateListView, WorkflowTemplateCreateView
 )
 
 app_name = 'contracts'
@@ -48,6 +48,7 @@ urlpatterns = [
     path('workflows/step/<int:pk>/update/', WorkflowStepUpdateView.as_view(), name='update_workflow_step'),
     path('workflows/step/<int:pk>/complete/', WorkflowStepCompleteView.as_view(), name='complete_workflow_step'),
     path('workflow-templates/', WorkflowTemplateListView.as_view(), name='workflow_template_list'),
+    path('workflow-templates/create/', WorkflowTemplateCreateView.as_view(), name='workflow_template_create'),
 
     # Contracts
     path('', ContractListView.as_view(), name='contract_list'),

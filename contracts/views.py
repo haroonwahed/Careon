@@ -323,7 +323,18 @@ class WorkflowTemplateListView(LoginRequiredMixin, ListView):
     context_object_name = 'templates'
 
     def get_queryset(self):
-        return WorkflowTemplate.objects.filter(created_by=self.request.user)
+        return WorkflowTemplate.objects.filter(is_active=True)
+
+
+class WorkflowTemplateCreateView(LoginRequiredMixin, CreateView):
+    model = WorkflowTemplate
+    template_name = 'contracts/workflow_template_form.html'
+    fields = ['name', 'description', 'contract_type']
+    success_url = reverse_lazy('contracts:workflow_template_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
 
 class WorkflowDetailView(LoginRequiredMixin, DetailView):
@@ -395,14 +406,34 @@ class WorkflowCreateView(LoginRequiredMixin, CreateView):
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        return super().form_valid(form)
+        workflow = form.save()
+        
+        # If a template is selected, create workflow steps from template
+        if workflow.template:
+            for template_step in workflow.template.template_steps.all():
+                WorkflowStep.objects.create(
+                    workflow=workflow,
+                    contract=workflow.contract,
+                    step_type=template_step.step_type,
+                    order=template_step.order,
+                    status=WorkflowStep.StepStatus.PENDING
+                )
+            # Set the first step as current
+            first_step = workflow.workflow_steps.first()
+            if first_step:
+                workflow.current_step = first_step
+                workflow.save()
+        
+        return redirect(self.success_url)
     
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
-        # Filter contracts to only show user's contracts
-        form.fields['contract'].queryset = Contract.objects.filter(created_by=self.request.user)
-        # Filter templates to only show user's templates
-        form.fields['template'].queryset = WorkflowTemplate.objects.filter(created_by=self.request.user)
+        # Filter contracts to only show user's contracts that don't already have workflows
+        form.fields['contract'].queryset = Contract.objects.filter(
+            created_by=self.request.user
+        ).exclude(workflow__isnull=False)
+        # Filter templates to only show active templates
+        form.fields['template'].queryset = WorkflowTemplate.objects.filter(is_active=True)
         return form
 
 
