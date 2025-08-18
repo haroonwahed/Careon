@@ -23,6 +23,17 @@
   --color-surface-contrast: #0F172A;
 }
 
-.card { @apply bg-white rounded-lg shadow-md; }
-.btn-primary { @apply inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-white shadow-sm hover:bg-primary/90 transition; }
-.btn-secondary { @apply inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-white shadow-sm hover:bg-secondary/90 transition; }
+@utility card { @apply bg-white rounded-lg shadow-md; }
+@utility btn-primary { @apply inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-white shadow-sm hover:bg-primary/90 transition; }
+@utility btn-secondary { @apply inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-white shadow-sm hover:bg-secondary/90 transition; }
+
+/* Hybrid Ironclad + Summize UI helpers */
+@utility input { @apply w-full rounded-md border border-gray-300 bg-white px-4 py-2 shadow-sm focus:border-primary focus:ring-primary focus:outline-none; }
+@utility badge { @apply inline-flex items-center rounded-full px-2 py-1 text-xs font-semibold whitespace-nowrap; }
+@utility badge-success { @apply bg-green-100 text-green-700; }
+@utility badge-warning { @apply bg-yellow-100 text-yellow-700; }
+@utility badge-neutral { @apply bg-blue-100 text-blue-700; }
+@utility card-section { @apply card p-6; }
+@utility table-base { @apply w-full text-sm text-left text-gray-700; }
+@utility table-head { @apply text-xs uppercase bg-gray-50 text-gray-600; }
+@utility table-row { @apply bg-white border-b hover:bg-gray-50; }
