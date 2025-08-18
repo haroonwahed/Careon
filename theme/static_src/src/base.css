@@ -1,0 +1,120 @@
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-sm);
+}
+
+.pill {
+  border-radius: 9999px;
+}
+
+.focus-ring:focus {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.link {
+  color: var(--primary-600);
+}
+
+.link:hover {
+  color: var(--primary-700);
+  text-decoration: underline;
+}
+
+/* Button variants */
+.btn-primary {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition active:translate-y-[1px];
+  @apply h-10 px-4 bg-primary-600 text-white hover:bg-primary-700 shadow-sm;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary:focus {
+  box-shadow: var(--ring);
+}
+
+.btn-accent {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition active:translate-y-[1px];
+  @apply h-10 px-4 bg-accent-500 text-gray-900 hover:brightness-95 shadow-sm;
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-accent:focus {
+  box-shadow: var(--ring);
+}
+
+.btn-outline {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition active:translate-y-[1px];
+  @apply h-10 px-4 border bg-card text-gray-900 hover:border-primary-400;
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-outline:focus {
+  box-shadow: var(--ring);
+}
+
+.btn-ghost {
+  @apply inline-flex items-center justify-center font-medium rounded-xl transition;
+  @apply h-10 px-4 bg-transparent text-gray-700 hover:bg-primary-500/5;
+}
+
+.btn-ghost:focus {
+  box-shadow: var(--ring);
+}
+
+/* Input styles */
+.input-field {
+  @apply h-10 rounded-xl px-3;
+  border: 1px solid var(--border);
+  background: var(--card);
+}
+
+.input-field:focus {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+/* Chip styles */
+.chip {
+  @apply px-3 h-8 pill border text-sm font-medium transition;
+}
+
+.chip-inactive {
+  border-color: var(--border);
+  background: var(--card);
+}
+
+.chip-inactive:hover {
+  border-color: var(--primary-400);
+}
+
+.chip-active {
+  @apply bg-primary-50 text-primary-700 border-primary-200;
+}
+
+/* Status badges */
+.badge {
+  @apply pill text-xs px-2.5 py-1 border font-medium;
+  border-color: var(--border);
+}
+
+.badge-draft {
+  @apply bg-indigo-50 text-primary-800;
+}
+
+.badge-active {
+  @apply bg-green-50;
+  color: var(--success);
+}
+
+.badge-inactive {
+  @apply bg-gray-100 text-gray-700;
+}
+
+.badge-unverified {
+  @apply bg-yellow-50;
+  color: var(--warning);
+}

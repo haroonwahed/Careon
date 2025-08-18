@@ -1,4 +1,8 @@
-@import "tailwindcss";
+@import './theme.css';
+@import './base.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /**
   * A catch-all path to Django template files, JavaScript, and Python files
@@ -17,15 +21,15 @@
   --color-primary-600: #174cbc;
   --color-primary-700: #123e9e;
   --color-primary: #1e5bdc;
-  
+
   --color-accent-500: #f2c100;
   --color-accent: #f2c100;
-  
+
   --color-bg: #f4f7fb;
   --color-card: #ffffff;
   --color-border: #e6eaf1;
   --color-muted: #6b7280;
-  
+
   --color-secondary: #6b7280;
   --color-success: #10B981;
   --color-warning: #f59e0b;
@@ -33,7 +37,7 @@
 
   --color-surface: #f4f7fb;
   --color-surface-contrast: #123e9e;
-  
+
   --radius-xl: 16px;
 }
 
