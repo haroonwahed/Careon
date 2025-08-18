@@ -151,11 +151,29 @@
                 <a href="{% url 'contracts:risk_log_list' %}" class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                     <div class="flex items-center">
                         <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                         </svg>
-                        <span>High Risks</span>
+                        <span>Risk Management</span>
                     </div>
-                    <span class="text-xs text-gray-500">{{ top_risks|length }}</span>
+                    <span class="text-xs text-gray-500">{{ risk_count }}</span>
+                </a>
+                <a href="{% url 'contracts:due_diligence_list' %}" class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        <span>Due Diligence</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ dd_count|default:"0" }}</span>
+                </a>
+                <a href="{% url 'contracts:budget_list' %}" class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
+                    <div class="flex items-center">
+                        <svg class="w-4 h-4 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                        </svg>
+                        <span>Budgets</span>
+                    </div>
+                    <span class="text-xs text-gray-500">{{ budget_count|default:"0" }}</span>
                 </a>
                 <a href="{% url 'contracts:compliance_checklist_list' %}" class="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded">
                     <div class="flex items-center">
@@ -302,20 +320,20 @@ function addNewView() {
         </div>
     `;
     document.body.appendChild(modal);
-    
+
     document.getElementById('custom-view-form').onsubmit = function(e) {
         e.preventDefault();
         const viewName = document.getElementById('view-name').value;
         const status = document.getElementById('view-status').value;
         const type = document.getElementById('view-type').value;
-        
+
         // Create the view URL with filters
         let viewUrl = '{% url "contracts:contract_list" %}?';
         const params = [];
         if (status) params.push(`status=${status}`);
         if (type) params.push(`contract_type=${type}`);
         viewUrl += params.join('&');
-        
+
         // Add to views list
         const viewsList = document.querySelector('.space-y-1');
         const newView = document.createElement('a');
@@ -331,7 +349,7 @@ function addNewView() {
             <span class="text-xs text-gray-500">0</span>
         `;
         viewsList.appendChild(newView);
-        
+
         closeViewModal();
     };
 }
@@ -353,7 +371,7 @@ document.addEventListener('click', function(event) {
     const workflowDropdown = document.getElementById('workflow-dropdown');
     if (workflowDropdown) {
         const workflowButton = event.target.closest('button[onclick="toggleWorkflowDropdown()"]');
-        
+
         if (!workflowButton && !workflowDropdown.contains(event.target)) {
             workflowDropdown.classList.add('hidden');
         }
@@ -363,10 +381,10 @@ document.addEventListener('click', function(event) {
 function collapseViews() {
     const viewsList = document.querySelector('.space-y-1');
     const toggle = document.getElementById('views-toggle');
-    
+
     if (viewsList && toggle) {
         const svg = toggle.querySelector('svg path');
-        
+
         if (viewsList.style.display === 'none') {
             viewsList.style.display = 'block';
             if (svg) svg.setAttribute('d', 'M19 9l-7 7-7-7');
@@ -382,10 +400,10 @@ function collapseViews() {
 function collapseRepository() {
     const repositoryList = document.getElementById('repository-list');
     const toggle = document.getElementById('repository-toggle');
-    
+
     if (repositoryList && toggle) {
         const svg = toggle.querySelector('svg path');
-        
+
         if (repositoryList.style.display === 'none') {
             repositoryList.style.display = 'block';
             if (svg) svg.setAttribute('d', 'M19 9l-7 7-7-7');
@@ -401,10 +419,10 @@ function collapseRepository() {
 function collapseWorkflows() {
     const workflowsList = document.getElementById('workflows-list');
     const toggle = document.getElementById('workflows-toggle');
-    
+
     if (workflowsList && toggle) {
         const svg = toggle.querySelector('svg path');
-        
+
         if (workflowsList.style.display === 'none') {
             workflowsList.style.display = 'block';
             if (svg) svg.setAttribute('d', 'M19 9l-7 7-7-7');

@@ -3,7 +3,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import (
     NegotiationThread, ChecklistItem, Workflow, WorkflowTemplate,
-    DueDiligence, DueDiligenceItem, DueDiligenceRisk, Budget, Expense
+    DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk,
+    Budget, BudgetExpense
 )
 
 User = get_user_model()
@@ -29,9 +30,61 @@ class NegotiationThreadForm(forms.ModelForm):
 class ChecklistItemForm(forms.ModelForm):
     class Meta:
         model = ChecklistItem
-        fields = ['text']
+        fields = ['title', 'description', 'is_required', 'order']
+
+
+class DueDiligenceProcessForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligenceProcess
+        fields = ['title', 'transaction_type', 'target_company', 'deal_value', 
+                 'lead_attorney', 'start_date', 'target_completion_date', 'description']
         widgets = {
-            'text': forms.TextInput(attrs={'placeholder': 'New item description...'}),
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'target_completion_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+
+
+class DueDiligenceTaskForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligenceTask
+        fields = ['title', 'category', 'description', 'assigned_to', 'due_date', 'notes']
+        widgets = {
+            'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
+class DueDiligenceRiskForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligenceRisk
+        fields = ['title', 'category', 'description', 'risk_level', 'likelihood', 
+                 'impact', 'mitigation_strategy', 'owner', 'target_resolution_date']
+        widgets = {
+            'target_resolution_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'mitigation_strategy': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
+class BudgetForm(forms.ModelForm):
+    class Meta:
+        model = Budget
+        fields = ['year', 'quarter', 'department', 'total_budget', 'description']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
+
+
+class BudgetExpenseForm(forms.ModelForm):
+    class Meta:
+        model = BudgetExpense
+        fields = ['title', 'category', 'amount', 'description', 'date_incurred', 
+                 'vendor', 'invoice_number']
+        widgets = {
+            'date_incurred': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
 
 
@@ -85,26 +138,6 @@ class DueDiligenceItemForm(forms.ModelForm):
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date'}),
             'description': forms.Textarea(attrs={'rows': 2}),
-        }
-
-
-class DueDiligenceRiskForm(forms.ModelForm):
-    class Meta:
-        model = DueDiligenceRisk
-        fields = ['title', 'description', 'risk_level', 'category', 'impact_assessment', 'mitigation_plan', 'owner']
-        widgets = {
-            'description': forms.Textarea(attrs={'rows': 3}),
-            'impact_assessment': forms.Textarea(attrs={'rows': 2}),
-            'mitigation_plan': forms.Textarea(attrs={'rows': 2}),
-        }
-
-
-class BudgetForm(forms.ModelForm):
-    class Meta:
-        model = Budget
-        fields = ['name', 'year', 'quarter', 'department', 'total_budget', 'status', 'owner']
-        widgets = {
-            'year': forms.NumberInput(attrs={'min': 2020, 'max': 2030}),
         }
 
 

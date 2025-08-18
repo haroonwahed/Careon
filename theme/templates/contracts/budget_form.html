@@ -74,3 +74,97 @@
     </div>
 </div>
 {% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit{% else %}New{% endif %} Budget{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">
+                {% if object %}Edit Budget{% else %}New Budget{% endif %}
+            </h1>
+            <p class="text-gray-600">Manage quarterly budget allocation</p>
+        </div>
+        <a href="{% url 'contracts:budget_list' %}" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50">
+            Back to List
+        </a>
+    </div>
+
+    <!-- Form -->
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Year
+                    </label>
+                    {{ form.year }}
+                    {% if form.year.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.year.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.quarter.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Quarter
+                    </label>
+                    {{ form.quarter }}
+                    {% if form.quarter.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.quarter.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.department.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Department
+                    </label>
+                    {{ form.department }}
+                    {% if form.department.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.department.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.total_budget.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Total Budget ($)
+                    </label>
+                    {{ form.total_budget }}
+                    {% if form.total_budget.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.total_budget.errors.0 }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                </label>
+                {{ form.description }}
+                {% if form.description.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.description.errors.0 }}</p>
+                {% endif %}
+            </div>
+            
+            <div class="flex space-x-3">
+                <button type="submit" class="btn-primary">
+                    {% if object %}Update Budget{% else %}Create Budget{% endif %}
+                </button>
+                <a href="{% url 'contracts:budget_list' %}" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-control, input[type="text"], input[type="number"], select, textarea {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500;
+}
+</style>
+{% endblock %}

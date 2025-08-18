@@ -8,16 +8,24 @@ from django.db.models import Sum
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required # Added for new decorator usage
 
 from .forms import (
     RegistrationForm, NegotiationThreadForm, ChecklistItemForm, WorkflowForm, WorkflowTemplateForm,
-    DueDiligenceForm, DueDiligenceItemForm, DueDiligenceRiskForm, BudgetForm, ExpenseForm
+    DueDiligenceForm, DueDiligenceItemForm, DueDiligenceRiskForm, BudgetForm, ExpenseForm,
+    ContractForm, WorkflowStepForm, TrademarkRequestForm, LegalTaskForm, RiskLogForm, ComplianceChecklistForm,
+    DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetForm, BudgetExpenseForm # Added new form imports
 )
 from .models import (
     Contract, Note, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
-    DueDiligence, DueDiligenceItem, DueDiligenceRisk, Budget, Expense
+    DueDiligence, DueDiligenceItem, DueDiligenceRisk, Budget, Expense,
+    DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense # Added new model imports
 )
+
+# --- Index View ---
+def index(request):
+    return redirect('dashboard')
 
 # --- Contract Views ---
 
@@ -273,105 +281,54 @@ class WorkflowStepCompleteView(LoginRequiredMixin, View):
 
 
 # --- Due Diligence Views ---
-class DueDiligenceListView(LoginRequiredMixin, ListView):
-    model = DueDiligence
+class DueDiligenceProcessListView(LoginRequiredMixin, ListView):
+    model = DueDiligenceProcess
     template_name = 'contracts/due_diligence_list.html'
-    context_object_name = 'due_diligences'
+    context_object_name = 'processes'
+    paginate_by = 25
 
     def get_queryset(self):
-        queryset = DueDiligence.objects.all()
-
-        search_query = self.request.GET.get('search')
-        status = self.request.GET.get('status')
-        transaction_type = self.request.GET.get('transaction_type')
-
-        if search_query:
-            queryset = queryset.filter(
-                Q(title__icontains=search_query) |
-                Q(target_company__icontains=search_query)
-            )
-
-        if status:
-            queryset = queryset.filter(status=status)
-
-        if transaction_type:
-            queryset = queryset.filter(transaction_type=transaction_type)
-
+        queryset = DueDiligenceProcess.objects.all()
+        status_filter = self.request.GET.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
         return queryset.order_by('-created_at')
-
-
-class DueDiligenceDetailView(LoginRequiredMixin, DetailView):
-    model = DueDiligence
-    template_name = 'contracts/due_diligence_detail.html'
-    context_object_name = 'due_diligence'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['item_form'] = DueDiligenceItemForm()
-        context['risk_form'] = DueDiligenceRiskForm()
-        context['items_by_category'] = {}
-
-        for item in self.object.dd_items.all():
-            category = item.get_category_display()
-            if category not in context['items_by_category']:
-                context['items_by_category'][category] = []
-            context['items_by_category'][category].append(item)
-
+        context['status_choices'] = DueDiligenceProcess.ProcessStatus.choices
         return context
 
 
-class DueDiligenceCreateView(LoginRequiredMixin, CreateView):
-    model = DueDiligence
-    form_class = DueDiligenceForm
+class DueDiligenceProcessDetailView(LoginRequiredMixin, DetailView):
+    model = DueDiligenceProcess
+    template_name = 'contracts/due_diligence_detail.html'
+    context_object_name = 'process'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tasks'] = self.object.dd_tasks.all()
+        context['risks'] = self.object.dd_risks.all()
+        context['high_risks'] = self.object.dd_risks.filter(risk_level='HIGH')
+        context['medium_risks'] = self.object.dd_risks.filter(risk_level='MEDIUM')
+        context['low_risks'] = self.object.dd_risks.filter(risk_level='LOW')
+        return context
+
+
+class DueDiligenceProcessCreateView(LoginRequiredMixin, CreateView):
+    model = DueDiligenceProcess
+    form_class = DueDiligenceProcessForm
     template_name = 'contracts/due_diligence_form.html'
     success_url = reverse_lazy('contracts:due_diligence_list')
 
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        return super().form_valid(form)
 
-
-class DueDiligenceUpdateView(LoginRequiredMixin, UpdateView):
-    model = DueDiligence
-    form_class = DueDiligenceForm
+class DueDiligenceProcessUpdateView(LoginRequiredMixin, UpdateView):
+    model = DueDiligenceProcess
+    form_class = DueDiligenceProcessForm
     template_name = 'contracts/due_diligence_form.html'
-    success_url = reverse_lazy('contracts:due_diligence_list')
 
-
-class AddDueDiligenceItemView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        due_diligence = get_object_or_404(DueDiligence, pk=pk)
-        form = DueDiligenceItemForm(request.POST)
-        if form.is_valid():
-            item = form.save(commit=False)
-            item.due_diligence = due_diligence
-            item.save()
-        return redirect('contracts:due_diligence_detail', pk=due_diligence.pk)
-
-
-class AddDueDiligenceRiskView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        due_diligence = get_object_or_404(DueDiligence, pk=pk)
-        form = DueDiligenceRiskForm(request.POST)
-        if form.is_valid():
-            risk = form.save(commit=False)
-            risk.due_diligence = due_diligence
-            risk.save()
-        return redirect('contracts:due_diligence_detail', pk=due_diligence.pk)
-
-
-@require_POST
-@login_required
-def toggle_dd_item(request, pk):
-    item = get_object_or_404(DueDiligenceItem, pk=pk)
-    item.is_completed = not item.is_completed
-    if item.is_completed:
-        from django.utils import timezone
-        item.completed_date = timezone.now()
-    else:
-        item.completed_date = None
-    item.save()
-    return redirect('contracts:due_diligence_detail', pk=item.due_diligence.pk)
+    def get_success_url(self):
+        return reverse_lazy('contracts:due_diligence_detail', kwargs={'pk': self.object.pk})
 
 
 # --- Budget Views ---
@@ -379,22 +336,12 @@ class BudgetListView(LoginRequiredMixin, ListView):
     model = Budget
     template_name = 'contracts/budget_list.html'
     context_object_name = 'budgets'
+    paginate_by = 25
 
-    def get_queryset(self):
-        queryset = Budget.objects.all()
-
-        year = self.request.GET.get('year')
-        quarter = self.request.GET.get('quarter')
-        department = self.request.GET.get('department')
-
-        if year:
-            queryset = queryset.filter(year=year)
-        if quarter:
-            queryset = queryset.filter(quarter=quarter)
-        if department:
-            queryset = queryset.filter(department__icontains=department)
-
-        return queryset.order_by('-year', '-quarter')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['current_year'] = timezone.now().year
+        return context
 
 
 class BudgetDetailView(LoginRequiredMixin, DetailView):
@@ -404,15 +351,8 @@ class BudgetDetailView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['expense_form'] = ExpenseForm()
-        context['expenses_by_category'] = {}
-
-        for expense in self.object.expenses.all():
-            category = expense.get_category_display()
-            if category not in context['expenses_by_category']:
-                context['expenses_by_category'][category] = []
-            context['expenses_by_category'][category].append(expense)
-
+        context['expenses'] = self.object.expenses.all()
+        context['expense_form'] = BudgetExpenseForm()
         return context
 
 
@@ -431,21 +371,30 @@ class BudgetUpdateView(LoginRequiredMixin, UpdateView):
     model = Budget
     form_class = BudgetForm
     template_name = 'contracts/budget_form.html'
-    success_url = reverse_lazy('contracts:budget_list')
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:budget_detail', kwargs={'pk': self.object.pk})
 
 
-class AddExpenseView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        budget = get_object_or_404(Budget, pk=pk)
-        form = ExpenseForm(request.POST)
-        if form.is_valid():
-            expense = form.save(commit=False)
-            expense.budget = budget
-            expense.created_by = request.user
-            expense.save()
-        return redirect('contracts:budget_detail', pk=budget.pk)
+@login_required
+@require_POST
+def add_budget_expense(request, budget_id):
+    budget = get_object_or_404(Budget, id=budget_id)
+    form = BudgetExpenseForm(request.POST)
+
+    if form.is_valid():
+        expense = form.save(commit=False)
+        expense.budget = budget
+        expense.created_by = request.user
+        expense.save()
+        messages.success(request, 'Expense added successfully.')
+    else:
+        messages.error(request, 'Error adding expense. Please check the form.')
+
+    return redirect('contracts:budget_detail', pk=budget_id)
 
 
+# --- Dashboard View ---
 def dashboard(request):
     all_contracts = Contract.objects.all()
     pending_tasks = LegalTask.objects.filter(status='PENDING').count()
@@ -455,7 +404,7 @@ def dashboard(request):
 
     # Due Diligence data
     try:
-        active_due_diligence = DueDiligence.objects.filter(status__in=['INITIATED', 'IN_PROGRESS', 'REVIEW']).count()
+        active_due_diligence = DueDiligenceProcess.objects.filter(status__in=['INITIATED', 'IN_PROGRESS', 'REVIEW']).count()
         high_risk_dd = DueDiligenceRisk.objects.filter(risk_level='HIGH').count()
     except:
         active_due_diligence = 0

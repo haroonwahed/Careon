@@ -120,3 +120,110 @@ M&A Due Diligence
     </div>
 </div>
 {% endblock %}
+{% extends 'base.html' %}
+
+{% block title %}Due Diligence Processes{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Due Diligence Processes</h1>
+            <p class="text-gray-600">Track M&A due diligence processes and risk management</p>
+        </div>
+        <a href="{% url 'contracts:due_diligence_create' %}" class="btn-primary">
+            New Process
+        </a>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white p-4 rounded-lg border border-gray-200">
+        <form method="get" class="flex space-x-4">
+            <select name="status" class="border border-gray-300 rounded-md px-3 py-2">
+                <option value="">All Statuses</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">Filter</button>
+        </form>
+    </div>
+
+    <!-- Processes List -->
+    <div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold">Active Processes</h3>
+        </div>
+        
+        {% if processes %}
+        <div class="divide-y divide-gray-200">
+            {% for process in processes %}
+            <div class="p-6 hover:bg-gray-50">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center space-x-3">
+                            <h4 class="text-lg font-semibold text-gray-900">
+                                <a href="{% url 'contracts:due_diligence_detail' process.pk %}" class="hover:text-blue-600">
+                                    {{ process.title }}
+                                </a>
+                            </h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if process.status == 'PLANNING' %}bg-gray-100 text-gray-800
+                                {% elif process.status == 'IN_PROGRESS' %}bg-blue-100 text-blue-800
+                                {% elif process.status == 'REVIEW' %}bg-yellow-100 text-yellow-800
+                                {% elif process.status == 'COMPLETED' %}bg-green-100 text-green-800
+                                {% else %}bg-red-100 text-red-800{% endif %}">
+                                {{ process.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{ process.get_transaction_type_display }} • {{ process.target_company }}
+                            {% if process.deal_value %}• ${{ process.deal_value|floatformat:0 }}{% endif %}
+                        </p>
+                        <div class="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                            <span>Lead: {{ process.lead_attorney.get_full_name|default:process.lead_attorney.username|default:"Unassigned" }}</span>
+                            <span>Target: {{ process.target_completion_date|date:"M d, Y" }}</span>
+                            <span>Progress: {{ process.progress_percentage }}%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium
+                            {% if process.overall_risk_level == 'HIGH' %}bg-red-100 text-red-700
+                            {% elif process.overall_risk_level == 'MEDIUM' %}bg-yellow-100 text-yellow-700
+                            {% else %}bg-green-100 text-green-700{% endif %}">
+                            {{ process.overall_risk_level }} RISK
+                        </span>
+                        <div class="w-20 bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" style="width: {{ process.progress_percentage }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="p-6 text-center text-gray-500">
+            <p>No due diligence processes found.</p>
+            <a href="{% url 'contracts:due_diligence_create' %}" class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                Create your first process
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <div class="flex justify-center">
+        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Previous</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">Next</a>
+            {% endif %}
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
