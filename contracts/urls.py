@@ -1,36 +1,51 @@
 from django.urls import path
-from . import views
+from .views import (
+    ContractListView, TrademarkRequestListView, TrademarkRequestCreateView,
+    TrademarkRequestDetailView, TrademarkRequestUpdateView, RiskLogListView,
+    RiskLogCreateView, RiskLogUpdateView, LegalTaskKanbanView,
+    LegalTaskCreateView, LegalTaskUpdateView, ComplianceChecklistListView,
+    ComplianceChecklistCreateView, ComplianceChecklistDetailView,
+    ComplianceChecklistUpdateView, ToggleChecklistItemView, AddChecklistItemView,
+    ContractDetailView, ContractCreateView, ContractUpdateView,
+    AddNegotiationNoteView, WorkflowDashboardView, WorkflowDetailView,
+    StartWorkflowView, UpdateWorkflowStepView, WorkflowTemplateListView
+)
 
 app_name = 'contracts'
 
 urlpatterns = [
-    path('', views.ContractListView.as_view(), name='contract_list'),
-    path('trademarks/', views.TrademarkRequestListView.as_view(), name='trademark_request_list'),
-    path('trademarks/new/', views.TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
-    path('trademarks/<int:pk>/', views.TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
-    path('trademarks/<int:pk>/edit/', views.TrademarkRequestUpdateView.as_view(), name='trademark_request_update'),
+    path('', ContractListView.as_view(), name='contract_list'),
+    path('trademarks/', TrademarkRequestListView.as_view(), name='trademark_request_list'),
+    path('trademarks/new/', TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
+    path('trademarks/<int:pk>/', TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
+    path('trademarks/<int:pk>/edit/', TrademarkRequestUpdateView.as_view(), name='trademark_request_update'),
 
     # Risk Logs
-    path('risks/', views.RiskLogListView.as_view(), name='risk_log_list'),
-    path('risks/new/', views.RiskLogCreateView.as_view(), name='risk_log_create'),
-    path('risks/<int:pk>/edit/', views.RiskLogUpdateView.as_view(), name='risk_log_update'),
+    path('risks/', RiskLogListView.as_view(), name='risk_log_list'),
+    path('risks/new/', RiskLogCreateView.as_view(), name='risk_log_create'),
+    path('risks/<int:pk>/edit/', RiskLogUpdateView.as_view(), name='risk_log_update'),
 
     # Legal Tasks
-    path('legal-tasks/', views.LegalTaskKanbanView.as_view(), name='legal_task_board'),
-    path('legal-tasks/new/', views.LegalTaskCreateView.as_view(), name='legal_task_create'),
-    path('legal-tasks/<int:pk>/edit/', views.LegalTaskUpdateView.as_view(), name='legal_task_update'),
+    path('legal-tasks/', LegalTaskKanbanView.as_view(), name='legal_task_board'),
+    path('legal-tasks/new/', LegalTaskCreateView.as_view(), name='legal_task_create'),
+    path('legal-tasks/<int:pk>/edit/', LegalTaskUpdateView.as_view(), name='legal_task_update'),
 
     # Compliance Checklists
-    path('compliance/', views.ComplianceChecklistListView.as_view(), name='compliance_checklist_list'),
-    path('compliance/new/', views.ComplianceChecklistCreateView.as_view(), name='compliance_checklist_create'),
-    path('compliance/<int:pk>/', views.ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
-    path('compliance/<int:pk>/edit/', views.ComplianceChecklistUpdateView.as_view(), name='compliance_checklist_update'),
-    path('compliance/item/<int:pk>/toggle/', views.ToggleChecklistItemView.as_view(), name='toggle_checklist_item'),
-    path('compliance/<int:pk>/add_item/', views.AddChecklistItemView.as_view(), name='add_checklist_item'),
+    path('compliance/', ComplianceChecklistListView.as_view(), name='compliance_checklist_list'),
+    path('compliance/create/', ComplianceChecklistCreateView.as_view(), name='compliance_checklist_create'),
+    path('compliance/<int:pk>/', ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
+    path('compliance/<int:pk>/toggle-item/<int:item_pk>/', ToggleChecklistItemView.as_view(), name='toggle_checklist_item'),
+
+    # Workflow URLs
+    path('workflows/', WorkflowDashboardView.as_view(), name='workflow_dashboard'),
+    path('workflows/<int:pk>/', WorkflowDetailView.as_view(), name='workflow_detail'),
+    path('workflows/start/<int:contract_pk>/', StartWorkflowView.as_view(), name='start_workflow'),
+    path('workflows/step/<int:pk>/update/', UpdateWorkflowStepView.as_view(), name='update_workflow_step'),
+    path('workflows/templates/', WorkflowTemplateListView.as_view(), name='workflow_template_list'),
 
     # Contracts
-    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),
-    path('new/', views.ContractCreateView.as_view(), name='contract_create'),
-    path('<int:pk>/edit/', views.ContractUpdateView.as_view(), name='contract_update'),
-    path('<int:pk>/add_note/', views.AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
+    path('<int:pk>/', ContractDetailView.as_view(), name='contract_detail'),
+    path('new/', ContractCreateView.as_view(), name='contract_create'),
+    path('<int:pk>/edit/', ContractUpdateView.as_view(), name='contract_update'),
+    path('<int:pk>/add_note/', AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
 ]

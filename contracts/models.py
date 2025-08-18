@@ -77,13 +77,18 @@ class WorkflowStep(models.Model):
         SKIPPED = 'SKIPPED', 'Skipped'
 
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='workflow_steps')
+    workflow = models.ForeignKey('Workflow', on_delete=models.CASCADE, related_name='workflow_steps', null=True, blank=True)
     step_type = models.CharField(max_length=20, choices=StepType.choices)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='workflow_tasks')
     status = models.CharField(max_length=20, choices=StepStatus.choices, default=StepStatus.PENDING)
     notes = models.TextField(blank=True)
     due_date = models.DateField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['order']
 
     def __str__(self):
         return f'{self.get_step_type_display()} for {self.contract.title}'
@@ -196,6 +201,69 @@ class ComplianceChecklist(models.Model):
         NOT_STARTED = 'NOT_STARTED', 'Not Started'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         COMPLETE = 'COMPLETE', 'Complete'
+
+
+
+class WorkflowTemplate(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    contract_type = models.CharField(max_length=20, choices=Contract.ContractType.choices, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_templates')
+
+    def __str__(self):
+        return self.name
+
+
+class WorkflowTemplateStep(models.Model):
+    template = models.ForeignKey(WorkflowTemplate, on_delete=models.CASCADE, related_name='template_steps')
+    step_type = models.CharField(max_length=20, choices=WorkflowStep.StepType.choices)
+    order = models.PositiveIntegerField()
+    default_assignee_role = models.CharField(max_length=50, blank=True)
+    estimated_days = models.PositiveIntegerField(default=3)
+    is_required = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['order']
+        unique_together = ('template', 'order')
+
+    def __str__(self):
+        return f'{self.template.name} - Step {self.order}: {self.get_step_type_display()}'
+
+
+class Workflow(models.Model):
+    class WorkflowStatus(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+        ON_HOLD = 'ON_HOLD', 'On Hold'
+
+    name = models.CharField(max_length=200)
+    contract = models.OneToOneField(Contract, on_delete=models.CASCADE, related_name='workflow')
+    template = models.ForeignKey(WorkflowTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+    status = models.CharField(max_length=20, choices=WorkflowStatus.choices, default=WorkflowStatus.ACTIVE)
+    current_step = models.ForeignKey(WorkflowStep, on_delete=models.SET_NULL, null=True, blank=True, related_name='current_workflows')
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    projected_completion = models.DateField(null=True, blank=True)
+
+    def __str__(self):
+        return f'{self.name} - {self.contract.title}'
+
+    @property
+    def progress_percentage(self):
+        total_steps = self.workflow_steps.count()
+        if total_steps == 0:
+            return 0
+        completed_steps = self.workflow_steps.filter(status=WorkflowStep.StepStatus.COMPLETED).count()
+        return int((completed_steps / total_steps) * 100)
+
+    @property
+    def current_stage(self):
+        if self.current_step:
+            return self.current_step.get_step_type_display()
+        return "Not Started"
 
     name = models.CharField(max_length=200)
     regulation = models.CharField(max_length=200)
