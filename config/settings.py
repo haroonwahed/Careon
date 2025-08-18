@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'contracts.context_processors.feature_flags',
             ],
         },
     },
@@ -132,6 +133,9 @@ STATICFILES_DIRS = [BASE_DIR / 'theme' / 'static']
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Feature Flags
+IRONCLAD_MODE = False  # Set to True to enable Ironclad-like features
 
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'

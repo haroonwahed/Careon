@@ -23,14 +23,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             const backButton = document.querySelector('button[onclick="goBack()"]');
             const forwardButton = document.querySelector('button[onclick="goForward()"]');
-            
+
             // Enable/disable buttons based on history
             if (window.history.length <= 1) {
                 if (backButton) {
                     backButton.title = 'Go to Dashboard';
                 }
             }
-            
+
             // Listen for navigation events
             window.addEventListener('popstate', function() {
                 // Update button states if needed
@@ -47,7 +47,7 @@
                     <svg width="180" height="45" viewBox="0 0 180 45" class="mr-2">
                         <!-- Bolton logo with brand colors -->
                         <rect x="0" y="8" width="40" height="32" fill="var(--primary-700)" rx="6"/>
-                        
+
                         <!-- White architectural lines -->
                         <g fill="white" stroke="white" stroke-width="0.5">
                             <rect x="8" y="12" width="2" height="20"/>
@@ -56,14 +56,14 @@
                             <rect x="20" y="12" width="2" height="20"/>
                             <rect x="24" y="12" width="2" height="20"/>
                             <rect x="28" y="12" width="2" height="20"/>
-                            
+
                             <rect x="6" y="14" width="28" height="1"/>
                             <rect x="6" y="18" width="28" height="1"/>
                             <rect x="6" y="22" width="28" height="1"/>
                             <rect x="6" y="26" width="28" height="1"/>
                             <rect x="6" y="30" width="28" height="1"/>
                         </g>
-                        
+
                         <text x="15" y="30" fill="white" font-family="Arial Black, sans-serif" font-size="16" font-weight="900">B</text>
                         <text x="45" y="25" fill="var(--primary-700)" font-family="Inter, sans-serif" font-size="18" font-weight="bold" letter-spacing="2">BOLTON</text>
                         <text x="45" y="38" fill="var(--primary-600)" font-family="Inter, sans-serif" font-size="14" font-weight="normal" letter-spacing="2">CLM</text>
@@ -162,5 +162,7 @@
         {% block content %}
         {% endblock %}
     </main>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,19 +1,17 @@
 from django.urls import path
 from .views import (
-    ContractListView, TrademarkRequestListView, TrademarkRequestCreateView,
-    TrademarkRequestDetailView, TrademarkRequestUpdateView, RiskLogListView,
-    RiskLogCreateView, RiskLogUpdateView, LegalTaskKanbanView,
-    LegalTaskCreateView, LegalTaskUpdateView, ComplianceChecklistListView,
-    ComplianceChecklistCreateView, ComplianceChecklistDetailView,
-    ComplianceChecklistUpdateView, ToggleChecklistItemView, AddChecklistItemView,
-
-    RepositoryView,
-
-    ContractDetailView, ContractCreateView, ContractUpdateView,
-    AddNegotiationNoteView, WorkflowDashboardView, WorkflowDetailView,
-    WorkflowCreateView, WorkflowStepUpdateView, WorkflowStepCompleteView,
-    WorkflowTemplateListView, WorkflowTemplateCreateView
+    ContractListView, ContractDetailView, ContractCreateView, ContractUpdateView, AddNegotiationNoteView,
+    TrademarkRequestListView, TrademarkRequestDetailView, TrademarkRequestCreateView, TrademarkRequestUpdateView,
+    LegalTaskKanbanView, LegalTaskCreateView, LegalTaskUpdateView,
+    RiskLogListView, RiskLogCreateView, RiskLogUpdateView,
+    ComplianceChecklistListView, ComplianceChecklistDetailView, ComplianceChecklistCreateView, ComplianceChecklistUpdateView,
+    ToggleChecklistItemView, AddChecklistItemView,
+    WorkflowDashboardView, WorkflowTemplateListView, WorkflowCreateView, WorkflowTemplateCreateView,
+    WorkflowDetailView, WorkflowStepUpdateView, WorkflowStepCompleteView,
+    RepositoryView, WorkflowCreateView as WorkflowCreateFormView,
+    workflow_create, workflow_template_create, workflow_template_list
 )
+from .api import views as api_views
 
 app_name = 'contracts'
 

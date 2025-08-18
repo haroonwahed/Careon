@@ -151,3 +151,12 @@ Contract Repository
     </div>
 </div>
 {% endblock %}
+
+{% block extra_js %}
+{% if ironclad_mode %}
+<script src="{% static 'js/ironclad-repository.js' %}"></script>
+<script>
+    window.ironcladMode = true;
+</script>
+{% endif %}
+{% endblock %}
