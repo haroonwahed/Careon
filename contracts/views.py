@@ -11,13 +11,14 @@ from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 
+from django.contrib.auth.forms import UserCreationForm
 from .forms import (
     ChecklistItemForm, WorkflowForm, WorkflowTemplateForm,
     BudgetForm, TrademarkRequestForm, LegalTaskForm, RiskLogForm, ComplianceChecklistForm,
     DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetExpenseForm
 )
 from .models import (
-    Contract, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
 )

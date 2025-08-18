@@ -7,10 +7,9 @@ from .models import (
 
 @admin.register(RiskLog)
 class RiskLogAdmin(admin.ModelAdmin):
-    list_display = ('title', 'risk_level', 'mitigation_status', 'owner', 'linked_contract')
-    list_filter = ('risk_level', 'mitigation_status', 'owner')
-    search_fields = ('title', 'description', 'mitigation_steps')
-    autocomplete_fields = ['owner', 'linked_contract']
+    list_display = ('title', 'risk_level', 'created_at')
+    list_filter = ('risk_level',)
+    search_fields = ('title', 'description')
 
 class ChecklistItemInline(admin.TabularInline):
     model = ChecklistItem
@@ -18,23 +17,34 @@ class ChecklistItemInline(admin.TabularInline):
 
 @admin.register(ComplianceChecklist)
 class ComplianceChecklistAdmin(admin.ModelAdmin):
-    list_display = ('name', 'regulation', 'status', 'due_date', 'reviewed_by')
-    list_filter = ('status', 'due_date', 'reviewed_by')
-    search_fields = ('name', 'regulation')
-    autocomplete_fields = ['reviewed_by']
+    list_display = ('title', 'regulation_type', 'created_at')
+    list_filter = ('regulation_type',)
+    search_fields = ('title', 'description')
     inlines = [ChecklistItemInline]
-
 
 @admin.register(TrademarkRequest)
 class TrademarkRequestAdmin(admin.ModelAdmin):
-    list_display = ('region', 'class_number', 'status', 'request_date', 'renewal_deadline', 'owner')
-    list_filter = ('status', 'region')
-    search_fields = ('region', 'class_number')
-    autocomplete_fields = ['owner']
+    list_display = ('mark_text', 'status', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('mark_text', 'description')
 
-class DueDiligenceItemInline(admin.TabularInline):
-    model = DueDiligenceItem
-    extra = 1
+@admin.register(LegalTask)
+class LegalTaskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'priority', 'status', 'due_date', 'assigned_to')
+    list_filter = ('priority', 'status')
+    search_fields = ('title', 'description')
+
+@admin.register(DueDiligenceProcess)
+class DueDiligenceProcessAdmin(admin.ModelAdmin):
+    list_display = ('title', 'transaction_type', 'status', 'target_company')
+    list_filter = ('transaction_type', 'status')
+    search_fields = ('title', 'target_company')
+
+@admin.register(Budget)
+class BudgetAdmin(admin.ModelAdmin):
+    list_display = ('department', 'year', 'quarter', 'allocated_amount')
+    list_filter = ('year', 'quarter', 'department')
+    search_fields = ('department',)
 
 class DueDiligenceRiskInline(admin.TabularInline):
     model = DueDiligenceRisk
