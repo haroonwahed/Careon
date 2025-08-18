@@ -31,33 +31,72 @@
             }
         }
     </script>
+<script>
+        function goBack() {
+            if (window.history.length > 1) {
+                window.history.back();
+            }
+        }
+        
+        function goForward() {
+            window.history.forward();
+        }
+    </script>
 </head>
 <body class="bg-gray-50">
-    <!-- Ironclad Logo Header -->
+    <!-- Bolton Logo Header -->
     <div class="bg-white border-b border-gray-200">
         <div class="flex items-center justify-between px-6 py-4">
             <div class="flex items-center">
-                <svg width="140" height="40" viewBox="0 0 140 40" class="mr-2">
-                    <!-- Bolton logo recreation -->
-                    <!-- Yellow square -->
-                    <rect x="0" y="8" width="24" height="24" fill="#f59e0b" rx="1"/>
+                <a href="{% url 'dashboard' %}" class="flex items-center">
+                    <svg width="160" height="40" viewBox="0 0 160 40" class="mr-2">
+                        <!-- Bolton logo exact recreation -->
+                        <!-- Yellow square background -->
+                        <rect x="2" y="6" width="28" height="28" fill="#FFC72C" rx="2"/>
 
-                    <!-- Blue icon inside yellow square -->
-                    <g fill="#1e40af">
-                        <!-- Building/structure icon -->
-                        <rect x="4" y="14" width="3" height="12"/>
-                        <rect x="8" y="12" width="3" height="14"/>
-                        <rect x="12" y="16" width="3" height="10"/>
-                        <rect x="16" y="18" width="3" height="8"/>
-                        <rect x="4" y="11" width="15" height="2"/>
-                    </g>
+                        <!-- Blue building icon inside yellow square -->
+                        <g fill="#1e40af">
+                            <!-- Main building structure -->
+                            <rect x="6" y="12" width="3" height="16"/>
+                            <rect x="10" y="10" width="3" height="18"/>
+                            <rect x="14" y="14" width="3" height="14"/>
+                            <rect x="18" y="16" width="3" height="12"/>
+                            <rect x="22" y="18" width="3" height="10"/>
+                            
+                            <!-- Building top line -->
+                            <rect x="6" y="9" width="19" height="2"/>
+                            
+                            <!-- Small details -->
+                            <rect x="7" y="14" width="1" height="1"/>
+                            <rect x="7" y="16" width="1" height="1"/>
+                            <rect x="11" y="12" width="1" height="1"/>
+                            <rect x="11" y="14" width="1" height="1"/>
+                            <rect x="15" y="16" width="1" height="1"/>
+                            <rect x="15" y="18" width="1" height="1"/>
+                            <rect x="19" y="18" width="1" height="1"/>
+                            <rect x="19" y="20" width="1" height="1"/>
+                        </g>
 
-                    <!-- BOLTON text -->
-                    <text x="30" y="18" fill="#1e40af" font-family="Arial, sans-serif" font-size="12" font-weight="bold" letter-spacing="0.5">BOLTON</text>
+                        <!-- BOLTON text -->
+                        <text x="36" y="20" fill="#1e40af" font-family="Arial, sans-serif" font-size="14" font-weight="bold" letter-spacing="1">BOLTON</text>
 
-                    <!-- CLM text -->
-                    <text x="30" y="30" fill="#1e40af" font-family="Arial, sans-serif" font-size="10" font-weight="normal" letter-spacing="0.5">CLM</text>
-                </svg>
+                        <!-- CLM text -->
+                        <text x="36" y="32" fill="#1e40af" font-family="Arial, sans-serif" font-size="11" font-weight="normal" letter-spacing="1">CLM</text>
+                    </svg>
+                </a>
+            </div>
+            <div class="flex items-center space-x-4">
+                <!-- Navigation buttons -->
+                <button onclick="goBack()" class="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100" title="Go back">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <button onclick="goForward()" class="text-gray-600 hover:text-gray-800 p-2 rounded-md hover:bg-gray-100" title="Go forward">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </button>
             </div>
             <div class="flex items-center space-x-4">
                 {% if user.is_authenticated %}
