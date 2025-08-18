@@ -57,6 +57,9 @@ def dashboard(request):
         due_date__lte=date.today() + timedelta(days=30)
     ).order_by('due_date')
 
+    # Recent contracts for main view
+    recent_contracts = user_contracts.order_by('-created_at')[:10]
+    
     context = {
         'total_contracts': user_contracts.count(),
         'pipeline_data': pipeline_data,
@@ -64,6 +67,7 @@ def dashboard(request):
         'overdue_milestones': overdue_milestones,
         'top_risks': top_risks,
         'upcoming_checklists': upcoming_checklists,
+        'recent_contracts': recent_contracts,
     }
     return render(request, 'dashboard.html', context)
 
