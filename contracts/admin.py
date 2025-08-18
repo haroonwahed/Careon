@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     Contract, Tag, Note, WorkflowStep, ContractVersion, NegotiationThread,
-    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem
+    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    DueDiligence, DueDiligenceItem, DueDiligenceRisk, Budget, Expense
 )
 
 @admin.register(RiskLog)
@@ -30,6 +31,48 @@ class TrademarkRequestAdmin(admin.ModelAdmin):
     list_filter = ('status', 'region')
     search_fields = ('region', 'class_number')
     autocomplete_fields = ['owner']
+
+class DueDiligenceItemInline(admin.TabularInline):
+    model = DueDiligenceItem
+    extra = 1
+
+class DueDiligenceRiskInline(admin.TabularInline):
+    model = DueDiligenceRisk
+    extra = 1
+
+@admin.register(DueDiligence)
+class DueDiligenceAdmin(admin.ModelAdmin):
+    list_display = ('title', 'target_company', 'transaction_type', 'status', 'expected_closing', 'created_by')
+    list_filter = ('transaction_type', 'status', 'created_at')
+    search_fields = ('title', 'target_company')
+    autocomplete_fields = ['lead_attorney', 'assigned_team', 'created_by']
+    inlines = [DueDiligenceItemInline, DueDiligenceRiskInline]
+
+@admin.register(DueDiligenceRisk)
+class DueDiligenceRiskAdmin(admin.ModelAdmin):
+    list_display = ('title', 'due_diligence', 'risk_level', 'category', 'owner')
+    list_filter = ('risk_level', 'category', 'due_diligence')
+    search_fields = ('title', 'description')
+    autocomplete_fields = ['due_diligence', 'owner']
+
+class ExpenseInline(admin.TabularInline):
+    model = Expense
+    extra = 1
+
+@admin.register(Budget)
+class BudgetAdmin(admin.ModelAdmin):
+    list_display = ('name', 'year', 'quarter', 'department', 'total_budget', 'status', 'owner')
+    list_filter = ('year', 'quarter', 'status', 'department')
+    search_fields = ('name', 'department')
+    autocomplete_fields = ['owner', 'created_by']
+    inlines = [ExpenseInline]
+
+@admin.register(Expense)
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ('description', 'budget', 'category', 'amount', 'expense_date', 'created_by')
+    list_filter = ('category', 'expense_date', 'budget')
+    search_fields = ('description', 'vendor')
+    autocomplete_fields = ['budget', 'created_by']
 
 @admin.register(LegalTask)
 class LegalTaskAdmin(admin.ModelAdmin):

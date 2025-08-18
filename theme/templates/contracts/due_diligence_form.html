@@ -1,0 +1,90 @@
+
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Edit{% else %}Create{% endif %} Due Diligence{% endblock %}
+
+{% block page_title %}
+{% if object %}Edit Due Diligence{% else %}Create New Due Diligence{% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-lg border border-gray-200 p-6">
+        <form method="post" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Deal Title
+                    </label>
+                    {{ form.title }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.target_company.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Target Company
+                    </label>
+                    {{ form.target_company }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.transaction_type.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Transaction Type
+                    </label>
+                    {{ form.transaction_type }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Status
+                    </label>
+                    {{ form.status }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.deal_value.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Deal Value ($)
+                    </label>
+                    {{ form.deal_value }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.expected_closing.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Expected Closing
+                    </label>
+                    {{ form.expected_closing }}
+                </div>
+                
+                <div>
+                    <label for="{{ form.lead_attorney.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        Lead Attorney
+                    </label>
+                    {{ form.lead_attorney }}
+                </div>
+            </div>
+            
+            <div>
+                <label for="{{ form.assigned_team.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Assigned Team
+                </label>
+                {{ form.assigned_team }}
+            </div>
+            
+            <div>
+                <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                    Notes
+                </label>
+                {{ form.notes }}
+            </div>
+            
+            <div class="flex justify-end space-x-3">
+                <a href="{% url 'contracts:due_diligence_list' %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn-primary">
+                    {% if object %}Update{% else %}Create{% endif %} Due Diligence
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

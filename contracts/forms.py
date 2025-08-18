@@ -1,7 +1,10 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from .models import NegotiationThread, ChecklistItem
+from .models import (
+    NegotiationThread, ChecklistItem, Workflow, WorkflowTemplate,
+    DueDiligence, DueDiligenceItem, DueDiligenceRisk, Budget, Expense
+)
 
 User = get_user_model()
 
@@ -32,8 +35,6 @@ class ChecklistItemForm(forms.ModelForm):
         }
 
 
-from .models import Workflow, WorkflowTemplate
-
 class WorkflowForm(forms.ModelForm):
     class Meta:
         model = Workflow
@@ -58,11 +59,60 @@ class WorkflowTemplateForm(forms.ModelForm):
         model = WorkflowTemplate
         fields = ['name', 'description', 'contract_type']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'placeholder': 'Enter template name...'}),
-            'description': forms.Textarea(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md', 'rows': 3, 'placeholder': 'Describe this template'}),
-            'contract_type': forms.Select(attrs={'class': 'w-full px-3 py-2 border border-gray-300 rounded-md'}),
+            'description': forms.Textarea(attrs={'rows': 3}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['contract_type'].required = False
+
+
+class DueDiligenceForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligence
+        fields = ['title', 'target_company', 'transaction_type', 'status', 'deal_value', 'lead_attorney', 'assigned_team', 'expected_closing', 'notes']
+        widgets = {
+            'expected_closing': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+            'assigned_team': forms.CheckboxSelectMultiple(),
+        }
+
+
+class DueDiligenceItemForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligenceItem
+        fields = ['category', 'title', 'description', 'assigned_to', 'due_date']
+        widgets = {
+            'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+
+
+class DueDiligenceRiskForm(forms.ModelForm):
+    class Meta:
+        model = DueDiligenceRisk
+        fields = ['title', 'description', 'risk_level', 'category', 'impact_assessment', 'mitigation_plan', 'owner']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'impact_assessment': forms.Textarea(attrs={'rows': 2}),
+            'mitigation_plan': forms.Textarea(attrs={'rows': 2}),
+        }
+
+
+class BudgetForm(forms.ModelForm):
+    class Meta:
+        model = Budget
+        fields = ['name', 'year', 'quarter', 'department', 'total_budget', 'status', 'owner']
+        widgets = {
+            'year': forms.NumberInput(attrs={'min': 2020, 'max': 2030}),
+        }
+
+
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['description', 'category', 'amount', 'expense_date', 'vendor', 'receipt_uploaded', 'notes']
+        widgets = {
+            'expense_date': forms.DateInput(attrs={'type': 'date'}),
+            'notes': forms.Textarea(attrs={'rows': 2}),
+        }

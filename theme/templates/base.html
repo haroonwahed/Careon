@@ -149,9 +149,13 @@
                 <a href="{% url 'contracts:compliance_checklist_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'compliance' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
                     Compliance
                 </a>
-                <a href="{% url 'contracts:trademark_request_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'trademark' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    Trademarks
+                <a href="{% url 'contracts:due_diligence_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'due_diligence' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+                    M&A Due Diligence
                 </a>
+                <a href="{% url 'contracts:budget_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'budget' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+                    Budgets
+                </a>
+                <a href="{% url 'contracts:trademark_request_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {</a>
             </nav>
         </div>
     </div>

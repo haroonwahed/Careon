@@ -9,37 +9,35 @@ from .views import (
     WorkflowDashboardView, WorkflowTemplateListView, WorkflowCreateView, WorkflowTemplateCreateView,
     WorkflowDetailView, WorkflowStepUpdateView, WorkflowStepCompleteView,
     RepositoryView, WorkflowCreateView as WorkflowCreateFormView,
-    workflow_create, workflow_template_create, workflow_template_list
+    DueDiligenceListView, DueDiligenceCreateView, DueDiligenceDetailView, DueDiligenceUpdateView, AddDueDiligenceItemView, AddDueDiligenceRiskView,
+    BudgetListView, BudgetCreateView, BudgetDetailView, BudgetUpdateView, AddExpenseView,
+    workflow_create, workflow_template_create, workflow_template_list, toggle_dd_item
 )
 from .api import views as api_views
 
 app_name = 'contracts'
 
 urlpatterns = [
-    path('', ContractListView.as_view(), name='contract_list'),
-    path('repository/', RepositoryView.as_view(), name='repository'),
-    path('trademarks/', TrademarkRequestListView.as_view(), name='trademark_request_list'),
-    path('trademarks/new/', TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
-    path('trademarks/<int:pk>/', TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
-    path('trademarks/<int:pk>/edit/', TrademarkRequestUpdateView.as_view(), name='trademark_request_update'),
+    # API endpoints
+    path('api/contracts/', api_views.contracts_api, name='contracts_api'),
+    path('api/contracts/bulk-update/', api_views.bulk_update_contracts, name='bulk_update_contracts'),
+    path('api/contracts/<str:contract_id>/', api_views.contract_detail_api, name='contract_detail_api'),
 
-    # Risk Logs
-    path('risks/', RiskLogListView.as_view(), name='risk_log_list'),
-    path('risks/new/', RiskLogCreateView.as_view(), name='risk_log_create'),
-    path('risks/<int:pk>/edit/', RiskLogUpdateView.as_view(), name='risk_log_update'),
+    # Due Diligence URLs
+    path('due-diligence/', DueDiligenceListView.as_view(), name='due_diligence_list'),
+    path('due-diligence/new/', DueDiligenceCreateView.as_view(), name='due_diligence_create'),
+    path('due-diligence/<int:pk>/', DueDiligenceDetailView.as_view(), name='due_diligence_detail'),
+    path('due-diligence/<int:pk>/edit/', DueDiligenceUpdateView.as_view(), name='due_diligence_update'),
+    path('due-diligence/<int:pk>/add-item/', AddDueDiligenceItemView.as_view(), name='add_dd_item'),
+    path('due-diligence/<int:pk>/add-risk/', AddDueDiligenceRiskView.as_view(), name='add_dd_risk'),
+    path('dd-item/<int:pk>/toggle/', toggle_dd_item, name='toggle_dd_item'),
 
-    # Legal Tasks
-    path('legal-tasks/', LegalTaskKanbanView.as_view(), name='legal_task_board'),
-    path('legal-tasks/new/', LegalTaskCreateView.as_view(), name='legal_task_create'),
-    path('legal-tasks/<int:pk>/edit/', LegalTaskUpdateView.as_view(), name='legal_task_update'),
-
-    # Compliance Checklists
-    path('compliance/', ComplianceChecklistListView.as_view(), name='compliance_checklist_list'),
-    path('compliance/create/', ComplianceChecklistCreateView.as_view(), name='compliance_checklist_create'),
-    path('compliance/<int:pk>/', ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
-    path('compliance/<int:pk>/edit/', ComplianceChecklistUpdateView.as_view(), name='compliance_checklist_update'),
-    path('compliance/<int:pk>/toggle-item/<int:item_pk>/', ToggleChecklistItemView.as_view(), name='toggle_checklist_item'),
-    path('compliance/<int:pk>/add-item/', AddChecklistItemView.as_view(), name='add_checklist_item'),
+    # Budget URLs
+    path('budgets/', BudgetListView.as_view(), name='budget_list'),
+    path('budgets/new/', BudgetCreateView.as_view(), name='budget_create'),
+    path('budgets/<int:pk>/', BudgetDetailView.as_view(), name='budget_detail'),
+    path('budgets/<int:pk>/edit/', BudgetUpdateView.as_view(), name='budget_update'),
+    path('budgets/<int:pk>/add-expense/', AddExpenseView.as_view(), name='add_expense'),
 
     # Workflow URLs
     path('workflow-dashboard/', WorkflowDashboardView.as_view(), name='workflow_dashboard'),
@@ -56,64 +54,4 @@ urlpatterns = [
     path('new/', ContractCreateView.as_view(), name='contract_create'),
     path('<int:pk>/edit/', ContractUpdateView.as_view(), name='contract_update'),
     path('<int:pk>/add_note/', AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
-]
-from django.urls import path
-from . import views
-
-app_name = 'contracts'
-
-urlpatterns = [
-    # Existing URLs
-    path('', views.ContractListView.as_view(), name='contract_list'),
-    path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),
-    path('new/', views.ContractCreateView.as_view(), name='contract_create'),
-    path('<int:pk>/edit/', views.ContractUpdateView.as_view(), name='contract_update'),
-    path('<int:pk>/add_note/', views.AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
-    
-    # Repository URL (alias for contract list with enhanced features)
-    path('repository/', views.ContractListView.as_view(), name='repository'),
-    
-    # Bulk operations
-    path('bulk-update/', views.BulkUpdateView.as_view(), name='bulk_update'),
-    
-    # Templates
-    path('templates/', views.TemplateListView.as_view(), name='template_list'),
-    path('templates/create/', views.TemplateCreateView.as_view(), name='template_create'),
-    path('templates/<str:pk>/', views.TemplateDetailView.as_view(), name='template_detail'),
-    
-    # Clause Library  
-    path('clauses/', views.ClauseLibraryView.as_view(), name='clause_library'),
-    path('clauses/create/', views.ClauseCreateView.as_view(), name='clause_create'),
-    
-    # Obligations
-    path('obligations/', views.ObligationListView.as_view(), name='obligation_list'),
-    path('obligations/create/', views.ObligationCreateView.as_view(), name='obligation_create'),
-    path('obligations/<str:pk>/', views.ObligationDetailView.as_view(), name='obligation_detail'),
-    
-    # Workflow URLs
-    path('workflow-dashboard/', views.WorkflowDashboardView.as_view(), name='workflow_dashboard'),
-    path('workflows/<int:pk>/', views.WorkflowDetailView.as_view(), name='workflow_detail'),
-    path('workflows/create/', views.WorkflowCreateView.as_view(), name='workflow_create'),
-    path('workflows/step/<int:pk>/update/', views.WorkflowStepUpdateView.as_view(), name='update_workflow_step'),
-    path('workflows/step/<int:pk>/complete/', views.WorkflowStepCompleteView.as_view(), name='complete_workflow_step'),
-    path('workflow-templates/', views.WorkflowTemplateListView.as_view(), name='workflow_template_list'),
-    path('workflow-templates/create/', views.WorkflowTemplateCreateView.as_view(), name='workflow_template_create'),
-    
-    # Risk Management
-    path('risks/', views.RiskLogListView.as_view(), name='risk_log_list'),
-    path('risks/create/', views.RiskLogCreateView.as_view(), name='risk_log_create'),
-    
-    # Compliance
-    path('compliance/', views.ComplianceChecklistListView.as_view(), name='compliance_checklist_list'),
-    path('compliance/create/', views.ComplianceChecklistCreateView.as_view(), name='compliance_checklist_create'),
-    path('compliance/<int:pk>/', views.ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
-    
-    # Trademarks
-    path('trademarks/', views.TrademarkRequestListView.as_view(), name='trademark_request_list'),
-    path('trademarks/create/', views.TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
-    path('trademarks/<int:pk>/', views.TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
-    
-    # Legal Tasks
-    path('legal-tasks/', views.LegalTaskBoardView.as_view(), name='legal_task_board'),
-    path('legal-tasks/create/', views.LegalTaskCreateView.as_view(), name='legal_task_create'),
 ]

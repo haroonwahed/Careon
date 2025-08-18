@@ -287,3 +287,177 @@ class ChecklistItem(models.Model):
 
     def __str__(self):
         return self.text
+
+
+class DueDiligence(models.Model):
+    class DDStatus(models.TextChoices):
+        INITIATED = 'INITIATED', 'Initiated'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        REVIEW = 'REVIEW', 'Under Review'
+        COMPLETED = 'COMPLETED', 'Completed'
+        ON_HOLD = 'ON_HOLD', 'On Hold'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    class TransactionType(models.TextChoices):
+        MERGER = 'MERGER', 'Merger'
+        ACQUISITION = 'ACQUISITION', 'Acquisition'
+        JOINT_VENTURE = 'JOINT_VENTURE', 'Joint Venture'
+        ASSET_PURCHASE = 'ASSET_PURCHASE', 'Asset Purchase'
+        STOCK_PURCHASE = 'STOCK_PURCHASE', 'Stock Purchase'
+
+    title = models.CharField(max_length=200)
+    target_company = models.CharField(max_length=200)
+    transaction_type = models.CharField(max_length=20, choices=TransactionType.choices, default=TransactionType.ACQUISITION)
+    status = models.CharField(max_length=20, choices=DDStatus.choices, default=DDStatus.INITIATED)
+    deal_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    lead_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='led_due_diligence')
+    assigned_team = models.ManyToManyField(User, related_name='assigned_due_diligence', blank=True)
+    expected_closing = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_due_diligence')
+    notes = models.TextField(blank=True)
+
+    def __str__(self):
+        return f'{self.title} - {self.target_company}'
+
+    @property
+    def progress_percentage(self):
+        total_items = self.dd_items.count()
+        if total_items == 0:
+            return 0
+        completed_items = self.dd_items.filter(is_completed=True).count()
+        return int((completed_items / total_items) * 100)
+
+    @property
+    def high_risk_count(self):
+        return self.dd_risks.filter(risk_level='HIGH').count()
+
+
+class DueDiligenceItem(models.Model):
+    class ItemCategory(models.TextChoices):
+        LEGAL = 'LEGAL', 'Legal'
+        FINANCIAL = 'FINANCIAL', 'Financial'
+        OPERATIONAL = 'OPERATIONAL', 'Operational'
+        TECHNICAL = 'TECHNICAL', 'Technical'
+        COMMERCIAL = 'COMMERCIAL', 'Commercial'
+        ESG = 'ESG', 'Environmental, Social & Governance'
+
+    due_diligence = models.ForeignKey(DueDiligence, on_delete=models.CASCADE, related_name='dd_items')
+    category = models.CharField(max_length=20, choices=ItemCategory.choices, default=ItemCategory.LEGAL)
+    title = models.CharField(max_length=300)
+    description = models.TextField(blank=True)
+    is_completed = models.BooleanField(default=False)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    due_date = models.DateField(null=True, blank=True)
+    completed_date = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.due_diligence.title} - {self.title}'
+
+
+class DueDiligenceRisk(models.Model):
+    class RiskLevel(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+
+    class RiskCategory(models.TextChoices):
+        REGULATORY = 'REGULATORY', 'Regulatory'
+        FINANCIAL = 'FINANCIAL', 'Financial'
+        OPERATIONAL = 'OPERATIONAL', 'Operational'
+        LEGAL = 'LEGAL', 'Legal'
+        REPUTATIONAL = 'REPUTATIONAL', 'Reputational'
+        INTEGRATION = 'INTEGRATION', 'Integration'
+
+    due_diligence = models.ForeignKey(DueDiligence, on_delete=models.CASCADE, related_name='dd_risks')
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.MEDIUM)
+    category = models.CharField(max_length=20, choices=RiskCategory.choices, default=RiskCategory.LEGAL)
+    impact_assessment = models.TextField(blank=True)
+    mitigation_plan = models.TextField(blank=True)
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_dd_risks')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.due_diligence.title} - {self.title}'
+
+
+class Budget(models.Model):
+    class Quarter(models.TextChoices):
+        Q1 = 'Q1', 'Q1'
+        Q2 = 'Q2', 'Q2'
+        Q3 = 'Q3', 'Q3'
+        Q4 = 'Q4', 'Q4'
+
+    class BudgetStatus(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        APPROVED = 'APPROVED', 'Approved'
+        ACTIVE = 'ACTIVE', 'Active'
+        CLOSED = 'CLOSED', 'Closed'
+
+    name = models.CharField(max_length=200)
+    year = models.PositiveIntegerField()
+    quarter = models.CharField(max_length=2, choices=Quarter.choices)
+    department = models.CharField(max_length=100, blank=True)
+    total_budget = models.DecimalField(max_digits=12, decimal_places=2)
+    status = models.CharField(max_length=20, choices=BudgetStatus.choices, default=BudgetStatus.DRAFT)
+    owner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='owned_budgets')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_budgets')
+
+    class Meta:
+        unique_together = ('year', 'quarter', 'department')
+
+    def __str__(self):
+        return f'{self.name} - {self.year} {self.quarter}'
+
+    @property
+    def total_expenses(self):
+        return sum(expense.amount for expense in self.expenses.all())
+
+    @property
+    def remaining_budget(self):
+        return self.total_budget - self.total_expenses
+
+    @property
+    def budget_utilization(self):
+        if self.total_budget == 0:
+            return 0
+        return (self.total_expenses / self.total_budget) * 100
+
+    @property
+    def is_over_budget(self):
+        return self.total_expenses > self.total_budget
+
+
+class Expense(models.Model):
+    class ExpenseCategory(models.TextChoices):
+        LEGAL_FEES = 'LEGAL_FEES', 'Legal Fees'
+        CONSULTING = 'CONSULTING', 'Consulting'
+        TRAVEL = 'TRAVEL', 'Travel'
+        SOFTWARE = 'SOFTWARE', 'Software'
+        OFFICE = 'OFFICE', 'Office Supplies'
+        EXTERNAL_COUNSEL = 'EXTERNAL_COUNSEL', 'External Counsel'
+        FILING_FEES = 'FILING_FEES', 'Filing Fees'
+        OTHER = 'OTHER', 'Other'
+
+    budget = models.ForeignKey(Budget, on_delete=models.CASCADE, related_name='expenses')
+    description = models.CharField(max_length=300)
+    category = models.CharField(max_length=20, choices=ExpenseCategory.choices, default=ExpenseCategory.OTHER)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    expense_date = models.DateField()
+    vendor = models.CharField(max_length=200, blank=True)
+    receipt_uploaded = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_expenses')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.description} - ${self.amount}'
