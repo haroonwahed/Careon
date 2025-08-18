@@ -74,9 +74,10 @@ class BudgetAdmin(admin.ModelAdmin):
 
 @admin.register(BudgetExpense)
 class BudgetExpenseAdmin(admin.ModelAdmin):
-    list_display = ('description', 'budget', 'category', 'amount', 'date')
-    list_filter = ('category', 'date', 'budget')
-    search_fields = ('description',)
+    list_display = ['budget', 'description', 'amount', 'category', 'date', 'created_by']
+    list_filter = ['category', 'date', 'created_at']
+    search_fields = ['description', 'budget__department']
+    date_hierarchy = 'date'
 
 class WorkflowStepInline(admin.TabularInline):
     model = WorkflowStep
@@ -85,10 +86,10 @@ class WorkflowStepInline(admin.TabularInline):
 
 @admin.register(Workflow)
 class WorkflowAdmin(admin.ModelAdmin):
-    list_display = ('title', 'status', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('title', 'description')
-    readonly_fields = ('created_at',)
+    list_display = ['title', 'status', 'created_by', 'created_at']
+    list_filter = ['status', 'created_at']
+    search_fields = ['title', 'description']
+    readonly_fields = ['created_at']
 
 @admin.register(WorkflowTemplate)
 class WorkflowTemplateAdmin(admin.ModelAdmin):
@@ -98,12 +99,13 @@ class WorkflowTemplateAdmin(admin.ModelAdmin):
 
 @admin.register(WorkflowTemplateStep)
 class WorkflowTemplateStepAdmin(admin.ModelAdmin):
-    list_display = ('template', 'title', 'order')
-    list_filter = ('template',)
-    search_fields = ('title', 'description')
+    list_display = ['template', 'title', 'order', 'estimated_duration_days']
+    list_filter = ['template']
+    search_fields = ['template__name', 'title']
+    ordering = ['template', 'order']
 
 @admin.register(WorkflowStep)
 class WorkflowStepAdmin(admin.ModelAdmin):
-    list_display = ('workflow', 'title', 'assigned_to', 'status', 'due_date')
-    list_filter = ('status', 'assigned_to')
-    search_fields = ('workflow__title', 'title')
+    list_display = ['workflow', 'title', 'status', 'assigned_to', 'due_date']
+    list_filter = ['status', 'due_date']
+    search_fields = ['workflow__title', 'title']

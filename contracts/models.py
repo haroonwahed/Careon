@@ -131,7 +131,7 @@ class ComplianceChecklist(models.Model):
 
 class ChecklistItem(models.Model):
     checklist = models.ForeignKey(ComplianceChecklist, on_delete=models.CASCADE, related_name='items')
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, default='Untitled Item')
     description = models.TextField(blank=True)
     is_completed = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=1)
