@@ -34,10 +34,18 @@
     <div class="bg-white border-b border-gray-200">
         <div class="flex items-center justify-between px-6 py-4">
             <div class="flex items-center">
-                <div class="w-8 h-8 bg-teal-600 rounded flex items-center justify-center mr-3">
-                    <span class="text-white font-bold text-sm">BC</span>
-                </div>
-                <span class="text-lg font-semibold text-gray-900">Bolton CLM</span>
+                <svg width="120" height="40" viewBox="0 0 120 40" class="mr-2">
+                    <!-- Blue square with B and 3 -->
+                    <rect x="0" y="8" width="24" height="24" fill="#1E40AF" rx="2"/>
+                    <text x="4" y="22" fill="white" font-family="Arial, sans-serif" font-size="10" font-weight="bold">B</text>
+                    <text x="14" y="28" fill="white" font-family="Arial, sans-serif" font-size="8" font-weight="bold">3</text>
+                    
+                    <!-- BOLTON text -->
+                    <text x="30" y="16" fill="#1E40AF" font-family="Arial, sans-serif" font-size="10" font-weight="bold" letter-spacing="0.5">BOLTON</text>
+                    
+                    <!-- CLM text -->
+                    <text x="30" y="28" fill="#1E40AF" font-family="Arial, sans-serif" font-size="10" font-weight="bold" letter-spacing="0.5">CLM</text>
+                </svg>
             </div>
             <div class="flex items-center space-x-4">
                 {% if user.is_authenticated %}
