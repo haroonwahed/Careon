@@ -34,40 +34,42 @@
         <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-between mb-3">
                 <h3 class="text-sm font-medium text-gray-900">Filters</h3>
-                <button class="text-sm text-blue-600 hover:text-blue-700">Reset</button>
+                <a href="{% url 'contracts:repository' %}" class="text-sm text-blue-600 hover:text-blue-700">Reset</a>
             </div>
             
-            <!-- Record type filter -->
-            <div class="mb-4">
-                <label class="block text-xs font-medium text-gray-700 mb-2">Record type</label>
-                <select class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" name="contract_type">
-                    <option value="">All Types</option>
-                    {% for type_key, type_display in contract_types %}
-                    <option value="{{ type_key }}" {% if current_type_filter == type_key %}selected{% endif %}>
-                        {{ type_display }} ({{ type_counts|default_if_none:0 }})
-                    </option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <!-- Document text filter -->
-            <div class="mb-4">
-                <label class="block text-xs font-medium text-gray-700 mb-2">Document text</label>
-                <input type="text" placeholder="Add keyword search" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" name="search" value="{{ search_query|default:'' }}">
-            </div>
-
-            <!-- Agreement Status -->
-            <div class="mb-4">
-                <label class="block text-xs font-medium text-gray-700 mb-2">Agreement Status</label>
-                <div class="space-y-2">
-                    {% for status_key, status_display in contract_statuses %}
-                    <label class="flex items-center">
-                        <input type="checkbox" class="rounded border-gray-300 text-blue-600 mr-2" value="{{ status_key }}">
-                        <span class="text-sm text-gray-700">{{ status_display }}</span>
-                    </label>
-                    {% endfor %}
+            <form method="get" id="filter-form">
+                <!-- Record type filter -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-700 mb-2">Record type</label>
+                    <select class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" name="contract_type" onchange="document.getElementById('filter-form').submit();">
+                        <option value="">All Types</option>
+                        {% for type_key, type_display in contract_types %}
+                        <option value="{{ type_key }}" {% if current_type_filter == type_key %}selected{% endif %}>
+                            {{ type_display }} ({{ type_counts.type_key|default:0 }})
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </div>
+
+                <!-- Document text filter -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-700 mb-2">Document text</label>
+                    <input type="text" placeholder="Add keyword search" class="w-full text-sm border border-gray-300 rounded-md px-3 py-2" name="search" value="{{ search_query|default:'' }}" onchange="document.getElementById('filter-form').submit();">
+                </div>
+
+                <!-- Agreement Status -->
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-gray-700 mb-2">Agreement Status</label>
+                    <div class="space-y-2">
+                        {% for status_key, status_display in contract_statuses %}
+                        <label class="flex items-center">
+                            <input type="radio" name="status" class="text-blue-600 mr-2" value="{{ status_key }}" {% if current_status_filter == status_key %}checked{% endif %} onchange="document.getElementById('filter-form').submit();">
+                            <span class="text-sm text-gray-700">{{ status_display }} ({{ status_counts.status_key|default:0 }})</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </form>
 
             <!-- Agreement Expiration Date -->
             <div class="mb-4">
@@ -115,12 +117,13 @@
 
         <!-- Search Bar -->
         <div class="bg-white border-b border-gray-200 px-6 py-3">
-            <div class="flex items-center">
+            <form method="get" class="flex items-center">
                 <svg class="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
-                <input type="text" placeholder="Search records" class="flex-1 border-0 focus:ring-0 text-sm" value="{{ search_query|default:'' }}">
-            </div>
+                <input type="text" name="search" placeholder="Search records" class="flex-1 border-0 focus:ring-0 text-sm" value="{{ search_query|default:'' }}">
+                <button type="submit" class="ml-2 px-3 py-1 bg-blue-600 text-white rounded-md text-sm">Search</button>
+            </form>
         </div>
 
         <!-- Table -->

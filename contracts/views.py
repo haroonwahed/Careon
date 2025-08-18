@@ -390,12 +390,20 @@ class RepositoryView(LoginRequiredMixin, TemplateView):
 class WorkflowCreateView(LoginRequiredMixin, CreateView):
     model = Workflow
     template_name = 'contracts/workflow_form.html'
-    fields = ['name', 'template', 'contract']
+    fields = ['name', 'contract', 'template']
     success_url = reverse_lazy('contracts:workflow_dashboard')
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
         return super().form_valid(form)
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        # Filter contracts to only show user's contracts
+        form.fields['contract'].queryset = Contract.objects.filter(created_by=self.request.user)
+        # Filter templates to only show user's templates
+        form.fields['template'].queryset = WorkflowTemplate.objects.filter(created_by=self.request.user)
+        return form
 
 
 class WorkflowStepUpdateView(LoginRequiredMixin, UpdateView):
