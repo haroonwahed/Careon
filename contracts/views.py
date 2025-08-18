@@ -18,7 +18,7 @@ from .forms import (
     DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetExpenseForm
 )
 from .models import (
-    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    Contract, NegotiationThread, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
 )
@@ -28,6 +28,28 @@ def index(request):
     return redirect('dashboard')
 
 # --- Contract Views ---
+class ContractListView(LoginRequiredMixin, ListView):
+    model = Contract
+    template_name = 'contracts/contract_list.html'
+    context_object_name = 'contracts'
+    paginate_by = 25
+
+class ContractDetailView(LoginRequiredMixin, DetailView):
+    model = Contract
+    template_name = 'contracts/contract_detail.html'
+    context_object_name = 'contract'
+
+class ContractCreateView(LoginRequiredMixin, CreateView):
+    model = Contract
+    fields = ['title', 'content', 'status']
+    template_name = 'contracts/contract_form.html'
+    success_url = reverse_lazy('contracts:contract_list')
+
+class ContractUpdateView(LoginRequiredMixin, UpdateView):
+    model = Contract
+    fields = ['title', 'content', 'status']
+    template_name = 'contracts/contract_form.html'
+    success_url = reverse_lazy('contracts:contract_list')
 
 # --- Missing View Classes ---
 class ProfileView(View):
@@ -59,6 +81,142 @@ class AddNegotiationNoteView(LoginRequiredMixin, View):
     def post(self, request, pk):
         # Placeholder - redirect back for now
         return redirect('dashboard')
+
+# --- Missing Views from URLs ---
+class TrademarkRequestListView(LoginRequiredMixin, ListView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_list.html'
+    context_object_name = 'trademark_requests'
+
+class TrademarkRequestDetailView(LoginRequiredMixin, DetailView):
+    model = TrademarkRequest
+    template_name = 'contracts/trademark_request_detail.html'
+    context_object_name = 'trademark_request'
+
+class TrademarkRequestCreateView(LoginRequiredMixin, CreateView):
+    model = TrademarkRequest
+    form_class = TrademarkRequestForm
+    template_name = 'contracts/trademark_request_form.html'
+    success_url = reverse_lazy('contracts:trademark_request_list')
+
+class TrademarkRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = TrademarkRequest
+    form_class = TrademarkRequestForm
+    template_name = 'contracts/trademark_request_form.html'
+    success_url = reverse_lazy('contracts:trademark_request_list')
+
+class LegalTaskKanbanView(LoginRequiredMixin, ListView):
+    model = LegalTask
+    template_name = 'contracts/legal_task_board.html'
+    context_object_name = 'legal_tasks'
+
+class LegalTaskCreateView(LoginRequiredMixin, CreateView):
+    model = LegalTask
+    form_class = LegalTaskForm
+    template_name = 'contracts/legal_task_form.html'
+    success_url = reverse_lazy('contracts:legal_task_kanban')
+
+class LegalTaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = LegalTask
+    form_class = LegalTaskForm
+    template_name = 'contracts/legal_task_form.html'
+    success_url = reverse_lazy('contracts:legal_task_kanban')
+
+class RiskLogListView(LoginRequiredMixin, ListView):
+    model = RiskLog
+    template_name = 'contracts/risk_log_list.html'
+    context_object_name = 'risk_logs'
+
+class RiskLogCreateView(LoginRequiredMixin, CreateView):
+    model = RiskLog
+    form_class = RiskLogForm
+    template_name = 'contracts/risk_log_form.html'
+    success_url = reverse_lazy('contracts:risk_log_list')
+
+class RiskLogUpdateView(LoginRequiredMixin, UpdateView):
+    model = RiskLog
+    form_class = RiskLogForm
+    template_name = 'contracts/risk_log_form.html'
+    success_url = reverse_lazy('contracts:risk_log_list')
+
+class ComplianceChecklistListView(LoginRequiredMixin, ListView):
+    model = ComplianceChecklist
+    template_name = 'contracts/compliance_checklist_list.html'
+    context_object_name = 'compliance_checklists'
+
+class ComplianceChecklistDetailView(LoginRequiredMixin, DetailView):
+    model = ComplianceChecklist
+    template_name = 'contracts/compliance_checklist_detail.html'
+    context_object_name = 'compliance_checklist'
+
+class ComplianceChecklistCreateView(LoginRequiredMixin, CreateView):
+    model = ComplianceChecklist
+    form_class = ComplianceChecklistForm
+    template_name = 'contracts/compliance_checklist_form.html'
+    success_url = reverse_lazy('contracts:compliance_checklist_list')
+
+class ComplianceChecklistUpdateView(LoginRequiredMixin, UpdateView):
+    model = ComplianceChecklist
+    form_class = ComplianceChecklistForm
+    template_name = 'contracts/compliance_checklist_form.html'
+    success_url = reverse_lazy('contracts:compliance_checklist_list')
+
+class ToggleChecklistItemView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        item = get_object_or_404(ChecklistItem, pk=pk)
+        item.is_completed = not item.is_completed
+        item.save()
+        return redirect('contracts:compliance_checklist_detail', pk=item.checklist.pk)
+
+class AddChecklistItemView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        checklist = get_object_or_404(ComplianceChecklist, pk=pk)
+        form = ChecklistItemForm(request.POST)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.checklist = checklist
+            item.save()
+        return redirect('contracts:compliance_checklist_detail', pk=checklist.pk)
+
+class RepositoryView(LoginRequiredMixin, View):
+    def get(self, request):
+        return render(request, 'contracts/repository.html')
+
+# Function-based views that are imported
+def workflow_create(request):
+    if request.method == 'POST':
+        form = WorkflowForm(request.POST)
+        if form.is_valid():
+            workflow = form.save(commit=False)
+            workflow.created_by = request.user
+            workflow.save()
+            return redirect('contracts:workflow_detail', pk=workflow.pk)
+    else:
+        form = WorkflowForm()
+    return render(request, 'contracts/workflow_form.html', {'form': form})
+
+def workflow_template_create(request):
+    if request.method == 'POST':
+        form = WorkflowTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save()
+            return redirect('contracts:workflow_template_list')
+    else:
+        form = WorkflowTemplateForm()
+    return render(request, 'contracts/workflow_template_form.html', {'form': form})
+
+def workflow_template_list(request):
+    templates = WorkflowTemplate.objects.all()
+    return render(request, 'contracts/workflow_template_list.html', {'workflow_templates': templates})
+
+def toggle_dd_item(request, pk):
+    task = get_object_or_404(DueDiligenceTask, pk=pk)
+    if task.status == 'COMPLETED':
+        task.status = 'PENDING'
+    else:
+        task.status = 'COMPLETED'
+    task.save()
+    return redirect('contracts:due_diligence_detail', pk=task.process.pk)
 
 def profile(request):
     return render(request, 'profile.html')
@@ -169,6 +327,59 @@ class WorkflowStepCompleteView(LoginRequiredMixin, View):
         step.save()
         return redirect('contracts:workflow_detail', pk=step.workflow.pk)
 
+
+# Add remaining missing views
+class DueDiligenceListView(LoginRequiredMixin, ListView):
+    model = DueDiligenceProcess
+    template_name = 'contracts/due_diligence_list.html'
+    context_object_name = 'processes'
+
+class DueDiligenceCreateView(LoginRequiredMixin, CreateView):
+    model = DueDiligenceProcess
+    form_class = DueDiligenceProcessForm
+    template_name = 'contracts/due_diligence_form.html'
+    success_url = reverse_lazy('contracts:due_diligence_list')
+
+class DueDiligenceDetailView(LoginRequiredMixin, DetailView):
+    model = DueDiligenceProcess
+    template_name = 'contracts/due_diligence_detail.html'
+    context_object_name = 'process'
+
+class DueDiligenceUpdateView(LoginRequiredMixin, UpdateView):
+    model = DueDiligenceProcess
+    form_class = DueDiligenceProcessForm
+    template_name = 'contracts/due_diligence_form.html'
+
+class AddDueDiligenceItemView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        process = get_object_or_404(DueDiligenceProcess, pk=pk)
+        form = DueDiligenceTaskForm(request.POST)
+        if form.is_valid():
+            task = form.save(commit=False)
+            task.process = process
+            task.save()
+        return redirect('contracts:due_diligence_detail', pk=process.pk)
+
+class AddDueDiligenceRiskView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        process = get_object_or_404(DueDiligenceProcess, pk=pk)
+        form = DueDiligenceRiskForm(request.POST)
+        if form.is_valid():
+            risk = form.save(commit=False)
+            risk.process = process
+            risk.save()
+        return redirect('contracts:due_diligence_detail', pk=process.pk)
+
+class AddExpenseView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        budget = get_object_or_404(Budget, pk=pk)
+        form = BudgetExpenseForm(request.POST)
+        if form.is_valid():
+            expense = form.save(commit=False)
+            expense.budget = budget
+            expense.created_by = request.user
+            expense.save()
+        return redirect('contracts:budget_detail', pk=budget.pk)
 
 # --- Due Diligence Views ---
 class DueDiligenceProcessListView(LoginRequiredMixin, ListView):

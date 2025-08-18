@@ -2,12 +2,31 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import (
-    TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    Contract, NegotiationThread, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
 )
 
 User = get_user_model()
+
+
+class ContractForm(forms.ModelForm):
+    class Meta:
+        model = Contract
+        fields = ['title', 'content', 'status']
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 10}),
+        }
+
+
+class NegotiationThreadForm(forms.ModelForm):
+    class Meta:
+        model = NegotiationThread
+        fields = ['round_number', 'internal_note', 'external_note', 'attachment']
+        widgets = {
+            'internal_note': forms.Textarea(attrs={'rows': 3}),
+            'external_note': forms.Textarea(attrs={'rows': 3}),
+        }
 
 
 class RegistrationForm(UserCreationForm):
