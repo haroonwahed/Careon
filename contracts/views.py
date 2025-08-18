@@ -307,6 +307,53 @@ class WorkflowDetailView(LoginRequiredMixin, DetailView):
     template_name = 'contracts/workflow_detail.html'
     context_object_name = 'workflow'
 
+
+
+class RepositoryView(LoginRequiredMixin, TemplateView):
+    template_name = 'contracts/repository.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Get all contracts for the user
+        user_contracts = Contract.objects.filter(created_by=self.request.user)
+        
+        # Apply filters
+        status_filter = self.request.GET.get('status')
+        contract_type_filter = self.request.GET.get('contract_type')
+        search_query = self.request.GET.get('search')
+        
+        if status_filter:
+            user_contracts = user_contracts.filter(status=status_filter)
+        if contract_type_filter:
+            user_contracts = user_contracts.filter(contract_type=contract_type_filter)
+        if search_query:
+            user_contracts = user_contracts.filter(
+                Q(title__icontains=search_query) | 
+                Q(counterparty__icontains=search_query)
+            )
+        
+        # Order by creation date
+        user_contracts = user_contracts.order_by('-created_at')
+        
+        # Get filter counts
+        status_counts = Contract.objects.filter(created_by=self.request.user).values('status').annotate(count=Count('status'))
+        type_counts = Contract.objects.filter(created_by=self.request.user).values('contract_type').annotate(count=Count('contract_type'))
+        
+        context.update({
+            'contracts': user_contracts,
+            'total_contracts': Contract.objects.filter(created_by=self.request.user).count(),
+            'status_counts': {item['status']: item['count'] for item in status_counts},
+            'type_counts': {item['contract_type']: item['count'] for item in type_counts},
+            'current_status_filter': status_filter,
+            'current_type_filter': contract_type_filter,
+            'search_query': search_query,
+            'contract_statuses': Contract.ContractStatus.choices,
+            'contract_types': Contract.ContractType.choices,
+        })
+        
+        return context
+
     def get_queryset(self):
         return Workflow.objects.filter(created_by=self.request.user)
 

@@ -6,6 +6,9 @@ from .views import (
     LegalTaskCreateView, LegalTaskUpdateView, ComplianceChecklistListView,
     ComplianceChecklistCreateView, ComplianceChecklistDetailView,
     ComplianceChecklistUpdateView, ToggleChecklistItemView, AddChecklistItemView,
+
+    RepositoryView,
+
     ContractDetailView, ContractCreateView, ContractUpdateView,
     AddNegotiationNoteView, WorkflowDashboardView, WorkflowDetailView,
     WorkflowCreateView, WorkflowStepUpdateView, WorkflowStepCompleteView,
@@ -16,6 +19,7 @@ app_name = 'contracts'
 
 urlpatterns = [
     path('', ContractListView.as_view(), name='contract_list'),
+    path('repository/', RepositoryView.as_view(), name='repository'),
     path('trademarks/', TrademarkRequestListView.as_view(), name='trademark_request_list'),
     path('trademarks/new/', TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
     path('trademarks/<int:pk>/', TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
