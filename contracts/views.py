@@ -357,6 +357,15 @@ class RepositoryView(LoginRequiredMixin, TemplateView):
         status_filter = self.request.GET.get('status')
         contract_type_filter = self.request.GET.get('contract_type')
         search_query = self.request.GET.get('search')
+        view_filter = self.request.GET.get('view')
+        
+        # Handle special saved views
+        if view_filter == 'japan_uk_deals':
+            # Example: filter for specific jurisdictions
+            user_contracts = user_contracts.filter(
+                jurisdiction__in=['JP', 'UK'],
+                status__in=['NEGOTIATION', 'SIGNATURE', 'EXECUTION']
+            )
         
         if status_filter:
             user_contracts = user_contracts.filter(status=status_filter)
@@ -403,6 +412,30 @@ class WorkflowCreateView(LoginRequiredMixin, CreateView):
     template_name = 'contracts/workflow_form.html'
     fields = ['name', 'contract', 'template']
     success_url = reverse_lazy('contracts:workflow_dashboard')
+
+    def get_initial(self):
+        initial = super().get_initial()
+        template_type = self.request.GET.get('template')
+        
+        # Pre-select template based on URL parameter
+        if template_type:
+            template_mapping = {
+                'artist_licensing': 'Artist Licensing Agreement',
+                'mutual_nda': 'Mutual NDA',
+                'procurement': 'Vendor Agreement',
+                'licensing_lothaire': 'Artist Licensing - Lothaire',
+                'licensing_armora': 'Artist Licensing - Armora',
+            }
+            template_name = template_mapping.get(template_type)
+            if template_name:
+                try:
+                    template = WorkflowTemplate.objects.get(name=template_name, is_active=True)
+                    initial['template'] = template
+                    initial['name'] = f"New {template_name} Workflow"
+                except WorkflowTemplate.DoesNotExist:
+                    pass
+        
+        return initial
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
