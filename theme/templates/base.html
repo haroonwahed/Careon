@@ -78,7 +78,10 @@
                         <div class="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center">
                             <span class="text-xs font-semibold text-primary-700">{{ user.first_name.0|default:user.username.0|upper }}</span>
                         </div>
-                        <a href="{% url 'logout' %}" class="text-sm text-muted hover:text-primary-700 focus:outline-none focus:ring-2 focus:ring-primary rounded-xl px-2 py-1">Logout</a>
+                        <form method="post" action="{% url 'logout' %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" class="text-sm text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500 rounded-md px-2 py-1 transition-colors">Logout</button>
+                        </form>
                     </div>
                 {% else %}
                     <div class="flex items-center space-x-4">
@@ -92,31 +95,31 @@
 
     <!-- Main Navigation Tabs (Ironclad Style) -->
     {% if user.is_authenticated %}
-    <div class="bg-card border-b border-border">
+    <div class="bg-white border-b border-gray-200 shadow-sm">
         <div class="px-6">
-            <nav class="flex space-x-8">
-                <a href="{% url 'dashboard' %}" class="py-4 px-1 border-b-2 {% if request.resolver_match.url_name == 'dashboard' %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+            <nav class="flex space-x-0">
+                <a href="{% url 'dashboard' %}" class="relative py-3 px-6 text-sm font-medium {% if request.resolver_match.url_name == 'dashboard' %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Dashboard
                 </a>
-                <a href="{% url 'contracts:contract_list' %}" class="py-4 px-1 border-b-2 {% if 'contract' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:contract_list' %}" class="relative py-3 px-6 text-sm font-medium {% if 'contract' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Contracts
                 </a>
-                <a href="{% url 'contracts:legal_task_board' %}" class="py-4 px-1 border-b-2 {% if 'legal_task' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:legal_task_board' %}" class="relative py-3 px-6 text-sm font-medium {% if 'legal_task' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Legal Tasks
                 </a>
-                <a href="{% url 'contracts:repository' %}" class="py-4 px-1 border-b-2 {% if request.resolver_match.url_name == 'repository' %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:repository' %}" class="relative py-3 px-6 text-sm font-medium {% if request.resolver_match.url_name == 'repository' %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Repository
                 </a>
-                <a href="{% url 'contracts:workflow_dashboard' %}" class="py-4 px-1 border-b-2 {% if 'workflow' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:workflow_dashboard' %}" class="relative py-3 px-6 text-sm font-medium {% if 'workflow' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Workflow Designer
                 </a>
-                <a href="{% url 'contracts:risk_log_list' %}" class="py-4 px-1 border-b-2 {% if 'risk' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:risk_log_list' %}" class="relative py-3 px-6 text-sm font-medium {% if 'risk' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Risks
                 </a>
-                <a href="{% url 'contracts:compliance_checklist_list' %}" class="py-4 px-1 border-b-2 {% if 'compliance' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:compliance_checklist_list' %}" class="relative py-3 px-6 text-sm font-medium {% if 'compliance' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Compliance
                 </a>
-                <a href="{% url 'contracts:trademark_request_list' %}" class="py-4 px-1 border-b-2 {% if 'trademark' in request.resolver_match.url_name %}border-primary-600 text-primary-700{% else %}border-transparent text-muted hover:text-primary-700 hover:border-border{% endif %} font-medium text-sm focus:outline-none focus:ring-2 focus:ring-primary rounded-t-xl">
+                <a href="{% url 'contracts:trademark_request_list' %}" class="relative py-3 px-6 text-sm font-medium {% if 'trademark' in request.resolver_match.url_name %}text-teal-600 bg-white border-b-2 border-teal-600{% else %}text-gray-600 hover:text-gray-900 bg-gray-50 border-b-2 border-transparent hover:border-gray-300{% endif %} transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
                     Trademarks
                 </a>
             </nav>
