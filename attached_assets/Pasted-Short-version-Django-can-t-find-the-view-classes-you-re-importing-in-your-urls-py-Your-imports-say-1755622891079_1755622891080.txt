@@ -1,0 +1,116 @@
+Short version: Django can’t find the view classes you’re importing in your urls.py. Your imports say from contracts.views import SignUpView and later ContractListView, but those names don’t actually exist (or aren’t exportable) in contracts/views.py at import time. So the URL resolver blows up during runserver’s system checks.
+
+Why this happens (most common causes)
+
+The class/function isn’t defined (typo/rename mismatch).
+
+It moved into a submodule (e.g. contracts/views/auth.py) but urls.py still imports from contracts.views.
+
+views.py exists but doesn’t define those names, or defines them under different names (SignupView vs SignUpView, contract_list vs ContractListView).
+
+Case-sensitivity on Linux: file/class names must match exactly.
+
+Circular import: e.g. views.py imports something that (directly or indirectly) imports contracts.urls again.
+
+What to do (fastest fixes)
+
+Make the imports match reality
+Open contracts/views.py and confirm the exact names. Either:
+
+# contracts/urls.py
+from django.urls import path
+from .views import SignUpView, ContractListView  # ONLY if these exist in views.py
+
+
+or, if you split views into modules:
+
+# contracts/urls.py
+from django.urls import path
+from .views.auth import SignUpView
+from .views.contracts import ContractListView
+
+
+If you split views into a package, export them (optional but tidy)
+
+# contracts/views/__init__.py
+from .auth import SignUpView
+from .contracts import ContractListView
+
+__all__ = ["SignUpView", "ContractListView"]
+
+
+Then from .views import SignUpView, ContractListView will work again.
+
+If the views don’t exist yet, stub them properly
+Here are minimal working class-based views you can drop in to make the imports valid:
+
+# contracts/views.py  (or split as shown above)
+from django.contrib.auth.forms import UserCreationForm
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, ListView
+from .models import Contract  # ensure this model exists
+
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    template_name = "registration/signup.html"  # create this template
+    success_url = reverse_lazy("login")  # or your desired URL name
+
+class ContractListView(ListView):
+    model = Contract
+    template_name = "contracts/contract_list.html"  # create this template
+    context_object_name = "contracts"
+
+
+And in contracts/urls.py:
+
+from django.urls import path
+from .views import SignUpView, ContractListView
+
+app_name = "contracts"  # you’re using namespace='contracts' in config/urls.py
+urlpatterns = [
+    path("signup/", SignUpView.as_view(), name="signup"),
+    path("", ContractListView.as_view(), name="list"),
+]
+
+
+Keep the namespace consistent
+Because you include with namespace='contracts', you must have app_name = "contracts" at the top of contracts/urls.py.
+
+Kill circular imports
+Make sure contracts/views.py does not import contracts.urls (directly or indirectly). Views should import models/forms/utilities, not urls.
+
+Clean caches / restart in Replit
+
+Delete python bytecode just to be sure (Replit shell):
+
+find . -type d -name "__pycache__" -prune -exec rm -rf {} +
+
+
+Stop and re-run the repl (the Django autoreloader sometimes sticks after file moves).
+
+Check INSTALLED_APPS and templates
+
+Ensure contracts is in INSTALLED_APPS.
+
+If you used the registration/ template path for SignUpView, add django.contrib.auth in INSTALLED_APPS and create the template files you reference.
+
+Verify exact names (easy to miss)
+
+SignUpView vs SignupView
+
+ContractListView vs ContractsListView
+
+File path case (views/Auth.py ≠ views/auth.py)
+
+If you want a bulletproof import pattern I recommend:
+
+Turn contracts/views.py into a folder:
+
+contracts/
+  views/
+    __init__.py
+    auth.py
+    contracts.py
+
+
+Import explicitly in urls.py from those modules, or re-export in __init__.py as shown
