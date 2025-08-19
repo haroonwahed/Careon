@@ -1,10 +1,12 @@
 from django import forms
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.core.exceptions import ValidationError
 from .models import (
-    Contract, NegotiationThread, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
-    Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
-    DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
+    Contract, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    TrademarkRequest, Workflow, WorkflowStep, WorkflowTemplate,
+    WorkflowTemplateStep, Budget, BudgetExpense, DueDiligenceProcess,
+    DueDiligenceTask, DueDiligenceRisk, NegotiationThread, Tag
 )
 
 User = get_user_model()
@@ -29,10 +31,76 @@ class NegotiationThreadForm(forms.ModelForm):
         }
 
 
-class RegistrationForm(UserCreationForm):
-    class Meta(UserCreationForm.Meta):
+class CustomUserCreationForm(UserCreationForm):
+    email = forms.EmailField(
+        required=True,
+        widget=forms.EmailInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Enter your business email address'
+        })
+    )
+
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Choose a username'
+        })
+    )
+
+    password1 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Create a strong password'
+        })
+    )
+
+    password2 = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Confirm your password'
+        })
+    )
+
+    class Meta:
         model = User
-        fields = ('username', 'email')
+        fields = ("username", "email", "password1", "password2")
+
+    def clean_email(self):
+        email = self.cleaned_data.get('email')
+        if User.objects.filter(email=email).exists():
+            raise ValidationError("A user with this email address already exists.")
+        return email
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data["email"]
+        if commit:
+            user.save()
+        return user
+
+
+class CustomAuthenticationForm(AuthenticationForm):
+    username = forms.CharField(
+        widget=forms.TextInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Enter your email address or username'
+        })
+    )
+
+    password = forms.CharField(
+        widget=forms.PasswordInput(attrs={
+            'class': 'w-full pl-12 pr-4 py-4 border-2 border-border rounded-xl focus:border-primary-500 focus:ring-4 focus:ring-primary-100 transition-all duration-200 bg-white text-primary-700 placeholder-muted',
+            'placeholder': 'Enter your password'
+        })
+    )
+
+    error_messages = {
+        'invalid_login': (
+            "Please enter a correct email/username and password. Note that both "
+            "fields may be case-sensitive."
+        ),
+        'inactive': "This account is inactive.",
+    }
 
 
 class ChecklistItemForm(forms.ModelForm):

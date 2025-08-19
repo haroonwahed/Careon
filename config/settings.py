@@ -31,6 +31,10 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'https://*.replit.dev',
     'https://*.repl.co',
+    'https://*.replit.app',
+    'https://*.riker.replit.dev',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
 ]
 
 
@@ -143,3 +147,9 @@ LOGOUT_REDIRECT_URL = '/'
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'contracts.auth_backends.EmailBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
