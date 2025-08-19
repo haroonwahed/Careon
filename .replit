@@ -1,19 +1,25 @@
-modules = ["python-3.11"]
+modules = ["nodejs-20", "python-3.12", "web"]
+run = "run"
+
+[nix]
+channel = "stable-25_05"
+packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp", "libxcrypt", "openjpeg", "tcl", "tk", "zlib"]
+
+[deployment]
+run = ["sh", "-c", "run"]
 
 [workflows]
-runButton = "Run Django Server"
+runButton = "Django Server"
 
 [[workflows.workflow]]
-name = "Run Django Server"
+name = "Django Server"
 author = 40360714
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python manage.py runserver 0.0.0.0:8000"
-
-[nix]
+args = "python manage.py runserver 0.0.0.0:5000"
 
 [[ports]]
-localPort = 8000
+localPort = 5000
 externalPort = 80

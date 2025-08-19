@@ -1,59 +1,32 @@
+{% extends 'base_fullscreen.html' %}
 
-{% extends 'base.html' %}
-{% load static %}
-
-{% block title %}Login - Bolton CLM{% endblock %}
+{% block title %}Sign in{% endblock %}
 
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-surface">
-  <div class="max-w-md w-full space-y-8">
-    <div>
-      <div class="mx-auto h-12 w-auto flex justify-center">
-        <h1 class="text-3xl font-bold text-primary-700">BOLTON CLM</h1>
-      </div>
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        Sign in to your account
-      </h2>
-    </div>
-    <form class="mt-8 space-y-6" method="post">
-      {% csrf_token %}
-      <input type="hidden" name="remember" value="true">
-      <div class="rounded-md shadow-sm -space-y-px">
+<div class="card p-8 max-w-md mx-auto">
+    <h1 class="text-3xl font-semibold text-slate-800 mb-6">Sign in</h1>
+    <form method="post" class="space-y-4">
+        {% csrf_token %}
         <div>
-          <label for="id_username" class="sr-only">Username</label>
-          <input id="id_username" name="username" type="text" required 
-                 class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm" 
-                 placeholder="Username">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            {{ form.username }}
         </div>
         <div>
-          <label for="id_password" class="sr-only">Password</label>
-          <input id="id_password" name="password" type="password" required 
-                 class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm" 
-                 placeholder="Password">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            {{ form.password }}
         </div>
-      </div>
-
-      {% if form.errors %}
-        <div class="rounded-md bg-red-50 p-4">
-          <div class="text-sm text-red-700">
-            {{ form.errors }}
-          </div>
+        <div class="flex items-center gap-2">
+            <input id="remember" name="remember" type="checkbox" class="h-4 w-4 border-gray-300 rounded">
+            <label for="remember" class="text-sm text-gray-700">Remember me</label>
         </div>
-      {% endif %}
-
-      <div>
-        <button type="submit" 
-                class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-          Sign in
-        </button>
-      </div>
-
-      <div class="text-center">
-        <a href="{% url 'register' %}" class="text-primary-600 hover:text-primary-500">
-          Don't have an account? Sign up
-        </a>
-      </div>
+        <button type="submit" class="btn-accent w-full">Continue</button>
     </form>
-  </div>
+    <div class="relative my-6 text-center text-gray-500">
+        <span class="px-3 bg-white relative z-10">or</span>
+        <span class="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-gray-200"></span>
+    </div>
+    <div>
+        <a href="{% url 'register' %}" class="btn-ghost w-full text-center">Create an account</a>
+    </div>
 </div>
 {% endblock %}

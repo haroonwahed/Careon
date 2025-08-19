@@ -16,31 +16,19 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from django.contrib.auth import views as auth_views
-from django.views.generic import RedirectView
-from contracts.views import SignUpView
 from django.conf import settings
 from django.conf.urls.static import static
 from contracts import views
 
 urlpatterns = [
+    path('', views.index, name='index'),
     path('admin/', admin.site.urls),
-    path('', RedirectView.as_view(url='/dashboard/', permanent=True)),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
     path('contracts/', include('contracts.urls', namespace='contracts')),
-    # Custom authentication URLs
-    path('login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html'
-    ), name='login'),
-    path('accounts/login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html'
-    ), name='accounts_login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('accounts/register/', SignUpView.as_view(), name='register'),
-
-    # Include remaining auth URLs
+    path('accounts/register/', views.SignUpView.as_view(), name='register'),
     path('accounts/', include('django.contrib.auth.urls')),
+    path("__reload__/", include("django_browser_reload.urls")),
 ]
 
 if settings.DEBUG:

@@ -11,11 +11,9 @@ from .views import (
     RepositoryView, WorkflowCreateView as WorkflowCreateFormView,
     DueDiligenceListView, DueDiligenceCreateView, DueDiligenceDetailView, DueDiligenceUpdateView, AddDueDiligenceItemView, AddDueDiligenceRiskView,
     BudgetListView, BudgetCreateView, BudgetDetailView, BudgetUpdateView, AddExpenseView,
-    SignUpView, workflow_create, workflow_template_create, workflow_template_list, toggle_dd_item
+    workflow_create, workflow_template_create, workflow_template_list, toggle_dd_item
 )
 from .api import views as api_views
-from django.contrib.auth import views as auth_views
-from .forms import CustomUserCreationForm
 
 app_name = 'contracts'
 
@@ -80,9 +78,4 @@ urlpatterns = [
     path('new/', ContractCreateView.as_view(), name='contract_create'),
     path('<int:pk>/edit/', ContractUpdateView.as_view(), name='contract_update'),
     path('<int:pk>/add_note/', AddNegotiationNoteView.as_view(), name='add_negotiation_note'),
-
-    # Authentication URLs
-    path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
-    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('register/', SignUpView.as_view(), name='register'),
 ]
