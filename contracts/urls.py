@@ -32,6 +32,30 @@ urlpatterns = [
     path('due-diligence/<int:pk>/add-risk/', AddDueDiligenceRiskView.as_view(), name='add_dd_risk'),
     path('dd-item/<int:pk>/toggle/', toggle_dd_item, name='toggle_dd_item'),
 
+    # Legal Task URLs
+    path('legal-tasks/', LegalTaskKanbanView.as_view(), name='legal_task_kanban'),
+    path('legal-tasks/new/', LegalTaskCreateView.as_view(), name='legal_task_create'),
+    path('legal-tasks/<int:pk>/edit/', LegalTaskUpdateView.as_view(), name='legal_task_update'),
+
+    # Trademark Request URLs
+    path('trademarks/', TrademarkRequestListView.as_view(), name='trademark_request_list'),
+    path('trademarks/new/', TrademarkRequestCreateView.as_view(), name='trademark_request_create'),
+    path('trademarks/<int:pk>/', TrademarkRequestDetailView.as_view(), name='trademark_request_detail'),
+    path('trademarks/<int:pk>/edit/', TrademarkRequestUpdateView.as_view(), name='trademark_request_update'),
+
+    # Risk Log URLs
+    path('risks/', RiskLogListView.as_view(), name='risk_log_list'),
+    path('risks/new/', RiskLogCreateView.as_view(), name='risk_log_create'),
+    path('risks/<int:pk>/edit/', RiskLogUpdateView.as_view(), name='risk_log_update'),
+
+    # Compliance Checklist URLs
+    path('compliance/', ComplianceChecklistListView.as_view(), name='compliance_checklist_list'),
+    path('compliance/new/', ComplianceChecklistCreateView.as_view(), name='compliance_checklist_create'),
+    path('compliance/<int:pk>/', ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
+    path('compliance/<int:pk>/edit/', ComplianceChecklistUpdateView.as_view(), name='compliance_checklist_update'),
+    path('compliance/<int:pk>/toggle-item/', ToggleChecklistItemView.as_view(), name='toggle_checklist_item'),
+    path('compliance/<int:pk>/add-item/', AddChecklistItemView.as_view(), name='add_checklist_item'),
+
     # Budget URLs
     path('budgets/', BudgetListView.as_view(), name='budget_list'),
     path('budgets/new/', BudgetCreateView.as_view(), name='budget_create'),

@@ -637,7 +637,34 @@ def add_budget_expense(request, budget_id):
 
 # --- Dashboard View ---
 def dashboard(request):
-    pending_tasks = 0
+    # Contract data
+    try:
+        total_contracts = Contract.objects.count()
+        recent_contracts = Contract.objects.all()[:10]
+        
+        # Pipeline data - count contracts by status
+        pipeline_data = []
+        for status, display in Contract.ContractStatus.choices:
+            count = Contract.objects.filter(status=status).count()
+            if count > 0:
+                pipeline_data.append((display, count))
+    except:
+        total_contracts = 0
+        recent_contracts = []
+        pipeline_data = []
+
+    # Legal Tasks data
+    try:
+        pending_tasks = LegalTask.objects.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+    except:
+        pending_tasks = 0
+
+    # Workflow data
+    try:
+        active_workflows = Workflow.objects.filter(status='ACTIVE').count()
+    except:
+        active_workflows = 0
+
     # Trademark data
     try:
         trademark_requests = TrademarkRequest.objects.all().count()
@@ -646,31 +673,44 @@ def dashboard(request):
         trademark_requests = 0
         pending_trademarks = 0
 
+    # Risk data
+    try:
+        risk_count = RiskLog.objects.count()
+        top_risks = RiskLog.objects.filter(risk_level='HIGH')[:5]
+    except:
+        risk_count = 0
+        top_risks = []
+
     # Due Diligence data
     try:
-        active_due_diligence = DueDiligenceProcess.objects.filter(status__in=['PLANNING', 'IN_PROGRESS', 'REVIEW']).count()
-        high_risk_dd = DueDiligenceRisk.objects.filter(risk_level='HIGH').count()
+        dd_count = DueDiligenceProcess.objects.count()
     except:
-        active_due_diligence = 0
-        high_risk_dd = 0
+        dd_count = 0
 
     # Budget data
     try:
-        from datetime import datetime
-        current_year = datetime.now().year
-        current_quarter = f"Q{((datetime.now().month - 1) // 3) + 1}"
-        current_budgets = Budget.objects.filter(year=current_year, quarter=current_quarter)
-        over_budget_count = sum(1 for budget in current_budgets if budget.is_over_budget)
+        budget_count = Budget.objects.count()
     except:
-        over_budget_count = 0
+        budget_count = 0
+
+    # Compliance data
+    try:
+        upcoming_checklists = ComplianceChecklist.objects.all()[:5]
+    except:
+        upcoming_checklists = []
 
     context = {
-        'all_contracts_count': 0,
+        'total_contracts': total_contracts,
+        'recent_contracts': recent_contracts,
+        'pipeline_data': pipeline_data,
         'pending_tasks': pending_tasks,
+        'active_workflows': active_workflows,
         'trademark_requests': trademark_requests,
         'pending_trademarks': pending_trademarks,
-        'active_due_diligence': active_due_diligence,
-        'high_risk_dd': high_risk_dd,
-        'over_budget_count': over_budget_count,
+        'risk_count': risk_count,
+        'top_risks': top_risks,
+        'dd_count': dd_count,
+        'budget_count': budget_count,
+        'upcoming_checklists': upcoming_checklists,
     }
     return render(request, 'dashboard.html', context)
