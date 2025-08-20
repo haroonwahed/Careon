@@ -1,0 +1,117 @@
+You’re linking to a URL name that Django doesn’t know. In your navbar you have:
+
+<a href="{% url 'contracts:legal_task_board' %}">
+
+
+But there is no URL pattern with name="legal_task_board" (under the contracts namespace) loaded into the resolver. Fix it with this quick checklist.
+
+1) Define the route in contracts/urls.py
+
+Make sure both app_name and the pattern exist:
+
+# contracts/urls.py
+from django.urls import path
+from . import views  # or from .legal_tasks import views as legal_views
+
+app_name = "contracts"
+
+urlpatterns = [
+    # ... your other routes
+    path("legal-tasks/", views.legal_task_board, name="legal_task_board"),
+    # If using a CBV:
+    # path("legal-tasks/", LegalTaskBoardView.as_view(), name="legal_task_board"),
+]
+
+
+If you split URLs across modules (e.g., contracts/urls/legal_tasks.py), that file must also set app_name = "contracts" or be included in a way that preserves the parent namespace (see step 2).
+
+2) Include contracts.urls with a namespace in config/urls.py
+
+The include must carry the namespace that matches your {% url 'contracts:...' %}:
+
+# config/urls.py
+from django.urls import path, include
+
+urlpatterns = [
+    path("", include(("contracts.urls", "contracts"), namespace="contracts")),
+    # or, if contracts.urls already has app_name = "contracts":
+    # path("", include("contracts.urls", namespace="contracts")),
+]
+
+
+Common gotcha: if you don’t give a namespace here, you must drop contracts: in the template ({% url 'legal_task_board' %}). You currently do use contracts:..., so keep the namespace and wire it correctly.
+
+3) Make sure the view exists and is importable
+
+If the view isn’t there yet, stub it so reversing works:
+
+# contracts/views.py
+from django.shortcuts import render
+
+def legal_task_board(request):
+    return render(request, "contracts/legal_tasks/board.html", {})
+
+
+(And create theme/templates/contracts/legal_tasks/board.html or wherever your templates live.)
+
+If you moved the view into a submodule (e.g., contracts/views/legal_tasks.py), either import it in contracts/urls.py:
+
+from .views.legal_tasks import legal_task_board
+
+
+or re-export in contracts/views/__init__.py:
+
+from .legal_tasks import legal_task_board
+__all__ = ["legal_task_board"]
+
+4) Quick sanity checks (pick one)
+
+A. In a Django shell (Replit terminal):
+
+python manage.py shell -c "from django.urls import get_resolver; print(sorted([(p.name, str(p.pattern)) for p in get_resolver().url_patterns if hasattr(p, 'name')]))"
+
+
+You should see ('legal_task_board', 'legal-tasks/') somewhere (possibly nested; if you’re using includes, you’ll need a slightly deeper walk).
+
+B. Temporary debug view (if shell is annoying):
+
+# config/urls.py (TEMP ONLY)
+from django.urls import get_resolver
+from django.http import HttpResponse
+
+def show_names(_):
+    names = []
+    def walk(patterns, prefix=""):
+        for p in patterns:
+            if hasattr(p, "url_patterns"):
+                walk(p.url_patterns, prefix + str(p.pattern))
+            else:
+                names.append((p.name, prefix + str(p.pattern)))
+    walk(get_resolver().url_patterns)
+    return HttpResponse("<pre>" + "\n".join([f"{n}: {pat}" for n, pat in names]) + "</pre>")
+
+urlpatterns += [path("_urls/", show_names)]
+
+
+Open /__urls/ and confirm the name is present.
+
+5) Template condition (minor)
+
+You also use:
+
+{% if 'legal_task' in request.resolver_match.url_name %}
+
+
+Sometimes url_name can be None. Safer:
+
+{% if request.resolver_match.url_name and 'legal_task' in request.resolver_match.url_name %}
+
+TL;DR fix
+
+Add app_name = "contracts" and path("legal-tasks/", views.legal_task_board, name="legal_task_board") in contracts/urls.py.
+
+Include it with namespace="contracts" in config/urls.py.
+
+Ensure the legal_task_board view exists (function or CBV).
+
+(Optional) harden the template condition.
