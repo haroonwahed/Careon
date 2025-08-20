@@ -38,22 +38,16 @@ class RegistrationForm(UserCreationForm):
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['username'].widget.attrs.update({
-            'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm',
-            'placeholder': 'Choose a username'
-        })
-        self.fields['email'].widget.attrs.update({
-            'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm',
-            'placeholder': 'Enter your email'
-        })
-        self.fields['password1'].widget.attrs.update({
-            'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm',
-            'placeholder': 'Choose a password'
-        })
-        self.fields['password2'].widget.attrs.update({
-            'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm',
-            'placeholder': 'Confirm your password'
-        })
+        # Add consistent styling to match the login form
+        for field_name, field in self.fields.items():
+            field.widget.attrs.update({
+                'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm'
+            })
+        
+        self.fields['username'].widget.attrs['placeholder'] = 'Choose a username'
+        self.fields['email'].widget.attrs['placeholder'] = 'Enter your email'
+        self.fields['password1'].widget.attrs['placeholder'] = 'Choose a password'
+        self.fields['password2'].widget.attrs['placeholder'] = 'Confirm your password'
 
 
 class ChecklistItemForm(forms.ModelForm):

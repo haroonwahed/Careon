@@ -118,7 +118,6 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('dashboard')
 
     def form_valid(self, form):
-        response = super().form_valid(form)
         user = form.save()
         login(self.request, user)
         messages.success(self.request, 'Account created successfully!')
