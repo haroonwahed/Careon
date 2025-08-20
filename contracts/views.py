@@ -10,8 +10,9 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+
 from .forms import (
     ChecklistItemForm, WorkflowForm, WorkflowTemplateForm,
     BudgetForm, TrademarkRequestForm, LegalTaskForm, RiskLogForm, ComplianceChecklistForm,
@@ -25,7 +26,9 @@ from .models import (
 
 # --- Index View ---
 def index(request):
-    return redirect('dashboard')
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'registration/login.html')
 
 # --- Contract Views ---
 class ContractListView(LoginRequiredMixin, ListView):

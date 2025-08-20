@@ -1,32 +1,72 @@
+
 {% extends 'base_fullscreen.html' %}
 
-{% block title %}Sign in{% endblock %}
+{% block title %}Sign in to Bolton CLM{% endblock %}
 
 {% block content %}
-<div class="card p-8 max-w-md mx-auto">
-    <h1 class="text-3xl font-semibold text-slate-800 mb-6">Sign in</h1>
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            {{ form.username }}
-        </div>
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            {{ form.password }}
-        </div>
-        <div class="flex items-center gap-2">
-            <input id="remember" name="remember" type="checkbox" class="h-4 w-4 border-gray-300 rounded">
-            <label for="remember" class="text-sm text-gray-700">Remember me</label>
-        </div>
-        <button type="submit" class="btn-accent w-full">Continue</button>
-    </form>
-    <div class="relative my-6 text-center text-gray-500">
-        <span class="px-3 bg-white relative z-10">or</span>
-        <span class="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-gray-200"></span>
+<div class="card p-8">
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-medium text-primary-700 mb-3">Sign in to Bolton CLM</h1>
+        <p class="text-muted text-sm leading-relaxed">
+            Welcome back. Please sign in to your account.
+        </p>
     </div>
-    <div>
-        <a href="{% url 'register' %}" class="btn-ghost w-full text-center">Create an account</a>
+    
+    {% if form.errors %}
+        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div class="text-red-700 text-sm">
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+    
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <div>
+            <label for="{{ form.username.id_for_label }}" class="block text-sm font-medium text-primary-700 mb-2">
+                Username or Email
+            </label>
+            <input type="text" 
+                   name="username" 
+                   id="{{ form.username.id_for_label }}"
+                   value="{{ form.username.value|default:'' }}"
+                   class="input"
+                   required>
+        </div>
+        
+        <div>
+            <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium text-primary-700 mb-2">
+                Password
+            </label>
+            <input type="password" 
+                   name="password" 
+                   id="{{ form.password.id_for_label }}"
+                   class="input"
+                   required>
+        </div>
+        
+        <div class="flex items-center">
+            <input id="remember" name="remember" type="checkbox" class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-border rounded">
+            <label for="remember" class="ml-2 block text-sm text-muted">Remember me</label>
+        </div>
+        
+        <div class="pt-4">
+            <button type="submit" class="btn-primary w-full">
+                Sign in
+            </button>
+        </div>
+    </form>
+    
+    <div class="text-center mt-8 pt-6 border-t border-border">
+        <p class="text-sm text-muted">
+            Don't have an account? 
+            <a href="{% url 'register' %}" class="text-primary-600 hover:text-primary-700 font-medium transition duration-200">Sign up</a>
+        </p>
     </div>
 </div>
 {% endblock %}
