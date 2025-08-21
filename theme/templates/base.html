@@ -6,6 +6,7 @@
     <title>{% block title %}Bolton CLM{% endblock %}</title>
     {% load static %}
     <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme-iron.css' %}" rel="stylesheet">
 <script>
         function goBack() {
             if (window.history.length > 1) {
@@ -38,7 +39,7 @@
         });
     </script>
 </head>
-<body style="background: var(--bg);" class="font-sans">
+<body style="background: var(--bg);" class="font-sans theme-iron">
     <!-- Bolton Logo Header -->
     <div style="background: var(--card); border-bottom: 1px solid var(--border);" class="shadow-sm">
         <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
