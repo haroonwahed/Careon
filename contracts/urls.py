@@ -1,4 +1,5 @@
 from django.urls import path
+from . import views
 from .views import (
     ContractListView, ContractDetailView, ContractCreateView, ContractUpdateView, AddNegotiationNoteView,
     TrademarkRequestListView, TrademarkRequestDetailView, TrademarkRequestCreateView, TrademarkRequestUpdateView,
