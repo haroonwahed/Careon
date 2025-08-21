@@ -36,7 +36,9 @@
 }
 
 /* Buttons */
-.theme-iron .btn-primary {
+.theme-iron .btn-primary,
+.theme-iron a.btn-primary,
+.theme-iron button.btn-primary {
   background: var(--accent);
   color: #fff;
   border-radius: 10px;
@@ -47,9 +49,22 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.theme-iron .btn-outline {
+.theme-iron .btn-primary:hover,
+.theme-iron a.btn-primary:hover,
+.theme-iron button.btn-primary:hover {
+  background: #1d4ed8;
+  color: #fff;
+  text-decoration: none;
+}
+
+.theme-iron .btn-outline,
+.theme-iron a.btn-outline,
+.theme-iron button.btn-outline {
   background: #fff;
   border: 1px solid var(--border);
   color: var(--text);
@@ -60,10 +75,50 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.theme-iron .btn-outline:hover {
+.theme-iron .btn-outline:hover,
+.theme-iron a.btn-outline:hover,
+.theme-iron button.btn-outline:hover {
   background: var(--hover);
+  text-decoration: none;
+}
+
+/* Ensure form buttons match */
+.theme-iron input[type="submit"].btn-primary,
+.theme-iron button[type="submit"].btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 10px;
+  height: var(--btn-h);
+  padding: 0 14px;
+  border: none;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Override existing button styles that don't match */
+.theme-iron .bg-teal-600,
+.theme-iron .bg-blue-600 {
+  background: var(--accent) !important;
+  border-radius: 10px !important;
+  height: var(--btn-h) !important;
+  padding: 0 14px !important;
+  font-weight: 500 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.theme-iron .hover\:bg-teal-700:hover,
+.theme-iron .hover\:bg-blue-700:hover {
+  background: #1d4ed8 !important;
 }
 
 /* Top Navigation Override */

@@ -2,85 +2,114 @@
 
 {% block title %}Risk Log{% endblock %}
 
-{% block page_title %}
-Risk Log
-{% endblock %}
-
-{% block page_actions %}
-<a href="{% url 'contracts:risk_log_create' %}" class="btn-primary shadow-sm">New Risk</a>
-{% endblock %}
-
 {% block content %}
-<div class="space-y-6">
-    <!-- Search and Filters -->
-    <div class="bg-white rounded-lg border border-gray-200 p-4">
-        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Search risks..." class="input-field w-full">
-            </div>
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">Risk Level</label>
-                <select name="risk_level" class="input-field w-full">
-                    <option value="">All Levels</option>
-                    <option value="HIGH" {% if request.GET.risk_level == 'HIGH' %}selected{% endif %}>High</option>
-                    <option value="MEDIUM" {% if request.GET.risk_level == 'MEDIUM' %}selected{% endif %}>Medium</option>
-                    <option value="LOW" {% if request.GET.risk_level == 'LOW' %}selected{% endif %}>Low</option>
-                </select>
-            </div>
-            <div class="flex items-end">
-                <button type="submit" class="btn-primary w-full">Apply Filters</button>
-            </div>
-        </form>
-    </div>
+<div class="theme-layout">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+        <div class="section-title">Risk Views</div>
+        <a href="{% url 'contracts:risk_log_list' %}" class="item active" data-legacy-class="nav-link">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 6.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            All Risks
+            <span class="item-count">{{ risk_logs.count }}</span>
+        </a>
+        <a href="{% url 'contracts:risk_log_list' %}?risk_level=HIGH" class="item" data-legacy-class="nav-link">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"></path>
+            </svg>
+            High Risk
+        </a>
+    </aside>
 
-<div class="bg-white rounded-lg border border-gray-200 overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm text-left text-gray-500">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <a href="{% url 'contracts:risk_log_create' %}" class="btn-primary" data-legacy-class="btn-new-risk">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    New Risk
+                </a>
+                <div class="search">
+                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Search risks" data-legacy-class="search-input">
+                </div>
+            </div>
+            <div class="toolbar-right">
+                <form method="get" class="flex space-x-2">
+                    <select name="risk_level" class="btn-outline" data-legacy-class="filter-select">
+                        <option value="">All Levels</option>
+                        <option value="HIGH" {% if request.GET.risk_level == 'HIGH' %}selected{% endif %}>High</option>
+                        <option value="MEDIUM" {% if request.GET.risk_level == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                        <option value="LOW" {% if request.GET.risk_level == 'LOW' %}selected{% endif %}>Low</option>
+                    </select>
+                    <button type="submit" class="btn-outline" data-legacy-class="filter-btn">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
+                        </svg>
+                        Filter
+                    </button>
+                </form>
+            </div>
+        </div>
+<!-- Main Table -->
+        {% if risk_logs %}
+        <table class="data" data-legacy-class="risks-table">
+            <thead>
                 <tr>
-                    <th scope="col" class="px-6 py-3">Title</th>
-                    <th scope="col" class="px-6 py-3">Risk Level</th>
-                    <th scope="col" class="px-6 py-3">Mitigation Status</th>
-                    <th scope="col" class="px-6 py-3">Owner</th>
-                    <th scope="col" class="px-6 py-3">Linked Contract</th>
-                    <th scope="col" class="px-6 py-3">Actions</th>
+                    <th>Title</th>
+                    <th>Risk Level</th>
+                    <th>Mitigation Status</th>
+                    <th>Owner</th>
+                    <th>Linked Contract</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for risk in risk_logs %}
-                    <tr class="bg-white border-b hover:bg-gray-50">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">
+                <tr data-legacy-class="risk-row" data-risk-id="{{ risk.id }}">
+                    <td>
+                        <span class="font-medium text-blue-600" data-legacy-class="risk-title">
                             {{ risk.title }}
-                        </th>
-                        <td class="px-6 py-4">
-                            <span class="px-2 py-1 text-xs font-semibold leading-tight rounded-full
-                                {% if risk.risk_level == 'HIGH' %} bg-red-100 text-red-700 {% endif %}
-                                {% if risk.risk_level == 'MEDIUM' %} bg-yellow-100 text-yellow-700 {% endif %}
-                                {% if risk.risk_level == 'LOW' %} bg-green-100 text-green-700 {% endif %}
-                            ">{{ risk.get_risk_level_display }}</span>
-                        </td>
-                        <td class="px-6 py-4">{{ risk.get_mitigation_status_display }}</td>
-                        <td class="px-6 py-4">{{ risk.owner.username|default:"N/A" }}</td>
-                        <td class="px-6 py-4">
-                            {% if risk.linked_contract %}
-                                <a href="{% url 'contracts:contract_detail' risk.linked_contract.pk %}" class="text-blue-600 hover:underline">{{ risk.linked_contract.title }}</a>
-                            {% else %}
-                                N/A
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4">
-                            <a href="{% url 'contracts:risk_log_update' risk.pk %}" class="font-medium text-blue-600 hover:underline">Edit</a>
-                        </td>
-                    </tr>
-                {% empty %}
-                    <tr>
-                        <td colspan="6" class="px-6 py-4 text-center text-gray-600">No risks have been logged yet.</td>
-                    </tr>
+                        </span>
+                    </td>
+                    <td>
+                        <span class="pill {% if risk.risk_level == 'HIGH' %}status-pending{% elif risk.risk_level == 'MEDIUM' %}status-draft{% else %}status-completed{% endif %}" data-legacy-class="risk-level-badge">
+                            {{ risk.get_risk_level_display }}
+                        </span>
+                    </td>
+                    <td>{{ risk.get_mitigation_status_display|default:"—" }}</td>
+                    <td>{{ risk.owner.username|default:"—" }}</td>
+                    <td>
+                        {% if risk.linked_contract %}
+                            <a href="{% url 'contracts:contract_detail' risk.linked_contract.pk %}" class="text-blue-600 hover:text-blue-800" data-legacy-class="contract-link">{{ risk.linked_contract.title }}</a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{% url 'contracts:risk_log_update' risk.pk %}" class="text-blue-600 hover:text-blue-800 font-medium" data-legacy-class="edit-link">Edit</a>
+                    </td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>
-</div>
+        {% else %}
+        <div class="empty" data-when="no-risks" data-legacy-class="empty-state">
+            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 6.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+            </svg>
+            <h3>No risks found</h3>
+            <p>Get started by logging your first risk.</p>
+            <a href="{% url 'contracts:risk_log_create' %}" data-legacy-class="create-first-risk">Log your first risk</a>
+        </div>
+        {% endif %}
+
+    </main>
 </div>
 {% endblock %}

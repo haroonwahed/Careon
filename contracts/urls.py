@@ -63,14 +63,8 @@ urlpatterns = [
     path('budgets/<int:pk>/edit/', BudgetUpdateView.as_view(), name='budget_update'),
     path('budgets/<int:pk>/add-expense/', AddExpenseView.as_view(), name='add_expense'),
 
-    # Workflow URLs
-    path('workflow-dashboard/', WorkflowDashboardView.as_view(), name='workflow_dashboard'),
-    path('workflows/<int:pk>/', WorkflowDetailView.as_view(), name='workflow_detail'),
-    path('workflows/create/', WorkflowCreateView.as_view(), name='workflow_create'),
-    path('workflows/step/<int:pk>/update/', WorkflowStepUpdateView.as_view(), name='update_workflow_step'),
-    path('workflows/step/<int:pk>/complete/', WorkflowStepCompleteView.as_view(), name='complete_workflow_step'),
-    path('workflow-templates/', WorkflowTemplateListView.as_view(), name='workflow_template_list'),
-    path('workflow-templates/create/', WorkflowTemplateCreateView.as_view(), name='workflow_template_create'),
+    # Templates
+    path('templates/', WorkflowTemplateListView.as_view(), name='templates_list'),
 
     # Repository
     path('repository/', RepositoryView.as_view(), name='repository'),
