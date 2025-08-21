@@ -10,14 +10,12 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
 
+from django.contrib.auth.forms import UserCreationForm
 from .forms import (
     ChecklistItemForm, WorkflowForm, WorkflowTemplateForm,
     BudgetForm, TrademarkRequestForm, LegalTaskForm, RiskLogForm, ComplianceChecklistForm,
-    DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetExpenseForm,
-    RegistrationForm
+    DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetExpenseForm
 )
 from .models import (
     Contract, NegotiationThread, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
@@ -27,9 +25,7 @@ from .models import (
 
 # --- Index View ---
 def index(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
-    return render(request, 'registration/login.html')
+    return redirect('dashboard')
 
 # --- Contract Views ---
 class ContractListView(LoginRequiredMixin, ListView):
@@ -85,6 +81,11 @@ class AddChecklistItemView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('contracts:compliance_checklist_detail', kwargs={'pk': self.kwargs['checklist_pk']})
 
+class RepositoryView(LoginRequiredMixin, ListView):
+    model = Contract
+    template_name = 'contracts/repository.html'
+    context_object_name = 'contracts'
+
 class ContractDetailView(LoginRequiredMixin, DetailView):
     model = Contract
     template_name = 'contracts/contract_detail.html'
@@ -108,23 +109,9 @@ class ProfileView(View):
         return render(request, 'profile.html')
 
 class SignUpView(CreateView):
-    form_class = RegistrationForm
+    form_class = UserCreationForm
     template_name = 'registration/register.html'
-    success_url = reverse_lazy('dashboard')
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        login(self.request, self.object)
-        messages.success(self.request, 'Account created successfully!')
-        return response
-
-    def form_invalid(self, form):
-        messages.error(self.request, 'Please correct the errors below.')
-        return super().form_invalid(form)
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        return context
+    success_url = reverse_lazy('login')
 
 # Workflow Dashboard View
 class WorkflowDashboardView(LoginRequiredMixin, ListView):
@@ -397,7 +384,29 @@ class DueDiligenceUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'contracts/due_diligence_form.html'
     success_url = reverse_lazy('contracts:due_diligence_list')
 
+class AddDueDiligenceItemView(LoginRequiredMixin, CreateView):
+    model = DueDiligenceTask
+    form_class = DueDiligenceTaskForm
+    template_name = 'contracts/dd_task_form.html'
 
+    def form_valid(self, form):
+        form.instance.process_id = self.kwargs['process_pk']
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:due_diligence_detail', kwargs={'pk': self.kwargs['process_pk']})
+
+class AddDueDiligenceRiskView(LoginRequiredMixin, CreateView):
+    model = DueDiligenceRisk
+    form_class = DueDiligenceRiskForm
+    template_name = 'contracts/dd_risk_form.html'
+
+    def form_valid(self, form):
+        form.instance.process_id = self.kwargs['process_pk']
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:due_diligence_detail', kwargs={'pk': self.kwargs['process_pk']})
 
 class BudgetListView(LoginRequiredMixin, ListView):
     model = Budget
@@ -421,22 +430,18 @@ class BudgetUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'contracts/budget_form.html'
     success_url = reverse_lazy('contracts:budget_list')
 
+class AddExpenseView(LoginRequiredMixin, CreateView):
+    model = BudgetExpense
+    form_class = BudgetExpenseForm
+    template_name = 'contracts/expense_form.html'
 
+    def form_valid(self, form):
+        form.instance.budget_id = self.kwargs['budget_pk']
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
-def legal_task_board(request):
-    """Legal Task Board view"""
-    tasks = LegalTask.objects.all().order_by('-created_at')
-    pending_tasks = tasks.filter(status='PENDING')
-    in_progress_tasks = tasks.filter(status='IN_PROGRESS')
-    completed_tasks = tasks.filter(status='COMPLETED')
-
-    context = {
-        'pending_tasks': pending_tasks,
-        'in_progress_tasks': in_progress_tasks,
-        'completed_tasks': completed_tasks,
-        'all_tasks': tasks,
-    }
-    return render(request, 'contracts/legal_task_board.html', context)
+    def get_success_url(self):
+        return reverse_lazy('contracts:budget_detail', kwargs={'pk': self.kwargs['budget_pk']})
 
 def workflow_create(request):
     return redirect('contracts:workflow_dashboard')
@@ -468,8 +473,8 @@ class DueDiligenceUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'contracts/due_diligence_form.html'
 
 class AddDueDiligenceItemView(LoginRequiredMixin, View):
-    def post(self, request, process_pk):
-        process = get_object_or_404(DueDiligenceProcess, pk=process_pk)
+    def post(self, request, pk):
+        process = get_object_or_404(DueDiligenceProcess, pk=pk)
         form = DueDiligenceTaskForm(request.POST)
         if form.is_valid():
             task = form.save(commit=False)
@@ -478,8 +483,8 @@ class AddDueDiligenceItemView(LoginRequiredMixin, View):
         return redirect('contracts:due_diligence_detail', pk=process.pk)
 
 class AddDueDiligenceRiskView(LoginRequiredMixin, View):
-    def post(self, request, process_pk):
-        process = get_object_or_404(DueDiligenceProcess, pk=process_pk)
+    def post(self, request, pk):
+        process = get_object_or_404(DueDiligenceProcess, pk=pk)
         form = DueDiligenceRiskForm(request.POST)
         if form.is_valid():
             risk = form.save(commit=False)
@@ -488,8 +493,8 @@ class AddDueDiligenceRiskView(LoginRequiredMixin, View):
         return redirect('contracts:due_diligence_detail', pk=process.pk)
 
 class AddExpenseView(LoginRequiredMixin, View):
-    def post(self, request, budget_pk):
-        budget = get_object_or_404(Budget, pk=budget_pk)
+    def post(self, request, pk):
+        budget = get_object_or_404(Budget, pk=pk)
         form = BudgetExpenseForm(request.POST)
         if form.is_valid():
             expense = form.save(commit=False)

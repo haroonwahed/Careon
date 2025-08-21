@@ -1,5 +1,4 @@
 from django.urls import path
-from . import views
 from .views import (
     ContractListView, ContractDetailView, ContractCreateView, ContractUpdateView, AddNegotiationNoteView,
     TrademarkRequestListView, TrademarkRequestDetailView, TrademarkRequestCreateView, TrademarkRequestUpdateView,
@@ -29,12 +28,12 @@ urlpatterns = [
     path('due-diligence/new/', DueDiligenceCreateView.as_view(), name='due_diligence_create'),
     path('due-diligence/<int:pk>/', DueDiligenceDetailView.as_view(), name='due_diligence_detail'),
     path('due-diligence/<int:pk>/edit/', DueDiligenceUpdateView.as_view(), name='due_diligence_update'),
-    path('due-diligence/<int:process_pk>/add-item/', AddDueDiligenceItemView.as_view(), name='add_dd_item'),
-    path('due-diligence/<int:process_pk>/add-risk/', AddDueDiligenceRiskView.as_view(), name='add_dd_risk'),
+    path('due-diligence/<int:pk>/add-item/', AddDueDiligenceItemView.as_view(), name='add_dd_item'),
+    path('due-diligence/<int:pk>/add-risk/', AddDueDiligenceRiskView.as_view(), name='add_dd_risk'),
     path('dd-item/<int:pk>/toggle/', toggle_dd_item, name='toggle_dd_item'),
 
     # Legal Task URLs
-    path('legal-tasks/', views.legal_task_board, name='legal_task_kanban'),
+    path('legal-tasks/', LegalTaskKanbanView.as_view(), name='legal_task_kanban'),
     path('legal-tasks/new/', LegalTaskCreateView.as_view(), name='legal_task_create'),
     path('legal-tasks/<int:pk>/edit/', LegalTaskUpdateView.as_view(), name='legal_task_update'),
 
@@ -55,14 +54,14 @@ urlpatterns = [
     path('compliance/<int:pk>/', ComplianceChecklistDetailView.as_view(), name='compliance_checklist_detail'),
     path('compliance/<int:pk>/edit/', ComplianceChecklistUpdateView.as_view(), name='compliance_checklist_update'),
     path('compliance/<int:pk>/toggle-item/', ToggleChecklistItemView.as_view(), name='toggle_checklist_item'),
-    path('compliance/<int:checklist_pk>/add-item/', AddChecklistItemView.as_view(), name='add_checklist_item'),
+    path('compliance/<int:pk>/add-item/', AddChecklistItemView.as_view(), name='add_checklist_item'),
 
     # Budget URLs
     path('budgets/', BudgetListView.as_view(), name='budget_list'),
     path('budgets/new/', BudgetCreateView.as_view(), name='budget_create'),
     path('budgets/<int:pk>/', BudgetDetailView.as_view(), name='budget_detail'),
     path('budgets/<int:pk>/edit/', BudgetUpdateView.as_view(), name='budget_update'),
-    path('budgets/<int:budget_pk>/add-expense/', AddExpenseView.as_view(), name='add_expense'),
+    path('budgets/<int:pk>/add-expense/', AddExpenseView.as_view(), name='add_expense'),
 
     # Workflow URLs
     path('workflow-dashboard/', WorkflowDashboardView.as_view(), name='workflow_dashboard'),
@@ -72,9 +71,6 @@ urlpatterns = [
     path('workflows/step/<int:pk>/complete/', WorkflowStepCompleteView.as_view(), name='complete_workflow_step'),
     path('workflow-templates/', WorkflowTemplateListView.as_view(), name='workflow_template_list'),
     path('workflow-templates/create/', WorkflowTemplateCreateView.as_view(), name='workflow_template_create'),
-
-    # Repository
-    path('repository/', RepositoryView.as_view(), name='repository'),
 
     # Contracts
     path('', ContractListView.as_view(), name='contract_list'),

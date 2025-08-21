@@ -30,31 +30,9 @@ class NegotiationThreadForm(forms.ModelForm):
 
 
 class RegistrationForm(UserCreationForm):
-    email = forms.EmailField(required=True)
-
-    class Meta:
+    class Meta(UserCreationForm.Meta):
         model = User
-        fields = ("username", "email", "password1", "password2")
-
-    def save(self, commit=True):
-        user = super().save(commit=False)
-        user.email = self.cleaned_data["email"]
-        if commit:
-            user.save()
-        return user
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Add consistent styling to match the login form
-        for field_name, field in self.fields.items():
-            field.widget.attrs.update({
-                'class': 'input-field appearance-none rounded-lg relative block w-full px-3 py-3 border placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-0 focus:z-10 sm:text-sm'
-            })
-
-        self.fields['username'].widget.attrs['placeholder'] = 'Choose a username'
-        self.fields['email'].widget.attrs['placeholder'] = 'Enter your email'
-        self.fields['password1'].widget.attrs['placeholder'] = 'Choose a password'
-        self.fields['password2'].widget.attrs['placeholder'] = 'Confirm your password'
+        fields = ('username', 'email')
 
 
 class ChecklistItemForm(forms.ModelForm):
