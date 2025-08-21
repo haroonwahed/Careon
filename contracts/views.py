@@ -134,6 +134,28 @@ class AddNegotiationNoteView(LoginRequiredMixin, View):
         # Placeholder - redirect back for now
         return redirect('dashboard')
 
+# Function-based views for workflows
+@login_required
+def workflow_create(request):
+    """Create a new workflow"""
+    if request.method == 'POST':
+        # Handle form submission
+        return redirect('contracts:workflow_dashboard')
+    return render(request, 'contracts/workflow_form.html')
+
+@login_required
+def workflow_template_list(request):
+    """List workflow templates"""
+    return render(request, 'contracts/workflow_template_list.html')
+
+@login_required
+def workflow_template_create(request):
+    """Create a new workflow template"""
+    if request.method == 'POST':
+        # Handle form submission
+        return redirect('contracts:workflow_template_list')
+    return render(request, 'contracts/workflow_template_form.html')
+
 # --- Missing Views from URLs ---
 class TrademarkRequestListView(LoginRequiredMixin, ListView):
     model = TrademarkRequest
