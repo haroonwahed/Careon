@@ -27,6 +27,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('profile/', views.profile, name='profile'),
+    path('repository/', views.RepositoryView.as_view(), name='repository'),
     path('contracts/', include('contracts.urls', namespace='contracts')),
     # Authentication URLs
     path('accounts/login/', auth_views.LoginView.as_view(
