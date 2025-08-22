@@ -1,3 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #FFFFFF;
+  --ink: #0B0B0C;
+  --muted: #6B7280;
+  --stroke: #E5E7EB;
+  --accent: #0E9F6E;
+  --warn: #F59E0B;
+  --danger: #DC2626;
+  --card: #FFFFFF;
+}
+
+[data-theme="dark"] {
+  --bg: #111827;
+  --ink: #F9FAFB;
+  --muted: #9CA3AF;
+  --stroke: #374151;
+  --card: #1F2937;
+}
+
+@layer base {
+  * {
+    border-color: var(--stroke);
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 16px;
+    color: var(--ink);
+    background-color: var(--bg);
+  }
+
+  h1 {
+    font-size: 32px;
+    line-height: 36px;
+    font-weight: 700;
+  }
+
+  h2 {
+    font-size: 24px;
+    line-height: 28px;
+    font-weight: 600;
+  }
+
+  h3 {
+    font-size: 18px;
+    line-height: 24px;
+    font-weight: 600;
+  }
+}
+
+@layer components {
+  .container {
+    @apply mx-auto max-w-content px-4;
+  }
+
+  .page-header {
+    @apply mb-8 flex items-center justify-between;
+  }
+
+  .page-title {
+    @apply text-page font-bold text-ink;
+  }
+
+  .section-title {
+    @apply text-section font-semibold text-ink;
+  }
+
+  .card {
+    @apply bg-card border border-stroke rounded-lg shadow-sm;
+  }
+
+  .card-header {
+    @apply px-6 py-4 border-b border-stroke;
+  }
+
+  .card-body {
+    @apply px-6 py-4;
+  }
+
+  .card-footer {
+    @apply px-6 py-4 border-t border-stroke bg-gray-50;
+  }
+}
 
 .card {
   background: var(--card);

@@ -41,3 +41,21 @@ def is_mochadocs_enabled():
 def is_test_mode():
     """Check if test mode is enabled (uses mocks)"""
     return TEST_MODE
+import os
+
+def get_feature_flag(flag_name, default=False):
+    """Get feature flag value from environment or Django settings"""
+    env_value = os.environ.get(flag_name)
+    if env_value is not None:
+        return env_value.lower() in ('true', '1', 'yes', 'on')
+    
+    from django.conf import settings
+    return getattr(settings, flag_name, default)
+
+def is_feature_redesign_enabled():
+    """Check if the new design system should be used"""
+    return get_feature_flag('FEATURE_REDESIGN', False)
+
+def is_test_mode():
+    """Check if we're in test mode"""
+    return get_feature_flag('TEST_MODE', False)
