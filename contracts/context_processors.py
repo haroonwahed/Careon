@@ -1,8 +1,8 @@
 
-from config.feature_flags import is_feature_enabled
+from config.feature_flags import get_feature_flag
 
 def feature_flags(request):
     """Add feature flags to template context"""
     return {
-        'FEATURE_REDESIGN': is_feature_enabled('FEATURE_REDESIGN'),
+        'FEATURE_REDESIGN': get_feature_flag('FEATURE_REDESIGN', False),
     }
