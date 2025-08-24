@@ -1,227 +1,129 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+/* Design System Tokens - Ironclad Style */
 :root {
-  --bg: #FFFFFF;
+  /* Colors */
   --ink: #0B0B0C;
-  --muted: #6B7280;
+  --bg: #FFFFFF;
   --stroke: #E5E7EB;
   --accent: #0E9F6E;
   --warn: #F59E0B;
   --danger: #DC2626;
-  --card: #FFFFFF;
+  --muted: #6B7280;
+  --surface: #F9FAFB;
+
+  /* Typography */
+  --font-base: 14px;
+  --line-base: 16px;
+  --font-section: 24px;
+  --line-section: 28px;
+  --font-page: 32px;
+  --line-page: 36px;
+
+  /* Spacing (8px scale) */
+  --space-1: 0.5rem;   /* 8px */
+  --space-2: 1rem;     /* 16px */
+  --space-3: 1.5rem;   /* 24px */
+  --space-4: 2rem;     /* 32px */
+  --space-6: 3rem;     /* 48px */
+  --space-8: 4rem;     /* 64px */
 }
 
-[data-theme="dark"] {
-  --bg: #111827;
-  --ink: #F9FAFB;
-  --muted: #9CA3AF;
-  --stroke: #374151;
-  --card: #1F2937;
+/* Global Typography */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--font-base);
+  line-height: var(--line-base);
+  color: var(--ink);
+  background-color: var(--bg);
 }
 
-@layer base {
-  * {
-    border-color: var(--stroke);
-  }
-
-  body {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px;
-    line-height: 16px;
-    color: var(--ink);
-    background-color: var(--bg);
-  }
-
-  h1 {
-    font-size: 32px;
-    line-height: 36px;
-    font-weight: 700;
-  }
-
-  h2 {
-    font-size: 24px;
-    line-height: 28px;
-    font-weight: 600;
-  }
-
-  h3 {
-    font-size: 18px;
-    line-height: 24px;
-    font-weight: 600;
-  }
+h1 {
+  font-size: var(--font-page);
+  line-height: var(--line-page);
+  font-weight: 600;
 }
 
-@layer components {
-  .container {
-    @apply mx-auto max-w-content px-4;
-  }
+h2 {
+  font-size: var(--font-section);
+  line-height: var(--line-section);
+  font-weight: 600;
+}
 
-  .page-header {
-    @apply mb-8 flex items-center justify-between;
-  }
+/* Layout Grid */
+.container-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
 
-  .page-title {
-    @apply text-page font-bold text-ink;
-  }
+.grid-12 {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--space-3);
+}
 
-  .section-title {
-    @apply text-section font-semibold text-ink;
-  }
+/* Component Base Classes */
+.btn {
+  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors;
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
+  @apply disabled:pointer-events-none disabled:opacity-50;
+  padding: 0.5rem 1rem;
+}
 
-  .card {
-    @apply bg-card border border-stroke rounded-lg shadow-sm;
-  }
+.btn-primary {
+  background-color: var(--accent);
+  color: white;
+}
 
-  .card-header {
-    @apply px-6 py-4 border-b border-stroke;
-  }
-
-  .card-body {
-    @apply px-6 py-4;
-  }
-
-  .card-footer {
-    @apply px-6 py-4 border-t border-stroke bg-gray-50;
-  }
+.btn-primary:hover {
+  background-color: #0d8f63;
 }
 
 .card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
+  background-color: var(--bg);
+  border: 1px solid var(--stroke);
+  border-radius: 0.5rem;
+  padding: var(--space-3);
 }
 
-.pill {
-  border-radius: 9999px;
+.stat-card {
+  @apply card;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
-.focus-ring:focus {
-  outline: none;
-  box-shadow: var(--ring);
+.stat-number {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-.link {
-  color: var(--primary-600);
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
-.link:hover {
-  color: var(--primary-700);
-  text-decoration: underline;
+/* Utilities */
+.space-y-6 > * + * {
+  margin-top: var(--space-6);
 }
 
-/* Bolton Button Variants */
-.btn-primary {
-  @apply inline-flex items-center justify-center font-medium rounded-full transition active:translate-y-[1px];
-  @apply h-12 px-6 bg-primary-700 text-white hover:bg-primary-800;
-  box-shadow: var(--shadow-btn);
+.text-muted {
+  color: var(--muted);
 }
 
-.btn-primary:focus {
-  box-shadow: var(--ring);
+.bg-surface {
+  background-color: var(--surface);
 }
 
-.btn-accent {
-  @apply inline-flex items-center justify-center font-medium rounded-full transition active:translate-y-[1px];
-  @apply h-12 px-6 bg-accent-500 text-gray-900 hover:brightness-95;
-  box-shadow: var(--shadow-btn);
-}
-
-.btn-accent:focus {
-  box-shadow: var(--ring);
-}
-
-.btn-outline {
-  @apply inline-flex items-center justify-center font-medium rounded-full transition active:translate-y-[1px];
-  @apply h-12 px-6 border-2 bg-card text-primary-700 hover:bg-primary-50;
-  border-color: var(--bolton-blue-700);
-  box-shadow: var(--shadow-btn);
-}
-
-.btn-outline:focus {
-  box-shadow: var(--ring);
-}
-
-.btn-ghost {
-  @apply inline-flex items-center justify-center font-medium rounded-full transition;
-  @apply h-10 px-4 bg-transparent text-primary-700 hover:bg-primary-500/5;
-}
-
-.btn-ghost:focus {
-  box-shadow: var(--ring);
-}
-
-/* Bolton Button Sizes */
-.btn-sm {
-  @apply h-8 px-4 text-sm;
-}
-
-.btn-md {
-  @apply h-10 px-5;
-}
-
-.btn-lg {
-  @apply h-12 px-6 text-lg;
-}
-
-.btn-xl {
-  @apply h-14 px-8 text-xl;
-}
-
-/* Input styles */
-.input-field {
-  @apply h-10 rounded-xl px-3;
-  border: 1px solid var(--border);
-  background: var(--card);
-}
-
-.input-field:focus {
-  outline: none;
-  box-shadow: var(--ring);
-}
-
-/* Chip styles */
-.chip {
-  @apply px-3 h-8 pill border text-sm font-medium transition;
-}
-
-.chip-inactive {
-  border-color: var(--border);
-  background: var(--card);
-}
-
-.chip-inactive:hover {
-  border-color: var(--primary-400);
-}
-
-.chip-active {
-  @apply bg-primary-50 text-primary-700 border-primary-200;
-}
-
-/* Status badges */
-.badge {
-  @apply pill text-xs px-2.5 py-1 border font-medium;
-  border-color: var(--border);
-}
-
-.badge-draft {
-  @apply bg-indigo-50 text-primary-800;
-}
-
-.badge-active {
-  @apply bg-green-50;
-  color: var(--success);
-}
-
-.badge-inactive {
-  @apply bg-gray-100 text-gray-700;
-}
-
-.badge-unverified {
-  @apply bg-yellow-50;
-  color: var(--warning);
+/* Focus rings for accessibility */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

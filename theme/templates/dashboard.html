@@ -1,526 +1,295 @@
 
-{% extends "base.html" %}
+{% extends 'base_redesign.html' %}
 {% load static %}
 
 {% block title %}Dashboard - Bolton CLM{% endblock %}
 
 {% block content %}
-{% if FEATURE_REDESIGN %}
-<!-- Bolton CLM Dashboard Redesign -->
-<div class="min-h-screen bg-gray-50">
-    <!-- Top Bar -->
-    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div class="max-w-[1200px] mx-auto px-6">
-            <div class="flex items-center justify-between h-16">
-                <h1 class="text-[32px] leading-[36px] font-semibold text-gray-900">Dashboard</h1>
-                
-                <div class="flex items-center gap-4">
-                    <!-- Global Search -->
-                    <div class="relative">
-                        <input 
-                            type="search" 
-                            placeholder="Search contracts, workflows..." 
-                            class="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] leading-[16px]"
-                            x-ref="globalSearch"
-                            @keydown.slash.window.prevent="$refs.globalSearch.focus()"
-                        >
-                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
-                    
-                    <!-- New Contract Button -->
-                    <a href="{% url 'contracts:contract_create' %}" 
-                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] leading-[16px] flex items-center gap-2 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        New Contract
-                    </a>
-                </div>
-            </div>
+<div class="space-y-6">
+    <!-- Page Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-ink">Dashboard</h1>
+            <p class="text-muted mt-1">Welcome back, {{ user.get_full_name|default:user.username }}</p>
+        </div>
+        <div class="flex items-center space-x-3">
+            <select class="border border-stroke rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent">
+                <option>Last 30 days</option>
+                <option>Last 90 days</option>
+                <option>This year</option>
+            </select>
         </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div class="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
-        
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-4 gap-6">
-            <!-- Total Contracts Stat -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-[12px] leading-[14px] text-gray-500 uppercase tracking-wide font-medium">Total Contracts</div>
-                        <div class="text-[24px] leading-[28px] font-semibold text-gray-900 mt-1">{{ total_contracts|default:0 }}</div>
-                    </div>
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Total Contracts -->
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                         </svg>
                     </div>
                 </div>
-                <div class="flex items-center mt-2">
-                    <svg class="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="text-[12px] text-green-600">+12% from last month</span>
+                <div class="ml-4">
+                    <div class="stat-number">{{ total_contracts|default:42 }}</div>
+                    <div class="stat-label">Total Contracts</div>
+                    <div class="flex items-center mt-1">
+                        <svg class="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span class="text-xs text-green-600">12% vs last month</span>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Pending Tasks Stat -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-[12px] leading-[14px] text-gray-500 uppercase tracking-wide font-medium">Pending Tasks</div>
-                        <div class="text-[24px] leading-[28px] font-semibold text-gray-900 mt-1">{{ pending_tasks_count|default:0 }}</div>
-                    </div>
-                    <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- Pending Tasks -->
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                 </div>
-                <div class="flex items-center mt-2">
-                    <svg class="w-3 h-3 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 13.586V6a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="text-[12px] text-red-600">+3 this week</span>
+                <div class="ml-4">
+                    <div class="stat-number">{{ pending_tasks|default:18 }}</div>
+                    <div class="stat-label">Pending Tasks</div>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs text-amber-600">3 due today</span>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Active Workflows Stat -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-[12px] leading-[14px] text-gray-500 uppercase tracking-wide font-medium">Active Workflows</div>
-                        <div class="text-[24px] leading-[28px] font-semibold text-gray-900 mt-1">{{ active_workflows_count|default:0 }}</div>
-                    </div>
+        <!-- Active Workflows -->
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                         </svg>
                     </div>
                 </div>
-                <div class="flex items-center mt-2">
-                    <svg class="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="text-[12px] text-green-600">On track</span>
+                <div class="ml-4">
+                    <div class="stat-number">{{ active_workflows|default:7 }}</div>
+                    <div class="stat-label">Active Workflows</div>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs text-green-600">2 completed this week</span>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Expiring Soon Stat -->
-            <div class="bg-white rounded-lg border border-gray-200 p-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <div class="text-[12px] leading-[14px] text-gray-500 uppercase tracking-wide font-medium">Expiring Soon</div>
-                        <div class="text-[24px] leading-[28px] font-semibold text-gray-900 mt-1">{{ expiring_soon_count|default:7 }}</div>
-                    </div>
+        <!-- Expiring Soon -->
+        <div class="stat-card">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
                     <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                         </svg>
                     </div>
                 </div>
-                <div class="flex items-center mt-2">
-                    <svg class="w-3 h-3 text-red-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="text-[12px] text-red-600">Review required</span>
+                <div class="ml-4">
+                    <div class="stat-number">{{ expiring_soon|default:5 }}</div>
+                    <div class="stat-label">Expiring Soon</div>
+                    <div class="flex items-center mt-1">
+                        <span class="text-xs text-red-600">Within 30 days</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Saved Views Row -->
+    <div class="bg-white rounded-lg border border-stroke p-4">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-medium text-ink">Saved Views</h3>
+            <button class="text-sm text-accent hover:text-green-700 font-medium">+ Create View</button>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <!-- Demo saved views -->
+            <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium text-gray-700 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                </svg>
+                High Value Contracts
+            </button>
+            <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium text-gray-700 transition-colors">
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Due This Week
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Activity -->
+        <div class="lg:col-span-2">
+            <div class="bg-white rounded-lg border border-stroke">
+                <div class="p-6 border-b border-stroke">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-medium text-ink">Recent Activity</h3>
+                        <a href="#" class="text-sm text-accent hover:text-green-700 font-medium">View all</a>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="flow-root">
+                        <ul class="-mb-8">
+                            <!-- Activity Item 1 -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
+                                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-gray-900">Contract <span class="font-medium">ACME-2024-001</span> approved by legal team</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                                <time>2h ago</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Activity Item 2 -->
+                            <li>
+                                <div class="relative pb-8">
+                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-gray-900">New contract <span class="font-medium">GlobalTech-2024-015</span> created</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                                <time>4h ago</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+
+                            <!-- Activity Item 3 -->
+                            <li>
+                                <div class="relative">
+                                    <div class="relative flex space-x-3">
+                                        <div>
+                                            <span class="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center ring-8 ring-white">
+                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                </svg>
+                                            </span>
+                                        </div>
+                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
+                                            <div>
+                                                <p class="text-sm text-gray-900">Workflow step <span class="font-medium">Legal Review</span> assigned to Sarah Johnson</p>
+                                            </div>
+                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
+                                                <time>6h ago</time>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Saved Views Chips -->
-        <div class="flex items-center gap-2">
-            <span class="text-[14px] leading-[16px] font-medium text-gray-700">Saved Views:</span>
-            <button class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    onclick="applySavedView('pending-review')">
-                Pending Review
-            </button>
-            <button class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-green-100 text-green-800 hover:bg-green-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                    onclick="applySavedView('active-contracts')">
-                Active Contracts
-            </button>
-        </div>
+        <!-- Quick Actions & Shortcuts -->
+        <div class="space-y-6">
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg border border-stroke p-6">
+                <h3 class="text-lg font-medium text-ink mb-4">Quick Actions</h3>
+                <div class="space-y-3">
+                    <a href="{% url 'contracts:contract_create' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-900">New Contract</div>
+                            <div class="text-sm text-gray-500">Create a new contract</div>
+                        </div>
+                    </a>
+                    
+                    <a href="{% url 'contracts:workflow_create' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-900">Start Workflow</div>
+                            <div class="text-sm text-gray-500">Begin a new process</div>
+                        </div>
+                    </a>
 
-        <!-- Recent Contracts Section -->
-        <div class="bg-white rounded-lg border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <h2 class="text-[24px] leading-[28px] font-semibold text-gray-900">Recent Contracts</h2>
-            </div>
-            
-            {% if recent_contracts %}
-            <div class="overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50 sticky top-16 z-20">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Stage</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Agreement Date</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Counterparty</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for contract in recent_contracts %}
-                        <tr class="hover:bg-gray-50 cursor-pointer focus:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset" 
-                            tabindex="0"
-                            onclick="openContractDrawer({{ contract.id }})"
-                            @keydown.enter="openContractDrawer({{ contract.id }})"
-                            role="button"
-                            aria-label="Open contract {{ contract.title }}">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-[14px] leading-[16px] font-medium text-gray-900">{{ contract.title|truncatechars:40 }}</div>
-                                <div class="text-[12px] text-gray-500">ID: {{ contract.id }}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {% if contract.status == 'ACTIVE' %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-green-100 text-green-800">Active</span>
-                                {% elif contract.status == 'PENDING' %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-yellow-100 text-yellow-800">Review</span>
-                                {% else %}
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium bg-gray-100 text-gray-800">Draft</span>
-                                {% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900">{{ contract.start_date|date:"M d, Y"|default:"—" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900">{{ contract.region|default:"North America" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900">
-                                {% if contract.value %}${{ contract.value|floatformat:0|add:"0"|default:"—" }}{% else %}—{% endif %}
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900">{{ contract.counterparty|default:"—" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900">{{ contract.created_by.get_full_name|default:contract.created_by.username|default:"System" }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500">{{ contract.updated_at|timesince }} ago</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-12">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-                <h3 class="mt-2 text-[14px] font-medium text-gray-900">No contracts found</h3>
-                <p class="mt-1 text-[14px] text-gray-500">Get started by creating your first contract.</p>
-                <div class="mt-6">
-                    <a href="{% url 'contracts:contract_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-[14px] font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        New Contract
+                    <a href="{% url 'contracts:repository' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
+                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                        </div>
+                        <div>
+                            <div class="font-medium text-gray-900">Upload Document</div>
+                            <div class="text-sm text-gray-500">Add files to repository</div>
+                        </div>
                     </a>
                 </div>
             </div>
-            {% endif %}
-        </div>
-    </div>
-</div>
 
-<!-- Contract Drawer -->
-<div id="contractDrawer" class="fixed inset-y-0 right-0 w-[480px] bg-white shadow-xl transform translate-x-full transition-transform duration-300 ease-in-out z-50 border-l border-gray-200"
-     x-show="drawerOpen" 
-     x-transition:enter="transition ease-in-out duration-300"
-     x-transition:enter-start="transform translate-x-full"
-     x-transition:enter-end="transform translate-x-0"
-     x-transition:leave="transition ease-in-out duration-300"
-     x-transition:leave-start="transform translate-x-0"
-     x-transition:leave-end="transform translate-x-full">
-    
-    <!-- Drawer Header -->
-    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-[18px] font-semibold text-gray-900" id="drawerTitle">Contract Details</h3>
-        <button onclick="closeContractDrawer()" 
-                class="text-gray-400 hover:text-gray-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                aria-label="Close drawer">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-        </button>
-    </div>
-    
-    <!-- Drawer Content -->
-    <div class="p-6 space-y-6 overflow-y-auto h-full">
-        <div id="drawerContent">
-            <!-- Dynamic content will be loaded here -->
-            <div class="animate-pulse">
-                <div class="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div class="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-                <div class="h-4 bg-gray-200 rounded w-2/3"></div>
-            </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="border-t pt-6 space-y-3">
-            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                Edit Contract
-            </button>
-            <button class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                Start/Advance Workflow
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Drawer Overlay -->
-<div id="drawerOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden" onclick="closeContractDrawer()"></div>
-
-<script>
-// Global search focus on "/"
-document.addEventListener('keydown', function(e) {
-    if (e.key === '/' && !e.target.matches('input, textarea, [contenteditable]')) {
-        e.preventDefault();
-        document.querySelector('[x-ref="globalSearch"]').focus();
-    }
-});
-
-// Saved views functionality
-function applySavedView(viewType) {
-    const url = new URL('{% url "contracts:contract_list" %}', window.location.origin);
-    if (viewType === 'pending-review') {
-        url.searchParams.set('status', 'PENDING');
-    } else if (viewType === 'active-contracts') {
-        url.searchParams.set('status', 'ACTIVE');
-    }
-    window.location.href = url.toString();
-}
-
-// Contract drawer functionality
-function openContractDrawer(contractId) {
-    document.getElementById('contractDrawer').classList.remove('translate-x-full');
-    document.getElementById('drawerOverlay').classList.remove('hidden');
-    
-    // Load contract details (stub implementation)
-    document.getElementById('drawerContent').innerHTML = `
-        <div class="space-y-4">
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Contract ID</label>
-                <div class="text-[14px] text-gray-900">${contractId}</div>
-            </div>
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Status</label>
-                <div class="text-[14px] text-gray-900">Active</div>
-            </div>
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Workflow Progress</label>
-                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
-                </div>
-                <div class="text-[12px] text-gray-500 mt-1">65% Complete</div>
-            </div>
-        </div>
-    `;
-}
-
-function closeContractDrawer() {
-    document.getElementById('contractDrawer').classList.add('translate-x-full');
-    document.getElementById('drawerOverlay').classList.add('hidden');
-}
-
-// Keyboard navigation for table rows
-document.addEventListener('keydown', function(e) {
-    if (e.target.matches('tr[tabindex]')) {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const next = e.target.nextElementSibling;
-            if (next) next.focus();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const prev = e.target.previousElementSibling;
-            if (prev) prev.focus();
-        }
-    }
-});
-</script>
-
-{% else %}
-<!-- Original Dashboard Layout -->
-<div class="theme-layout">
-    <!-- Left Sidebar -->
-    <aside class="sidebar">
-        <div class="section-title">My Views</div>
-        <a href="{% url 'dashboard' %}" class="item active" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 002 2"></path>
-            </svg>
-            Dashboard
-            <span class="item-count">{{ total_contracts }}</span>
-        </a>
-        <a href="{% url 'contracts:contract_list' %}" class="item" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            All Contracts
-            <span class="item-count">{{ total_contracts }}</span>
-        </a>
-        <a href="{% url 'contracts:legal_task_kanban' %}" class="item" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v6a2 2 0 002 2h6a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 002 2m-6 9l2 2 4-4"></path>
-            </svg>
-            Legal Tasks
-            <span class="item-count">{{ pending_tasks_count }}</span>
-        </a>
-        <a href="{% url 'contracts:workflow_dashboard' %}" class="item" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            Active Workflows
-            <span class="item-count">{{ active_workflows_count }}</span>
-        </a>
-
-        <div class="section-title" style="margin-top: 32px;">Quick Actions</div>
-        <a href="{% url 'contracts:contract_create' %}" class="item" data-legacy-class="quick-action">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-            </svg>
-            New Contract
-        </a>
-        <a href="{% url 'contracts:workflow_template_list' %}" class="item" data-legacy-class="quick-action">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            Start Workflow
-        </a>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Quick Stats -->
-        <div class="quick-stats">
-            <div class="stat" data-legacy-class="stat-card">
-                <div>
-                    <div class="stat-label">Total Contracts</div>
-                    <div class="stat-value">{{ total_contracts }}</div>
-                </div>
-                <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                </svg>
-            </div>
-            <div class="stat" data-legacy-class="stat-card">
-                <div>
-                    <div class="stat-label">Pending Tasks</div>
-                    <div class="stat-value">{{ pending_tasks_count }}</div>
-                </div>
-                <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-            </div>
-            <div class="stat" data-legacy-class="stat-card">
-                <div>
-                    <div class="stat-label">Active Workflows</div>
-                    <div class="stat-value">{{ active_workflows_count }}</div>
-                </div>
-                <svg class="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                </svg>
-            </div>
-            <div class="stat" data-legacy-class="stat-card">
-                <div>
-                    <div class="stat-label">Expiring Soon</div>
-                    <div class="stat-value">{{ expiring_soon_count }}</div>
-                </div>
-                <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                </svg>
-            </div>
-        </div>
-
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <a href="{% url 'contracts:workflow_template_list' %}" class="btn-primary" data-legacy-class="btn-start-workflow">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-                    Start Workflow
-                </a>
-                <div class="search">
-                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    <input type="search" placeholder="Search for a workflow" data-legacy-class="search-input">
-                </div>
-            </div>
-            <div class="toolbar-right">
-                <button class="btn-outline" data-legacy-class="filter-btn">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                    </svg>
-                    Filter 2
-                </button>
-                <button class="btn-outline" data-legacy-class="columns-btn">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
-                    </svg>
-                    Columns
-                </button>
-            </div>
-        </div>
-
-        <!-- Main Table -->
-        {% if recent_contracts %}
-        <table class="data" data-legacy-class="contracts-table">
-            <thead>
-                <tr>
-                    <th>Contract Name</th>
-                    <th>Stage</th>
-                    <th>Agreement Date</th>
-                    <th>Region</th>
-                    <th>Value</th>
-                    <th>Counterparty</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for contract in recent_contracts %}
-                <tr data-legacy-class="contract-row" data-contract-id="{{ contract.id }}">
-                    <td>
-                        <a href="{% url 'contracts:contract_detail' contract.pk %}" class="font-medium text-blue-600 hover:text-blue-800" data-legacy-class="contract-link">
-                            {{ contract.title|truncatechars:50 }}
-                        </a>
-                    </td>
-                    <td>
-                        <span class="pill {% if contract.status == 'ACTIVE' %}status-completed{% elif contract.status == 'PENDING' %}status-pending{% else %}status-draft{% endif %}" data-legacy-class="status-badge">
-                            {% if contract.status == 'ACTIVE' %}
-                                Active
-                            {% elif contract.status == 'PENDING' %}
-                                Review
-                            {% else %}
-                                Draft
-                            {% endif %}
+            <!-- Upcoming Deadlines -->
+            <div class="bg-white rounded-lg border border-stroke p-6">
+                <h3 class="text-lg font-medium text-ink mb-4">Upcoming Deadlines</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">ACME Contract Review</div>
+                            <div class="text-sm text-gray-500">Due tomorrow</div>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            Urgent
                         </span>
-                    </td>
-                    <td>{{ contract.start_date|date:"F d, Y"|default:"—" }}</td>
-                    <td>{{ contract.counterparty|default:"—" }}</td>
-                    <td>
-                        {% if contract.value %}
-                            ${{ contract.value|floatformat:2 }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>{{ contract.counterparty|default:"—" }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty" data-when="no-contracts" data-legacy-class="empty-state">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <h3>No contracts found</h3>
-            <p>Get started by creating your first contract or importing existing ones.</p>
-            <a href="{% url 'contracts:contract_create' %}" data-legacy-class="create-first-contract">Create your first contract</a>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">TechCorp Legal Review</div>
+                            <div class="text-sm text-gray-500">Due in 3 days</div>
+                        </div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                            Soon
+                        </span>
+                    </div>
+                </div>
+            </div>
         </div>
-        {% endif %}
-    </main>
+    </div>
 </div>
-{% endif %}
-
-<!-- Include layout toggle for testing -->
-{% include 'layout_toggle.html' %}
 {% endblock %}

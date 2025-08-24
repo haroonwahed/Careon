@@ -1,9 +1,8 @@
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
     '../templates/**/*.html',
-    './src/**/*.css',
+    '../static/**/*.js',
     '../../contracts/templates/**/*.html',
   ],
   theme: {
@@ -25,6 +24,15 @@ module.exports = {
         success: '#10B981',
         warning: '#F59E0B',
         error: '#DC2626',
+
+        // New colors from the edit
+        ink: '#0B0B0C',
+        stroke: '#E5E7EB',
+        accent: '#0E9F6E',
+        warn: '#F59E0B',
+        danger: '#DC2626',
+        muted: '#6B7280',
+        surface: '#F9FAFB',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
@@ -39,7 +47,7 @@ module.exports = {
         'labels': '500',
       },
       maxWidth: {
-        'content': '1200px',
+        'container': '1200px',
       },
       spacing: {
         '0.5': '4px',
@@ -56,11 +64,16 @@ module.exports = {
         '16': '128px',
         '20': '160px',
         '24': '192px',
+        '18': '4.5rem',
+        '88': '22rem',
       },
       boxShadow: {
         'card': '0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)',
         'elevated': '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
       },
+      gridTemplateColumns: {
+        '12': 'repeat(12, 1fr)',
+      }
     },
   },
   plugins: [],
