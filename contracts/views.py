@@ -262,7 +262,7 @@ class RepositoryView(LoginRequiredMixin, View):
     def get(self, request):
         return render(request, 'contracts/repository.html')
 
-# Function-based views that are imported
+# Function-based views for workflows
 def workflow_create(request):
     if request.method == 'POST':
         form = WorkflowForm(request.POST)

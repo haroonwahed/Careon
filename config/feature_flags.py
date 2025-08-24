@@ -18,6 +18,10 @@ def is_feature_redesign_enabled():
     """Check if the redesign feature is enabled"""
     return get_feature_flag('FEATURE_REDESIGN', False)
 
+def is_test_mode():
+    """Check if test mode is enabled"""
+    return get_feature_flag('TEST_MODE', False)
+
 def clear_cache():
     """Clear the feature flags cache"""
     global cache
