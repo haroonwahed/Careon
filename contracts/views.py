@@ -130,6 +130,9 @@ def toggle_redesign(request):
         current_value = os.environ.get('FEATURE_REDESIGN', 'false').lower()
         new_value = 'false' if current_value == 'true' else 'true'
         os.environ['FEATURE_REDESIGN'] = new_value
+        # Clear the cache for feature flags if you have one
+        from config.feature_flags import cache
+        cache.clear()
         return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
     return redirect('dashboard')
 
@@ -155,26 +158,28 @@ class AddNegotiationNoteView(LoginRequiredMixin, View):
         return redirect('dashboard')
 
 # Function-based views for workflows
-@login_required
-def workflow_create(request):
-    """Create a new workflow"""
-    if request.method == 'POST':
-        # Handle form submission
-        return redirect('contracts:workflow_dashboard')
-    return render(request, 'contracts/workflow_form.html')
+# This workflow_create view is a duplicate of the one defined below, so it is removed.
+# def workflow_create(request):
+#     """Create a new workflow"""
+#     if request.method == 'POST':
+#         # Handle form submission
+#         return redirect('contracts:workflow_dashboard')
+#     return render(request, 'contracts/workflow_form.html')
 
-@login_required
-def workflow_template_list(request):
-    """List workflow templates"""
-    return render(request, 'contracts/workflow_template_list.html')
+# This workflow_template_list view is a duplicate of the one defined below, so it is removed.
+# @login_required
+# def workflow_template_list(request):
+#     """List workflow templates"""
+#     return render(request, 'contracts/workflow_template_list.html')
 
-@login_required
-def workflow_template_create(request):
-    """Create a new workflow template"""
-    if request.method == 'POST':
-        # Handle form submission
-        return redirect('contracts:workflow_template_list')
-    return render(request, 'contracts/workflow_template_form.html')
+# This workflow_template_create view is a duplicate of the one defined below, so it is removed.
+# @login_required
+# def workflow_template_create(request):
+#     """Create a new workflow template"""
+#     if request.method == 'POST':
+#         # Handle form submission
+#         return redirect('contracts:workflow_template_list')
+#     return render(request, 'contracts/workflow_template_form.html')
 
 # --- Missing Views from URLs ---
 class TrademarkRequestListView(LoginRequiredMixin, ListView):
@@ -265,10 +270,12 @@ def workflow_create(request):
             workflow = form.save(commit=False)
             workflow.created_by = request.user
             workflow.save()
+            messages.success(request, 'Workflow created successfully!')
             return redirect('contracts:workflow_detail', pk=workflow.pk)
     else:
         form = WorkflowForm()
-    return render(request, 'contracts/workflow_form.html', {'form': form})
+    context = {'form': form, 'page_title': 'Create Workflow'}
+    return render(request, 'contracts/workflow_form.html', context)
 
 def workflow_template_create(request):
     if request.method == 'POST':
@@ -505,7 +512,8 @@ def dashboard(request):
             count = Contract.objects.filter(status=status).count()
             if count > 0:
                 pipeline_data.append((display, count))
-    except:
+    except Exception as e:
+        print(f"Error fetching contract data: {e}")
         total_contracts = 0
         recent_contracts = []
         pipeline_data = []
@@ -513,20 +521,23 @@ def dashboard(request):
     # Legal Tasks data
     try:
         pending_tasks = LegalTask.objects.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
-    except:
+    except Exception as e:
+        print(f"Error fetching legal task data: {e}")
         pending_tasks = 0
 
     # Workflow data
     try:
         active_workflows = Workflow.objects.filter(status='ACTIVE').count()
-    except:
+    except Exception as e:
+        print(f"Error fetching workflow data: {e}")
         active_workflows = 0
 
     # Trademark data
     try:
         trademark_requests = TrademarkRequest.objects.all().count()
         pending_trademarks = TrademarkRequest.objects.filter(status__in=['PENDING', 'FILED', 'IN_REVIEW']).count()
-    except:
+    except Exception as e:
+        print(f"Error fetching trademark data: {e}")
         trademark_requests = 0
         pending_trademarks = 0
 
@@ -534,26 +545,30 @@ def dashboard(request):
     try:
         risk_count = RiskLog.objects.count()
         top_risks = RiskLog.objects.filter(risk_level='HIGH')[:5]
-    except:
+    except Exception as e:
+        print(f"Error fetching risk data: {e}")
         risk_count = 0
         top_risks = []
 
     # Due Diligence data
     try:
         dd_count = DueDiligenceProcess.objects.count()
-    except:
+    except Exception as e:
+        print(f"Error fetching due diligence data: {e}")
         dd_count = 0
 
     # Budget data
     try:
         budget_count = Budget.objects.count()
-    except:
+    except Exception as e:
+        print(f"Error fetching budget data: {e}")
         budget_count = 0
 
     # Compliance data
     try:
         upcoming_checklists = ComplianceChecklist.objects.all()[:5]
-    except:
+    except Exception as e:
+        print(f"Error fetching compliance data: {e}")
         upcoming_checklists = []
 
     context = {
