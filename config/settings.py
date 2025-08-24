@@ -31,6 +31,8 @@ ALLOWED_HOSTS = ['*']
 CSRF_TRUSTED_ORIGINS = [
     'https://*.replit.dev',
     'https://*.repl.co',
+    'https://*.riker.replit.dev',
+    'https://*.riker.replit.dev:8000',
 ]
 
 
