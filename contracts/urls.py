@@ -1,19 +1,5 @@
 from django.urls import path
-from . import views  # Import views module
-from .views import (
-    ContractListView, ContractDetailView, ContractCreateView, ContractUpdateView, AddNegotiationNoteView,
-    TrademarkRequestListView, TrademarkRequestDetailView, TrademarkRequestCreateView, TrademarkRequestUpdateView,
-    LegalTaskKanbanView, LegalTaskCreateView, LegalTaskUpdateView,
-    RiskLogListView, RiskLogCreateView, RiskLogUpdateView,
-    ComplianceChecklistListView, ComplianceChecklistDetailView, ComplianceChecklistCreateView, ComplianceChecklistUpdateView,
-    ToggleChecklistItemView, AddChecklistItemView,
-    WorkflowDashboardView, WorkflowTemplateListView, WorkflowCreateView, WorkflowTemplateCreateView,
-    WorkflowDetailView, WorkflowStepUpdateView, WorkflowStepCompleteView,
-    RepositoryView, WorkflowCreateView as WorkflowCreateFormView,
-    DueDiligenceListView, DueDiligenceCreateView, DueDiligenceDetailView, DueDiligenceUpdateView, AddDueDiligenceItemView, AddDueDiligenceRiskView,
-    BudgetListView, BudgetCreateView, BudgetDetailView, BudgetUpdateView, AddExpenseView,
-    workflow_create, workflow_template_create, workflow_template_list, toggle_dd_item
-)
+from . import views
 from .api import views as api_views
 
 app_name = 'contracts'

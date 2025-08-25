@@ -20,25 +20,21 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.shortcuts import render
 from django.views.generic import TemplateView # Import TemplateView
-from contracts import views
+from contracts import views as contract_views
 
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
-    path('', views.index, name='index'),
     path('admin/', admin.site.urls),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('profile/', views.profile, name='profile'),
-    path('toggle-redesign/', views.toggle_redesign, name='toggle_redesign'),
-    path('components-demo/', TemplateView.as_view(template_name='components_demo.html'), name='components_demo'),
-    path('contracts/', include('contracts.urls', namespace='contracts')),
-    # Authentication URLs
-    path('accounts/login/', auth_views.LoginView.as_view(
-        template_name='registration/login.html'
-    ), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('accounts/register/', views.SignUpView.as_view(), name='register'),
-    path("__reload__/", include("django_browser_reload.urls")),
+    path('', contract_views.index, name='index'),
+    path('dashboard/', contract_views.dashboard, name='dashboard'),
+    path('contracts/', include('contracts.urls')),
+    path('profile/', contract_views.profile, name='profile'),
+    path('register/', contract_views.SignUpView.as_view(), name='register'),
+    path('login/', auth_views.LoginView.as_view(), name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('toggle-redesign/', contract_views.toggle_redesign, name='toggle_redesign'),
+    path('__reload__/', include('django_browser_reload.urls')),
 ]
 
 if settings.DEBUG:

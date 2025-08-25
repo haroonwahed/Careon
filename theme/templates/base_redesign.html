@@ -70,11 +70,15 @@
                         <button class="flex items-center space-x-2 p-2 rounded-lg hover:bg-surface" id="user-menu-button">
                             <div class="w-8 h-8 bg-accent rounded-full flex items-center justify-center">
                                 <span class="text-white text-sm font-medium">
-                                    {% if user.first_name %}{{ user.first_name.0|upper }}{% elif user.username %}{{ user.username.0|upper }}{% else %}U{% endif %}
+                                    {% if user.is_authenticated %}
+                                        {% if user.first_name %}{{ user.first_name.0|upper }}{% elif user.username %}{{ user.username.0|upper }}{% else %}U{% endif %}
+                                    {% else %}U{% endif %}
                                 </span>
                             </div>
                             <span class="text-sm font-medium text-ink">
-                                {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username|default:"User" }}{% endif %}
+                                {% if user.is_authenticated %}
+                                    {% if user.get_full_name %}{{ user.get_full_name }}{% else %}{{ user.username|default:"User" }}{% endif %}
+                                {% else %}User{% endif %}
                             </span>
                             <i data-lucide="chevron-down" class="h-4 w-4 text-muted"></i>
                         </button>
