@@ -25,6 +25,10 @@ from .models import (
 )
 from django.http import JsonResponse
 from config.feature_flags import get_feature_flag, is_feature_redesign_enabled
+from django.conf import settings
+from datetime import datetime, timedelta
+from django.db.models import Count, Q
+
 
 # --- Index View ---
 def index(request):
@@ -40,7 +44,7 @@ class ContractListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['FEATURE_REDESIGN'] = is_feature_redesign_enabled()
-        
+
         if context['FEATURE_REDESIGN']:
             # Prepare contracts data for JavaScript
             contracts_data = []
@@ -57,10 +61,10 @@ class ContractListView(LoginRequiredMixin, ListView):
                     'owner': contract.created_by.get_full_name() if contract.created_by else 'System',
                     'updated_at': contract.updated_at.strftime('%b %d, %Y') if hasattr(contract, 'updated_at') and contract.updated_at else 'N/A',
                 })
-            
+
             import json
             context['contracts_json'] = json.dumps(contracts_data)
-        
+
         return context
 
 class WorkflowDetailView(LoginRequiredMixin, DetailView):
@@ -643,3 +647,34 @@ def dashboard(request):
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
+
+def dashboard_view(request):
+    # Calculate stats
+    total_contracts = Contract.objects.count()
+    pending_tasks = LegalTask.objects.filter(status='PENDING').count() if hasattr(globals(), 'LegalTask') else 18
+    active_workflows = Workflow.objects.filter(status='ACTIVE').count()
+
+    # Contracts expiring in next 30 days
+    thirty_days_from_now = datetime.now().date() + timedelta(days=30)
+    expiring_soon = Contract.objects.filter(
+        end_date__lte=thirty_days_from_now,
+        end_date__gte=datetime.now().date()
+    ).count()
+
+    context = {
+        'total_contracts': total_contracts,
+        'pending_tasks': pending_tasks,
+        'active_workflows': active_workflows,
+        'expiring_soon': expiring_soon,
+        'recent_contracts': Contract.objects.order_by('-created_at')[:5],
+        'user': request.user,
+    }
+
+    # Use redesigned template if feature flag is enabled
+    if is_feature_redesign_enabled():
+        return render(request, 'dashboard.html', context)
+
+    # Legacy dashboard for old design
+    if getattr(settings, 'IRONCLAD_MODE', False):
+        return render(request, 'dashboard_ironclad.html', context)
+    return render(request, 'dashboard_old.html', context)

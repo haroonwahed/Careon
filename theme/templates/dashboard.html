@@ -1,291 +1,205 @@
-
 {% extends 'base_redesign.html' %}
 {% load static %}
 
 {% block title %}Dashboard - Bolton CLM{% endblock %}
 
 {% block content %}
-<div class="space-y-6">
-    <!-- Page Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h1 class="text-2xl font-semibold text-ink">Dashboard</h1>
-            <p class="text-muted mt-1">Welcome back, {{ user.get_full_name|default:user.username }}</p>
-        </div>
-        <div class="flex items-center space-x-3">
-            <select class="border border-stroke rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent">
-                <option>Last 30 days</option>
-                <option>Last 90 days</option>
-                <option>This year</option>
-            </select>
-        </div>
-    </div>
+<!-- Page Header -->
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Overview of your contract lifecycle management</p>
+</div>
 
-    <!-- Stats Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Total Contracts -->
-        <div class="stat-card">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <div class="stat-number">{{ total_contracts|default:42 }}</div>
-                    <div class="stat-label">Total Contracts</div>
-                    <div class="flex items-center mt-1">
-                        <svg class="w-3 h-3 text-green-500 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                        </svg>
-                        <span class="text-xs text-green-600">12% vs last month</span>
-                    </div>
-                </div>
-            </div>
+<!-- Stats Row -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="stat">
+        <div class="stat-icon">
+            <i data-lucide="file-text"></i>
         </div>
-
-        <!-- Pending Tasks -->
-        <div class="stat-card">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <div class="stat-number">{{ pending_tasks|default:18 }}</div>
-                    <div class="stat-label">Pending Tasks</div>
-                    <div class="flex items-center mt-1">
-                        <span class="text-xs text-amber-600">3 due today</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Active Workflows -->
-        <div class="stat-card">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <div class="stat-number">{{ active_workflows|default:7 }}</div>
-                    <div class="stat-label">Active Workflows</div>
-                    <div class="flex items-center mt-1">
-                        <span class="text-xs text-green-600">2 completed this week</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Expiring Soon -->
-        <div class="stat-card">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                        </svg>
-                    </div>
-                </div>
-                <div class="ml-4">
-                    <div class="stat-number">{{ expiring_soon|default:5 }}</div>
-                    <div class="stat-label">Expiring Soon</div>
-                    <div class="flex items-center mt-1">
-                        <span class="text-xs text-red-600">Within 30 days</span>
-                    </div>
-                </div>
-            </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ total_contracts|default:0 }}</div>
+            <div class="stat-label">Total Contracts</div>
         </div>
     </div>
 
-    <!-- Saved Views Row -->
-    <div class="bg-white rounded-lg border border-stroke p-4">
-        <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-medium text-ink">Saved Views</h3>
-            <button class="text-sm text-accent hover:text-green-700 font-medium">+ Create View</button>
+    <div class="stat">
+        <div class="stat-icon">
+            <i data-lucide="clock"></i>
         </div>
-        <div class="flex flex-wrap gap-2">
-            <!-- Demo saved views -->
-            <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium text-gray-700 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
-                </svg>
-                High Value Contracts
-            </button>
-            <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-sm font-medium text-gray-700 transition-colors">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                Due This Week
-            </button>
+        <div class="stat-content">
+            <div class="stat-value">{{ pending_tasks|default:0 }}</div>
+            <div class="stat-label">Pending Tasks</div>
         </div>
     </div>
 
-    <!-- Main Content Grid -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Recent Activity -->
-        <div class="lg:col-span-2">
-            <div class="bg-white rounded-lg border border-stroke">
-                <div class="p-6 border-b border-stroke">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-medium text-ink">Recent Activity</h3>
-                        <a href="#" class="text-sm text-accent hover:text-green-700 font-medium">View all</a>
-                    </div>
-                </div>
-                <div class="p-6">
-                    <div class="flow-root">
-                        <ul class="-mb-8">
-                            <!-- Activity Item 1 -->
-                            <li>
-                                <div class="relative pb-8">
-                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-                                    <div class="relative flex space-x-3">
-                                        <div>
-                                            <span class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center ring-8 ring-white">
-                                                <svg class="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                                </svg>
-                                            </span>
-                                        </div>
-                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                                            <div>
-                                                <p class="text-sm text-gray-900">Contract <span class="font-medium">ACME-2024-001</span> approved by legal team</p>
-                                            </div>
-                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
-                                                <time>2h ago</time>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
+    <div class="stat">
+        <div class="stat-icon">
+            <i data-lucide="workflow"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ active_workflows|default:0 }}</div>
+            <div class="stat-label">Active Workflows</div>
+        </div>
+    </div>
 
-                            <!-- Activity Item 2 -->
-                            <li>
-                                <div class="relative pb-8">
-                                    <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
-                                    <div class="relative flex space-x-3">
-                                        <div>
-                                            <span class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center ring-8 ring-white">
-                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                                </svg>
-                                            </span>
-                                        </div>
-                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                                            <div>
-                                                <p class="text-sm text-gray-900">New contract <span class="font-medium">GlobalTech-2024-015</span> created</p>
-                                            </div>
-                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
-                                                <time>4h ago</time>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
+    <div class="stat">
+        <div class="stat-icon">
+            <i data-lucide="calendar-x"></i>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ expiring_soon|default:0 }}</div>
+            <div class="stat-label">Expiring Soon</div>
+        </div>
+    </div>
+</div>
 
-                            <!-- Activity Item 3 -->
-                            <li>
-                                <div class="relative">
-                                    <div class="relative flex space-x-3">
-                                        <div>
-                                            <span class="h-8 w-8 rounded-full bg-amber-500 flex items-center justify-center ring-8 ring-white">
-                                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                                </svg>
-                                            </span>
-                                        </div>
-                                        <div class="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                                            <div>
-                                                <p class="text-sm text-gray-900">Workflow step <span class="font-medium">Legal Review</span> assigned to Sarah Johnson</p>
-                                            </div>
-                                            <div class="text-right text-sm whitespace-nowrap text-gray-500">
-                                                <time>6h ago</time>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </li>
-                        </ul>
+<!-- Saved Views Row -->
+<div class="mb-8">
+    <div class="flex flex-wrap gap-3">
+        <a href="{% url 'contracts:contract_list' %}?status=draft" class="inline-flex items-center px-4 py-2 border border-stroke rounded-lg text-sm text-muted hover:bg-surface hover:text-ink">
+            <i data-lucide="edit-3" class="h-4 w-4 mr-2"></i>
+            Draft Contracts
+            <span class="ml-2 badge badge-neutral">{{ draft_count|default:0 }}</span>
+        </a>
+        <a href="{% url 'contracts:contract_list' %}?status=review" class="inline-flex items-center px-4 py-2 border border-stroke rounded-lg text-sm text-muted hover:bg-surface hover:text-ink">
+            <i data-lucide="eye" class="h-4 w-4 mr-2"></i>
+            Under Review
+            <span class="ml-2 badge badge-warning">{{ review_count|default:0 }}</span>
+        </a>
+        <a href="{% url 'contracts:contract_list' %}?status=active" class="inline-flex items-center px-4 py-2 border border-stroke rounded-lg text-sm text-muted hover:bg-surface hover:text-ink">
+            <i data-lucide="check-circle" class="h-4 w-4 mr-2"></i>
+            Active Contracts
+            <span class="ml-2 badge badge-success">{{ active_count|default:0 }}</span>
+        </a>
+        <a href="{% url 'contracts:legal_task_board' %}?priority=high" class="inline-flex items-center px-4 py-2 border border-stroke rounded-lg text-sm text-muted hover:bg-surface hover:text-ink">
+            <i data-lucide="flag" class="h-4 w-4 mr-2"></i>
+            High Priority Tasks
+            <span class="ml-2 badge badge-danger">{{ high_priority_count|default:0 }}</span>
+        </a>
+    </div>
+</div>
+
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Activity Feed -->
+    <div class="lg:col-span-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="section-header mb-0">Recent Activity</h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-6">
+                    {% for activity in recent_activities %}
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-accent bg-opacity-10 rounded-full flex items-center justify-center">
+                                {% if activity.type == 'contract_created' %}
+                                    <i data-lucide="plus" class="h-4 w-4 text-accent"></i>
+                                {% elif activity.type == 'contract_approved' %}
+                                    <i data-lucide="check" class="h-4 w-4 text-accent"></i>
+                                {% elif activity.type == 'task_completed' %}
+                                    <i data-lucide="check-square" class="h-4 w-4 text-accent"></i>
+                                {% else %}
+                                    <i data-lucide="activity" class="h-4 w-4 text-accent"></i>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm text-ink">
+                                <span class="font-medium">{{ activity.user.get_full_name|default:activity.user.username }}</span>
+                                {{ activity.description }}
+                            </p>
+                            <p class="text-xs text-muted">{{ activity.created_at|timesince }} ago</p>
+                        </div>
                     </div>
+                    {% empty %}
+                    <div class="empty-state">
+                        <div class="empty-state-icon">
+                            <i data-lucide="activity"></i>
+                        </div>
+                        <h3 class="empty-state-title">No recent activity</h3>
+                        <p class="empty-state-description">Activity will appear here as you work with contracts and tasks.</p>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Quick Actions & Shortcuts -->
-        <div class="space-y-6">
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-lg border border-stroke p-6">
-                <h3 class="text-lg font-medium text-ink mb-4">Quick Actions</h3>
-                <div class="space-y-3">
-                    <a href="{% url 'contracts:contract_create' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
+    <!-- Quick Actions & Summary -->
+    <div class="space-y-8">
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="section-header mb-0">Quick Actions</h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <a href="{% url 'contracts:contract_create' %}" class="flex items-center p-4 border border-stroke rounded-lg hover:bg-surface group">
+                        <div class="w-10 h-10 bg-accent bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-accent group-hover:bg-opacity-20">
+                            <i data-lucide="plus" class="h-5 w-5 text-accent"></i>
                         </div>
-                        <div>
-                            <div class="font-medium text-gray-900">New Contract</div>
-                            <div class="text-sm text-gray-500">Create a new contract</div>
-                        </div>
-                    </a>
-                    
-                    <a href="{% url 'contracts:workflow_create' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                        </div>
-                        <div>
-                            <div class="font-medium text-gray-900">Start Workflow</div>
-                            <div class="text-sm text-gray-500">Begin a new process</div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-ink">New Contract</h4>
+                            <p class="text-xs text-muted">Create a new contract</p>
                         </div>
                     </a>
 
-                    <a href="{% url 'contracts:repository' %}" class="flex items-center p-3 border border-stroke rounded-lg hover:bg-gray-50 transition-colors">
-                        <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                            </svg>
+                    <a href="{% url 'contracts:workflow_create' %}" class="flex items-center p-4 border border-stroke rounded-lg hover:bg-surface group">
+                        <div class="w-10 h-10 bg-accent bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-accent group-hover:bg-opacity-20">
+                            <i data-lucide="play" class="h-5 w-5 text-accent"></i>
                         </div>
-                        <div>
-                            <div class="font-medium text-gray-900">Upload Document</div>
-                            <div class="text-sm text-gray-500">Add files to repository</div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-ink">Start Workflow</h4>
+                            <p class="text-xs text-muted">Begin a new workflow</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="flex items-center p-4 border border-stroke rounded-lg hover:bg-surface group">
+                        <div class="w-10 h-10 bg-accent bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-accent group-hover:bg-opacity-20">
+                            <i data-lucide="upload" class="h-5 w-5 text-accent"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-ink">Import</h4>
+                            <p class="text-xs text-muted">Import contracts</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="flex items-center p-4 border border-stroke rounded-lg hover:bg-surface group">
+                        <div class="w-10 h-10 bg-accent bg-opacity-10 rounded-lg flex items-center justify-center group-hover:bg-accent group-hover:bg-opacity-20">
+                            <i data-lucide="file-plus" class="h-5 w-5 text-accent"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-sm font-medium text-ink">Upload</h4>
+                            <p class="text-xs text-muted">Upload documents</p>
                         </div>
                     </a>
                 </div>
             </div>
+        </div>
 
-            <!-- Upcoming Deadlines -->
-            <div class="bg-white rounded-lg border border-stroke p-6">
-                <h3 class="text-lg font-medium text-ink mb-4">Upcoming Deadlines</h3>
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                        <div>
-                            <div class="font-medium text-gray-900">ACME Contract Review</div>
-                            <div class="text-sm text-gray-500">Due tomorrow</div>
-                        </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            Urgent
-                        </span>
+        <!-- Contract Status Summary -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="section-header mb-0">Contract Status</h3>
+            </div>
+            <div class="card-body">
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-muted">Draft</span>
+                        <span class="text-sm font-medium text-ink">{{ draft_count|default:0 }}</span>
                     </div>
-                    
-                    <div class="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
-                        <div>
-                            <div class="font-medium text-gray-900">TechCorp Legal Review</div>
-                            <div class="text-sm text-gray-500">Due in 3 days</div>
-                        </div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                            Soon
-                        </span>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-muted">Under Review</span>
+                        <span class="text-sm font-medium text-ink">{{ review_count|default:0 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-muted">Active</span>
+                        <span class="text-sm font-medium text-ink">{{ active_count|default:0 }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-muted">Expired</span>
+                        <span class="text-sm font-medium text-ink">{{ expired_count|default:0 }}</span>
                     </div>
                 </div>
             </div>

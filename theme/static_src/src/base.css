@@ -2,7 +2,7 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
-/* Design System Tokens - Ironclad Style */
+/* Design System Foundation */
 :root {
   /* Colors */
   --ink: #0B0B0C;
@@ -13,117 +13,52 @@
   --danger: #DC2626;
   --muted: #6B7280;
   --surface: #F9FAFB;
+  --border: #E5E7EB;
 
   /* Typography */
-  --font-base: 14px;
-  --line-base: 16px;
-  --font-section: 24px;
-  --line-section: 28px;
-  --font-page: 32px;
-  --line-page: 36px;
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-size-base: 14px;
+  --line-height-base: 20px;
+  --font-size-lg: 16px;
+  --line-height-lg: 24px;
+  --font-size-xl: 18px;
+  --line-height-xl: 28px;
+  --font-size-2xl: 24px;
+  --line-height-2xl: 32px;
+  --font-size-3xl: 32px;
+  --line-height-3xl: 40px;
 
-  /* Spacing (8px scale) */
-  --space-1: 0.5rem;   /* 8px */
-  --space-2: 1rem;     /* 16px */
-  --space-3: 1.5rem;   /* 24px */
-  --space-4: 2rem;     /* 32px */
-  --space-6: 3rem;     /* 48px */
-  --space-8: 4rem;     /* 64px */
+  /* Spacing */
+  --spacing-unit: 8px;
+  --container-max-width: 1200px;
 }
 
-/* Global Typography */
+/* Global Styles */
+html {
+  font-family: var(--font-family);
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-base);
+  color: var(--ink);
+  background-color: var(--bg);
+}
+
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: var(--font-base);
-  line-height: var(--line-base);
-  color: var(--ink);
-  background-color: var(--bg);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
 }
 
-h1 {
-  font-size: var(--font-page);
-  line-height: var(--line-page);
-  font-weight: 600;
-}
-
-h2 {
-  font-size: var(--font-section);
-  line-height: var(--line-section);
-  font-weight: 600;
-}
-
-/* Layout Grid */
-.container-main {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 1.5rem;
-}
-
-.grid-12 {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-3);
-}
-
-/* Component Base Classes */
-.btn {
-  @apply inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors;
-  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
-  @apply disabled:pointer-events-none disabled:opacity-50;
-  padding: 0.5rem 1rem;
-}
-
-.btn-primary {
-  background-color: var(--accent);
-  color: white;
-}
-
-.btn-primary:hover {
-  background-color: #0d8f63;
-}
-
-.card {
-  background-color: var(--bg);
-  border: 1px solid var(--stroke);
-  border-radius: 0.5rem;
-  padding: var(--space-3);
-}
-
-.stat-card {
-  @apply card;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-
-.stat-number {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: 0.025em;
-}
-
-/* Utilities */
-.space-y-6 > * + * {
-  margin-top: var(--space-6);
-}
-
-.text-muted {
-  color: var(--muted);
-}
-
-.bg-surface {
-  background-color: var(--surface);
-}
-
-/* Focus rings for accessibility */
-.focus-ring:focus-visible {
+/* Focus States for A11y */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+* {
+  transition: colors 150ms ease, background-color 150ms ease, border-color 150ms ease;
 }

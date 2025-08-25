@@ -1,603 +1,382 @@
 
-{% extends "base.html" %}
+{% extends 'base_redesign.html' %}
 {% load static %}
 
 {% block title %}Contracts - Bolton CLM{% endblock %}
 
 {% block content %}
-{% if FEATURE_REDESIGN %}
-<!-- Bolton CLM Contracts Index -->
-<div class="min-h-screen bg-gray-50" x-data="contractsApp()">
-    <!-- Top Bar -->
-    <div class="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div class="max-w-[1200px] mx-auto px-6">
-            <div class="flex items-center justify-between h-16">
-                <h1 class="text-[32px] leading-[36px] font-semibold text-gray-900">Contracts</h1>
-                
-                <div class="flex items-center gap-4">
-                    <!-- Global Search -->
-                    <div class="relative">
-                        <input 
-                            type="search" 
-                            placeholder="Search contracts..." 
-                            class="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-[14px] leading-[16px]"
-                            x-model="searchTerm"
-                            @input="updateFilters()"
-                            x-ref="globalSearch"
-                            @keydown.slash.window.prevent="$refs.globalSearch.focus()"
-                        >
-                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </div>
-                    
-                    <!-- New Contract Button -->
-                    <a href="{% url 'contracts:contract_create' %}" 
-                       class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] leading-[16px] flex items-center gap-2 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                        </svg>
-                        New Contract
-                    </a>
-                </div>
-            </div>
-        </div>
+<!-- Page Header -->
+<div class="flex justify-between items-start mb-8">
+    <div class="page-header">
+        <h1 class="page-title">Contracts</h1>
+        <p class="page-subtitle">Manage your contract lifecycle</p>
     </div>
-
-    <!-- Main Content Container -->
-    <div class="max-w-[1200px] mx-auto px-6 py-6 space-y-6">
-        
-        <!-- Filters Bar -->
-        <div class="bg-white rounded-lg border border-gray-200 p-4">
-            <div class="flex flex-wrap items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <label class="text-[14px] font-medium text-gray-700">Status:</label>
-                    <select x-model="statusFilter" @change="updateFilters()" 
-                            class="border border-gray-300 rounded-md px-3 py-1 text-[14px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All</option>
-                        <option value="DRAFT">Draft</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="ACTIVE">Active</option>
-                        <option value="COMPLETED">Completed</option>
-                        <option value="CANCELLED">Cancelled</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <label class="text-[14px] font-medium text-gray-700">Owner:</label>
-                    <select x-model="ownerFilter" @change="updateFilters()" 
-                            class="border border-gray-300 rounded-md px-3 py-1 text-[14px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All</option>
-                        <option value="me">My Contracts</option>
-                        <option value="unassigned">Unassigned</option>
-                    </select>
-                </div>
-                
-                <div class="flex items-center gap-2">
-                    <label class="text-[14px] font-medium text-gray-700">Value Range:</label>
-                    <input type="number" placeholder="Min" x-model="minValue" @change="updateFilters()"
-                           class="w-24 border border-gray-300 rounded-md px-3 py-1 text-[14px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <span class="text-gray-500">to</span>
-                    <input type="number" placeholder="Max" x-model="maxValue" @change="updateFilters()"
-                           class="w-24 border border-gray-300 rounded-md px-3 py-1 text-[14px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                </div>
-                
-                <button @click="clearFilters()" 
-                        class="text-[14px] text-blue-600 hover:text-blue-800 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1">
-                    Clear Filters
-                </button>
-            </div>
-        </div>
-
-        <!-- Saved Views Chips -->
-        <div class="flex items-center gap-2">
-            <span class="text-[14px] leading-[16px] font-medium text-gray-700">Saved Views:</span>
-            <button @click="applySavedView('pending-review')"
-                    class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                Pending Review
-            </button>
-            <button @click="applySavedView('active-contracts')"
-                    class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-green-100 text-green-800 hover:bg-green-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                Active Contracts
-            </button>
-            <button @click="applySavedView('high-value')"
-                    class="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-medium bg-purple-100 text-purple-800 hover:bg-purple-200 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2">
-                High Value
-            </button>
-        </div>
-
-        <!-- Contracts Table -->
-        <div class="bg-white rounded-lg border border-gray-200">
-            <div class="px-6 py-4 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <h2 class="text-[24px] leading-[28px] font-semibold text-gray-900">Contracts</h2>
-                    <div class="text-[14px] text-gray-500">
-                        <span x-text="filteredContracts.length"></span> contracts
-                    </div>
-                </div>
-            </div>
-            
-            <div class="overflow-hidden">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50 sticky top-16 z-20">
-                        <tr>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                @click="sortBy('title')">
-                                Name
-                                <svg class="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                </svg>
-                            </th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                @click="sortBy('status')">
-                                Stage
-                                <svg class="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                </svg>
-                            </th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                @click="sortBy('start_date')">
-                                Agreement Date
-                                <svg class="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                </svg>
-                            </th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Region</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                @click="sortBy('value')">
-                                Value
-                                <svg class="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                </svg>
-                            </th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Counterparty</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider">Owner</th>
-                            <th class="px-6 py-3 text-left text-[12px] font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
-                                @click="sortBy('updated_at')">
-                                Updated
-                                <svg class="inline w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
-                                </svg>
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        <template x-for="contract in paginatedContracts" :key="contract.id">
-                            <tr class="hover:bg-gray-50 cursor-pointer focus:bg-gray-100 focus:ring-2 focus:ring-blue-500 focus:ring-inset" 
-                                tabindex="0"
-                                @click="openContractDrawer(contract)"
-                                @keydown.enter="openContractDrawer(contract)"
-                                role="button"
-                                :aria-label="`Open contract ${contract.title}`">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-[14px] leading-[16px] font-medium text-gray-900" x-text="contract.title.length > 40 ? contract.title.slice(0, 40) + '...' : contract.title"></div>
-                                    <div class="text-[12px] text-gray-500" x-text="`ID: ${contract.id}`"></div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium"
-                                          :class="{
-                                              'bg-green-100 text-green-800': contract.status === 'ACTIVE',
-                                              'bg-yellow-100 text-yellow-800': contract.status === 'PENDING',
-                                              'bg-gray-100 text-gray-800': contract.status === 'DRAFT',
-                                              'bg-blue-100 text-blue-800': contract.status === 'COMPLETED',
-                                              'bg-red-100 text-red-800': contract.status === 'CANCELLED'
-                                          }"
-                                          x-text="contract.status_display"></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900" x-text="contract.start_date || '—'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900" x-text="contract.region || 'North America'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900" x-text="contract.value ? `$${contract.value.toLocaleString()}` : '—'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900" x-text="contract.counterparty || '—'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-900" x-text="contract.owner || 'System'"></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-[14px] text-gray-500" x-text="contract.updated_at"></td>
-                            </tr>
-                        </template>
-                    </tbody>
-                </table>
-                
-                <!-- Empty State -->
-                <div x-show="filteredContracts.length === 0" class="text-center py-12">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-[14px] font-medium text-gray-900">No contracts found</h3>
-                    <p class="mt-1 text-[14px] text-gray-500">Try adjusting your filters or create a new contract.</p>
-                    <div class="mt-6">
-                        <a href="{% url 'contracts:contract_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-[14px] font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                            </svg>
-                            New Contract
-                        </a>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Pagination -->
-            <div class="bg-white px-6 py-3 border-t border-gray-200" x-show="totalPages > 1">
-                <div class="flex items-center justify-between">
-                    <div class="text-[14px] text-gray-700">
-                        Showing <span x-text="((currentPage - 1) * itemsPerPage) + 1"></span> to 
-                        <span x-text="Math.min(currentPage * itemsPerPage, filteredContracts.length)"></span> of 
-                        <span x-text="filteredContracts.length"></span> results
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button @click="currentPage = Math.max(1, currentPage - 1)" 
-                                :disabled="currentPage === 1"
-                                :class="currentPage === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'"
-                                class="px-3 py-1 border border-gray-300 rounded-md text-[14px] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            Previous
-                        </button>
-                        <span class="text-[14px] text-gray-700" x-text="`Page ${currentPage} of ${totalPages}`"></span>
-                        <button @click="currentPage = Math.min(totalPages, currentPage + 1)" 
-                                :disabled="currentPage === totalPages"
-                                :class="currentPage === totalPages ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'"
-                                class="px-3 py-1 border border-gray-300 rounded-md text-[14px] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                            Next
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Contract Drawer -->
-<div x-show="drawerOpen" class="fixed inset-y-0 right-0 w-[480px] bg-white shadow-xl z-50 border-l border-gray-200"
-     x-transition:enter="transition ease-in-out duration-300"
-     x-transition:enter-start="transform translate-x-full"
-     x-transition:enter-end="transform translate-x-0"
-     x-transition:leave="transition ease-in-out duration-300"
-     x-transition:leave-start="transform translate-x-0"
-     x-transition:leave-end="transform translate-x-full">
-    
-    <!-- Drawer Header -->
-    <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
-        <h3 class="text-[18px] font-semibold text-gray-900">Contract Details</h3>
-        <button @click="closeContractDrawer()" 
-                class="text-gray-400 hover:text-gray-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-                aria-label="Close drawer">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
+    <div class="flex space-x-3">
+        <button class="btn btn-secondary" onclick="toggleFilters()">
+            <i data-lucide="filter" class="h-4 w-4 mr-2"></i>
+            Filters
         </button>
-    </div>
-    
-    <!-- Drawer Content -->
-    <div class="p-6 space-y-6 overflow-y-auto h-full" x-show="selectedContract">
-        <div class="space-y-4">
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Contract Name</label>
-                <div class="text-[16px] font-medium text-gray-900" x-text="selectedContract?.title"></div>
-            </div>
-            
-            <div class="grid grid-cols-2 gap-4">
-                <div>
-                    <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Status</label>
-                    <div class="text-[14px] text-gray-900" x-text="selectedContract?.status_display"></div>
-                </div>
-                <div>
-                    <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Value</label>
-                    <div class="text-[14px] text-gray-900" x-text="selectedContract?.value ? `$${selectedContract.value.toLocaleString()}` : '—'"></div>
-                </div>
-            </div>
-            
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Counterparty</label>
-                <div class="text-[14px] text-gray-900" x-text="selectedContract?.counterparty || '—'"></div>
-            </div>
-            
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Workflow Progress</label>
-                <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
-                </div>
-                <div class="text-[12px] text-gray-500 mt-1">65% Complete</div>
-            </div>
-            
-            <div>
-                <label class="text-[12px] font-medium text-gray-500 uppercase tracking-wide">Latest File Versions</label>
-                <div class="mt-2 space-y-2">
-                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-[12px] text-gray-900">Contract_v3.pdf</span>
-                        </div>
-                        <span class="text-[12px] text-gray-500">2 days ago</span>
-                    </div>
-                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                        <div class="flex items-center gap-2">
-                            <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd"></path>
-                            </svg>
-                            <span class="text-[12px] text-gray-900">Terms_Amendment.docx</span>
-                        </div>
-                        <span class="text-[12px] text-gray-500">1 week ago</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Action Buttons -->
-        <div class="border-t pt-6 space-y-3">
-            <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                Edit Contract
-            </button>
-            <button class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium text-[14px] focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                Start/Advance Workflow
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- Drawer Overlay -->
-<div x-show="drawerOpen" @click="closeContractDrawer()" class="fixed inset-0 bg-black bg-opacity-50 z-40"></div>
-
-<script>
-function contractsApp() {
-    return {
-        // State
-        contracts: {{ contracts_json|safe }},
-        filteredContracts: [],
-        selectedContract: null,
-        drawerOpen: false,
-        
-        // Filters
-        searchTerm: '',
-        statusFilter: '',
-        ownerFilter: '',
-        minValue: '',
-        maxValue: '',
-        
-        // Sorting
-        sortField: '',
-        sortDirection: 'asc',
-        
-        // Pagination
-        currentPage: 1,
-        itemsPerPage: 20,
-        
-        init() {
-            this.filteredContracts = [...this.contracts];
-            this.loadFiltersFromURL();
-            this.applyFilters();
-        },
-        
-        get paginatedContracts() {
-            const start = (this.currentPage - 1) * this.itemsPerPage;
-            const end = start + this.itemsPerPage;
-            return this.filteredContracts.slice(start, end);
-        },
-        
-        get totalPages() {
-            return Math.ceil(this.filteredContracts.length / this.itemsPerPage);
-        },
-        
-        loadFiltersFromURL() {
-            const params = new URLSearchParams(window.location.search);
-            this.statusFilter = params.get('status') || '';
-            this.ownerFilter = params.get('owner') || '';
-            this.searchTerm = params.get('search') || '';
-            this.minValue = params.get('min_value') || '';
-            this.maxValue = params.get('max_value') || '';
-        },
-        
-        updateFilters() {
-            this.applyFilters();
-            this.updateURL();
-            this.currentPage = 1;
-        },
-        
-        applyFilters() {
-            this.filteredContracts = this.contracts.filter(contract => {
-                // Search filter
-                if (this.searchTerm && !contract.title.toLowerCase().includes(this.searchTerm.toLowerCase())) {
-                    return false;
-                }
-                
-                // Status filter
-                if (this.statusFilter && contract.status !== this.statusFilter) {
-                    return false;
-                }
-                
-                // Owner filter
-                if (this.ownerFilter === 'me' && contract.owner !== 'Current User') {
-                    return false;
-                }
-                if (this.ownerFilter === 'unassigned' && contract.owner) {
-                    return false;
-                }
-                
-                // Value range filter
-                if (this.minValue && contract.value < parseInt(this.minValue)) {
-                    return false;
-                }
-                if (this.maxValue && contract.value > parseInt(this.maxValue)) {
-                    return false;
-                }
-                
-                return true;
-            });
-            
-            // Apply sorting
-            if (this.sortField) {
-                this.filteredContracts.sort((a, b) => {
-                    let aVal = a[this.sortField];
-                    let bVal = b[this.sortField];
-                    
-                    if (typeof aVal === 'string') {
-                        aVal = aVal.toLowerCase();
-                        bVal = bVal.toLowerCase();
-                    }
-                    
-                    if (this.sortDirection === 'asc') {
-                        return aVal > bVal ? 1 : -1;
-                    } else {
-                        return aVal < bVal ? 1 : -1;
-                    }
-                });
-            }
-        },
-        
-        updateURL() {
-            const params = new URLSearchParams();
-            if (this.statusFilter) params.set('status', this.statusFilter);
-            if (this.ownerFilter) params.set('owner', this.ownerFilter);
-            if (this.searchTerm) params.set('search', this.searchTerm);
-            if (this.minValue) params.set('min_value', this.minValue);
-            if (this.maxValue) params.set('max_value', this.maxValue);
-            
-            const newURL = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
-            window.history.pushState({}, '', newURL);
-        },
-        
-        clearFilters() {
-            this.searchTerm = '';
-            this.statusFilter = '';
-            this.ownerFilter = '';
-            this.minValue = '';
-            this.maxValue = '';
-            this.updateFilters();
-        },
-        
-        sortBy(field) {
-            if (this.sortField === field) {
-                this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
-            } else {
-                this.sortField = field;
-                this.sortDirection = 'asc';
-            }
-            this.applyFilters();
-        },
-        
-        applySavedView(viewType) {
-            this.clearFilters();
-            if (viewType === 'pending-review') {
-                this.statusFilter = 'PENDING';
-            } else if (viewType === 'active-contracts') {
-                this.statusFilter = 'ACTIVE';
-            } else if (viewType === 'high-value') {
-                this.minValue = '100000';
-            }
-            this.updateFilters();
-        },
-        
-        openContractDrawer(contract) {
-            this.selectedContract = contract;
-            this.drawerOpen = true;
-        },
-        
-        closeContractDrawer() {
-            this.drawerOpen = false;
-            this.selectedContract = null;
-        }
-    }
-}
-
-// Global search focus on "/"
-document.addEventListener('keydown', function(e) {
-    if (e.key === '/' && !e.target.matches('input, textarea, [contenteditable]')) {
-        e.preventDefault();
-        document.querySelector('[x-ref="globalSearch"]').focus();
-    }
-});
-
-// Keyboard navigation for table rows
-document.addEventListener('keydown', function(e) {
-    if (e.target.matches('tr[tabindex]')) {
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const next = e.target.nextElementSibling;
-            if (next) next.focus();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const prev = e.target.previousElementSibling;
-            if (prev) prev.focus();
-        }
-    }
-});
-</script>
-
-{% else %}
-<!-- Original Legacy Template -->
-<div class="space-y-6">
-    <div class="flex justify-between items-center">
-        <h1 class="text-2xl font-bold text-gray-900">Contracts</h1>
-        <a href="{% url 'contracts:contract_create' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md">
+        <a href="{% url 'contracts:contract_create' %}" class="btn btn-primary">
+            <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
             New Contract
         </a>
     </div>
+</div>
 
-    <div class="bg-white shadow rounded-lg">
-        <div class="px-4 py-5 sm:p-6">
-            {% if contracts %}
-                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
-                    <table class="min-w-full divide-y divide-gray-300">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Title
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Status
-                                </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Created
-                                </th>
-                                <th class="relative px-6 py-3">
-                                    <span class="sr-only">Actions</span>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            {% for contract in contracts %}
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">
-                                        <a href="{% url 'contracts:contract_detail' contract.pk %}" class="text-teal-600 hover:text-teal-900">
-                                            {{ contract.title }}
-                                        </a>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        {% if contract.status == 'ACTIVE' %}bg-green-100 text-green-800
-                                        {% elif contract.status == 'PENDING' %}bg-yellow-100 text-yellow-800
-                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                                        {{ contract.get_status_display }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ contract.created_at|date:"M d, Y" }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <a href="{% url 'contracts:contract_detail' contract.pk %}" class="text-teal-600 hover:text-teal-900">
-                                        View
-                                    </a>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+<!-- Filters Panel -->
+<div id="filters-panel" class="hidden mb-6">
+    <div class="card">
+        <div class="card-body">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label class="label">Status</label>
+                    <select name="status" class="input">
+                        <option value="">All Status</option>
+                        <option value="draft" {% if request.GET.status == 'draft' %}selected{% endif %}>Draft</option>
+                        <option value="review" {% if request.GET.status == 'review' %}selected{% endif %}>Under Review</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="expired" {% if request.GET.status == 'expired' %}selected{% endif %}>Expired</option>
+                    </select>
                 </div>
-            {% else %}
-                <div class="text-center">
-                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
-                    <h3 class="mt-2 text-sm font-medium text-gray-900">No contracts</h3>
-                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new contract.</p>
-                    <div class="mt-6">
-                        <a href="{% url 'contracts:contract_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700">
-                            New Contract
-                        </a>
-                    </div>
+                <div>
+                    <label class="label">Owner</label>
+                    <select name="owner" class="input">
+                        <option value="">All Owners</option>
+                        {% for user in owners %}
+                        <option value="{{ user.id }}" {% if request.GET.owner == user.id|stringformat:'s' %}selected{% endif %}>
+                            {{ user.get_full_name|default:user.username }}
+                        </option>
+                        {% endfor %}
+                    </select>
                 </div>
-            {% endif %}
+                <div>
+                    <label class="label">Date Range</label>
+                    <input type="date" name="date_from" value="{{ request.GET.date_from }}" class="input">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                    <a href="{% url 'contracts:contract_list' %}" class="btn btn-secondary ml-2">Clear</a>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-{% endif %}
+
+<!-- Bulk Actions -->
+<div id="bulk-actions" class="hidden mb-6">
+    <div class="flex items-center justify-between p-4 bg-accent bg-opacity-10 border border-accent border-opacity-20 rounded-lg">
+        <div class="flex items-center">
+            <span class="text-sm text-accent font-medium" id="selected-count">0 contracts selected</span>
+        </div>
+        <div class="flex space-x-3">
+            <button class="btn btn-sm btn-secondary" onclick="bulkAction('assign')">
+                <i data-lucide="user-plus" class="h-4 w-4 mr-1"></i>
+                Assign
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="bulkAction('tag')">
+                <i data-lucide="tag" class="h-4 w-4 mr-1"></i>
+                Tag
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="bulkAction('archive')">
+                <i data-lucide="archive" class="h-4 w-4 mr-1"></i>
+                Archive
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Contracts Table -->
+<div class="card">
+    <div class="overflow-x-auto">
+        <table class="table">
+            <thead class="table-header">
+                <tr>
+                    <th class="table-header-cell w-8">
+                        <input type="checkbox" id="select-all" class="rounded border-stroke">
+                    </th>
+                    <th class="table-header-cell">Name</th>
+                    <th class="table-header-cell">Stage</th>
+                    <th class="table-header-cell">Agreement Date</th>
+                    <th class="table-header-cell">Region</th>
+                    <th class="table-header-cell">Value</th>
+                    <th class="table-header-cell">Counterparty</th>
+                    <th class="table-header-cell">Owner</th>
+                    <th class="table-header-cell">Updated</th>
+                    <th class="table-header-cell w-16"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contract in contracts %}
+                <tr class="table-row cursor-pointer" onclick="openContractDrawer({{ contract.id }})" data-contract-id="{{ contract.id }}">
+                    <td class="table-cell" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="contract-checkbox rounded border-stroke" value="{{ contract.id }}">
+                    </td>
+                    <td class="table-cell">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 w-8 h-8 bg-accent bg-opacity-10 rounded-lg flex items-center justify-center mr-3">
+                                <i data-lucide="file-text" class="h-4 w-4 text-accent"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-ink">{{ contract.title }}</div>
+                                <div class="text-xs text-muted">{{ contract.contract_type|title }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="table-cell">
+                        {% if contract.status == 'DRAFT' %}
+                            <span class="badge badge-neutral">Draft</span>
+                        {% elif contract.status == 'REVIEW' %}
+                            <span class="badge badge-warning">Review</span>
+                        {% elif contract.status == 'ACTIVE' %}
+                            <span class="badge badge-success">Active</span>
+                        {% elif contract.status == 'EXPIRED' %}
+                            <span class="badge badge-danger">Expired</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-cell">
+                        {% if contract.agreement_date %}
+                            <div class="text-sm">{{ contract.agreement_date }}</div>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-cell">
+                        <span class="text-sm">{{ contract.jurisdiction|default:"—" }}</span>
+                    </td>
+                    <td class="table-cell">
+                        {% if contract.value %}
+                            <div class="font-medium">${{ contract.value|floatformat:0 }}</div>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="table-cell">
+                        <span class="text-sm">{{ contract.counterparty|default:"—" }}</span>
+                    </td>
+                    <td class="table-cell">
+                        <div class="flex items-center">
+                            <div class="w-6 h-6 bg-accent rounded-full flex items-center justify-center mr-2">
+                                <span class="text-white text-xs font-medium">
+                                    {{ contract.created_by.first_name.0|default:contract.created_by.username.0|upper }}
+                                </span>
+                            </div>
+                            <span class="text-sm">{{ contract.created_by.get_full_name|default:contract.created_by.username }}</span>
+                        </div>
+                    </td>
+                    <td class="table-cell">
+                        <div class="text-sm">{{ contract.updated_at|date:"M d" }}</div>
+                        <div class="text-xs text-muted">{{ contract.updated_at|time:"H:i" }}</div>
+                    </td>
+                    <td class="table-cell" onclick="event.stopPropagation()">
+                        <button class="p-1 text-muted hover:text-ink rounded" onclick="openContractMenu({{ contract.id }})">
+                            <i data-lucide="more-horizontal" class="h-4 w-4"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="10" class="table-cell">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">
+                                <i data-lucide="file-text"></i>
+                            </div>
+                            <h3 class="empty-state-title">No contracts found</h3>
+                            <p class="empty-state-description">Get started by creating your first contract.</p>
+                            <div class="empty-state-actions">
+                                <a href="{% url 'contracts:contract_create' %}" class="btn btn-primary">
+                                    <i data-lucide="plus" class="h-4 w-4 mr-2"></i>
+                                    Create Contract
+                                </a>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Contract Preview Drawer -->
+<div id="contract-drawer" class="drawer-overlay hidden" onclick="closeContractDrawer()">
+    <div class="drawer" onclick="event.stopPropagation()">
+        <div class="drawer-header">
+            <h3 class="text-lg font-semibold text-ink" id="drawer-title">Contract Details</h3>
+            <button onclick="closeContractDrawer()" class="p-2 text-muted hover:text-ink rounded-lg">
+                <i data-lucide="x" class="h-5 w-5"></i>
+            </button>
+        </div>
+        <div class="drawer-body" id="drawer-content">
+            <!-- Content will be loaded dynamically -->
+            <div class="animate-pulse space-y-4">
+                <div class="skeleton h-6 w-3/4"></div>
+                <div class="skeleton h-4 w-full"></div>
+                <div class="skeleton h-4 w-5/6"></div>
+                <div class="skeleton h-32 w-full"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Filter toggle
+function toggleFilters() {
+    document.getElementById('filters-panel').classList.toggle('hidden');
+}
+
+// Contract selection
+let selectedContracts = new Set();
+
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.contract-checkbox');
+    checkboxes.forEach(cb => {
+        cb.checked = this.checked;
+        if (this.checked) {
+            selectedContracts.add(cb.value);
+        } else {
+            selectedContracts.delete(cb.value);
+        }
+    });
+    updateBulkActions();
+});
+
+document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('contract-checkbox')) {
+        if (e.target.checked) {
+            selectedContracts.add(e.target.value);
+        } else {
+            selectedContracts.delete(e.target.value);
+        }
+        updateBulkActions();
+    }
+});
+
+function updateBulkActions() {
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+    
+    if (selectedContracts.size > 0) {
+        bulkActions.classList.remove('hidden');
+        selectedCount.textContent = `${selectedContracts.size} contract${selectedContracts.size !== 1 ? 's' : ''} selected`;
+    } else {
+        bulkActions.classList.add('hidden');
+    }
+}
+
+// Contract drawer
+function openContractDrawer(contractId) {
+    const drawer = document.getElementById('contract-drawer');
+    drawer.classList.remove('hidden');
+    
+    // Load contract details via AJAX
+    fetch(`/contracts/${contractId}/`)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('drawer-title').textContent = data.title;
+            document.getElementById('drawer-content').innerHTML = `
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="font-medium text-ink mb-2">Overview</h4>
+                        <div class="space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-muted">Status</span>
+                                <span class="badge badge-${data.status.toLowerCase()}">${data.status}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted">Value</span>
+                                <span>${data.value ? '$' + data.value : '—'}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-muted">Counterparty</span>
+                                <span>${data.counterparty || '—'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-ink mb-2">Tasks</h4>
+                        <div class="space-y-2">
+                            ${data.tasks.map(task => `
+                                <div class="flex items-center justify-between p-3 bg-surface rounded-lg">
+                                    <span class="text-sm">${task.title}</span>
+                                    <span class="badge badge-${task.status.toLowerCase()}">${task.status}</span>
+                                </div>
+                            `).join('') || '<p class="text-muted text-sm">No tasks</p>'}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-ink mb-2">Files</h4>
+                        <div class="space-y-2">
+                            ${data.files.map(file => `
+                                <div class="flex items-center p-3 bg-surface rounded-lg">
+                                    <i data-lucide="file" class="h-4 w-4 text-muted mr-3"></i>
+                                    <span class="text-sm">${file.name}</span>
+                                </div>
+                            `).join('') || '<p class="text-muted text-sm">No files</p>'}
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-medium text-ink mb-2">Comments</h4>
+                        <div class="space-y-3">
+                            ${data.comments.map(comment => `
+                                <div class="flex space-x-3">
+                                    <div class="w-6 h-6 bg-accent rounded-full flex items-center justify-center">
+                                        <span class="text-white text-xs">${comment.user.charAt(0)}</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <div class="text-sm">${comment.text}</div>
+                                        <div class="text-xs text-muted">${comment.created_at}</div>
+                                    </div>
+                                </div>
+                            `).join('') || '<p class="text-muted text-sm">No comments</p>'}
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        })
+        .catch(error => {
+            document.getElementById('drawer-content').innerHTML = '<p class="text-danger">Error loading contract details</p>';
+        });
+}
+
+function closeContractDrawer() {
+    document.getElementById('contract-drawer').classList.add('hidden');
+}
+
+// Bulk actions
+function bulkAction(action) {
+    if (selectedContracts.size === 0) return;
+    
+    const contractIds = Array.from(selectedContracts);
+    console.log(`Performing ${action} on contracts:`, contractIds);
+    
+    // Implement bulk action logic here
+    // For now, just show a toast message
+    showToast(`${action.charAt(0).toUpperCase() + action.slice(1)} action applied to ${contractIds.length} contracts`);
+}
+
+// Toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+        <div class="flex items-center">
+            <i data-lucide="${type === 'success' ? 'check' : 'info'}" class="h-4 w-4 mr-3"></i>
+            <span>${message}</span>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    lucide.createIcons();
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Initialize icons
+lucide.createIcons();
+</script>
 {% endblock %}
