@@ -9,7 +9,7 @@ packages = ["freetype", "lcms2", "libimagequant", "libjpeg", "libtiff", "libwebp
 run = ["sh", "-c", "run"]
 
 [workflows]
-runButton = "Start Django Server"
+runButton = "Django Server"
 
 [[workflows.workflow]]
 name = "Start Django Server"
@@ -24,6 +24,22 @@ args = "python manage.py migrate"
 task = "shell.exec"
 args = "python manage.py runserver 0.0.0.0:8000"
 
+[[workflows.workflow]]
+name = "Django Server"
+author = 40360714
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python manage.py migrate"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python manage.py runserver 0.0.0.0:$PORT"
+
+[env]
+PORT = "5000"
+
 [[ports]]
-localPort = 8000
+localPort = 5000
 externalPort = 80
