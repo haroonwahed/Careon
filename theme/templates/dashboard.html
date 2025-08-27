@@ -1,10 +1,6 @@
 
-{% load static %}
-{% if FEATURE_REDESIGN %}
-{% extends "base_redesign.html" %}
-{% else %}
 {% extends "base.html" %}
-{% endif %}
+{% load static %}
 
 {% block title %}Dashboard - Bolton CLM{% endblock %}
 
@@ -173,6 +169,12 @@
                         {% endif %}
                     </td>
                     <td>{{ contract.counterparty|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-gray-500 py-8">
+                        No recent contracts found.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
