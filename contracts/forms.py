@@ -1,3 +1,4 @@
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
@@ -13,9 +14,11 @@ User = get_user_model()
 class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract
-        fields = ['title', 'content', 'status']
+        fields = ['title', 'content', 'status', 'counterparty', 'value', 'start_date', 'end_date']
         widgets = {
             'content': forms.Textarea(attrs={'rows': 10}),
+            'start_date': forms.DateInput(attrs={'type': 'date'}),
+            'end_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
 
@@ -38,6 +41,9 @@ class ChecklistItemForm(forms.ModelForm):
     class Meta:
         model = ChecklistItem
         fields = ['title', 'description', 'is_completed', 'order']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+        }
 
 
 class DueDiligenceProcessForm(forms.ModelForm):
@@ -96,37 +102,55 @@ class BudgetExpenseForm(forms.ModelForm):
 class WorkflowForm(forms.ModelForm):
     class Meta:
         model = Workflow
-        fields = ['title', 'description', 'template']
+        fields = ['title', 'description', 'template', 'contract']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
 
 
 class WorkflowTemplateForm(forms.ModelForm):
     class Meta:
         model = WorkflowTemplate
         fields = ['name', 'description', 'category']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
 
 
 class TrademarkRequestForm(forms.ModelForm):
     class Meta:
         model = TrademarkRequest
         fields = ['mark_text', 'description', 'goods_services', 'filing_basis']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'goods_services': forms.Textarea(attrs={'rows': 4}),
+        }
 
 
 class LegalTaskForm(forms.ModelForm):
     class Meta:
         model = LegalTask
-        fields = ['title', 'description', 'priority', 'due_date', 'assigned_to']
+        fields = ['title', 'description', 'priority', 'due_date', 'assigned_to', 'contract']
         widgets = {
             'due_date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.Textarea(attrs={'rows': 4}),
         }
 
 
 class RiskLogForm(forms.ModelForm):
     class Meta:
         model = RiskLog
-        fields = ['title', 'description', 'risk_level', 'mitigation_strategy']
+        fields = ['title', 'description', 'risk_level', 'mitigation_plan', 'contract']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'mitigation_plan': forms.Textarea(attrs={'rows': 4}),
+        }
 
 
 class ComplianceChecklistForm(forms.ModelForm):
     class Meta:
         model = ComplianceChecklist
-        fields = ['title', 'description', 'regulation_type']
+        fields = ['title', 'description', 'regulation_type', 'contract']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
