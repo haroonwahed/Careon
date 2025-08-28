@@ -70,58 +70,6 @@ class ContractListView(LoginRequiredMixin, ListView):
 
         return context
 
-class WorkflowDetailView(LoginRequiredMixin, DetailView):
-    model = Workflow
-    template_name = 'contracts/workflow_detail.html'
-    context_object_name = 'workflow'
-
-class WorkflowCreateView(LoginRequiredMixin, CreateView):
-    model = Workflow
-    form_class = WorkflowForm
-    template_name = 'contracts/workflow_form.html'
-    success_url = reverse_lazy('contracts:workflow_dashboard')
-
-class WorkflowTemplateListView(LoginRequiredMixin, ListView):
-    model = WorkflowTemplate
-    template_name = 'contracts/workflow_template_list.html'
-    context_object_name = 'workflow_templates'
-
-class WorkflowTemplateCreateView(LoginRequiredMixin, CreateView):
-    model = WorkflowTemplate
-    form_class = WorkflowTemplateForm
-    template_name = 'contracts/workflow_template_form.html'
-    success_url = reverse_lazy('contracts:workflow_template_list')
-
-class ComplianceChecklistUpdateView(LoginRequiredMixin, UpdateView):
-    model = ComplianceChecklist
-    form_class = ComplianceChecklistForm
-    template_name = 'contracts/compliance_checklist_form.html'
-    success_url = reverse_lazy('contracts:compliance_checklist_list')
-
-class ToggleChecklistItemView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        item = get_object_or_404(ChecklistItem, pk=pk)
-        item.is_completed = not item.is_completed
-        item.save()
-        return redirect('contracts:compliance_checklist_detail', pk=item.checklist.pk)
-
-class AddChecklistItemView(LoginRequiredMixin, CreateView):
-    model = ChecklistItem
-    form_class = ChecklistItemForm
-    template_name = 'contracts/checklist_item_form.html'
-
-    def form_valid(self, form):
-        form.instance.checklist_id = self.kwargs['checklist_pk']
-        return super().form_valid(form)
-
-    def get_success_url(self):
-        return reverse_lazy('contracts:compliance_checklist_detail', kwargs={'pk': self.kwargs['checklist_pk']})
-
-class RepositoryView(LoginRequiredMixin, ListView):
-    model = Contract
-    template_name = 'contracts/repository.html'
-    context_object_name = 'contracts'
-
 class ContractDetailView(LoginRequiredMixin, DetailView):
     model = Contract
     template_name = 'contracts/contract_detail.html'
@@ -129,92 +77,110 @@ class ContractDetailView(LoginRequiredMixin, DetailView):
 
 class ContractCreateView(LoginRequiredMixin, CreateView):
     model = Contract
-    fields = ['title', 'content', 'status']
+    fields = ['title', 'content', 'status', 'counterparty', 'value', 'start_date', 'end_date']
     template_name = 'contracts/contract_form.html'
     success_url = reverse_lazy('contracts:contract_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
 class ContractUpdateView(LoginRequiredMixin, UpdateView):
     model = Contract
-    fields = ['title', 'content', 'status']
+    fields = ['title', 'content', 'status', 'counterparty', 'value', 'start_date', 'end_date']
     template_name = 'contracts/contract_form.html'
     success_url = reverse_lazy('contracts:contract_list')
 
-# --- Missing View Classes ---
-class ProfileView(View):
-    def get(self, request):
-        return render(request, 'profile.html')
+# --- Workflow Views ---
+class WorkflowTemplateListView(LoginRequiredMixin, ListView):
+    model = WorkflowTemplate
+    template_name = 'contracts/workflow_template_list.html'
+    context_object_name = 'workflow_templates'
 
-class SignUpView(CreateView):
-    form_class = UserCreationForm
-    success_url = reverse_lazy('login')
-    template_name = 'registration/register.html'
+class WorkflowTemplateDetailView(LoginRequiredMixin, DetailView):
+    model = WorkflowTemplate
+    template_name = 'contracts/workflow_template_detail.html'
+    context_object_name = 'workflow_template'
 
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        login(self.request, self.object)
-        return response
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['steps'] = WorkflowTemplateStep.objects.filter(template=self.object).order_by('order')
+        return context
 
-@login_required
-def toggle_redesign(request):
-    """Toggle the FEATURE_REDESIGN flag for development"""
-    if request.method == 'POST':
-        import os
-        # Toggle the environment variable
-        current_value = os.environ.get('FEATURE_REDESIGN', 'false').lower()
-        new_value = 'false' if current_value == 'true' else 'true'
-        os.environ['FEATURE_REDESIGN'] = new_value
-        # Clear the cache for feature flags if you have one
-        from config.feature_flags import cache
-        cache.clear()
-        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
-    return redirect('dashboard')
+class WorkflowTemplateCreateView(LoginRequiredMixin, CreateView):
+    model = WorkflowTemplate
+    form_class = WorkflowTemplateForm
+    template_name = 'contracts/workflow_template_form.html'
+    success_url = reverse_lazy('contracts:workflow_template_list')
 
-# Workflow Dashboard View
-class WorkflowDashboardView(LoginRequiredMixin, ListView):
+class WorkflowTemplateUpdateView(LoginRequiredMixin, UpdateView):
+    model = WorkflowTemplate
+    form_class = WorkflowTemplateForm
+    template_name = 'contracts/workflow_template_form.html'
+    success_url = reverse_lazy('contracts:workflow_template_list')
+
+class WorkflowListView(LoginRequiredMixin, ListView):
     model = Workflow
-    template_name = 'contracts/workflow_dashboard.html'
+    template_name = 'contracts/workflow_list.html'
     context_object_name = 'workflows'
 
-# Workflow Step Update View
-class WorkflowStepUpdateView(LoginRequiredMixin, UpdateView):
-    model = WorkflowStep
-    fields = ['status', 'assigned_to', 'due_date']
-    template_name = 'contracts/workflow_step_form.html'
+    def get_queryset(self):
+        queryset = Workflow.objects.all()
+        contract_pk = self.request.GET.get('contract_pk')
+        if contract_pk:
+            queryset = queryset.filter(contract=contract_pk)
+        return queryset.order_by('-created_at')
+
+class WorkflowDetailView(LoginRequiredMixin, DetailView):
+    model = Workflow
+    template_name = 'contracts/workflow_detail.html'
+    context_object_name = 'workflow'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['steps'] = WorkflowStep.objects.filter(workflow=self.object).order_by('order')
+        context['step_form'] = WorkflowForm()
+        return context
+
+class WorkflowCreateView(LoginRequiredMixin, CreateView):
+    model = Workflow
+    form_class = WorkflowForm
+    template_name = 'contracts/workflow_form.html'
 
     def get_success_url(self):
-        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.workflow.pk})
+        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
 
-# Add Missing Negotiation Note View
-class AddNegotiationNoteView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        # Placeholder - redirect back for now
-        return redirect('dashboard')
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
 
-# Function-based views for workflows
-# This workflow_create view is a duplicate of the one defined below, so it is removed.
-# def workflow_create(request):
-#     """Create a new workflow"""
-#     if request.method == 'POST':
-#         # Handle form submission
-#         return redirect('contracts:workflow_dashboard')
-#     return render(request, 'contracts/workflow_form.html')
+class WorkflowUpdateView(LoginRequiredMixin, UpdateView):
+    model = Workflow
+    form_class = WorkflowForm
+    template_name = 'contracts/workflow_form.html'
 
-# This workflow_template_list view is a duplicate of the one defined below, so it is removed.
-# @login_required
-# def workflow_template_list(request):
-#     """List workflow templates"""
-#     return render(request, 'contracts/workflow_template_list.html')
+    def get_success_url(self):
+        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
 
-# This workflow_template_create view is a duplicate of the one defined below, so it is removed.
-# @login_required
-# def workflow_template_create(request):
-#     """Create a new workflow template"""
-#     if request.method == 'POST':
-#         # Handle form submission
-#         return redirect('contracts:workflow_template_list')
-#     return render(request, 'contracts/workflow_template_form.html')
+# --- Legal Task Views ---
+class LegalTaskKanbanView(LoginRequiredMixin, ListView):
+    model = LegalTask
+    template_name = 'contracts/legal_task_board.html'
+    context_object_name = 'legal_tasks'
 
-# --- Missing Views from URLs ---
+class LegalTaskCreateView(LoginRequiredMixin, CreateView):
+    model = LegalTask
+    form_class = LegalTaskForm
+    template_name = 'contracts/legal_task_form.html'
+    success_url = reverse_lazy('contracts:legal_task_kanban')
+
+class LegalTaskUpdateView(LoginRequiredMixin, UpdateView):
+    model = LegalTask
+    form_class = LegalTaskForm
+    template_name = 'contracts/legal_task_form.html'
+    success_url = reverse_lazy('contracts:legal_task_kanban')
+
+# --- Trademark Views ---
 class TrademarkRequestListView(LoginRequiredMixin, ListView):
     model = TrademarkRequest
     template_name = 'contracts/trademark_request_list.html'
@@ -237,23 +203,7 @@ class TrademarkRequestUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'contracts/trademark_request_form.html'
     success_url = reverse_lazy('contracts:trademark_request_list')
 
-class LegalTaskKanbanView(LoginRequiredMixin, ListView):
-    model = LegalTask
-    template_name = 'contracts/legal_task_board.html'
-    context_object_name = 'legal_tasks'
-
-class LegalTaskCreateView(LoginRequiredMixin, CreateView):
-    model = LegalTask
-    form_class = LegalTaskForm
-    template_name = 'contracts/legal_task_form.html'
-    success_url = reverse_lazy('contracts:legal_task_kanban')
-
-class LegalTaskUpdateView(LoginRequiredMixin, UpdateView):
-    model = LegalTask
-    form_class = LegalTaskForm
-    template_name = 'contracts/legal_task_form.html'
-    success_url = reverse_lazy('contracts:legal_task_kanban')
-
+# --- Risk Management Views ---
 class RiskLogListView(LoginRequiredMixin, ListView):
     model = RiskLog
     template_name = 'contracts/risk_log_list.html'
@@ -271,6 +221,7 @@ class RiskLogUpdateView(LoginRequiredMixin, UpdateView):
     template_name = 'contracts/risk_log_form.html'
     success_url = reverse_lazy('contracts:risk_log_list')
 
+# --- Compliance Views ---
 class ComplianceChecklistListView(LoginRequiredMixin, ListView):
     model = ComplianceChecklist
     template_name = 'contracts/compliance_checklist_list.html'
@@ -287,183 +238,13 @@ class ComplianceChecklistCreateView(LoginRequiredMixin, CreateView):
     template_name = 'contracts/compliance_checklist_form.html'
     success_url = reverse_lazy('contracts:compliance_checklist_list')
 
-# Removed duplicate ComplianceChecklistUpdateView
-# Removed duplicate ToggleChecklistItemView
-# Removed duplicate AddChecklistItemView
+class ComplianceChecklistUpdateView(LoginRequiredMixin, UpdateView):
+    model = ComplianceChecklist
+    form_class = ComplianceChecklistForm
+    template_name = 'contracts/compliance_checklist_form.html'
+    success_url = reverse_lazy('contracts:compliance_checklist_list')
 
-class RepositoryView(LoginRequiredMixin, View):
-    def get(self, request):
-        return render(request, 'contracts/repository.html')
-
-# Function-based views for workflows
-def workflow_dashboard(request):
-    """Display workflow dashboard"""
-    workflows = Workflow.objects.all()
-    context = {'workflows': workflows}
-    return render(request, 'contracts/workflow_dashboard.html', context)
-
-def workflow_detail(request, pk):
-    """Display workflow detail"""
-    workflow = get_object_or_404(Workflow, pk=pk)
-    steps = WorkflowStep.objects.filter(workflow=workflow).order_by('order')
-    context = {'workflow': workflow, 'steps': steps}
-    return render(request, 'contracts/workflow_detail.html', context)
-
-def workflow_template_detail(request, pk):
-    """Display workflow template detail"""
-    template = get_object_or_404(WorkflowTemplate, pk=pk)
-    steps = WorkflowTemplateStep.objects.filter(template=template).order_by('order')
-    context = {'workflow_template': template, 'steps': steps}
-    return render(request, 'contracts/workflow_template_detail.html', context)
-
-def workflow_create(request):
-    if request.method == 'POST':
-        form = WorkflowForm(request.POST)
-        if form.is_valid():
-            workflow = form.save(commit=False)
-            workflow.created_by = request.user
-            workflow.save()
-            messages.success(request, 'Workflow created successfully!')
-            return redirect('contracts:workflow_detail', pk=workflow.pk)
-    else:
-        form = WorkflowForm()
-    context = {'form': form, 'page_title': 'Create Workflow'}
-    return render(request, 'contracts/workflow_form.html', context)
-
-def workflow_template_create(request):
-    if request.method == 'POST':
-        form = WorkflowTemplateForm(request.POST)
-        if form.is_valid():
-            template = form.save()
-            return redirect('contracts:workflow_template_list')
-    else:
-        form = WorkflowTemplateForm()
-    return render(request, 'contracts/workflow_template_form.html', {'form': form})
-
-def workflow_template_list(request):
-    templates = WorkflowTemplate.objects.all()
-    return render(request, 'contracts/workflow_template_list.html', {'workflow_templates': templates})
-
-def toggle_dd_item(request, pk):
-    task = get_object_or_404(DueDiligenceTask, pk=pk)
-    if task.status == 'COMPLETED':
-        task.status = 'PENDING'
-    else:
-        task.status = 'COMPLETED'
-    task.save()
-    return redirect('contracts:due_diligence_detail', pk=task.process.pk)
-
-def profile(request):
-    return render(request, 'profile.html')
-
-
-# --- Workflow Views ---
-
-class WorkflowTemplateListView(LoginRequiredMixin, ListView):
-    model = WorkflowTemplate
-    template_name = 'contracts/workflow_template_list.html'
-    context_object_name = 'workflow_templates'
-
-
-class WorkflowTemplateDetailView(LoginRequiredMixin, DetailView):
-    model = WorkflowTemplate
-    template_name = 'contracts/workflow_template_detail.html'
-    context_object_name = 'workflow_template'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['steps'] = WorkflowTemplateStep.objects.filter(template=self.object).order_by('order')
-        return context
-
-
-class WorkflowTemplateCreateView(LoginRequiredMixin, CreateView):
-    model = WorkflowTemplate
-    form_class = WorkflowTemplateForm
-    template_name = 'contracts/workflow_template_form.html'
-    success_url = reverse_lazy('contracts:workflow_template_list')
-
-
-class WorkflowTemplateUpdateView(LoginRequiredMixin, UpdateView):
-    model = WorkflowTemplate
-    form_class = WorkflowTemplateForm
-    template_name = 'contracts/workflow_template_form.html'
-    success_url = reverse_lazy('contracts:workflow_template_list')
-
-
-class AddWorkflowTemplateStepView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        template = get_object_or_404(WorkflowTemplate, pk=pk)
-        # Template step creation logic would go here
-        return redirect('contracts:workflow_template_detail', pk=template.pk)
-
-
-class WorkflowListView(LoginRequiredMixin, ListView):
-    model = Workflow
-    template_name = 'contracts/workflow_list.html'
-    context_object_name = 'workflows'
-
-    def get_queryset(self):
-        queryset = Workflow.objects.all()
-        contract_pk = self.request.GET.get('contract_pk')
-        if contract_pk:
-            queryset = queryset.filter(contract=contract_pk)
-        return queryset.order_by('-created_at')
-
-
-class WorkflowDetailView(LoginRequiredMixin, DetailView):
-    model = Workflow
-    template_name = 'contracts/workflow_detail.html'
-    context_object_name = 'workflow'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['steps'] = WorkflowStep.objects.filter(workflow=self.object).order_by('order')
-        context['step_form'] = WorkflowForm()
-        return context
-
-
-class WorkflowCreateView(LoginRequiredMixin, CreateView):
-    model = Workflow
-    form_class = WorkflowForm
-    template_name = 'contracts/workflow_form.html'
-
-    def get_success_url(self):
-        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
-
-    def form_valid(self, form):
-        form.instance.created_by = self.request.user
-        return super().form_valid(form)
-
-
-class WorkflowUpdateView(LoginRequiredMixin, UpdateView):
-    model = Workflow
-    form_class = WorkflowForm
-    template_name = 'contracts/workflow_form.html'
-
-    def get_success_url(self):
-        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
-
-
-class AddWorkflowStepView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        workflow = get_object_or_404(Workflow, pk=pk)
-        form = WorkflowForm(request.POST)
-        if form.is_valid():
-            step = form.save(commit=False)
-            step.workflow = workflow
-            step.save()
-        return redirect('contracts:workflow_detail', pk=workflow.pk)
-
-
-class WorkflowStepCompleteView(LoginRequiredMixin, View):
-    def post(self, request, pk):
-        step = get_object_or_404(WorkflowStep, pk=pk)
-        step.status = 'COMPLETED'
-        step.save()
-        return redirect('contracts:workflow_detail', pk=step.workflow.pk)
-
-
-# Add remaining missing views
+# --- Due Diligence Views ---
 class DueDiligenceListView(LoginRequiredMixin, ListView):
     model = DueDiligenceProcess
     template_name = 'contracts/due_diligence_list.html'
@@ -485,6 +266,69 @@ class DueDiligenceUpdateView(LoginRequiredMixin, UpdateView):
     form_class = DueDiligenceProcessForm
     template_name = 'contracts/due_diligence_form.html'
     success_url = reverse_lazy('contracts:due_diligence_list')
+
+# --- Budget Views ---
+class BudgetListView(LoginRequiredMixin, ListView):
+    model = Budget
+    template_name = 'contracts/budget_list.html'
+    context_object_name = 'budgets'
+
+class BudgetCreateView(LoginRequiredMixin, CreateView):
+    model = Budget
+    form_class = BudgetForm
+    template_name = 'contracts/budget_form.html'
+    success_url = reverse_lazy('contracts:budget_list')
+
+class BudgetDetailView(LoginRequiredMixin, DetailView):
+    model = Budget
+    template_name = 'contracts/budget_detail.html'
+    context_object_name = 'budget'
+
+class BudgetUpdateView(LoginRequiredMixin, UpdateView):
+    model = Budget
+    form_class = BudgetForm
+    template_name = 'contracts/budget_form.html'
+    success_url = reverse_lazy('contracts:budget_list')
+
+# --- Helper Views ---
+class RepositoryView(LoginRequiredMixin, ListView):
+    model = Contract
+    template_name = 'contracts/repository.html'
+    context_object_name = 'contracts'
+
+class ProfileView(View):
+    def get(self, request):
+        return render(request, 'profile.html')
+
+class SignUpView(CreateView):
+    form_class = UserCreationForm
+    success_url = reverse_lazy('login')
+    template_name = 'registration/register.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        login(self.request, self.object)
+        return response
+
+# --- Action Views ---
+class ToggleChecklistItemView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        item = get_object_or_404(ChecklistItem, pk=pk)
+        item.is_completed = not item.is_completed
+        item.save()
+        return redirect('contracts:compliance_checklist_detail', pk=item.checklist.pk)
+
+class AddChecklistItemView(LoginRequiredMixin, CreateView):
+    model = ChecklistItem
+    form_class = ChecklistItemForm
+    template_name = 'contracts/checklist_item_form.html'
+
+    def form_valid(self, form):
+        form.instance.checklist_id = self.kwargs['checklist_pk']
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:compliance_checklist_detail', kwargs={'pk': self.kwargs['checklist_pk']})
 
 class AddDueDiligenceItemView(LoginRequiredMixin, CreateView):
     model = DueDiligenceTask
@@ -510,28 +354,6 @@ class AddDueDiligenceRiskView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('contracts:due_diligence_detail', kwargs={'pk': self.kwargs['process_pk']})
 
-class BudgetListView(LoginRequiredMixin, ListView):
-    model = Budget
-    template_name = 'contracts/budget_list.html'
-    context_object_name = 'budgets'
-
-class BudgetCreateView(LoginRequiredMixin, CreateView):
-    model = Budget
-    form_class = BudgetForm
-    template_name = 'contracts/budget_form.html'
-    success_url = reverse_lazy('contracts:budget_list')
-
-class BudgetDetailView(LoginRequiredMixin, DetailView):
-    model = Budget
-    template_name = 'contracts/budget_detail.html'
-    context_object_name = 'budget'
-
-class BudgetUpdateView(LoginRequiredMixin, UpdateView):
-    model = Budget
-    form_class = BudgetForm
-    template_name = 'contracts/budget_form.html'
-    success_url = reverse_lazy('contracts:budget_list')
-
 class AddExpenseView(LoginRequiredMixin, CreateView):
     model = BudgetExpense
     form_class = BudgetExpenseForm
@@ -545,12 +367,70 @@ class AddExpenseView(LoginRequiredMixin, CreateView):
     def get_success_url(self):
         return reverse_lazy('contracts:budget_detail', kwargs={'pk': self.kwargs['budget_pk']})
 
-# Remove duplicate function definitions - these are already defined above
+class WorkflowStepUpdateView(LoginRequiredMixin, UpdateView):
+    model = WorkflowStep
+    fields = ['status', 'assigned_to', 'due_date']
+    template_name = 'contracts/workflow_step_form.html'
 
-# Remove duplicate view definitions - these are already defined above
+    def get_success_url(self):
+        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.workflow.pk})
 
-# Duplicate views removed - using the ones defined above
+class WorkflowStepCompleteView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        step = get_object_or_404(WorkflowStep, pk=pk)
+        step.status = 'COMPLETED'
+        step.save()
+        return redirect('contracts:workflow_detail', pk=step.workflow.pk)
 
+class AddWorkflowStepView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        workflow = get_object_or_404(Workflow, pk=pk)
+        form = WorkflowForm(request.POST)
+        if form.is_valid():
+            step = form.save(commit=False)
+            step.workflow = workflow
+            step.save()
+        return redirect('contracts:workflow_detail', pk=workflow.pk)
+
+class AddWorkflowTemplateStepView(LoginRequiredMixin, View):
+    def post(self, request, pk):
+        template = get_object_or_404(WorkflowTemplate, pk=pk)
+        # Template step creation logic would go here
+        return redirect('contracts:workflow_template_detail', pk=template.pk)
+
+# --- Function-based Views ---
+@login_required
+def toggle_redesign(request):
+    """Toggle the FEATURE_REDESIGN flag for development"""
+    if request.method == 'POST':
+        import os
+        # Toggle the environment variable
+        current_value = os.environ.get('FEATURE_REDESIGN', 'false').lower()
+        new_value = 'false' if current_value == 'true' else 'true'
+        os.environ['FEATURE_REDESIGN'] = new_value
+        # Clear the cache for feature flags if you have one
+        from config.feature_flags import cache
+        cache.clear()
+        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
+    return redirect('dashboard')
+
+def workflow_dashboard(request):
+    """Display workflow dashboard"""
+    workflows = Workflow.objects.all()
+    context = {'workflows': workflows}
+    return render(request, 'contracts/workflow_dashboard.html', context)
+
+def toggle_dd_item(request, pk):
+    task = get_object_or_404(DueDiligenceTask, pk=pk)
+    if task.status == 'COMPLETED':
+        task.status = 'PENDING'
+    else:
+        task.status = 'COMPLETED'
+    task.save()
+    return redirect('contracts:due_diligence_detail', pk=task.process.pk)
+
+def profile(request):
+    return render(request, 'profile.html')
 
 # --- Dashboard View ---
 def dashboard(request):
@@ -631,6 +511,17 @@ def dashboard(request):
         logger.error(f"Error fetching compliance data: {e}")
         upcoming_checklists = []
 
+    # Contracts expiring in next 30 days
+    thirty_days_from_now = datetime.now().date() + timedelta(days=30)
+    try:
+        expiring_soon = Contract.objects.filter(
+            end_date__lte=thirty_days_from_now,
+            end_date__gte=datetime.now().date()
+        ).count()
+    except Exception as e:
+        logger.error(f"Error fetching expiring contracts: {e}")
+        expiring_soon = 0
+
     context = {
         'total_contracts': total_contracts,
         'recent_contracts': recent_contracts,
@@ -639,7 +530,7 @@ def dashboard(request):
         'pending_tasks_count': pending_tasks,
         'active_workflows': active_workflows,
         'active_workflows_count': active_workflows,
-        'expiring_soon_count': 0,  # Add placeholder for expiring contracts
+        'expiring_soon_count': expiring_soon,
         'trademark_requests': trademark_requests,
         'pending_trademarks': pending_trademarks,
         'risk_count': risk_count,
@@ -650,34 +541,3 @@ def dashboard(request):
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
-
-def dashboard_view(request):
-    # Calculate stats
-    total_contracts = Contract.objects.count()
-    pending_tasks = LegalTask.objects.filter(status='PENDING').count() if hasattr(globals(), 'LegalTask') else 18
-    active_workflows = Workflow.objects.filter(status='ACTIVE').count()
-
-    # Contracts expiring in next 30 days
-    thirty_days_from_now = datetime.now().date() + timedelta(days=30)
-    expiring_soon = Contract.objects.filter(
-        end_date__lte=thirty_days_from_now,
-        end_date__gte=datetime.now().date()
-    ).count()
-
-    context = {
-        'total_contracts': total_contracts,
-        'pending_tasks': pending_tasks,
-        'active_workflows': active_workflows,
-        'expiring_soon': expiring_soon,
-        'recent_contracts': Contract.objects.order_by('-created_at')[:5],
-        'user': request.user,
-    }
-
-    # Use redesigned template if feature flag is enabled
-    if is_feature_redesign_enabled():
-        return render(request, 'dashboard.html', context)
-
-    # Legacy dashboard for old design
-    if getattr(settings, 'IRONCLAD_MODE', False):
-        return render(request, 'dashboard_ironclad.html', context)
-    return render(request, 'dashboard_old.html', context)
