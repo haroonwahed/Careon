@@ -310,6 +310,19 @@ class SignUpView(CreateView):
         login(self.request, self.object)
         return response
 
+class AddNegotiationNoteView(LoginRequiredMixin, CreateView):
+    model = NegotiationThread
+    fields = ['title', 'content']
+    template_name = 'contracts/negotiation_note_form.html'
+
+    def form_valid(self, form):
+        form.instance.contract_id = self.kwargs['pk']
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:contract_detail', kwargs={'pk': self.kwargs['pk']})
+
 # --- Action Views ---
 class ToggleChecklistItemView(LoginRequiredMixin, View):
     def post(self, request, pk):
@@ -431,6 +444,42 @@ def toggle_dd_item(request, pk):
 
 def profile(request):
     return render(request, 'profile.html')
+
+def workflow_create(request):
+    if request.method == 'POST':
+        form = WorkflowForm(request.POST)
+        if form.is_valid():
+            workflow = form.save(commit=False)
+            workflow.created_by = request.user
+            workflow.save()
+            return redirect('contracts:workflow_detail', pk=workflow.pk)
+    else:
+        form = WorkflowForm()
+    return render(request, 'contracts/workflow_form.html', {'form': form})
+
+def workflow_detail(request, pk):
+    workflow = get_object_or_404(Workflow, pk=pk)
+    steps = WorkflowStep.objects.filter(workflow=workflow).order_by('order')
+    return render(request, 'contracts/workflow_detail.html', {'workflow': workflow, 'steps': steps})
+
+def workflow_template_create(request):
+    if request.method == 'POST':
+        form = WorkflowTemplateForm(request.POST)
+        if form.is_valid():
+            template = form.save()
+            return redirect('contracts:workflow_template_detail', pk=template.pk)
+    else:
+        form = WorkflowTemplateForm()
+    return render(request, 'contracts/workflow_template_form.html', {'form': form})
+
+def workflow_template_detail(request, pk):
+    template = get_object_or_404(WorkflowTemplate, pk=pk)
+    steps = WorkflowTemplateStep.objects.filter(template=template).order_by('order')
+    return render(request, 'contracts/workflow_template_detail.html', {'workflow_template': template, 'steps': steps})
+
+def workflow_template_list(request):
+    templates = WorkflowTemplate.objects.all()
+    return render(request, 'contracts/workflow_template_list.html', {'workflow_templates': templates})
 
 # --- Dashboard View ---
 def dashboard(request):
