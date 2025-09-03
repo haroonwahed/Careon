@@ -310,7 +310,8 @@ class SignUpView(CreateView):
         login(self.request, self.object)
         return response
 
-class AddNegotiationNoteView(LoginRequiredMixin, CreateView):
+# --- Negotiation Views ---
+class AddNegotiationNoteView(CreateView):
     model = NegotiationThread
     fields = ['title', 'content']
     template_name = 'contracts/negotiation_note_form.html'
@@ -322,6 +323,78 @@ class AddNegotiationNoteView(LoginRequiredMixin, CreateView):
 
     def get_success_url(self):
         return reverse_lazy('contracts:contract_detail', kwargs={'pk': self.kwargs['pk']})
+
+# --- Workflow Views ---
+class WorkflowTemplateListView(LoginRequiredMixin, ListView):
+    model = WorkflowTemplate
+    template_name = 'contracts/workflow_template_list.html'
+    context_object_name = 'workflow_templates'
+
+class WorkflowTemplateDetailView(LoginRequiredMixin, DetailView):
+    model = WorkflowTemplate
+    template_name = 'contracts/workflow_template_detail.html'
+    context_object_name = 'workflow_template'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['steps'] = WorkflowTemplateStep.objects.filter(template=self.object).order_by('order')
+        return context
+
+class WorkflowTemplateCreateView(LoginRequiredMixin, CreateView):
+    model = WorkflowTemplate
+    form_class = WorkflowTemplateForm
+    template_name = 'contracts/workflow_template_form.html'
+    success_url = reverse_lazy('contracts:workflow_template_list')
+
+class WorkflowTemplateUpdateView(LoginRequiredMixin, UpdateView):
+    model = WorkflowTemplate
+    form_class = WorkflowTemplateForm
+    template_name = 'contracts/workflow_template_form.html'
+    success_url = reverse_lazy('contracts:workflow_template_list')
+
+class WorkflowListView(LoginRequiredMixin, ListView):
+    model = Workflow
+    template_name = 'contracts/workflow_list.html'
+    context_object_name = 'workflows'
+
+    def get_queryset(self):
+        queryset = Workflow.objects.all()
+        contract_pk = self.request.GET.get('contract_pk')
+        if contract_pk:
+            queryset = queryset.filter(contract=contract_pk)
+        return queryset.order_by('-created_at')
+
+class WorkflowDetailView(LoginRequiredMixin, DetailView):
+    model = Workflow
+    template_name = 'contracts/workflow_detail.html'
+    context_object_name = 'workflow'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['steps'] = WorkflowStep.objects.filter(workflow=self.object).order_by('order')
+        context['step_form'] = WorkflowForm()
+        return context
+
+class WorkflowCreateView(LoginRequiredMixin, CreateView):
+    model = Workflow
+    form_class = WorkflowForm
+    template_name = 'contracts/workflow_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+class WorkflowUpdateView(LoginRequiredMixin, UpdateView):
+    model = Workflow
+    form_class = WorkflowForm
+    template_name = 'contracts/workflow_form.html'
+
+    def get_success_url(self):
+        return reverse_lazy('contracts:workflow_detail', kwargs={'pk': self.object.pk})
+
 
 # --- Action Views ---
 class ToggleChecklistItemView(LoginRequiredMixin, View):
