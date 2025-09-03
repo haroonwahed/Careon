@@ -2,13 +2,13 @@ from django.contrib import admin
 from .models import (
     TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep, ChecklistItem,
-    DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
+    DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense, Contract
 )
 
 @admin.register(RiskLog)
 class RiskLogAdmin(admin.ModelAdmin):
-    list_display = ('title', 'risk_level', 'created_at')
-    list_filter = ('risk_level',)
+    list_display = ('title', 'risk_level', 'contract', 'created_by', 'created_at')
+    list_filter = ('risk_level', 'created_at')
     search_fields = ('title', 'description')
 
 class ChecklistItemInline(admin.TabularInline):
@@ -109,3 +109,10 @@ class WorkflowStepAdmin(admin.ModelAdmin):
     list_display = ['workflow', 'name', 'status', 'assigned_to', 'due_date']
     list_filter = ['status', 'due_date']
     search_fields = ['workflow__title', 'name']
+
+@admin.register(Contract)
+class ContractAdmin(admin.ModelAdmin):
+    list_display = ['title', 'status', 'counterparty', 'value', 'start_date', 'end_date', 'created_at']
+    list_filter = ['status', 'created_at', 'start_date']
+    search_fields = ['title', 'content', 'counterparty']
+    ordering = ['-created_at']

@@ -484,91 +484,79 @@ def workflow_template_list(request):
 
 # --- Dashboard View ---
 def dashboard(request):
-    # Contract data
+    # Basic counts - using safe database queries
     try:
         total_contracts = Contract.objects.count()
-        recent_contracts = Contract.objects.all()[:10]
-
-        # Pipeline data - count contracts by status
-        pipeline_data = []
-        status_choices = [
-            ('DRAFT', 'Draft'),
-            ('PENDING', 'Pending'),
-            ('ACTIVE', 'Active'),
-            ('COMPLETED', 'Completed'),
-            ('CANCELLED', 'Cancelled'),
-        ]
-        for status, display in status_choices:
-            count = Contract.objects.filter(status=status).count()
-            if count > 0:
-                pipeline_data.append((display, count))
     except Exception as e:
-        logger.error(f"Error fetching contract data: {e}")
+        print(f"Error fetching total contracts: {e}")
         total_contracts = 0
-        recent_contracts = []
-        pipeline_data = []
 
-    # Legal Tasks data
     try:
-        pending_tasks = LegalTask.objects.filter(status__in=['PENDING', 'IN_PROGRESS']).count()
+        active_contracts = Contract.objects.filter(status='ACTIVE').count()
     except Exception as e:
-        logger.error(f"Error fetching legal task data: {e}")
+        print(f"Error fetching active contracts: {e}")
+        active_contracts = 0
+
+    try:
+        pending_tasks = LegalTask.objects.filter(status='PENDING').count()
+    except Exception as e:
+        print(f"Error fetching pending tasks: {e}")
         pending_tasks = 0
 
-    # Workflow data
     try:
         active_workflows = Workflow.objects.filter(status='ACTIVE').count()
     except Exception as e:
-        logger.error(f"Error fetching workflow data: {e}")
+        print(f"Error fetching active workflows: {e}")
         active_workflows = 0
 
-    # Trademark data
     try:
-        trademark_requests = TrademarkRequest.objects.all().count()
-        pending_trademarks = TrademarkRequest.objects.filter(status__in=['PENDING', 'FILED', 'IN_REVIEW']).count()
+        trademark_requests = TrademarkRequest.objects.count()
     except Exception as e:
-        logger.error(f"Error fetching trademark data: {e}")
+        print(f"Error fetching trademark requests: {e}")
         trademark_requests = 0
+
+    try:
+        pending_trademarks = TrademarkRequest.objects.filter(status='PENDING').count()
+    except Exception as e:
+        print(f"Error fetching pending trademarks: {e}")
         pending_trademarks = 0
 
-    # Risk data
     try:
-        risk_count = RiskLog.objects.count()
-        top_risks = RiskLog.objects.filter(risk_level='HIGH')[:5]
+        risk_count = RiskLog.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).count()
     except Exception as e:
-        logger.error(f"Error fetching risk data: {e}")
+        print(f"Error fetching risk count: {e}")
         risk_count = 0
-        top_risks = []
 
-    # Due Diligence data
+    # Recent activity - only fetch fields that exist
     try:
-        dd_count = DueDiligenceProcess.objects.count()
+        recent_contracts = Contract.objects.order_by('-created_at')[:5]
     except Exception as e:
-        logger.error(f"Error fetching due diligence data: {e}")
-        dd_count = 0
+        print(f"Error fetching recent contracts: {e}")
+        recent_contracts = []
 
-    # Budget data
     try:
-        budget_count = Budget.objects.count()
+        upcoming_tasks = LegalTask.objects.filter(
+            status='PENDING',
+            due_date__gte=timezone.now().date()
+        ).order_by('due_date')[:5]
     except Exception as e:
-        logger.error(f"Error fetching budget data: {e}")
-        budget_count = 0
+        print(f"Error fetching upcoming tasks: {e}")
+        upcoming_tasks = []
 
-    # Compliance data
     try:
-        upcoming_checklists = ComplianceChecklist.objects.all()[:5]
+        upcoming_checklists = ChecklistItem.objects.filter(
+            is_completed=False
+        ).select_related('checklist')[:5]
     except Exception as e:
-        logger.error(f"Error fetching compliance data: {e}")
+        print(f"Error fetching upcoming checklists: {e}")
         upcoming_checklists = []
 
-    # Contracts expiring in next 30 days
+    # Contracts expiring in next 30 days using end_date field
     try:
-        # Get contracts expiring in the next 30 days
-        # Note: Using start_date + 365 days as proxy for end_date until proper field is added
-        thirty_days_from_now = timezone.now() + timedelta(days=30)
-        one_year_ago = timezone.now() - timedelta(days=335)  # ~30 days before 1 year
+        thirty_days_from_now = timezone.now().date() + timedelta(days=30)
         expiring_soon_count = Contract.objects.filter(
-            start_date__lte=one_year_ago,
+            end_date__lte=thirty_days_from_now,
+            end_date__gte=timezone.now().date(),
             status='ACTIVE'
         ).count()
     except Exception as e:
@@ -577,20 +565,16 @@ def dashboard(request):
 
     context = {
         'total_contracts': total_contracts,
-        'recent_contracts': recent_contracts,
-        'pipeline_data': pipeline_data,
+        'active_contracts': active_contracts,
         'pending_tasks': pending_tasks,
-        'pending_tasks_count': pending_tasks,
         'active_workflows': active_workflows,
-        'active_workflows_count': active_workflows,
-        'expiring_soon_count': expiring_soon_count,
         'trademark_requests': trademark_requests,
         'pending_trademarks': pending_trademarks,
         'risk_count': risk_count,
-        'top_risks': top_risks,
-        'dd_count': dd_count,
-        'budget_count': budget_count,
+        'recent_contracts': recent_contracts,
+        'upcoming_tasks': upcoming_tasks,
         'upcoming_checklists': upcoming_checklists,
+        'expiring_soon_count': expiring_soon_count,
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
