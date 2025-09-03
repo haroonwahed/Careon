@@ -1,179 +1,184 @@
 
 """
-Repository service implementation for contracts
+Repository service layer for contracts
+Provides abstraction between UI and data layer
 """
-import time
-from typing import List, Dict, Any
 from django.contrib.auth.models import User
-from django.db.models import Q
 from contracts.models import Contract
-from contracts.domain.contracts import (
-    RepositoryService, ContractData, ContractStatus, ListParams, ListResult
-)
+from contracts.domain.contracts import ListParams, ContractData, ListResult, ContractStatus
+from django.core.paginator import Paginator
+from django.db.models import Q
+import time
+from typing import List, Optional
 
-class DjangoRepositoryService:
-    """Django ORM implementation of RepositoryService"""
-    
-    def __init__(self, user: User):
-        self.user = user
-    
-    def _contract_to_data(self, contract: Contract) -> ContractData:
-        """Convert Django model to domain object"""
-        return ContractData(
-            id=str(contract.id),
-            title=contract.title,
-            counterparty=contract.counterparty,
-            status=ContractStatus(contract.status),
-            hint=f"Created {contract.created_at.strftime('%b %d, %Y')}",
-            updated_at=contract.updated_at.isoformat(),
-            contract_type=contract.contract_type,
-            value=float(contract.value) if contract.value else None
-        )
-    
-    def list(self, params: ListParams) -> ListResult:
-        """List contracts with filtering and pagination"""
-        queryset = Contract.objects.filter(created_by=self.user)
-        
-        # Apply filters
-        if params.q:
-            queryset = queryset.filter(
-                Q(title__icontains=params.q) | 
-                Q(counterparty__icontains=params.q)
-            )
-        
-        if params.status:
-            status_values = [s.value for s in params.status]
-            queryset = queryset.filter(status__in=status_values)
-        
-        if params.contract_type:
-            queryset = queryset.filter(contract_type__in=params.contract_type)
-        
-        # Apply sorting
-        sort_field = '-updated_at'  # default
-        if params.sort:
-            sort_map = {
-                'title': 'title',
-                'status': 'status',
-                'updated_desc': '-updated_at',
-                'updated_asc': 'updated_at'
-            }
-            sort_field = sort_map.get(params.sort, sort_field)
-        
-        queryset = queryset.order_by(sort_field)
-        
-        # Pagination
-        total = queryset.count()
-        start = (params.page - 1) * params.page_size
-        end = start + params.page_size
-        contracts = list(queryset[start:end])
-        
-        return ListResult(
-            rows=[self._contract_to_data(c) for c in contracts],
-            total=total,
-            page=params.page,
-            page_size=params.page_size
-        )
-    
-    def get(self, contract_id: str) -> ContractData:
-        """Get a single contract by ID"""
-        contract = Contract.objects.get(id=contract_id, created_by=self.user)
-        return self._contract_to_data(contract)
-    
-    def update(self, contract_id: str, patch: Dict[str, Any]) -> ContractData:
-        """Update a contract"""
-        contract = Contract.objects.get(id=contract_id, created_by=self.user)
-        
-        for field, value in patch.items():
-            if hasattr(contract, field):
-                setattr(contract, field, value)
-        
-        contract.save()
-        return self._contract_to_data(contract)
-    
-    def bulk_update(self, ids: List[str], patch: Dict[str, Any]) -> None:
-        """Bulk update multiple contracts"""
-        Contract.objects.filter(
-            id__in=ids, 
-            created_by=self.user
-        ).update(**patch)
-    
-    def create(self, payload: Dict[str, Any]) -> ContractData:
-        """Create a new contract"""
-        contract = Contract.objects.create(
-            created_by=self.user,
-            **payload
-        )
-        return self._contract_to_data(contract)
-
-class MockRepositoryService:
-    """Mock implementation for testing"""
-    
-    def __init__(self, user=None):
-        self.user = user
-        # Simulate latency
-        self._latency = 0.1
-    
-    def _simulate_latency(self):
-        time.sleep(self._latency)
-    
-    def list(self, params: ListParams) -> ListResult:
-        self._simulate_latency()
-        # Mock data
-        mock_contracts = [
-            ContractData(
-                id="1",
-                title="Sample Contract 1",
-                counterparty="Acme Corp",
-                status=ContractStatus.ACTIVE,
-                hint="Created Dec 15, 2023"
-            ),
-            ContractData(
-                id="2", 
-                title="Sample Contract 2",
-                counterparty="Beta Inc",
-                status=ContractStatus.DRAFT,
-                hint="Created Dec 10, 2023"
-            )
-        ]
-        
-        return ListResult(
-            rows=mock_contracts,
-            total=len(mock_contracts),
-            page=params.page,
-            page_size=params.page_size
-        )
-    
-    def get(self, contract_id: str) -> ContractData:
-        self._simulate_latency()
-        return ContractData(
-            id=contract_id,
-            title=f"Contract {contract_id}",
-            status=ContractStatus.ACTIVE
-        )
-    
-    def update(self, contract_id: str, patch: Dict[str, Any]) -> ContractData:
-        self._simulate_latency()
-        return ContractData(
-            id=contract_id,
-            title=f"Updated Contract {contract_id}",
-            status=ContractStatus.ACTIVE
-        )
-    
-    def bulk_update(self, ids: List[str], patch: Dict[str, Any]) -> None:
-        self._simulate_latency()
-        pass
-    
-    def create(self, payload: Dict[str, Any]) -> ContractData:
-        self._simulate_latency()
-        return ContractData(
-            id="new-id",
-            title=payload.get("title", "New Contract"),
-            status=ContractStatus.DRAFT
-        )
-
-def get_repository_service(user=None, use_mock=False) -> RepositoryService:
+def get_repository_service(user: User, use_mock: bool = False):
     """Factory function to get repository service"""
     if use_mock:
         return MockRepositoryService(user)
     else:
         return DjangoRepositoryService(user)
+
+class RepositoryServiceInterface:
+    """Interface for repository services"""
+    
+    def list(self, params: ListParams) -> ListResult:
+        raise NotImplementedError
+        
+    def get_by_id(self, contract_id: str) -> Optional[ContractData]:
+        raise NotImplementedError
+        
+    def bulk_update(self, contract_ids: List[str], updates: dict) -> int:
+        raise NotImplementedError
+
+class DjangoRepositoryService(RepositoryServiceInterface):
+    """Production repository service using Django ORM"""
+    
+    def __init__(self, user: User):
+        self.user = user
+    
+    def list(self, params: ListParams) -> ListResult:
+        """List contracts with filtering and pagination"""
+        queryset = Contract.objects.all()
+        
+        # Apply search
+        if params.q:
+            queryset = queryset.filter(
+                Q(title__icontains=params.q) |
+                Q(counterparty__icontains=params.q) |
+                Q(content__icontains=params.q)
+            )
+        
+        # Apply status filter
+        if params.status:
+            queryset = queryset.filter(status__in=params.status)
+            
+        # Apply type filter (if we had a contract_type field)
+        if params.contract_type:
+            # queryset = queryset.filter(contract_type__in=params.contract_type)
+            pass
+        
+        # Apply sorting
+        if params.sort == 'updated_desc':
+            queryset = queryset.order_by('-updated_at')
+        elif params.sort == 'updated_asc':
+            queryset = queryset.order_by('updated_at')
+        elif params.sort == 'title':
+            queryset = queryset.order_by('title')
+        elif params.sort == 'status':
+            queryset = queryset.order_by('status')
+            
+        # Paginate
+        paginator = Paginator(queryset, params.page_size)
+        page_obj = paginator.get_page(params.page)
+        
+        # Convert to domain objects
+        contracts = []
+        for contract in page_obj:
+            contracts.append(ContractData(
+                id=str(contract.id),
+                title=contract.title,
+                status=contract.status,
+                counterparty=getattr(contract, 'counterparty', ''),
+                value=float(contract.value) if hasattr(contract, 'value') and contract.value else None,
+                start_date=contract.start_date.isoformat() if hasattr(contract, 'start_date') and contract.start_date else None,
+                end_date=contract.end_date.isoformat() if hasattr(contract, 'end_date') and contract.end_date else None,
+                owner=contract.created_by.get_full_name() if contract.created_by else 'System',
+                updated_at=contract.updated_at.isoformat() if hasattr(contract, 'updated_at') and contract.updated_at else None,
+                created_at=contract.created_at.isoformat() if contract.created_at else None
+            ))
+        
+        return ListResult(
+            contracts=contracts,
+            total_count=paginator.count,
+            page=params.page,
+            page_size=params.page_size,
+            total_pages=paginator.num_pages
+        )
+    
+    def get_by_id(self, contract_id: str) -> Optional[ContractData]:
+        """Get single contract by ID"""
+        try:
+            contract = Contract.objects.get(id=contract_id)
+            return ContractData(
+                id=str(contract.id),
+                title=contract.title,
+                status=contract.status,
+                counterparty=getattr(contract, 'counterparty', ''),
+                value=float(contract.value) if hasattr(contract, 'value') and contract.value else None,
+                start_date=contract.start_date.isoformat() if hasattr(contract, 'start_date') and contract.start_date else None,
+                end_date=contract.end_date.isoformat() if hasattr(contract, 'end_date') and contract.end_date else None,
+                owner=contract.created_by.get_full_name() if contract.created_by else 'System',
+                updated_at=contract.updated_at.isoformat() if hasattr(contract, 'updated_at') and contract.updated_at else None,
+                created_at=contract.created_at.isoformat() if contract.created_at else None,
+                content=contract.content
+            )
+        except Contract.DoesNotExist:
+            return None
+    
+    def bulk_update(self, contract_ids: List[str], updates: dict) -> int:
+        """Bulk update contracts"""
+        queryset = Contract.objects.filter(id__in=contract_ids)
+        return queryset.update(**updates)
+
+class MockRepositoryService(RepositoryServiceInterface):
+    """Mock service for testing with simulated latency"""
+    
+    def __init__(self, user: User):
+        self.user = user
+        
+    def list(self, params: ListParams) -> ListResult:
+        """Mock list with simulated data and latency"""
+        time.sleep(0.1)  # Simulate network latency
+        
+        # Generate mock data
+        mock_contracts = []
+        for i in range(1, 26):
+            mock_contracts.append(ContractData(
+                id=str(i),
+                title=f"Sample Contract {i}",
+                status="ACTIVE" if i % 2 == 0 else "DRAFT",
+                counterparty=f"Company {i}",
+                value=10000.0 * i,
+                start_date="2024-01-15",
+                end_date="2025-01-15",
+                owner="John Doe",
+                updated_at="2024-01-15T10:00:00Z",
+                created_at="2024-01-01T10:00:00Z"
+            ))
+        
+        # Apply filtering (simplified)
+        filtered = mock_contracts
+        if params.q:
+            filtered = [c for c in filtered if params.q.lower() in c.title.lower()]
+        if params.status:
+            filtered = [c for c in filtered if c.status in params.status]
+            
+        return ListResult(
+            contracts=filtered,
+            total_count=len(filtered),
+            page=params.page,
+            page_size=params.page_size,
+            total_pages=(len(filtered) + params.page_size - 1) // params.page_size
+        )
+    
+    def get_by_id(self, contract_id: str) -> Optional[ContractData]:
+        """Mock get by ID"""
+        time.sleep(0.05)
+        return ContractData(
+            id=contract_id,
+            title=f"Sample Contract {contract_id}",
+            status="ACTIVE",
+            counterparty="Sample Company",
+            value=50000.0,
+            start_date="2024-01-15",
+            end_date="2025-01-15",
+            owner="John Doe",
+            updated_at="2024-01-15T10:00:00Z",
+            created_at="2024-01-01T10:00:00Z",
+            content="Sample contract content..."
+        )
+    
+    def bulk_update(self, contract_ids: List[str], updates: dict) -> int:
+        """Mock bulk update"""
+        time.sleep(0.2)
+        return len(contract_ids)

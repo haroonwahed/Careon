@@ -27,6 +27,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', contract_views.index, name='index'),
+    path('_health/', contract_views.health_check, name='health_check'),
     path('dashboard/', contract_views.dashboard, name='dashboard'),
     path('contracts/', include('contracts.urls')),
     path('profile/', contract_views.profile, name='profile'),

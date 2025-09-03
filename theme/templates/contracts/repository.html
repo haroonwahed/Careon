@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -8,24 +9,18 @@
     <!-- Left Sidebar -->
     <aside class="sidebar">
         <div class="section-title">Repository Views</div>
-        <a href="{% url 'contracts:repository' %}" class="item active" data-legacy-class="nav-link">
+        <a href="{% url 'contracts:repository' %}" class="item active">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
             </svg>
             All Documents
         </a>
-        <a href="{% url 'contracts:workflow_template_list' %}" class="item" data-legacy-class="nav-link">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Templates
-                        <span class="item-count">12</span>
-                    </a>
-        <a href="#" class="item disabled" data-legacy-class="nav-link">
+        <a href="{% url 'contracts:workflow_template_list' %}" class="item">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
             </svg>
-            Clause Library (Coming Soon)
+            Templates
+            <span class="item-count">12</span>
         </a>
     </aside>
 
@@ -34,7 +29,7 @@
         <!-- Toolbar -->
         <div class="toolbar">
             <div class="toolbar-left">
-                <button class="btn-primary" data-legacy-class="btn-upload">
+                <button class="btn-primary">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
                     </svg>
@@ -44,37 +39,158 @@
                     <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    <input type="search" placeholder="Search documents" data-legacy-class="search-input">
+                    <input type="search" id="search-input" placeholder="Search documents">
                 </div>
             </div>
             <div class="toolbar-right">
-                <button class="btn-outline" data-legacy-class="filter-btn">
+                <select id="sort-select" class="btn-outline">
+                    <option value="updated_desc">Recently Updated</option>
+                    <option value="updated_asc">Oldest First</option>
+                    <option value="title">Title A-Z</option>
+                    <option value="status">Status</option>
+                </select>
+                <button class="btn-outline">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
                     </svg>
                     Filter
                 </button>
-                <button class="btn-outline" data-legacy-class="view-btn">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
-                    </svg>
-                    Grid View
-                </button>
             </div>
         </div>
 
-        <!-- Repository Content -->
-        <div class="empty" data-when="no-documents" data-legacy-class="empty-state">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-            <h3>Document Repository</h3>
-            <p>Upload and organize your contract documents, templates, and clause library.</p>
-            <button class="btn-primary" data-legacy-class="upload-first-document">Upload your first document</button>
+        <!-- Bulk Action Bar (hidden by default) -->
+        <div id="bulk-action-bar" class="bulk-action-bar" style="display: none;">
+            <div class="flex items-center space-x-4">
+                <span id="selected-count" class="font-medium">0 selected</span>
+                <button class="btn-outline btn-sm">Change Status</button>
+                <button class="btn-outline btn-sm">Assign to Me</button>
+                <button class="btn-outline btn-sm">Export CSV</button>
+                <button onclick="window.ironclad.clearSelection()" class="btn-ghost btn-sm">Clear</button>
+            </div>
         </div>
 
+        <!-- Contracts Table -->
+        <div class="card">
+            <table id="contracts-table" class="table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="select-all"></th>
+                        <th>Document</th>
+                        <th>Status</th>
+                        <th>Value</th>
+                        <th>Owner</th>
+                        <th>Updated</th>
+                    </tr>
+                </thead>
+                <tbody id="contracts-tbody">
+                    <tr><td colspan="6" class="text-center py-8">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination will be added here -->
+        <div id="pagination-container"></div>
+
     </main>
+
+    <!-- Details Drawer -->
+    <div id="details-drawer" class="details-drawer">
+        <!-- Contract details will be loaded here -->
+    </div>
 </div>
 
 <script src="{% static 'js/ironclad-repository.js' %}"></script>
+<style>
+.theme-layout {
+    display: flex;
+    min-height: calc(100vh - 140px);
+}
+.sidebar {
+    width: 240px;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 1rem;
+}
+.main-content {
+    flex: 1;
+    padding: 1rem;
+}
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    gap: 1rem;
+}
+.toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.search {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+.search-icon {
+    position: absolute;
+    left: 0.75rem;
+    width: 1rem;
+    height: 1rem;
+    color: var(--muted);
+}
+.search input {
+    padding-left: 2.5rem;
+    padding-right: 1rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-width: 300px;
+}
+.details-drawer {
+    position: fixed;
+    top: 140px;
+    right: -400px;
+    width: 400px;
+    height: calc(100vh - 140px);
+    background: var(--card);
+    border-left: 1px solid var(--border);
+    box-shadow: var(--shadow-lg);
+    transition: right 0.3s ease;
+    overflow-y: auto;
+}
+.details-drawer.active {
+    right: 0;
+}
+.bulk-action-bar {
+    background: var(--accent);
+    color: white;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    border-radius: var(--radius);
+}
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+.status-active { background: #dcfce7; color: #166534; }
+.status-draft { background: #fef3c7; color: #92400e; }
+.status-expired { background: #fecaca; color: #991b1b; }
+.table {
+    width: 100%;
+}
+.table th, .table td {
+    text-align: left;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border);
+}
+.table th {
+    background: var(--hover);
+    font-weight: 500;
+    color: var(--muted);
+}
+</style>
 {% endblock %}

@@ -1,66 +1,68 @@
 
 """
-Domain types and interfaces for contract management
+Domain classes for contract repository
+These classes define the data structures independent of Django models
 """
-from typing import Protocol, List, Dict, Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
+from typing import List, Optional
 from enum import Enum
 
-class ContractStatus(str, Enum):
+class ContractStatus(Enum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE" 
-    INACTIVE = "INACTIVE"
-    UNVERIFIED = "UNVERIFIED"
-
-@dataclass
-class ContractData:
-    id: str
-    title: str
-    counterparty: Optional[str] = None
-    status: ContractStatus = ContractStatus.DRAFT
-    hint: Optional[str] = None
-    updated_at: str = ""
-    contract_type: Optional[str] = None
-    value: Optional[float] = None
+    EXPIRED = "EXPIRED"
+    TERMINATED = "TERMINATED"
 
 @dataclass
 class ListParams:
-    q: Optional[str] = None
-    status: Optional[List[ContractStatus]] = None
-    contract_type: Optional[List[str]] = None
-    people: Optional[List[str]] = None
-    date_from: Optional[str] = None
-    date_to: Optional[str] = None
-    sort: Optional[str] = None
+    """Parameters for contract listing"""
+    q: str = ""
+    status: List[str] = None
+    contract_type: List[str] = None
+    sort: str = "updated_desc"
     page: int = 1
     page_size: int = 25
+    
+    def __post_init__(self):
+        if self.status is None:
+            self.status = []
+        if self.contract_type is None:
+            self.contract_type = []
+
+@dataclass
+class ContractData:
+    """Contract data transfer object"""
+    id: str
+    title: str
+    status: str
+    counterparty: str = ""
+    value: Optional[float] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    owner: str = ""
+    updated_at: Optional[str] = None
+    created_at: Optional[str] = None
+    content: str = ""
+    
+    def to_dict(self):
+        """Convert to dictionary for JSON serialization"""
+        return asdict(self)
 
 @dataclass
 class ListResult:
-    rows: List[ContractData]
-    total: int
+    """Result of contract listing operation"""
+    contracts: List[ContractData]
+    total_count: int
     page: int
     page_size: int
-
-class RepositoryService(Protocol):
-    """Interface for contract repository operations"""
+    total_pages: int
     
-    def list(self, params: ListParams) -> ListResult:
-        """List contracts with filtering and pagination"""
-        ...
-    
-    def get(self, contract_id: str) -> ContractData:
-        """Get a single contract by ID"""
-        ...
-    
-    def update(self, contract_id: str, patch: Dict[str, Any]) -> ContractData:
-        """Update a contract"""
-        ...
-    
-    def bulk_update(self, ids: List[str], patch: Dict[str, Any]) -> None:
-        """Bulk update multiple contracts"""
-        ...
-    
-    def create(self, payload: Dict[str, Any]) -> ContractData:
-        """Create a new contract"""
-        ...
+    def to_dict(self):
+        """Convert to dictionary for JSON serialization"""
+        return {
+            'contracts': [c.to_dict() for c in self.contracts],
+            'total_count': self.total_count,
+            'page': self.page,
+            'page_size': self.page_size,
+            'total_pages': self.total_pages
+        }

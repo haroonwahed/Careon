@@ -22,7 +22,7 @@ from .models import (
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense
 )
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from config.feature_flags import get_feature_flag, is_feature_redesign_enabled
 from django.conf import settings
 from datetime import datetime, timedelta
@@ -413,6 +413,10 @@ class AddWorkflowTemplateStepView(LoginRequiredMixin, View):
         return redirect('contracts:workflow_template_detail', pk=template.pk)
 
 # --- Function-based Views ---
+def health_check(request):
+    """Health check endpoint for deployment verification"""
+    return HttpResponse("OK", content_type="text/plain")
+
 @login_required
 def toggle_redesign(request):
     """Toggle the FEATURE_REDESIGN flag for development"""

@@ -17,11 +17,12 @@ from .views import (
 app_name = 'contracts'
 
 urlpatterns = [
-    # API endpoints
+    # API endpoints for Ironclad repository
     path('api/contracts/', api_views.contracts_api, name='contracts_api'),
-    path('api/contracts/bulk-update/', api_views.bulk_update_contracts, name='bulk_update_contracts'),
     path('api/contracts/<str:contract_id>/', api_views.contract_detail_api, name='contract_detail_api'),
+    path('api/contracts/bulk-update/', api_views.contracts_bulk_update_api, name='contracts_bulk_update_api'),
 
+    # Regular views
     # Due Diligence URLs
     path('due-diligence/', DueDiligenceListView.as_view(), name='due_diligence_list'),
     path('due-diligence/new/', DueDiligenceCreateView.as_view(), name='due_diligence_create'),
