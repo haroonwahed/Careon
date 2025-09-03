@@ -562,15 +562,18 @@ def dashboard(request):
         upcoming_checklists = []
 
     # Contracts expiring in next 30 days
-    thirty_days_from_now = datetime.now().date() + timedelta(days=30)
     try:
-        expiring_soon = Contract.objects.filter(
-            end_date__lte=thirty_days_from_now,
-            end_date__gte=datetime.now().date()
+        # Get contracts expiring in the next 30 days
+        # Note: Using start_date + 365 days as proxy for end_date until proper field is added
+        thirty_days_from_now = timezone.now() + timedelta(days=30)
+        one_year_ago = timezone.now() - timedelta(days=335)  # ~30 days before 1 year
+        expiring_soon_count = Contract.objects.filter(
+            start_date__lte=one_year_ago,
+            status='ACTIVE'
         ).count()
     except Exception as e:
-        logger.error(f"Error fetching expiring contracts: {e}")
-        expiring_soon = 0
+        print(f"Error fetching expiring contracts: {e}")
+        expiring_soon_count = 0
 
     context = {
         'total_contracts': total_contracts,
@@ -580,7 +583,7 @@ def dashboard(request):
         'pending_tasks_count': pending_tasks,
         'active_workflows': active_workflows,
         'active_workflows_count': active_workflows,
-        'expiring_soon_count': expiring_soon,
+        'expiring_soon_count': expiring_soon_count,
         'trademark_requests': trademark_requests,
         'pending_trademarks': pending_trademarks,
         'risk_count': risk_count,
