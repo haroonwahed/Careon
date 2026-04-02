@@ -28,6 +28,10 @@ def is_test_mode_enabled():
     """Check if TEST_MODE flag is enabled"""
     return get_feature_flag('TEST_MODE', False)
 
+def is_test_mode():
+    """Alias for is_test_mode_enabled"""
+    return is_test_mode_enabled()
+
 # Cache for feature flags to avoid repeated lookups
 cache = {}
 

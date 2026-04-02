@@ -7,170 +7,183 @@
     {% load static %}
     <link href="{% static 'css/dist/styles.css' %}" rel="stylesheet">
     <link href="{% static 'css/theme-iron.css' %}" rel="stylesheet">
-<script>
-        function goBack() {
-            if (window.history.length > 1) {
-                window.history.back();
-            } else {
-                window.location.href = "{% url 'dashboard' %}";
-            }
-        }
-
-        function goForward() {
-            window.history.forward();
-        }
-
-        // Update button states based on navigation history
-        document.addEventListener('DOMContentLoaded', function() {
-            const backButton = document.querySelector('button[onclick="goBack()"]');
-            const forwardButton = document.querySelector('button[onclick="goForward()"]');
-
-            // Enable/disable buttons based on history
-            if (window.history.length <= 1) {
-                if (backButton) {
-                    backButton.title = 'Go to Dashboard';
-                }
-            }
-
-            // Listen for navigation events
-            window.addEventListener('popstate', function() {
-                // Update button states if needed
-            });
-        });
-    </script>
-    <!-- Alpine.js -->
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        .nav-section { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; padding: 8px 16px 4px; margin-top: 8px; }
+        .nav-link { display: flex; align-items: center; gap: 8px; padding: 6px 16px; font-size: 13px; color: #374151; border-radius: 6px; margin: 1px 8px; transition: all 0.15s; text-decoration: none; }
+        .nav-link:hover { background: #f3f4f6; color: #1d4ed8; }
+        .nav-link.active { background: #eff6ff; color: #1d4ed8; font-weight: 600; }
+        .nav-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+        .nav-badge { font-size: 11px; background: #ef4444; color: white; border-radius: 9999px; padding: 0 6px; margin-left: auto; min-width: 18px; text-align: center; line-height: 18px; }
+        .sidebar-container { width: 220px; min-height: calc(100vh - 60px); border-right: 1px solid #e5e7eb; background: #fafafa; overflow-y: auto; flex-shrink: 0; }
+        .main-layout { display: flex; min-height: calc(100vh - 60px); }
+        .main-area { flex: 1; overflow-y: auto; background: #f9fafb; }
+        .top-bar { background: white; border-bottom: 1px solid #e5e7eb; padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .messages-container .msg { padding: 12px 16px; margin: 8px 24px; border-radius: 8px; font-size: 14px; }
+        .msg-success { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .msg-error { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .msg-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+    </style>
 </head>
-<body>
-    <!-- Bolton Logo Header -->
-    <div style="background: var(--card); border-bottom: 1px solid var(--border);" class="shadow-sm">
-        <div class="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-            <div class="flex items-center">
-                <a href="{% url 'dashboard' %}" class="flex items-center focus-ring rounded-2xl">
-                    <svg width="180" height="45" viewBox="0 0 180 45" class="mr-2">
-                        <!-- Bolton logo with brand colors -->
-                        <rect x="0" y="8" width="40" height="32" fill="var(--primary-700)" rx="6"/>
-
-                        <!-- White architectural lines -->
-                        <g fill="white" stroke="white" stroke-width="0.5">
-                            <rect x="8" y="12" width="2" height="20"/>
-                            <rect x="12" y="12" width="2" height="20"/>
-                            <rect x="16" y="12" width="2" height="20"/>
-                            <rect x="20" y="12" width="2" height="20"/>
-                            <rect x="24" y="12" width="2" height="20"/>
-                            <rect x="28" y="12" width="2" height="20"/>
-
-                            <rect x="6" y="14" width="28" height="1"/>
-                            <rect x="6" y="18" width="28" height="1"/>
-                            <rect x="6" y="22" width="28" height="1"/>
-                            <rect x="6" y="26" width="28" height="1"/>
-                            <rect x="6" y="30" width="28" height="1"/>
-                        </g>
-
-                        <text x="15" y="30" fill="white" font-family="Arial Black, sans-serif" font-size="16" font-weight="900">B</text>
-                        <text x="45" y="25" fill="var(--primary-700)" font-family="Inter, sans-serif" font-size="18" font-weight="bold" letter-spacing="2">BOLTON</text>
-                        <text x="45" y="38" fill="var(--primary-600)" font-family="Inter, sans-serif" font-size="14" font-weight="normal" letter-spacing="2">CLM</text>
-                    </svg>
+<body class="bg-gray-50">
+    <div class="top-bar">
+        <div class="flex items-center gap-4">
+            <a href="{% url 'dashboard' %}" class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-700 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-sm">B</span>
+                </div>
+                <span class="font-bold text-gray-900 text-lg">Bolton CLM</span>
+            </a>
+        </div>
+        <div class="flex items-center gap-4">
+            {% if user.is_authenticated %}
+                <a href="{% url 'contracts:notification_list' %}" class="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100" title="Notifications">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
                 </a>
-            </div>
-            <div class="flex items-center space-x-4">
-                <!-- Navigation buttons -->
-                <button onclick="goBack()" style="color: var(--muted);" class="hover:text-primary-700 p-2 rounded-xl hover:bg-border focus-ring" title="Go back">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                    </svg>
-                </button>
-                <button onclick="goForward()" style="color: var(--muted);" class="hover:text-primary-700 p-2 rounded-xl hover:bg-border focus-ring" title="Go forward">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </button>
-            </div>
-            <div class="flex items-center space-x-4">
-                {% if user.is_authenticated %}
-                    <!-- Action Buttons -->
-                    <div class="flex items-center space-x-3">
-                        <a href="{% url 'contracts:contract_create' %}" class="btn-accent flex items-center space-x-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            <span>New Contract</span>
-                        </a>
-                        <a href="{% url 'contracts:workflow_template_list' %}" class="btn-primary flex items-center space-x-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            <span>Start Workflow</span>
-                        </a>
-                    </div>
-                    <!-- User Menu -->
-                    <div class="flex items-center space-x-3">
-                        <a href="{% url 'profile' %}" class="flex items-center space-x-2 hover:bg-primary-500/5 rounded-xl px-2 py-1 transition-colors">
-                            <span class="text-sm text-primary-700 font-medium">{{ user.first_name|default:user.username }}</span>
-                            <div class="w-8 h-8 bg-primary-100 rounded-xl flex items-center justify-center">
-                                <span class="text-xs font-semibold text-primary-700">{{ user.first_name.0|default:user.username.0|upper }}</span>
-                            </div>
-                        </a>
-                        <form method="post" action="{% url 'logout' %}" class="inline">
-                            {% csrf_token %}
-                            <button type="submit" style="color: var(--muted);" class="text-sm hover:text-gray-900 focus-ring rounded-xl px-2 py-1 transition-colors">Logout</button>
-                        </form>
-                    </div>
-                {% else %}
-                    <div class="flex items-center space-x-4">
-                        <a href="{% url 'login' %}" class="link text-sm rounded-xl px-2 py-1">Login</a>
-                        <a href="{% url 'register' %}" class="btn-primary text-sm">Sign up</a>
-                    </div>
-                {% endif %}
-            </div>
+                <a href="{% url 'contracts:contract_create' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                    New
+                </a>
+                <div class="flex items-center gap-2">
+                    <a href="{% url 'profile' %}" class="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-100 transition">
+                        <div class="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-xs font-semibold text-blue-700">{{ user.first_name.0|default:user.username.0|upper }}</span>
+                        </div>
+                        <span class="text-sm text-gray-700">{{ user.first_name|default:user.username }}</span>
+                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="inline">
+                        {% csrf_token %}
+                        <button type="submit" class="text-xs text-gray-400 hover:text-gray-600 px-2 py-1">Logout</button>
+                    </form>
+                </div>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-sm text-gray-600 hover:text-gray-900 px-3 py-1.5">Login</a>
+                <a href="{% url 'register' %}" class="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700">Sign up</a>
+            {% endif %}
         </div>
     </div>
 
-    <!-- Main Navigation Tabs (Bolton Style) -->
     {% if user.is_authenticated %}
-    <div style="background: var(--card); border-bottom: 1px solid var(--border);" class="shadow-sm">
-        <div class="max-w-7xl mx-auto px-6">
-            <nav class="flex space-x-0">
-                <a href="{% url 'dashboard' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if request.resolver_match.url_name == 'dashboard' %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+    <div class="main-layout">
+        <nav class="sidebar-container" id="sidebar">
+            <div class="py-2">
+                <div class="nav-section">Main</div>
+                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     Dashboard
                 </a>
-                <a href="{% url 'contracts:contract_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'contract' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+
+                <div class="nav-section">Client Management</div>
+                <a href="{% url 'contracts:client_list' %}" class="nav-link {% if 'client' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    Clients
+                </a>
+                <a href="{% url 'contracts:matter_list' %}" class="nav-link {% if 'matter' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                    Matters
+                </a>
+                <a href="{% url 'contracts:conflict_check_list' %}" class="nav-link {% if 'conflict' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    Conflict Checks
+                </a>
+
+                <div class="nav-section">Contracts & Docs</div>
+                <a href="{% url 'contracts:contract_list' %}" class="nav-link {% if request.resolver_match.url_name == 'contract_list' or request.resolver_match.url_name == 'contract_detail' or request.resolver_match.url_name == 'contract_create' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                     Contracts
                 </a>
-                <a href="{% url 'contracts:legal_task_kanban' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'legal_task' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    Legal Tasks
+                <a href="{% url 'contracts:document_list' %}" class="nav-link {% if 'document' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    Documents
                 </a>
-                <a href="{% url 'contracts:repository' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if request.resolver_match.url_name == 'repository' %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+                <a href="{% url 'contracts:repository' %}" class="nav-link {% if request.resolver_match.url_name == 'repository' %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
                     Repository
                 </a>
-                <a href="{% url 'contracts:workflow_dashboard' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'workflow' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    Workflow Designer
+
+                <div class="nav-section">Billing & Finance</div>
+                <a href="{% url 'contracts:time_entry_list' %}" class="nav-link {% if 'time_entry' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Time Tracking
                 </a>
-                <a href="{% url 'contracts:risk_log_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'risk' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    Risks
+                <a href="{% url 'contracts:invoice_list' %}" class="nav-link {% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"></path></svg>
+                    Invoices
                 </a>
-                <a href="{% url 'contracts:compliance_checklist_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'compliance' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    Compliance
+                <a href="{% url 'contracts:trust_account_list' %}" class="nav-link {% if 'trust' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                    Trust Accounts
                 </a>
-                <a href="{% url 'contracts:due_diligence_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'due_diligence' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
-                    M&A Due Diligence
-                </a>
-                <a href="{% url 'contracts:budget_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'budget' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+                <a href="{% url 'contracts:budget_list' %}" class="nav-link {% if 'budget' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                     Budgets
                 </a>
-                <a href="{% url 'contracts:trademark_request_list' %}" class="relative py-3 px-4 text-sm font-medium hover:text-primary-700 transition-all duration-200 focus-ring {% if 'trademark' in request.resolver_match.url_name %}text-primary-700 after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary-600{% else %}text-gray-600{% endif %}">
+
+                <div class="nav-section">Operations</div>
+                <a href="{% url 'contracts:legal_task_kanban' %}" class="nav-link {% if 'legal_task' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                    Tasks
+                </a>
+                <a href="{% url 'contracts:deadline_list' %}" class="nav-link {% if 'deadline' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    Deadlines
+                </a>
+                <a href="{% url 'contracts:workflow_dashboard' %}" class="nav-link {% if 'workflow' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Workflows
+                </a>
+
+                <div class="nav-section">Risk & Compliance</div>
+                <a href="{% url 'contracts:risk_log_list' %}" class="nav-link {% if 'risk' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                    Risks
+                </a>
+                <a href="{% url 'contracts:compliance_checklist_list' %}" class="nav-link {% if 'compliance' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    Compliance
+                </a>
+                <a href="{% url 'contracts:due_diligence_list' %}" class="nav-link {% if 'due_diligence' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    Due Diligence
+                </a>
+                <a href="{% url 'contracts:trademark_request_list' %}" class="nav-link {% if 'trademark' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
                     Trademarks
                 </a>
-            </nav>
+
+                <div class="nav-section">Analytics</div>
+                <a href="{% url 'contracts:reports_dashboard' %}" class="nav-link {% if 'report' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Reports
+                </a>
+                <a href="{% url 'contracts:audit_log_list' %}" class="nav-link {% if 'audit' in request.resolver_match.url_name %}active{% endif %}">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                    Audit Log
+                </a>
+            </div>
+        </nav>
+
+        <div class="main-area">
+            {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                <div class="msg {% if message.tags == 'success' %}msg-success{% elif message.tags == 'error' %}msg-error{% else %}msg-warning{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="p-6">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </div>
-    {% endif %}
-
-    <!-- Main Content -->
+    {% else %}
     <main>
-        {% block content %}
-        {% endblock %}
+        {% block content_public %}{% endblock content_public %}
     </main>
+    {% endif %}
 
     {% block extra_js %}{% endblock %}
 </body>

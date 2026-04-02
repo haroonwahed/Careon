@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Matters - Bolton CLM{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Matters</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ total_matters }} total &middot; {{ active_matters }} active</p>
+    </div>
+    <a href="{% url 'contracts:matter_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        New Matter
+    </a>
+</div>
+<form method="get" class="mb-4 flex gap-2">
+    <input type="text" name="q" value="{{ search_query }}" placeholder="Search matters..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        <option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Active</option>
+        <option value="CLOSED" {% if request.GET.status == 'CLOSED' %}selected{% endif %}>Closed</option>
+        <option value="ON_HOLD" {% if request.GET.status == 'ON_HOLD' %}selected{% endif %}>On Hold</option>
+    </select>
+    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Search</button>
+</form>
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Matter #</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Title</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Client</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Practice Area</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Attorney</th>
+                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for matter in matters %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 text-sm font-mono text-gray-600">{{ matter.matter_number }}</td>
+                <td class="px-5 py-3"><a href="{% url 'contracts:matter_detail' matter.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ matter.title|truncatechars:40 }}</a></td>
+                <td class="px-5 py-3 text-sm text-gray-600">{{ matter.client.name|truncatechars:25 }}</td>
+                <td class="px-5 py-3 text-sm text-gray-600">{{ matter.get_practice_area_display }}</td>
+                <td class="px-5 py-3"><span class="text-xs px-2 py-1 rounded-full {% if matter.status == 'ACTIVE' %}bg-green-100 text-green-800{% elif matter.status == 'ON_HOLD' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-600{% endif %}">{{ matter.get_status_display }}</span></td>
+                <td class="px-5 py-3 text-sm text-gray-600">{{ matter.responsible_attorney.get_full_name|default:"—" }}</td>
+                <td class="px-5 py-3 text-right"><a href="{% url 'contracts:matter_update' matter.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Edit</a></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">No matters found.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
