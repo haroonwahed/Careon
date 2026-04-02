@@ -1,7 +1,7 @@
-# Bolton CLM - Legal Consultancy Management System
+# CMS Aegis - Legal Practice Management System
 
 ## Overview
-A production-grade Django-based legal contract lifecycle management (CLM) system with comprehensive features for law firm operations.
+A production-grade Django-based legal practice management system with comprehensive features for law firm operations.
 
 ## Tech Stack
 - **Backend**: Django 5.2.5, Python 3.12

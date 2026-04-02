@@ -47,7 +47,9 @@ def get_or_create_profile(user):
 
 
 def index(request):
-    return redirect('dashboard')
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    return render(request, 'landing.html')
 
 
 def health_check(request):
