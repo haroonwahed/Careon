@@ -26,14 +26,21 @@ from .forms import (
     DueDiligenceProcessForm, DueDiligenceTaskForm, DueDiligenceRiskForm, BudgetExpenseForm,
     ClientForm, MatterForm, DocumentForm, TimeEntryForm, InvoiceForm,
     TrustAccountForm, TrustTransactionForm, DeadlineForm, UserProfileForm,
-    ConflictCheckForm, ContractForm, RegistrationForm
+    ConflictCheckForm, ContractForm, RegistrationForm,
+    CounterpartyForm, ClauseCategoryForm, ClauseTemplateForm, EthicalWallForm,
+    SignatureRequestForm, DataInventoryForm, DSARRequestForm, SubprocessorForm,
+    TransferRecordForm, RetentionPolicyForm, LegalHoldForm, ApprovalRuleForm,
+    ApprovalRequestForm,
 )
 from .models import (
     Contract, NegotiationThread, TrademarkRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense,
     Client, Matter, Document, TimeEntry, Invoice, TrustAccount, TrustTransaction,
-    Deadline, AuditLog, Notification, UserProfile, ConflictCheck
+    Deadline, AuditLog, Notification, UserProfile, ConflictCheck,
+    Counterparty, ClauseCategory, ClauseTemplate, EthicalWall, SignatureRequest,
+    DataInventoryRecord, DSARRequest, Subprocessor, TransferRecord, RetentionPolicy,
+    LegalHold, ApprovalRule, ApprovalRequest,
 )
 from .middleware import log_action
 from config.feature_flags import get_feature_flag, is_feature_redesign_enabled
@@ -1310,3 +1317,428 @@ def dashboard(request):
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
+
+
+class CounterpartyListView(LoginRequiredMixin, ListView):
+    model = Counterparty
+    template_name = 'contracts/counterparty_list.html'
+    context_object_name = 'counterparties'
+
+    def get_queryset(self):
+        qs = Counterparty.objects.all()
+        q = self.request.GET.get('q', '')
+        if q:
+            qs = qs.filter(Q(name__icontains=q) | Q(jurisdiction__icontains=q))
+        return qs
+
+
+class CounterpartyCreateView(LoginRequiredMixin, CreateView):
+    model = Counterparty
+    form_class = CounterpartyForm
+    template_name = 'contracts/counterparty_form.html'
+    success_url = reverse_lazy('contracts:counterparty_list')
+
+
+class CounterpartyDetailView(LoginRequiredMixin, DetailView):
+    model = Counterparty
+    template_name = 'contracts/counterparty_detail.html'
+
+
+class CounterpartyUpdateView(LoginRequiredMixin, UpdateView):
+    model = Counterparty
+    form_class = CounterpartyForm
+    template_name = 'contracts/counterparty_form.html'
+    success_url = reverse_lazy('contracts:counterparty_list')
+
+
+class ClauseCategoryListView(LoginRequiredMixin, ListView):
+    model = ClauseCategory
+    template_name = 'contracts/clause_category_list.html'
+    context_object_name = 'categories'
+
+
+class ClauseCategoryCreateView(LoginRequiredMixin, CreateView):
+    model = ClauseCategory
+    form_class = ClauseCategoryForm
+    template_name = 'contracts/clause_category_form.html'
+    success_url = reverse_lazy('contracts:clause_category_list')
+
+
+class ClauseTemplateListView(LoginRequiredMixin, ListView):
+    model = ClauseTemplate
+    template_name = 'contracts/clause_template_list.html'
+    context_object_name = 'clauses'
+
+    def get_queryset(self):
+        qs = ClauseTemplate.objects.select_related('category').all()
+        cat = self.request.GET.get('category')
+        scope = self.request.GET.get('scope')
+        q = self.request.GET.get('q', '')
+        if cat:
+            qs = qs.filter(category_id=cat)
+        if scope:
+            qs = qs.filter(jurisdiction_scope=scope)
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(content__icontains=q) | Q(tags__icontains=q))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['categories'] = ClauseCategory.objects.all()
+        return ctx
+
+
+class ClauseTemplateCreateView(LoginRequiredMixin, CreateView):
+    model = ClauseTemplate
+    form_class = ClauseTemplateForm
+    template_name = 'contracts/clause_template_form.html'
+    success_url = reverse_lazy('contracts:clause_template_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class ClauseTemplateDetailView(LoginRequiredMixin, DetailView):
+    model = ClauseTemplate
+    template_name = 'contracts/clause_template_detail.html'
+
+
+class ClauseTemplateUpdateView(LoginRequiredMixin, UpdateView):
+    model = ClauseTemplate
+    form_class = ClauseTemplateForm
+    template_name = 'contracts/clause_template_form.html'
+    success_url = reverse_lazy('contracts:clause_template_list')
+
+
+class EthicalWallListView(LoginRequiredMixin, ListView):
+    model = EthicalWall
+    template_name = 'contracts/ethical_wall_list.html'
+    context_object_name = 'walls'
+
+
+class EthicalWallCreateView(LoginRequiredMixin, CreateView):
+    model = EthicalWall
+    form_class = EthicalWallForm
+    template_name = 'contracts/ethical_wall_form.html'
+    success_url = reverse_lazy('contracts:ethical_wall_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class EthicalWallUpdateView(LoginRequiredMixin, UpdateView):
+    model = EthicalWall
+    form_class = EthicalWallForm
+    template_name = 'contracts/ethical_wall_form.html'
+    success_url = reverse_lazy('contracts:ethical_wall_list')
+
+
+class SignatureRequestListView(LoginRequiredMixin, ListView):
+    model = SignatureRequest
+    template_name = 'contracts/signature_request_list.html'
+    context_object_name = 'signatures'
+
+    def get_queryset(self):
+        qs = SignatureRequest.objects.select_related('contract').all()
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+
+class SignatureRequestCreateView(LoginRequiredMixin, CreateView):
+    model = SignatureRequest
+    form_class = SignatureRequestForm
+    template_name = 'contracts/signature_request_form.html'
+    success_url = reverse_lazy('contracts:signature_request_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class SignatureRequestDetailView(LoginRequiredMixin, DetailView):
+    model = SignatureRequest
+    template_name = 'contracts/signature_request_detail.html'
+
+
+class SignatureRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = SignatureRequest
+    form_class = SignatureRequestForm
+    template_name = 'contracts/signature_request_form.html'
+    success_url = reverse_lazy('contracts:signature_request_list')
+
+
+class DataInventoryListView(LoginRequiredMixin, ListView):
+    model = DataInventoryRecord
+    template_name = 'contracts/data_inventory_list.html'
+    context_object_name = 'records'
+
+
+class DataInventoryCreateView(LoginRequiredMixin, CreateView):
+    model = DataInventoryRecord
+    form_class = DataInventoryForm
+    template_name = 'contracts/data_inventory_form.html'
+    success_url = reverse_lazy('contracts:data_inventory_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class DataInventoryDetailView(LoginRequiredMixin, DetailView):
+    model = DataInventoryRecord
+    template_name = 'contracts/data_inventory_detail.html'
+
+
+class DataInventoryUpdateView(LoginRequiredMixin, UpdateView):
+    model = DataInventoryRecord
+    form_class = DataInventoryForm
+    template_name = 'contracts/data_inventory_form.html'
+    success_url = reverse_lazy('contracts:data_inventory_list')
+
+
+class DSARRequestListView(LoginRequiredMixin, ListView):
+    model = DSARRequest
+    template_name = 'contracts/dsar_list.html'
+    context_object_name = 'requests'
+
+    def get_queryset(self):
+        qs = DSARRequest.objects.all().order_by('-received_date')
+        status = self.request.GET.get('status')
+        rtype = self.request.GET.get('type')
+        if status:
+            qs = qs.filter(status=status)
+        if rtype:
+            qs = qs.filter(request_type=rtype)
+        return qs
+
+
+class DSARRequestCreateView(LoginRequiredMixin, CreateView):
+    model = DSARRequest
+    form_class = DSARRequestForm
+    template_name = 'contracts/dsar_form.html'
+    success_url = reverse_lazy('contracts:dsar_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class DSARRequestDetailView(LoginRequiredMixin, DetailView):
+    model = DSARRequest
+    template_name = 'contracts/dsar_detail.html'
+
+
+class DSARRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = DSARRequest
+    form_class = DSARRequestForm
+    template_name = 'contracts/dsar_form.html'
+    success_url = reverse_lazy('contracts:dsar_list')
+
+
+class SubprocessorListView(LoginRequiredMixin, ListView):
+    model = Subprocessor
+    template_name = 'contracts/subprocessor_list.html'
+    context_object_name = 'subprocessors'
+
+
+class SubprocessorCreateView(LoginRequiredMixin, CreateView):
+    model = Subprocessor
+    form_class = SubprocessorForm
+    template_name = 'contracts/subprocessor_form.html'
+    success_url = reverse_lazy('contracts:subprocessor_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class SubprocessorDetailView(LoginRequiredMixin, DetailView):
+    model = Subprocessor
+    template_name = 'contracts/subprocessor_detail.html'
+
+
+class SubprocessorUpdateView(LoginRequiredMixin, UpdateView):
+    model = Subprocessor
+    form_class = SubprocessorForm
+    template_name = 'contracts/subprocessor_form.html'
+    success_url = reverse_lazy('contracts:subprocessor_list')
+
+
+class TransferRecordListView(LoginRequiredMixin, ListView):
+    model = TransferRecord
+    template_name = 'contracts/transfer_record_list.html'
+    context_object_name = 'transfers'
+
+
+class TransferRecordCreateView(LoginRequiredMixin, CreateView):
+    model = TransferRecord
+    form_class = TransferRecordForm
+    template_name = 'contracts/transfer_record_form.html'
+    success_url = reverse_lazy('contracts:transfer_record_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class TransferRecordUpdateView(LoginRequiredMixin, UpdateView):
+    model = TransferRecord
+    form_class = TransferRecordForm
+    template_name = 'contracts/transfer_record_form.html'
+    success_url = reverse_lazy('contracts:transfer_record_list')
+
+
+class RetentionPolicyListView(LoginRequiredMixin, ListView):
+    model = RetentionPolicy
+    template_name = 'contracts/retention_policy_list.html'
+    context_object_name = 'policies'
+
+
+class RetentionPolicyCreateView(LoginRequiredMixin, CreateView):
+    model = RetentionPolicy
+    form_class = RetentionPolicyForm
+    template_name = 'contracts/retention_policy_form.html'
+    success_url = reverse_lazy('contracts:retention_policy_list')
+
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+
+
+class RetentionPolicyUpdateView(LoginRequiredMixin, UpdateView):
+    model = RetentionPolicy
+    form_class = RetentionPolicyForm
+    template_name = 'contracts/retention_policy_form.html'
+    success_url = reverse_lazy('contracts:retention_policy_list')
+
+
+class LegalHoldListView(LoginRequiredMixin, ListView):
+    model = LegalHold
+    template_name = 'contracts/legal_hold_list.html'
+    context_object_name = 'holds'
+
+
+class LegalHoldCreateView(LoginRequiredMixin, CreateView):
+    model = LegalHold
+    form_class = LegalHoldForm
+    template_name = 'contracts/legal_hold_form.html'
+    success_url = reverse_lazy('contracts:legal_hold_list')
+
+    def form_valid(self, form):
+        form.instance.issued_by = self.request.user
+        return super().form_valid(form)
+
+
+class LegalHoldDetailView(LoginRequiredMixin, DetailView):
+    model = LegalHold
+    template_name = 'contracts/legal_hold_detail.html'
+
+
+class LegalHoldUpdateView(LoginRequiredMixin, UpdateView):
+    model = LegalHold
+    form_class = LegalHoldForm
+    template_name = 'contracts/legal_hold_form.html'
+    success_url = reverse_lazy('contracts:legal_hold_list')
+
+
+class ApprovalRuleListView(LoginRequiredMixin, ListView):
+    model = ApprovalRule
+    template_name = 'contracts/approval_rule_list.html'
+    context_object_name = 'rules'
+
+
+class ApprovalRuleCreateView(LoginRequiredMixin, CreateView):
+    model = ApprovalRule
+    form_class = ApprovalRuleForm
+    template_name = 'contracts/approval_rule_form.html'
+    success_url = reverse_lazy('contracts:approval_rule_list')
+
+
+class ApprovalRuleUpdateView(LoginRequiredMixin, UpdateView):
+    model = ApprovalRule
+    form_class = ApprovalRuleForm
+    template_name = 'contracts/approval_rule_form.html'
+    success_url = reverse_lazy('contracts:approval_rule_list')
+
+
+class ApprovalRequestListView(LoginRequiredMixin, ListView):
+    model = ApprovalRequest
+    template_name = 'contracts/approval_request_list.html'
+    context_object_name = 'approvals'
+
+    def get_queryset(self):
+        qs = ApprovalRequest.objects.select_related('contract', 'assigned_to').all().order_by('-created_at')
+        status = self.request.GET.get('status')
+        if status:
+            qs = qs.filter(status=status)
+        return qs
+
+
+class ApprovalRequestCreateView(LoginRequiredMixin, CreateView):
+    model = ApprovalRequest
+    form_class = ApprovalRequestForm
+    template_name = 'contracts/approval_request_form.html'
+    success_url = reverse_lazy('contracts:approval_request_list')
+
+
+class ApprovalRequestUpdateView(LoginRequiredMixin, UpdateView):
+    model = ApprovalRequest
+    form_class = ApprovalRequestForm
+    template_name = 'contracts/approval_request_form.html'
+    success_url = reverse_lazy('contracts:approval_request_list')
+
+
+@login_required
+def privacy_dashboard(request):
+    data_inventory_count = DataInventoryRecord.objects.count()
+    dsar_pending = DSARRequest.objects.filter(status__in=['RECEIVED', 'VERIFIED', 'IN_PROGRESS']).count()
+    dsar_overdue = DSARRequest.objects.filter(
+        status__in=['RECEIVED', 'VERIFIED', 'IN_PROGRESS'],
+        due_date__lt=date.today()
+    ).count()
+    subprocessor_count = Subprocessor.objects.filter(is_active=True).count()
+    transfer_count = TransferRecord.objects.filter(is_active=True).count()
+    retention_count = RetentionPolicy.objects.filter(is_active=True).count()
+    legal_hold_count = LegalHold.objects.filter(status='ACTIVE').count()
+    recent_dsars = DSARRequest.objects.order_by('-received_date')[:5]
+    context = {
+        'data_inventory_count': data_inventory_count,
+        'dsar_pending': dsar_pending,
+        'dsar_overdue': dsar_overdue,
+        'subprocessor_count': subprocessor_count,
+        'transfer_count': transfer_count,
+        'retention_count': retention_count,
+        'legal_hold_count': legal_hold_count,
+        'recent_dsars': recent_dsars,
+    }
+    return render(request, 'contracts/privacy_dashboard.html', context)
+
+
+@login_required
+def global_search(request):
+    q = request.GET.get('q', '').strip()
+    results = {}
+    if q:
+        results['contracts'] = Contract.objects.filter(
+            Q(title__icontains=q) | Q(counterparty__icontains=q) | Q(content__icontains=q)
+        )[:10]
+        results['clients'] = Client.objects.filter(
+            Q(name__icontains=q) | Q(email__icontains=q) | Q(industry__icontains=q)
+        )[:10]
+        results['matters'] = Matter.objects.filter(
+            Q(title__icontains=q) | Q(matter_number__icontains=q) | Q(description__icontains=q)
+        )[:10]
+        results['documents'] = Document.objects.filter(
+            Q(title__icontains=q) | Q(description__icontains=q) | Q(tags__icontains=q)
+        )[:10]
+        results['clauses'] = ClauseTemplate.objects.filter(
+            Q(title__icontains=q) | Q(content__icontains=q) | Q(tags__icontains=q)
+        )[:10]
+        results['counterparties'] = Counterparty.objects.filter(
+            Q(name__icontains=q) | Q(jurisdiction__icontains=q)
+        )[:10]
+    return render(request, 'contracts/search_results.html', {'q': q, 'results': results})

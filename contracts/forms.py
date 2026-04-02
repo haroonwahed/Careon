@@ -6,7 +6,10 @@ from .models import (
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     DueDiligenceProcess, DueDiligenceTask, DueDiligenceRisk, Budget, BudgetExpense,
     Client, Matter, Document, TimeEntry, Invoice, TrustAccount, TrustTransaction,
-    Deadline, UserProfile, ConflictCheck
+    Deadline, UserProfile, ConflictCheck,
+    Counterparty, ClauseCategory, ClauseTemplate, EthicalWall, SignatureRequest,
+    DataInventoryRecord, DSARRequest, Subprocessor, TransferRecord, RetentionPolicy,
+    LegalHold, ApprovalRule, ApprovalRequest,
 )
 
 User = get_user_model()
@@ -207,9 +210,11 @@ class ConflictCheckForm(forms.ModelForm):
 class ContractForm(forms.ModelForm):
     class Meta:
         model = Contract
-        fields = ['title', 'contract_type', 'content', 'status', 'counterparty', 'value',
+        fields = ['title', 'contract_type', 'content', 'status', 'counterparty', 'value', 'currency',
+                  'governing_law', 'jurisdiction', 'language', 'risk_level',
+                  'data_transfer_flag', 'dpa_attached', 'scc_attached', 'lifecycle_stage',
                   'start_date', 'end_date', 'renewal_date', 'auto_renew', 'notice_period_days',
-                  'client', 'matter']
+                  'termination_notice_date', 'client', 'matter']
         widgets = {
             'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'contract_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
@@ -217,11 +222,21 @@ class ContractForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'counterparty': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'value': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
+            'currency': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'governing_law': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'e.g. State of Delaware, England & Wales'}),
+            'jurisdiction': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'e.g. New York, EU'}),
+            'language': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'risk_level': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'data_transfer_flag': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'dpa_attached': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'scc_attached': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'lifecycle_stage': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'end_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'renewal_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'auto_renew': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
             'notice_period_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+            'termination_notice_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'matter': forms.Select(attrs={'class': TAILWIND_SELECT}),
         }
@@ -405,4 +420,262 @@ class ComplianceChecklistForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
             'regulation_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
+        }
+
+
+class CounterpartyForm(forms.ModelForm):
+    class Meta:
+        model = Counterparty
+        fields = ['name', 'entity_type', 'jurisdiction', 'registration_number', 'address',
+                  'contact_name', 'contact_email', 'contact_phone', 'website', 'notes', 'is_active']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'entity_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'jurisdiction': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'registration_number': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'address': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'contact_name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'contact_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
+            'contact_phone': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'website': forms.URLInput(attrs={'class': TAILWIND_INPUT}),
+            'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+        }
+
+
+class ClauseCategoryForm(forms.ModelForm):
+    class Meta:
+        model = ClauseCategory
+        fields = ['name', 'description', 'order']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+        }
+
+
+class ClauseTemplateForm(forms.ModelForm):
+    class Meta:
+        model = ClauseTemplate
+        fields = ['title', 'category', 'content', 'fallback_content', 'jurisdiction_scope',
+                  'is_mandatory', 'applicable_contract_types', 'playbook_notes', 'tags']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'category': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'content': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 8}),
+            'fallback_content': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 5}),
+            'jurisdiction_scope': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'is_mandatory': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'applicable_contract_types': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'NDA, MSA, SOW'}),
+            'playbook_notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'tags': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'comma-separated tags'}),
+        }
+
+
+class EthicalWallForm(forms.ModelForm):
+    class Meta:
+        model = EthicalWall
+        fields = ['name', 'description', 'matter', 'client', 'restricted_users', 'is_active', 'reason', 'expires_at']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'matter': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'restricted_users': forms.SelectMultiple(attrs={'class': TAILWIND_SELECT, 'size': 5}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'reason': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'expires_at': forms.DateTimeInput(attrs={'class': TAILWIND_INPUT, 'type': 'datetime-local'}),
+        }
+
+
+class SignatureRequestForm(forms.ModelForm):
+    class Meta:
+        model = SignatureRequest
+        fields = ['contract', 'document', 'signer_name', 'signer_email', 'signer_role', 'status', 'order']
+        widgets = {
+            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'document': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'signer_name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'signer_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
+            'signer_role': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'e.g. CEO, General Counsel'}),
+            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+        }
+
+
+class DataInventoryForm(forms.ModelForm):
+    class Meta:
+        model = DataInventoryRecord
+        fields = ['title', 'description', 'data_categories', 'data_subjects', 'purpose',
+                  'lawful_basis', 'retention_period', 'recipients', 'third_country_transfers',
+                  'transfer_safeguards', 'technical_measures', 'organizational_measures',
+                  'dpia_required', 'dpia_completed', 'controller', 'processor', 'dpo_contact', 'client']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'data_subjects': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'purpose': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'lawful_basis': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'retention_period': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'recipients': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'third_country_transfers': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'transfer_safeguards': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'technical_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'organizational_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'dpia_required': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'dpia_completed': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'controller': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'processor': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'dpo_contact': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
+        }
+
+
+class DSARRequestForm(forms.ModelForm):
+    class Meta:
+        model = DSARRequest
+        fields = ['request_type', 'status', 'requester_name', 'requester_email',
+                  'requester_id_verified', 'description', 'response', 'denial_reason',
+                  'received_date', 'due_date', 'completed_date', 'extended', 'client', 'assigned_to']
+        widgets = {
+            'request_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'requester_name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'requester_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
+            'requester_id_verified': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'response': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'denial_reason': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'received_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'due_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'completed_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'extended': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'assigned_to': forms.Select(attrs={'class': TAILWIND_SELECT}),
+        }
+
+
+class SubprocessorForm(forms.ModelForm):
+    class Meta:
+        model = Subprocessor
+        fields = ['name', 'description', 'service_type', 'country', 'is_eu_based',
+                  'dpa_in_place', 'scc_in_place', 'dpf_certified', 'data_categories',
+                  'contact_email', 'contract_start_date', 'contract_end_date',
+                  'last_audit_date', 'risk_level', 'is_active', 'notes']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'service_type': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'is_eu_based': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'dpa_in_place': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'scc_in_place': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'dpf_certified': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'contact_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
+            'contract_start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'contract_end_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'last_audit_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'risk_level': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+        }
+
+
+class TransferRecordForm(forms.ModelForm):
+    class Meta:
+        model = TransferRecord
+        fields = ['title', 'source_country', 'destination_country', 'transfer_mechanism',
+                  'data_categories', 'subprocessor', 'contract', 'tia_completed',
+                  'supplementary_measures', 'is_active', 'start_date', 'review_date', 'notes']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'source_country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'destination_country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'transfer_mechanism': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'subprocessor': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'tia_completed': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'supplementary_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'review_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+        }
+
+
+class RetentionPolicyForm(forms.ModelForm):
+    class Meta:
+        model = RetentionPolicy
+        fields = ['title', 'category', 'description', 'retention_period_days', 'legal_basis',
+                  'deletion_method', 'auto_delete', 'review_frequency_days', 'last_reviewed',
+                  'next_review', 'is_active']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'category': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'retention_period_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+            'legal_basis': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
+            'deletion_method': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'auto_delete': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'review_frequency_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+            'last_reviewed': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'next_review': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+        }
+
+
+class LegalHoldForm(forms.ModelForm):
+    class Meta:
+        model = LegalHold
+        fields = ['title', 'description', 'status', 'matter', 'client', 'custodians',
+                  'hold_start_date', 'hold_end_date', 'reason', 'scope']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'matter': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'custodians': forms.SelectMultiple(attrs={'class': TAILWIND_SELECT, 'size': 5}),
+            'hold_start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'hold_end_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
+            'reason': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'scope': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+        }
+
+
+class ApprovalRuleForm(forms.ModelForm):
+    class Meta:
+        model = ApprovalRule
+        fields = ['name', 'description', 'trigger_type', 'trigger_value', 'approval_step',
+                  'approver_role', 'specific_approver', 'sla_hours', 'escalation_after_hours',
+                  'is_active', 'order']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
+            'trigger_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'trigger_value': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'approval_step': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'approver_role': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'specific_approver': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'sla_hours': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+            'escalation_after_hours': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
+            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
+        }
+
+
+class ApprovalRequestForm(forms.ModelForm):
+    class Meta:
+        model = ApprovalRequest
+        fields = ['contract', 'approval_step', 'status', 'assigned_to', 'comments', 'due_date']
+        widgets = {
+            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'approval_step': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'assigned_to': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'comments': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'due_date': forms.DateTimeInput(attrs={'class': TAILWIND_INPUT, 'type': 'datetime-local'}),
         }

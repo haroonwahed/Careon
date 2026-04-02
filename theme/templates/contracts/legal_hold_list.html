@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Legal Holds - CMS Aegis{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Legal Holds</h1>
+        <p class="text-sm text-gray-500 mt-1">Manage legal holds</p>
+    </div>
+    <a href="{% url 'contracts:legal_hold_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        Add New
+    </a>
+</div>
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Title</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Matter</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Start</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">End</th>
+                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for item in holds %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 text-sm text-gray-700"><a href="{% url 'contracts:legal_hold_detail' item.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">{{ item.title }}</a></td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.matter|default:"-" }}</td>
+                <td class="px-5 py-3 text-sm text-gray-700"><span class="px-2 py-1 text-xs rounded-full {% if item.status == 'ACTIVE' %}bg-red-100 text-red-700{% elif item.status == 'RELEASED' %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ item.get_status_display }}</span></td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.hold_start_date }}</td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.hold_end_date|default:"-" }}</td>
+                <td class="px-5 py-3 text-right">
+                    <a href="{% url 'contracts:legal_hold_update' item.pk %}" class="text-sm text-blue-600 hover:text-blue-800">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">No legal holds found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -205,17 +205,52 @@ class Contract(models.Model):
         AMENDMENT = 'AMENDMENT', 'Amendment'
         OTHER = 'OTHER', 'Other'
 
+    class RiskLevel(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+        CRITICAL = 'CRITICAL', 'Critical'
+
+    class Currency(models.TextChoices):
+        USD = 'USD', 'USD ($)'
+        EUR = 'EUR', 'EUR (€)'
+        GBP = 'GBP', 'GBP (£)'
+        CHF = 'CHF', 'CHF (Fr)'
+        CAD = 'CAD', 'CAD (C$)'
+        AUD = 'AUD', 'AUD (A$)'
+        OTHER = 'OTHER', 'Other'
+
     title = models.CharField(max_length=200)
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
     content = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     counterparty = models.CharField(max_length=200, blank=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=5, choices=Currency.choices, default=Currency.USD)
+    governing_law = models.CharField(max_length=200, blank=True, help_text='Governing law jurisdiction')
+    jurisdiction = models.CharField(max_length=200, blank=True, help_text='Contract jurisdiction')
+    language = models.CharField(max_length=50, default='English', blank=True)
+    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.LOW)
+    data_transfer_flag = models.BooleanField(default=False, help_text='Involves cross-border data transfer (EU/US)')
+    dpa_attached = models.BooleanField(default=False, help_text='Data Processing Agreement attached')
+    scc_attached = models.BooleanField(default=False, help_text='Standard Contractual Clauses attached')
     start_date = models.DateField(null=True, blank=True)
     end_date = models.DateField(null=True, blank=True)
     renewal_date = models.DateField(null=True, blank=True)
     auto_renew = models.BooleanField(default=False)
     notice_period_days = models.PositiveIntegerField(null=True, blank=True)
+    termination_notice_date = models.DateField(null=True, blank=True)
+    lifecycle_stage = models.CharField(max_length=20, choices=[
+        ('DRAFTING', 'Drafting'),
+        ('INTERNAL_REVIEW', 'Internal Review'),
+        ('NEGOTIATION', 'Negotiation'),
+        ('APPROVAL', 'Approval'),
+        ('SIGNATURE', 'Signature'),
+        ('EXECUTED', 'Executed'),
+        ('OBLIGATION_TRACKING', 'Obligation Tracking'),
+        ('RENEWAL', 'Renewal/Termination'),
+        ('ARCHIVED', 'Archived'),
+    ], default='DRAFTING')
     client = models.ForeignKey('Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
     matter = models.ForeignKey('Matter', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -934,3 +969,387 @@ class NegotiationThread(models.Model):
 
     def __str__(self):
         return f"{self.contract.title} - {self.title}"
+
+
+class Counterparty(models.Model):
+    class EntityType(models.TextChoices):
+        CORPORATION = 'CORPORATION', 'Corporation'
+        LLC = 'LLC', 'LLC'
+        PARTNERSHIP = 'PARTNERSHIP', 'Partnership'
+        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
+        GOVERNMENT = 'GOVERNMENT', 'Government'
+        NON_PROFIT = 'NON_PROFIT', 'Non-Profit'
+        OTHER = 'OTHER', 'Other'
+
+    name = models.CharField(max_length=300)
+    entity_type = models.CharField(max_length=20, choices=EntityType.choices, default=EntityType.CORPORATION)
+    jurisdiction = models.CharField(max_length=200, blank=True)
+    registration_number = models.CharField(max_length=100, blank=True)
+    address = models.TextField(blank=True)
+    contact_name = models.CharField(max_length=200, blank=True)
+    contact_email = models.EmailField(blank=True)
+    contact_phone = models.CharField(max_length=30, blank=True)
+    website = models.URLField(blank=True)
+    notes = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = 'Counterparties'
+
+    def __str__(self):
+        return self.name
+
+
+class ClauseCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = 'Clause categories'
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return self.name
+
+
+class ClauseTemplate(models.Model):
+    class JurisdictionScope(models.TextChoices):
+        EU = 'EU', 'European Union'
+        US = 'US', 'United States'
+        UK = 'UK', 'United Kingdom'
+        GLOBAL = 'GLOBAL', 'Global/Universal'
+        CUSTOM = 'CUSTOM', 'Custom'
+
+    title = models.CharField(max_length=200)
+    category = models.ForeignKey(ClauseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='clauses')
+    content = models.TextField(help_text='Standard clause text')
+    fallback_content = models.TextField(blank=True, help_text='Fallback/negotiation position')
+    jurisdiction_scope = models.CharField(max_length=10, choices=JurisdictionScope.choices, default=JurisdictionScope.GLOBAL)
+    is_mandatory = models.BooleanField(default=False, help_text='Required in all contracts of this type')
+    applicable_contract_types = models.CharField(max_length=200, blank=True, help_text='Comma-separated contract types')
+    version = models.PositiveIntegerField(default=1)
+    is_approved = models.BooleanField(default=False)
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_clauses')
+    approved_at = models.DateTimeField(null=True, blank=True)
+    playbook_notes = models.TextField(blank=True, help_text='Negotiation playbook guidance')
+    tags = models.CharField(max_length=500, blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.title} (v{self.version})'
+
+
+class EthicalWall(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='ethical_walls')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True, related_name='ethical_walls')
+    restricted_users = models.ManyToManyField(User, related_name='ethical_wall_restrictions', blank=True)
+    is_active = models.BooleanField(default=True)
+    reason = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_walls')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+
+class SignatureRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        SENT = 'SENT', 'Sent'
+        VIEWED = 'VIEWED', 'Viewed'
+        SIGNED = 'SIGNED', 'Signed'
+        DECLINED = 'DECLINED', 'Declined'
+        EXPIRED = 'EXPIRED', 'Expired'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='signature_requests')
+    document = models.ForeignKey(Document, on_delete=models.SET_NULL, null=True, blank=True, related_name='signature_requests')
+    signer_name = models.CharField(max_length=200)
+    signer_email = models.EmailField()
+    signer_role = models.CharField(max_length=100, blank=True, help_text='e.g. CEO, Legal Counsel')
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    external_id = models.CharField(max_length=200, blank=True, help_text='External provider reference ID')
+    sent_at = models.DateTimeField(null=True, blank=True)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+    signed_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+    decline_reason = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    execution_certificate_url = models.URLField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order', 'created_at']
+
+    def __str__(self):
+        return f'{self.contract.title} - {self.signer_name} ({self.get_status_display()})'
+
+
+class DataInventoryRecord(models.Model):
+    class LawfulBasis(models.TextChoices):
+        CONSENT = 'CONSENT', 'Consent'
+        CONTRACT = 'CONTRACT', 'Contractual Necessity'
+        LEGAL_OBLIGATION = 'LEGAL_OBLIGATION', 'Legal Obligation'
+        VITAL_INTEREST = 'VITAL_INTEREST', 'Vital Interest'
+        PUBLIC_INTEREST = 'PUBLIC_INTEREST', 'Public Interest'
+        LEGITIMATE_INTEREST = 'LEGITIMATE_INTEREST', 'Legitimate Interest'
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    data_categories = models.TextField(help_text='Categories of personal data processed')
+    data_subjects = models.TextField(help_text='Categories of data subjects')
+    purpose = models.TextField(help_text='Purpose of processing')
+    lawful_basis = models.CharField(max_length=25, choices=LawfulBasis.choices)
+    retention_period = models.CharField(max_length=200, help_text='e.g. 7 years, until consent withdrawn')
+    recipients = models.TextField(blank=True, help_text='Categories of recipients')
+    third_country_transfers = models.BooleanField(default=False)
+    transfer_safeguards = models.TextField(blank=True, help_text='SCC, DPF, adequacy decision, etc.')
+    technical_measures = models.TextField(blank=True, help_text='Encryption, pseudonymization, etc.')
+    organizational_measures = models.TextField(blank=True, help_text='Access controls, training, etc.')
+    dpia_required = models.BooleanField(default=False, help_text='Data Protection Impact Assessment required')
+    dpia_completed = models.BooleanField(default=False)
+    controller = models.CharField(max_length=200, blank=True)
+    processor = models.CharField(max_length=200, blank=True)
+    dpo_contact = models.CharField(max_length=200, blank=True)
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='data_inventory')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+
+class DSARRequest(models.Model):
+    class RequestType(models.TextChoices):
+        ACCESS = 'ACCESS', 'Right of Access'
+        RECTIFICATION = 'RECTIFICATION', 'Right to Rectification'
+        ERASURE = 'ERASURE', 'Right to Erasure'
+        RESTRICT = 'RESTRICT', 'Right to Restrict Processing'
+        PORTABILITY = 'PORTABILITY', 'Right to Data Portability'
+        OBJECTION = 'OBJECTION', 'Right to Object'
+
+    class Status(models.TextChoices):
+        RECEIVED = 'RECEIVED', 'Received'
+        VERIFIED = 'VERIFIED', 'Identity Verified'
+        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
+        COMPLETED = 'COMPLETED', 'Completed'
+        DENIED = 'DENIED', 'Denied'
+        EXTENDED = 'EXTENDED', 'Extended'
+
+    reference_number = models.CharField(max_length=50, unique=True)
+    request_type = models.CharField(max_length=15, choices=RequestType.choices)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.RECEIVED)
+    requester_name = models.CharField(max_length=200)
+    requester_email = models.EmailField()
+    requester_id_verified = models.BooleanField(default=False)
+    description = models.TextField()
+    response = models.TextField(blank=True)
+    denial_reason = models.TextField(blank=True)
+    received_date = models.DateField()
+    due_date = models.DateField(help_text='Must respond within 30 days (GDPR)')
+    completed_date = models.DateField(null=True, blank=True)
+    extended = models.BooleanField(default=False, help_text='Extension requested (up to 60 additional days)')
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='dsar_requests')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_dsars')
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'DSAR Request'
+
+    def __str__(self):
+        return f'{self.reference_number} - {self.get_request_type_display()}'
+
+    def save(self, *args, **kwargs):
+        if not self.reference_number:
+            last = DSARRequest.objects.order_by('-id').first()
+            next_num = (last.id + 1) if last else 1
+            self.reference_number = f'DSAR-{next_num:05d}'
+        super().save(*args, **kwargs)
+
+    @property
+    def is_overdue(self):
+        if self.status not in ['COMPLETED', 'DENIED'] and self.due_date:
+            return date.today() > self.due_date
+        return False
+
+
+class Subprocessor(models.Model):
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    service_type = models.CharField(max_length=200, help_text='e.g. Cloud hosting, Payment processing')
+    country = models.CharField(max_length=100)
+    is_eu_based = models.BooleanField(default=False)
+    dpa_in_place = models.BooleanField(default=False)
+    scc_in_place = models.BooleanField(default=False)
+    dpf_certified = models.BooleanField(default=False, help_text='Data Privacy Framework certified')
+    data_categories = models.TextField(blank=True, help_text='Types of data shared')
+    contact_email = models.EmailField(blank=True)
+    contract_start_date = models.DateField(null=True, blank=True)
+    contract_end_date = models.DateField(null=True, blank=True)
+    last_audit_date = models.DateField(null=True, blank=True)
+    risk_level = models.CharField(max_length=10, choices=[
+        ('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'),
+    ], default='LOW')
+    is_active = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.name} ({self.country})'
+
+
+class TransferRecord(models.Model):
+    class TransferMechanism(models.TextChoices):
+        ADEQUACY = 'ADEQUACY', 'Adequacy Decision'
+        SCC = 'SCC', 'Standard Contractual Clauses'
+        BCR = 'BCR', 'Binding Corporate Rules'
+        DPF = 'DPF', 'Data Privacy Framework'
+        CONSENT = 'CONSENT', 'Explicit Consent'
+        DEROGATION = 'DEROGATION', 'Derogation'
+
+    title = models.CharField(max_length=200)
+    source_country = models.CharField(max_length=100)
+    destination_country = models.CharField(max_length=100)
+    transfer_mechanism = models.CharField(max_length=15, choices=TransferMechanism.choices)
+    data_categories = models.TextField(help_text='Types of data transferred')
+    subprocessor = models.ForeignKey(Subprocessor, on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers')
+    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, related_name='data_transfers')
+    tia_completed = models.BooleanField(default=False, help_text='Transfer Impact Assessment completed')
+    supplementary_measures = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    start_date = models.DateField(null=True, blank=True)
+    review_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.title} ({self.source_country} → {self.destination_country})'
+
+
+class RetentionPolicy(models.Model):
+    class Category(models.TextChoices):
+        CONTRACTS = 'CONTRACTS', 'Contracts'
+        CLIENT_DATA = 'CLIENT_DATA', 'Client Data'
+        EMPLOYEE_DATA = 'EMPLOYEE_DATA', 'Employee Data'
+        FINANCIAL = 'FINANCIAL', 'Financial Records'
+        CORRESPONDENCE = 'CORRESPONDENCE', 'Correspondence'
+        LITIGATION = 'LITIGATION', 'Litigation Files'
+        COMPLIANCE = 'COMPLIANCE', 'Compliance Records'
+        OTHER = 'OTHER', 'Other'
+
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=20, choices=Category.choices)
+    description = models.TextField(blank=True)
+    retention_period_days = models.PositiveIntegerField(help_text='Retention period in days')
+    legal_basis = models.TextField(blank=True, help_text='Legal requirement for retention')
+    deletion_method = models.CharField(max_length=200, blank=True, help_text='How data is destroyed')
+    auto_delete = models.BooleanField(default=False)
+    review_frequency_days = models.PositiveIntegerField(default=365)
+    last_reviewed = models.DateField(null=True, blank=True)
+    next_review = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name_plural = 'Retention policies'
+
+    def __str__(self):
+        return f'{self.title} ({self.retention_period_days} days)'
+
+
+class LegalHold(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Active'
+        RELEASED = 'RELEASED', 'Released'
+        EXPIRED = 'EXPIRED', 'Expired'
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
+    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='legal_holds')
+    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='legal_holds')
+    custodians = models.ManyToManyField(User, related_name='legal_hold_custodians', blank=True)
+    hold_start_date = models.DateField()
+    hold_end_date = models.DateField(null=True, blank=True)
+    reason = models.TextField(blank=True)
+    scope = models.TextField(blank=True, help_text='Documents, emails, data types in scope')
+    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_holds')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'{self.title} ({self.get_status_display()})'
+
+
+class ApprovalRule(models.Model):
+    class TriggerType(models.TextChoices):
+        VALUE_ABOVE = 'VALUE_ABOVE', 'Contract Value Above'
+        JURISDICTION = 'JURISDICTION', 'Specific Jurisdiction'
+        CONTRACT_TYPE = 'CONTRACT_TYPE', 'Contract Type'
+        RISK_LEVEL = 'RISK_LEVEL', 'Risk Level'
+        DATA_TRANSFER = 'DATA_TRANSFER', 'Cross-border Data Transfer'
+
+    name = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    trigger_type = models.CharField(max_length=20, choices=TriggerType.choices)
+    trigger_value = models.CharField(max_length=200, help_text='Threshold value or matching text')
+    approval_step = models.CharField(max_length=20, choices=[
+        ('LEGAL', 'Legal Review'),
+        ('FINANCE', 'Finance Review'),
+        ('PRIVACY', 'Privacy Review'),
+        ('EXECUTIVE', 'Executive Approval'),
+        ('COMPLIANCE', 'Compliance Review'),
+    ])
+    approver_role = models.CharField(max_length=20, choices=UserProfile.Role.choices)
+    specific_approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_rules')
+    sla_hours = models.PositiveIntegerField(default=48, help_text='SLA in hours for approval')
+    escalation_after_hours = models.PositiveIntegerField(default=72, help_text='Auto-escalate after hours')
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return f'{self.name} ({self.get_trigger_type_display()})'
+
+
+class ApprovalRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+        ESCALATED = 'ESCALATED', 'Escalated'
+
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='approval_requests')
+    rule = models.ForeignKey(ApprovalRule, on_delete=models.SET_NULL, null=True, blank=True)
+    approval_step = models.CharField(max_length=50)
+    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_assignments')
+    comments = models.TextField(blank=True)
+    due_date = models.DateTimeField(null=True, blank=True)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decided_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_decisions')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.contract.title} - {self.approval_step} ({self.get_status_display()})'

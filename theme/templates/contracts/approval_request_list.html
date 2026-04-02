@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Approval Requests - CMS Aegis{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Approval Requests</h1>
+        <p class="text-sm text-gray-500 mt-1">Manage approval requests</p>
+    </div>
+    <a href="{% url 'contracts:approval_request_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+        Add New
+    </a>
+</div>
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <table class="w-full">
+        <thead class="bg-gray-50">
+            <tr>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Contract</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Step</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Assigned To</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Created</th>
+                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for item in approvals %}
+            <tr class="hover:bg-gray-50">
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.contract.title }}</td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.approval_step }}</td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.assigned_to|default:"-" }}</td>
+                <td class="px-5 py-3 text-sm text-gray-700"><span class="px-2 py-1 text-xs rounded-full {% if item.status == 'APPROVED' %}bg-green-100 text-green-700{% elif item.status == 'PENDING' %}bg-yellow-100 text-yellow-700{% elif item.status == 'REJECTED' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">{{ item.get_status_display }}</span></td>
+                <td class="px-5 py-3 text-sm text-gray-700">{{ item.created_at|date:"M d, Y" }}</td>
+                <td class="px-5 py-3 text-right">
+                    <a href="{% url 'contracts:approval_request_update' item.pk %}" class="text-sm text-blue-600 hover:text-blue-800">Edit</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="px-5 py-8 text-center text-sm text-gray-400">No approval requests found</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -120,6 +120,67 @@ urlpatterns = [
     # Repository
     path('repository/', views.RepositoryView.as_view(), name='repository'),
 
+    # Counterparties
+    path('counterparties/', views.CounterpartyListView.as_view(), name='counterparty_list'),
+    path('counterparties/new/', views.CounterpartyCreateView.as_view(), name='counterparty_create'),
+    path('counterparties/<int:pk>/', views.CounterpartyDetailView.as_view(), name='counterparty_detail'),
+    path('counterparties/<int:pk>/edit/', views.CounterpartyUpdateView.as_view(), name='counterparty_update'),
+
+    # Clause Library
+    path('clause-categories/', views.ClauseCategoryListView.as_view(), name='clause_category_list'),
+    path('clause-categories/new/', views.ClauseCategoryCreateView.as_view(), name='clause_category_create'),
+    path('clause-library/', views.ClauseTemplateListView.as_view(), name='clause_template_list'),
+    path('clause-library/new/', views.ClauseTemplateCreateView.as_view(), name='clause_template_create'),
+    path('clause-library/<int:pk>/', views.ClauseTemplateDetailView.as_view(), name='clause_template_detail'),
+    path('clause-library/<int:pk>/edit/', views.ClauseTemplateUpdateView.as_view(), name='clause_template_update'),
+
+    # Ethical Walls
+    path('ethical-walls/', views.EthicalWallListView.as_view(), name='ethical_wall_list'),
+    path('ethical-walls/new/', views.EthicalWallCreateView.as_view(), name='ethical_wall_create'),
+    path('ethical-walls/<int:pk>/edit/', views.EthicalWallUpdateView.as_view(), name='ethical_wall_update'),
+
+    # E-Signatures
+    path('signatures/', views.SignatureRequestListView.as_view(), name='signature_request_list'),
+    path('signatures/new/', views.SignatureRequestCreateView.as_view(), name='signature_request_create'),
+    path('signatures/<int:pk>/', views.SignatureRequestDetailView.as_view(), name='signature_request_detail'),
+    path('signatures/<int:pk>/edit/', views.SignatureRequestUpdateView.as_view(), name='signature_request_update'),
+
+    # Privacy & GDPR
+    path('privacy/', views.privacy_dashboard, name='privacy_dashboard'),
+    path('privacy/data-inventory/', views.DataInventoryListView.as_view(), name='data_inventory_list'),
+    path('privacy/data-inventory/new/', views.DataInventoryCreateView.as_view(), name='data_inventory_create'),
+    path('privacy/data-inventory/<int:pk>/', views.DataInventoryDetailView.as_view(), name='data_inventory_detail'),
+    path('privacy/data-inventory/<int:pk>/edit/', views.DataInventoryUpdateView.as_view(), name='data_inventory_update'),
+    path('privacy/dsar/', views.DSARRequestListView.as_view(), name='dsar_list'),
+    path('privacy/dsar/new/', views.DSARRequestCreateView.as_view(), name='dsar_create'),
+    path('privacy/dsar/<int:pk>/', views.DSARRequestDetailView.as_view(), name='dsar_detail'),
+    path('privacy/dsar/<int:pk>/edit/', views.DSARRequestUpdateView.as_view(), name='dsar_update'),
+    path('privacy/subprocessors/', views.SubprocessorListView.as_view(), name='subprocessor_list'),
+    path('privacy/subprocessors/new/', views.SubprocessorCreateView.as_view(), name='subprocessor_create'),
+    path('privacy/subprocessors/<int:pk>/', views.SubprocessorDetailView.as_view(), name='subprocessor_detail'),
+    path('privacy/subprocessors/<int:pk>/edit/', views.SubprocessorUpdateView.as_view(), name='subprocessor_update'),
+    path('privacy/transfers/', views.TransferRecordListView.as_view(), name='transfer_record_list'),
+    path('privacy/transfers/new/', views.TransferRecordCreateView.as_view(), name='transfer_record_create'),
+    path('privacy/transfers/<int:pk>/edit/', views.TransferRecordUpdateView.as_view(), name='transfer_record_update'),
+    path('privacy/retention/', views.RetentionPolicyListView.as_view(), name='retention_policy_list'),
+    path('privacy/retention/new/', views.RetentionPolicyCreateView.as_view(), name='retention_policy_create'),
+    path('privacy/retention/<int:pk>/edit/', views.RetentionPolicyUpdateView.as_view(), name='retention_policy_update'),
+    path('privacy/legal-holds/', views.LegalHoldListView.as_view(), name='legal_hold_list'),
+    path('privacy/legal-holds/new/', views.LegalHoldCreateView.as_view(), name='legal_hold_create'),
+    path('privacy/legal-holds/<int:pk>/', views.LegalHoldDetailView.as_view(), name='legal_hold_detail'),
+    path('privacy/legal-holds/<int:pk>/edit/', views.LegalHoldUpdateView.as_view(), name='legal_hold_update'),
+
+    # Approval Workflow Engine
+    path('approval-rules/', views.ApprovalRuleListView.as_view(), name='approval_rule_list'),
+    path('approval-rules/new/', views.ApprovalRuleCreateView.as_view(), name='approval_rule_create'),
+    path('approval-rules/<int:pk>/edit/', views.ApprovalRuleUpdateView.as_view(), name='approval_rule_update'),
+    path('approvals/', views.ApprovalRequestListView.as_view(), name='approval_request_list'),
+    path('approvals/new/', views.ApprovalRequestCreateView.as_view(), name='approval_request_create'),
+    path('approvals/<int:pk>/edit/', views.ApprovalRequestUpdateView.as_view(), name='approval_request_update'),
+
+    # Search
+    path('search/', views.global_search, name='global_search'),
+
     # Contracts
     path('', views.ContractListView.as_view(), name='contract_list'),
     path('<int:pk>/', views.ContractDetailView.as_view(), name='contract_detail'),
