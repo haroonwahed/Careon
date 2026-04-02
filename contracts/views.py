@@ -1209,111 +1209,106 @@ def workflow_template_list(request):
 # ==================== DASHBOARD VIEW ====================
 
 def dashboard(request):
-    try:
-        total_contracts = Contract.objects.count()
-    except Exception:
-        total_contracts = 0
-    try:
-        active_contracts = Contract.objects.filter(status='ACTIVE').count()
-    except Exception:
-        active_contracts = 0
-    try:
-        pending_tasks = LegalTask.objects.filter(status='PENDING').count()
-    except Exception:
-        pending_tasks = 0
-    try:
-        active_workflows = Workflow.objects.filter(status='ACTIVE').count()
-    except Exception:
-        active_workflows = 0
-    try:
-        trademark_requests_count = TrademarkRequest.objects.count()
-    except Exception:
-        trademark_requests_count = 0
-    try:
-        pending_trademarks = TrademarkRequest.objects.filter(status='PENDING').count()
-    except Exception:
-        pending_trademarks = 0
-    try:
-        risk_count = RiskLog.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).count()
-    except Exception:
-        risk_count = 0
-    try:
-        recent_contracts = Contract.objects.order_by('-created_at')[:5]
-    except Exception:
-        recent_contracts = []
-    try:
-        upcoming_tasks = LegalTask.objects.filter(
-            status='PENDING', due_date__gte=timezone.now().date()
-        ).order_by('due_date')[:5]
-    except Exception:
-        upcoming_tasks = []
-    try:
-        upcoming_checklists = ChecklistItem.objects.filter(
-            is_completed=False
-        ).select_related('checklist')[:5]
-    except Exception:
-        upcoming_checklists = []
-    try:
-        thirty_days = timezone.now().date() + timedelta(days=30)
-        expiring_soon_count = Contract.objects.filter(
-            end_date__lte=thirty_days, end_date__gte=timezone.now().date(), status='ACTIVE'
-        ).count()
-    except Exception:
-        expiring_soon_count = 0
+    today = date.today()
+    now = timezone.now()
+    thirty_days = today + timedelta(days=30)
+    seven_days = today + timedelta(days=7)
 
-    try:
-        total_clients = Client.objects.count()
-    except Exception:
-        total_clients = 0
-    try:
-        active_matters = Matter.objects.filter(status='ACTIVE').count()
-    except Exception:
-        active_matters = 0
-    try:
-        overdue_deadlines = Deadline.objects.filter(is_completed=False, due_date__lt=date.today()).count()
-    except Exception:
-        overdue_deadlines = 0
-    try:
-        upcoming_deadlines = Deadline.objects.filter(
-            is_completed=False, due_date__gte=date.today(), due_date__lte=date.today() + timedelta(days=7)
-        )[:5]
-    except Exception:
-        upcoming_deadlines = []
-    try:
-        outstanding_invoices = Invoice.objects.filter(status__in=['SENT', 'OVERDUE']).aggregate(
-            total=Sum('total_amount'))['total'] or Decimal('0')
-    except Exception:
-        outstanding_invoices = Decimal('0')
-    try:
-        unread_notifications = 0
-        if request.user.is_authenticated:
-            unread_notifications = Notification.objects.filter(recipient=request.user, is_read=False).count()
-    except Exception:
-        unread_notifications = 0
-    try:
-        recent_audit = AuditLog.objects.select_related('user').order_by('-timestamp')[:5]
-    except Exception:
-        recent_audit = []
+    def _safe(fn, default=0):
+        try:
+            return fn()
+        except Exception:
+            return default
+
+    total_contracts = _safe(lambda: Contract.objects.count())
+    active_contracts = _safe(lambda: Contract.objects.filter(status='ACTIVE').count())
+    draft_contracts = _safe(lambda: Contract.objects.filter(status='DRAFT').count())
+    pending_contracts = _safe(lambda: Contract.objects.filter(status='PENDING').count())
+    expiring_soon_count = _safe(lambda: Contract.objects.filter(
+        end_date__lte=thirty_days, end_date__gte=today, status='ACTIVE').count())
+
+    total_clients = _safe(lambda: Client.objects.count())
+    active_matters = _safe(lambda: Matter.objects.filter(status='ACTIVE').count())
+    total_matters = _safe(lambda: Matter.objects.count())
+
+    pending_tasks = _safe(lambda: LegalTask.objects.filter(status='PENDING').count())
+    active_workflows = _safe(lambda: Workflow.objects.filter(status='ACTIVE').count())
+    risk_count = _safe(lambda: RiskLog.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).count())
+
+    overdue_deadlines = _safe(lambda: Deadline.objects.filter(is_completed=False, due_date__lt=today).count())
+    upcoming_deadline_count = _safe(lambda: Deadline.objects.filter(
+        is_completed=False, due_date__gte=today, due_date__lte=seven_days).count())
+
+    outstanding_invoices = _safe(lambda: Invoice.objects.filter(
+        status__in=['SENT', 'OVERDUE']).aggregate(
+        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
+    overdue_invoices = _safe(lambda: Invoice.objects.filter(status='OVERDUE').aggregate(
+        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
+    paid_this_month = _safe(lambda: Invoice.objects.filter(
+        status='PAID', updated_at__month=today.month, updated_at__year=today.year).aggregate(
+        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
+
+    total_documents = _safe(lambda: Document.objects.count())
+
+    pending_approvals = _safe(lambda: ApprovalRequest.objects.filter(status='PENDING').count())
+    pending_signatures = _safe(lambda: SignatureRequest.objects.filter(status='PENDING').count())
+    open_dsars = _safe(lambda: DSARRequest.objects.filter(status__in=['RECEIVED', 'IN_PROGRESS']).count())
+
+    unread_notifications = 0
+    if request.user.is_authenticated:
+        unread_notifications = _safe(lambda: Notification.objects.filter(
+            recipient=request.user, is_read=False).count())
+
+    recent_contracts = _safe(lambda: list(Contract.objects.order_by('-created_at')[:6]), [])
+    upcoming_deadlines = _safe(lambda: list(Deadline.objects.filter(
+        is_completed=False, due_date__gte=today).order_by('due_date')[:6]), [])
+    upcoming_tasks = _safe(lambda: list(LegalTask.objects.filter(
+        status='PENDING', due_date__gte=today).order_by('due_date')[:5]), [])
+    recent_audit = _safe(lambda: list(AuditLog.objects.select_related('user').order_by('-timestamp')[:8]), [])
+
+    contract_status_data = []
+    for status_code, status_label in [('ACTIVE', 'Active'), ('DRAFT', 'Draft'), ('PENDING', 'In Review'), ('EXPIRED', 'Expired'), ('TERMINATED', 'Terminated')]:
+        cnt = _safe(lambda sc=status_code: Contract.objects.filter(status=sc).count())
+        if cnt > 0:
+            contract_status_data.append({'label': status_label, 'count': cnt})
+
+    billable_this_month = _safe(lambda: TimeEntry.objects.filter(
+        date__month=today.month, date__year=today.year).aggregate(
+        total=Sum('hours'))['total'] or Decimal('0'), Decimal('0'))
+
+    trust_balance = _safe(lambda: TrustAccount.objects.aggregate(
+        total=Sum('balance'))['total'] or Decimal('0'), Decimal('0'))
 
     context = {
         'total_contracts': total_contracts,
         'active_contracts': active_contracts,
-        'pending_tasks': pending_tasks,
-        'active_workflows': active_workflows,
-        'trademark_requests': trademark_requests_count,
-        'pending_trademarks': pending_trademarks,
-        'risk_count': risk_count,
-        'recent_contracts': recent_contracts,
-        'upcoming_tasks': upcoming_tasks,
-        'upcoming_checklists': upcoming_checklists,
+        'draft_contracts': draft_contracts,
+        'pending_contracts': pending_contracts,
         'expiring_soon_count': expiring_soon_count,
         'total_clients': total_clients,
         'active_matters': active_matters,
+        'total_matters': total_matters,
+        'pending_tasks': pending_tasks,
+        'active_workflows': active_workflows,
+        'risk_count': risk_count,
         'overdue_deadlines': overdue_deadlines,
-        'upcoming_deadlines': upcoming_deadlines,
+        'upcoming_deadline_count': upcoming_deadline_count,
         'outstanding_invoices': outstanding_invoices,
+        'overdue_invoices': overdue_invoices,
+        'paid_this_month': paid_this_month,
+        'total_documents': total_documents,
+        'pending_approvals': pending_approvals,
+        'pending_signatures': pending_signatures,
+        'open_dsars': open_dsars,
         'unread_notifications': unread_notifications,
+        'recent_contracts': recent_contracts,
+        'upcoming_deadlines': upcoming_deadlines,
+        'upcoming_tasks': upcoming_tasks,
         'recent_audit': recent_audit,
+        'contract_status_data': contract_status_data,
+        'billable_this_month': billable_this_month,
+        'trust_balance': trust_balance,
+        'today': today,
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)

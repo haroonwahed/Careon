@@ -2,144 +2,524 @@
 {% block title %}Dashboard - CMS Aegis{% endblock %}
 
 {% block content %}
-<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
-    <p class="text-sm text-gray-500 mt-1">Welcome back. Here's your overview.</p>
-</div>
+<style>
+    .dash-grid { display: grid; gap: 20px; }
+    .dash-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .dash-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .dash-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .dash-grid-2-1 { grid-template-columns: 2fr 1fr; }
+    @media (max-width: 1024px) {
+        .dash-grid-4 { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid-3 { grid-template-columns: repeat(2, 1fr); }
+        .dash-grid-2-1 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+        .dash-grid-4, .dash-grid-3, .dash-grid-2 { grid-template-columns: 1fr; }
+    }
 
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Active Contracts</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ active_contracts }}</div>
-        <div class="text-xs text-orange-600 mt-1">{{ expiring_soon_count }} expiring soon</div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Clients</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ total_clients }}</div>
-        <div class="text-xs text-green-600 mt-1">{{ active_matters }} active matters</div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Pending Tasks</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ pending_tasks }}</div>
-        <div class="text-xs text-blue-600 mt-1">{{ active_workflows }} active workflows</div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Outstanding Invoices</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">${{ outstanding_invoices|floatformat:0 }}</div>
-        <div class="text-xs text-red-600 mt-1">{{ overdue_deadlines }} overdue deadlines</div>
-    </div>
-</div>
+    .kpi-card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        padding: 22px 24px;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s ease;
+    }
+    .kpi-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+    .kpi-card .kpi-icon {
+        width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+        margin-bottom: 16px; position: relative; z-index: 1;
+    }
+    .kpi-card .kpi-icon svg { width: 20px; height: 20px; }
+    .kpi-card .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; color: var(--text-primary); }
+    .kpi-card .kpi-label { font-size: 13px; color: var(--text-secondary); margin-top: 6px; font-weight: 500; }
+    .kpi-card .kpi-sub { font-size: 11px; margin-top: 10px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; }
+    .kpi-card .kpi-glow {
+        position: absolute; top: -30px; right: -30px; width: 100px; height: 100px;
+        border-radius: 50%; opacity: 0.06; pointer-events: none; transition: opacity 0.3s;
+    }
+    .kpi-card:hover .kpi-glow { opacity: 0.12; }
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="font-semibold text-gray-900">Recent Contracts</h2>
-            <a href="{% url 'contracts:contract_list' %}" class="text-sm text-blue-600 hover:text-blue-800">View all</a>
+    .panel {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+    .panel-head {
+        padding: 18px 22px;
+        border-bottom: 1px solid var(--card-border);
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-title { font-size: 14px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.01em; }
+    .panel-link {
+        font-size: 12px; color: var(--primary-light); font-weight: 600; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s;
+    }
+    .panel-link:hover { color: var(--primary); }
+    .panel-link svg { width: 14px; height: 14px; }
+
+    .list-row {
+        display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        padding: 14px 22px; border-bottom: 1px solid var(--card-border);
+        transition: background 0.15s; text-decoration: none; color: inherit;
+    }
+    .list-row:last-child { border-bottom: none; }
+    .list-row:hover { background: var(--sidebar-hover); }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .status-dot.green { background: #22C55E; box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+    .status-dot.blue { background: #3B82F6; box-shadow: 0 0 8px rgba(59,130,246,0.4); }
+    .status-dot.yellow { background: #F59E0B; box-shadow: 0 0 8px rgba(245,158,11,0.4); }
+    .status-dot.red { background: #EF4444; box-shadow: 0 0 8px rgba(239,68,68,0.4); }
+    .status-dot.gray { background: #6B7280; }
+
+    .badge-sm {
+        font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px;
+        white-space: nowrap; letter-spacing: 0.01em;
+    }
+    .badge-green { background: rgba(34,197,94,0.12); color: #4ADE80; }
+    .badge-blue { background: rgba(59,130,246,0.12); color: #60A5FA; }
+    .badge-yellow { background: rgba(245,158,11,0.12); color: #FBBF24; }
+    .badge-red { background: rgba(239,68,68,0.12); color: #F87171; }
+    .badge-purple { background: rgba(139,92,246,0.12); color: #A78BFA; }
+    .badge-gray { background: rgba(107,114,128,0.12); color: #9CA3AF; }
+    [data-theme="light"] .badge-green { background: #ECFDF5; color: #059669; }
+    [data-theme="light"] .badge-blue { background: #EFF6FF; color: #2563EB; }
+    [data-theme="light"] .badge-yellow { background: #FFFBEB; color: #D97706; }
+    [data-theme="light"] .badge-red { background: #FEF2F2; color: #DC2626; }
+    [data-theme="light"] .badge-purple { background: #F5F3FF; color: #7C3AED; }
+    [data-theme="light"] .badge-gray { background: #F3F4F6; color: #6B7280; }
+
+    .progress-bar-bg {
+        height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; width: 100%;
+    }
+    .progress-bar-fill {
+        height: 100%; border-radius: 3px; transition: width 0.6s ease;
+    }
+
+    .empty-state {
+        padding: 32px 22px; text-align: center; color: var(--text-muted); font-size: 13px;
+    }
+    .empty-state svg { width: 32px; height: 32px; margin: 0 auto 10px; opacity: 0.3; }
+
+    .action-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600;
+        text-decoration: none; transition: all 0.2s; border: 1px solid var(--card-border);
+        color: var(--text-secondary); background: var(--card-bg);
+    }
+    .action-chip:hover { border-color: var(--primary); color: var(--primary-light); background: var(--primary-subtle); }
+    .action-chip svg { width: 16px; height: 16px; }
+
+    .alert-banner {
+        display: flex; align-items: center; gap: 12px;
+        padding: 14px 20px; border-radius: 12px; font-size: 13px; font-weight: 500;
+    }
+    .alert-banner svg { width: 18px; height: 18px; flex-shrink: 0; }
+    .alert-banner-red { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.15); color: #F87171; }
+    .alert-banner-yellow { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.15); color: #FBBF24; }
+    [data-theme="light"] .alert-banner-red { background: #FEF2F2; border-color: #FECACA; color: #DC2626; }
+    [data-theme="light"] .alert-banner-yellow { background: #FFFBEB; border-color: #FDE68A; color: #D97706; }
+
+    .audit-action { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 2px 8px; border-radius: 4px; }
+
+    .stat-ring {
+        width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+        font-size: 16px; font-weight: 800; color: var(--text-primary);
+        border: 3px solid var(--border); position: relative;
+    }
+</style>
+
+<div style="padding: 28px 32px; max-width: 1400px; margin: 0 auto;">
+
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em; margin: 0;">
+                Welcome back{% if user.first_name %}, {{ user.first_name }}{% endif %}
+            </h1>
+            <p style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">
+                {{ today|date:"l, F j, Y" }}
+            </p>
         </div>
-        <div class="divide-y divide-gray-100">
-            {% for contract in recent_contracts %}
-            <a href="{% url 'contracts:contract_detail' contract.pk %}" class="flex items-center justify-between px-5 py-3 hover:bg-gray-50 transition">
-                <div>
-                    <div class="text-sm font-medium text-gray-900">{{ contract.title|truncatechars:40 }}</div>
-                    <div class="text-xs text-gray-500">{{ contract.counterparty|default:"No counterparty" }}</div>
+        <div style="display: flex; gap: 8px;">
+            <a href="{% url 'contracts:contract_create' %}" class="action-chip">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                New Contract
+            </a>
+            <a href="{% url 'contracts:client_create' %}" class="action-chip">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                New Client
+            </a>
+            <a href="{% url 'contracts:time_entry_create' %}" class="action-chip">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                Log Time
+            </a>
+        </div>
+    </div>
+
+    {% if overdue_deadlines > 0 or risk_count > 0 %}
+    <div style="display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap;">
+        {% if overdue_deadlines > 0 %}
+        <a href="{% url 'contracts:deadline_list' %}" class="alert-banner alert-banner-red" style="text-decoration: none; flex: 1; min-width: 250px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <span><strong>{{ overdue_deadlines }}</strong> overdue deadline{{ overdue_deadlines|pluralize }}</span>
+            <svg style="width: 14px; height: 14px; margin-left: auto; opacity: 0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        {% endif %}
+        {% if risk_count > 0 %}
+        <a href="{% url 'contracts:risk_log_list' %}" class="alert-banner alert-banner-yellow" style="text-decoration: none; flex: 1; min-width: 250px;">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.618 5.984A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <span><strong>{{ risk_count }}</strong> high/critical risk item{{ risk_count|pluralize }}</span>
+            <svg style="width: 14px; height: 14px; margin-left: auto; opacity: 0.6;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="dash-grid dash-grid-4" style="margin-bottom: 24px;">
+
+        <div class="kpi-card">
+            <div class="kpi-glow" style="background: #2563EB;"></div>
+            <div class="kpi-icon" style="background: rgba(37,99,235,0.12);">
+                <svg style="color: #60A5FA;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            </div>
+            <div class="kpi-value">{{ active_contracts }}</div>
+            <div class="kpi-label">Active Contracts</div>
+            {% if expiring_soon_count > 0 %}
+            <div class="kpi-sub" style="background: rgba(245,158,11,0.12); color: #FBBF24;">
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ expiring_soon_count }} expiring soon
+            </div>
+            {% else %}
+            <div class="kpi-sub" style="background: rgba(34,197,94,0.1); color: #4ADE80;">{{ total_contracts }} total</div>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-glow" style="background: #22C55E;"></div>
+            <div class="kpi-icon" style="background: rgba(34,197,94,0.12);">
+                <svg style="color: #4ADE80;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            </div>
+            <div class="kpi-value">{{ total_clients }}</div>
+            <div class="kpi-label">Clients</div>
+            <div class="kpi-sub" style="background: rgba(37,99,235,0.1); color: #60A5FA;">{{ active_matters }} active matter{{ active_matters|pluralize }}</div>
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-glow" style="background: #F59E0B;"></div>
+            <div class="kpi-icon" style="background: rgba(245,158,11,0.12);">
+                <svg style="color: #FBBF24;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </div>
+            <div class="kpi-value">${{ outstanding_invoices|floatformat:0 }}</div>
+            <div class="kpi-label">Outstanding</div>
+            {% if overdue_invoices > 0 %}
+            <div class="kpi-sub" style="background: rgba(239,68,68,0.12); color: #F87171;">
+                <svg style="width: 12px; height: 12px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/></svg>
+                ${{ overdue_invoices|floatformat:0 }} overdue
+            </div>
+            {% else %}
+            <div class="kpi-sub" style="background: rgba(34,197,94,0.1); color: #4ADE80;">${{ paid_this_month|floatformat:0 }} paid this month</div>
+            {% endif %}
+        </div>
+
+        <div class="kpi-card">
+            <div class="kpi-glow" style="background: #8B5CF6;"></div>
+            <div class="kpi-icon" style="background: rgba(139,92,246,0.12);">
+                <svg style="color: #A78BFA;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            </div>
+            <div class="kpi-value">{{ pending_tasks }}</div>
+            <div class="kpi-label">Pending Tasks</div>
+            <div class="kpi-sub" style="background: rgba(37,99,235,0.1); color: #60A5FA;">{{ active_workflows }} workflow{{ active_workflows|pluralize }}</div>
+        </div>
+    </div>
+
+    {% if pending_approvals > 0 or pending_signatures > 0 or open_dsars > 0 %}
+    <div class="dash-grid dash-grid-3" style="margin-bottom: 24px;">
+        {% if pending_approvals > 0 %}
+        <a href="{% url 'contracts:approval_request_list' %}" class="kpi-card" style="text-decoration: none;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="kpi-icon" style="background: rgba(245,158,11,0.12); margin-bottom: 0;">
+                    <svg style="color: #FBBF24;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full {% if contract.status == 'ACTIVE' %}bg-green-100 text-green-800{% elif contract.status == 'DRAFT' %}bg-gray-100 text-gray-600{% elif contract.status == 'PENDING' %}bg-yellow-100 text-yellow-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                <div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">{{ pending_approvals }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Pending Approvals</div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+        {% if pending_signatures > 0 %}
+        <a href="{% url 'contracts:signature_request_list' %}" class="kpi-card" style="text-decoration: none;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="kpi-icon" style="background: rgba(59,130,246,0.12); margin-bottom: 0;">
+                    <svg style="color: #60A5FA;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                </div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">{{ pending_signatures }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Awaiting Signatures</div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+        {% if open_dsars > 0 %}
+        <a href="{% url 'contracts:dsar_list' %}" class="kpi-card" style="text-decoration: none;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div class="kpi-icon" style="background: rgba(239,68,68,0.12); margin-bottom: 0;">
+                    <svg style="color: #F87171;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                </div>
+                <div>
+                    <div style="font-size: 20px; font-weight: 800; color: var(--text-primary);">{{ open_dsars }}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary); font-weight: 500;">Open DSARs</div>
+                </div>
+            </div>
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="dash-grid dash-grid-2-1" style="margin-bottom: 24px;">
+
+        <div class="panel">
+            <div class="panel-head">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #2563EB;"></div>
+                    <span class="panel-title">Recent Contracts</span>
+                </div>
+                <a href="{% url 'contracts:contract_list' %}" class="panel-link">
+                    View all
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% for contract in recent_contracts %}
+            <a href="{% url 'contracts:contract_detail' contract.pk %}" class="list-row">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div class="status-dot {% if contract.status == 'ACTIVE' %}green{% elif contract.status == 'DRAFT' %}gray{% elif contract.status == 'PENDING' %}yellow{% elif contract.status == 'EXPIRED' %}red{% else %}blue{% endif %}"></div>
+                    <div style="min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ contract.title|truncatechars:45 }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ contract.get_contract_type_display|default:"Contract" }} &middot; {{ contract.created_at|date:"M d" }}</div>
+                    </div>
+                </div>
+                <span class="badge-sm {% if contract.status == 'ACTIVE' %}badge-green{% elif contract.status == 'DRAFT' %}badge-gray{% elif contract.status == 'PENDING' %}badge-yellow{% elif contract.status == 'EXPIRED' %}badge-red{% else %}badge-blue{% endif %}">
                     {{ contract.get_status_display }}
                 </span>
             </a>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">
-                No contracts yet. <a href="{% url 'contracts:contract_create' %}" class="text-blue-600">Create one</a>
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                No contracts yet.
+                <a href="{% url 'contracts:contract_create' %}" style="color: var(--primary-light); text-decoration: none; font-weight: 600;"> Create your first contract</a>
             </div>
             {% endfor %}
         </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #8B5CF6;"></div>
+                    <span class="panel-title">Portfolio</span>
+                </div>
+            </div>
+            <div style="padding: 22px;">
+                {% if contract_status_data %}
+                {% for item in contract_status_data %}
+                <div style="margin-bottom: {% if forloop.last %}0{% else %}16px{% endif %};">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                        <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">{{ item.label }}</span>
+                        <span style="font-size: 12px; font-weight: 700; color: var(--text-primary);">{{ item.count }}</span>
+                    </div>
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill" style="width: {% widthratio item.count total_contracts 100 %}%; background: {% if item.label == 'Active' %}#22C55E{% elif item.label == 'Draft' %}#6B7280{% elif item.label == 'In Review' %}#F59E0B{% elif item.label == 'Expired' %}#EF4444{% else %}#8B5CF6{% endif %};"></div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 13px;">
+                    No contract data yet
+                </div>
+                {% endif %}
+
+                <div style="border-top: 1px solid var(--card-border); margin-top: 20px; padding-top: 18px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">{{ total_documents }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Documents</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 800; color: var(--text-primary);">{{ total_matters }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Total Matters</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="font-semibold text-gray-900">Upcoming Deadlines</h2>
-            <a href="{% url 'contracts:deadline_list' %}" class="text-sm text-blue-600 hover:text-blue-800">View all</a>
-        </div>
-        <div class="divide-y divide-gray-100">
-            {% for deadline in upcoming_deadlines %}
-            <div class="flex items-center justify-between px-5 py-3">
-                <div>
-                    <div class="text-sm font-medium text-gray-900">{{ deadline.title|truncatechars:40 }}</div>
-                    <div class="text-xs text-gray-500">{{ deadline.get_deadline_type_display }} &middot; {{ deadline.due_date|date:"M d, Y" }}</div>
+    <div class="dash-grid dash-grid-2" style="margin-bottom: 24px;">
+
+        <div class="panel">
+            <div class="panel-head">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444;"></div>
+                    <span class="panel-title">Upcoming Deadlines</span>
+                    {% if upcoming_deadline_count > 0 %}
+                    <span class="badge-sm badge-red" style="margin-left: 4px;">{{ upcoming_deadline_count }}</span>
+                    {% endif %}
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full {% if deadline.priority == 'CRITICAL' %}bg-red-100 text-red-800{% elif deadline.priority == 'HIGH' %}bg-orange-100 text-orange-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                <a href="{% url 'contracts:deadline_list' %}" class="panel-link">
+                    View all
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% for deadline in upcoming_deadlines %}
+            <div class="list-row">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div style="text-align: center; min-width: 40px;">
+                        <div style="font-size: 18px; font-weight: 800; color: var(--text-primary); line-height: 1;">{{ deadline.due_date|date:"d" }}</div>
+                        <div style="font-size: 10px; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">{{ deadline.due_date|date:"M" }}</div>
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ deadline.title|truncatechars:38 }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ deadline.get_deadline_type_display }}</div>
+                    </div>
+                </div>
+                <span class="badge-sm {% if deadline.priority == 'CRITICAL' %}badge-red{% elif deadline.priority == 'HIGH' %}badge-yellow{% else %}badge-blue{% endif %}">
                     {{ deadline.get_priority_display }}
                 </span>
             </div>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">
-                No upcoming deadlines this week.
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                No upcoming deadlines. You're all clear.
             </div>
             {% endfor %}
         </div>
-    </div>
-</div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="font-semibold text-gray-900">Pending Tasks</h2>
-            <a href="{% url 'contracts:legal_task_kanban' %}" class="text-sm text-blue-600 hover:text-blue-800">View all</a>
-        </div>
-        <div class="divide-y divide-gray-100">
-            {% for task in upcoming_tasks %}
-            <div class="flex items-center justify-between px-5 py-3">
-                <div>
-                    <div class="text-sm font-medium text-gray-900">{{ task.title|truncatechars:40 }}</div>
-                    <div class="text-xs text-gray-500">Due {{ task.due_date|date:"M d" }} &middot; {{ task.get_priority_display }}</div>
+        <div class="panel">
+            <div class="panel-head">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #F59E0B;"></div>
+                    <span class="panel-title">Pending Tasks</span>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full {% if task.priority == 'URGENT' %}bg-red-100 text-red-800{% elif task.priority == 'HIGH' %}bg-orange-100 text-orange-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                <a href="{% url 'contracts:legal_task_kanban' %}" class="panel-link">
+                    View all
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% for task in upcoming_tasks %}
+            <div class="list-row">
+                <div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">
+                    <div style="width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    </div>
+                    <div style="min-width: 0;">
+                        <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ task.title|truncatechars:40 }}</div>
+                        <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Due {{ task.due_date|date:"M d" }}</div>
+                    </div>
+                </div>
+                <span class="badge-sm {% if task.priority == 'URGENT' %}badge-red{% elif task.priority == 'HIGH' %}badge-yellow{% else %}badge-blue{% endif %}">
                     {{ task.get_priority_display }}
                 </span>
             </div>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">No pending tasks.</div>
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                No pending tasks. Nice work.
+            </div>
             {% endfor %}
         </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 class="font-semibold text-gray-900">Recent Activity</h2>
-            <a href="{% url 'contracts:audit_log_list' %}" class="text-sm text-blue-600 hover:text-blue-800">View all</a>
-        </div>
-        <div class="divide-y divide-gray-100">
-            {% for log in recent_audit %}
-            <div class="px-5 py-3">
-                <div class="text-sm text-gray-900">
-                    <span class="font-medium">{{ log.user.get_full_name|default:log.user.username }}</span>
-                    {{ log.get_action_display|lower }} {{ log.model_name }}
+    <div class="dash-grid dash-grid-2-1" style="margin-bottom: 24px;">
+
+        <div class="panel">
+            <div class="panel-head">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="width: 8px; height: 8px; border-radius: 50%; background: #22C55E;"></div>
+                    <span class="panel-title">Activity Feed</span>
                 </div>
-                <div class="text-xs text-gray-500">{{ log.timestamp|timesince }} ago</div>
+                <a href="{% url 'contracts:audit_log_list' %}" class="panel-link">
+                    Full log
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+            {% for log in recent_audit %}
+            <div class="list-row" style="gap: 14px;">
+                <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 11px; font-weight: 700; background: var(--avatar-gradient); flex-shrink: 0;">
+                    {{ log.user.first_name.0|default:log.user.username.0|upper }}
+                </div>
+                <div style="flex: 1; min-width: 0;">
+                    <div style="font-size: 13px; color: var(--text-primary);">
+                        <span style="font-weight: 700;">{{ log.user.get_full_name|default:log.user.username }}</span>
+                        <span style="color: var(--text-secondary); font-weight: 400;">{{ log.get_action_display|lower }}</span>
+                        <span style="font-weight: 500;">{{ log.model_name }}</span>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">{{ log.timestamp|timesince }} ago</div>
+                </div>
+                <span class="audit-action {% if log.action == 'CREATE' %}badge-green{% elif log.action == 'UPDATE' %}badge-blue{% elif log.action == 'DELETE' %}badge-red{% else %}badge-gray{% endif %}">
+                    {{ log.get_action_display }}
+                </span>
             </div>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">No recent activity.</div>
+            <div class="empty-state">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                No recent activity.
+            </div>
             {% endfor %}
         </div>
-    </div>
-</div>
 
-<div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">High Risks</div>
-        <div class="text-2xl font-bold text-red-600 mt-1">{{ risk_count }}</div>
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Billing Snapshot</span>
+                </div>
+                <div style="padding: 22px;">
+                    <div style="margin-bottom: 20px;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Hours This Month</div>
+                        <div style="font-size: 26px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.03em;">{{ billable_this_month|floatformat:1 }}<span style="font-size: 14px; color: var(--text-muted); font-weight: 500; margin-left: 4px;">hrs</span></div>
+                    </div>
+                    <div style="border-top: 1px solid var(--card-border); padding-top: 16px;">
+                        <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Trust Balance (IOLTA)</div>
+                        <div style="font-size: 20px; font-weight: 800; color: #4ADE80; letter-spacing: -0.02em;">${{ trust_balance|floatformat:0 }}</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-head">
+                    <span class="panel-title">Quick Links</span>
+                </div>
+                <a href="{% url 'contracts:reports_dashboard' %}" class="list-row" style="text-decoration: none;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Reports</span>
+                    </div>
+                    <svg style="width: 14px; height: 14px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                <a href="{% url 'contracts:privacy_dashboard' %}" class="list-row" style="text-decoration: none;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Privacy Center</span>
+                    </div>
+                    <svg style="width: 14px; height: 14px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                <a href="{% url 'contracts:clause_template_list' %}" class="list-row" style="text-decoration: none;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Clause Library</span>
+                    </div>
+                    <svg style="width: 14px; height: 14px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+                <a href="{% url 'contracts:conflict_check_list' %}" class="list-row" style="text-decoration: none;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <svg style="width: 16px; height: 16px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                        <span style="font-size: 13px; font-weight: 500; color: var(--text-primary);">Conflict Checks</span>
+                    </div>
+                    <svg style="width: 14px; height: 14px; color: var(--text-muted);" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                </a>
+            </div>
+        </div>
     </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Total Contracts</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ total_contracts }}</div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Trademarks</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ trademark_requests }}</div>
-    </div>
-    <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Active Workflows</div>
-        <div class="text-2xl font-bold text-gray-900 mt-1">{{ active_workflows }}</div>
-    </div>
+
 </div>
 {% endblock %}
