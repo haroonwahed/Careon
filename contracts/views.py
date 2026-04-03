@@ -1592,6 +1592,51 @@ class RiskLogListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     template_name = 'contracts/risk_log_list.html'
     context_object_name = 'risk_logs'
 
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        qs = scope_queryset_for_organization(
+            RiskLog.objects.select_related('contract', 'matter', 'created_by'),
+            org,
+        )
+        search_query = (self.request.GET.get('q') or '').strip()
+        risk_level = (self.request.GET.get('risk_level') or '').strip()
+
+        if search_query:
+            qs = qs.filter(
+                Q(title__icontains=search_query)
+                | Q(description__icontains=search_query)
+                | Q(contract__title__icontains=search_query)
+                | Q(matter__title__icontains=search_query)
+            )
+
+        if risk_level:
+            qs = qs.filter(risk_level=risk_level)
+
+        risk_order = models.Case(
+            models.When(risk_level=RiskLog.RiskLevel.CRITICAL, then=models.Value(0)),
+            models.When(risk_level=RiskLog.RiskLevel.HIGH, then=models.Value(1)),
+            models.When(risk_level=RiskLog.RiskLevel.MEDIUM, then=models.Value(2)),
+            default=models.Value(3),
+            output_field=models.IntegerField(),
+        )
+        return qs.annotate(risk_sort=risk_order).order_by('risk_sort', '-created_at')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = get_user_organization(self.request.user)
+        tenant_risks = scope_queryset_for_organization(RiskLog.objects.all(), org)
+        ctx['search_query'] = (self.request.GET.get('q') or '').strip()
+        ctx['selected_risk_level'] = (self.request.GET.get('risk_level') or '').strip()
+        ctx['total_risks'] = tenant_risks.count()
+        ctx['high_risk_count'] = tenant_risks.filter(risk_level=RiskLog.RiskLevel.HIGH).count()
+        ctx['critical_risk_count'] = tenant_risks.filter(risk_level=RiskLog.RiskLevel.CRITICAL).count()
+        ctx['risk_tabs'] = [
+            ('All Risks', ''),
+            ('High Risk', RiskLog.RiskLevel.HIGH),
+            ('Critical Risk', RiskLog.RiskLevel.CRITICAL),
+        ]
+        return ctx
+
 
 class RiskLogCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     model = RiskLog

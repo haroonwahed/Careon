@@ -1,44 +1,40 @@
-# Design System Decisions
+# CMS Aegis Decisions
 
-## Section #1: Brand System (Bolton Style)
+## Canonical Documentation
 
-### Typography Choice
-- **Decision**: Use Inter font family as the primary typeface
-- **Rationale**: Inter is highly legible, modern, and works well in digital interfaces. It's also web-safe and performs well across different screen sizes.
+- `README_IRONCLAD.md` is the single operational overview for setup, running, auth, reminders, and tests.
+- `DECISIONS.md` is the single decisions log.
+- Duplicate or stale handover docs are removed instead of being kept as parallel sources of truth.
 
-### Color Palette
-- **Decision**: Implement the exact colors specified in the blueprint
-- **Rationale**: These colors provide good contrast ratios and align with professional SaaS applications. The accent color (#0E9F6E) provides a distinct brand identity.
+## Multi-Tenant Authorization
 
-### Component Architecture
-- **Decision**: Use CSS classes with Tailwind utilities rather than CSS-in-JS
-- **Rationale**: Maintains consistency with the existing Django/Tailwind setup and allows for easier theming and maintenance.
+- Organization membership is the basis of tenant access.
+- Roles are `OWNER`, `ADMIN`, and `MEMBER`.
+- Contract permission logic is centralized in `contracts/permissions.py`.
+- `VIEW`, `COMMENT`, and `AI` actions are allowed for any active organization member.
+- `EDIT` is restricted to owners/admins and the contract creator.
 
-### Spacing Scale
-- **Decision**: Use 8px base spacing scale (0.5, 1, 1.5, 2, 3, 4, 5, 6, 8, 10, 12, 16, 20, 24)
-- **Rationale**: 8px scale is a common design system practice that ensures consistent spacing and makes components align properly.
+## Reminder Execution Model
 
-### Feature Flag Implementation
-- **Decision**: Use environment variables with Django settings fallback
-- **Rationale**: Allows for easy toggling in different environments without code changes.
+- Renewal and expiration reminders run through management commands, not cron-specific code.
+- `send_contract_reminders` performs one-off creation.
+- `run_reminder_scheduler` runs the same logic in a long-lived loop.
+- The web server and reminder scheduler are intentionally separate processes.
 
-### Demo Page Structure
-- **Decision**: Create a comprehensive demo page showing all components
-- **Rationale**: Makes it easy to visually verify components work correctly and provides documentation for developers.
+## Local Development Workflow
 
-## Design System Implementation
+- Default local app URL is `http://127.0.0.1:8000`.
+- `scripts/dev_up.sh` starts or adopts the dev server on port `8000` and starts the reminder scheduler.
+- `scripts/dev_down.sh` stops both processes using pid files under `logs/`.
 
-- **Color Tokens**: Used CSS custom properties for consistent theming across components
-- **Component Architecture**: Built reusable components with Tailwind utility classes
-- **Testing Strategy**: Created both unit tests for components and visual regression tests
-- **Documentation**: Added components demo page for design system showcase
+## Auth and Routing
 
-## Global Layout & Navigation
+- Login route is `/login/`, not `/accounts/login/`.
+- Register route is `/register/`.
+- Post-login redirect is `/dashboard/`.
 
-- **Sidebar Approach**: Implemented collapsible sidebar (280px expanded, 64px collapsed) for better space utilization
-- **Top Navigation**: Sticky header with logo, global search, and user actions for consistent access
-- **Feature Flag Integration**: Used base_redesign.html template with conditional rendering based on FEATURE_REDESIGN flag
-- **Keyboard Shortcuts**: Implemented standard shortcuts (/ for search, N for new contract, G+key for navigation)
-- **Search Design**: Centered global search with placeholder text and visual search icon
-- **Content Layout**: Max-width 1200px container with responsive margins for optimal reading width
-- **Sidebar Sections**: Organized into "My Views", "Quick Actions", and "Filters" for logical grouping
+## UI and Test Compatibility
+
+- The redesign contract list and dashboard markers covered by the test suite are part of the supported UI surface.
+- Template changes should preserve tested user-facing markers unless the tests are intentionally updated in the same change.
+- Light/dark mode on auth pages is implemented with CSS variables rather than hardcoded colors.

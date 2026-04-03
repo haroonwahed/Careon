@@ -1,150 +1,119 @@
 
-# Ironclad Mode Features
+# CMS Aegis
 
-This document describes the Ironclad-like features that can be enabled in the contract management system.
+CMS Aegis is a Django-based contract and legal operations platform with multi-tenant organization support, role-based access control, reminders, audit logging, and a tested redesign layer.
 
-## Feature Flag
+## Current State
 
-The Ironclad mode is controlled by the `IRONCLAD_MODE` setting in Django:
+- Backend: Django 5.2.5
+- Database: SQLite in development
+- Auth routes: `/login/`, `/register/`, `/logout/`
+- App shell: dashboard + contract-centric SaaS UI with light/dark theme support
+- Dev server: `127.0.0.1:8000` or `0.0.0.0:8000`
 
-```python
-# In settings.py
-IRONCLAD_MODE = True  # Enable Ironclad features
-```
+## Core Capabilities
 
-Or via environment variable:
-```bash
-export IRONCLAD_MODE=true
-```
+- Contract repository with create, detail, update, notes, AI assistant, deadlines, documents, workflows, risks, legal tasks, compliance checklists, and reporting
+- Multi-tenant organization model using `Organization` and `OrganizationMembership`
+- Organization team management: invites, role changes, deactivation/reactivation, activity log, CSV export
+- Internal reminder system for contract renewals and expirations
+- Internal AI assistant endpoint scoped to contract organization membership
+- Audit logging across key actions
 
-## Features
+## RBAC Model
 
-When `IRONCLAD_MODE=True`, the following features are enabled:
+Permission policy lives in `contracts/permissions.py`.
 
-### 1. Filter Chips and Saved Views
-- Multi-select filter chips for Status, Type, Counterparty, People, Date
-- Save custom views with filters
-- Persistent saved views in localStorage
-- Quick access to common filter combinations
+Organization roles:
 
-### 2. Bulk Selection and Operations
-- Checkbox selection on each contract row
-- "Select all on page" functionality  
-- Bulk action bar appears when contracts are selected
-- Available bulk operations:
-  - Change status
-  - Assign to current user
-  - Export to CSV
+- `OWNER`
+- `ADMIN`
+- `MEMBER`
 
-### 3. Details Drawer
-- Click any row to open details drawer from the right
-- Non-blocking - can browse contracts while drawer is open
-- Deep-linking via URL parameters (`?contractId=123`)
-- Keyboard shortcuts (Esc to close)
+Contract actions:
 
-### 4. Enhanced Search and Sort
-- Debounced search with 300ms delay
-- Sort by Updated (Recent/Oldest), Title, Status
-- Page size controls (25/50/100 per page)
+- `VIEW`, `COMMENT`, `AI`: allowed for any active member of the contract's organization
+- `EDIT`: allowed for organization owners/admins, plus the contract creator
 
-### 5. Keyboard Shortcuts
-- `/` - Focus search input
-- `n` - New contract wizard
-- `Esc` - Close drawer
-- `Shift+A` - Select all contracts on current page
+The centralized policy entry point is `can_access_contract_action(user, contract, action)`.
 
-### 6. Permissions (Stubbed)
-- Role-based access control stub
-- Different bulk actions available based on user role
-- Currently supports: viewer, editor, admin roles
+## Feature Flags
 
-## Services Architecture
+- `IRONCLAD_MODE = False` by default in `config/settings.py`
+- `FEATURE_REDESIGN` is used by the redesign tests and UI paths
 
-### Repository Service Interface
-The system uses a service layer to abstract data operations:
+The redesign and contract list/dashboard markers are covered by the test suite and should be treated as part of the supported UI surface.
 
-```python
-from contracts.services.repository import get_repository_service
-
-# Get service instance
-service = get_repository_service(user, use_mock=False)
-
-# List contracts with filters
-params = ListParams(q="search", status=[ContractStatus.ACTIVE])
-result = service.list(params)
-
-# Bulk operations
-service.bulk_update(["1", "2"], {"status": "ACTIVE"})
-```
-
-### Implementations
-- **DjangoRepositoryService**: Production implementation using Django ORM
-- **MockRepositoryService**: Testing implementation with simulated data and latency
-
-## API Endpoints
-
-When Ironclad mode is enabled, additional API endpoints are available:
-
-- `GET /contracts/api/contracts/` - List contracts with filtering
-- `GET /contracts/api/contracts/{id}/` - Get contract details  
-- `POST /contracts/api/contracts/bulk-update/` - Bulk update contracts
-
-## Testing
-
-Run the Ironclad feature tests:
+## Running Locally
 
 ```bash
-python manage.py test tests.test_ironclad_features
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py runserver 127.0.0.1:8000
 ```
 
-The tests cover:
-- API endpoint functionality
-- Repository service implementations
-- Filtering and search
-- Bulk operations
-- Template rendering with/without Ironclad mode
-
-## Automated Contract Reminder Scheduling
-
-Renewal and expiration reminders can run automatically via in-repo management commands:
+Or run the dev server and reminder scheduler together:
 
 ```bash
-# one-off execution
-python manage.py send_contract_reminders
-
-# scheduler loop (runs hourly by default)
-python manage.py run_reminder_scheduler
-
-# custom interval in minutes
-python manage.py run_reminder_scheduler --interval-minutes 15
-
-# run scheduler logic once and exit
-python manage.py run_reminder_scheduler --once
+bash scripts/dev_up.sh
+bash scripts/dev_up.sh 15
+bash scripts/dev_down.sh
 ```
 
-Recommended production setup:
-- Run `run_reminder_scheduler` as a dedicated background process.
-- Keep the web server and scheduler as separate processes for reliability.
+## Seed Data
 
-## Switching to Real API
+Optional development seed data:
 
-To switch from the current Django backend to a real API:
+```bash
+.venv/bin/python manage.py seed_data
+```
 
-1. Update `get_repository_service()` in `contracts/services/repository.py`
-2. Implement `ApiRepositoryService` class with HTTP calls
-3. Update the factory function to return the new service
-4. All components will automatically use the new service
+That command creates demo users, including:
 
-## Backward Compatibility
+- `admin` / `admin123`
+- `jsmith` / `password123`
+- `sjones` / `password123`
+- `mwilson` / `password123`
 
-- With `IRONCLAD_MODE=False`: App behaves exactly as before
-- All existing routes, exports, and functionality remain unchanged
-- Bolton theme and styling are preserved
-- No breaking changes to existing code
+If you do not run `seed_data`, create your own user with:
 
-## Browser Compatibility
+```bash
+.venv/bin/python manage.py createsuperuser
+```
 
-- Modern browsers supporting ES6+ features
-- Uses native fetch API for HTTP requests
-- CSS Grid and Flexbox for layouts
-- No external JavaScript dependencies
+## Reminder Commands
+
+One-off reminder generation:
+
+```bash
+.venv/bin/python manage.py send_contract_reminders
+```
+
+Long-running scheduler:
+
+```bash
+.venv/bin/python manage.py run_reminder_scheduler
+.venv/bin/python manage.py run_reminder_scheduler --interval-minutes 15
+.venv/bin/python manage.py run_reminder_scheduler --once
+```
+
+Reminder recipients currently include the contract creator, responsible attorneys where present, and active organization owners/admins. Notifications are deduplicated per day.
+
+## Tests
+
+Run the full validated suite:
+
+```bash
+.venv/bin/python manage.py test contracts tests -v 1
+```
+
+As of the latest validation pass:
+
+- `76` tests pass
+- `manage.py check` is clean
+
+## Canonical Docs
+
+- `README_IRONCLAD.md`: current operational overview
+- `DECISIONS.md`: implemented architectural and product decisions
+
+Old Replit-era handover notes and duplicate decision logs have been removed to keep the docs aligned with the codebase.

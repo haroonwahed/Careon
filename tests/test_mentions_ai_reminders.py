@@ -374,6 +374,36 @@ class MentionsAiAndReminderTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_risk_log_list_renders_real_fields(self):
+        self.client.login(username='owner', password='testpass123')
+
+        response = self.client.get(reverse('contracts:risk_log_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Risk Log')
+        self.assertContains(response, 'Data transfer compliance risk')
+        self.assertContains(response, 'Master Services Agreement')
+        self.assertContains(response, 'No mitigation plan recorded')
+
+    def test_risk_log_list_filters_by_search_and_level(self):
+        self.client.login(username='owner', password='testpass123')
+        RiskLog.objects.create(
+            title='Low-priority admin risk',
+            description='Operational cleanup item.',
+            risk_level=RiskLog.RiskLevel.LOW,
+            contract=self.contract,
+            created_by=self.owner,
+        )
+
+        response = self.client.get(
+            reverse('contracts:risk_log_list'),
+            {'q': 'data transfer', 'risk_level': RiskLog.RiskLevel.HIGH},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Data transfer compliance risk')
+        self.assertNotContains(response, 'Low-priority admin risk')
+
     def test_legal_task_create_requires_contract_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
