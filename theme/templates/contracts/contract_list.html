@@ -45,7 +45,12 @@
                 </th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Counterparty</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Client</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Value</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">
+                    <a href="?sort={% if sort == 'value' %}-value{% else %}value{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="inline-flex items-center gap-1 hover:text-gray-700">
+                        Value
+                        {% if sort == 'value' %}↑{% elif sort == '-value' %}↓{% endif %}
+                    </a>
+                </th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">
                     <a href="?sort={% if sort == 'end_date' %}-end_date{% else %}end_date{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="inline-flex items-center gap-1 hover:text-gray-700">
                         End Date
