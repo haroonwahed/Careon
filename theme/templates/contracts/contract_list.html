@@ -21,6 +21,9 @@
         <option value="EXPIRED" {% if request.GET.status == 'EXPIRED' %}selected{% endif %}>Expired</option>
     </select>
     <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Search</button>
+    {% if search_query or request.GET.status %}
+    <a href="{% url 'contracts:contract_list' %}" class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg text-sm hover:bg-gray-50">Clear</a>
+    {% endif %}
 </form>
 <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
     <table class="w-full">
@@ -56,9 +59,9 @@
 </div>
 {% if is_paginated %}
 <div class="mt-4 flex justify-center gap-2">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Previous</a>{% endif %}
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Previous</a>{% endif %}
     <span class="px-3 py-1 text-sm text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Next</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Next</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}
