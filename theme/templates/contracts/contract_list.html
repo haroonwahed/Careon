@@ -13,6 +13,7 @@
 </div>
 <form method="get" class="mb-4 flex gap-2">
     <input type="text" name="q" value="{{ search_query }}" placeholder="Search contracts..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+    <input type="hidden" name="sort" value="{{ sort }}">
     <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
         <option value="">All Statuses</option>
         <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Draft</option>
@@ -29,13 +30,28 @@
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Title</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">
+                    <a href="?sort={% if sort == 'title' %}-title{% else %}title{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="inline-flex items-center gap-1 hover:text-gray-700">
+                        Title
+                        {% if sort == 'title' %}↑{% elif sort == '-title' %}↓{% endif %}
+                    </a>
+                </th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">
+                    <a href="?sort={% if sort == 'status' %}-status{% else %}status{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="inline-flex items-center gap-1 hover:text-gray-700">
+                        Status
+                        {% if sort == 'status' %}↑{% elif sort == '-status' %}↓{% endif %}
+                    </a>
+                </th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Counterparty</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Client</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Value</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">End Date</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">
+                    <a href="?sort={% if sort == 'end_date' %}-end_date{% else %}end_date{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="inline-flex items-center gap-1 hover:text-gray-700">
+                        End Date
+                        {% if sort == 'end_date' %}↑{% elif sort == '-end_date' %}↓{% endif %}
+                    </a>
+                </th>
                 <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Actions</th>
             </tr>
         </thead>
@@ -59,9 +75,9 @@
 </div>
 {% if is_paginated %}
 <div class="mt-4 flex justify-center gap-2">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Previous</a>{% endif %}
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if sort %}&sort={{ sort|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Previous</a>{% endif %}
     <span class="px-3 py-1 text-sm text-gray-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Next</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if sort %}&sort={{ sort|urlencode }}{% endif %}" class="px-3 py-1 bg-white border border-gray-300 rounded text-sm">Next</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

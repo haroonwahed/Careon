@@ -655,18 +655,32 @@ class ContractListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get('q')
         status = self.request.GET.get('status')
         contract_type = self.request.GET.get('type')
+        sort = self.request.GET.get('sort', '-created_at')
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(counterparty__icontains=q))
         if status:
             qs = qs.filter(status=status)
         if contract_type:
             qs = qs.filter(contract_type=contract_type)
-        return qs.order_by('-created_at')
+
+        # Restrict sorting to known fields only.
+        allowed_sort_fields = {
+            'title', '-title',
+            'status', '-status',
+            'end_date', '-end_date',
+            'created_at', '-created_at',
+            'value', '-value',
+        }
+        if sort not in allowed_sort_fields:
+            sort = '-created_at'
+
+        return qs.order_by(sort)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['FEATURE_REDESIGN'] = is_feature_redesign_enabled()
         context['search_query'] = self.request.GET.get('q', '')
+        context['sort'] = self.request.GET.get('sort', '-created_at')
         context['total_contracts'] = Contract.objects.count()
         context['active_contracts'] = Contract.objects.filter(status='ACTIVE').count()
         context['expiring_soon'] = Contract.objects.filter(
