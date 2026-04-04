@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from contracts.models import Contract, Organization, OrganizationMembership
+from contracts.models import Budget, Client as ClientModel, Contract, Matter, Organization, OrganizationMembership, TrademarkRequest
 
 
 class RedesignComponentsTestCase(TestCase):
@@ -65,6 +65,66 @@ class RedesignComponentsTestCase(TestCase):
         self.assertContains(response, 'title="Search"')
         self.assertContains(response, '@media (max-width: 1024px)')
         self.assertContains(response, '@media (max-width: 640px)')
+
+    def test_budget_list_matches_dashboard_style(self):
+        Budget.objects.create(
+            year=2025,
+            quarter=Budget.Quarter.Q3,
+            department='Legal Ops',
+            allocated_amount='120000.00',
+            description='Core operations budget',
+            created_by=self.user,
+        )
+
+        response = self.client.get(reverse('contracts:budget_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Budgets')
+        self.assertContains(response, 'Search budgets by department or description...')
+        self.assertContains(response, 'New Budget')
+        self.assertContains(response, 'Legal Ops')
+
+    def test_trademark_request_list_uses_real_model_fields(self):
+        client_record = ClientModel.objects.create(
+            organization=self.organization,
+            name='Acme Client',
+            created_by=self.user,
+        )
+        matter = Matter.objects.create(
+            organization=self.organization,
+            matter_number='TM-0001',
+            title='Brand Protection',
+            client=client_record,
+            created_by=self.user,
+        )
+        TrademarkRequest.objects.create(
+            mark_text='AEGIS MARK',
+            description='Primary trademark filing for the platform.',
+            goods_services='Legal software services',
+            filing_basis='Use in commerce',
+            status=TrademarkRequest.Status.PENDING,
+            client=client_record,
+            matter=matter,
+        )
+
+        response = self.client.get(reverse('contracts:trademark_request_list'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Trademark Requests')
+        self.assertContains(response, 'Search marks, clients, matters, or descriptions...')
+        self.assertContains(response, 'AEGIS MARK')
+        self.assertContains(response, 'Brand Protection')
+        self.assertContains(response, 'Use in commerce')
+
+    def test_repository_page_preserves_js_hooks_in_new_shell(self):
+        response = self.client.get(reverse('contracts:repository'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Repository')
+        self.assertContains(response, 'id="search-input"')
+        self.assertContains(response, 'id="sort-select"')
+        self.assertContains(response, 'id="contracts-table"')
+        self.assertContains(response, 'id="details-drawer"')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

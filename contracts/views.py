@@ -1564,6 +1564,45 @@ class TrademarkRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
     template_name = 'contracts/trademark_request_list.html'
     context_object_name = 'trademark_requests'
 
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        qs = scope_queryset_for_organization(
+            TrademarkRequest.objects.select_related('client', 'matter'),
+            org,
+        )
+        search_query = (self.request.GET.get('q') or '').strip()
+        status = (self.request.GET.get('status') or '').strip()
+
+        if search_query:
+            qs = qs.filter(
+                Q(mark_text__icontains=search_query)
+                | Q(description__icontains=search_query)
+                | Q(client__name__icontains=search_query)
+                | Q(matter__title__icontains=search_query)
+            )
+
+        if status:
+            qs = qs.filter(status=status)
+
+        return qs.order_by('-updated_at', '-created_at')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = get_user_organization(self.request.user)
+        tenant_requests = scope_queryset_for_organization(TrademarkRequest.objects.all(), org)
+        ctx['search_query'] = (self.request.GET.get('q') or '').strip()
+        ctx['selected_status'] = (self.request.GET.get('status') or '').strip()
+        ctx['status_choices'] = TrademarkRequest.Status.choices
+        ctx['total_requests'] = tenant_requests.count()
+        ctx['pending_requests'] = tenant_requests.filter(status=TrademarkRequest.Status.PENDING).count()
+        ctx['approved_requests'] = tenant_requests.filter(status=TrademarkRequest.Status.APPROVED).count()
+        ctx['request_tabs'] = [
+            ('All Requests', ''),
+            ('Pending', TrademarkRequest.Status.PENDING),
+            ('Approved', TrademarkRequest.Status.APPROVED),
+        ]
+        return ctx
+
 
 class TrademarkRequestDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
     model = TrademarkRequest
@@ -1739,6 +1778,37 @@ class BudgetListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     template_name = 'contracts/budget_list.html'
     context_object_name = 'budgets'
 
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        qs = scope_queryset_for_organization(Budget.objects.all(), org)
+        search_query = (self.request.GET.get('q') or '').strip()
+        year = (self.request.GET.get('year') or '').strip()
+
+        if search_query:
+            qs = qs.filter(Q(department__icontains=search_query) | Q(description__icontains=search_query))
+
+        if year and year.isdigit():
+            qs = qs.filter(year=int(year))
+
+        return qs.order_by('-year', 'quarter', 'department')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = get_user_organization(self.request.user)
+        tenant_budgets = scope_queryset_for_organization(Budget.objects.all(), org)
+        current_year = timezone.localdate().year
+        ctx['search_query'] = (self.request.GET.get('q') or '').strip()
+        ctx['selected_year'] = (self.request.GET.get('year') or '').strip()
+        ctx['current_year'] = current_year
+        ctx['total_budgets'] = tenant_budgets.count()
+        ctx['current_year_budgets'] = tenant_budgets.filter(year=current_year).count()
+        ctx['total_allocated'] = tenant_budgets.aggregate(total=Coalesce(Sum('allocated_amount'), Decimal('0')))['total']
+        ctx['budget_tabs'] = [
+            ('All Budgets', ''),
+            (str(current_year), str(current_year)),
+        ]
+        return ctx
+
 
 class BudgetCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     model = Budget
@@ -1766,6 +1836,20 @@ class RepositoryView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     model = Contract
     template_name = 'contracts/repository.html'
     context_object_name = 'contracts'
+
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        return scope_queryset_for_organization(Contract.objects.select_related('created_by'), org).order_by('-updated_at', '-created_at')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = get_user_organization(self.request.user)
+        tenant_contracts = scope_queryset_for_organization(Contract.objects.all(), org)
+        ctx['total_documents'] = tenant_contracts.count()
+        ctx['active_documents'] = tenant_contracts.filter(status=Contract.Status.ACTIVE).count()
+        ctx['draft_documents'] = tenant_contracts.filter(status=Contract.Status.DRAFT).count()
+        ctx['expiring_documents'] = tenant_contracts.filter(end_date__isnull=False, end_date__lte=timezone.localdate() + timedelta(days=30)).count()
+        return ctx
 
 
 class ProfileView(LoginRequiredMixin, View):

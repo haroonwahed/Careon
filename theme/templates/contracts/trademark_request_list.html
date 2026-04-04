@@ -1,118 +1,105 @@
 {% extends 'base.html' %}
 
-{% block title %}Trademark Requests{% endblock %}
+{% block title %}Trademark Requests - CMS Aegis{% endblock %}
 
 {% block content %}
-<div class="theme-layout">
-    <!-- Left Sidebar -->
-    <aside class="sidebar">
-        <div class="section-title">Trademark Views</div>
-        <a href="{% url 'contracts:trademark_request_list' %}" class="item active" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            All Requests
-            <span class="item-count">{{ trademark_requests.count }}</span>
-        </a>
-        <a href="{% url 'contracts:trademark_request_list' %}?status=PENDING" class="item" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Pending
-        </a>
-        <a href="{% url 'contracts:trademark_request_list' %}?status=REGISTERED" class="item" data-legacy-class="nav-link">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            Registered
-        </a>
-    </aside>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold" style="color:var(--text-primary)">Trademark Requests</h1>
+        <p class="text-sm mt-1" style="color:var(--text-muted)">Manage filing pipelines and linked client matters.</p>
+    </div>
+    <a href="{% url 'contracts:trademark_request_create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90" style="background:var(--btn-gradient)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+        New Request
+    </a>
+</div>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <a href="{% url 'contracts:trademark_request_create' %}" class="btn-primary" data-legacy-class="btn-new-request">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                    </svg>
-                    New Request
-                </a>
-                <div class="search">
-                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    <input type="search" name="search" value="{{ request.GET.search }}" placeholder="Search trademarks" data-legacy-class="search-input">
-                </div>
-            </div>
-            <div class="toolbar-right">
-                <form method="get" class="flex space-x-2">
-                    <select name="status" class="btn-outline" data-legacy-class="filter-select">
-                        <option value="">All Statuses</option>
-                        <option value="PENDING" {% if request.GET.status == 'PENDING' %}selected{% endif %}>Pending</option>
-                        <option value="FILED" {% if request.GET.status == 'FILED' %}selected{% endif %}>Filed</option>
-                        <option value="IN_REVIEW" {% if request.GET.status == 'IN_REVIEW' %}selected{% endif %}>In Review</option>
-                        <option value="REGISTERED" {% if request.GET.status == 'REGISTERED' %}selected{% endif %}>Registered</option>
-                        <option value="REJECTED" {% if request.GET.status == 'REJECTED' %}selected{% endif %}>Rejected</option>
-                    </select>
-                    <button type="submit" class="btn-outline" data-legacy-class="filter-btn">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                        </svg>
-                        Filter
-                    </button>
-                </form>
-            </div>
+<div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Total Requests</p>
+        <p class="text-3xl font-bold" style="color:var(--text-primary)">{{ total_requests }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">active trademark matters</p>
+    </div>
+    <div class="rounded-xl p-5 border" style="background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.28)">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:rgba(251,191,36,0.85)">Pending</p>
+        <p class="text-3xl font-bold" style="color:#FBBF24">{{ pending_requests }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">awaiting action</p>
+    </div>
+    <div class="rounded-xl p-5 border" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.22)">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:#86EFAC">Approved</p>
+        <p class="text-3xl font-bold" style="color:#4ADE80">{{ approved_requests }}</p>
+        <p class="text-xs mt-1" style="color:var(--text-muted)">completed approvals</p>
+    </div>
+</div>
+
+<div class="flex items-center gap-3 mb-4 flex-wrap">
+    {% with cur=selected_status %}
+    <div class="flex items-center rounded-lg p-1 border flex-shrink-0" style="background:var(--surface);border-color:var(--border)">
+        {% for tab_label, tab_value in request_tabs %}
+        <a href="?{% if tab_value %}status={{ tab_value }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}"
+           class="px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap"
+           style="{% if cur == tab_value or not cur and not tab_value %}background:var(--card-bg);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,0.18){% else %}color:var(--text-secondary){% endif %}">
+            {{ tab_label }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endwith %}
+
+    <form method="get" class="flex items-center gap-2 flex-1 min-w-0">
+        <div class="relative flex-1 min-w-0">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Search marks, clients, matters, or descriptions..." class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none" style="background:var(--input-bg);border-color:var(--border);color:var(--text-primary)">
         </div>
-<!-- Main Table -->
-        {% if trademark_requests %}
-        <table class="data" data-legacy-class="trademarks-table">
-            <thead>
-                <tr>
-                    <th>Region</th>
-                    <th>Class Number(s)</th>
-                    <th>Status</th>
-                    <th>Request Date</th>
-                    <th>Renewal Deadline</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for request in trademark_requests %}
-                <tr data-legacy-class="trademark-row" data-trademark-id="{{ request.id }}">
-                    <td>
-                        <a href="{% url 'contracts:trademark_request_detail' request.pk %}" class="font-medium text-blue-600 hover:text-blue-800" data-legacy-class="trademark-link">
-                            {{ request.region }}
-                        </a>
-                    </td>
-                    <td>{{ request.class_number|default:"—" }}</td>
-                    <td>
-                        <span class="pill {% if request.status == 'REGISTERED' %}status-completed{% elif request.status == 'PENDING' or request.status == 'IN_REVIEW' %}status-pending{% else %}status-draft{% endif %}" data-legacy-class="status-badge">
-                            {{ request.get_status_display }}
-                        </span>
-                    </td>
-                    <td>{{ request.request_date|date:"M d, Y"|default:"—" }}</td>
-                    <td>{{ request.renewal_deadline|date:"M d, Y"|default:"—" }}</td>
-                    <td>
-                        <a href="{% url 'contracts:trademark_request_detail' request.pk %}" class="text-blue-600 hover:text-blue-800 font-medium" data-legacy-class="view-link">View</a>
-                        <a href="{% url 'contracts:trademark_request_update' request.pk %}" class="text-blue-600 hover:text-blue-800 font-medium ml-4" data-legacy-class="edit-link">Edit</a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <div class="empty" data-when="no-trademarks" data-legacy-class="empty-state">
-            <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            <h3>No trademark requests found</h3>
-            <p>Get started by creating your first trademark request.</p>
-            <a href="{% url 'contracts:trademark_request_create' %}" data-legacy-class="create-first-trademark">Create your first request</a>
-        </div>
+        <select name="status" class="px-3 py-2 text-sm rounded-lg border focus:outline-none" style="background:var(--surface);border-color:var(--border);color:var(--text-primary)">
+            <option value="">All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border" style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">Search</button>
+        {% if search_query or selected_status %}
+        <a href="{% url 'contracts:trademark_request_list' %}" class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5" style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">Clear</a>
         {% endif %}
+    </form>
+</div>
 
-    </main>
+<div class="rounded-xl border overflow-hidden" style="background:var(--card-bg);border-color:var(--card-border)">
+    <table class="w-full text-sm">
+        <thead style="background:var(--surface);border-bottom:1px solid var(--border)">
+            <tr>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Mark</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Client / Matter</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Filing Basis</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Updated</th>
+                <th class="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for trademark_request in trademark_requests %}
+            <tr class="border-b transition-colors" style="border-color:var(--border)" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
+                <td class="px-5 py-3.5">
+                    <a href="{% url 'contracts:trademark_request_detail' trademark_request.pk %}" class="font-medium" style="color:var(--primary-light)">{{ trademark_request.mark_text }}</a>
+                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ trademark_request.description|truncatechars:72 }}</p>
+                </td>
+                <td class="px-5 py-3.5">
+                    <span class="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full {% if trademark_request.status == 'APPROVED' %}bg-green-100 text-green-800{% elif trademark_request.status == 'PENDING' or trademark_request.status == 'IN_REVIEW' %}bg-yellow-100 text-yellow-800{% elif trademark_request.status == 'REJECTED' %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                        <span class="w-1.5 h-1.5 rounded-full flex-shrink-0 {% if trademark_request.status == 'APPROVED' %}bg-green-500{% elif trademark_request.status == 'PENDING' or trademark_request.status == 'IN_REVIEW' %}bg-yellow-500{% elif trademark_request.status == 'REJECTED' %}bg-red-500{% else %}bg-blue-500{% endif %}"></span>
+                        {{ trademark_request.get_status_display }}
+                    </span>
+                </td>
+                <td class="px-5 py-3.5" style="color:var(--text-secondary)">
+                    {% if trademark_request.client %}<div>{{ trademark_request.client.name }}</div>{% endif %}
+                    {% if trademark_request.matter %}<div class="text-xs" style="color:var(--text-muted)">{{ trademark_request.matter.title }}</div>{% elif not trademark_request.client %}<span style="color:var(--text-dim)">Unlinked</span>{% endif %}
+                </td>
+                <td class="px-5 py-3.5" style="color:var(--text-secondary)">{{ trademark_request.filing_basis|default:'—' }}</td>
+                <td class="px-5 py-3.5" style="color:var(--text-secondary)">{{ trademark_request.updated_at|date:"M d, Y" }}</td>
+                <td class="px-5 py-3.5 text-right"><div class="inline-flex items-center gap-2"><a href="{% url 'contracts:trademark_request_detail' trademark_request.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80" style="color:var(--primary-light);border-color:var(--primary-subtle);background:var(--primary-subtle)">View</a><a href="{% url 'contracts:trademark_request_update' trademark_request.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80" style="color:var(--text-secondary);border-color:var(--border);background:var(--surface)">Edit</a></div></td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="6" class="px-5 py-20 text-center"><div class="flex flex-col items-center gap-3"><div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:var(--surface)"><svg class="w-6 h-6" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div><p class="font-medium" style="color:var(--text-primary)">No trademark requests found</p><p class="text-sm mt-1" style="color:var(--text-muted)">{% if search_query or selected_status %}Try adjusting your filters or <a href="{% url 'contracts:trademark_request_list' %}" style="color:var(--primary-light)">clear the search</a>.{% else %}Get started by <a href="{% url 'contracts:trademark_request_create' %}" style="color:var(--primary-light)">creating your first request</a>.{% endif %}</p></div></div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
 </div>
 {% endblock %}

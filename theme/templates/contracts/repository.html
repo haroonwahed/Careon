@@ -2,195 +2,113 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Repository{% endblock %}
+{% block title %}Repository - CMS Aegis{% endblock %}
 
 {% block content %}
-<div class="theme-layout">
-    <!-- Left Sidebar -->
-    <aside class="sidebar">
-        <div class="section-title">Repository Views</div>
-        <a href="{% url 'contracts:repository' %}" class="item active">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-            All Documents
-        </a>
-        <a href="{% url 'contracts:workflow_template_list' %}" class="item">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-            </svg>
-            Templates
-            <span class="item-count">12</span>
-        </a>
-    </aside>
+<style>
+    .repo-drawer {
+        position: fixed;
+        top: 56px;
+        right: -420px;
+        width: 420px;
+        height: calc(100vh - 56px);
+        background: var(--card-bg);
+        border-left: 1px solid var(--card-border);
+        box-shadow: -16px 0 40px rgba(0,0,0,0.16);
+        transition: right 0.3s ease;
+        overflow-y: auto;
+        z-index: 40;
+    }
+    .repo-drawer.active { right: 0; }
+    .repo-bulk-bar {
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 18px;
+        margin-bottom: 16px;
+        border-radius: 14px;
+        background: var(--primary-subtle);
+        border: 1px solid var(--primary-bg);
+    }
+    .repo-mini-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid var(--card-border);
+        background: var(--card-bg);
+        color: var(--text-secondary);
+    }
+</style>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Toolbar -->
-        <div class="toolbar">
-            <div class="toolbar-left">
-                <button class="btn-primary">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    Upload Document
-                </button>
-                <div class="search">
-                    <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    <input type="search" id="search-input" placeholder="Search documents">
-                </div>
-            </div>
-            <div class="toolbar-right">
-                <select id="sort-select" class="btn-outline">
-                    <option value="updated_desc">Recently Updated</option>
-                    <option value="updated_asc">Oldest First</option>
-                    <option value="title">Title A-Z</option>
-                    <option value="status">Status</option>
-                </select>
-                <button class="btn-outline">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"></path>
-                    </svg>
-                    Filter
-                </button>
-            </div>
-        </div>
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold" style="color:var(--text-primary)">Repository</h1>
+        <p class="text-sm mt-1" style="color:var(--text-muted)">Browse contracts with live search, sorting, and quick-preview drawer.</p>
+    </div>
+    <a href="{% url 'contracts:document_create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90" style="background:var(--btn-gradient)">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+        Upload Document
+    </a>
+</div>
 
-        <!-- Bulk Action Bar (hidden by default) -->
-        <div id="bulk-action-bar" class="bulk-action-bar" style="display: none;">
-            <div class="flex items-center space-x-4">
-                <span id="selected-count" class="font-medium">0 selected</span>
-                <button class="btn-outline btn-sm">Change Status</button>
-                <button class="btn-outline btn-sm">Assign to Me</button>
-                <button class="btn-outline btn-sm">Export CSV</button>
-                <button onclick="window.ironclad.clearSelection()" class="btn-ghost btn-sm">Clear</button>
-            </div>
-        </div>
+<div class="grid grid-cols-4 gap-4 mb-6">
+    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)"><p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Total Contracts</p><p class="text-3xl font-bold" style="color:var(--text-primary)">{{ total_documents }}</p></div>
+    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)"><p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Active</p><p class="text-3xl font-bold" style="color:var(--accent)">{{ active_documents }}</p></div>
+    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)"><p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Draft</p><p class="text-3xl font-bold" style="color:var(--primary)">{{ draft_documents }}</p></div>
+    <div class="rounded-xl p-5 border" style="background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.28)"><p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:rgba(251,191,36,0.85)">Expiring 30d</p><p class="text-3xl font-bold" style="color:#FBBF24">{{ expiring_documents }}</p></div>
+</div>
 
-        <!-- Contracts Table -->
-        <div class="card">
-            <table id="contracts-table" class="table">
-                <thead>
-                    <tr>
-                        <th><input type="checkbox" id="select-all"></th>
-                        <th>Document</th>
-                        <th>Status</th>
-                        <th>Value</th>
-                        <th>Owner</th>
-                        <th>Updated</th>
-                    </tr>
-                </thead>
-                <tbody id="contracts-tbody">
-                    <tr><td colspan="6" class="text-center py-8">Loading...</td></tr>
-                </tbody>
-            </table>
-        </div>
+<div class="flex items-center gap-3 mb-4 flex-wrap">
+    <div class="relative flex-1 min-w-0">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
+        <input type="search" id="search-input" placeholder="Search repository documents" class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none" style="background:var(--input-bg);border-color:var(--border);color:var(--text-primary)">
+    </div>
+    <select id="sort-select" class="px-3 py-2 text-sm rounded-lg border focus:outline-none" style="background:var(--surface);border-color:var(--border);color:var(--text-primary)">
+        <option value="updated_desc">Recently Updated</option>
+        <option value="updated_asc">Oldest First</option>
+        <option value="title">Title A-Z</option>
+        <option value="status">Status</option>
+    </select>
+    <a href="{% url 'contracts:workflow_template_list' %}" class="px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-2" style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">
+        Templates
+    </a>
+</div>
 
-        <!-- Pagination will be added here -->
-        <div id="pagination-container"></div>
-
-    </main>
-
-    <!-- Details Drawer -->
-    <div id="details-drawer" class="details-drawer">
-        <!-- Contract details will be loaded here -->
+<div id="bulk-action-bar" class="repo-bulk-bar">
+    <div class="font-medium" id="selected-count" style="color:var(--text-primary)">0 selected</div>
+    <div class="flex items-center gap-2 flex-wrap">
+        <button class="repo-mini-btn">Change Status</button>
+        <button class="repo-mini-btn">Assign to Me</button>
+        <button class="repo-mini-btn">Export CSV</button>
+        <button onclick="window.ironclad.clearSelection()" class="repo-mini-btn">Clear</button>
     </div>
 </div>
 
+<div class="rounded-xl border overflow-hidden" style="background:var(--card-bg);border-color:var(--card-border)">
+    <table id="contracts-table" class="w-full text-sm">
+        <thead style="background:var(--surface);border-bottom:1px solid var(--border)">
+            <tr>
+                <th class="text-left px-5 py-3" style="color:var(--text-muted)"><input type="checkbox" id="select-all"></th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Document</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Status</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Value</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Owner</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Updated</th>
+            </tr>
+        </thead>
+        <tbody id="contracts-tbody">
+            <tr><td colspan="6" class="px-5 py-20 text-center" style="color:var(--text-muted)">Loading...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<div id="pagination-container" class="mt-4"></div>
+<div id="details-drawer" class="repo-drawer"></div>
+
 <script src="{% static 'js/ironclad-repository.js' %}"></script>
-<style>
-.theme-layout {
-    display: flex;
-    min-height: calc(100vh - 140px);
-}
-.sidebar {
-    width: 240px;
-    background: var(--card);
-    border-right: 1px solid var(--border);
-    padding: 1rem;
-}
-.main-content {
-    flex: 1;
-    padding: 1rem;
-}
-.toolbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    gap: 1rem;
-}
-.toolbar-left, .toolbar-right {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-.search {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-.search-icon {
-    position: absolute;
-    left: 0.75rem;
-    width: 1rem;
-    height: 1rem;
-    color: var(--muted);
-}
-.search input {
-    padding-left: 2.5rem;
-    padding-right: 1rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    min-width: 300px;
-}
-.details-drawer {
-    position: fixed;
-    top: 140px;
-    right: -400px;
-    width: 400px;
-    height: calc(100vh - 140px);
-    background: var(--card);
-    border-left: 1px solid var(--border);
-    box-shadow: var(--shadow-lg);
-    transition: right 0.3s ease;
-    overflow-y: auto;
-}
-.details-drawer.active {
-    right: 0;
-}
-.bulk-action-bar {
-    background: var(--accent);
-    color: white;
-    padding: 0.75rem 1rem;
-    margin-bottom: 1rem;
-    border-radius: var(--radius);
-}
-.status-badge {
-    padding: 0.25rem 0.5rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-}
-.status-active { background: #dcfce7; color: #166534; }
-.status-draft { background: #fef3c7; color: #92400e; }
-.status-expired { background: #fecaca; color: #991b1b; }
-.table {
-    width: 100%;
-}
-.table th, .table td {
-    text-align: left;
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border);
-}
-.table th {
-    background: var(--hover);
-    font-weight: 500;
-    color: var(--muted);
-}
-</style>
 {% endblock %}
