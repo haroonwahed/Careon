@@ -552,11 +552,7 @@ class DeadlineListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         org = self.get_organization()
-        if org:
-            q_org = Q(contract__organization=org) | Q(matter__organization=org)
-            qs = Deadline.objects.select_related('matter', 'contract', 'assigned_to').filter(q_org)
-        else:
-            qs = Deadline.objects.none()
+        qs = Deadline.objects.select_related('matter', 'contract', 'assigned_to').for_organization(org)
         show = self.request.GET.get('show', 'upcoming')
         if show == 'overdue':
             qs = qs.filter(is_completed=False, due_date__lt=date.today())
@@ -571,11 +567,7 @@ class DeadlineListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
-        if org:
-            q_org = Q(contract__organization=org) | Q(matter__organization=org)
-            org_deadlines = Deadline.objects.filter(q_org)
-        else:
-            org_deadlines = Deadline.objects.none()
+        org_deadlines = Deadline.objects.for_organization(org)
         ctx['overdue_count'] = org_deadlines.filter(is_completed=False, due_date__lt=date.today()).count()
         ctx['upcoming_count'] = org_deadlines.filter(is_completed=False, due_date__gte=date.today()).count()
         ctx['show'] = self.request.GET.get('show', 'upcoming')
@@ -607,9 +599,7 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
         org = self.get_organization()
         if not org:
             return Deadline.objects.none()
-        return Deadline.objects.filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
-        )
+        return Deadline.objects.for_organization(org)
 
     def dispatch(self, request, *args, **kwargs):
         deadline = self.get_object()
@@ -626,12 +616,7 @@ def deadline_complete(request, pk):
         request._cached_organization = get_user_organization(request.user)
     organization = request._cached_organization
     
-    if organization:
-        deadline_qs = Deadline.objects.filter(
-            Q(contract__organization=organization) | Q(matter__organization=organization)
-        )
-    else:
-        deadline_qs = Deadline.objects.none()
+    deadline_qs = Deadline.objects.for_organization(organization)
     deadline = get_object_or_404(deadline_qs, pk=pk)
     if deadline.contract and not can_access_contract_action(request.user, deadline.contract, ContractAction.EDIT):
         return HttpResponseForbidden('You do not have permission to complete this contract deadline.')
@@ -2358,23 +2343,11 @@ def dashboard(request):
     seven_days = today + timedelta(days=7)
 
     org = get_user_organization(request.user)
+    
+    # Scoped querysets for primary models with direct FK to organization
     contracts_qs = scope_queryset_for_organization(Contract.objects.all(), org)
     clients_qs = scope_queryset_for_organization(Client.objects.all(), org)
     matters_qs = scope_queryset_for_organization(Matter.objects.all(), org)
-    if org:
-        legal_tasks_qs = LegalTask.objects.filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
-        )
-        risks_qs = RiskLog.objects.filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
-        )
-        deadlines_qs = Deadline.objects.filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
-        )
-    else:
-        legal_tasks_qs = LegalTask.objects.none()
-        risks_qs = RiskLog.objects.none()
-        deadlines_qs = Deadline.objects.none()
     workflows_qs = scope_queryset_for_organization(Workflow.objects.all(), org)
     invoices_qs = scope_queryset_for_organization(Invoice.objects.all(), org)
     documents_qs = scope_queryset_for_organization(Document.objects.all(), org)
@@ -2383,6 +2356,11 @@ def dashboard(request):
     dsars_qs = scope_queryset_for_organization(DSARRequest.objects.all(), org)
     time_entries_qs = scope_queryset_for_organization(TimeEntry.objects.all(), org)
     trust_accounts_qs = scope_queryset_for_organization(TrustAccount.objects.all(), org)
+    
+    # Scoped querysets for models with indirect org FK (via contract/matter)
+    legal_tasks_qs = LegalTask.objects.for_organization(org) if org else LegalTask.objects.none()
+    risks_qs = RiskLog.objects.for_organization(org) if org else RiskLog.objects.none()
+    deadlines_qs = Deadline.objects.for_organization(org)
 
     def _safe(fn, default=0):
         try:

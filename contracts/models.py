@@ -553,6 +553,28 @@ class TrustTransaction(models.Model):
         self.account.save()
 
 
+class DeadlineQuerySet(models.QuerySet):
+    """Custom queryset for Deadline with organization-scoping support."""
+    def for_organization(self, organization):
+        """Filter deadlines that belong to a specific organization via contract or matter."""
+        if not organization:
+            return self.none()
+        from django.db.models import Q
+        return self.filter(
+            Q(contract__organization=organization) | Q(matter__organization=organization)
+        )
+
+
+class DeadlineManager(models.Manager):
+    """Custom manager for Deadline."""
+    def get_queryset(self):
+        return DeadlineQuerySet(self.model, using=self._db)
+    
+    def for_organization(self, organization):
+        """Filter deadlines that belong to a specific organization."""
+        return self.get_queryset().for_organization(organization)
+
+
 class Deadline(models.Model):
     class Priority(models.TextChoices):
         LOW = 'LOW', 'Low'
@@ -585,6 +607,8 @@ class Deadline(models.Model):
     completed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_deadlines')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_deadlines')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = DeadlineManager()
 
     class Meta:
         ordering = ['due_date']
@@ -711,6 +735,28 @@ class TrademarkRequest(models.Model):
         return self.mark_text
 
 
+class LegalTaskQuerySet(models.QuerySet):
+    """Custom queryset for LegalTask with organization-scoping support."""
+    def for_organization(self, organization):
+        """Filter legal tasks that belong to a specific organization via contract or matter."""
+        if not organization:
+            return self.none()
+        from django.db.models import Q
+        return self.filter(
+            Q(contract__organization=organization) | Q(matter__organization=organization)
+        )
+
+
+class LegalTaskManager(models.Manager):
+    """Custom manager for LegalTask."""
+    def get_queryset(self):
+        return LegalTaskQuerySet(self.model, using=self._db)
+    
+    def for_organization(self, organization):
+        """Filter legal tasks that belong to a specific organization."""
+        return self.get_queryset().for_organization(organization)
+
+
 class LegalTask(models.Model):
     class Priority(models.TextChoices):
         LOW = 'LOW', 'Low'
@@ -735,6 +781,8 @@ class LegalTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = LegalTaskManager()
+
     def __str__(self):
         return self.title
 
@@ -744,6 +792,28 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class RiskLogQuerySet(models.QuerySet):
+    """Custom queryset for RiskLog with organization-scoping support."""
+    def for_organization(self, organization):
+        """Filter risk logs that belong to a specific organization via contract or matter."""
+        if not organization:
+            return self.none()
+        from django.db.models import Q
+        return self.filter(
+            Q(contract__organization=organization) | Q(matter__organization=organization)
+        )
+
+
+class RiskLogManager(models.Manager):
+    """Custom manager for RiskLog."""
+    def get_queryset(self):
+        return RiskLogQuerySet(self.model, using=self._db)
+    
+    def for_organization(self, organization):
+        """Filter risk logs that belong to a specific organization."""
+        return self.get_queryset().for_organization(organization)
 
 
 class RiskLog(models.Model):
@@ -761,6 +831,8 @@ class RiskLog(models.Model):
     mitigation_plan = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = RiskLogManager()
 
     def __str__(self):
         return self.title
