@@ -534,7 +534,12 @@ class DeadlineListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        qs = Deadline.objects.select_related('matter', 'contract', 'assigned_to')
+        org = get_user_organization(self.request.user)
+        if org:
+            q_org = Q(contract__organization=org) | Q(matter__organization=org)
+            qs = Deadline.objects.select_related('matter', 'contract', 'assigned_to').filter(q_org)
+        else:
+            qs = Deadline.objects.none()
         show = self.request.GET.get('show', 'upcoming')
         if show == 'overdue':
             qs = qs.filter(is_completed=False, due_date__lt=date.today())
@@ -548,8 +553,14 @@ class DeadlineListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['overdue_count'] = Deadline.objects.filter(is_completed=False, due_date__lt=date.today()).count()
-        ctx['upcoming_count'] = Deadline.objects.filter(is_completed=False, due_date__gte=date.today()).count()
+        org = get_user_organization(self.request.user)
+        if org:
+            q_org = Q(contract__organization=org) | Q(matter__organization=org)
+            org_deadlines = Deadline.objects.filter(q_org)
+        else:
+            org_deadlines = Deadline.objects.none()
+        ctx['overdue_count'] = org_deadlines.filter(is_completed=False, due_date__lt=date.today()).count()
+        ctx['upcoming_count'] = org_deadlines.filter(is_completed=False, due_date__gte=date.today()).count()
         ctx['show'] = self.request.GET.get('show', 'upcoming')
         return ctx
 
@@ -574,6 +585,14 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
     form_class = DeadlineForm
     template_name = 'contracts/deadline_form.html'
     success_url = reverse_lazy('contracts:deadline_list')
+
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        if not org:
+            return Deadline.objects.none()
+        return Deadline.objects.filter(
+            Q(contract__organization=org) | Q(matter__organization=org)
+        )
 
     def dispatch(self, request, *args, **kwargs):
         deadline = self.get_object()
@@ -1566,10 +1585,12 @@ class TrademarkRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
-        qs = scope_queryset_for_organization(
-            TrademarkRequest.objects.select_related('client', 'matter'),
-            org,
-        )
+        if org:
+            qs = TrademarkRequest.objects.select_related('client', 'matter').filter(
+                Q(client__organization=org) | Q(matter__organization=org)
+            )
+        else:
+            qs = TrademarkRequest.objects.none()
         search_query = (self.request.GET.get('q') or '').strip()
         status = (self.request.GET.get('status') or '').strip()
 
@@ -1589,7 +1610,12 @@ class TrademarkRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
-        tenant_requests = scope_queryset_for_organization(TrademarkRequest.objects.all(), org)
+        if org:
+            tenant_requests = TrademarkRequest.objects.filter(
+                Q(client__organization=org) | Q(matter__organization=org)
+            )
+        else:
+            tenant_requests = TrademarkRequest.objects.none()
         ctx['search_query'] = (self.request.GET.get('q') or '').strip()
         ctx['selected_status'] = (self.request.GET.get('status') or '').strip()
         ctx['status_choices'] = TrademarkRequest.Status.choices
@@ -1609,6 +1635,14 @@ class TrademarkRequestDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
     template_name = 'contracts/trademark_request_detail.html'
     context_object_name = 'trademark_request'
 
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        if not org:
+            return TrademarkRequest.objects.none()
+        return TrademarkRequest.objects.filter(
+            Q(client__organization=org) | Q(matter__organization=org)
+        )
+
 
 class TrademarkRequestCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     model = TrademarkRequest
@@ -1623,6 +1657,14 @@ class TrademarkRequestUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
     template_name = 'contracts/trademark_request_form.html'
     success_url = reverse_lazy('contracts:trademark_request_list')
 
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        if not org:
+            return TrademarkRequest.objects.none()
+        return TrademarkRequest.objects.filter(
+            Q(client__organization=org) | Q(matter__organization=org)
+        )
+
 
 # ==================== RISK MANAGEMENT VIEWS ====================
 
@@ -1633,10 +1675,12 @@ class RiskLogListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
-        qs = scope_queryset_for_organization(
-            RiskLog.objects.select_related('contract', 'matter', 'created_by'),
-            org,
-        )
+        if org:
+            qs = RiskLog.objects.select_related('contract', 'matter', 'created_by').filter(
+                Q(contract__organization=org) | Q(matter__organization=org)
+            )
+        else:
+            qs = RiskLog.objects.none()
         search_query = (self.request.GET.get('q') or '').strip()
         risk_level = (self.request.GET.get('risk_level') or '').strip()
 
@@ -1663,7 +1707,12 @@ class RiskLogListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
-        tenant_risks = scope_queryset_for_organization(RiskLog.objects.all(), org)
+        if org:
+            tenant_risks = RiskLog.objects.filter(
+                Q(contract__organization=org) | Q(matter__organization=org)
+            )
+        else:
+            tenant_risks = RiskLog.objects.none()
         ctx['search_query'] = (self.request.GET.get('q') or '').strip()
         ctx['selected_risk_level'] = (self.request.GET.get('risk_level') or '').strip()
         ctx['total_risks'] = tenant_risks.count()
@@ -1695,6 +1744,14 @@ class RiskLogUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVie
     form_class = RiskLogForm
     template_name = 'contracts/risk_log_form.html'
     success_url = reverse_lazy('contracts:risk_log_list')
+
+    def get_queryset(self):
+        org = get_user_organization(self.request.user)
+        if not org:
+            return RiskLog.objects.none()
+        return RiskLog.objects.filter(
+            Q(contract__organization=org) | Q(matter__organization=org)
+        )
 
     def dispatch(self, request, *args, **kwargs):
         risk_log = self.get_object()

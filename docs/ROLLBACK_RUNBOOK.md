@@ -1,0 +1,220 @@
+# CMS-Aegis Rollback Runbook
+
+> **Purpose** — Authoritative step-by-step guide for reverting the application
+> to a known-good state. Use this when a deployment introduces a regression,
+> data corruption, or security incident. All commands assume the production or
+> staging server; adapt paths for other environments.
+
+---
+
+## 0. Before You Start
+
+| Prerequisite | Command |
+|---|---|
+| SSH onto the app server | `ssh deploy@<host>` |
+| Activate the virtualenv | `source /opt/cms-aegis/.venv/bin/activate` |
+| Confirm current HEAD | `git -C /opt/cms-aegis log -1 --oneline` |
+| Check migration state | `python manage.py showmigrations` |
+| Verify backup exists | `ls -lth /backups/cms-aegis/ \| head -5` |
+
+> **Never roll back without a database backup confirmed within the last hour.**
+
+---
+
+## 1. Classification
+
+Determine the rollback level needed before acting:
+
+| Level | Symptoms | Action |
+|---|---|---|
+| **L1 – Config only** | Wrong env var, bad feature flag | Update `.env`, restart Gunicorn |
+| **L2 – Code only** | Python/template bug, no schema change | `git revert` or `git checkout`, restart |
+| **L3 – Code + migrations** | Data shape changed; migration was applied | Reverse migration then code rollback |
+| **L4 – Data corruption** | Rows deleted/corrupted | Restore from DB backup |
+
+---
+
+## 2. L1 — Config / Feature Flag Rollback
+
+```bash
+# 1. Edit the env file
+nano /opt/cms-aegis/.env
+
+# 2. Restart the application server
+sudo systemctl restart gunicorn-cms-aegis
+
+# 3. Smoke-test
+curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
+```
+
+**Feature flags** (toggle without a restart when using database flags):
+
+```bash
+# Disable the redesign flag immediately
+python manage.py shell -c "
+from config.feature_flags import set_flag
+set_flag('FEATURE_REDESIGN', False)
+"
+```
+
+---
+
+## 3. L2 — Code-Only Rollback
+
+```bash
+cd /opt/cms-aegis
+
+# 1. Identify the last good commit
+git log --oneline -10
+
+# 2. Revert to it (keeps history)
+git revert <bad-commit-sha> --no-edit
+# OR hard-reset to a tag / known SHA (destructive — confirm with team):
+# git reset --hard <good-sha>
+
+# 3. Install any dependency changes
+pip install -r requirements.txt
+
+# 4. Collect static assets
+python manage.py collectstatic --noinput
+
+# 5. Restart
+sudo systemctl restart gunicorn-cms-aegis
+
+# 6. Verify health
+curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
+```
+
+---
+
+## 4. L3 — Migration Rollback
+
+### 4.1 Current migration state (as of 2026-04-04)
+
+| App | Latest applied migration |
+|---|---|
+| `contracts` | `0004_organizationinvitation` |
+| `auth` | `0012_alter_user_first_name_max_length` |
+| `admin` | `0003_logentry_add_action_flag_choices` |
+| `sessions` | `0001_initial` |
+
+### 4.2 Reverting a migration
+
+```bash
+cd /opt/cms-aegis
+
+# 1. Back up the database FIRST
+pg_dump -Fc cms_aegis > /backups/cms-aegis/pre-rollback-$(date +%Y%m%dT%H%M%S).dump
+# SQLite equivalent:
+cp db.sqlite3 /backups/cms-aegis/db-pre-rollback-$(date +%Y%m%dT%H%M%S).sqlite3
+
+# 2. Identify the migration to revert to
+python manage.py showmigrations contracts
+
+# 3. Migrate backwards (replace 0003 with the target state)
+python manage.py migrate contracts 0003_organization_client_organization_and_more
+
+# 4. Check the state
+python manage.py showmigrations contracts
+
+# 5. Roll back the code
+git revert <migration-commit-sha> --no-edit
+pip install -r requirements.txt
+
+# 6. Restart
+sudo systemctl restart gunicorn-cms-aegis
+```
+
+> **Data warning**: reversing a migration that adds columns is usually safe.
+> Reversing one that removes columns or tables may silently discard data.
+> Always verify the migration's `reverse_sql` / `operations` before running.
+
+### 4.3 Reverting all contracts migrations to zero (emergency only)
+
+```bash
+python manage.py migrate contracts zero
+# This drops ALL contracts tables — only for staging/test environments
+```
+
+---
+
+## 5. L4 — Database Restore
+
+```bash
+# --- PostgreSQL ---
+# 1. Stop the application
+sudo systemctl stop gunicorn-cms-aegis
+
+# 2. Drop and recreate the database
+psql -U postgres -c "DROP DATABASE cms_aegis;"
+psql -U postgres -c "CREATE DATABASE cms_aegis OWNER cms_user;"
+
+# 3. Restore from backup
+pg_restore -Fc -d cms_aegis /backups/cms-aegis/<backup-file>.dump
+
+# 4. Re-run any migrations added after the backup was taken
+python manage.py migrate --run-syncdb
+
+# 5. Restart
+sudo systemctl restart gunicorn-cms-aegis
+
+# --- SQLite (development / small deployments) ---
+sudo systemctl stop gunicorn-cms-aegis
+cp /backups/cms-aegis/<backup>.sqlite3 db.sqlite3
+sudo systemctl start gunicorn-cms-aegis
+```
+
+---
+
+## 6. Post-Rollback Verification Checklist
+
+Run this after every rollback before declaring it complete.
+
+```bash
+# 1. Django system check
+python manage.py check --deploy
+
+# 2. Unit + integration tests
+python manage.py test tests/ --verbosity=2
+
+# 3. Cross-tenant isolation
+python manage.py test tests.test_cross_tenant_isolation -v 2
+
+# 4. Playwright smoke suite (requires Node + Playwright installed)
+cd client && E2E_BASE_URL=https://<host> npx playwright test tests/e2e/
+
+# 5. Manual spot-checks
+#   - Log in as a non-admin user → dashboard loads
+#   - Create a contract → save succeeds
+#   - Log in as a second org user → first org data NOT visible
+```
+
+---
+
+## 7. Comms Template
+
+> **TO:** eng-alerts channel  
+> **SUBJECT:** [CMS-Aegis] Rollback executed — \<date\>  
+>
+> **Incident summary:** \<one-line description\>  
+> **Rollback level:** L\<1-4\>  
+> **Rolled back to commit/migration:** \<sha or migration name\>  
+> **Data impact:** None / \<describe\>  
+> **All-clear time:** \<timestamp\>  
+> **Follow-up action:** \<owner\> to create a post-mortem issue within 24 h
+
+---
+
+## 8. Drill Schedule
+
+| Frequency | Drill |
+|---|---|
+| Monthly | L2 code rollback on staging |
+| Quarterly | L3 migration rollback on staging with synthetic data |
+| Semi-annually | L4 full DB restore on staging |
+
+Drill results should be recorded in `docs/DRILL_LOG.md`.
+
+---
+
+*Last updated: 2026-04-04*
