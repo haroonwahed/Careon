@@ -351,26 +351,23 @@ class UnauthenticatedAccessTest(TestCase):
 
 
 # ===========================================================================
-# 4. KNOWN GAPS – schema migration required for full isolation
+# 4. Previously-known gaps — now fixed via migration 0005
 # ===========================================================================
 
-@unittest.skip(
-    'KNOWN SECURITY GAP: Budget has no organization FK and no indirect org '
-    'link. A migration adding organization FK is required before isolation '
-    'can be enforced. Track: https://github.com/Technivian/CMS-Aegis/issues'
-)
 class BudgetIsolationTest(CrossTenantFixtureMixin, TestCase):
-    """Budget cross-tenant isolation – currently NOT enforced (known gap)."""
+    """Budget cross-tenant isolation – enforced via organization FK (migration 0005)."""
 
     def setUp(self):
         super().setUp()
         self.budget_a = Budget.objects.create(
+            organization=self.org_a,
             year=2025, quarter='Q1',
             department='AlphaDept',
             allocated_amount='50000.00',
             created_by=self.user_a,
         )
         self.budget_b = Budget.objects.create(
+            organization=self.org_b,
             year=2025, quarter='Q1',
             department='BetaDept',
             allocated_amount='50000.00',
@@ -390,18 +387,19 @@ class BudgetIsolationTest(CrossTenantFixtureMixin, TestCase):
         url = reverse('contracts:budget_detail', kwargs={'pk': self.budget_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
+    def test_update_cross_org_returns_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('contracts:budget_update', kwargs={'pk': self.budget_a.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
 
-@unittest.skip(
-    'KNOWN SECURITY GAP: DueDiligenceProcess has no organization FK and no '
-    'indirect org link. A migration adding organization FK is required. '
-    'Track: https://github.com/Technivian/CMS-Aegis/issues'
-)
+
 class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
-    """DueDiligenceProcess cross-tenant isolation – currently NOT enforced."""
+    """DueDiligenceProcess cross-tenant isolation – enforced via organization FK (migration 0005)."""
 
     def setUp(self):
         super().setUp()
         self.dd_a = DueDiligenceProcess.objects.create(
+            organization=self.org_a,
             title='Alpha DD', transaction_type='ACQUISITION',
             target_company='Target A',
             start_date=datetime.date.today(),
@@ -409,6 +407,7 @@ class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
             lead_attorney=self.user_a,
         )
         self.dd_b = DueDiligenceProcess.objects.create(
+            organization=self.org_b,
             title='Beta DD', transaction_type='MERGER',
             target_company='Target B',
             start_date=datetime.date.today(),
@@ -427,4 +426,9 @@ class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
         url = reverse('contracts:due_diligence_detail', kwargs={'pk': self.dd_a.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_update_cross_org_returns_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('contracts:due_diligence_update', kwargs={'pk': self.dd_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)

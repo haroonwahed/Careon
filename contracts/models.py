@@ -889,6 +889,10 @@ class DueDiligenceProcess(models.Model):
         JOINT_VENTURE = 'JOINT_VENTURE', 'Joint Venture'
         ASSET_PURCHASE = 'ASSET_PURCHASE', 'Asset Purchase'
 
+    organization = models.ForeignKey(
+        'Organization', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='due_diligence_processes',
+    )
     title = models.CharField(max_length=200)
     transaction_type = models.CharField(max_length=20, choices=TransactionType.choices)
     target_company = models.CharField(max_length=200)
@@ -977,6 +981,10 @@ class Budget(models.Model):
         Q3 = 'Q3', 'Q3'
         Q4 = 'Q4', 'Q4'
 
+    organization = models.ForeignKey(
+        'Organization', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='budgets',
+    )
     year = models.PositiveIntegerField()
     quarter = models.CharField(max_length=2, choices=Quarter.choices)
     department = models.CharField(max_length=100)
@@ -986,7 +994,7 @@ class Budget(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ['year', 'quarter', 'department']
+        unique_together = ['organization', 'year', 'quarter', 'department']
 
     def __str__(self):
         return f'{self.department} - {self.year} {self.quarter}'
