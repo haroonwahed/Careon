@@ -80,9 +80,20 @@ def health_check(request):
 
 
 class TenantScopedQuerysetMixin:
+    """Mixin to automatically scope querysets to the user's organization.
+    
+    Caches organization in request to avoid repeated lookups.
+    Use self.get_organization() to access cached org in any view method.
+    """
+    def get_organization(self):
+        """Get organization for current user, cached on request."""
+        if not hasattr(self.request, '_cached_organization'):
+            self.request._cached_organization = get_user_organization(self.request.user)
+        return self.request._cached_organization
+    
     def get_queryset(self):
         queryset = super().get_queryset()
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(queryset, org)
 
 
@@ -183,7 +194,7 @@ class MatterListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         qs = scope_queryset_for_organization(Matter.objects.select_related('client', 'responsible_attorney'), org)
         q = self.request.GET.get('q')
         status = self.request.GET.get('status')
@@ -198,7 +209,7 @@ class MatterListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         tenant_matters = scope_queryset_for_organization(Matter.objects.all(), org)
         ctx['total_matters'] = tenant_matters.count()
         ctx['active_matters'] = tenant_matters.filter(status='ACTIVE').count()
@@ -212,7 +223,7 @@ class MatterDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
     context_object_name = 'matter'
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Matter.objects.all(), org)
 
     def get_context_data(self, **kwargs):
@@ -252,7 +263,7 @@ class MatterUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
         return reverse('contracts:matter_detail', kwargs={'pk': self.object.pk})
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Matter.objects.all(), org)
 
     def form_valid(self, form):
@@ -271,7 +282,7 @@ class DocumentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         qs = scope_queryset_for_organization(
             Document.objects.select_related('contract', 'matter', 'client', 'uploaded_by'),
             org,
@@ -291,7 +302,7 @@ class DocumentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailVi
     context_object_name = 'document'
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Document.objects.all(), org)
 
     def get_context_data(self, **kwargs):
@@ -324,7 +335,7 @@ class DocumentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
     success_url = reverse_lazy('contracts:document_list')
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Document.objects.all(), org)
 
     def dispatch(self, request, *args, **kwargs):
@@ -348,7 +359,7 @@ class TimeEntryListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView)
     paginate_by = 25
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         qs = scope_queryset_for_organization(
             TimeEntry.objects.select_related('matter', 'matter__client', 'user'),
             org,
@@ -367,7 +378,7 @@ class TimeEntryListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView)
         ctx = super().get_context_data(**kwargs)
         today = date.today()
         week_start = today - timedelta(days=today.weekday())
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         my_entries = scope_queryset_for_organization(TimeEntry.objects.filter(user=self.request.user), org)
         ctx['today_hours'] = my_entries.filter(date=today).aggregate(total=Sum('hours'))['total'] or Decimal('0')
         ctx['week_hours'] = my_entries.filter(date__gte=week_start).aggregate(total=Sum('hours'))['total'] or Decimal('0')
@@ -397,7 +408,7 @@ class TimeEntryUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateV
     success_url = reverse_lazy('contracts:time_entry_list')
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(TimeEntry.objects.all(), org)
 
 
@@ -410,7 +421,7 @@ class InvoiceListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     paginate_by = 25
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         qs = scope_queryset_for_organization(Invoice.objects.select_related('client', 'matter'), org)
         status = self.request.GET.get('status')
         if status:
@@ -419,7 +430,7 @@ class InvoiceListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         tenant_invoices = scope_queryset_for_organization(Invoice.objects.all(), org)
         ctx['total_outstanding'] = tenant_invoices.filter(status__in=['SENT', 'OVERDUE']).aggregate(
             total=Sum('total_amount'))['total'] or Decimal('0')
@@ -437,7 +448,7 @@ class InvoiceDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailVie
     context_object_name = 'invoice'
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Invoice.objects.all(), org)
 
 
@@ -467,7 +478,7 @@ class InvoiceUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVie
         return reverse('contracts:invoice_detail', kwargs={'pk': self.object.pk})
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         return scope_queryset_for_organization(Invoice.objects.all(), org)
 
 
@@ -527,14 +538,20 @@ class AddTrustTransactionView(TenantAssignCreateMixin, LoginRequiredMixin, Creat
 
 # ==================== DEADLINE VIEWS ====================
 
-class DeadlineListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
+class DeadlineListView(LoginRequiredMixin, ListView):
     model = Deadline
     template_name = 'contracts/deadline_list.html'
     context_object_name = 'deadlines'
     paginate_by = 25
 
+    def get_organization(self):
+        """Get organization for current user, cached on request."""
+        if not hasattr(self.request, '_cached_organization'):
+            self.request._cached_organization = get_user_organization(self.request.user)
+        return self.request._cached_organization
+
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         if org:
             q_org = Q(contract__organization=org) | Q(matter__organization=org)
             qs = Deadline.objects.select_related('matter', 'contract', 'assigned_to').filter(q_org)
@@ -553,7 +570,7 @@ class DeadlineListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         if org:
             q_org = Q(contract__organization=org) | Q(matter__organization=org)
             org_deadlines = Deadline.objects.filter(q_org)
@@ -587,7 +604,7 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
     success_url = reverse_lazy('contracts:deadline_list')
 
     def get_queryset(self):
-        org = get_user_organization(self.request.user)
+        org = self.get_organization()
         if not org:
             return Deadline.objects.none()
         return Deadline.objects.filter(
@@ -604,7 +621,11 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
 @login_required
 @require_POST
 def deadline_complete(request, pk):
-    organization = get_user_organization(request.user)
+    # Cache org on request for consistency
+    if not hasattr(request, '_cached_organization'):
+        request._cached_organization = get_user_organization(request.user)
+    organization = request._cached_organization
+    
     if organization:
         deadline_qs = Deadline.objects.filter(
             Q(contract__organization=organization) | Q(matter__organization=organization)
