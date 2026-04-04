@@ -31,6 +31,7 @@ urlpatterns = [
     path('dashboard/', contract_views.dashboard, name='dashboard'),
     path('contracts/', include('contracts.urls')),
     path('profile/', contract_views.profile, name='profile'),
+    path('settings/', contract_views.settings_hub, name='settings_hub'),
     path('register/', contract_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

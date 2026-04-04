@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Settings - CMS Aegis{% endblock %}
+
+{% block content %}
+<div style="max-width: 1100px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 28px; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">Settings</h1>
+            <p style="font-size: 14px; color: var(--text-secondary);">Manage your account, team, and compliance configuration in one place.</p>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
+        <a href="{% url 'profile' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Profile</h2>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">Update personal details and profile metadata.</p>
+        </a>
+
+        <a href="{% url 'contracts:organization_team' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Organization Team</h2>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">Manage members, roles, and invitations.</p>
+        </a>
+
+        <a href="{% url 'contracts:organization_activity' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Team Activity</h2>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">Review organization-level activity logs.</p>
+        </a>
+
+        <a href="{% url 'contracts:privacy_dashboard' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Privacy Center</h2>
+            </div>
+            <p style="font-size: 13px; color: var(--text-secondary);">Manage GDPR workflows, DSARs, and data inventories.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

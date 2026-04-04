@@ -2261,6 +2261,11 @@ def profile(request):
 
 
 @login_required
+def settings_hub(request):
+    return render(request, 'settings_hub.html')
+
+
+@login_required
 def workflow_create(request):
     if request.method == 'POST':
         form = WorkflowForm(request.POST)
