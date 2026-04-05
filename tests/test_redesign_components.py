@@ -68,6 +68,7 @@ class RedesignComponentsTestCase(TestCase):
 
     def test_budget_list_matches_dashboard_style(self):
         Budget.objects.create(
+            organization=self.organization,
             year=2025,
             quarter=Budget.Quarter.Q3,
             department='Legal Ops',

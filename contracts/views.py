@@ -129,8 +129,12 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
         tenant_clients = scope_queryset_for_organization(Client.objects.all(), org)
-        ctx['total_clients'] = tenant_clients.count()
-        ctx['active_clients'] = tenant_clients.filter(status='ACTIVE').count()
+        client_stats = tenant_clients.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(status='ACTIVE')),
+        )
+        ctx['total_clients'] = client_stats['total']
+        ctx['active_clients'] = client_stats['active']
         ctx['search_query'] = self.request.GET.get('q', '')
         return ctx
 
@@ -211,8 +215,12 @@ class MatterListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         tenant_matters = scope_queryset_for_organization(Matter.objects.all(), org)
-        ctx['total_matters'] = tenant_matters.count()
-        ctx['active_matters'] = tenant_matters.filter(status='ACTIVE').count()
+        matter_stats = tenant_matters.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(status='ACTIVE')),
+        )
+        ctx['total_matters'] = matter_stats['total']
+        ctx['active_matters'] = matter_stats['active']
         ctx['search_query'] = self.request.GET.get('q', '')
         return ctx
 
@@ -432,11 +440,14 @@ class InvoiceListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         tenant_invoices = scope_queryset_for_organization(Invoice.objects.all(), org)
-        ctx['total_outstanding'] = tenant_invoices.filter(status__in=['SENT', 'OVERDUE']).aggregate(
-            total=Sum('total_amount'))['total'] or Decimal('0')
-        ctx['total_paid'] = tenant_invoices.filter(status='PAID').aggregate(
-            total=Sum('total_amount'))['total'] or Decimal('0')
-        ctx['overdue_count'] = tenant_invoices.filter(status='OVERDUE').count()
+        invoice_stats = tenant_invoices.aggregate(
+            total_outstanding=Coalesce(Sum('total_amount', filter=Q(status__in=['SENT', 'OVERDUE'])), Decimal('0')),
+            total_paid=Coalesce(Sum('total_amount', filter=Q(status='PAID')), Decimal('0')),
+            overdue_count=Count('id', filter=Q(status='OVERDUE')),
+        )
+        ctx['total_outstanding'] = invoice_stats['total_outstanding']
+        ctx['total_paid'] = invoice_stats['total_paid']
+        ctx['overdue_count'] = invoice_stats['overdue_count']
         overdue_sent = tenant_invoices.filter(status='SENT', due_date__lt=date.today())
         overdue_sent.update(status='OVERDUE')
         return ctx
@@ -1285,46 +1296,64 @@ def reports_dashboard(request):
         deadlines_qs = Deadline.objects.none()
         risks_qs = RiskLog.objects.none()
 
-    total_contracts = contracts_qs.count()
-    active_contracts = contracts_qs.filter(status='ACTIVE').count()
-    total_contract_value = contracts_qs.filter(value__isnull=False).aggregate(total=Sum('value'))['total'] or Decimal('0')
+    contract_stats = contracts_qs.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+        total_value=Coalesce(Sum('value', filter=Q(value__isnull=False)), Decimal('0')),
+    )
+    total_contracts = contract_stats['total']
+    active_contracts = contract_stats['active']
+    total_contract_value = contract_stats['total_value']
 
-    total_clients = clients_qs.count()
-    active_clients = clients_qs.filter(status='ACTIVE').count()
+    client_stats = clients_qs.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+    )
+    total_clients = client_stats['total']
+    active_clients = client_stats['active']
 
-    total_matters = matters_qs.count()
-    active_matters = matters_qs.filter(status='ACTIVE').count()
+    matter_stats = matters_qs.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+    )
+    total_matters = matter_stats['total']
+    active_matters = matter_stats['active']
 
     monthly_hours = time_entries_qs.filter(
         date__gte=month_start
     ).aggregate(total=Sum('hours'))['total'] or Decimal('0')
 
-    yearly_revenue = invoices_qs.filter(
-        status='PAID', issue_date__gte=year_start
-    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
+    invoice_stats = invoices_qs.aggregate(
+        yearly_revenue=Coalesce(Sum('total_amount', filter=Q(status='PAID', issue_date__gte=year_start)), Decimal('0')),
+        outstanding=Coalesce(Sum('total_amount', filter=Q(status__in=['SENT', 'OVERDUE'])), Decimal('0')),
+    )
+    yearly_revenue = invoice_stats['yearly_revenue']
+    outstanding = invoice_stats['outstanding']
 
-    outstanding = invoices_qs.filter(
-        status__in=['SENT', 'OVERDUE']
-    ).aggregate(total=Sum('total_amount'))['total'] or Decimal('0')
-
-    overdue_deadlines = deadlines_qs.filter(is_completed=False, due_date__lt=today).count()
-    upcoming_deadlines = deadlines_qs.filter(
-        is_completed=False, due_date__gte=today, due_date__lte=today + timedelta(days=7)
-    ).count()
+    deadline_stats = deadlines_qs.aggregate(
+        overdue=Count('id', filter=Q(is_completed=False, due_date__lt=today)),
+        upcoming=Count('id', filter=Q(is_completed=False, due_date__gte=today, due_date__lte=today + timedelta(days=7))),
+    )
+    overdue_deadlines = deadline_stats['overdue']
+    upcoming_deadlines = deadline_stats['upcoming']
 
     high_risks = risks_qs.filter(risk_level__in=['HIGH', 'CRITICAL']).count()
 
+    # Single query for last 6 months billing — TruncMonth groups by calendar month
+    six_months_ago = today.replace(day=1) - timedelta(days=155)
+    monthly_rows = (
+        invoices_qs
+        .filter(issue_date__gte=six_months_ago)
+        .annotate(month=TruncMonth('issue_date'))
+        .values('month')
+        .annotate(total=Coalesce(Sum('total_amount'), Decimal('0')))
+        .order_by('month')
+    )
+    monthly_map = {row['month'].strftime('%b %Y'): float(row['total']) for row in monthly_rows}
     monthly_billing = []
-    for i in range(6):
+    for i in range(5, -1, -1):
         m = today.replace(day=1) - timedelta(days=30 * i)
-        month_total = invoices_qs.filter(
-            issue_date__month=m.month, issue_date__year=m.year
-        ).aggregate(total=Sum('total_amount'))['total'] or 0
-        monthly_billing.append({
-            'month': m.strftime('%b %Y'),
-            'total': float(month_total)
-        })
-    monthly_billing.reverse()
+        monthly_billing.append({'month': m.strftime('%b %Y'), 'total': monthly_map.get(m.strftime('%b %Y'), 0.0)})
 
     practice_areas = matters_qs.filter(status='ACTIVE').values('practice_area').annotate(
         count=Count('id')).order_by('-count')
@@ -1387,7 +1416,30 @@ class ContractListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
+        
+        # Optimize: use aggregations instead of separate count() calls on full queryset
+        today = date.today()
+        thirty_days_from_today = today + timedelta(days=30)
+        
+        # Single aggregation query to get all counts at once
         tenant_contracts = scope_queryset_for_organization(Contract.objects.all(), org)
+        contract_stats = tenant_contracts.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(status='ACTIVE')),
+            expiring_soon=Count('id', filter=Q(
+                status='ACTIVE',
+                end_date__lte=thirty_days_from_today,
+                end_date__gte=today,
+            )),
+        )
+        
+        # Get expiring contract IDs for highlighting
+        expiring_ids_qs = tenant_contracts.filter(
+            status='ACTIVE',
+            end_date__lte=thirty_days_from_today,
+            end_date__gte=today,
+        ).values_list('id', flat=True)
+        
         context['FEATURE_REDESIGN'] = is_feature_redesign_enabled()
         context['search_query'] = self.request.GET.get('q', '')
         context['sort'] = self.request.GET.get('sort', '-created_at')
@@ -1398,19 +1450,16 @@ class ContractListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
             ('Pending', 'PENDING'),
             ('Expired', 'EXPIRED'),
         ]
-        context['total_contracts'] = tenant_contracts.count()
-        context['active_contracts'] = tenant_contracts.filter(status='ACTIVE').count()
-        _expiring_qs = tenant_contracts.filter(
-            end_date__lte=date.today() + timedelta(days=30),
-            end_date__gte=date.today(),
-            status='ACTIVE'
-        )
-        context['expiring_soon'] = _expiring_qs.count()
-        context['expiring_contract_ids'] = set(_expiring_qs.values_list('id', flat=True))
+        context['total_contracts'] = contract_stats['total'] or 0
+        context['active_contracts'] = contract_stats['active'] or 0
+        context['expiring_soon'] = contract_stats['expiring_soon'] or 0
+        context['expiring_contract_ids'] = set(expiring_ids_qs)
 
         if context['FEATURE_REDESIGN']:
+            # Optimize: build JSON from paginated object_list, not by re-querying
+            # The parent ListView already handles pagination via self.object_list
             contracts_data = []
-            for contract in self.get_queryset():
+            for contract in context['object_list']:
                 contracts_data.append({
                     'id': contract.id,
                     'title': contract.title,
@@ -1921,9 +1970,14 @@ class BudgetListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx['search_query'] = (self.request.GET.get('q') or '').strip()
         ctx['selected_year'] = (self.request.GET.get('year') or '').strip()
         ctx['current_year'] = current_year
-        ctx['total_budgets'] = tenant_budgets.count()
-        ctx['current_year_budgets'] = tenant_budgets.filter(year=current_year).count()
-        ctx['total_allocated'] = tenant_budgets.aggregate(total=Coalesce(Sum('allocated_amount'), Decimal('0')))['total']
+        budget_stats = tenant_budgets.aggregate(
+            total=Count('id'),
+            current_year=Count('id', filter=Q(year=current_year)),
+            total_allocated=Coalesce(Sum('allocated_amount'), Decimal('0')),
+        )
+        ctx['total_budgets'] = budget_stats['total']
+        ctx['current_year_budgets'] = budget_stats['current_year']
+        ctx['total_allocated'] = budget_stats['total_allocated']
         ctx['budget_tabs'] = [
             ('All Budgets', ''),
             (str(current_year), str(current_year)),
@@ -1966,10 +2020,17 @@ class RepositoryView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
         tenant_contracts = scope_queryset_for_organization(Contract.objects.all(), org)
-        ctx['total_documents'] = tenant_contracts.count()
-        ctx['active_documents'] = tenant_contracts.filter(status=Contract.Status.ACTIVE).count()
-        ctx['draft_documents'] = tenant_contracts.filter(status=Contract.Status.DRAFT).count()
-        ctx['expiring_documents'] = tenant_contracts.filter(end_date__isnull=False, end_date__lte=timezone.localdate() + timedelta(days=30)).count()
+        expiry_cutoff = timezone.localdate() + timedelta(days=30)
+        doc_stats = tenant_contracts.aggregate(
+            total=Count('id'),
+            active=Count('id', filter=Q(status=Contract.Status.ACTIVE)),
+            draft=Count('id', filter=Q(status=Contract.Status.DRAFT)),
+            expiring=Count('id', filter=Q(end_date__isnull=False, end_date__lte=expiry_cutoff)),
+        )
+        ctx['total_documents'] = doc_stats['total']
+        ctx['active_documents'] = doc_stats['active']
+        ctx['draft_documents'] = doc_stats['draft']
+        ctx['expiring_documents'] = doc_stats['expiring']
         return ctx
 
 
@@ -2344,7 +2405,10 @@ def dashboard(request):
 
     org = get_user_organization(request.user)
     
-    # Scoped querysets for primary models with direct FK to organization
+    # Prepare aggregation queries for counts and sums in a single database call
+    # This replaces 20+ separate count() calls with 4-5 efficient aggregation queries.
+    
+    # === PRIMARY MODELS (direct org FK) ===
     contracts_qs = scope_queryset_for_organization(Contract.objects.all(), org)
     clients_qs = scope_queryset_for_organization(Client.objects.all(), org)
     matters_qs = scope_queryset_for_organization(Matter.objects.all(), org)
@@ -2357,75 +2421,163 @@ def dashboard(request):
     time_entries_qs = scope_queryset_for_organization(TimeEntry.objects.all(), org)
     trust_accounts_qs = scope_queryset_for_organization(TrustAccount.objects.all(), org)
     
-    # Scoped querysets for models with indirect org FK (via contract/matter)
+    # === INDIRECT MODELS (org FK via contract/matter) ===
     legal_tasks_qs = LegalTask.objects.for_organization(org) if org else LegalTask.objects.none()
     risks_qs = RiskLog.objects.for_organization(org) if org else RiskLog.objects.none()
     deadlines_qs = Deadline.objects.for_organization(org)
 
-    def _safe(fn, default=0):
-        try:
-            return fn()
-        except Exception:
-            return default
-
-    total_contracts = _safe(lambda: contracts_qs.count())
-    active_contracts = _safe(lambda: contracts_qs.filter(status='ACTIVE').count())
-    draft_contracts = _safe(lambda: contracts_qs.filter(status='DRAFT').count())
-    pending_contracts = _safe(lambda: contracts_qs.filter(status='PENDING').count())
-    expiring_soon_count = _safe(lambda: contracts_qs.filter(
-        end_date__lte=thirty_days, end_date__gte=today, status='ACTIVE').count())
-
-    total_clients = _safe(lambda: clients_qs.count())
-    active_matters = _safe(lambda: matters_qs.filter(status='ACTIVE').count())
-    total_matters = _safe(lambda: matters_qs.count())
-
-    pending_tasks = _safe(lambda: legal_tasks_qs.filter(status='PENDING').count())
-    active_workflows = _safe(lambda: workflows_qs.filter(status='ACTIVE').count())
-    risk_count = _safe(lambda: risks_qs.filter(risk_level__in=['HIGH', 'CRITICAL']).count())
-
-    overdue_deadlines = _safe(lambda: deadlines_qs.filter(is_completed=False, due_date__lt=today).count())
-    upcoming_deadline_count = _safe(lambda: deadlines_qs.filter(
-        is_completed=False, due_date__gte=today, due_date__lte=seven_days).count())
-
-    outstanding_invoices = _safe(lambda: invoices_qs.filter(
-        status__in=['SENT', 'OVERDUE']).aggregate(
-        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
-    overdue_invoices = _safe(lambda: invoices_qs.filter(status='OVERDUE').aggregate(
-        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
-    paid_this_month = _safe(lambda: invoices_qs.filter(
-        status='PAID', updated_at__month=today.month, updated_at__year=today.year).aggregate(
-        total=Sum('total_amount'))['total'] or Decimal('0'), Decimal('0'))
-
-    total_documents = _safe(lambda: documents_qs.count())
-
-    pending_approvals = _safe(lambda: approvals_qs.filter(status='PENDING').count())
-    pending_signatures = _safe(lambda: signatures_qs.filter(status='PENDING').count())
-    open_dsars = _safe(lambda: dsars_qs.filter(status__in=['RECEIVED', 'IN_PROGRESS']).count())
-
+    # === AGGREGATED COUNTS for contracts ===
+    # Single query instead of 5 separate count() calls
+    contract_stats = contracts_qs.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+        draft=Count('id', filter=Q(status='DRAFT')),
+        pending=Count('id', filter=Q(status='PENDING')),
+        expiring_soon=Count('id', filter=Q(
+            status='ACTIVE',
+            end_date__lte=thirty_days,
+            end_date__gte=today,
+        )),
+    )
+    
+    # === AGGREGATED COUNTS for clients/matters ===
+    client_stats = clients_qs.aggregate(
+        total=Count('id'),
+    )
+    matter_stats = matters_qs.aggregate(
+        total=Count('id'),
+        active=Count('id', filter=Q(status='ACTIVE')),
+    )
+    
+    # === AGGREGATED COUNTS for tasks/workflows/risks ===
+    task_stats = legal_tasks_qs.aggregate(
+        pending=Count('id', filter=Q(status='PENDING')),
+    )
+    workflow_stats = workflows_qs.aggregate(
+        active=Count('id', filter=Q(status='ACTIVE')),
+    )
+    risk_stats = risks_qs.aggregate(
+        high_critical=Count('id', filter=Q(risk_level__in=['HIGH', 'CRITICAL'])),
+    )
+    
+    # === AGGREGATED COUNTS for deadlines ===
+    deadline_stats = deadlines_qs.aggregate(
+        overdue=Count('id', filter=Q(is_completed=False, due_date__lt=today)),
+        upcoming=Count('id', filter=Q(
+            is_completed=False,
+            due_date__gte=today,
+            due_date__lte=seven_days,
+        )),
+    )
+    
+    # === AGGREGATED SUMS for invoices ===
+    # Single query instead of 3 separate aggregate queries
+    invoice_stats = invoices_qs.aggregate(
+        outstanding=Sum(
+            'total_amount',
+            filter=Q(status__in=['SENT', 'OVERDUE']),
+        ) or Decimal('0'),
+        overdue=Sum(
+            'total_amount',
+            filter=Q(status='OVERDUE'),
+        ) or Decimal('0'),
+        paid_this_month=Sum(
+            'total_amount',
+            filter=Q(status='PAID', updated_at__month=today.month, updated_at__year=today.year),
+        ) or Decimal('0'),
+    )
+    
+    # === AGGREGATED COUNTS for approvals/signatures/dsars ===
+    approval_stats = approvals_qs.aggregate(
+        pending=Count('id', filter=Q(status='PENDING')),
+    )
+    signature_stats = signatures_qs.aggregate(
+        pending=Count('id', filter=Q(status='PENDING')),
+    )
+    dsar_stats = dsars_qs.aggregate(
+        open=Count('id', filter=Q(status__in=['RECEIVED', 'IN_PROGRESS'])),
+    )
+    
+    # === Unread notifications ===
     unread_notifications = 0
     if request.user.is_authenticated:
-        unread_notifications = _safe(lambda: Notification.objects.filter(
-            recipient=request.user, is_read=False).count())
-
-    recent_contracts = _safe(lambda: list(contracts_qs.order_by('-created_at')[:6]), [])
-    upcoming_deadlines = _safe(lambda: list(deadlines_qs.filter(
-        is_completed=False, due_date__gte=today).order_by('due_date')[:6]), [])
-    upcoming_tasks = _safe(lambda: list(legal_tasks_qs.filter(
-        status='PENDING', due_date__gte=today).order_by('due_date')[:5]), [])
-    recent_audit = _safe(lambda: list(AuditLog.objects.select_related('user').order_by('-timestamp')[:8]), [])
-
+        unread_notifications = Notification.objects.filter(
+            recipient=request.user, is_read=False).count()
+    
+    # === RECENT LISTS (with select_related for relationships) ===
+    # These lists are fetched separately with optimized queries
+    recent_contracts = list(
+        contracts_qs.select_related('client', 'created_by').order_by('-created_at')[:6]
+    )
+    upcoming_deadlines = list(
+        deadlines_qs.select_related('contract', 'matter', 'assigned_to')
+        .filter(is_completed=False, due_date__gte=today)
+        .order_by('due_date')[:6]
+    )
+    upcoming_tasks = list(
+        legal_tasks_qs.select_related('contract', 'matter', 'assigned_to')
+        .filter(status='PENDING', due_date__gte=today)
+        .order_by('due_date')[:5]
+    )
+    recent_audit = list(
+        AuditLog.objects.select_related('user').order_by('-timestamp')[:8]
+    )
+    
+    # === CONTRACT STATUS BREAKDOWN ===
+    # Query once and build the data from aggregated results
     contract_status_data = []
-    for status_code, status_label in [('ACTIVE', 'Active'), ('DRAFT', 'Draft'), ('PENDING', 'In Review'), ('EXPIRED', 'Expired'), ('TERMINATED', 'Terminated')]:
-        cnt = _safe(lambda sc=status_code: contracts_qs.filter(status=sc).count())
+    status_mapping = [
+        ('ACTIVE', 'Active'),
+        ('DRAFT', 'Draft'),
+        ('PENDING', 'In Review'),
+        ('EXPIRED', 'Expired'),
+        ('TERMINATED', 'Terminated'),
+    ]
+    status_counts = contracts_qs.values('status').annotate(count=Count('id'))
+    status_counts_dict = {item['status']: item['count'] for item in status_counts}
+    for status_code, status_label in status_mapping:
+        cnt = status_counts_dict.get(status_code, 0)
         if cnt > 0:
             contract_status_data.append({'label': status_label, 'count': cnt})
-
-    billable_this_month = _safe(lambda: time_entries_qs.filter(
-        date__month=today.month, date__year=today.year).aggregate(
-        total=Sum('hours'))['total'] or Decimal('0'), Decimal('0'))
-
-    trust_balance = _safe(lambda: trust_accounts_qs.aggregate(
-        total=Sum('balance'))['total'] or Decimal('0'), Decimal('0'))
+    
+    # === OTHER AGGREGATES ===
+    billable_hours = time_entries_qs.filter(
+        date__month=today.month, date__year=today.year
+    ).aggregate(total=Sum('hours'))['total'] or Decimal('0')
+    
+    trust_balance = trust_accounts_qs.aggregate(
+        total=Sum('balance')
+    )['total'] or Decimal('0')
+    
+    total_documents = documents_qs.count()
+    
+    # === EXTRACT VALUES FROM AGGREGATION DICTS ===
+    total_contracts = contract_stats['total'] or 0
+    active_contracts = contract_stats['active'] or 0
+    draft_contracts = contract_stats['draft'] or 0
+    pending_contracts = contract_stats['pending'] or 0
+    expiring_soon_count = contract_stats['expiring_soon'] or 0
+    
+    total_clients = client_stats['total'] or 0
+    total_matters = matter_stats['total'] or 0
+    active_matters = matter_stats['active'] or 0
+    
+    pending_tasks = task_stats['pending'] or 0
+    active_workflows = workflow_stats['active'] or 0
+    risk_count = risk_stats['high_critical'] or 0
+    
+    overdue_deadlines = deadline_stats['overdue'] or 0
+    upcoming_deadline_count = deadline_stats['upcoming'] or 0
+    
+    outstanding_invoices = invoice_stats['outstanding']
+    overdue_invoices = invoice_stats['overdue']
+    paid_this_month = invoice_stats['paid_this_month']
+    
+    pending_approvals = approval_stats['pending'] or 0
+    pending_signatures = signature_stats['pending'] or 0
+    open_dsars = dsar_stats['open'] or 0
+    
+    billable_this_month = billable_hours
 
     context = {
         'total_contracts': total_contracts,

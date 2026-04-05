@@ -2,51 +2,16 @@
 {% block title %}Contracts - CMS Aegis{% endblock %}
 {% block content %}
 
-<style>
-    /* Fallback utilities scoped to this page to prevent oversized icons and broken layout. */
-    .contracts-list-page .grid { display: grid; }
-    .contracts-list-page .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .contracts-list-page .gap-4 { gap: 1rem; }
-    .contracts-list-page .flex { display: flex; }
-    .contracts-list-page .inline-flex { display: inline-flex; }
-    .contracts-list-page .items-center { align-items: center; }
-    .contracts-list-page .justify-between { justify-content: space-between; }
-    .contracts-list-page .flex-wrap { flex-wrap: wrap; }
-    .contracts-list-page .flex-1 { flex: 1 1 0%; }
-    .contracts-list-page .flex-shrink-0 { flex-shrink: 0; }
-    .contracts-list-page .min-w-0 { min-width: 0; }
-
-    .contracts-list-page .w-1\.5 { width: 0.375rem; }
-    .contracts-list-page .h-1\.5 { height: 0.375rem; }
-    .contracts-list-page .w-2 { width: 0.5rem; }
-    .contracts-list-page .h-2 { height: 0.5rem; }
-    .contracts-list-page .w-3 { width: 0.75rem; }
-    .contracts-list-page .h-3 { height: 0.75rem; }
-    .contracts-list-page .w-3\.5 { width: 0.875rem; }
-    .contracts-list-page .h-3\.5 { height: 0.875rem; }
-    .contracts-list-page .w-4 { width: 1rem; }
-    .contracts-list-page .h-4 { height: 1rem; }
-    .contracts-list-page .w-6 { width: 1.5rem; }
-    .contracts-list-page .h-6 { height: 1.5rem; }
-    .contracts-list-page .w-12 { width: 3rem; }
-    .contracts-list-page .h-12 { height: 3rem; }
-
-    @media (max-width: 1100px) {
-        .contracts-list-page .grid-cols-3 { grid-template-columns: 1fr; }
-    }
-</style>
-
 <div class="contracts-list-page">
 
 {# ── Page header ───────────────────────────────────────────────────────────── #}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold" style="color:var(--text-primary)">Contracts</h1>
-        <p class="text-sm mt-1" style="color:var(--text-muted)">All agreements across your organization</p>
+        <h1 class="text-2xl font-bold c-primary">Contracts</h1>
+        <p class="text-sm mt-1 c-muted">All agreements across your organization</p>
     </div>
     <a href="{% url 'contracts:contract_create' %}"
-       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90"
-       style="background:var(--btn-gradient)">
+       class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90 btn-primary-grad">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
@@ -56,33 +21,33 @@
 
 {# ── Summary stat cards ────────────────────────────────────────────────────── #}
 <div class="grid grid-cols-3 gap-4 mb-6">
-    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)">
-        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Total</p>
-        <p class="text-3xl font-bold" style="color:var(--text-primary)">{{ total_contracts }}</p>
-        <p class="text-xs mt-1" style="color:var(--text-muted)">contracts</p>
+    <div class="rounded-xl p-5 border stat-card">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Total</p>
+        <p class="text-3xl font-bold c-primary">{{ total_contracts }}</p>
+        <p class="text-xs mt-1 c-muted">contracts</p>
     </div>
-    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)">
+    <div class="rounded-xl p-5 border stat-card">
         <div class="flex items-center gap-2 mb-2">
-            <span class="w-2 h-2 rounded-full flex-shrink-0" style="background:var(--accent)"></span>
-            <p class="text-xs font-semibold uppercase tracking-widest" style="color:var(--text-muted)">Active</p>
+            <span class="w-2 h-2 rounded-full flex-shrink-0 bg-accent-dot"></span>
+            <p class="text-xs font-semibold uppercase tracking-widest c-muted">Active</p>
         </div>
-        <p class="text-3xl font-bold" style="color:var(--accent)">{{ active_contracts }}</p>
-        <p class="text-xs mt-1" style="color:var(--text-muted)">currently active</p>
+        <p class="text-3xl font-bold c-accent">{{ active_contracts }}</p>
+        <p class="text-xs mt-1 c-muted">currently active</p>
     </div>
     {% if expiring_soon %}
-    <div class="rounded-xl p-5 border" style="background:rgba(245,158,11,0.07);border-color:rgba(245,158,11,0.28)">
+    <div class="rounded-xl p-5 border stat-card-amber">
         <div class="flex items-center gap-2 mb-2">
             <span class="w-2 h-2 rounded-full flex-shrink-0 bg-yellow-400"></span>
-            <p class="text-xs font-semibold uppercase tracking-widest" style="color:rgba(251,191,36,0.85)">Expiring Soon</p>
+            <p class="text-xs font-semibold uppercase tracking-widest c-amber-soft">Expiring Soon</p>
         </div>
-        <p class="text-3xl font-bold" style="color:#FBBF24">{{ expiring_soon }}</p>
-        <p class="text-xs mt-1" style="color:var(--text-muted)">within 30 days</p>
+        <p class="text-3xl font-bold c-amber">{{ expiring_soon }}</p>
+        <p class="text-xs mt-1 c-muted">within 30 days</p>
     </div>
     {% else %}
-    <div class="rounded-xl p-5 border" style="background:var(--card-bg);border-color:var(--card-border)">
-        <p class="text-xs font-semibold uppercase tracking-widest mb-2" style="color:var(--text-muted)">Expiring Soon</p>
-        <p class="text-3xl font-bold" style="color:var(--text-dim)">0</p>
-        <p class="text-xs mt-1" style="color:var(--text-muted)">within 30 days</p>
+    <div class="rounded-xl p-5 border stat-card">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Expiring Soon</p>
+        <p class="text-3xl font-bold c-dim">0</p>
+        <p class="text-xs mt-1 c-muted">within 30 days</p>
     </div>
     {% endif %}
 </div>
@@ -91,13 +56,12 @@
 <div class="flex items-center gap-3 mb-4 flex-wrap">
 
     {# Quick-filter tab strip #}
-    <span class="text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">All Statuses</span>
+    <span class="text-xs font-semibold uppercase tracking-wide c-muted">All Statuses</span>
     {% with cur=request.GET.status %}
-    <div class="flex items-center rounded-lg p-1 border flex-shrink-0" style="background:var(--surface);border-color:var(--border)">
+    <div class="flex items-center rounded-lg p-1 border flex-shrink-0 tabs-shell">
         {% for tab_label, tab_status in status_tabs %}
-        <a href="?{% if tab_status %}status={{ tab_status }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if sort and sort != '-created_at' %}&sort={{ sort|urlencode }}{% endif %}"
-           class="px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap"
-           style="{% if cur == tab_status or not cur and not tab_status %}background:var(--card-bg);color:var(--text-primary);box-shadow:0 1px 3px rgba(0,0,0,0.18){% else %}color:var(--text-secondary){% endif %}">
+          <a href="?{% if tab_status %}status={{ tab_status }}{% endif %}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if sort and sort != '-created_at' %}&sort={{ sort|urlencode }}{% endif %}"
+              class="px-3 py-1.5 text-xs font-medium rounded-md transition-all whitespace-nowrap {% if cur == tab_status or not cur and not tab_status %}tab-pill-active{% else %}tab-pill-idle{% endif %}">
             {{ tab_label }}
         </a>
         {% endfor %}
@@ -107,25 +71,21 @@
     {# Search bar #}
     <form method="get" class="flex items-center gap-2 flex-1 min-w-0">
         <div class="relative flex-1 min-w-0">
-            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
             </svg>
             <input type="text" name="q" value="{{ search_query }}"
                    placeholder="Search contracts..."
-                   class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none"
-                   style="background:var(--input-bg);border-color:var(--border);color:var(--text-primary)">
+                   class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none form-input">
         </div>
         <input type="hidden" name="sort" value="{{ sort }}">
         {% if request.GET.status %}<input type="hidden" name="status" value="{{ request.GET.status }}">{% endif %}
-        <button type="submit"
-                class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border"
-                style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">
+        <button type="submit" class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border btn-ghost">
             Search
         </button>
         {% if search_query or request.GET.status %}
         <a href="{% url 'contracts:contract_list' %}"
-           class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5"
-           style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">
+           class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5 btn-ghost">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -137,15 +97,14 @@
 </div>
 
 {# ── Contracts table ───────────────────────────────────────────────────────── #}
-<div class="rounded-xl border overflow-hidden" style="background:var(--card-bg);border-color:var(--card-border)">
+<div class="rounded-xl border overflow-hidden stat-card">
     <table class="w-full text-sm">
-        <thead style="background:var(--surface);border-bottom:1px solid var(--border)">
+        <thead class="tbl-head">
             <tr>
                 {% with qs=search_query st=request.GET.status %}
                 <th class="text-left px-5 py-3">
                     <a href="?sort={% if sort == 'title' %}-title{% else %}title{% endif %}{% if qs %}&q={{ qs|urlencode }}{% endif %}{% if st %}&status={{ st|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                       style="color:var(--text-muted)">
+                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity tbl-th">
                         Title
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {% if sort == 'title' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
@@ -154,11 +113,10 @@
                         </svg>
                     </a>
                 </th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Type</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Type</th>
                 <th class="text-left px-5 py-3">
                     <a href="?sort={% if sort == 'status' %}-status{% else %}status{% endif %}{% if qs %}&q={{ qs|urlencode }}{% endif %}{% if st %}&status={{ st|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                       style="color:var(--text-muted)">
+                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity tbl-th">
                         Status
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {% if sort == 'status' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
@@ -167,11 +125,10 @@
                         </svg>
                     </a>
                 </th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Counterparty</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Counterparty</th>
                 <th class="text-left px-5 py-3">
                     <a href="?sort={% if sort == 'value' %}-value{% else %}value{% endif %}{% if qs %}&q={{ qs|urlencode }}{% endif %}{% if st %}&status={{ st|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                       style="color:var(--text-muted)">
+                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity tbl-th">
                         Value
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {% if sort == 'value' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
@@ -182,8 +139,7 @@
                 </th>
                 <th class="text-left px-5 py-3">
                     <a href="?sort={% if sort == 'end_date' %}-end_date{% else %}end_date{% endif %}{% if qs %}&q={{ qs|urlencode }}{% endif %}{% if st %}&status={{ st|urlencode }}{% endif %}"
-                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity"
-                       style="color:var(--text-muted)">
+                       class="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-wide hover:opacity-80 transition-opacity tbl-th">
                         Expires
                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             {% if sort == 'end_date' %}<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 15l7-7 7 7"/>
@@ -192,29 +148,27 @@
                         </svg>
                     </a>
                 </th>
-                <th class="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide" style="color:var(--text-muted)">Actions</th>
+                <th class="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Actions</th>
                 {% endwith %}
             </tr>
         </thead>
         <tbody>
             {% for contract in contracts %}
-            <tr class="border-b transition-colors"
-                style="border-color:var(--border);{% if contract.pk in expiring_contract_ids %}border-left:3px solid rgba(245,158,11,0.7){% endif %}"
+            <tr class="border-b transition-colors tbl-row {% if contract.pk in expiring_contract_ids %}row-expiring{% endif %}"
                 onmouseover="this.style.background='var(--surface)'"
                 onmouseout="this.style.background=''">
 
                 {# Title + client sub-line #}
-                <td class="px-5 py-3.5">
+                 <td class="px-5 py-3.5">
                     <a href="{% url 'contracts:contract_detail' contract.pk %}"
-                       class="font-medium hover:underline"
-                       style="color:var(--primary-light)">{{ contract.title|truncatechars:44 }}</a>
+                       class="font-medium hover:underline c-link">{{ contract.title|truncatechars:44 }}</a>
                     {% if contract.client %}
-                    <p class="text-xs mt-0.5" style="color:var(--text-muted)">{{ contract.client.name }}</p>
+                    <p class="text-xs mt-0.5 c-muted">{{ contract.client.name }}</p>
                     {% endif %}
                 </td>
 
                 {# Type #}
-                <td class="px-5 py-3.5" style="color:var(--text-secondary)">{{ contract.get_contract_type_display }}</td>
+                <td class="px-5 py-3.5 tbl-td">{{ contract.get_contract_type_display }}</td>
 
                 {# Status badge with leading dot #}
                 <td class="px-5 py-3.5">
@@ -235,41 +189,38 @@
                 </td>
 
                 {# Counterparty #}
-                <td class="px-5 py-3.5" style="color:var(--text-secondary)">{{ contract.counterparty|default:"—" }}</td>
+                <td class="px-5 py-3.5 tbl-td">{{ contract.counterparty|default:"—" }}</td>
 
                 {# Value #}
-                <td class="px-5 py-3.5 font-medium tabular-nums" style="color:var(--text-primary)">
-                    {% if contract.value %}${{ contract.value|floatformat:0 }}{% else %}<span style="color:var(--text-dim)">—</span>{% endif %}
+                <td class="px-5 py-3.5 font-medium tabular-nums c-primary">
+                    {% if contract.value %}${{ contract.value|floatformat:0 }}{% else %}<span class="c-dim">—</span>{% endif %}
                 </td>
 
                 {# Expiry date — amber warning badge if expiring soon #}
                 <td class="px-5 py-3.5">
                     {% if contract.end_date %}
                         {% if contract.pk in expiring_contract_ids %}
-                        <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md"
-                              style="background:rgba(245,158,11,0.12);color:#FBBF24;border:1px solid rgba(245,158,11,0.22)">
+                            <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-md badge-expiring">
                             <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                             </svg>
                             {{ contract.end_date|date:"M d, Y" }}
                         </span>
                         {% else %}
-                        <span style="color:var(--text-secondary)">{{ contract.end_date|date:"M d, Y" }}</span>
+                        <span class="tbl-td">{{ contract.end_date|date:"M d, Y" }}</span>
                         {% endif %}
                     {% else %}
-                    <span style="color:var(--text-dim)">—</span>
+                    <span class="c-dim">—</span>
                     {% endif %}
                 </td>
 
                 {# Actions #}
                 <td class="px-5 py-3.5 text-right">
                     <div class="inline-flex items-center gap-2">
-                        <a href="{% url 'contracts:contract_detail' contract.pk %}"
-                           class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80"
-                           style="color:var(--primary-light);border-color:var(--primary-subtle);background:var(--primary-subtle)">View</a>
+                                <a href="{% url 'contracts:contract_detail' contract.pk %}"
+                                    class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-soft-primary">View</a>
                         <a href="{% url 'contracts:contract_update' contract.pk %}"
-                           class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80"
-                           style="color:var(--text-secondary);border-color:var(--border);background:var(--surface)">Edit</a>
+                           class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-ghost">Edit</a>
                     </div>
                 </td>
 
@@ -278,18 +229,18 @@
             <tr>
                 <td colspan="7" class="px-5 py-20 text-center">
                     <div class="flex flex-col items-center gap-3">
-                        <div class="w-12 h-12 rounded-full flex items-center justify-center" style="background:var(--surface)">
-                            <svg class="w-6 h-6" style="color:var(--text-muted)" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center surface-bubble">
+                            <svg class="w-6 h-6 c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                             </svg>
                         </div>
                         <div>
-                            <p class="font-medium" style="color:var(--text-primary)">No contracts found</p>
-                            <p class="text-sm mt-1" style="color:var(--text-muted)">
+                            <p class="font-medium c-primary">No contracts found</p>
+                            <p class="text-sm mt-1 c-muted">
                                 {% if search_query or request.GET.status %}
-                                Try adjusting your filters or <a href="{% url 'contracts:contract_list' %}" style="color:var(--primary-light)">clear all filters</a>.
+                                Try adjusting your filters or <a href="{% url 'contracts:contract_list' %}" class="c-link">clear all filters</a>.
                                 {% else %}
-                                Get started by <a href="{% url 'contracts:contract_create' %}" style="color:var(--primary-light)">creating your first contract</a>.
+                                Get started by <a href="{% url 'contracts:contract_create' %}" class="c-link">creating your first contract</a>.
                                 {% endif %}
                             </p>
                         </div>
@@ -304,24 +255,22 @@
 {# ── Pagination ────────────────────────────────────────────────────────────── #}
 {% if is_paginated %}
 <div class="mt-4 flex items-center justify-between">
-    <p class="text-sm" style="color:var(--text-muted)">
+    <p class="text-sm c-muted">
         Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
         &middot; {{ page_obj.paginator.count }} contract{{ page_obj.paginator.count|pluralize }}
     </p>
     <div class="flex items-center gap-1">
         {% if page_obj.has_previous %}
         <a href="?page={{ page_obj.previous_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if sort %}&sort={{ sort|urlencode }}{% endif %}"
-           class="px-3 py-1.5 text-sm rounded-lg border inline-flex items-center gap-1 transition-opacity hover:opacity-80"
-           style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">
+           class="px-3 py-1.5 text-sm rounded-lg border inline-flex items-center gap-1 transition-opacity hover:opacity-80 btn-ghost">
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
             Prev
         </a>
         {% endif %}
-        <span class="px-3 py-1.5 text-sm rounded-lg font-semibold" style="background:var(--primary);color:white">{{ page_obj.number }}</span>
+        <span class="px-3 py-1.5 text-sm rounded-lg font-semibold page-pill-active">{{ page_obj.number }}</span>
         {% if page_obj.has_next %}
         <a href="?page={{ page_obj.next_page_number }}{% if search_query %}&q={{ search_query|urlencode }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status|urlencode }}{% endif %}{% if sort %}&sort={{ sort|urlencode }}{% endif %}"
-           class="px-3 py-1.5 text-sm rounded-lg border inline-flex items-center gap-1 transition-opacity hover:opacity-80"
-           style="background:var(--surface);border-color:var(--border);color:var(--text-secondary)">
+           class="px-3 py-1.5 text-sm rounded-lg border inline-flex items-center gap-1 transition-opacity hover:opacity-80 btn-ghost">
             Next
             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
         </a>
@@ -331,5 +280,4 @@
 {% endif %}
 
 </div>
-
 {% endblock %}

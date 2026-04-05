@@ -5,46 +5,6 @@
 {% block title %}Repository - CMS Aegis{% endblock %}
 
 {% block content %}
-<style>
-    .repo-drawer {
-        position: fixed;
-        top: 56px;
-        right: -420px;
-        width: 420px;
-        height: calc(100vh - 56px);
-        background: var(--card-bg);
-        border-left: 1px solid var(--card-border);
-        box-shadow: -16px 0 40px rgba(0,0,0,0.16);
-        transition: right 0.3s ease;
-        overflow-y: auto;
-        z-index: 40;
-    }
-    .repo-drawer.active { right: 0; }
-    .repo-bulk-bar {
-        display: none;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 14px 18px;
-        margin-bottom: 16px;
-        border-radius: 14px;
-        background: var(--primary-subtle);
-        border: 1px solid var(--primary-bg);
-    }
-    .repo-mini-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 12px;
-        border-radius: 10px;
-        font-size: 12px;
-        font-weight: 600;
-        border: 1px solid var(--card-border);
-        background: var(--card-bg);
-        color: var(--text-secondary);
-    }
-</style>
-
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold" style="color:var(--text-primary)">Repository</h1>
