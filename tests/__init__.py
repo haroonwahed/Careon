@@ -1,4 +1,4 @@
 
 """
-Tests package for the contract management system
+Tests package for the CareOn case-flow system.
 """
