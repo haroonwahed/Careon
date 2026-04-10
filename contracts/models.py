@@ -82,10 +82,10 @@ class UserProfile(models.Model):
         PARTNER = 'PARTNER', 'Partner'
         SENIOR_ASSOCIATE = 'SENIOR_ASSOCIATE', 'Senior Associate'
         ASSOCIATE = 'ASSOCIATE', 'Associate'
-        PARALEGAL = 'PARALEGAL', 'Paralegal'
-        LEGAL_ASSISTANT = 'LEGAL_ASSISTANT', 'Legal Assistant'
+        PARALEGAL = 'PARALEGAL', 'Regiemedewerker'
+        LEGAL_ASSISTANT = 'LEGAL_ASSISTANT', 'Zorgassistent'
         ADMIN = 'ADMIN', 'Administrator'
-        CLIENT = 'CLIENT', 'Client'
+        CLIENT = 'CLIENT', 'Cliënt'
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.ASSOCIATE)
@@ -111,14 +111,81 @@ class UserProfile(models.Model):
         return self.role in [self.Role.PARTNER, self.Role.SENIOR_ASSOCIATE, self.Role.ASSOCIATE]
 
 
+# ============================================
+# CARE-FOCUSED MODELS (INTAKE & ASSESSMENT)
+# ============================================
+
+class CareCategoryMain(models.Model):
+    """Main care question categories (Hoofdcategorieën Zorgvraag)"""
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = 'Care Category (Main)'
+        verbose_name_plural = 'Care Categories (Main)'
+
+    name = models.CharField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CareCategorySubcategory(models.Model):
+    """Subcategories for care questions (Subcategorieën Zorgvraag)"""
+    class Meta:
+        ordering = ['order', 'name']
+        verbose_name = 'Care Subcategory'
+        verbose_name_plural = 'Care Subcategories'
+
+    main_category = models.ForeignKey(CareCategoryMain, on_delete=models.CASCADE, related_name='subcategories')
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f'{self.main_category.name} → {self.name}'
+
+
+class RiskFactor(models.Model):
+    """Signal factors for client profile"""
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'Signaalfactor'
+        verbose_name_plural = 'Signaalfactoren'
+
+    FACTOR_CHOICES = [
+        ('DEBT', 'Schulden'),
+        ('VIOLENCE', 'Geweld'),
+        ('ADDICTION', 'Verslaving'),
+        ('MENTAL_HEALTH', 'Psychische problematiek'),
+        ('HOMELESSNESS', 'Huisvesting'),
+        ('SOCIAL_ISOLATION', 'Sociale isolatie'),
+        ('EMPLOYMENT', 'Werkloosheid'),
+        ('LEGAL', 'Regelgevingsvragen'),
+        ('TRAUMA', 'Trauma'),
+        ('OTHER', 'Anderszins'),
+    ]
+
+    name = models.CharField(max_length=100, unique=True, choices=FACTOR_CHOICES)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.get_name_display()
+
+
 class Client(models.Model):
     class ClientType(models.TextChoices):
-        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
-        CORPORATION = 'CORPORATION', 'Corporation'
+        INDIVIDUAL = 'INDIVIDUAL', 'Individuele client'
+        CORPORATION = 'CORPORATION', 'Aanbiederorganisatie'
         LLC = 'LLC', 'LLC'
-        PARTNERSHIP = 'PARTNERSHIP', 'Partnership'
-        GOVERNMENT = 'GOVERNMENT', 'Government Entity'
-        NON_PROFIT = 'NON_PROFIT', 'Non-Profit'
+        PARTNERSHIP = 'PARTNERSHIP', 'Samenwerkingsverband'
+        GOVERNMENT = 'GOVERNMENT', 'Gemeente / overheid'
+        NON_PROFIT = 'NON_PROFIT', 'Non-profit'
         OTHER = 'OTHER', 'Other'
 
     class Status(models.TextChoices):
@@ -156,16 +223,70 @@ class Client(models.Model):
 
     @property
     def total_billed(self):
-        return self.invoices.aggregate(total=models.Sum('total_amount'))['total'] or Decimal('0')
+           # Represent active caseload volume as a simple count-backed metric.
+        return Decimal(self.contracts.filter(status__in=['DRAFT', 'IN_REVIEW', 'PENDING', 'APPROVED', 'ACTIVE']).count())
 
     @property
     def outstanding_balance(self):
-        return self.invoices.filter(status__in=['SENT', 'OVERDUE']).aggregate(
-            total=models.Sum('total_amount'))['total'] or Decimal('0')
+        # Legacy billing pressure replaced by unresolved placement pressure.
+        return Decimal(self.contracts.filter(status__in=['PENDING', 'IN_REVIEW']).count())
 
     @property
     def active_matters_count(self):
         return self.matters.filter(status='ACTIVE').count()
+
+
+class ProviderProfile(models.Model):
+    """Care provider/aanbieder target groups and capabilities"""
+    class Meta:
+        verbose_name = 'Provider Profile'
+        verbose_name_plural = 'Provider Profiles'
+
+    client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name='provider_profile',
+                                  help_text='Link to care provider/aanbieder')
+    
+    # Target age groups
+    target_age_0_4 = models.BooleanField(default=False, verbose_name='Target: 0–4')
+    target_age_4_12 = models.BooleanField(default=False, verbose_name='Target: 4–12')
+    target_age_12_18 = models.BooleanField(default=False, verbose_name='Target: 12–18')
+    target_age_18_plus = models.BooleanField(default=False, verbose_name='Target: 18+')
+    
+    # Target care categories
+    target_care_categories = models.ManyToManyField(CareCategoryMain, blank=True, related_name='provider_profiles',
+                                                     verbose_name='Zorgvraagcategorieën')
+    
+    # Target care forms
+    offers_outpatient = models.BooleanField(default=False, verbose_name='Aanbod: Ambulant')
+    offers_day_treatment = models.BooleanField(default=False, verbose_name='Aanbod: Dagbehandeling')
+    offers_residential = models.BooleanField(default=False, verbose_name='Aanbod: Residentieel')
+    offers_crisis = models.BooleanField(default=False, verbose_name='Aanbod: Crisisopvang')
+    
+    # Complexity levels
+    handles_simple = models.BooleanField(default=False, verbose_name='Kan: Enkelvoudig')
+    handles_multiple = models.BooleanField(default=False, verbose_name='Kan: Meervoudig')
+    handles_severe = models.BooleanField(default=False, verbose_name='Kan: Zwaar')
+    
+    # Urgency levels
+    handles_low_urgency = models.BooleanField(default=False, verbose_name='Kan: Laag')
+    handles_medium_urgency = models.BooleanField(default=False, verbose_name='Kan: Middel')
+    handles_high_urgency = models.BooleanField(default=False, verbose_name='Kan: Hoog')
+    handles_crisis_urgency = models.BooleanField(default=False, verbose_name='Kan: Crisis')
+    
+    # Capacity & availability
+    current_capacity = models.PositiveIntegerField(default=0, verbose_name='Huidige beschikbaarheid (aantal plaatsen)')
+    max_capacity = models.PositiveIntegerField(default=0, verbose_name='Maximale capaciteit')
+    waiting_list_length = models.PositiveIntegerField(default=0, verbose_name='Wachtlijst lengte')
+    average_wait_days = models.PositiveIntegerField(default=0, verbose_name='Gemiddelde wachttijd (dagen)')
+    
+    # Additional info
+    special_facilities = models.TextField(blank=True, verbose_name='Speciale faciliteiten')
+    service_area = models.CharField(max_length=500, blank=True, verbose_name='Dienstgebied')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Provider Profile: {self.client.name}'
 
 
 class Matter(models.Model):
@@ -175,106 +296,199 @@ class Matter(models.Model):
         CLOSED = 'CLOSED', 'Closed'
         ON_HOLD = 'ON_HOLD', 'On Hold'
 
-    class PracticeArea(models.TextChoices):
-        CORPORATE = 'CORPORATE', 'Corporate'
-        LITIGATION = 'LITIGATION', 'Litigation'
-        IP = 'IP', 'Intellectual Property'
-        REAL_ESTATE = 'REAL_ESTATE', 'Real Estate'
-        EMPLOYMENT = 'EMPLOYMENT', 'Employment'
-        TAX = 'TAX', 'Tax'
-        REGULATORY = 'REGULATORY', 'Regulatory'
-        FAMILY = 'FAMILY', 'Family Law'
-        CRIMINAL = 'CRIMINAL', 'Criminal Defense'
-        BANKRUPTCY = 'BANKRUPTCY', 'Bankruptcy'
-        IMMIGRATION = 'IMMIGRATION', 'Immigration'
-        ESTATE = 'ESTATE', 'Estate Planning'
-        ENVIRONMENTAL = 'ENVIRONMENTAL', 'Environmental'
-        OTHER = 'OTHER', 'Other'
+    class Scope(models.TextChoices):
+        GEMEENTE = 'GEMEENTE', 'Gemeente'
+        REGIO = 'REGIO', 'Regio'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='matters')
-    matter_number = models.CharField(max_length=50, unique=True)
+    configuration_id = models.CharField(max_length=50, unique=True)
     title = models.CharField(max_length=300)
     description = models.TextField(blank=True)
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='matters')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='matters', null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
-    practice_area = models.CharField(max_length=20, choices=PracticeArea.choices, default=PracticeArea.CORPORATE)
-    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='responsible_matters')
-    originating_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='originated_matters')
+    scope = models.CharField(max_length=20, choices=Scope.choices, default=Scope.GEMEENTE, help_text='Municipality or Regional scope')
+    care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='municipality_configurations')
+    linked_providers = models.ManyToManyField(Client, blank=True, related_name='municipality_configurations')
+    is_active = models.BooleanField(default=True)
+    responsible_care_coordinator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='responsible_configurations')
+    responsible_team = models.CharField(max_length=200, blank=True)
+    intake_creator = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_configurations')
     team_members = models.ManyToManyField(User, blank=True, related_name='matter_team')
     open_date = models.DateField(default=date.today)
     close_date = models.DateField(null=True, blank=True)
-    statute_of_limitations = models.DateField(null=True, blank=True)
-    court_name = models.CharField(max_length=200, blank=True)
-    case_number = models.CharField(max_length=100, blank=True)
-    opposing_party = models.CharField(max_length=200, blank=True)
-    opposing_counsel = models.CharField(max_length=200, blank=True)
-    billing_type = models.CharField(max_length=20, choices=[
-        ('HOURLY', 'Hourly'),
-        ('FLAT_FEE', 'Flat Fee'),
-        ('CONTINGENCY', 'Contingency'),
-        ('RETAINER', 'Retainer'),
-        ('PRO_BONO', 'Pro Bono'),
-    ], default='HOURLY')
-    budget_amount = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    max_wait_days = models.PositiveIntegerField(null=True, blank=True)
+    priority_rules = models.TextField(blank=True)
     notes = models.TextField(blank=True)
     is_confidential = models.BooleanField(default=False)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_matters')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        db_table = 'contracts_care_configuration'
+
+    def __init__(self, *args, **kwargs):
+        legacy_practice = kwargs.pop('practice_area', None)
+        kwargs.pop('billing_type', None)
+        kwargs.pop('budget_amount', None)
+        if 'matter_number' in kwargs and 'configuration_id' not in kwargs:
+            kwargs['configuration_id'] = kwargs.pop('matter_number')
+        if 'responsible_attorney' in kwargs and 'responsible_care_coordinator' not in kwargs:
+            kwargs['responsible_care_coordinator'] = kwargs.pop('responsible_attorney')
+        if 'originating_attorney' in kwargs and 'intake_creator' not in kwargs:
+            kwargs['intake_creator'] = kwargs.pop('originating_attorney')
+        super().__init__(*args, **kwargs)
+        self._legacy_practice_area = legacy_practice
+
     def __str__(self):
-        return f'{self.matter_number} - {self.title}'
+        return f'{self.configuration_id} - {self.title}'
 
     def save(self, *args, **kwargs):
-        if not self.matter_number:
+        if not self.configuration_id:
             last = Matter.objects.order_by('-id').first()
             next_num = (last.id + 1) if last else 1
-            self.matter_number = f'MTR-{next_num:05d}'
+            self.configuration_id = f'CFG-{next_num:05d}'
         super().save(*args, **kwargs)
 
     @property
+    def matter_number(self):
+        return self.configuration_id
+
+    @matter_number.setter
+    def matter_number(self, value):
+        self.configuration_id = value
+
+    @property
+    def responsible_attorney(self):
+        return self.responsible_care_coordinator
+
+    @responsible_attorney.setter
+    def responsible_attorney(self, value):
+        self.responsible_care_coordinator = value
+
+    @property
+    def originating_attorney(self):
+        return self.intake_creator
+
+    @originating_attorney.setter
+    def originating_attorney(self, value):
+        self.intake_creator = value
+
+    @property
+    def practice_area(self):
+        return self._legacy_practice_area or ''
+
+    def get_practice_area_display(self):
+        return 'Zorgdomeinen gestuurd'
+
+    @property
+    def billing_type(self):
+        return ''
+
+    def get_billing_type_display(self):
+        return 'Niet van toepassing'
+
+    @property
+    def budget_amount(self):
+        return None
+
+    @property
     def total_time_billed(self):
-        entries = self.time_entries.filter(is_billable=True)
+        entries_manager = getattr(self, 'time_entries', None)
+        if entries_manager is None:
+            return Decimal('0')
+        entries = entries_manager.filter(is_billable=True)
         total = sum(e.hours for e in entries)
         return total
 
     @property
     def total_amount_billed(self):
-        entries = self.time_entries.filter(is_billable=True)
+        entries_manager = getattr(self, 'time_entries', None)
+        if entries_manager is None:
+            return Decimal('0')
+        entries = entries_manager.filter(is_billable=True)
         total = sum(e.total_amount for e in entries)
         return total
+
+    @property
+    def provider_total(self):
+        linked_count = self.linked_providers.count()
+        if linked_count:
+            return linked_count
+        return 1 if self.client_id else 0
+
+    @property
+    def care_domains_display(self):
+        names = list(self.care_domains.values_list('name', flat=True))
+        if names:
+            return ', '.join(names)
+        return 'Niet ingesteld'
+
+    @property
+    def average_wait_days(self):
+        provider_ids = list(self.linked_providers.values_list('id', flat=True))
+        if not provider_ids and self.client_id:
+            provider_ids = [self.client_id]
+        wait_qs = TrustAccount.objects.filter(provider_id__in=provider_ids)
+        value = wait_qs.aggregate(avg=models.Avg('wait_days'))['avg']
+        return round(float(value), 1) if value is not None else None
+
+    @property
+    def case_total(self):
+        return self.contracts.count()
+
+    @property
+    def capacity_status(self):
+        avg_wait = self.average_wait_days
+        if avg_wait is None:
+            return 'Onbekend'
+        if self.max_wait_days is None:
+            return 'Geen norm'
+        return 'Op schema' if avg_wait <= self.max_wait_days else 'Over norm'
+
+
+# Canonical care-native alias retained while schema and field names stay stable.
+CareConfiguration = Matter
 
 
 class Contract(models.Model):
     class Status(models.TextChoices):
-        DRAFT = 'DRAFT', 'Draft'
-        PENDING = 'PENDING', 'Pending'
-        IN_REVIEW = 'IN_REVIEW', 'In Review'
-        APPROVED = 'APPROVED', 'Approved'
-        ACTIVE = 'ACTIVE', 'Active'
-        EXPIRED = 'EXPIRED', 'Expired'
-        TERMINATED = 'TERMINATED', 'Terminated'
-        COMPLETED = 'COMPLETED', 'Completed'
-        CANCELLED = 'CANCELLED', 'Cancelled'
+        DRAFT = 'DRAFT', 'Concept'
+        PENDING = 'PENDING', 'Wacht op actie'
+        IN_REVIEW = 'IN_REVIEW', 'In beoordeling'
+        APPROVED = 'APPROVED', 'Goedgekeurd'
+        ACTIVE = 'ACTIVE', 'Actief'
+        EXPIRED = 'EXPIRED', 'Verlopen'
+        TERMINATED = 'TERMINATED', 'Beëindigd'
+        COMPLETED = 'COMPLETED', 'Afgerond'
+        CANCELLED = 'CANCELLED', 'Geannuleerd'
+
+    class CasePhase(models.TextChoices):
+        INTAKE = 'intake', 'Intake'
+        BEOORDELING = 'beoordeling', 'Beoordeling'
+        MATCHING = 'matching', 'Matching'
+        PLAATSING = 'plaatsing', 'Plaatsing'
+        ACTIEF = 'actief', 'Actief'
+        AFGEROND = 'afgerond', 'Afgerond'
 
     class ContractType(models.TextChoices):
-        NDA = 'NDA', 'Non-Disclosure Agreement'
-        MSA = 'MSA', 'Master Service Agreement'
-        SOW = 'SOW', 'Statement of Work'
-        EMPLOYMENT = 'EMPLOYMENT', 'Employment Agreement'
-        LEASE = 'LEASE', 'Lease Agreement'
-        LICENSE = 'LICENSE', 'License Agreement'
-        VENDOR = 'VENDOR', 'Vendor Agreement'
-        PARTNERSHIP = 'PARTNERSHIP', 'Partnership Agreement'
-        SETTLEMENT = 'SETTLEMENT', 'Settlement Agreement'
-        AMENDMENT = 'AMENDMENT', 'Amendment'
+        NDA = 'NDA', 'Intakeafspraak'
+        MSA = 'MSA', 'Regieafspraak'
+        SOW = 'SOW', 'Uitvoeringsafspraak'
+        EMPLOYMENT = 'EMPLOYMENT', 'Personele inzet'
+        LEASE = 'LEASE', 'Capaciteitsafspraak'
+        LICENSE = 'LICENSE', 'Toegangsafspraak'
+        VENDOR = 'VENDOR', 'Aanbiedersafspraak'
+        PARTNERSHIP = 'PARTNERSHIP', 'Samenwerkingsafspraak'
+        SETTLEMENT = 'SETTLEMENT', 'Afstemmingsafspraak'
+        AMENDMENT = 'AMENDMENT', 'Wijzigingsafspraak'
         OTHER = 'OTHER', 'Other'
 
     class RiskLevel(models.TextChoices):
-        LOW = 'LOW', 'Low'
-        MEDIUM = 'MEDIUM', 'Medium'
-        HIGH = 'HIGH', 'High'
-        CRITICAL = 'CRITICAL', 'Critical'
+        LOW = 'LOW', 'Laag'
+        MEDIUM = 'MEDIUM', 'Middel'
+        HIGH = 'HIGH', 'Hoog'
+        CRITICAL = 'CRITICAL', 'Kritiek'
 
     class Currency(models.TextChoices):
         USD = 'USD', 'USD ($)'
@@ -290,11 +504,11 @@ class Contract(models.Model):
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
     content = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
-    counterparty = models.CharField(max_length=200, blank=True)
+    preferred_provider = models.CharField(max_length=200, blank=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     currency = models.CharField(max_length=5, choices=Currency.choices, default=Currency.USD)
-    governing_law = models.CharField(max_length=200, blank=True, help_text='Governing law jurisdiction')
-    jurisdiction = models.CharField(max_length=200, blank=True, help_text='Contract jurisdiction')
+    governing_law = models.CharField(max_length=200, blank=True, help_text='Kader of beleidsgrondslag')
+    jurisdiction = models.CharField(max_length=200, blank=True, help_text='Regio of toepassingsgebied')
     language = models.CharField(max_length=50, default='English', blank=True)
     risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.LOW)
     data_transfer_flag = models.BooleanField(default=False, help_text='Involves cross-border data transfer (EU/US)')
@@ -307,16 +521,18 @@ class Contract(models.Model):
     notice_period_days = models.PositiveIntegerField(null=True, blank=True)
     termination_notice_date = models.DateField(null=True, blank=True)
     lifecycle_stage = models.CharField(max_length=20, choices=[
-        ('DRAFTING', 'Drafting'),
-        ('INTERNAL_REVIEW', 'Internal Review'),
-        ('NEGOTIATION', 'Negotiation'),
-        ('APPROVAL', 'Approval'),
-        ('SIGNATURE', 'Signature'),
-        ('EXECUTED', 'Executed'),
-        ('OBLIGATION_TRACKING', 'Obligation Tracking'),
-        ('RENEWAL', 'Renewal/Termination'),
+        ('DRAFTING', 'Voorbereiding'),
+        ('INTERNAL_REVIEW', 'Interne beoordeling'),
+        ('NEGOTIATION', 'Afstemming'),
+        ('APPROVAL', 'Indicatie'),
+        ('SIGNATURE', 'Bevestiging'),
+        ('EXECUTED', 'Gestart'),
+        ('OBLIGATION_TRACKING', 'Voortgangsbewaking'),
+        ('RENEWAL', 'Herbeoordeling / afronding'),
         ('ARCHIVED', 'Archived'),
     ], default='DRAFTING')
+    case_phase = models.CharField(max_length=20, choices=CasePhase.choices, default=CasePhase.INTAKE)
+    phase_entered_at = models.DateTimeField(null=True, blank=True, help_text='Timestamp when the case entered the current phase')
     client = models.ForeignKey('Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
     matter = models.ForeignKey('Matter', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -324,6 +540,9 @@ class Contract(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'contracts_care_case'
 
     def __str__(self):
         return self.title
@@ -342,27 +561,30 @@ class Contract(models.Model):
         return None
 
 
+CareCase = Contract
+
+
 class Document(models.Model):
     class DocType(models.TextChoices):
-        CONTRACT = 'CONTRACT', 'Contract Document'
-        AMENDMENT = 'AMENDMENT', 'Amendment'
-        EXHIBIT = 'EXHIBIT', 'Exhibit/Attachment'
+        CONTRACT = 'CONTRACT', 'Casusdossier'
+        AMENDMENT = 'AMENDMENT', 'Wijziging'
+        EXHIBIT = 'EXHIBIT', 'Bijlage'
         CORRESPONDENCE = 'CORRESPONDENCE', 'Correspondence'
-        COURT_FILING = 'COURT_FILING', 'Court Filing'
-        PLEADING = 'PLEADING', 'Pleading'
+        COURT_FILING = 'COURT_FILING', 'Formele indiening'
+        PLEADING = 'PLEADING', 'Onderbouwing'
         DISCOVERY = 'DISCOVERY', 'Discovery'
         MEMO = 'MEMO', 'Memorandum'
-        RESEARCH = 'RESEARCH', 'Legal Research'
-        INVOICE = 'INVOICE', 'Invoice'
+        RESEARCH = 'RESEARCH', 'Onderzoeksnotitie'
+        INVOICE = 'INVOICE', 'Archived Financial Record'
         TEMPLATE = 'TEMPLATE', 'Template'
         OTHER = 'OTHER', 'Other'
 
     class Status(models.TextChoices):
-        DRAFT = 'DRAFT', 'Draft'
-        REVIEW = 'REVIEW', 'Under Review'
-        APPROVED = 'APPROVED', 'Approved'
-        FINAL = 'FINAL', 'Final'
-        ARCHIVED = 'ARCHIVED', 'Archived'
+        DRAFT = 'DRAFT', 'Concept'
+        REVIEW = 'REVIEW', 'In beoordeling'
+        APPROVED = 'APPROVED', 'Goedgekeurd'
+        FINAL = 'FINAL', 'Definitief'
+        ARCHIVED = 'ARCHIVED', 'Gearchiveerd'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
     title = models.CharField(max_length=300)
@@ -403,165 +625,54 @@ class Document(models.Model):
         return ''
 
 
-class TimeEntry(models.Model):
-    class ActivityType(models.TextChoices):
-        RESEARCH = 'RESEARCH', 'Legal Research'
-        DRAFTING = 'DRAFTING', 'Document Drafting'
-        REVIEW = 'REVIEW', 'Document Review'
-        MEETING = 'MEETING', 'Meeting/Conference'
-        COURT = 'COURT', 'Court Appearance'
-        DEPOSITION = 'DEPOSITION', 'Deposition'
-        NEGOTIATION = 'NEGOTIATION', 'Negotiation'
-        COMMUNICATION = 'COMMUNICATION', 'Communication'
-        TRAVEL = 'TRAVEL', 'Travel'
-        ADMIN = 'ADMIN', 'Administrative'
-        OTHER = 'OTHER', 'Other'
-
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='time_entries')
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, related_name='time_entries')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='time_entries')
-    date = models.DateField(default=date.today)
-    hours = models.DecimalField(max_digits=5, decimal_places=2, validators=[MinValueValidator(Decimal('0.1'))])
-    description = models.TextField()
-    activity_type = models.CharField(max_length=20, choices=ActivityType.choices, default=ActivityType.OTHER)
-    rate = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
-    is_billable = models.BooleanField(default=True)
-    is_billed = models.BooleanField(default=False)
-    invoice = models.ForeignKey('Invoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='time_entries')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-date', '-created_at']
-
-    def __str__(self):
-        return f'{self.user.get_full_name() or self.user.username} - {self.matter} - {self.hours}h'
-
-    @property
-    def total_amount(self):
-        if self.rate:
-            return self.hours * self.rate
-        try:
-            return self.hours * self.user.profile.hourly_rate
-        except Exception:
-            return Decimal('0')
-
-    def save(self, *args, **kwargs):
-        if not self.rate:
-            try:
-                self.rate = self.user.profile.hourly_rate
-            except Exception:
-                pass
-        super().save(*args, **kwargs)
-
-
-class Invoice(models.Model):
-    class Status(models.TextChoices):
-        DRAFT = 'DRAFT', 'Draft'
-        SENT = 'SENT', 'Sent'
-        PAID = 'PAID', 'Paid'
-        PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially Paid'
-        OVERDUE = 'OVERDUE', 'Overdue'
-        VOID = 'VOID', 'Void'
-        WRITTEN_OFF = 'WRITTEN_OFF', 'Written Off'
-
-    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='invoices')
-    invoice_number = models.CharField(max_length=50, unique=True)
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='invoices')
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='invoices')
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
-    issue_date = models.DateField(default=date.today)
-    due_date = models.DateField()
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=Decimal('0'))
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    total_amount = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    amount_paid = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
-    notes = models.TextField(blank=True)
-    payment_terms = models.CharField(max_length=200, default='Net 30')
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        ordering = ['-issue_date']
-
-    def __str__(self):
-        return f'Invoice #{self.invoice_number} - {self.client.name}'
-
-    def save(self, *args, **kwargs):
-        if not self.invoice_number:
-            last = Invoice.objects.order_by('-id').first()
-            next_num = (last.id + 1) if last else 1
-            self.invoice_number = f'INV-{next_num:05d}'
-        self.tax_amount = self.subtotal * (self.tax_rate / 100)
-        self.total_amount = self.subtotal + self.tax_amount
-        super().save(*args, **kwargs)
-
-    @property
-    def balance_due(self):
-        return self.total_amount - self.amount_paid
-
-    @property
-    def is_overdue(self):
-        return self.status in ['SENT', 'PARTIALLY_PAID'] and self.due_date < date.today()
-
-
 class TrustAccount(models.Model):
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='trust_accounts')
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='trust_accounts')
-    account_name = models.CharField(max_length=200)
-    balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0'))
+    class CareType(models.TextChoices):
+        AMBULANT = 'AMBULANT', 'Ambulant'
+        DAGBESTEDING = 'DAGBESTEDING', 'Dagbesteding'
+        JEUGDHULP = 'JEUGDHULP', 'Jeugdhulp'
+        GGZ = 'GGZ', 'GGZ'
+        WLZ = 'WLZ', 'WLZ'
+        OVERIG = 'OVERIG', 'Overig'
+
+    provider = models.ForeignKey(
+        Client,
+        on_delete=models.CASCADE,
+        related_name='wait_time_entries',
+        verbose_name='Aanbieder',
+        null=True,
+        blank=True,
+    )
+    region = models.CharField(max_length=120, default='', verbose_name='Regio / gemeente')
+    care_type = models.CharField(max_length=20, choices=CareType.choices, default=CareType.AMBULANT, verbose_name='Zorgtype')
+    wait_days = models.PositiveIntegerField(default=0, verbose_name='Gemiddelde wachttijd (dagen)')
+    open_slots = models.PositiveIntegerField(default=0, verbose_name='Beschikbare plekken')
+    waiting_list_size = models.PositiveIntegerField(default=0, verbose_name='Wachtlijst (aantal)')
+    notes = models.TextField(blank=True, verbose_name='Toelichting')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f'{self.account_name} - {self.client.name} (${self.balance})'
-
-
-class TrustTransaction(models.Model):
-    class TransactionType(models.TextChoices):
-        DEPOSIT = 'DEPOSIT', 'Deposit'
-        WITHDRAWAL = 'WITHDRAWAL', 'Withdrawal'
-        TRANSFER = 'TRANSFER', 'Transfer'
-        REFUND = 'REFUND', 'Refund'
-
-    account = models.ForeignKey(TrustAccount, on_delete=models.CASCADE, related_name='transactions')
-    transaction_type = models.CharField(max_length=20, choices=TransactionType.choices)
-    amount = models.DecimalField(max_digits=12, decimal_places=2)
-    description = models.CharField(max_length=300)
-    reference_number = models.CharField(max_length=100, blank=True)
-    invoice = models.ForeignKey(Invoice, on_delete=models.SET_NULL, null=True, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
     class Meta:
-        ordering = ['-created_at']
+        verbose_name = 'Wachttijd'
+        verbose_name_plural = 'Wachttijden'
+        ordering = ['-updated_at']
 
     def __str__(self):
-        return f'{self.get_transaction_type_display()} - ${self.amount}'
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        if self.transaction_type in ['DEPOSIT']:
-            self.account.balance += self.amount
-        elif self.transaction_type in ['WITHDRAWAL', 'TRANSFER']:
-            self.account.balance -= self.amount
-        elif self.transaction_type == 'REFUND':
-            self.account.balance -= self.amount
-        self.account.save()
+        provider_name = self.provider.name if self.provider else 'Onbekende aanbieder'
+        return f'{provider_name} - {self.region} ({self.wait_days} dagen)'
 
 
 class DeadlineQuerySet(models.QuerySet):
     """Custom queryset for Deadline with organization-scoping support."""
     def for_organization(self, organization):
-        """Filter deadlines that belong to a specific organization via contract or matter."""
+        """Filter tasks that belong to a specific organization via case or legacy relations."""
         if not organization:
             return self.none()
         from django.db.models import Q
         return self.filter(
-            Q(contract__organization=organization) | Q(matter__organization=organization)
+            Q(due_diligence_process__organization=organization)
+            | Q(contract__organization=organization)
+            | Q(matter__organization=organization)
         )
 
 
@@ -577,31 +688,47 @@ class DeadlineManager(models.Manager):
 
 class Deadline(models.Model):
     class Priority(models.TextChoices):
-        LOW = 'LOW', 'Low'
-        MEDIUM = 'MEDIUM', 'Medium'
-        HIGH = 'HIGH', 'High'
-        CRITICAL = 'CRITICAL', 'Critical'
+        LOW = 'LOW', 'Laag'
+        MEDIUM = 'MEDIUM', 'Middel'
+        HIGH = 'HIGH', 'Hoog'
+        URGENT = 'URGENT', 'Urgent'
 
-    class DeadlineType(models.TextChoices):
-        COURT = 'COURT', 'Court Deadline'
-        FILING = 'FILING', 'Filing Deadline'
-        SOL = 'SOL', 'Statute of Limitations'
-        CONTRACT = 'CONTRACT', 'Contract Deadline'
-        REGULATORY = 'REGULATORY', 'Regulatory Deadline'
-        INTERNAL = 'INTERNAL', 'Internal Deadline'
-        CLIENT = 'CLIENT', 'Client Deadline'
-        OTHER = 'OTHER', 'Other'
+    class TaskType(models.TextChoices):
+        INTAKE_COMPLETE = 'INTAKE_COMPLETE', 'Intake afronden'
+        ASSESSMENT_PERFORM = 'ASSESSMENT_PERFORM', 'Beoordeling uitvoeren'
+        SELECT_MATCH = 'SELECT_MATCH', 'Match selecteren'
+        CONTACT_PROVIDER = 'CONTACT_PROVIDER', 'Aanbieder contacteren'
+        CONFIRM_PLACEMENT = 'CONFIRM_PLACEMENT', 'Plaatsing bevestigen'
+        EVALUATE = 'EVALUATE', 'Evaluatie uitvoeren'
 
-    title = models.CharField(max_length=300)
+    class GenerationSource(models.TextChoices):
+        MANUAL = 'MANUAL', 'Handmatig'
+        INTAKE = 'INTAKE', 'Intake'
+        ASSESSMENT = 'ASSESSMENT', 'Beoordeling'
+        MATCHING = 'MATCHING', 'Matching'
+        PLACEMENT = 'PLACEMENT', 'Plaatsing'
+
+    due_diligence_process = models.ForeignKey(
+        'DueDiligenceProcess',
+        on_delete=models.CASCADE,
+        related_name='followup_tasks',
+        null=True,
+        blank=True,
+        verbose_name='Casus'
+    )
+    title = models.CharField(max_length=300, verbose_name='Taak')
     description = models.TextField(blank=True)
-    deadline_type = models.CharField(max_length=20, choices=DeadlineType.choices, default=DeadlineType.OTHER)
+    task_type = models.CharField(max_length=30, choices=TaskType.choices, default=TaskType.INTAKE_COMPLETE, verbose_name='Type taak')
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
     due_date = models.DateField()
     due_time = models.TimeField(null=True, blank=True)
-    reminder_days = models.PositiveIntegerField(default=7)
+    
+    # Legacy fields retained for compatibility with historical data.
     matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines')
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='deadlines')
+    auto_generated = models.BooleanField(default=False)
+    generation_source = models.CharField(max_length=20, choices=GenerationSource.choices, default=GenerationSource.MANUAL)
     is_completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
     completed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='completed_deadlines')
@@ -614,7 +741,7 @@ class Deadline(models.Model):
         ordering = ['due_date']
 
     def __str__(self):
-        return f'{self.title} - Due: {self.due_date}'
+        return f'Taak: {self.title} (deadline {self.due_date})'
 
     @property
     def is_overdue(self):
@@ -631,7 +758,7 @@ class Deadline(models.Model):
         if self.is_completed:
             return False
         days = (self.due_date - date.today()).days
-        return 0 < days <= self.reminder_days
+        return 0 < days <= 2
 
 
 class AuditLog(models.Model):
@@ -665,12 +792,12 @@ class AuditLog(models.Model):
 
 class Notification(models.Model):
     class NotificationType(models.TextChoices):
-        DEADLINE = 'DEADLINE', 'Deadline Reminder'
-        TASK = 'TASK', 'Task Assignment'
-        CONTRACT = 'CONTRACT', 'Contract Update'
-        APPROVAL = 'APPROVAL', 'Approval Request'
-        SYSTEM = 'SYSTEM', 'System'
-        BILLING = 'BILLING', 'Billing'
+        DEADLINE = 'DEADLINE', 'Deadline herinnering'
+        TASK = 'TASK', 'Taaktoewijzing'
+        CONTRACT = 'CONTRACT', 'Casusupdate'
+        APPROVAL = 'APPROVAL', 'Indicatieverzoek'
+        SYSTEM = 'SYSTEM', 'Systeem'
+        BILLING = 'BILLING', 'Capaciteitsbudget'
 
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
     notification_type = models.CharField(max_length=20, choices=NotificationType.choices)
@@ -687,52 +814,168 @@ class Notification(models.Model):
         return f'{self.title} -> {self.recipient.username}'
 
 
-class ConflictCheck(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending Review'
-        CLEAR = 'CLEAR', 'No Conflict'
-        CONFLICT = 'CONFLICT', 'Conflict Found'
-        WAIVED = 'WAIVED', 'Conflict Waived'
+class CaseAssessment(models.Model):
+    """Care case assessment for intake review and matching preparation (Casusbeoordeling)"""
+    
+    class AssessmentStatus(models.TextChoices):
+        DRAFT = 'DRAFT', 'Concept'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'In beoordeling'
+        APPROVED_FOR_MATCHING = 'APPROVED_FOR_MATCHING', 'Goedgekeurd voor matching'
+        NEEDS_INFO = 'NEEDS_INFO', 'Aanvullende info nodig'
 
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True, related_name='conflict_checks')
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='conflict_checks')
-    checked_party = models.CharField(max_length=200)
-    checked_party_type = models.CharField(max_length=50, blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    notes = models.TextField(blank=True)
-    conflicts_found = models.TextField(blank=True)
-    checked_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='conflict_checks_performed')
-    resolved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='conflict_checks_resolved')
+    class RiskSignal(models.TextChoices):
+        SAFETY = 'SAFETY', 'Veiligheid'
+        ESCALATION = 'ESCALATION', 'Escalatie'
+        DROPOUT_RISK = 'DROPOUT_RISK', 'Uitvalsignaal'
+        INCOMPLETE_INTAKE = 'INCOMPLETE_INTAKE', 'Onvolledige intake'
+
+    # Link to intake/case
+    due_diligence_process = models.OneToOneField(
+        'DueDiligenceProcess',
+        on_delete=models.CASCADE,
+        related_name='case_assessment',
+        verbose_name='Casus'
+    )
+
+    # Assessment status
+    assessment_status = models.CharField(
+        max_length=32,
+        choices=AssessmentStatus.choices,
+        default=AssessmentStatus.DRAFT,
+        verbose_name='Beoordeling status'
+    )
+
+    # Signals (multi-select via CharField with comma-separated values or use JSONField)
+    risk_signals = models.CharField(
+        max_length=200,
+        blank=True,
+        help_text='Komma-gescheiden signaalcodes',
+        verbose_name='Signalen'
+    )
+
+    # Matching readiness
+    matching_ready = models.BooleanField(
+        default=False,
+        verbose_name='Klaar voor matching'
+    )
+    reason_not_ready = models.TextField(
+        blank=True,
+        verbose_name='Reden indien niet klaar',
+        help_text='Toelichting waarom nog niet klaar voor matching'
+    )
+
+    # Assessment notes
+    notes = models.TextField(
+        blank=True,
+        verbose_name='Notities',
+        help_text='Vrije notities bij beoordeling'
+    )
+
+    # Track who performed assessment
+    assessed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='case_assessments_performed',
+        verbose_name='Beoordeeld door'
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
-    resolved_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
+        verbose_name = 'Casusbeoordeling'
+        verbose_name_plural = 'Casusbeoordelingen'
 
     def __str__(self):
-        return f'Conflict Check: {self.checked_party} ({self.get_status_display()})'
+        return f'Casusbeoordeling: {self.due_diligence_process.title} ({self.get_assessment_status_display()})'
+    
+    def get_risk_signals_display(self):
+        """Return list of signal labels."""
+        if not self.risk_signals:
+            return []
+        codes = [s.strip() for s in self.risk_signals.split(',')]
+        return [dict(self.RiskSignal.choices).get(code, code) for code in codes]
 
 
 class TrademarkRequest(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        FILED = 'FILED', 'Filed'
-        IN_REVIEW = 'IN_REVIEW', 'In Review'
-        APPROVED = 'APPROVED', 'Approved'
-        REJECTED = 'REJECTED', 'Rejected'
+    class Meta:
+        verbose_name = 'Placement Request'
+        verbose_name_plural = 'Placement Requests'
 
-    mark_text = models.CharField(max_length=200)
-    description = models.TextField()
-    goods_services = models.TextField()
-    filing_basis = models.CharField(max_length=100)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    class Status(models.TextChoices):
+        DRAFT = 'DRAFT', 'Concept'
+        IN_REVIEW = 'IN_REVIEW', 'In beoordeling'
+        APPROVED = 'APPROVED', 'Goedgekeurd'
+        REJECTED = 'REJECTED', 'Afgewezen'
+        NEEDS_INFO = 'NEEDS_INFO', 'Aanvullende info nodig'
+
+    # Backward-compatible alias used by older tests/code paths.
+    Status.PENDING = Status.DRAFT
+
+    class CareForm(models.TextChoices):
+        OUTPATIENT = 'OUTPATIENT', 'Ambulant'
+        DAY_TREATMENT = 'DAY_TREATMENT', 'Dagbehandeling'
+        RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
+        CRISIS = 'CRISIS', 'Crisisopvang'
+
+    # Legacy fields (kept for backward compatibility)
+    mark_text = models.CharField(max_length=200, blank=True)
+    description = models.TextField(blank=True)
+    goods_services = models.TextField(blank=True)
+    filing_basis = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='trademark_requests')
     matter = models.ForeignKey(Matter, on_delete=models.SET_NULL, null=True, blank=True, related_name='trademark_requests')
+
+    # Care indication flow fields
+    due_diligence_process = models.ForeignKey(
+        'DueDiligenceProcess',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='indications',
+        verbose_name='Casus'
+    )
+    proposed_provider = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='proposed_indications',
+        verbose_name='Voorgestelde aanbieder'
+    )
+    selected_provider = models.ForeignKey(
+        Client,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='selected_indications',
+        verbose_name='Geselecteerde aanbieder'
+    )
+    care_form = models.CharField(
+        max_length=20,
+        choices=CareForm.choices,
+        blank=True,
+        verbose_name='Zorgvorm'
+    )
+    start_date = models.DateField(null=True, blank=True, verbose_name='Startdatum')
+    duration_weeks = models.PositiveIntegerField(null=True, blank=True, verbose_name='Duur (weken, optioneel)')
+    decision_notes = models.TextField(blank=True, verbose_name='Besluitnotities')
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return self.mark_text
+        if self.due_diligence_process:
+            return f'Indicatie: {self.due_diligence_process.title}'
+        return self.mark_text or f'Indicatie #{self.pk}'
+
+
+# Canonical care-native alias retained while the schema still uses the legacy model name.
+PlacementRequest = TrademarkRequest
 
 
 class LegalTaskQuerySet(models.QuerySet):
@@ -797,12 +1040,14 @@ class Tag(models.Model):
 class RiskLogQuerySet(models.QuerySet):
     """Custom queryset for RiskLog with organization-scoping support."""
     def for_organization(self, organization):
-        """Filter risk logs that belong to a specific organization via contract or matter."""
+        """Filter signals that belong to a specific organization."""
         if not organization:
             return self.none()
         from django.db.models import Q
         return self.filter(
-            Q(contract__organization=organization) | Q(matter__organization=organization)
+            Q(due_diligence_process__organization=organization)
+            | Q(contract__organization=organization)
+            | Q(matter__organization=organization)
         )
 
 
@@ -817,25 +1062,58 @@ class RiskLogManager(models.Manager):
 
 
 class RiskLog(models.Model):
-    class RiskLevel(models.TextChoices):
-        LOW = 'LOW', 'Low'
-        MEDIUM = 'MEDIUM', 'Medium'
-        HIGH = 'HIGH', 'High'
-        CRITICAL = 'CRITICAL', 'Critical'
+    class SignalType(models.TextChoices):
+        SAFETY = 'SAFETY', 'Veiligheid'
+        ESCALATION = 'ESCALATION', 'Escalatie'
+        NO_MATCH = 'NO_MATCH', 'Geen match'
+        WAIT_EXCEEDED = 'WAIT_EXCEEDED', 'Wachttijd overschreden'
+        CAPACITY_ISSUE = 'CAPACITY_ISSUE', 'Capaciteit probleem'
+        INTAKE_INCOMPLETE = 'INTAKE_INCOMPLETE', 'Intake incompleet'
+        DROPOUT_RISK = 'DROPOUT_RISK', 'Uitval risico'
 
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.MEDIUM)
+    class RiskLevel(models.TextChoices):
+        LOW = 'LOW', 'Laag'
+        MEDIUM = 'MEDIUM', 'Middel'
+        HIGH = 'HIGH', 'Hoog'
+        CRITICAL = 'CRITICAL', 'Kritisch'
+
+    class SignalStatus(models.TextChoices):
+        OPEN = 'OPEN', 'Open'
+        IN_PROGRESS = 'IN_PROGRESS', 'In opvolging'
+        RESOLVED = 'RESOLVED', 'Afgerond'
+
+    title = models.CharField(max_length=200, blank=True, verbose_name='Titel (optioneel)')
+    due_diligence_process = models.ForeignKey(
+        'DueDiligenceProcess',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='signals',
+        verbose_name='Casus'
+    )
+    signal_type = models.CharField(max_length=30, choices=SignalType.choices, default=SignalType.SAFETY, verbose_name='Type signaal')
+    description = models.TextField(verbose_name='Omschrijving')
+    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.MEDIUM, verbose_name='Urgentie')
+    status = models.CharField(max_length=20, choices=SignalStatus.choices, default=SignalStatus.OPEN, verbose_name='Status')
+    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_signals', verbose_name='Verantwoordelijke')
+    follow_up = models.TextField(blank=True, verbose_name='Opvolging')
+
+    # Legacy links (kept for compatibility with existing data)
     contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True)
     matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='risks')
     mitigation_plan = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     objects = RiskLogManager()
 
     def __str__(self):
-        return self.title
+        if self.title:
+            return self.title
+        if self.due_diligence_process:
+            return f'{self.get_signal_type_display()} - {self.due_diligence_process.title}'
+        return self.get_signal_type_display()
 
 
 class ComplianceChecklist(models.Model):
@@ -948,53 +1226,112 @@ class WorkflowStep(models.Model):
 
 
 class DueDiligenceProcess(models.Model):
+    """Care/intake & assessment processes (Intakes & Beoordelingen)"""
     class ProcessStatus(models.TextChoices):
-        PLANNING = 'PLANNING', 'Planning'
-        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
-        REVIEW = 'REVIEW', 'Review'
-        COMPLETED = 'COMPLETED', 'Completed'
-        ON_HOLD = 'ON_HOLD', 'On Hold'
+        INTAKE = 'INTAKE', 'Intake'
+        ASSESSMENT = 'ASSESSMENT', 'Beoordeling'
+        MATCHING = 'MATCHING', 'Matching'
+        DECISION = 'DECISION', 'Matchbesluit'
+        COMPLETED = 'COMPLETED', 'Afgerond'
+        ON_HOLD = 'ON_HOLD', 'In wacht'
 
-    class TransactionType(models.TextChoices):
-        MERGER = 'MERGER', 'Merger'
-        ACQUISITION = 'ACQUISITION', 'Acquisition'
-        JOINT_VENTURE = 'JOINT_VENTURE', 'Joint Venture'
-        ASSET_PURCHASE = 'ASSET_PURCHASE', 'Asset Purchase'
+    class Urgency(models.TextChoices):
+        LOW = 'LOW', 'Laag'
+        MEDIUM = 'MEDIUM', 'Middel'
+        HIGH = 'HIGH', 'Hoog'
+        CRISIS = 'CRISIS', 'Crisis'
 
-    organization = models.ForeignKey(
-        'Organization', on_delete=models.CASCADE, null=True, blank=True,
-        related_name='due_diligence_processes',
-    )
-    title = models.CharField(max_length=200)
-    transaction_type = models.CharField(max_length=20, choices=TransactionType.choices)
-    target_company = models.CharField(max_length=200)
+    class Complexity(models.TextChoices):
+        SIMPLE = 'SIMPLE', 'Enkelvoudig'
+        MULTIPLE = 'MULTIPLE', 'Meervoudig'
+        SEVERE = 'SEVERE', 'Zwaar'
+
+    class CareForm(models.TextChoices):
+        OUTPATIENT = 'OUTPATIENT', 'Ambulant'
+        DAY_TREATMENT = 'DAY_TREATMENT', 'Dagbehandeling'
+        RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
+        CRISIS = 'CRISIS', 'Crisisopvang'
+
+    class AgeCategory(models.TextChoices):
+        EARLY_CHILDHOOD = '0_4', '0–4'
+        CHILDHOOD = '4_12', '4–12'
+        ADOLESCENT = '12_18', '12–18'
+        ADULT = '18_PLUS', '18+'
+
+    class FamilySituation(models.TextChoices):
+        HOME_DWELLING = 'HOME_DWELLING', 'Thuiswonend'
+        DIVORCED_PARENTS = 'DIVORCED_PARENTS', 'Gescheiden ouders'
+        FOSTER_CARE = 'FOSTER_CARE', 'Pleegzorg'
+        INSTITUTION = 'INSTITUTION', 'Instelling'
+        OTHER = 'OTHER', 'Anders'
+
+    # Organization & basic info
+    organization = models.ForeignKey('Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='due_diligence_processes')
+    contract = models.OneToOneField('Contract', on_delete=models.SET_NULL, null=True, blank=True, related_name='due_diligence_process')
+    title = models.CharField(max_length=200, verbose_name='Casusidentificatie', help_text='Bijv. voornaam + initialiteit')
+    status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.INTAKE, verbose_name='Status')
+    
+    # Case coordination
+    lead_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='dd_processes', verbose_name='Casusregisseur')
+    
+    # Dates
+    start_date = models.DateField(verbose_name='Intakedatum')
+    target_completion_date = models.DateField(verbose_name='Doeldatum matchbesluit')
+    
+    # CARE-SPECIFIC: Zorgvraag (Care Question)
+    care_category_main = models.ForeignKey(CareCategoryMain, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_main', verbose_name='Hoofdcategorie zorgvraag')
+    care_category_sub = models.ForeignKey(CareCategorySubcategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_sub', verbose_name='Subcategorie zorgvraag')
+    
+    # CARE-SPECIFIC: Matching dimensions
+    urgency = models.CharField(max_length=10, choices=Urgency.choices, default=Urgency.MEDIUM, verbose_name='Urgentie')
+    complexity = models.CharField(max_length=20, choices=Complexity.choices, default=Complexity.SIMPLE, verbose_name='Complexiteit')
+    preferred_care_form = models.CharField(max_length=20, choices=CareForm.choices, default=CareForm.OUTPATIENT, verbose_name='Gewenste zorgvorm')
+    
+    # CARE-SPECIFIC: Client profile
+    client_age_category = models.CharField(max_length=10, choices=AgeCategory.choices, null=True, blank=True, verbose_name='Leeftijdscategorie cliënt')
+    family_situation = models.CharField(max_length=20, choices=FamilySituation.choices, null=True, blank=True, verbose_name='Gezinssituatie')
+    has_other_support = models.BooleanField(default=False, verbose_name='Betrokken hulp (ja/nee)')
+    other_support_description = models.TextField(blank=True, verbose_name='Beschrijving betrokken hulp')
+    school_work_status = models.CharField(max_length=200, blank=True, verbose_name='School- / werkstatus')
+    
+    # Risk factors (many-to-many)
+    risk_factors = models.ManyToManyField(RiskFactor, blank=True, related_name='intakes', verbose_name='Risicofactoren')
+    
+    # Descriptive assessment
+    assessment_summary = models.TextField(blank=True, verbose_name='Intake samenvatting', help_text='Hulpvraag samenvatting, urgentie, aandachtspunten')
+    description = models.TextField(blank=True, verbose_name='Aanvullende opmerkingen')
+    
+    # Legacy fields (kept for migration compatibility)
+    transaction_type = models.CharField(max_length=20, blank=True)
+    target_company = models.CharField(max_length=200, blank=True)
     deal_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.PLANNING)
-    lead_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='dd_processes')
-    start_date = models.DateField()
-    target_completion_date = models.DateField()
-    description = models.TextField(blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Intake & Beoordeling'
+        verbose_name_plural = 'Intakes & Beoordelingen'
+
     def __str__(self):
-        return f'{self.title} - {self.target_company}'
+        return f'{self.title} ({self.get_status_display()})'
 
 
 class DueDiligenceTask(models.Model):
     class TaskStatus(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
-        COMPLETED = 'COMPLETED', 'Completed'
-        BLOCKED = 'BLOCKED', 'Blocked'
+        PENDING = 'PENDING', 'Open'
+        IN_PROGRESS = 'IN_PROGRESS', 'In uitvoering'
+        COMPLETED = 'COMPLETED', 'Afgerond'
+        BLOCKED = 'BLOCKED', 'Geblokkeerd'
 
     class TaskCategory(models.TextChoices):
-        LEGAL = 'LEGAL', 'Legal'
-        FINANCIAL = 'FINANCIAL', 'Financial'
-        OPERATIONAL = 'OPERATIONAL', 'Operational'
-        TECHNICAL = 'TECHNICAL', 'Technical'
-        REGULATORY = 'REGULATORY', 'Regulatory'
-        COMMERCIAL = 'COMMERCIAL', 'Commercial'
+        LEGAL = 'LEGAL', 'Regelgeving'
+        FINANCIAL = 'FINANCIAL', 'Budget'
+        OPERATIONAL = 'OPERATIONAL', 'Operationeel'
+        TECHNICAL = 'TECHNICAL', 'Technisch'
+        REGULATORY = 'REGULATORY', 'Toetsing'
+        COMMERCIAL = 'COMMERCIAL', 'Samenwerking'
 
     process = models.ForeignKey(DueDiligenceProcess, on_delete=models.CASCADE, related_name='dd_tasks')
     title = models.CharField(max_length=200)
@@ -1017,16 +1354,16 @@ class DueDiligenceTask(models.Model):
 
 class DueDiligenceRisk(models.Model):
     class RiskLevel(models.TextChoices):
-        LOW = 'LOW', 'Low'
-        MEDIUM = 'MEDIUM', 'Medium'
-        HIGH = 'HIGH', 'High'
+        LOW = 'LOW', 'Laag'
+        MEDIUM = 'MEDIUM', 'Middel'
+        HIGH = 'HIGH', 'Hoog'
 
     class RiskCategory(models.TextChoices):
-        LEGAL = 'LEGAL', 'Legal & Regulatory'
-        FINANCIAL = 'FINANCIAL', 'Financial'
-        OPERATIONAL = 'OPERATIONAL', 'Operational'
-        REPUTATIONAL = 'REPUTATIONAL', 'Reputational'
-        STRATEGIC = 'STRATEGIC', 'Strategic'
+        LEGAL = 'LEGAL', 'Regelgeving & toetsing'
+        FINANCIAL = 'FINANCIAL', 'Budget'
+        OPERATIONAL = 'OPERATIONAL', 'Operationeel'
+        REPUTATIONAL = 'REPUTATIONAL', 'Reputatie'
+        STRATEGIC = 'STRATEGIC', 'Strategisch'
 
     process = models.ForeignKey(DueDiligenceProcess, on_delete=models.CASCADE, related_name='dd_risks')
     title = models.CharField(max_length=200)
@@ -1046,7 +1383,24 @@ class DueDiligenceRisk(models.Model):
         return f'{self.process.title} - {self.title} ({self.risk_level})'
 
 
+# Canonical care-native aliases retained while schema and field names stay stable.
+CaseIntakeProcess = DueDiligenceProcess
+IntakeTask = DueDiligenceTask
+CaseRiskSignal = DueDiligenceRisk
+
+
 class Budget(models.Model):
+    class ScopeType(models.TextChoices):
+        GEMEENTE = 'GEMEENTE', 'Gemeente'
+        REGIO = 'REGIO', 'Regio'
+
+    class CareType(models.TextChoices):
+        OUTPATIENT = 'OUTPATIENT', 'Ambulant'
+        DAY_TREATMENT = 'DAY_TREATMENT', 'Dagbehandeling'
+        RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
+        CRISIS = 'CRISIS', 'Crisisopvang'
+
+    # Legacy quarter choices retained for backward compatibility.
     class Quarter(models.TextChoices):
         Q1 = 'Q1', 'Q1'
         Q2 = 'Q2', 'Q2'
@@ -1057,19 +1411,50 @@ class Budget(models.Model):
         'Organization', on_delete=models.CASCADE, null=True, blank=True,
         related_name='budgets',
     )
+
+    # Care-oriented structure
+    scope_type = models.CharField(max_length=20, choices=ScopeType.choices, default=ScopeType.GEMEENTE, verbose_name='Gemeente / regio type')
+    scope_name = models.CharField(max_length=150, default='', blank=True, verbose_name='Gemeente / regio')
+    target_group = models.CharField(max_length=150, default='', blank=True, verbose_name='Doelgroep')
+    care_type = models.CharField(max_length=20, choices=CareType.choices, default=CareType.OUTPATIENT, verbose_name='Zorgtype')
     year = models.PositiveIntegerField()
-    quarter = models.CharField(max_length=2, choices=Quarter.choices)
-    department = models.CharField(max_length=100)
-    allocated_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0'))])
+
+    # Legacy fields retained for compatibility.
+    quarter = models.CharField(max_length=2, choices=Quarter.choices, blank=True, default='')
+    department = models.CharField(max_length=100, blank=True, default='')
+
+    allocated_amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(Decimal('0'))], verbose_name='Totaal budget')
     description = models.TextField(blank=True)
+
+    linked_providers = models.ManyToManyField(
+        Client,
+        blank=True,
+        related_name='capacity_budgets',
+        verbose_name='Gekoppelde aanbieders',
+        help_text='Optioneel: koppel aanbieders aan dit budget.'
+    )
+    linked_cases = models.ManyToManyField(
+        'DueDiligenceProcess',
+        blank=True,
+        related_name='capacity_budgets',
+        verbose_name='Gekoppelde casussen'
+    )
+    linked_placements = models.ManyToManyField(
+        'TrademarkRequest',
+        blank=True,
+        related_name='capacity_budgets',
+        verbose_name='Gekoppelde plaatsingen'
+    )
+
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['organization', 'year', 'quarter', 'department']
+        unique_together = ['organization', 'year', 'scope_type', 'scope_name', 'target_group', 'care_type']
 
     def __str__(self):
-        return f'{self.department} - {self.year} {self.quarter}'
+        return f'{self.get_scope_type_display()} {self.scope_name} - {self.target_group} ({self.year})'
 
     @property
     def spent_amount(self):
@@ -1083,10 +1468,20 @@ class Budget(models.Model):
     def is_over_budget(self):
         return self.spent_amount > self.allocated_amount
 
+    @property
+    def utilization_percentage(self):
+        if not self.allocated_amount:
+            return Decimal('0')
+        return (self.spent_amount / self.allocated_amount) * Decimal('100')
+
+    @property
+    def case_count(self):
+        return self.linked_cases.count()
+
 
 class BudgetExpense(models.Model):
     class Category(models.TextChoices):
-        LEGAL_FEES = 'LEGAL_FEES', 'Legal Fees'
+        LEGAL_FEES = 'LEGAL_FEES', 'Toetsingskosten'
         CONSULTING = 'CONSULTING', 'Consulting'
         SOFTWARE = 'SOFTWARE', 'Software'
         TRAVEL = 'TRAVEL', 'Travel'
@@ -1120,96 +1515,6 @@ class NegotiationThread(models.Model):
         return f"{self.contract.title} - {self.title}"
 
 
-class Counterparty(models.Model):
-    class EntityType(models.TextChoices):
-        CORPORATION = 'CORPORATION', 'Corporation'
-        LLC = 'LLC', 'LLC'
-        PARTNERSHIP = 'PARTNERSHIP', 'Partnership'
-        INDIVIDUAL = 'INDIVIDUAL', 'Individual'
-        GOVERNMENT = 'GOVERNMENT', 'Government'
-        NON_PROFIT = 'NON_PROFIT', 'Non-Profit'
-        OTHER = 'OTHER', 'Other'
-
-    name = models.CharField(max_length=300)
-    entity_type = models.CharField(max_length=20, choices=EntityType.choices, default=EntityType.CORPORATION)
-    jurisdiction = models.CharField(max_length=200, blank=True)
-    registration_number = models.CharField(max_length=100, blank=True)
-    address = models.TextField(blank=True)
-    contact_name = models.CharField(max_length=200, blank=True)
-    contact_email = models.EmailField(blank=True)
-    contact_phone = models.CharField(max_length=30, blank=True)
-    website = models.URLField(blank=True)
-    notes = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name_plural = 'Counterparties'
-
-    def __str__(self):
-        return self.name
-
-
-class ClauseCategory(models.Model):
-    name = models.CharField(max_length=100, unique=True)
-    description = models.TextField(blank=True)
-    order = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = 'Clause categories'
-        ordering = ['order', 'name']
-
-    def __str__(self):
-        return self.name
-
-
-class ClauseTemplate(models.Model):
-    class JurisdictionScope(models.TextChoices):
-        EU = 'EU', 'European Union'
-        US = 'US', 'United States'
-        UK = 'UK', 'United Kingdom'
-        GLOBAL = 'GLOBAL', 'Global/Universal'
-        CUSTOM = 'CUSTOM', 'Custom'
-
-    title = models.CharField(max_length=200)
-    category = models.ForeignKey(ClauseCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='clauses')
-    content = models.TextField(help_text='Standard clause text')
-    fallback_content = models.TextField(blank=True, help_text='Fallback/negotiation position')
-    jurisdiction_scope = models.CharField(max_length=10, choices=JurisdictionScope.choices, default=JurisdictionScope.GLOBAL)
-    is_mandatory = models.BooleanField(default=False, help_text='Required in all contracts of this type')
-    applicable_contract_types = models.CharField(max_length=200, blank=True, help_text='Comma-separated contract types')
-    version = models.PositiveIntegerField(default=1)
-    is_approved = models.BooleanField(default=False)
-    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_clauses')
-    approved_at = models.DateTimeField(null=True, blank=True)
-    playbook_notes = models.TextField(blank=True, help_text='Negotiation playbook guidance')
-    tags = models.CharField(max_length=500, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'{self.title} (v{self.version})'
-
-
-class EthicalWall(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='ethical_walls')
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True, related_name='ethical_walls')
-    restricted_users = models.ManyToManyField(User, related_name='ethical_wall_restrictions', blank=True)
-    is_active = models.BooleanField(default=True)
-    reason = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_walls')
-    created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self):
-        return self.name
-
-
 class SignatureRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -1224,7 +1529,7 @@ class SignatureRequest(models.Model):
     document = models.ForeignKey(Document, on_delete=models.SET_NULL, null=True, blank=True, related_name='signature_requests')
     signer_name = models.CharField(max_length=200)
     signer_email = models.EmailField()
-    signer_role = models.CharField(max_length=100, blank=True, help_text='e.g. CEO, Legal Counsel')
+    signer_role = models.CharField(max_length=100, blank=True, help_text='Bijv. Teamleider, Regiecoordinator')
     status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
     external_id = models.CharField(max_length=200, blank=True, help_text='External provider reference ID')
     sent_at = models.DateTimeField(null=True, blank=True)
@@ -1245,14 +1550,17 @@ class SignatureRequest(models.Model):
         return f'{self.contract.title} - {self.signer_name} ({self.get_status_display()})'
 
 
+ProviderResponseRequest = SignatureRequest
+
+
 class DataInventoryRecord(models.Model):
     class LawfulBasis(models.TextChoices):
-        CONSENT = 'CONSENT', 'Consent'
-        CONTRACT = 'CONTRACT', 'Contractual Necessity'
-        LEGAL_OBLIGATION = 'LEGAL_OBLIGATION', 'Legal Obligation'
-        VITAL_INTEREST = 'VITAL_INTEREST', 'Vital Interest'
-        PUBLIC_INTEREST = 'PUBLIC_INTEREST', 'Public Interest'
-        LEGITIMATE_INTEREST = 'LEGITIMATE_INTEREST', 'Legitimate Interest'
+        CONSENT = 'CONSENT', 'Toestemming'
+        CONTRACT = 'CONTRACT', 'Uitvoering zorgtraject'
+        LEGAL_OBLIGATION = 'LEGAL_OBLIGATION', 'Wettelijke verplichting'
+        VITAL_INTEREST = 'VITAL_INTEREST', 'Vitaal belang'
+        PUBLIC_INTEREST = 'PUBLIC_INTEREST', 'Publiek belang'
+        LEGITIMATE_INTEREST = 'LEGITIMATE_INTEREST', 'Gerechtvaardigd belang'
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -1424,30 +1732,6 @@ class RetentionPolicy(models.Model):
         return f'{self.title} ({self.retention_period_days} days)'
 
 
-class LegalHold(models.Model):
-    class Status(models.TextChoices):
-        ACTIVE = 'ACTIVE', 'Active'
-        RELEASED = 'RELEASED', 'Released'
-        EXPIRED = 'EXPIRED', 'Expired'
-
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='legal_holds')
-    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='legal_holds')
-    custodians = models.ManyToManyField(User, related_name='legal_hold_custodians', blank=True)
-    hold_start_date = models.DateField()
-    hold_end_date = models.DateField(null=True, blank=True)
-    reason = models.TextField(blank=True)
-    scope = models.TextField(blank=True, help_text='Documents, emails, data types in scope')
-    issued_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='issued_holds')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'{self.title} ({self.get_status_display()})'
-
-
 class ApprovalRule(models.Model):
     class TriggerType(models.TextChoices):
         VALUE_ABOVE = 'VALUE_ABOVE', 'Contract Value Above'
@@ -1502,3 +1786,122 @@ class ApprovalRequest(models.Model):
 
     def __str__(self):
         return f'{self.contract.title} - {self.approval_step} ({self.get_status_display()})'
+
+
+# ============================================
+# MUNICIPALITY & REGIONAL CONFIGURATION MODELS
+# ============================================
+
+class MunicipalityConfiguration(models.Model):
+    """Gemeente-level configuration for care network management"""
+    
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Actief'
+        INACTIVE = 'INACTIVE', 'Inactief'
+        DRAFT = 'DRAFT', 'Concept'
+
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='municipality_configs')
+    
+    # Municipality info
+    municipality_name = models.CharField(max_length=150, verbose_name='Gemeente')
+    municipality_code = models.CharField(max_length=50, blank=True, verbose_name='Gemeentecode')
+    
+    # Configuration management
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
+    
+    # Care configuration
+    care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='municipality_configs', verbose_name='Zorgdomeinen')
+    linked_providers = models.ManyToManyField(Client, blank=True, related_name='municipality_configs', verbose_name='Gekoppelde aanbieders')
+    
+    # Performance management
+    max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
+    priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
+    
+    # Contact & administration
+    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='municipality_configs', verbose_name='Verantwoordelijke')
+    notes = models.TextField(blank=True, verbose_name='Notities')
+    
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_municipality_configs')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['municipality_name']
+        verbose_name = 'Gemeente Configuratie'
+        verbose_name_plural = 'Gemeente Configuraties'
+        unique_together = ('organization', 'municipality_code')
+
+    def __str__(self):
+        return f'{self.municipality_name} (gemeente)'
+
+    @property
+    def provider_count(self):
+        return self.linked_providers.count()
+
+    @property
+    def care_domains_display(self):
+        names = list(self.care_domains.values_list('name', flat=True))
+        if names:
+            return ', '.join(names)
+        return 'Niet ingesteld'
+
+
+class RegionalConfiguration(models.Model):
+    """Regio-level configuration for multi-municipality care coordination"""
+    
+    class Status(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Actief'
+        INACTIVE = 'INACTIVE', 'Inactief'
+        DRAFT = 'DRAFT', 'Concept'
+
+    organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='regional_configs')
+    
+    # Region info
+    region_name = models.CharField(max_length=150, verbose_name='Regio')
+    region_code = models.CharField(max_length=50, blank=True, verbose_name='Regiode')
+    
+    # Configuration management
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
+    
+    # Served municipalities
+    served_municipalities = models.ManyToManyField(MunicipalityConfiguration, blank=True, related_name='regions', verbose_name='Bediende gemeenten')
+    
+    # Care configuration
+    care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='regional_configs', verbose_name='Zorgdomeinen')
+    linked_providers = models.ManyToManyField(Client, blank=True, related_name='regional_configs', verbose_name='Gekoppelde aanbieders')
+    
+    # Performance management
+    max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
+    priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
+    
+    # Contact & administration
+    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='regional_configs', verbose_name='Verantwoordelijke')
+    notes = models.TextField(blank=True, verbose_name='Notities')
+    
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_regional_configs')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['region_name']
+        verbose_name = 'Regio Configuratie'
+        verbose_name_plural = 'Regio Configuraties'
+        unique_together = ('organization', 'region_code')
+
+    def __str__(self):
+        return f'{self.region_name} (regio)'
+
+    @property
+    def provider_count(self):
+        return self.linked_providers.count()
+
+    @property
+    def municipality_count(self):
+        return self.served_municipalities.count()
+
+    @property
+    def care_domains_display(self):
+        names = list(self.care_domains.values_list('name', flat=True))
+        if names:
+            return ', '.join(names)
+        return 'Niet ingesteld'

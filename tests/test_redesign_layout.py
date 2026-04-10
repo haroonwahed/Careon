@@ -20,42 +20,42 @@ class RedesignLayoutTests(TestCase):
     def test_base_shell_and_theme_controls(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'CMS Aegis')
+        self.assertContains(response, 'Careon')
         self.assertContains(response, 'data-theme="dark"')
         self.assertContains(response, 'toggleTheme()')
         self.assertContains(response, 'title="Search"')
 
     def test_sidebar_navigation_sections_and_links(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'Client Management')
-        self.assertContains(response, 'Contracts')
-        self.assertContains(response, 'Risk')
+        self.assertContains(response, 'WERK')
+        self.assertContains(response, 'Casussen')
+        self.assertContains(response, 'Beoordelingen')
         self.assertContains(response, 'Dashboard')
-        self.assertContains(response, 'Contracts')
-        self.assertContains(response, 'Tasks')
-        self.assertContains(response, 'Workflows')
+        self.assertContains(response, 'Casussen')
+        self.assertContains(response, 'Taken')
+        self.assertContains(response, 'Matching')
 
     def test_topbar_actions(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'title="Notifications"')
-        self.assertContains(response, 'New Contract')
-        self.assertContains(response, 'Logout')
+        self.assertContains(response, 'title="Meldingen"')
+        self.assertContains(response, 'Nieuwe casus')
+        self.assertContains(response, 'Uitloggen')
         self.assertContains(response, '/profile/')
 
     def test_dashboard_kpis_and_panels(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'Active Contracts')
-        self.assertContains(response, 'Clients')
-        self.assertContains(response, 'Outstanding')
-        self.assertContains(response, 'Pending Tasks')
-        self.assertContains(response, 'Recent Contracts')
-        self.assertContains(response, 'Upcoming Deadlines')
+        self.assertContains(response, 'Urgente casussen')
+        self.assertContains(response, 'Casussen zonder match')
+        self.assertContains(response, 'Gem. doorlooptijd intake → plaatsing')
+        self.assertContains(response, 'Capaciteit signalen')
+        self.assertContains(response, 'Actie vereist')
+        self.assertContains(response, 'Match aanbevelingen open')
 
     def test_dashboard_quick_actions(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'New Contract')
-        self.assertContains(response, 'New Client')
-        self.assertContains(response, 'Log Time')
+        self.assertContains(response, 'Nieuwe casus')
+        self.assertContains(response, 'Nieuwe aanbieder')
+        self.assertContains(response, 'Start intake')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

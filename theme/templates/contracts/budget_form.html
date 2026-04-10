@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
 
-{% block title %}{% if object %}Edit{% else %}Create{% endif %} Budget{% endblock %}
+{% block title %}{% if object %}Budget bewerken{% else %}Budget aanmaken{% endif %}{% endblock %}
 
 {% block page_title %}
-{% if object %}Edit Budget{% else %}Create New Budget{% endif %}
+{% if object %}Budget bewerken{% else %}Nieuw budget aanmaken{% endif %}
 {% endblock %}
 
 {% block content %}
@@ -15,58 +15,58 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Budget Name
+                        Budgetnaam
                     </label>
                     {{ form.name }}
                 </div>
 
                 <div>
                     <label for="{{ form.department.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Department
+                        Afdeling
                     </label>
                     {{ form.department }}
                 </div>
 
                 <div>
                     <label for="{{ form.year.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Year
+                        Jaar
                     </label>
                     {{ form.year }}
                 </div>
 
                 <div>
                     <label for="{{ form.quarter.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Quarter
+                        Kwartaal
                     </label>
                     {{ form.quarter }}
                 </div>
 
                 <div>
                     <label for="{{ form.total_budget.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Total Budget ($)
+                        Totaal budget ($)
                     </label>
                     {{ form.total_budget }}
                 </div>
 
                 <div>
                     <label for="{{ form.status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Status
+                        Budgetstatus
                     </label>
                     {{ form.status }}
                 </div>
 
                 <div>
                     <label for="{{ form.owner.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        Budget Owner
+                        Budgeteigenaar
                     </label>
                     {{ form.owner }}
                 </div>
             </div>
 
             <div class="flex justify-end space-x-3">
-                <a href="{% url 'contracts:budget_list' %}" class="btn-outline">Cancel</a>
+                <a href="{% url 'contracts:budget_list' %}" class="btn-outline">Annuleren</a>
                 <button type="submit" class="btn-primary">
-                    {% if object %}Update{% else %}Create{% endif %} Budget
+                    {% if object %}Bijwerken{% else %}Aanmaken{% endif %} budget
                 </button>
             </div>
         </form>

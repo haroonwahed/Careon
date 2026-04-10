@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}{{ intake.title }} - Careon{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="mb-4 text-sm">
+    <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+    <span class="text-gray-400 mx-1">/</span>
+    <a href="{% url 'contracts:case_list' %}" class="text-blue-600 hover:text-blue-800">Intakes</a>
+    <span class="text-gray-400 mx-1">/</span>
+    <span class="text-gray-600">{{ intake.title }}</span>
+</div>
+
+<div class="flex items-start justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">{{ intake.title }}</h1>
+        <p class="text-gray-500 mt-2">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'contracts:case_update' intake.pk %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+            Bewerken
+        </a>
+    </div>
+</div>
+
+<!-- Status Bar -->
+<div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+    <div class="grid grid-cols-4 gap-4">
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Status</p>
+            <p class="text-lg font-semibold text-gray-900">{{ intake.get_status_display }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Urgentie</p>
+            <p class="text-lg font-semibold {% if intake.urgency == 'CRISIS' %}text-red-600{% elif intake.urgency == 'HIGH' %}text-orange-600{% else %}text-green-600{% endif %}">
+                {{ intake.get_urgency_display }}
+            </p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Complexiteit</p>
+            <p class="text-lg font-semibold text-gray-900">{{ intake.get_complexity_display }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Regisseur</p>
+            <p class="text-lg font-semibold text-gray-900">{{ intake.lead_attorney.get_full_name|default:"—" }}</p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="grid grid-cols-3 gap-6">
+    <!-- Left Column: Details -->
+    <div class="col-span-2 space-y-6">
+        <!-- Care Details -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Zorggegevens</h2>
+            <dl class="space-y-4">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Hoofdcategorie</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.care_category_main.name|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Subcategorie</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.care_category_sub.name|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Gewenste zorgvorm</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.get_preferred_care_form_display }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Samenvatting hulpvraag</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.assessment_summary|default:"—" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Client Profile -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Cliënt Profiel</h2>
+            <dl class="space-y-4">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Leeftijdscategorie</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.get_client_age_category_display|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">Gezinssituatie</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.get_family_situation_display|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500 uppercase">School-/werkstatus</dt>
+                    <dd class="text-sm text-gray-900">{{ intake.school_work_status|default:"—" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Additional Notes -->
+        {% if intake.description %}
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Aanvullende Opmerkingen</h2>
+            <p class="text-sm text-gray-600">{{ intake.description }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Risk Factors -->
+        {% if risk_factors_list %}
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Risicofactoren</h2>
+            <div class="flex flex-wrap gap-2">
+                {% for risk in risk_factors_list %}
+                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full">{{ risk.name }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Right Column: Sidebar -->
+    <div class="space-y-6">
+        <!-- Dates -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Datums</h3>
+            <dl class="space-y-3 text-sm">
+                <div>
+                    <dt class="text-gray-500">Intakedatum</dt>
+                    <dd class="font-medium text-gray-900">{{ intake.start_date|date:"d-m-Y" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">Doeldatum matchbesluit</dt>
+                    <dd class="font-medium text-gray-900">{{ intake.target_completion_date|date:"d-m-Y" }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <!-- Next Action -->
+        <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Volgende Stap</h3>
+            {% if not has_assessment %}
+                <p class="text-sm text-gray-700 mb-4">Deze intake is nog niet beoordeeld. Ga door naar beoordeling.</p>
+                <a href="{% url 'contracts:assessment_create' %}?intake={{ intake.pk }}" class="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+                    + Beoordeling Toevoegen
+                </a>
+            {% else %}
+                <p class="text-sm text-gray-700 mb-4">Status beoordeling: <strong>{{ assessment_status }}</strong></p>
+                <a href="{% url 'contracts:assessment_list' %}" class="block text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200">
+                    Naar Beoordelingen
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Assessments -->
+        {% if assessment_list %}
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Beoordelingen ({{ assessment_list.count }})</h3>
+            <div class="space-y-2">
+                {% for assessment in assessment_list %}
+                <div class="text-sm">
+                    <a href="{% url 'contracts:assessment_detail' assessment.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">
+                        Beoordeling #{{ assessment.pk }}
+                    </a>
+                    <p class="text-gray-500 text-xs">{{ assessment.get_assessment_status_display }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Metadata -->
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-xs text-gray-600 space-y-1">
+            <p>Aangemaakt: {{ intake.created_at|date:"d-m-Y H:i" }}</p>
+            <p>Gewijzigd: {{ intake.updated_at|date:"d-m-Y H:i" }}</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

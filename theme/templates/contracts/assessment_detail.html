@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Beoordeling Detail - Careon{% endblock %}
+{% block content %}
+
+<!-- Breadcrumb -->
+<div class="mb-4 text-sm">
+    <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+    <span class="text-gray-400 mx-1">/</span>
+    <a href="{% url 'contracts:assessment_list' %}" class="text-blue-600 hover:text-blue-800">Beoordelingen</a>
+    <span class="text-gray-400 mx-1">/</span>
+    <span class="text-gray-600">Beoordeling #{{ assessment.pk }}</span>
+</div>
+
+<div class="flex items-start justify-between mb-6">
+    <div>
+        <h1 class="text-3xl font-bold text-gray-900">Beoordeling</h1>
+        <p class="text-gray-500 mt-2">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'contracts:assessment_update' assessment.pk %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+            Bewerken
+        </a>
+    </div>
+</div>
+
+<!-- Status Bar -->
+<div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+    <div class="grid grid-cols-3 gap-4">
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Status Beoordeling</p>
+            <p class="text-lg font-semibold text-gray-900">{{ assessment.get_assessment_status_display }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Beoordelaar</p>
+            <p class="text-lg font-semibold text-gray-900">{{ assessment.assessed_by.get_full_name|default:"—" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Gerelateerde Intake</p>
+            <p class="text-lg font-semibold text-gray-900">
+                <a href="{% url 'contracts:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Main Content -->
+<div class="grid grid-cols-3 gap-6">
+    <div class="col-span-2 space-y-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Beoordelingsgegevens</h2>
+            <dl class="space-y-4 text-sm">
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Klaar voor matching</dt>
+                    <dd class="text-gray-900">{% if assessment.matching_ready %}Ja{% else %}Nee{% endif %}</dd>
+                </div>
+                {% if assessment.reason_not_ready %}
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Reden nog niet klaar</dt>
+                    <dd class="text-gray-900">{{ assessment.reason_not_ready }}</dd>
+                </div>
+                {% endif %}
+                {% if assessment.notes %}
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Notities</dt>
+                    <dd class="text-gray-900 whitespace-pre-line">{{ assessment.notes }}</dd>
+                </div>
+                {% endif %}
+            </dl>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Risicosignalen</h2>
+            {% with signals=assessment.get_risk_signals_display %}
+                {% if signals %}
+                    <div class="flex flex-wrap gap-2">
+                        {% for signal in signals %}
+                            <span class="px-3 py-1 bg-amber-100 text-amber-800 text-sm rounded-full">{{ signal }}</span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-500">Geen signalen geregistreerd.</p>
+                {% endif %}
+            {% endwith %}
+        </div>
+
+        <!-- Connected Intake Details -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Gekoppelde Intake</h2>
+            <dl class="space-y-4 text-sm">
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Identiteit</dt>
+                    <dd class="text-gray-900"><a href="{% url 'contracts:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ intake.title }}</a></dd>
+                </div>
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Zorgvraag</dt>
+                    <dd class="text-gray-900">{{ intake.care_category_main.name|default:"—" }}</dd>
+                </div>
+                <div>
+                    <dt class="font-medium text-gray-500 uppercase">Urgentie</dt>
+                    <dd class="text-gray-900">{{ intake.get_urgency_display }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}
+        <div class="bg-green-50 rounded-xl border border-green-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Gereed voor Matching</h3>
+            <p class="text-sm text-gray-700 mb-4">Deze beoordeling is goedgekeurd voor matching.</p>
+            <a href="{% url 'contracts:matching_dashboard' %}" class="block w-full text-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
+                Ga naar Matching
+            </a>
+        </div>
+        {% elif assessment.assessment_status == 'DRAFT' %}
+        <div class="bg-yellow-50 rounded-xl border border-yellow-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Concept</h3>
+            <p class="text-sm text-gray-700 mb-4">Deze beoordeling is nog in concept. Voltooi deze om door te gaan naar matching.</p>
+        </div>
+        {% endif %}
+
+        <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-xs text-gray-600 space-y-1">
+            <p>Aangemaakt: {{ assessment.created_at|date:"d-m-Y H:i"|default:"—" }}</p>
+            <p>Gewijzigd: {{ assessment.updated_at|date:"d-m-Y H:i" }}</p>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

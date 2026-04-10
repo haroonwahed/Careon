@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import Resolver404, resolve, reverse
 
-from contracts.models import Contract, Organization, OrganizationMembership
+from contracts.models import CareCase, Organization, OrganizationMembership
 
 
 class _InteractiveElementParser(HTMLParser):
@@ -71,11 +71,11 @@ class UIButtonAndFlowIntegrityTests(TestCase):
             role=OrganizationMembership.Role.OWNER,
             is_active=True,
         )
-        Contract.objects.create(
+        CareCase.objects.create(
             organization=self.organization,
             title='UI Integrity Contract',
             content='Contract used for link/form target checks.',
-            status=Contract.Status.DRAFT,
+            status=CareCase.Status.DRAFT,
             created_by=self.user,
         )
         self.client.login(username='uiowner', password='testpass123')
@@ -108,24 +108,23 @@ class UIButtonAndFlowIntegrityTests(TestCase):
     def test_click_targets_and_forms_are_wired_on_core_pages(self):
         pages = [
             reverse('dashboard'),
-            reverse('contracts:contract_list'),
+            reverse('contracts:case_list'),
             reverse('contracts:document_list'),
             reverse('contracts:deadline_list'),
-            reverse('contracts:legal_task_kanban'),
+            reverse('contracts:task_kanban'),
             reverse('contracts:risk_log_list'),
             reverse('contracts:budget_list'),
-            reverse('contracts:trademark_request_list'),
-            reverse('contracts:due_diligence_list'),
+            reverse('contracts:placement_list'),
+            reverse('contracts:intake_list'),
             reverse('contracts:workflow_dashboard'),
-            reverse('contracts:repository'),
+            reverse('contracts:configuration_list'),
             reverse('contracts:reports_dashboard'),
             reverse('contracts:organization_team'),
             reverse('contracts:notification_list'),
-            reverse('contracts:privacy_dashboard'),
         ]
 
         for page in pages:
-            response = self.client.get(page)
+            response = self.client.get(page, follow=True)
             self.assertEqual(response.status_code, 200, msg=f'Page failed: {page}')
 
             parser = _InteractiveElementParser()

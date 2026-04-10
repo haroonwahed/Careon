@@ -1,39 +1,39 @@
 {% extends "base.html" %}
-{% block title %}Budget Detail - CMS Aegis{% endblock %}
+{% block title %}Budgetdetails - Careon{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">{{ budget.department|default:"Budget" }} - Q{{ budget.quarter }} {{ budget.year }}</h1>
-        <p class="text-sm text-gray-500">Allocated: ${{ budget.allocated_amount|floatformat:2 }}</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ budget.department|default:"Budget" }} - K{{ budget.quarter }} {{ budget.year }}</h1>
+        <p class="text-sm text-gray-500">Toegekend: ${{ budget.allocated_amount|floatformat:2 }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{% url 'contracts:add_expense' budget.pk %}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Add Expense</a>
-        <a href="{% url 'contracts:budget_update' budget.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Edit</a>
+        <a href="{% url 'contracts:add_expense' budget.pk %}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Uitgave toevoegen</a>
+        <a href="{% url 'contracts:budget_update' budget.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
     </div>
 </div>
 <div class="grid grid-cols-3 gap-4 mb-6">
     <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Allocated</div>
+        <div class="text-sm text-gray-500">Toegekend</div>
         <div class="text-2xl font-bold text-gray-900">${{ budget.allocated_amount|floatformat:0 }}</div>
     </div>
     <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Spent</div>
+        <div class="text-sm text-gray-500">Besteed</div>
         <div class="text-2xl font-bold text-orange-600">${{ budget.total_spent|floatformat:0 }}</div>
     </div>
     <div class="bg-white rounded-xl p-4 border border-gray-200">
-        <div class="text-sm text-gray-500">Remaining</div>
+        <div class="text-sm text-gray-500">Resterend</div>
         <div class="text-2xl font-bold {% if budget.remaining >= 0 %}text-green-600{% else %}text-red-600{% endif %}">${{ budget.remaining|floatformat:0 }}</div>
     </div>
 </div>
 <div class="bg-white rounded-xl border border-gray-200">
-    <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Expenses</h2></div>
+    <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Uitgaven</h2></div>
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Date</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Description</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Category</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Amount</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Datum</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Omschrijving</th>
+                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Categorie</th>
+                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Bedrag</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
@@ -45,7 +45,7 @@
                 <td class="px-5 py-3 text-sm text-right font-medium">${{ expense.amount|floatformat:2 }}</td>
             </tr>
             {% empty %}
-            <tr><td colspan="4" class="px-5 py-8 text-center text-gray-400">No expenses recorded.</td></tr>
+            <tr><td colspan="4" class="px-5 py-8 text-center text-gray-400">Geen uitgaven geregistreerd.</td></tr>
             {% endfor %}
         </tbody>
     </table>

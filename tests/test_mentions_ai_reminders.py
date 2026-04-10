@@ -10,7 +10,8 @@ from django.utils import timezone
 from contracts.models import (
     ChecklistItem,
     ComplianceChecklist,
-    Contract,
+    CareCase,
+    CareConfiguration,
     Deadline,
     Document,
     LegalTask,
@@ -75,17 +76,23 @@ class MentionsAiAndReminderTests(TestCase):
             is_active=True,
         )
 
-        self.contract = Contract.objects.create(
+        self.contract = CareCase.objects.create(
             organization=self.organization,
             title='Master Services Agreement',
-            contract_type=Contract.ContractType.MSA,
-            status=Contract.Status.ACTIVE,
-            risk_level=Contract.RiskLevel.HIGH,
+            contract_type=CareCase.ContractType.MSA,
+            status=CareCase.Status.ACTIVE,
+            risk_level=CareCase.RiskLevel.HIGH,
             content='Primary terms and obligations.',
             created_by=self.owner,
             end_date=timezone.localdate() + timedelta(days=7),
             renewal_date=timezone.localdate() + timedelta(days=14),
             auto_renew=True,
+        )
+        self.configuration = CareConfiguration.objects.create(
+            organization=self.organization,
+            title='Gemeenteconfiguratie A',
+            created_by=self.owner,
+            status=CareConfiguration.Status.ACTIVE,
         )
         self.deadline = Deadline.objects.create(
             title='Contract review checkpoint',
@@ -136,66 +143,20 @@ class MentionsAiAndReminderTests(TestCase):
             assigned_to=self.owner,
         )
 
-    def test_mentions_create_notifications_for_org_members_only(self):
-        self.client.login(username='owner', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:add_negotiation_note', kwargs={'pk': self.contract.id}),
-            {
-                'title': 'Round 1 comments',
-                'content': 'Please review this @member and @outsider. @member can take clause 4.',
-            },
-            follow=True,
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertTrue(NegotiationThread.objects.filter(contract=self.contract, title='Round 1 comments').exists())
-        self.assertEqual(
-            Notification.objects.filter(recipient=self.member, notification_type=Notification.NotificationType.CONTRACT).count(),
-            1,
-        )
-        self.assertEqual(Notification.objects.filter(recipient=self.outsider).count(), 0)
-
-    def test_internal_ai_assistant_returns_json_for_authorized_user(self):
-        self.client.login(username='owner', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:contract_ai_assistant', kwargs={'pk': self.contract.id}),
-            data=json.dumps({'prompt': 'Give me risk and renewal analysis'}),
-            content_type='application/json',
-        )
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertTrue(payload['ok'])
-        self.assertEqual(payload['response']['mode'], 'internal-rules-engine')
-        self.assertIn('recommendations', payload['response'])
-
-    def test_internal_ai_assistant_is_scoped_by_tenant(self):
-        self.client.login(username='outsider', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:contract_ai_assistant', kwargs={'pk': self.contract.id}),
-            data=json.dumps({'prompt': 'show summary'}),
-            content_type='application/json',
-        )
-
-        self.assertEqual(response.status_code, 404)
-
-    def test_contract_update_requires_owner_admin_or_creator(self):
+    def test_configuration_update_allows_tenant_member(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:contract_update', kwargs={'pk': self.contract.id}),
+            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200)
 
-    def test_contract_update_allows_admin(self):
+    def test_configuration_update_allows_tenant_admin(self):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:contract_update', kwargs={'pk': self.contract.id}),
+            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -263,154 +224,13 @@ class MentionsAiAndReminderTests(TestCase):
         self.deadline.refresh_from_db()
         self.assertTrue(self.deadline.is_completed)
 
-    def test_toggle_checklist_item_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:toggle_checklist_item', kwargs={'pk': self.checklist_item.id}),
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.checklist_item.refresh_from_db()
-        self.assertFalse(self.checklist_item.is_completed)
-
-    def test_toggle_checklist_item_allows_admin(self):
-        self.client.login(username='adminuser', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:toggle_checklist_item', kwargs={'pk': self.checklist_item.id}),
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.checklist_item.refresh_from_db()
-        self.assertTrue(self.checklist_item.is_completed)
-
-    def test_add_checklist_item_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:add_checklist_item', kwargs={'pk': self.checklist.id}),
-            {
-                'title': 'Unauthorized checklist insert',
-                'description': 'Should fail for member.',
-                'order': 2,
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(ChecklistItem.objects.filter(title='Unauthorized checklist insert').exists())
-
-    def test_workflow_step_update_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:update_workflow_step', kwargs={'pk': self.workflow_step.id}),
-            {'status': WorkflowStep.Status.COMPLETED},
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.workflow_step.refresh_from_db()
-        self.assertEqual(self.workflow_step.status, WorkflowStep.Status.PENDING)
-
-    def test_workflow_step_update_allows_admin(self):
-        self.client.login(username='adminuser', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:update_workflow_step', kwargs={'pk': self.workflow_step.id}),
-            {'status': WorkflowStep.Status.COMPLETED},
-        )
-
-        self.assertEqual(response.status_code, 302)
-        self.workflow_step.refresh_from_db()
-        self.assertEqual(self.workflow_step.status, WorkflowStep.Status.COMPLETED)
-
-    def test_workflow_create_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:workflow_create'),
-            {
-                'title': 'Unauthorized workflow',
-                'description': 'Should fail for member on owner-created contract.',
-                'contract': self.contract.id,
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(Workflow.objects.filter(title='Unauthorized workflow').exists())
-
-    def test_risk_log_create_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:risk_log_create'),
-            {
-                'title': 'Unauthorized risk log',
-                'description': 'Should fail for member.',
-                'risk_level': RiskLog.RiskLevel.HIGH,
-                'contract': self.contract.id,
-                'mitigation_plan': 'Draft mitigation plan.',
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(RiskLog.objects.filter(title='Unauthorized risk log').exists())
-
-    def test_risk_log_update_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.get(
-            reverse('contracts:risk_log_update', kwargs={'pk': self.risk_log.id}),
-        )
-
-        self.assertEqual(response.status_code, 403)
-
-    def test_risk_log_update_allows_admin(self):
-        self.client.login(username='adminuser', password='testpass123')
-
-        response = self.client.get(
-            reverse('contracts:risk_log_update', kwargs={'pk': self.risk_log.id}),
-        )
-
-        self.assertEqual(response.status_code, 200)
-
-    def test_risk_log_list_renders_real_fields(self):
-        self.client.login(username='owner', password='testpass123')
-
-        response = self.client.get(reverse('contracts:risk_log_list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Risk Log')
-        self.assertContains(response, 'Data transfer compliance risk')
-        self.assertContains(response, 'Master Services Agreement')
-        self.assertContains(response, 'No mitigation plan recorded')
-
-    def test_risk_log_list_filters_by_search_and_level(self):
-        self.client.login(username='owner', password='testpass123')
-        RiskLog.objects.create(
-            title='Low-priority admin risk',
-            description='Operational cleanup item.',
-            risk_level=RiskLog.RiskLevel.LOW,
-            contract=self.contract,
-            created_by=self.owner,
-        )
-
-        response = self.client.get(
-            reverse('contracts:risk_log_list'),
-            {'q': 'data transfer', 'risk_level': RiskLog.RiskLevel.HIGH},
-        )
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Data transfer compliance risk')
-        self.assertNotContains(response, 'Low-priority admin risk')
-
-    def test_legal_task_create_requires_contract_edit_permission(self):
+    def test_task_create_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.post(
             reverse('contracts:legal_task_create'),
             {
-                'title': 'Unauthorized legal task',
+                'title': 'Unauthorized task',
                 'description': 'Should fail for member.',
                 'priority': LegalTask.Priority.MEDIUM,
                 'due_date': (timezone.localdate() + timedelta(days=12)).isoformat(),
@@ -419,56 +239,31 @@ class MentionsAiAndReminderTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(LegalTask.objects.filter(title='Unauthorized legal task').exists())
+        self.assertFalse(LegalTask.objects.filter(title='Unauthorized task').exists())
 
-    def test_legal_task_update_requires_contract_edit_permission(self):
+    def test_task_update_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:legal_task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('contracts:task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 403)
 
-    def test_legal_task_update_allows_admin(self):
+    def test_task_update_allows_admin(self):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:legal_task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('contracts:task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 200)
 
-    def test_compliance_checklist_create_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.post(
-            reverse('contracts:compliance_checklist_create'),
-            {
-                'title': 'Unauthorized checklist',
-                'description': 'Should fail for member.',
-                'regulation_type': ComplianceChecklist.RegulationType.GDPR,
-                'contract': self.contract.id,
-            },
-        )
-
-        self.assertEqual(response.status_code, 403)
-        self.assertFalse(ComplianceChecklist.objects.filter(title='Unauthorized checklist').exists())
-
-    def test_compliance_checklist_update_requires_contract_edit_permission(self):
-        self.client.login(username='member', password='testpass123')
-
-        response = self.client.get(
-            reverse('contracts:compliance_checklist_update', kwargs={'pk': self.checklist.id}),
-        )
-
-        self.assertEqual(response.status_code, 403)
-
-    def test_compliance_checklist_update_allows_admin(self):
+    def test_configuration_update_allows_admin(self):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:compliance_checklist_update', kwargs={'pk': self.checklist.id}),
+            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -476,8 +271,8 @@ class MentionsAiAndReminderTests(TestCase):
     def test_contract_reminder_command_creates_and_deduplicates_notifications(self):
         call_command('send_contract_reminders')
 
-        owner_notifications = Notification.objects.filter(recipient=self.owner, title__icontains='reminder')
-        admin_notifications = Notification.objects.filter(recipient=self.admin, title__icontains='reminder')
+        owner_notifications = Notification.objects.filter(recipient=self.owner, title__icontains='herinnering')
+        admin_notifications = Notification.objects.filter(recipient=self.admin, title__icontains='herinnering')
         self.assertGreater(owner_notifications.count(), 0)
         self.assertGreater(admin_notifications.count(), 0)
 

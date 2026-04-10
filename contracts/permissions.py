@@ -5,7 +5,7 @@ from .models import OrganizationMembership
 User = get_user_model()
 
 
-class ContractAction:
+class CaseAction:
     VIEW = 'view'
     COMMENT = 'comment'
     AI = 'ai'
@@ -39,20 +39,24 @@ def is_organization_owner(user, organization):
     return bool(membership and membership.role == OrganizationMembership.Role.OWNER)
 
 
-def can_access_contract_action(user, contract, action=ContractAction.VIEW):
-    if contract is None:
+def can_access_case_action(user, case, action=CaseAction.VIEW):
+    if case is None:
         return False
 
-    membership = get_active_org_membership(user, contract.organization)
+    membership = get_active_org_membership(user, case.organization)
     if membership is None:
         return False
 
-    if action in [ContractAction.VIEW, ContractAction.COMMENT, ContractAction.AI]:
+    if action in [CaseAction.VIEW, CaseAction.COMMENT, CaseAction.AI]:
         return True
 
-    if action == ContractAction.EDIT:
+    if action == CaseAction.EDIT:
         if membership.role in [OrganizationMembership.Role.OWNER, OrganizationMembership.Role.ADMIN]:
             return True
-        return bool(contract.created_by_id and contract.created_by_id == user.id)
+        return bool(case.created_by_id and case.created_by_id == user.id)
 
     return False
+
+
+ContractAction = CaseAction
+can_access_contract_action = can_access_case_action

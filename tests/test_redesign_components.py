@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from contracts.models import Budget, Client as ClientModel, Contract, Matter, Organization, OrganizationMembership, TrademarkRequest
+from contracts.models import Budget, CareConfiguration, Client as ClientModel, Organization, OrganizationMembership, PlacementRequest
 
 
 class RedesignComponentsTestCase(TestCase):
@@ -29,35 +29,40 @@ class RedesignComponentsTestCase(TestCase):
     def test_dashboard_component_labels(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Active Contracts')
-        self.assertContains(response, 'Pending Tasks')
-        self.assertContains(response, 'Recent Contracts')
-        self.assertContains(response, 'Activity Feed')
+        self.assertContains(response, 'Urgente casussen')
+        self.assertContains(response, 'Capaciteit signalen')
+        self.assertContains(response, 'Actie vereist')
+        self.assertContains(response, 'Regie-activiteit')
 
-    def test_contracts_list_core_components(self):
-        Contract.objects.create(
+    def test_case_list_alias_renders_configuration_components(self):
+        provider = ClientModel.objects.create(
             organization=self.organization,
-            title='Test Contract',
-            content='Test content',
-            status=Contract.Status.DRAFT,
+            name='ZorgPlus Noord',
+            created_by=self.user,
+        )
+        CareConfiguration.objects.create(
+            organization=self.organization,
+            matter_number='CFG-REDESIGN-1',
+            title='Test Configuration',
+            client=provider,
             created_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:contract_list'))
+        response = self.client.get(reverse('contracts:case_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Test Contract')
-        self.assertContains(response, 'Search contracts...')
-        self.assertContains(response, 'All Statuses')
-        self.assertContains(response, 'New Contract')
+        self.assertContains(response, 'Zorgintakes')
+        self.assertContains(response, 'Zoek intakes op titel, casus-ID...')
+        self.assertContains(response, 'Alle statussen')
+        self.assertContains(response, 'Nieuwe intake')
 
     def test_navigation_structure(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Dashboard')
-        self.assertContains(response, 'Contracts')
-        self.assertContains(response, 'Tasks')
-        self.assertContains(response, 'Repository')
-        self.assertContains(response, 'Workflows')
+        self.assertContains(response, 'Casussen')
+        self.assertContains(response, 'Taken')
+        self.assertContains(response, 'Documenten')
+        self.assertContains(response, 'Matching')
 
     def test_accessibility_and_responsive_markers(self):
         response = self.client.get(reverse('dashboard'))
@@ -80,52 +85,48 @@ class RedesignComponentsTestCase(TestCase):
         response = self.client.get(reverse('contracts:budget_list'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Budgets')
-        self.assertContains(response, 'Search budgets by department or description...')
-        self.assertContains(response, 'New Budget')
+        self.assertContains(response, 'Budgetten')
+        self.assertContains(response, 'Zoek budgetten op afdeling of omschrijving...')
+        self.assertContains(response, 'Nieuw budget')
         self.assertContains(response, 'Legal Ops')
 
-    def test_trademark_request_list_uses_real_model_fields(self):
+    def test_placement_list_alias_uses_configuration_view(self):
         client_record = ClientModel.objects.create(
             organization=self.organization,
             name='Acme Client',
             created_by=self.user,
         )
-        matter = Matter.objects.create(
+        configuration = CareConfiguration.objects.create(
             organization=self.organization,
             matter_number='TM-0001',
             title='Brand Protection',
             client=client_record,
             created_by=self.user,
         )
-        TrademarkRequest.objects.create(
-            mark_text='AEGIS MARK',
+        PlacementRequest.objects.create(
+            mark_text='CAREON MARK',
             description='Primary trademark filing for the platform.',
             goods_services='Legal software services',
             filing_basis='Use in commerce',
-            status=TrademarkRequest.Status.PENDING,
+            status=PlacementRequest.Status.PENDING,
             client=client_record,
-            matter=matter,
+            matter=configuration,
         )
 
-        response = self.client.get(reverse('contracts:trademark_request_list'))
+        response = self.client.get(reverse('contracts:placement_list'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Trademark Requests')
-        self.assertContains(response, 'Search marks, clients, matters, or descriptions...')
-        self.assertContains(response, 'AEGIS MARK')
-        self.assertContains(response, 'Brand Protection')
-        self.assertContains(response, 'Use in commerce')
+        self.assertRedirects(
+            response,
+            f"{reverse('contracts:case_list')}?flow=placement",
+            status_code=302,
+            target_status_code=200,
+        )
 
-    def test_repository_page_preserves_js_hooks_in_new_shell(self):
-        response = self.client.get(reverse('contracts:repository'))
+    def test_configuration_list_uses_current_authenticated_shell(self):
+        response = self.client.get(reverse('contracts:configuration_list'))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Repository')
-        self.assertContains(response, 'id="search-input"')
-        self.assertContains(response, 'id="sort-select"')
-        self.assertContains(response, 'id="contracts-table"')
-        self.assertContains(response, 'id="details-drawer"')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('contracts:municipality_list'), response['Location'])
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

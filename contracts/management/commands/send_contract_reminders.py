@@ -5,58 +5,58 @@ from django.db.models import Q
 from django.urls import reverse
 from django.utils import timezone
 
-from contracts.models import Contract, Notification, OrganizationMembership
+from contracts.models import CareCase, Notification, OrganizationMembership
 
 
 class Command(BaseCommand):
-    help = 'Send renewal and expiration reminder notifications for contracts.'
+    help = 'Send reminder notifications for upcoming case review and renewal dates.'
 
     def handle(self, *args, **options):
         today = timezone.localdate()
         created_count = 0
 
-        contracts = (
-            Contract.objects
+        case_records = (
+            CareCase.objects
             .filter(
                 organization__is_active=True,
-                status__in=[Contract.Status.ACTIVE, Contract.Status.APPROVED],
+                status__in=[CareCase.Status.ACTIVE, CareCase.Status.APPROVED],
             )
             .filter(Q(end_date__isnull=False) | Q(renewal_date__isnull=False))
             .select_related(
                 'organization',
                 'created_by',
-                'matter__responsible_attorney',
+                'matter__responsible_care_coordinator',
                 'client__responsible_attorney',
             )
         )
 
-        for contract in contracts:
+        for case_record in case_records:
             events = []
-            if contract.end_date:
-                days_until_end = (contract.end_date - today).days
+            if case_record.end_date:
+                days_until_end = (case_record.end_date - today).days
                 if 0 <= days_until_end <= 30 and days_until_end in {30, 14, 7, 3, 1, 0}:
-                    events.append(('Expiration', contract.end_date, days_until_end))
+                    events.append(('Einddatum', case_record.end_date, days_until_end))
 
-            if contract.renewal_date:
-                days_until_renewal = (contract.renewal_date - today).days
+            if case_record.renewal_date:
+                days_until_renewal = (case_record.renewal_date - today).days
                 if 0 <= days_until_renewal <= 45 and days_until_renewal in {45, 30, 14, 7, 3, 1, 0}:
-                    events.append(('Renewal', contract.renewal_date, days_until_renewal))
+                    events.append(('Herbeoordeling', case_record.renewal_date, days_until_renewal))
 
             if not events:
                 continue
 
             recipients = set()
-            if contract.created_by_id:
-                recipients.add(contract.created_by)
-            if contract.matter and contract.matter.responsible_attorney_id:
-                recipients.add(contract.matter.responsible_attorney)
-            if contract.client and contract.client.responsible_attorney_id:
-                recipients.add(contract.client.responsible_attorney)
+            if case_record.created_by_id:
+                recipients.add(case_record.created_by)
+            if case_record.matter and case_record.matter.responsible_attorney_id:
+                recipients.add(case_record.matter.responsible_attorney)
+            if case_record.client and case_record.client.responsible_attorney_id:
+                recipients.add(case_record.client.responsible_attorney)
 
             admins = (
                 OrganizationMembership.objects
                 .filter(
-                    organization=contract.organization,
+                    organization=case_record.organization,
                     is_active=True,
                     role__in=[OrganizationMembership.Role.OWNER, OrganizationMembership.Role.ADMIN],
                 )
@@ -65,16 +65,16 @@ class Command(BaseCommand):
             for membership in admins:
                 recipients.add(membership.user)
 
-            contract_link = reverse('contracts:contract_detail', kwargs={'pk': contract.id})
+            case_link = reverse('contracts:case_detail', kwargs={'pk': case_record.id})
 
             for event_name, event_date, days_remaining in events:
                 for recipient in recipients:
-                    title = f'{event_name} reminder: {contract.title} ({days_remaining}d)'
+                    title = f'{event_name} herinnering: {case_record.title} ({days_remaining}d)'
                     exists = Notification.objects.filter(
                         recipient=recipient,
                         notification_type=Notification.NotificationType.DEADLINE,
                         title=title,
-                        link=contract_link,
+                        link=case_link,
                         created_at__date=today,
                     ).exists()
                     if exists:
@@ -85,10 +85,10 @@ class Command(BaseCommand):
                         notification_type=Notification.NotificationType.DEADLINE,
                         title=title,
                         message=(
-                            f'{contract.title} has an upcoming {event_name.lower()} date '
-                            f'on {event_date.isoformat()} ({days_remaining} day(s) remaining).'
+                            f'{case_record.title} heeft een aankomende {event_name.lower()} op '
+                            f'{event_date.isoformat()} ({days_remaining} dag(en) resterend).'
                         ),
-                        link=contract_link,
+                        link=case_link,
                     )
                     created_count += 1
 

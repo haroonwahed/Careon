@@ -1,13 +1,13 @@
 
 """
-Domain classes for contract repository
-These classes define the data structures independent of Django models
+Domain classes for the case workspace.
+These classes define case data structures independent of Django models.
 """
 from dataclasses import dataclass, asdict
 from typing import List, Optional
 from enum import Enum
 
-class ContractStatus(Enum):
+class CareCaseStatus(Enum):
     DRAFT = "DRAFT"
     ACTIVE = "ACTIVE" 
     EXPIRED = "EXPIRED"
@@ -15,7 +15,7 @@ class ContractStatus(Enum):
 
 @dataclass
 class ListParams:
-    """Parameters for contract listing"""
+    """Parameters for case listing."""
     q: str = ""
     status: List[str] = None
     contract_type: List[str] = None
@@ -30,12 +30,12 @@ class ListParams:
             self.contract_type = []
 
 @dataclass
-class ContractData:
-    """Contract data transfer object"""
+class CareCaseData:
+    """Case data transfer object."""
     id: str
     title: str
     status: str
-    counterparty: str = ""
+    preferred_provider: str = ""
     value: Optional[float] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
@@ -50,8 +50,8 @@ class ContractData:
 
 @dataclass
 class ListResult:
-    """Result of contract listing operation"""
-    contracts: List[ContractData]
+    """Result of case listing operation."""
+    contracts: List[CareCaseData]
     total_count: int
     page: int
     page_size: int
@@ -66,3 +66,7 @@ class ListResult:
             'page_size': self.page_size,
             'total_pages': self.total_pages
         }
+
+
+ContractStatus = CareCaseStatus
+ContractData = CareCaseData

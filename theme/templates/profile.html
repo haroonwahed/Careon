@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Profile - CMS Aegis{% endblock %}
+{% block title %}Profiel - Careon{% endblock %}
 {% block content %}
 <div class="max-w-2xl">
     <div class="mb-6">
@@ -9,7 +9,7 @@
             </div>
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">{{ user.get_full_name|default:user.username }}</h1>
-                <p class="text-sm text-gray-500">{{ user.email }} &middot; Member since {{ user.date_joined|date:"F Y" }}</p>
+                <p class="text-sm text-gray-500">{{ user.email }} &middot; Lid sinds {{ user.date_joined|date:"F Y" }}</p>
             </div>
         </div>
     </div>
@@ -26,10 +26,10 @@
             {% endfor %}
         </div>
         <div class="flex gap-3 pt-4">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Save Changes</button>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Wijzigingen opslaan</button>
         </div>
         {% else %}
-        <p class="text-gray-500">Please log in to view your profile.</p>
+        <p class="text-gray-500">Log in om je profiel te bekijken.</p>
         {% endif %}
     </form>
 </div>

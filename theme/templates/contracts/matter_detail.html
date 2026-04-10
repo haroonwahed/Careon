@@ -1,14 +1,13 @@
 {% extends "base.html" %}
-{% block title %}{{ matter.matter_number }} - CMS Aegis{% endblock %}
+{% block title %}{{ configuration.configuration_id|default:matter.configuration_id }} - Careon{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">{{ matter.title }}</h1>
-        <p class="text-sm text-gray-500">{{ matter.matter_number }} &middot; {{ matter.get_practice_area_display }} &middot; {{ matter.client.name }}</p>
+        <h1 class="text-2xl font-bold text-gray-900">{{ configuration.title|default:matter.title }}</h1>
+        <p class="text-sm text-gray-500">{{ configuration.configuration_id|default:matter.configuration_id }} &middot; {{ configuration.care_domains_display|default:matter.care_domains_display }} &middot; {{ configuration.client.name|default:matter.client.name }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{% url 'contracts:time_entry_create' %}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Log Time</a>
-        <a href="{% url 'contracts:matter_update' matter.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Edit</a>
+        <a href="{% url 'contracts:configuration_update' configuration.pk|default:matter.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
     </div>
 </div>
 
@@ -16,44 +15,42 @@
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Details</h3>
         <div class="space-y-2 text-sm">
-            <div><span class="text-gray-500">Status:</span> <span class="px-2 py-0.5 rounded-full text-xs {% if matter.status == 'ACTIVE' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">{{ matter.get_status_display }}</span></div>
-            <div><span class="text-gray-500">Billing:</span> {{ matter.get_billing_type_display }}</div>
-            <div><span class="text-gray-500">Opened:</span> {{ matter.open_date|date:"M d, Y" }}</div>
-            {% if matter.budget_amount %}<div><span class="text-gray-500">Budget:</span> ${{ matter.budget_amount|floatformat:2 }}</div>{% endif %}
-            {% if matter.statute_of_limitations %}<div><span class="text-gray-500">SOL:</span> <span class="text-red-600 font-medium">{{ matter.statute_of_limitations|date:"M d, Y" }}</span></div>{% endif %}
+            <div><span class="text-gray-500">Status:</span> <span class="px-2 py-0.5 rounded-full text-xs {% if configuration.status|default:matter.status == 'ACTIVE' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-600{% endif %}">{{ configuration.get_status_display|default:matter.get_status_display }}</span></div>
+            <div><span class="text-gray-500">Geopend:</span> {{ configuration.open_date|default:matter.open_date|date:"M d, Y" }}</div>
+            {% if configuration.statute_of_limitations|default:matter.statute_of_limitations %}<div><span class="text-gray-500">Streefdatum:</span> <span class="text-red-600 font-medium">{{ configuration.statute_of_limitations|default:matter.statute_of_limitations|date:"M d, Y" }}</span></div>{% endif %}
         </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Team</h3>
         <div class="space-y-2 text-sm">
-            <div><span class="text-gray-500">Lead:</span> {{ matter.responsible_attorney.get_full_name|default:"Unassigned" }}</div>
-            <div><span class="text-gray-500">Originating:</span> {{ matter.originating_attorney.get_full_name|default:"—" }}</div>
+            <div><span class="text-gray-500">Verantwoordelijke:</span> {{ matter.responsible_care_coordinator.get_full_name|default:"Niet toegewezen" }}</div>
+            <div><span class="text-gray-500">Initiator:</span> {{ matter.intake_creator.get_full_name|default:"—" }}</div>
         </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Billing Summary</h3>
+        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Voortgangsoverzicht</h3>
         <div class="space-y-2 text-sm">
-            <div><span class="text-gray-500">Hours:</span> {{ matter.total_time_billed|floatformat:1 }}h</div>
-            <div><span class="text-gray-500">Amount:</span> ${{ matter.total_amount_billed|floatformat:2 }}</div>
+            <div><span class="text-gray-500">Ingezette tijd:</span> {{ configuration.total_time_billed|default:matter.total_time_billed|floatformat:1 }}u</div>
+            <div><span class="text-gray-500">Totale inzet:</span> {{ configuration.total_amount_billed|default:matter.total_amount_billed|floatformat:2 }}</div>
         </div>
     </div>
 </div>
 
-{% if matter.opposing_party or matter.court_name %}
+{% if configuration.opposing_party|default:matter.opposing_party or configuration.court_name|default:matter.court_name %}
 <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Case Info</h3>
+    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Casusinfo</h3>
     <div class="grid grid-cols-2 gap-4 text-sm">
-        {% if matter.opposing_party %}<div><span class="text-gray-500">Opposing Party:</span> {{ matter.opposing_party }}</div>{% endif %}
-        {% if matter.opposing_counsel %}<div><span class="text-gray-500">Opposing Counsel:</span> {{ matter.opposing_counsel }}</div>{% endif %}
-        {% if matter.court_name %}<div><span class="text-gray-500">Court:</span> {{ matter.court_name }}</div>{% endif %}
-        {% if matter.case_number %}<div><span class="text-gray-500">Case #:</span> {{ matter.case_number }}</div>{% endif %}
+        {% if configuration.opposing_party|default:matter.opposing_party %}<div><span class="text-gray-500">Tegenpartij:</span> {{ configuration.opposing_party|default:matter.opposing_party }}</div>{% endif %}
+        {% if configuration.opposing_counsel|default:matter.opposing_counsel %}<div><span class="text-gray-500">Contactpersoon tegenpartij:</span> {{ configuration.opposing_counsel|default:matter.opposing_counsel }}</div>{% endif %}
+        {% if configuration.court_name|default:matter.court_name %}<div><span class="text-gray-500">Externe instantie:</span> {{ configuration.court_name|default:matter.court_name }}</div>{% endif %}
+        {% if configuration.case_number|default:matter.case_number %}<div><span class="text-gray-500">Externe dossiercode:</span> {{ configuration.case_number|default:matter.case_number }}</div>{% endif %}
     </div>
 </div>
 {% endif %}
 
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Recent Time Entries</h2></div>
+        <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Recente activiteiten</h2></div>
         <div class="divide-y divide-gray-100">
             {% for entry in time_entries %}
             <div class="px-5 py-3">
@@ -61,12 +58,12 @@
                 <div class="text-xs text-gray-500">{{ entry.date|date:"M d" }} &middot; {{ entry.hours }}h &middot; {{ entry.user.get_full_name|default:entry.user.username }}</div>
             </div>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">No time entries.</div>
+            <div class="px-5 py-8 text-center text-gray-400 text-sm">Nog geen activiteiten geregistreerd.</div>
             {% endfor %}
         </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200">
-        <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Deadlines</h2></div>
+        <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Opvolgtaken</h2></div>
         <div class="divide-y divide-gray-100">
             {% for dl in deadlines %}
             <div class="px-5 py-3 flex items-center justify-between">
@@ -74,10 +71,10 @@
                     <div class="text-sm text-gray-900">{{ dl.title }}</div>
                     <div class="text-xs text-gray-500">{{ dl.due_date|date:"M d, Y" }}</div>
                 </div>
-                <span class="text-xs px-2 py-1 rounded-full {% if dl.is_overdue %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">{% if dl.is_overdue %}Overdue{% else %}{{ dl.days_remaining }}d{% endif %}</span>
+                <span class="text-xs px-2 py-1 rounded-full {% if dl.is_overdue %}bg-red-100 text-red-800{% else %}bg-blue-100 text-blue-800{% endif %}">{% if dl.is_overdue %}Achterstallig{% else %}{{ dl.days_remaining }}d{% endif %}</span>
             </div>
             {% empty %}
-            <div class="px-5 py-8 text-center text-gray-400 text-sm">No active deadlines.</div>
+            <div class="px-5 py-8 text-center text-gray-400 text-sm">Geen open opvolgtaken.</div>
             {% endfor %}
         </div>
     </div>

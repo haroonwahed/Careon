@@ -1,6 +1,6 @@
 
 """
-API views for Careon repository functionality.
+API views for CareOn case workspace functionality.
 """
 import json
 from django.http import JsonResponse
@@ -35,7 +35,7 @@ def _build_case_data(case):
 def contracts_api(request):
     """
     API endpoint for listing cases with filtering and pagination.
-    Used by the Careon repository UI.
+    Used by the CareOn case workspace UI.
     """
     try:
         # Parse filters from request

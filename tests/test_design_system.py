@@ -21,8 +21,8 @@ class DesignSystemTests(TestCase):
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'CMS Aegis')
-        self.assertContains(response, 'Active Contracts')
+        self.assertContains(response, 'Careon')
+        self.assertContains(response, 'Urgente casussen')
 
     def test_dashboard_loads_with_feature_flag_disabled(self):
         os.environ['FEATURE_REDESIGN'] = 'false'
@@ -71,7 +71,7 @@ class DesignSystemTests(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertContains(response, 'title="Search"')
         self.assertContains(response, '/contracts/search/')
-        self.assertContains(response, 'title="Notifications"')
+        self.assertContains(response, 'title="Meldingen"')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Intake bewerken{% else %}Nieuwe intake{% endif %} - Careon{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl mx-auto">
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900">{% if is_edit %}Intake bewerken{% else %}Nieuwe zorgintake{% endif %}</h1>
+        <p class="text-gray-500 mt-2">Vul alle verplichte velden (aangemerkt met *) in.</p>
+    </div>
+
+    <form method="post" class="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+        {% csrf_token %}
+
+        <!-- Errors -->
+        {% if form.non_field_errors %}
+        <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-red-800 font-medium">Fouten in formulier:</p>
+            {% for error in form.non_field_errors %}
+                <p class="text-red-700 text-sm">• {{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Identification Section -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Identificatie</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label for="{{ form.title.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.title.label }} {% if form.title.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% if form.title.errors %}<span class="text-red-600 text-xs">{{ form.title.errors.0 }}</span>{% endif %}
+                    {{ form.title }}
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.start_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.start_date.label }} {% if form.start_date.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {% if form.start_date.errors %}<span class="text-red-600 text-xs">{{ form.start_date.errors.0 }}</span>{% endif %}
+                        {{ form.start_date }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.target_completion_date.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                            {{ form.target_completion_date.label }} {% if form.target_completion_date.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {% if form.target_completion_date.errors %}<span class="text-red-600 text-xs">{{ form.target_completion_date.errors.0 }}</span>{% endif %}
+                        {{ form.target_completion_date }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Care Question Section -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Zorgvraag</h2>
+            
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="{{ form.care_category_main.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.care_category_main.label }} {% if form.care_category_main.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% if form.care_category_main.errors %}<span class="text-red-600 text-xs">{{ form.care_category_main.errors.0 }}</span>{% endif %}
+                    {{ form.care_category_main }}
+                </div>
+
+                <div>
+                    <label for="{{ form.care_category_sub.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.care_category_sub.label }}
+                    </label>
+                    {% if form.care_category_sub.errors %}<span class="text-red-600 text-xs">{{ form.care_category_sub.errors.0 }}</span>{% endif %}
+                    {{ form.care_category_sub }}
+                </div>
+            </div>
+
+            <div>
+                <label for="{{ form.assessment_summary.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                    {{ form.assessment_summary.label }}
+                </label>
+                <p class="text-sm text-gray-500 mb-1">Samenvatting van hulpvraag, urgentie en aandachtspunten</p>
+                {% if form.assessment_summary.errors %}<span class="text-red-600 text-xs">{{ form.assessment_summary.errors.0 }}</span>{% endif %}
+                {{ form.assessment_summary }}
+            </div>
+        </div>
+
+        <!-- Matching Dimensions -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Matching Dimensies</h2>
+            
+            <div class="grid grid-cols-3 gap-4">
+                <div>
+                    <label for="{{ form.urgency.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.urgency.label }} {% if form.urgency.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% if form.urgency.errors %}<span class="text-red-600 text-xs">{{ form.urgency.errors.0 }}</span>{% endif %}
+                    {{ form.urgency }}
+                </div>
+
+                <div>
+                    <label for="{{ form.complexity.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.complexity.label }} {% if form.complexity.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% if form.complexity.errors %}<span class="text-red-600 text-xs">{{ form.complexity.errors.0 }}</span>{% endif %}
+                    {{ form.complexity }}
+                </div>
+
+                <div>
+                    <label for="{{ form.preferred_care_form.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.preferred_care_form.label }} {% if form.preferred_care_form.field.required %}<span class="text-red-500">*</span>{% endif %}
+                    </label>
+                    {% if form.preferred_care_form.errors %}<span class="text-red-600 text-xs">{{ form.preferred_care_form.errors.0 }}</span>{% endif %}
+                    {{ form.preferred_care_form }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Client Profile -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">Cliëntprofiel</h2>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="{{ form.client_age_category.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.client_age_category.label }}
+                    </label>
+                    {% if form.client_age_category.errors %}<span class="text-red-600 text-xs">{{ form.client_age_category.errors.0 }}</span>{% endif %}
+                    {{ form.client_age_category }}
+                </div>
+
+                <div>
+                    <label for="{{ form.family_situation.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.family_situation.label }}
+                    </label>
+                    {% if form.family_situation.errors %}<span class="text-red-600 text-xs">{{ form.family_situation.errors.0 }}</span>{% endif %}
+                    {{ form.family_situation }}
+                </div>
+
+                <div class="col-span-2">
+                    <label for="{{ form.school_work_status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                        {{ form.school_work_status.label }}
+                    </label>
+                    {% if form.school_work_status.errors %}<span class="text-red-600 text-xs">{{ form.school_work_status.errors.0 }}</span>{% endif %}
+                    {{ form.school_work_status }}
+                </div>
+            </div>
+        </div>
+
+        <!-- Additional Notes -->
+        <div>
+            <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                {{ form.description.label }}
+            </label>
+            {% if form.description.errors %}<span class="text-red-600 text-xs">{{ form.description.errors.0 }}</span>{% endif %}
+            {{ form.description }}
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 pt-4 border-t border-gray-200">
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700">
+                {{ button_text|default:"Opslaan" }}
+            </button>
+            <a href="{% url 'contracts:case_list' %}" class="px-6 py-2 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200">
+                Annuleren
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+    input[type="text"], input[type="date"], input[type="email"], input[type="number"],
+    select, textarea {
+        width: 100%;
+        padding: 0.5rem 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    input[type="text"]:focus, input[type="date"]:focus, input[type="email"]:focus, input[type="number"]:focus,
+    select:focus, textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+    textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+</style>
+
+{% endblock %}

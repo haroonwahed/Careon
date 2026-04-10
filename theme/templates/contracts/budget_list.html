@@ -1,35 +1,40 @@
 
 {% extends 'base.html' %}
 
-{% block title %}Budgets - CMS Aegis{% endblock %}
+{% block title %}Budget & capaciteit - Careon{% endblock %}
 
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold c-primary">Budgets</h1>
-        <p class="text-sm mt-1 c-muted">Plan allocations and monitor spend across departments.</p>
+        <h1 class="text-2xl font-bold c-primary">Budgetten</h1>
+        <p class="text-sm mt-1 c-muted">Stuur op budget, capaciteit en inzet per gemeente of regio.</p>
     </div>
     <a href="{% url 'contracts:budget_create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90 btn-primary-grad">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-        New Budget
+        Nieuw budget
     </a>
 </div>
 
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
     <div class="rounded-xl p-5 border stat-card">
-        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Total Budgets</p>
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Totaal budgetten</p>
         <p class="text-3xl font-bold c-primary">{{ total_budgets }}</p>
-        <p class="text-xs mt-1 c-muted">tracked budget lines</p>
+        <p class="text-xs mt-1 c-muted">actieve budgetregels</p>
     </div>
     <div class="rounded-xl p-5 border stat-card">
-        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">{{ current_year }}</p>
-        <p class="text-3xl font-bold c-primary-brand">{{ current_year_budgets }}</p>
-        <p class="text-xs mt-1 c-muted">current-year budgets</p>
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Totaal besteed</p>
+        <p class="text-3xl font-bold c-primary-brand">${{ total_spent|floatformat:0 }}</p>
+        <p class="text-xs mt-1 c-muted">realisatie over alle jaren</p>
     </div>
     <div class="rounded-xl p-5 border stat-card">
-        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Allocated</p>
-        <p class="text-3xl font-bold c-accent">${{ total_allocated|floatformat:0 }}</p>
-        <p class="text-xs mt-1 c-muted">total planned spend</p>
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Nog beschikbaar</p>
+        <p class="text-3xl font-bold c-accent">${{ total_remaining|floatformat:0 }}</p>
+        <p class="text-xs mt-1 c-muted">beschikbaar budget</p>
+    </div>
+    <div class="rounded-xl p-5 border stat-card">
+        <p class="text-xs font-semibold uppercase tracking-widest mb-2 c-muted">Budgetdruk</p>
+        <p class="text-3xl font-bold {% if budget_under_pressure > 0 %}c-red{% else %}c-primary{% endif %}">{{ budget_under_pressure }}</p>
+        <p class="text-xs mt-1 c-muted">regels met >= 80% benutting</p>
     </div>
 </div>
 
@@ -48,15 +53,15 @@
     <form method="get" class="flex items-center gap-2 flex-1 min-w-0">
         <div class="relative flex-1 min-w-0">
             <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/></svg>
-            <input type="text" name="q" value="{{ search_query }}" placeholder="Search budgets by department or description..." class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none form-input">
+            <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek budgetten op afdeling of omschrijving..." class="w-full pl-9 pr-3 py-2 text-sm rounded-lg border focus:outline-none form-input">
         </div>
         <select name="year" class="px-3 py-2 text-sm rounded-lg border focus:outline-none form-select">
-            <option value="">All Years</option>
+            <option value="">Alle jaren</option>
             <option value="{{ current_year }}" {% if selected_year == current_year|stringformat:'s' %}selected{% endif %}>{{ current_year }}</option>
         </select>
-        <button type="submit" class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border btn-ghost">Search</button>
+        <button type="submit" class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border btn-ghost">Zoeken</button>
         {% if search_query or selected_year %}
-        <a href="{% url 'contracts:budget_list' %}" class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5 btn-ghost">Clear</a>
+        <a href="{% url 'contracts:budget_list' %}" class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5 btn-ghost">Wissen</a>
         {% endif %}
     </form>
 </div>
@@ -65,31 +70,46 @@
     <table class="w-full text-sm">
         <thead class="tbl-head">
             <tr>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Department</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Year</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Quarter</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Allocated</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Spent</th>
-                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Remaining</th>
-                <th class="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Actions</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Gemeente / regio</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Doelgroep</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Zorgtype</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Jaar</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Toegewezen</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Besteed</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Resterend</th>
+                <th class="text-left px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Casussen / plaatsingen</th>
+                <th class="text-right px-5 py-3 text-xs font-semibold uppercase tracking-wide tbl-th">Acties</th>
             </tr>
         </thead>
         <tbody>
-            {% for budget in budgets %}
+            {% for row in budget_rows %}
+            {% with budget=row.budget %}
             <tr class="border-b transition-colors tbl-row" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
                 <td class="px-5 py-3.5">
-                    <a href="{% url 'contracts:budget_detail' budget.pk %}" class="font-medium c-link">{{ budget.department }}</a>
+                    <a href="{% url 'contracts:budget_detail' budget.pk %}" class="font-medium c-link">{{ budget.get_scope_type_display }} {{ budget.scope_name }}</a>
+                    {% if budget.department %}
+                    <p class="text-xs mt-0.5 c-muted">{{ budget.department }}</p>
+                    {% endif %}
+                    {% if row.configuration_hint %}
+                    <p class="text-[11px] c-muted mt-0.5">{{ row.configuration_hint }}</p>
+                    {% endif %}
                     {% if budget.description %}<p class="text-xs mt-0.5 c-muted">{{ budget.description|truncatechars:72 }}</p>{% endif %}
                 </td>
+                <td class="px-5 py-3.5 tbl-td">{{ budget.target_group|default:'-' }}</td>
+                <td class="px-5 py-3.5 tbl-td">{{ budget.get_care_type_display }}</td>
                 <td class="px-5 py-3.5 tbl-td">{{ budget.year }}</td>
-                <td class="px-5 py-3.5 tbl-td">{{ budget.quarter }}</td>
                 <td class="px-5 py-3.5 font-medium tabular-nums c-primary">${{ budget.allocated_amount|floatformat:2 }}</td>
                 <td class="px-5 py-3.5 tabular-nums tbl-td">${{ budget.spent_amount|floatformat:2 }}</td>
-                <td class="px-5 py-3.5 tabular-nums {% if budget.is_over_budget %}c-red{% else %}tbl-td{% endif %}">${{ budget.remaining_amount|floatformat:2 }}</td>
-                <td class="px-5 py-3.5 text-right"><a href="{% url 'contracts:budget_detail' budget.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-ghost">View</a></td>
+                <td class="px-5 py-3.5 tabular-nums {% if budget.is_over_budget %}c-red{% else %}tbl-td{% endif %}">
+                    ${{ budget.remaining_amount|floatformat:2 }}
+                    <p class="text-[11px] {% if budget.utilization_percentage >= 80 %}c-red{% else %}c-muted{% endif %}">{{ budget.utilization_percentage|floatformat:0 }}% benut</p>
+                </td>
+                <td class="px-5 py-3.5 tbl-td">{{ budget.linked_cases.count }} / {{ budget.linked_placements.count }}</td>
+                <td class="px-5 py-3.5 text-right"><a href="{% url 'contracts:budget_detail' budget.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-ghost">Bekijken</a></td>
             </tr>
+            {% endwith %}
             {% empty %}
-            <tr><td colspan="7" class="px-5 py-20 text-center"><div class="flex flex-col items-center gap-3"><div class="w-12 h-12 rounded-full flex items-center justify-center surface-bubble"><svg class="w-6 h-6 c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg></div><div><p class="font-medium c-primary">No budgets found</p><p class="text-sm mt-1 c-muted">{% if search_query or selected_year %}Try adjusting your filters or <a href="{% url 'contracts:budget_list' %}" class="c-link">clear the search</a>.{% else %}Get started by <a href="{% url 'contracts:budget_create' %}" class="c-link">creating your first budget</a>.{% endif %}</p></div></div></td></tr>
+            <tr><td colspan="9" class="px-5 py-20 text-center"><div class="flex flex-col items-center gap-3"><div class="w-12 h-12 rounded-full flex items-center justify-center surface-bubble"><svg class="w-6 h-6 c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg></div><div><p class="font-medium c-primary">Geen budgetten gevonden</p><p class="text-sm mt-1 c-muted">{% if search_query or selected_year %}Pas je filters aan of <a href="{% url 'contracts:budget_list' %}" class="c-link">wis de zoekopdracht</a>.{% else %}Begin met <a href="{% url 'contracts:budget_create' %}" class="c-link">je eerste capaciteitbudget aanmaken</a>.{% endif %}</p></div></div></td></tr>
             {% endfor %}
         </tbody>
     </table>

@@ -27,7 +27,7 @@ test('local login works and key pages load', async ({ page }) => {
   expect(dashboardResponse.status()).toBeLessThan(400);
   await expect(page).not.toHaveURL(/\/login\/?$/);
 
-  const paths = ['/dashboard/', '/contracts/', '/contracts/repository/'];
+  const paths = ['/dashboard/', '/contracts/', '/contracts/documents/'];
   for (const path of paths) {
     const response = await page.goto(path);
     expect(response).not.toBeNull();

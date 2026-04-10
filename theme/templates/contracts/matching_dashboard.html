@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Matching - Careon{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">Matching Dashboard</h1>
+        <p class="text-sm text-gray-500 mt-1">{{ total_ready }} beoordelingen gereed, {{ assigned_count }} met aanbieder toegewezen</p>
+    </div>
+</div>
+
+<div class="space-y-6">
+    {% for row in rows %}
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-start justify-between mb-4">
+            <div>
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <a href="{% url 'contracts:case_detail' row.intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ row.intake.title }}</a>
+                </h2>
+                <p class="text-sm text-gray-500">
+                    {{ row.intake.care_category_main.name|default:"Onbekende categorie" }}
+                    &middot; Urgentie: {{ row.intake.get_urgency_display }}
+                    &middot; Zorgvorm: {{ row.intake.get_preferred_care_form_display }}
+                </p>
+            </div>
+            {% if row.assigned_provider %}
+            <span class="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">Toegewezen: {{ row.assigned_provider.name }}</span>
+            {% else %}
+            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Nog niet toegewezen</span>
+            {% endif %}
+        </div>
+
+        {% if row.suggestions %}
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Aanbieder</th>
+                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Score</th>
+                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Match</th>
+                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Capaciteit</th>
+                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Wachttijd</th>
+                        <th class="text-right px-3 py-2 text-xs font-medium text-gray-500 uppercase">Actie</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for suggestion in row.suggestions %}
+                    <tr>
+                        <td class="px-3 py-2 text-sm text-gray-900">{{ suggestion.provider_name }}</td>
+                        <td class="px-3 py-2 text-sm font-semibold text-blue-700">{{ suggestion.match_score }}%</td>
+                        <td class="px-3 py-2 text-xs text-gray-600">{{ suggestion.reason }}</td>
+                        <td class="px-3 py-2 text-sm text-gray-700">{{ suggestion.free_slots }} vrij</td>
+                        <td class="px-3 py-2 text-sm text-gray-700">{{ suggestion.avg_wait_days }} dagen</td>
+                        <td class="px-3 py-2 text-right">
+                            <form method="post" class="inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="assign">
+                                <input type="hidden" name="assessment_id" value="{{ row.assessment.pk }}">
+                                <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
+                                <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Toewijzen</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-500">Geen providers met profieldata beschikbaar voor deze beoordeling.</p>
+        {% endif %}
+    </div>
+    {% empty %}
+    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
+        Geen beoordelingen met status "Goedgekeurd voor matching".
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

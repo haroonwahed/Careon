@@ -1,14 +1,14 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en">
+<html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CMS Aegis{% endblock %}</title>
+    <title>{% block title %}Careon{% endblock %}</title>
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="{% static 'css/theme-iron.css' %}" rel="stylesheet">
+    <link href="{% static 'css/theme-careon.css' %}" rel="stylesheet">
 
     <!-- Inter Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -32,30 +32,30 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Left side -->
                 <div class="flex items-center space-x-8">
-                    <div class="font-semibold text-lg text-gray-900">CMS Aegis</div>
+                    <div class="font-semibold text-lg text-gray-900">Careon</div>
 
                     <!-- Tab Navigation -->
                     <div class="hidden lg:flex space-x-6">
                         <a href="{% url 'dashboard' %}" class="nav-tab {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                            Dashboard
+                            Overzicht
                         </a>
-                        <a href="{% url 'contracts:contract_list' %}" class="nav-tab">
-                            Contracts
+                        <a href="{% url 'contracts:case_list' %}" class="nav-tab">
+                            Casussen
                         </a>
                         <a href="#" class="nav-tab">
-                            Repository
+                            Dossiers
                         </a>
                         <a href="{% url 'contracts:workflow_dashboard' %}" class="nav-tab">
-                            Workflow Designer
+                            Regiestappen
                         </a>
                         <a href="#" class="nav-tab">
-                            Insights
+                            Inzichten
                         </a>
                         <a href="#" class="nav-tab">
-                            Obligations
+                            Actiepunten
                         </a>
                         <a href="#" class="nav-tab">
-                            Entities
+                            Entiteiten
                         </a>
                     </div>
                 </div>
@@ -65,7 +65,7 @@
                     <!-- Global Search -->
                     <div class="relative">
                         <input type="search" 
-                               placeholder="Search contracts, workflows..." 
+                               placeholder="Zoek casussen en dossiers..." 
                                class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -83,9 +83,9 @@
 
                         <div x-show="open" @click.away="open = false" x-cloak 
                              class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
-                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profile</a>
-                            <a href="{% url 'settings_hub' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Settings</a>
-                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sign out</a>
+                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profiel</a>
+                            <a href="{% url 'settings_hub' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Instellingen</a>
+                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Uitloggen</a>
                         </div>
                     </div>
                 </div>

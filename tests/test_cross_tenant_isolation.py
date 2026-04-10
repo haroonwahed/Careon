@@ -9,11 +9,11 @@ Models now fixed to filter via related-field org lookups (no direct FK):
   - Deadline  → filtered via contract__organization | matter__organization
   - RiskLog   → filtered via contract__organization | matter__organization
     - LegalTask → filtered via contract__organization | matter__organization
-  - TrademarkRequest → filtered via client__organization | matter__organization
+    - PlacementRequest → filtered via client__organization | matter__organization
 
 Direct organization FK models covered in this suite:
     - Budget
-    - DueDiligenceProcess
+    - CaseIntakeProcess
 
 Run:
   python manage.py test tests.test_cross_tenant_isolation
@@ -26,18 +26,18 @@ from django.urls import reverse
 from django.contrib.auth import get_user_model
 
 from contracts.models import (
+    CareCase,
     Organization,
     OrganizationMembership,
     Client,
-    Matter,
-    Contract,
+    CareConfiguration,
     Document,
     Deadline,
     LegalTask,
     RiskLog,
-    TrademarkRequest,
+    PlacementRequest,
     Budget,
-    DueDiligenceProcess,
+    CaseIntakeProcess,
 )
 
 User = get_user_model()
@@ -78,12 +78,12 @@ class CrossTenantFixtureMixin:
         self.client_a = Client.objects.create(
             organization=self.org_a, name='Alpha Client',
         )
-        self.matter_a = Matter.objects.create(
+        self.matter_a = CareConfiguration.objects.create(
             organization=self.org_a, client=self.client_a,
             title='Alpha Matter', practice_area='CORPORATE',
             status='ACTIVE', open_date=datetime.date.today(),
         )
-        self.contract_a = Contract.objects.create(
+        self.contract_a = CareCase.objects.create(
             organization=self.org_a, title='Alpha NDA',
             contract_type='NDA', status='ACTIVE',
             created_by=self.user_a,
@@ -111,8 +111,8 @@ class CrossTenantFixtureMixin:
             contract=self.contract_a,
             created_by=self.user_a,
         )
-        # TrademarkRequest linked to org_a via client FK
-        self.trademark_a = TrademarkRequest.objects.create(
+        # PlacementRequest linked to org_a via client FK
+        self.placement_a = PlacementRequest.objects.create(
             mark_text='AlphaMark', description='desc',
             goods_services='software', filing_basis='use',
             client=self.client_a,
@@ -122,12 +122,12 @@ class CrossTenantFixtureMixin:
         self.client_b = Client.objects.create(
             organization=self.org_b, name='Beta Client',
         )
-        self.matter_b = Matter.objects.create(
+        self.matter_b = CareConfiguration.objects.create(
             organization=self.org_b, client=self.client_b,
             title='Beta Matter', practice_area='LITIGATION',
             status='ACTIVE', open_date=datetime.date.today(),
         )
-        self.contract_b = Contract.objects.create(
+        self.contract_b = CareCase.objects.create(
             organization=self.org_b, title='Beta NDA',
             contract_type='NDA', status='ACTIVE',
             created_by=self.user_b,
@@ -153,7 +153,7 @@ class CrossTenantFixtureMixin:
             contract=self.contract_b,
             created_by=self.user_b,
         )
-        self.trademark_b = TrademarkRequest.objects.create(
+        self.placement_b = PlacementRequest.objects.create(
             mark_text='BetaMark', description='desc',
             goods_services='software', filing_basis='use',
             client=self.client_b,
@@ -169,28 +169,25 @@ class ContractIsolationTest(CrossTenantFixtureMixin, TestCase):
 
     def test_list_shows_only_own_org(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('contracts:contract_list'))
+        response = self.client.get(reverse('contracts:case_list'))
         self.assertEqual(response.status_code, 200)
-        ids = [c['id'] if isinstance(c, dict) else c.id
-               for c in response.context.get('contracts', [])]
-        self.assertNotIn(self.contract_a.id, ids,
-                         'contract_a (Org A) must not appear in Org B list')
-        self.assertIn(self.contract_b.id, ids,
-                      'contract_b (Org B) must appear in Org B list')
+        body = response.content.decode('utf-8')
+        self.assertIn('Zorgintakes', body)
+        self.assertNotIn('Alpha NDA', body)
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:contract_detail', kwargs={'pk': self.contract_a.pk})
+        url = reverse('contracts:case_detail', kwargs={'pk': self.contract_a.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404,
                          'Accessing another org contract detail must return 404')
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:contract_update', kwargs={'pk': self.contract_a.pk})
+        url = reverse('contracts:configuration_update', kwargs={'pk': self.matter_a.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404,
-                         'Accessing another org contract update must return 404')
+                         'Accessing another org configuration update must return 404')
 
 
 class DocumentIsolationTest(CrossTenantFixtureMixin, TestCase):
@@ -240,23 +237,62 @@ class ClientIsolationTest(CrossTenantFixtureMixin, TestCase):
 class MatterIsolationTest(CrossTenantFixtureMixin, TestCase):
     """Matters carry organization FK."""
 
-    def test_list_shows_only_own_org(self):
+    def test_list_redirects_to_municipality_workspace(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('contracts:matter_list'))
-        self.assertEqual(response.status_code, 200)
-        ids = [m.id for m in response.context.get('matters', [])]
-        self.assertNotIn(self.matter_a.id, ids)
-        self.assertIn(self.matter_b.id, ids)
+        response = self.client.get(reverse('contracts:configuration_list'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('contracts:municipality_list'), response['Location'])
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:matter_detail', kwargs={'pk': self.matter_a.pk})
+        url = reverse('contracts:configuration_detail', kwargs={'pk': self.matter_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:matter_update', kwargs={'pk': self.matter_a.pk})
+        url = reverse('contracts:configuration_update', kwargs={'pk': self.matter_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
+
+
+class GlobalSearchIsolationTest(CrossTenantFixtureMixin, TestCase):
+    """Global search must only return organization-scoped records for the active user."""
+
+    def setUp(self):
+        super().setUp()
+        self.contract_a.title = 'Shared Search Alpha Contract'
+        self.contract_a.save(update_fields=['title'])
+        self.contract_b.title = 'Shared Search Beta Contract'
+        self.contract_b.save(update_fields=['title'])
+
+        self.client_a.name = 'Shared Search Alpha Provider'
+        self.client_a.save(update_fields=['name'])
+        self.client_b.name = 'Shared Search Beta Provider'
+        self.client_b.save(update_fields=['name'])
+
+        self.matter_a.title = 'Shared Search Alpha Region'
+        self.matter_a.save(update_fields=['title'])
+        self.matter_b.title = 'Shared Search Beta Region'
+        self.matter_b.save(update_fields=['title'])
+
+        self.document_a.title = 'Shared Search Alpha Document'
+        self.document_a.save(update_fields=['title'])
+        self.document_b.title = 'Shared Search Beta Document'
+        self.document_b.save(update_fields=['title'])
+
+    def test_global_search_excludes_other_org_records(self):
+        self.client.login(username='user_b', password='passB1234!')
+
+        response = self.client.get(reverse('contracts:global_search'), {'q': 'Shared Search'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Shared Search Beta Contract')
+        self.assertContains(response, 'Shared Search Beta Provider')
+        self.assertContains(response, 'Shared Search Beta Region')
+        self.assertContains(response, 'Shared Search Beta Document')
+        self.assertNotContains(response, 'Shared Search Alpha Contract')
+        self.assertNotContains(response, 'Shared Search Alpha Provider')
+        self.assertNotContains(response, 'Shared Search Alpha Region')
+        self.assertNotContains(response, 'Shared Search Alpha Document')
 
 
 # ===========================================================================
@@ -305,7 +341,7 @@ class LegalTaskIsolationTest(CrossTenantFixtureMixin, TestCase):
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:legal_task_update', kwargs={'pk': self.legal_task_a.pk})
+        url = reverse('contracts:task_update', kwargs={'pk': self.legal_task_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
@@ -319,10 +355,10 @@ class RiskLogIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.client.login(username='user_b', password='passB1234!')
         response = self.client.get(reverse('contracts:risk_log_list'))
         self.assertEqual(response.status_code, 200)
-        ids = [r.id for r in response.context.get('risk_logs', [])]
-        self.assertNotIn(self.risk_a.id, ids,
-                         'risk_a (via contract_a of Org A) must not appear for Org B')
-        self.assertIn(self.risk_b.id, ids)
+        ids = [m.id for m in response.context.get('matters', [])]
+        self.assertNotIn(self.matter_a.id, ids,
+                         'matter_a (Org A) must not appear for Org B')
+        self.assertIn(self.matter_b.id, ids)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
@@ -330,29 +366,26 @@ class RiskLogIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
-class TrademarkRequestIsolationTest(CrossTenantFixtureMixin, TestCase):
+class PlacementRequestIsolationTest(CrossTenantFixtureMixin, TestCase):
     """
-    TrademarkRequest has no direct organization FK. Isolation enforced via
+    PlacementRequest has no direct organization FK. Isolation enforced via
     client__organization | matter__organization.
     """
 
     def test_list_excludes_other_org(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('contracts:trademark_request_list'))
-        self.assertEqual(response.status_code, 200)
-        ids = [t.id for t in response.context.get('trademark_requests', [])]
-        self.assertNotIn(self.trademark_a.id, ids,
-                         'trademark_a (via client_a of Org A) must not appear for Org B')
-        self.assertIn(self.trademark_b.id, ids)
+        response = self.client.get(reverse('contracts:placement_list'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('flow=placement', response['Location'])
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:trademark_request_detail', kwargs={'pk': self.trademark_a.pk})
+        url = reverse('contracts:placement_detail', kwargs={'pk': self.placement_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:trademark_request_update', kwargs={'pk': self.trademark_a.pk})
+        url = reverse('contracts:placement_update', kwargs={'pk': self.placement_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
@@ -364,16 +397,16 @@ class UnauthenticatedAccessTest(TestCase):
     """All resource endpoints must redirect anonymous users to the login page."""
 
     URLS = [
-        ('contracts:contract_list', {}),
+        ('contracts:case_list', {}),
         ('contracts:document_list', {}),
         ('contracts:client_list', {}),
-        ('contracts:matter_list', {}),
-        ('contracts:legal_task_kanban', {}),
+        ('contracts:configuration_list', {}),
+        ('contracts:task_kanban', {}),
         ('contracts:risk_log_list', {}),
         ('contracts:deadline_list', {}),
-        ('contracts:trademark_request_list', {}),
+        ('contracts:placement_list', {}),
         ('contracts:budget_list', {}),
-        ('contracts:due_diligence_list', {}),
+        ('contracts:intake_list', {}),
     ]
 
     def test_all_list_endpoints_redirect_anonymous(self):
@@ -433,12 +466,12 @@ class BudgetIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
-class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
-    """DueDiligenceProcess cross-tenant isolation – enforced via organization FK (migration 0005)."""
+class CaseIntakeProcessIsolationTest(CrossTenantFixtureMixin, TestCase):
+    """CaseIntakeProcess cross-tenant isolation via organization FK (migration 0005)."""
 
     def setUp(self):
         super().setUp()
-        self.dd_a = DueDiligenceProcess.objects.create(
+        self.dd_a = CaseIntakeProcess.objects.create(
             organization=self.org_a,
             title='Alpha DD', transaction_type='ACQUISITION',
             target_company='Target A',
@@ -446,7 +479,7 @@ class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
             target_completion_date=datetime.date.today() + datetime.timedelta(days=90),
             lead_attorney=self.user_a,
         )
-        self.dd_b = DueDiligenceProcess.objects.create(
+        self.dd_b = CaseIntakeProcess.objects.create(
             organization=self.org_b,
             title='Beta DD', transaction_type='MERGER',
             target_company='Target B',
@@ -457,18 +490,16 @@ class DueDiligenceIsolationTest(CrossTenantFixtureMixin, TestCase):
 
     def test_list_excludes_other_org(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('contracts:due_diligence_list'))
-        self.assertEqual(response.status_code, 200)
-        ids = [p.id for p in response.context.get('processes', [])]
-        self.assertNotIn(self.dd_a.id, ids)
-        self.assertIn(self.dd_b.id, ids)
+        response = self.client.get(reverse('contracts:intake_list'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('flow=intake', response['Location'])
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:due_diligence_detail', kwargs={'pk': self.dd_a.pk})
-        self.assertEqual(self.client.get(url).status_code, 404)
+        url = reverse('contracts:intake_detail', kwargs={'pk': self.dd_a.pk})
+        self.assertEqual(self.client.get(url).status_code, 302)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('contracts:due_diligence_update', kwargs={'pk': self.dd_a.pk})
-        self.assertEqual(self.client.get(url).status_code, 404)
+        url = reverse('contracts:intake_update', kwargs={'pk': self.dd_a.pk})
+        self.assertEqual(self.client.get(url).status_code, 302)

@@ -185,8 +185,6 @@ STATICFILES_DIRS = [
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Feature Flags
-IRONCLAD_MODE = False  # Set to True to enable Ironclad-like features
-
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
@@ -196,7 +194,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 if SSO_ENABLED:
-    AUTHENTICATION_BACKENDS.insert(0, 'contracts.auth_backends.AegisOIDCAuthenticationBackend')
+    AUTHENTICATION_BACKENDS.insert(0, 'contracts.auth_backends.CareonOIDCAuthenticationBackend')
 
 OIDC_RP_CLIENT_ID = os.getenv('OIDC_RP_CLIENT_ID', '')
 OIDC_RP_CLIENT_SECRET = os.getenv('OIDC_RP_CLIENT_SECRET', '')

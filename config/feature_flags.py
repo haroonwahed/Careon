@@ -16,14 +16,6 @@ def is_feature_redesign_enabled():
     """Check if FEATURE_REDESIGN flag is enabled"""
     return get_feature_flag('FEATURE_REDESIGN', False)
 
-def is_ironclad_mode_enabled():
-    """Check if IRONCLAD_MODE flag is enabled"""
-    return get_feature_flag('IRONCLAD_MODE', False)
-
-def is_mochadocs_mode_enabled():
-    """Check if MOCHADOCS_MODE flag is enabled"""
-    return get_feature_flag('MOCHADOCS_MODE', False)
-
 def is_test_mode_enabled():
     """Check if TEST_MODE flag is enabled"""
     return get_feature_flag('TEST_MODE', False)

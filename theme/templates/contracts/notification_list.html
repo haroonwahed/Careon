@@ -1,15 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Notifications - CMS Aegis{% endblock %}
+{% block title %}Notifications - Careon{% endblock %}
 {% block content %}
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-2xl font-bold text-gray-900">Notifications</h1>
-        <p class="text-sm text-gray-500">{{ unread_count }} unread</p>
+        <h1 class="text-2xl font-bold text-gray-900">Meldingen</h1>
+        <p class="text-sm text-gray-500">{{ unread_count }} ongelezen</p>
     </div>
     {% if unread_count > 0 %}
     <form method="post" action="{% url 'contracts:mark_all_notifications_read' %}">
         {% csrf_token %}
-        <button type="submit" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Mark all as read</button>
+        <button type="submit" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Markeer alles als gelezen</button>
     </form>
     {% endif %}
 </div>
@@ -29,17 +29,17 @@
             <div class="flex-1">
                 <div class="text-sm font-medium text-gray-900">{{ notification.title }}</div>
                 <div class="text-sm text-gray-600 mt-0.5">{{ notification.message }}</div>
-                <div class="text-xs text-gray-400 mt-1">{{ notification.created_at|timesince }} ago</div>
+                <div class="text-xs text-gray-400 mt-1">{{ notification.created_at|timesince }} geleden</div>
             </div>
             {% if not notification.is_read %}
             <form method="post" action="{% url 'contracts:mark_notification_read' notification.pk %}">
                 {% csrf_token %}
-                <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">Mark read</button>
+                <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">Markeer als gelezen</button>
             </form>
             {% endif %}
         </div>
         {% empty %}
-        <div class="px-5 py-12 text-center text-gray-400">No notifications.</div>
+        <div class="px-5 py-12 text-center text-gray-400">Geen meldingen.</div>
         {% endfor %}
     </div>
 </div>

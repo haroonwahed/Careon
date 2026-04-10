@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}CMS Aegis{% endblock %}</title>
+    <title>{% block title %}Careon{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
     </script>
     <script>
         (function() {
-            var t = localStorage.getItem('cms-aegis-theme') || 'dark';
+            var t = localStorage.getItem('careon-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', t);
         })();
     </script>
@@ -132,7 +132,7 @@
             var current = html.getAttribute('data-theme');
             var next = current === 'dark' ? 'light' : 'dark';
             html.setAttribute('data-theme', next);
-            localStorage.setItem('cms-aegis-theme', next);
+            localStorage.setItem('careon-theme', next);
         }
     </script>
 </body>

@@ -1,12 +1,12 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from contracts.models import Budget, DueDiligenceProcess, OrganizationMembership
+from contracts.models import Budget, CaseIntakeProcess, OrganizationMembership
 
 
 class Command(BaseCommand):
     help = (
-        'Backfill organization FK for Budget and DueDiligenceProcess rows where '
+        'Backfill organization FK for Budget and CaseIntakeProcess rows where '
         'organization is NULL using owner-user memberships.'
     )
 
@@ -66,10 +66,10 @@ class Command(BaseCommand):
         self.stdout.write(self.style.NOTICE(f'Running in {mode} mode'))
 
         budget_qs = Budget.objects.filter(organization__isnull=True)
-        dd_qs = DueDiligenceProcess.objects.filter(organization__isnull=True)
+        dd_qs = CaseIntakeProcess.objects.filter(organization__isnull=True)
 
         self.stdout.write(f'Budget rows with NULL organization: {budget_qs.count()}')
-        self.stdout.write(f'DueDiligenceProcess rows with NULL organization: {dd_qs.count()}')
+        self.stdout.write(f'CaseIntakeProcess rows with NULL organization: {dd_qs.count()}')
 
         with transaction.atomic():
             budget_updated, budget_skipped = self._backfill_queryset(
@@ -89,6 +89,6 @@ class Command(BaseCommand):
         self.stdout.write('')
         self.stdout.write(self.style.SUCCESS('Backfill summary'))
         self.stdout.write(f'- Budget: updated={budget_updated}, skipped={budget_skipped}')
-        self.stdout.write(f'- DueDiligenceProcess: updated={dd_updated}, skipped={dd_skipped}')
+        self.stdout.write(f'- CaseIntakeProcess: updated={dd_updated}, skipped={dd_skipped}')
         if not apply_changes:
             self.stdout.write(self.style.WARNING('Dry-run only. Re-run with --apply to persist changes.'))

@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}{% if form.instance.pk %}Edit{% else %}New{% endif %} Matter - CMS Aegis{% endblock %}
+{% block title %}{% if form.instance.pk %}Configuratie bewerken{% else %}Nieuwe configuratie{% endif %} - Careon{% endblock %}
 {% block content %}
 <div class="max-w-3xl">
-    <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900">{% if form.instance.pk %}Edit Matter{% else %}New Matter{% endif %}</h1></div>
+    <div class="mb-6"><h1 class="text-2xl font-bold text-gray-900">{% if form.instance.pk %}Bewerk configuratie{% else %}Nieuwe configuratie{% endif %}</h1></div>
     <form method="post" class="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         {% csrf_token %}
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -15,8 +15,8 @@
             {% endfor %}
         </div>
         <div class="flex gap-3 pt-4">
-            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">{% if form.instance.pk %}Update{% else %}Create{% endif %} Matter</button>
-            <a href="{% url 'contracts:matter_list' %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Cancel</a>
+            <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">{% if form.instance.pk %}Bijwerken{% else %}Aanmaken{% endif %} configuratie</button>
+            <a href="{% url 'contracts:configuration_list' %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Annuleren</a>
         </div>
     </form>
 </div>

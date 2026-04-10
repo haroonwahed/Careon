@@ -7,7 +7,7 @@ from django.utils import timezone
 
 
 class Command(BaseCommand):
-    help = 'Run an in-process scheduler that periodically sends contract reminders.'
+    help = 'Run an in-process scheduler that periodically sends case reminders.'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -28,12 +28,12 @@ class Command(BaseCommand):
 
         if run_once:
             call_command('send_contract_reminders')
-            self.stdout.write(self.style.SUCCESS('Reminder scheduler executed once.'))
+            self.stdout.write(self.style.SUCCESS('Herinneringsplanner eenmalig uitgevoerd.'))
             return
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Reminder scheduler started. Running every {interval_minutes} minute(s).'
+                f'Herinneringsplanner gestart. Draait elke {interval_minutes} minuut/minuten.'
             )
         )
 
@@ -44,6 +44,6 @@ class Command(BaseCommand):
                 call_command('send_contract_reminders')
                 next_run = now + timedelta(minutes=interval_minutes)
                 self.stdout.write(
-                    self.style.SUCCESS(f'Next reminder run scheduled at {next_run.isoformat()}.')
+                    self.style.SUCCESS(f'Volgende herinneringsrun gepland om {next_run.isoformat()}.')
                 )
             time.sleep(5)
