@@ -9,7 +9,7 @@ Validate P1 and P2 routing for CareOn observability bootstrap.
 
 ## Procedure
 1. Deploy monitoring rules from `ops/monitoring/prometheus-alert-rules.yml` to staging monitoring stack.
-2. Trigger synthetic 5xx responses in staging (`/contracts/` test endpoint) for >5 minutes.
+2. Trigger synthetic 5xx responses in staging (`/care/` test endpoint) for >5 minutes.
 3. Pause scheduler heartbeat emission for >30 minutes in staging.
 4. Verify P1 page and P2 ticket notifications.
 5. Restore normal traffic and scheduler job.

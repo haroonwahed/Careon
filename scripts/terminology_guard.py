@@ -19,6 +19,12 @@ class Rule:
     pattern: re.Pattern[str]
 
 
+@dataclass(frozen=True)
+class AllowlistEntry:
+    path_pattern: re.Pattern[str]
+    rule_names: frozenset[str]
+
+
 ROOT = Path(__file__).resolve().parents[1]
 
 # Scan runtime-facing code/docs only.
@@ -37,7 +43,6 @@ INCLUDE_DIRS = [
 ]
 
 SKIP_DIR_PARTS = {
-    "contracts/migrations",
     "theme/static_src/node_modules",
     "client/node_modules",
     ".venv",
@@ -70,7 +75,24 @@ RULES = [
     Rule("ironclad", re.compile(r"\bironclad\b", re.IGNORECASE)),
     Rule("law-firm", re.compile(r"\blaw\s+firm\b", re.IGNORECASE)),
     Rule("contract-lifecycle", re.compile(r"\bcontract\s+lifecycle\b", re.IGNORECASE)),
+    Rule("governing-law", re.compile(r"\bgoverning[_ ]law\b", re.IGNORECASE)),
+    Rule("jurisdiction", re.compile(r"\bjurisdiction\b", re.IGNORECASE)),
 ]
+
+ALLOWLIST: list[AllowlistEntry] = [
+    # Historical migration files may legitimately reference legacy field names.
+    AllowlistEntry(
+        path_pattern=re.compile(r"^contracts/migrations/"),
+        rule_names=frozenset({"governing-law", "jurisdiction"}),
+    ),
+]
+
+
+def is_allowlisted(rel: str, rule_name: str) -> bool:
+    for entry in ALLOWLIST:
+        if entry.path_pattern.search(rel) and rule_name in entry.rule_names:
+            return True
+    return False
 
 
 def iter_candidate_files() -> list[Path]:
@@ -106,6 +128,8 @@ def main() -> int:
         for idx, line in enumerate(content.splitlines(), start=1):
             for rule in RULES:
                 if rule.pattern.search(line):
+                    if is_allowlisted(rel, rule.name):
+                        continue
                     violations.append((rel, idx, rule.name, line.strip()))
 
     if not violations:

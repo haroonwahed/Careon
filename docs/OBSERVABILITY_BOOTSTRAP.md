@@ -12,7 +12,7 @@ This document defines the minimum monitoring baseline for CareOn.
 ## SLOs (initial)
 
 - Availability SLO: `99.9%` monthly for authenticated routes
-- API latency SLO: `p95 < 500ms` for `/dashboard/`, `/contracts/`, `/contracts/<id>/`
+- API latency SLO: `p95 < 500ms` for `/dashboard/`, `/care/`, `/care/<id>/`
 - Error-rate SLO: `5xx < 0.5%` of total requests
 
 ## Required Telemetry Streams
