@@ -101,9 +101,17 @@ Detailed provider guide:
 - `docs/SSO_AZURE_SETUP.md`
 - `docs/SSO_GOOGLE_SETUP.md`
 
-Operational takeover guide:
+Operational runbooks:
 
-- `docs/TAKEOVER_30_60_90_PLAN.md`
+- `docs/ROLLBACK_RUNBOOK.md`
+- `docs/RELEASE_ROLLOUT_CHECKLIST.md`
+- `docs/OBSERVABILITY_BOOTSTRAP.md`
+
+Blueprint terminology guard (local):
+
+```bash
+python scripts/terminology_guard.py
+```
 
 ## RBAC Model
 
