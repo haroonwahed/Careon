@@ -242,7 +242,7 @@ class DeadlineForm(forms.ModelForm):
 
 class CaseAssessmentForm(forms.ModelForm):
     """Form for care case assessment (Casusbeoordeling)"""
-
+    
     # Multi-select for care signals
     risk_signals = forms.MultipleChoiceField(
         choices=CaseAssessment.RiskSignal.choices,
@@ -250,7 +250,7 @@ class CaseAssessmentForm(forms.ModelForm):
         required=False,
         label='Signalen'
     )
-
+    
     class Meta:
         model = CaseAssessment
         fields = [
@@ -268,7 +268,7 @@ class CaseAssessmentForm(forms.ModelForm):
             'reason_not_ready': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
             'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
         }
-
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.risk_signals:
@@ -276,7 +276,7 @@ class CaseAssessmentForm(forms.ModelForm):
             self.fields['risk_signals'].initial = [
                 s.strip() for s in self.instance.risk_signals.split(',')
             ]
-
+    
     def save(self, commit=True):
         instance = super().save(commit=False)
         # Convert list of selected signals to comma-separated storage.

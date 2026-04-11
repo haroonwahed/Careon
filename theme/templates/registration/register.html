@@ -77,7 +77,7 @@
                     <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">E-mailadres</label>
                     <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}" required autocomplete="email"
                         class="login-input{% if form.email.errors %} has-error{% endif %}"
-                        placeholder="jij@uwfirma.nl">
+                        placeholder="naam@organisatie.nl">
                     {% if form.email.errors %}<p class="mt-1.5 text-xs" style="color: var(--error);">{% for e in form.email.errors %}{{ e }}{% endfor %}</p>{% endif %}
                 </div>
                 <div>

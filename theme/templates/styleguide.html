@@ -110,7 +110,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const buttons = document.querySelectorAll('button[class*="btn-"]');
     console.log(`Found ${buttons.length} Careon-style buttons`);
-    
+
     buttons.forEach((button, index) => {
         button.addEventListener('click', function(e) {
             if (!button.disabled && !button.onclick) {

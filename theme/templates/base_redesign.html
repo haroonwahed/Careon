@@ -39,13 +39,13 @@
                         <a href="{% url 'dashboard' %}" class="nav-tab {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                             Overzicht
                         </a>
-                        <a href="{% url 'contracts:case_list' %}" class="nav-tab">
+                        <a href="{% url 'careon:case_list' %}" class="nav-tab">
                             Casussen
                         </a>
                         <a href="#" class="nav-tab">
                             Dossiers
                         </a>
-                        <a href="{% url 'contracts:workflow_dashboard' %}" class="nav-tab">
+                        <a href="{% url 'careon:workflow_dashboard' %}" class="nav-tab">
                             Regiestappen
                         </a>
                         <a href="#" class="nav-tab">
@@ -64,8 +64,8 @@
                 <div class="flex items-center space-x-4">
                     <!-- Global Search -->
                     <div class="relative">
-                        <input type="search" 
-                               placeholder="Zoek casussen en dossiers..." 
+                        <input type="search"
+                               placeholder="Zoek casussen en dossiers..."
                                class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -81,7 +81,7 @@
                             </svg>
                         </button>
 
-                        <div x-show="open" @click.away="open = false" x-cloak 
+                        <div x-show="open" @click.away="open = false" x-cloak
                              class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
                             <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profiel</a>
                             <a href="{% url 'settings_hub' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Instellingen</a>

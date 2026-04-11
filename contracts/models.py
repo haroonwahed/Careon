@@ -248,44 +248,44 @@ class ProviderProfile(models.Model):
 
     client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name='provider_profile',
                                   help_text='Link to care provider/aanbieder')
-
+    
     # Target age groups
     target_age_0_4 = models.BooleanField(default=False, verbose_name='Target: 0–4')
     target_age_4_12 = models.BooleanField(default=False, verbose_name='Target: 4–12')
     target_age_12_18 = models.BooleanField(default=False, verbose_name='Target: 12–18')
     target_age_18_plus = models.BooleanField(default=False, verbose_name='Target: 18+')
-
+    
     # Target care categories
     target_care_categories = models.ManyToManyField(CareCategoryMain, blank=True, related_name='provider_profiles',
                                                      verbose_name='Zorgvraagcategorieën')
-
+    
     # Target care forms
     offers_outpatient = models.BooleanField(default=False, verbose_name='Aanbod: Ambulant')
     offers_day_treatment = models.BooleanField(default=False, verbose_name='Aanbod: Dagbehandeling')
     offers_residential = models.BooleanField(default=False, verbose_name='Aanbod: Residentieel')
     offers_crisis = models.BooleanField(default=False, verbose_name='Aanbod: Crisisopvang')
-
+    
     # Complexity levels
     handles_simple = models.BooleanField(default=False, verbose_name='Kan: Enkelvoudig')
     handles_multiple = models.BooleanField(default=False, verbose_name='Kan: Meervoudig')
     handles_severe = models.BooleanField(default=False, verbose_name='Kan: Zwaar')
-
+    
     # Urgency levels
     handles_low_urgency = models.BooleanField(default=False, verbose_name='Kan: Laag')
     handles_medium_urgency = models.BooleanField(default=False, verbose_name='Kan: Middel')
     handles_high_urgency = models.BooleanField(default=False, verbose_name='Kan: Hoog')
     handles_crisis_urgency = models.BooleanField(default=False, verbose_name='Kan: Crisis')
-
+    
     # Capacity & availability
     current_capacity = models.PositiveIntegerField(default=0, verbose_name='Huidige beschikbaarheid (aantal plaatsen)')
     max_capacity = models.PositiveIntegerField(default=0, verbose_name='Maximale capaciteit')
     waiting_list_length = models.PositiveIntegerField(default=0, verbose_name='Wachtlijst lengte')
     average_wait_days = models.PositiveIntegerField(default=0, verbose_name='Gemiddelde wachttijd (dagen)')
-
+    
     # Additional info
     special_facilities = models.TextField(blank=True, verbose_name='Speciale faciliteiten')
     service_area = models.CharField(max_length=500, blank=True, verbose_name='Dienstgebied')
-
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -630,7 +630,7 @@ class DeadlineManager(models.Manager):
     """Custom manager for Deadline."""
     def get_queryset(self):
         return DeadlineQuerySet(self.model, using=self._db)
-
+    
     def for_organization(self, organization):
         """Filter deadlines that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
@@ -672,7 +672,7 @@ class Deadline(models.Model):
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
     due_date = models.DateField()
     due_time = models.TimeField(null=True, blank=True)
-
+    
     # Canonical relation names mapped to existing compatibility columns.
     configuration = models.ForeignKey(CareConfiguration, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines', db_column='configuration_id')
     case_record = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines', db_column='case_record_id')
@@ -786,7 +786,7 @@ class Notification(models.Model):
 
 class CaseAssessment(models.Model):
     """Care case assessment for intake review and matching preparation (Casusbeoordeling)"""
-
+    
     class AssessmentStatus(models.TextChoices):
         DRAFT = 'DRAFT', 'Concept'
         UNDER_REVIEW = 'UNDER_REVIEW', 'In beoordeling'
@@ -869,7 +869,7 @@ class CaseAssessment(models.Model):
     @intake.setter
     def intake(self, value):
         self.due_diligence_process = value
-
+    
     def get_risk_signals_display(self):
         """Return list of signal labels."""
         if not self.risk_signals:
@@ -979,7 +979,7 @@ class CareTaskManager(models.Manager):
     """Custom manager for CareTask."""
     def get_queryset(self):
         return CareTaskQuerySet(self.model, using=self._db)
-
+    
     def for_organization(self, organization):
         """Filter care tasks that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
@@ -1061,7 +1061,7 @@ class CareSignalManager(models.Manager):
     """Custom manager for CareSignal."""
     def get_queryset(self):
         return CareSignalQuerySet(self.model, using=self._db)
-
+    
     def for_organization(self, organization):
         """Filter care signals that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
@@ -1277,7 +1277,7 @@ class CaseIntakeProcess(models.Model):
     contract = models.OneToOneField('CareCase', on_delete=models.SET_NULL, null=True, blank=True, related_name='due_diligence_process')
     title = models.CharField(max_length=200, verbose_name='Casusidentificatie', help_text='Bijv. voornaam + initialiteit')
     status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.INTAKE, verbose_name='Status')
-
+    
     # Case coordination
     case_coordinator = models.ForeignKey(
         User,
@@ -1287,39 +1287,39 @@ class CaseIntakeProcess(models.Model):
         related_name='dd_processes',
         verbose_name='Casusregisseur',
     )
-
+    
     # Dates
     start_date = models.DateField(verbose_name='Intakedatum')
     target_completion_date = models.DateField(verbose_name='Doeldatum matchbesluit')
-
+    
     # CARE-SPECIFIC: Zorgvraag (Care Question)
     care_category_main = models.ForeignKey(CareCategoryMain, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_main', verbose_name='Hoofdcategorie zorgvraag')
     care_category_sub = models.ForeignKey(CareCategorySubcategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_sub', verbose_name='Subcategorie zorgvraag')
-
+    
     # CARE-SPECIFIC: Matching dimensions
     urgency = models.CharField(max_length=10, choices=Urgency.choices, default=Urgency.MEDIUM, verbose_name='Urgentie')
     complexity = models.CharField(max_length=20, choices=Complexity.choices, default=Complexity.SIMPLE, verbose_name='Complexiteit')
     preferred_care_form = models.CharField(max_length=20, choices=CareForm.choices, default=CareForm.OUTPATIENT, verbose_name='Gewenste zorgvorm')
-
+    
     # CARE-SPECIFIC: Client profile
     client_age_category = models.CharField(max_length=10, choices=AgeCategory.choices, null=True, blank=True, verbose_name='Leeftijdscategorie cliënt')
     family_situation = models.CharField(max_length=20, choices=FamilySituation.choices, null=True, blank=True, verbose_name='Gezinssituatie')
     has_other_support = models.BooleanField(default=False, verbose_name='Betrokken hulp (ja/nee)')
     other_support_description = models.TextField(blank=True, verbose_name='Beschrijving betrokken hulp')
     school_work_status = models.CharField(max_length=200, blank=True, verbose_name='School- / werkstatus')
-
+    
     # Risk factors (many-to-many)
     risk_factors = models.ManyToManyField(RiskFactor, blank=True, related_name='intakes', verbose_name='Risicofactoren')
-
+    
     # Descriptive assessment
     assessment_summary = models.TextField(blank=True, verbose_name='Intake samenvatting', help_text='Hulpvraag samenvatting, urgentie, aandachtspunten')
     description = models.TextField(blank=True, verbose_name='Aanvullende opmerkingen')
-
+    
     # Legacy fields (kept for migration compatibility)
     transaction_type = models.CharField(max_length=20, blank=True)
     target_company = models.CharField(max_length=200, blank=True)
     deal_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1528,29 +1528,29 @@ class BudgetExpense(models.Model):
 
 class MunicipalityConfiguration(models.Model):
     """Gemeente-level configuration for care network management"""
-
+    
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Actief'
         INACTIVE = 'INACTIVE', 'Inactief'
         DRAFT = 'DRAFT', 'Concept'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='municipality_configs')
-
+    
     # Municipality info
     municipality_name = models.CharField(max_length=150, verbose_name='Gemeente')
     municipality_code = models.CharField(max_length=50, blank=True, verbose_name='Gemeentecode')
-
+    
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
-
+    
     # Care configuration
     care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='municipality_configs', verbose_name='Zorgdomeinen')
     linked_providers = models.ManyToManyField(Client, blank=True, related_name='municipality_configs', verbose_name='Gekoppelde aanbieders')
-
+    
     # Performance management
     max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
     priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
-
+    
     # Contact & administration
     responsible_coordinator = models.ForeignKey(
         User,
@@ -1561,7 +1561,7 @@ class MunicipalityConfiguration(models.Model):
         verbose_name='Verantwoordelijke',
     )
     notes = models.TextField(blank=True, verbose_name='Notities')
-
+    
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_municipality_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1589,32 +1589,32 @@ class MunicipalityConfiguration(models.Model):
 
 class RegionalConfiguration(models.Model):
     """Regio-level configuration for multi-municipality care coordination"""
-
+    
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Actief'
         INACTIVE = 'INACTIVE', 'Inactief'
         DRAFT = 'DRAFT', 'Concept'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='regional_configs')
-
+    
     # Region info
     region_name = models.CharField(max_length=150, verbose_name='Regio')
     region_code = models.CharField(max_length=50, blank=True, verbose_name='Regiode')
-
+    
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
-
+    
     # Served municipalities
     served_municipalities = models.ManyToManyField(MunicipalityConfiguration, blank=True, related_name='regions', verbose_name='Bediende gemeenten')
-
+    
     # Care configuration
     care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='regional_configs', verbose_name='Zorgdomeinen')
     linked_providers = models.ManyToManyField(Client, blank=True, related_name='regional_configs', verbose_name='Gekoppelde aanbieders')
-
+    
     # Performance management
     max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
     priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
-
+    
     # Contact & administration
     responsible_coordinator = models.ForeignKey(
         User,
@@ -1625,7 +1625,7 @@ class RegionalConfiguration(models.Model):
         verbose_name='Verantwoordelijke',
     )
     notes = models.TextField(blank=True, verbose_name='Notities')
-
+    
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_regional_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

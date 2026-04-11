@@ -1,8 +1,8 @@
-# CMS Aegis Decisions
+# CareOn Decisions
 
 ## Canonical Documentation
 
-- `README_IRONCLAD.md` is the single operational overview for setup, running, auth, reminders, and tests.
+- `README.md` is the single operational overview for setup, running, auth, reminders, and tests.
 - `DECISIONS.md` is the single decisions log.
 - Duplicate or stale handover docs are removed instead of being kept as parallel sources of truth.
 
