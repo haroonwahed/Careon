@@ -29,7 +29,7 @@ def ensure_user_organization(user: Optional[User]) -> Optional[Organization]:
         org_slug = f'{base_slug}-{n}'
         n += 1
 
-    org_name = f"{user.get_full_name().strip() or user.username}'s Firm"
+    org_name = f"{user.get_full_name().strip() or user.username}'s Regie"
     organization = Organization.objects.create(name=org_name, slug=org_slug)
     OrganizationMembership.objects.create(
         organization=organization,

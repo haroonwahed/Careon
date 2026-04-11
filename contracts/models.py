@@ -102,14 +102,6 @@ class UserProfile(models.Model):
     def __str__(self):
         return f'{self.user.get_full_name() or self.user.username} ({self.get_role_display()})'
 
-    @property
-    def can_approve(self):
-        return self.role in [self.Role.PARTNER, self.Role.SENIOR_ASSOCIATE, self.Role.ADMIN]
-
-    @property
-    def is_attorney(self):
-        return self.role in [self.Role.PARTNER, self.Role.SENIOR_ASSOCIATE, self.Role.ASSOCIATE]
-
 
 # ============================================
 # CARE-FOCUSED MODELS (INTAKE & ASSESSMENT)
@@ -165,7 +157,7 @@ class RiskFactor(models.Model):
         ('HOMELESSNESS', 'Huisvesting'),
         ('SOCIAL_ISOLATION', 'Sociale isolatie'),
         ('EMPLOYMENT', 'Werkloosheid'),
-        ('LEGAL', 'Regelgevingsvragen'),
+        ('GOVERNANCE', 'Regelgevingsvragen'),
         ('TRAUMA', 'Trauma'),
         ('OTHER', 'Anderszins'),
     ]
@@ -212,8 +204,20 @@ class Client(models.Model):
     primary_contact = models.CharField(max_length=200, blank=True)
     primary_contact_email = models.EmailField(blank=True)
     primary_contact_phone = models.CharField(max_length=20, blank=True)
-    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='responsible_clients')
-    originating_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='originated_clients')
+    responsible_coordinator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='responsible_clients',
+    )
+    intake_coordinator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='originated_clients',
+    )
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_clients')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -244,44 +248,44 @@ class ProviderProfile(models.Model):
 
     client = models.OneToOneField(Client, on_delete=models.CASCADE, related_name='provider_profile',
                                   help_text='Link to care provider/aanbieder')
-    
+
     # Target age groups
     target_age_0_4 = models.BooleanField(default=False, verbose_name='Target: 0–4')
     target_age_4_12 = models.BooleanField(default=False, verbose_name='Target: 4–12')
     target_age_12_18 = models.BooleanField(default=False, verbose_name='Target: 12–18')
     target_age_18_plus = models.BooleanField(default=False, verbose_name='Target: 18+')
-    
+
     # Target care categories
     target_care_categories = models.ManyToManyField(CareCategoryMain, blank=True, related_name='provider_profiles',
                                                      verbose_name='Zorgvraagcategorieën')
-    
+
     # Target care forms
     offers_outpatient = models.BooleanField(default=False, verbose_name='Aanbod: Ambulant')
     offers_day_treatment = models.BooleanField(default=False, verbose_name='Aanbod: Dagbehandeling')
     offers_residential = models.BooleanField(default=False, verbose_name='Aanbod: Residentieel')
     offers_crisis = models.BooleanField(default=False, verbose_name='Aanbod: Crisisopvang')
-    
+
     # Complexity levels
     handles_simple = models.BooleanField(default=False, verbose_name='Kan: Enkelvoudig')
     handles_multiple = models.BooleanField(default=False, verbose_name='Kan: Meervoudig')
     handles_severe = models.BooleanField(default=False, verbose_name='Kan: Zwaar')
-    
+
     # Urgency levels
     handles_low_urgency = models.BooleanField(default=False, verbose_name='Kan: Laag')
     handles_medium_urgency = models.BooleanField(default=False, verbose_name='Kan: Middel')
     handles_high_urgency = models.BooleanField(default=False, verbose_name='Kan: Hoog')
     handles_crisis_urgency = models.BooleanField(default=False, verbose_name='Kan: Crisis')
-    
+
     # Capacity & availability
     current_capacity = models.PositiveIntegerField(default=0, verbose_name='Huidige beschikbaarheid (aantal plaatsen)')
     max_capacity = models.PositiveIntegerField(default=0, verbose_name='Maximale capaciteit')
     waiting_list_length = models.PositiveIntegerField(default=0, verbose_name='Wachtlijst lengte')
     average_wait_days = models.PositiveIntegerField(default=0, verbose_name='Gemiddelde wachttijd (dagen)')
-    
+
     # Additional info
     special_facilities = models.TextField(blank=True, verbose_name='Speciale faciliteiten')
     service_area = models.CharField(max_length=500, blank=True, verbose_name='Dienstgebied')
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -289,7 +293,7 @@ class ProviderProfile(models.Model):
         return f'Provider Profile: {self.client.name}'
 
 
-class Matter(models.Model):
+class CareConfiguration(models.Model):
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Active'
         PENDING = 'PENDING', 'Pending'
@@ -327,25 +331,12 @@ class Matter(models.Model):
     class Meta:
         db_table = 'contracts_care_configuration'
 
-    def __init__(self, *args, **kwargs):
-        legacy_practice = kwargs.pop('practice_area', None)
-        kwargs.pop('billing_type', None)
-        kwargs.pop('budget_amount', None)
-        if 'matter_number' in kwargs and 'configuration_id' not in kwargs:
-            kwargs['configuration_id'] = kwargs.pop('matter_number')
-        if 'responsible_attorney' in kwargs and 'responsible_care_coordinator' not in kwargs:
-            kwargs['responsible_care_coordinator'] = kwargs.pop('responsible_attorney')
-        if 'originating_attorney' in kwargs and 'intake_creator' not in kwargs:
-            kwargs['intake_creator'] = kwargs.pop('originating_attorney')
-        super().__init__(*args, **kwargs)
-        self._legacy_practice_area = legacy_practice
-
     def __str__(self):
         return f'{self.configuration_id} - {self.title}'
 
     def save(self, *args, **kwargs):
         if not self.configuration_id:
-            last = Matter.objects.order_by('-id').first()
+            last = CareConfiguration.objects.order_by('-id').first()
             next_num = (last.id + 1) if last else 1
             self.configuration_id = f'CFG-{next_num:05d}'
         super().save(*args, **kwargs)
@@ -357,58 +348,6 @@ class Matter(models.Model):
     @matter_number.setter
     def matter_number(self, value):
         self.configuration_id = value
-
-    @property
-    def responsible_attorney(self):
-        return self.responsible_care_coordinator
-
-    @responsible_attorney.setter
-    def responsible_attorney(self, value):
-        self.responsible_care_coordinator = value
-
-    @property
-    def originating_attorney(self):
-        return self.intake_creator
-
-    @originating_attorney.setter
-    def originating_attorney(self, value):
-        self.intake_creator = value
-
-    @property
-    def practice_area(self):
-        return self._legacy_practice_area or ''
-
-    def get_practice_area_display(self):
-        return 'Zorgdomeinen gestuurd'
-
-    @property
-    def billing_type(self):
-        return ''
-
-    def get_billing_type_display(self):
-        return 'Niet van toepassing'
-
-    @property
-    def budget_amount(self):
-        return None
-
-    @property
-    def total_time_billed(self):
-        entries_manager = getattr(self, 'time_entries', None)
-        if entries_manager is None:
-            return Decimal('0')
-        entries = entries_manager.filter(is_billable=True)
-        total = sum(e.hours for e in entries)
-        return total
-
-    @property
-    def total_amount_billed(self):
-        entries_manager = getattr(self, 'time_entries', None)
-        if entries_manager is None:
-            return Decimal('0')
-        entries = entries_manager.filter(is_billable=True)
-        total = sum(e.total_amount for e in entries)
-        return total
 
     @property
     def provider_total(self):
@@ -447,11 +386,9 @@ class Matter(models.Model):
         return 'Op schema' if avg_wait <= self.max_wait_days else 'Over norm'
 
 
-# Canonical care-native alias retained while schema and field names stay stable.
-CareConfiguration = Matter
 
 
-class Contract(models.Model):
+class CareCase(models.Model):
     class Status(models.TextChoices):
         DRAFT = 'DRAFT', 'Concept'
         PENDING = 'PENDING', 'Wacht op actie'
@@ -491,12 +428,7 @@ class Contract(models.Model):
         CRITICAL = 'CRITICAL', 'Kritiek'
 
     class Currency(models.TextChoices):
-        USD = 'USD', 'USD ($)'
         EUR = 'EUR', 'EUR (€)'
-        GBP = 'GBP', 'GBP (£)'
-        CHF = 'CHF', 'CHF (Fr)'
-        CAD = 'CAD', 'CAD (C$)'
-        AUD = 'AUD', 'AUD (A$)'
         OTHER = 'OTHER', 'Other'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='contracts')
@@ -506,9 +438,9 @@ class Contract(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     preferred_provider = models.CharField(max_length=200, blank=True)
     value = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    currency = models.CharField(max_length=5, choices=Currency.choices, default=Currency.USD)
-    governing_law = models.CharField(max_length=200, blank=True, help_text='Kader of beleidsgrondslag')
-    jurisdiction = models.CharField(max_length=200, blank=True, help_text='Regio of toepassingsgebied')
+    currency = models.CharField(max_length=5, choices=Currency.choices, default=Currency.EUR)
+    policy_framework = models.CharField(max_length=200, blank=True, help_text='Kader of beleidsgrondslag')
+    service_region = models.CharField(max_length=200, blank=True, help_text='Regio of toepassingsgebied')
     language = models.CharField(max_length=50, default='English', blank=True)
     risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.LOW)
     data_transfer_flag = models.BooleanField(default=False, help_text='Involves cross-border data transfer (EU/US)')
@@ -534,7 +466,7 @@ class Contract(models.Model):
     case_phase = models.CharField(max_length=20, choices=CasePhase.choices, default=CasePhase.INTAKE)
     phase_entered_at = models.DateTimeField(null=True, blank=True, help_text='Timestamp when the case entered the current phase')
     client = models.ForeignKey('Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
-    matter = models.ForeignKey('Matter', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
+    matter = models.ForeignKey('CareConfiguration', on_delete=models.SET_NULL, null=True, blank=True, related_name='contracts')
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_contracts')
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -546,6 +478,14 @@ class Contract(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def configuration(self):
+        return self.matter
+
+    @configuration.setter
+    def configuration(self, value):
+        self.matter = value
 
     @property
     def is_expiring_soon(self):
@@ -561,8 +501,6 @@ class Contract(models.Model):
         return None
 
 
-CareCase = Contract
-
 
 class Document(models.Model):
     class DocType(models.TextChoices):
@@ -570,12 +508,8 @@ class Document(models.Model):
         AMENDMENT = 'AMENDMENT', 'Wijziging'
         EXHIBIT = 'EXHIBIT', 'Bijlage'
         CORRESPONDENCE = 'CORRESPONDENCE', 'Correspondence'
-        COURT_FILING = 'COURT_FILING', 'Formele indiening'
-        PLEADING = 'PLEADING', 'Onderbouwing'
-        DISCOVERY = 'DISCOVERY', 'Discovery'
         MEMO = 'MEMO', 'Memorandum'
         RESEARCH = 'RESEARCH', 'Onderzoeksnotitie'
-        INVOICE = 'INVOICE', 'Archived Financial Record'
         TEMPLATE = 'TEMPLATE', 'Template'
         OTHER = 'OTHER', 'Other'
 
@@ -596,8 +530,8 @@ class Document(models.Model):
     mime_type = models.CharField(max_length=100, blank=True)
     version = models.PositiveIntegerField(default=1)
     parent_document = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='versions')
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
+    contract = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
+    matter = models.ForeignKey(CareConfiguration, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
     client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True, related_name='documents')
     uploaded_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
     tags = models.CharField(max_length=500, blank=True)
@@ -617,6 +551,22 @@ class Document(models.Model):
             self.file_size = self.file.size
             self.mime_type = getattr(self.file, 'content_type', '')
         super().save(*args, **kwargs)
+
+    @property
+    def case_record(self):
+        return self.contract
+
+    @case_record.setter
+    def case_record(self, value):
+        self.contract = value
+
+    @property
+    def configuration(self):
+        return self.matter
+
+    @configuration.setter
+    def configuration(self, value):
+        self.matter = value
 
     @property
     def file_extension(self):
@@ -665,14 +615,14 @@ class TrustAccount(models.Model):
 class DeadlineQuerySet(models.QuerySet):
     """Custom queryset for Deadline with organization-scoping support."""
     def for_organization(self, organization):
-        """Filter tasks that belong to a specific organization via case or legacy relations."""
+        """Filter tasks that belong to a specific organization via case/configuration relations."""
         if not organization:
             return self.none()
         from django.db.models import Q
         return self.filter(
             Q(due_diligence_process__organization=organization)
-            | Q(contract__organization=organization)
-            | Q(matter__organization=organization)
+            | Q(case_record__organization=organization)
+            | Q(configuration__organization=organization)
         )
 
 
@@ -680,7 +630,7 @@ class DeadlineManager(models.Manager):
     """Custom manager for Deadline."""
     def get_queryset(self):
         return DeadlineQuerySet(self.model, using=self._db)
-    
+
     def for_organization(self, organization):
         """Filter deadlines that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
@@ -709,7 +659,7 @@ class Deadline(models.Model):
         PLACEMENT = 'PLACEMENT', 'Plaatsing'
 
     due_diligence_process = models.ForeignKey(
-        'DueDiligenceProcess',
+        'CaseIntakeProcess',
         on_delete=models.CASCADE,
         related_name='followup_tasks',
         null=True,
@@ -722,10 +672,10 @@ class Deadline(models.Model):
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
     due_date = models.DateField()
     due_time = models.TimeField(null=True, blank=True)
-    
-    # Legacy fields retained for compatibility with historical data.
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines')
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines')
+
+    # Canonical relation names mapped to existing compatibility columns.
+    configuration = models.ForeignKey(CareConfiguration, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines', db_column='configuration_id')
+    case_record = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True, related_name='deadlines', db_column='case_record_id')
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='deadlines')
     auto_generated = models.BooleanField(default=False)
     generation_source = models.CharField(max_length=20, choices=GenerationSource.choices, default=GenerationSource.MANUAL)
@@ -759,6 +709,26 @@ class Deadline(models.Model):
             return False
         days = (self.due_date - date.today()).days
         return 0 < days <= 2
+
+    @property
+    def intake(self):
+        return self.due_diligence_process
+
+    @property
+    def contract(self):
+        return self.case_record
+
+    @contract.setter
+    def contract(self, value):
+        self.case_record = value
+
+    @property
+    def matter(self):
+        return self.configuration
+
+    @matter.setter
+    def matter(self, value):
+        self.configuration = value
 
 
 class AuditLog(models.Model):
@@ -816,7 +786,7 @@ class Notification(models.Model):
 
 class CaseAssessment(models.Model):
     """Care case assessment for intake review and matching preparation (Casusbeoordeling)"""
-    
+
     class AssessmentStatus(models.TextChoices):
         DRAFT = 'DRAFT', 'Concept'
         UNDER_REVIEW = 'UNDER_REVIEW', 'In beoordeling'
@@ -831,7 +801,7 @@ class CaseAssessment(models.Model):
 
     # Link to intake/case
     due_diligence_process = models.OneToOneField(
-        'DueDiligenceProcess',
+        'CaseIntakeProcess',
         on_delete=models.CASCADE,
         related_name='case_assessment',
         verbose_name='Casus'
@@ -890,8 +860,16 @@ class CaseAssessment(models.Model):
         verbose_name_plural = 'Casusbeoordelingen'
 
     def __str__(self):
-        return f'Casusbeoordeling: {self.due_diligence_process.title} ({self.get_assessment_status_display()})'
-    
+        return f'Casusbeoordeling: {self.intake.title} ({self.get_assessment_status_display()})'
+
+    @property
+    def intake(self):
+        return self.due_diligence_process
+
+    @intake.setter
+    def intake(self, value):
+        self.due_diligence_process = value
+
     def get_risk_signals_display(self):
         """Return list of signal labels."""
         if not self.risk_signals:
@@ -900,8 +878,9 @@ class CaseAssessment(models.Model):
         return [dict(self.RiskSignal.choices).get(code, code) for code in codes]
 
 
-class TrademarkRequest(models.Model):
+class PlacementRequest(models.Model):
     class Meta:
+        db_table = 'contracts_placementrequest'
         verbose_name = 'Placement Request'
         verbose_name_plural = 'Placement Requests'
 
@@ -921,18 +900,18 @@ class TrademarkRequest(models.Model):
         RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
         CRISIS = 'CRISIS', 'Crisisopvang'
 
-    # Legacy fields (kept for backward compatibility)
+    # Schema-compatibility fields; DB columns retained until a rename migration is applied.
     mark_text = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
     goods_services = models.TextField(blank=True)
     filing_basis = models.CharField(max_length=100, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
     client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='trademark_requests')
-    matter = models.ForeignKey(Matter, on_delete=models.SET_NULL, null=True, blank=True, related_name='trademark_requests')
+    matter = models.ForeignKey(CareConfiguration, on_delete=models.SET_NULL, null=True, blank=True, related_name='trademark_requests')
 
     # Care indication flow fields
     due_diligence_process = models.ForeignKey(
-        'DueDiligenceProcess',
+        'CaseIntakeProcess',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -969,38 +948,44 @@ class TrademarkRequest(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        if self.due_diligence_process:
-            return f'Indicatie: {self.due_diligence_process.title}'
-        return self.mark_text or f'Indicatie #{self.pk}'
+        if self.intake:
+            return f'Indicatie: {self.intake.title}'
+        return f'Indicatie #{self.pk}'
+
+    @property
+    def intake(self):
+        return self.due_diligence_process
+
+    @intake.setter
+    def intake(self, value):
+        self.due_diligence_process = value
 
 
-# Canonical care-native alias retained while the schema still uses the legacy model name.
-PlacementRequest = TrademarkRequest
 
 
-class LegalTaskQuerySet(models.QuerySet):
-    """Custom queryset for LegalTask with organization-scoping support."""
+class CareTaskQuerySet(models.QuerySet):
+    """Custom queryset for CareTask with organization-scoping support."""
     def for_organization(self, organization):
-        """Filter legal tasks that belong to a specific organization via contract or matter."""
+        """Filter care tasks that belong to a specific organization via case/configuration relations."""
         if not organization:
             return self.none()
         from django.db.models import Q
         return self.filter(
-            Q(contract__organization=organization) | Q(matter__organization=organization)
+            Q(case_record__organization=organization) | Q(configuration__organization=organization)
         )
 
 
-class LegalTaskManager(models.Manager):
-    """Custom manager for LegalTask."""
+class CareTaskManager(models.Manager):
+    """Custom manager for CareTask."""
     def get_queryset(self):
-        return LegalTaskQuerySet(self.model, using=self._db)
-    
+        return CareTaskQuerySet(self.model, using=self._db)
+
     def for_organization(self, organization):
-        """Filter legal tasks that belong to a specific organization."""
+        """Filter care tasks that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
 
 
-class LegalTask(models.Model):
+class CareTask(models.Model):
     class Priority(models.TextChoices):
         LOW = 'LOW', 'Low'
         MEDIUM = 'MEDIUM', 'Medium'
@@ -1018,16 +1003,37 @@ class LegalTask(models.Model):
     priority = models.CharField(max_length=10, choices=Priority.choices, default=Priority.MEDIUM)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True)
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='tasks')
+    case_record = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True, db_column='case_record_id')
+    configuration = models.ForeignKey(CareConfiguration, on_delete=models.CASCADE, null=True, blank=True, related_name='tasks', db_column='configuration_id')
     due_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = LegalTaskManager()
+    objects = CareTaskManager()
+
+    class Meta:
+        db_table = 'contracts_caretask'
 
     def __str__(self):
         return self.title
+
+    @property
+    def contract(self):
+        return self.case_record
+
+    @contract.setter
+    def contract(self, value):
+        self.case_record = value
+
+    @property
+    def matter(self):
+        return self.configuration
+
+    @matter.setter
+    def matter(self, value):
+        self.configuration = value
+
+
 
 
 class Tag(models.Model):
@@ -1037,31 +1043,31 @@ class Tag(models.Model):
         return self.name
 
 
-class RiskLogQuerySet(models.QuerySet):
-    """Custom queryset for RiskLog with organization-scoping support."""
+class CareSignalQuerySet(models.QuerySet):
+    """Custom queryset for CareSignal with organization-scoping support."""
     def for_organization(self, organization):
-        """Filter signals that belong to a specific organization."""
+        """Filter signals that belong to a specific organization via case/configuration relations."""
         if not organization:
             return self.none()
         from django.db.models import Q
         return self.filter(
             Q(due_diligence_process__organization=organization)
-            | Q(contract__organization=organization)
-            | Q(matter__organization=organization)
+            | Q(case_record__organization=organization)
+            | Q(configuration__organization=organization)
         )
 
 
-class RiskLogManager(models.Manager):
-    """Custom manager for RiskLog."""
+class CareSignalManager(models.Manager):
+    """Custom manager for CareSignal."""
     def get_queryset(self):
-        return RiskLogQuerySet(self.model, using=self._db)
-    
+        return CareSignalQuerySet(self.model, using=self._db)
+
     def for_organization(self, organization):
-        """Filter risk logs that belong to a specific organization."""
+        """Filter care signals that belong to a specific organization."""
         return self.get_queryset().for_organization(organization)
 
 
-class RiskLog(models.Model):
+class CareSignal(models.Model):
     class SignalType(models.TextChoices):
         SAFETY = 'SAFETY', 'Veiligheid'
         ESCALATION = 'ESCALATION', 'Escalatie'
@@ -1084,7 +1090,7 @@ class RiskLog(models.Model):
 
     title = models.CharField(max_length=200, blank=True, verbose_name='Titel (optioneel)')
     due_diligence_process = models.ForeignKey(
-        'DueDiligenceProcess',
+        'CaseIntakeProcess',
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -1098,67 +1104,60 @@ class RiskLog(models.Model):
     assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_signals', verbose_name='Verantwoordelijke')
     follow_up = models.TextField(blank=True, verbose_name='Opvolging')
 
-    # Legacy links (kept for compatibility with existing data)
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True)
-    matter = models.ForeignKey(Matter, on_delete=models.CASCADE, null=True, blank=True, related_name='risks')
+    # Canonical relation names mapped to existing compatibility columns.
+    case_record = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True, db_column='case_record_id')
+    configuration = models.ForeignKey(CareConfiguration, on_delete=models.CASCADE, null=True, blank=True, related_name='risks', db_column='configuration_id')
     mitigation_plan = models.TextField(blank=True)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = RiskLogManager()
+    objects = CareSignalManager()
+
+    class Meta:
+        db_table = 'contracts_caresignal'
+        verbose_name = 'Signaal'
+        verbose_name_plural = 'Signalen'
 
     def __str__(self):
         if self.title:
             return self.title
-        if self.due_diligence_process:
-            return f'{self.get_signal_type_display()} - {self.due_diligence_process.title}'
+        if self.intake:
+            return f'{self.get_signal_type_display()} - {self.intake.title}'
         return self.get_signal_type_display()
 
+    @property
+    def intake(self):
+        return self.due_diligence_process
 
-class ComplianceChecklist(models.Model):
-    class RegulationType(models.TextChoices):
-        GDPR = 'GDPR', 'GDPR'
-        HIPAA = 'HIPAA', 'HIPAA'
-        SOX = 'SOX', 'Sarbanes-Oxley'
-        PCI = 'PCI', 'PCI DSS'
-        OTHER = 'OTHER', 'Other'
+    @intake.setter
+    def intake(self, value):
+        self.due_diligence_process = value
 
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    regulation_type = models.CharField(max_length=20, choices=RegulationType.choices)
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    @property
+    def contract(self):
+        return self.case_record
 
-    def __str__(self):
-        return self.title
+    @contract.setter
+    def contract(self, value):
+        self.case_record = value
 
+    @property
+    def matter(self):
+        return self.configuration
 
-class ChecklistItem(models.Model):
-    checklist = models.ForeignKey(ComplianceChecklist, on_delete=models.CASCADE, related_name='items')
-    title = models.CharField(max_length=200, default='Untitled Item')
-    description = models.TextField(blank=True)
-    is_completed = models.BooleanField(default=False)
-    completed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    order = models.PositiveIntegerField(default=1)
-
-    class Meta:
-        ordering = ['order']
-
-    def __str__(self):
-        return self.title
+    @matter.setter
+    def matter(self, value):
+        self.configuration = value
 
 
 class WorkflowTemplate(models.Model):
     class Category(models.TextChoices):
-        CONTRACT_REVIEW = 'CONTRACT_REVIEW', 'Contract Review'
-        DUE_DILIGENCE = 'DUE_DILIGENCE', 'Due Diligence'
-        TRADEMARK = 'TRADEMARK', 'Trademark'
+        CONTRACT_REVIEW = 'CONTRACT_REVIEW', 'Zorgovereenkomst review'
+        DUE_DILIGENCE = 'DUE_DILIGENCE', 'Intake & Beoordeling'
+        TRADEMARK = 'TRADEMARK', 'Plaatsingscoordinatie'
         COMPLIANCE = 'COMPLIANCE', 'Compliance'
-        GENERAL = 'GENERAL', 'General'
+        GENERAL = 'GENERAL', 'Algemeen'
 
     name = models.CharField(max_length=200)
     description = models.TextField()
@@ -1193,13 +1192,21 @@ class Workflow(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     template = models.ForeignKey(WorkflowTemplate, on_delete=models.SET_NULL, null=True, blank=True)
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, null=True, blank=True)
+    contract = models.ForeignKey(CareCase, on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE)
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
+    @property
+    def case_record(self):
+        return self.contract
+
+    @case_record.setter
+    def case_record(self, value):
+        self.contract = value
 
 
 class WorkflowStep(models.Model):
@@ -1225,7 +1232,7 @@ class WorkflowStep(models.Model):
         return f"{self.workflow.title} - {self.name}"
 
 
-class DueDiligenceProcess(models.Model):
+class CaseIntakeProcess(models.Model):
     """Care/intake & assessment processes (Intakes & Beoordelingen)"""
     class ProcessStatus(models.TextChoices):
         INTAKE = 'INTAKE', 'Intake'
@@ -1267,49 +1274,57 @@ class DueDiligenceProcess(models.Model):
 
     # Organization & basic info
     organization = models.ForeignKey('Organization', on_delete=models.CASCADE, null=True, blank=True, related_name='due_diligence_processes')
-    contract = models.OneToOneField('Contract', on_delete=models.SET_NULL, null=True, blank=True, related_name='due_diligence_process')
+    contract = models.OneToOneField('CareCase', on_delete=models.SET_NULL, null=True, blank=True, related_name='due_diligence_process')
     title = models.CharField(max_length=200, verbose_name='Casusidentificatie', help_text='Bijv. voornaam + initialiteit')
     status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.INTAKE, verbose_name='Status')
-    
+
     # Case coordination
-    lead_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='dd_processes', verbose_name='Casusregisseur')
-    
+    case_coordinator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dd_processes',
+        verbose_name='Casusregisseur',
+    )
+
     # Dates
     start_date = models.DateField(verbose_name='Intakedatum')
     target_completion_date = models.DateField(verbose_name='Doeldatum matchbesluit')
-    
+
     # CARE-SPECIFIC: Zorgvraag (Care Question)
     care_category_main = models.ForeignKey(CareCategoryMain, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_main', verbose_name='Hoofdcategorie zorgvraag')
     care_category_sub = models.ForeignKey(CareCategorySubcategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='intakes_sub', verbose_name='Subcategorie zorgvraag')
-    
+
     # CARE-SPECIFIC: Matching dimensions
     urgency = models.CharField(max_length=10, choices=Urgency.choices, default=Urgency.MEDIUM, verbose_name='Urgentie')
     complexity = models.CharField(max_length=20, choices=Complexity.choices, default=Complexity.SIMPLE, verbose_name='Complexiteit')
     preferred_care_form = models.CharField(max_length=20, choices=CareForm.choices, default=CareForm.OUTPATIENT, verbose_name='Gewenste zorgvorm')
-    
+
     # CARE-SPECIFIC: Client profile
     client_age_category = models.CharField(max_length=10, choices=AgeCategory.choices, null=True, blank=True, verbose_name='Leeftijdscategorie cliënt')
     family_situation = models.CharField(max_length=20, choices=FamilySituation.choices, null=True, blank=True, verbose_name='Gezinssituatie')
     has_other_support = models.BooleanField(default=False, verbose_name='Betrokken hulp (ja/nee)')
     other_support_description = models.TextField(blank=True, verbose_name='Beschrijving betrokken hulp')
     school_work_status = models.CharField(max_length=200, blank=True, verbose_name='School- / werkstatus')
-    
+
     # Risk factors (many-to-many)
     risk_factors = models.ManyToManyField(RiskFactor, blank=True, related_name='intakes', verbose_name='Risicofactoren')
-    
+
     # Descriptive assessment
     assessment_summary = models.TextField(blank=True, verbose_name='Intake samenvatting', help_text='Hulpvraag samenvatting, urgentie, aandachtspunten')
     description = models.TextField(blank=True, verbose_name='Aanvullende opmerkingen')
-    
+
     # Legacy fields (kept for migration compatibility)
     transaction_type = models.CharField(max_length=20, blank=True)
     target_company = models.CharField(max_length=200, blank=True)
     deal_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
+        db_table = 'contracts_caseintakeprocess'
         ordering = ['-created_at']
         verbose_name = 'Intake & Beoordeling'
         verbose_name_plural = 'Intakes & Beoordelingen'
@@ -1317,8 +1332,16 @@ class DueDiligenceProcess(models.Model):
     def __str__(self):
         return f'{self.title} ({self.get_status_display()})'
 
+    @property
+    def case_record(self):
+        return self.contract
 
-class DueDiligenceTask(models.Model):
+    @case_record.setter
+    def case_record(self, value):
+        self.contract = value
+
+
+class IntakeTask(models.Model):
     class TaskStatus(models.TextChoices):
         PENDING = 'PENDING', 'Open'
         IN_PROGRESS = 'IN_PROGRESS', 'In uitvoering'
@@ -1326,14 +1349,14 @@ class DueDiligenceTask(models.Model):
         BLOCKED = 'BLOCKED', 'Geblokkeerd'
 
     class TaskCategory(models.TextChoices):
-        LEGAL = 'LEGAL', 'Regelgeving'
+        GOVERNANCE = 'GOVERNANCE', 'Regelgeving'
         FINANCIAL = 'FINANCIAL', 'Budget'
         OPERATIONAL = 'OPERATIONAL', 'Operationeel'
         TECHNICAL = 'TECHNICAL', 'Technisch'
         REGULATORY = 'REGULATORY', 'Toetsing'
         COMMERCIAL = 'COMMERCIAL', 'Samenwerking'
 
-    process = models.ForeignKey(DueDiligenceProcess, on_delete=models.CASCADE, related_name='dd_tasks')
+    process = models.ForeignKey(CaseIntakeProcess, on_delete=models.CASCADE, related_name='dd_tasks')
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=20, choices=TaskCategory.choices)
     description = models.TextField(blank=True)
@@ -1346,26 +1369,27 @@ class DueDiligenceTask(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
+        db_table = 'contracts_intaketask'
         ordering = ['order', 'due_date']
 
     def __str__(self):
         return f'{self.process.title} - {self.title}'
 
 
-class DueDiligenceRisk(models.Model):
+class CaseRiskSignal(models.Model):
     class RiskLevel(models.TextChoices):
         LOW = 'LOW', 'Laag'
         MEDIUM = 'MEDIUM', 'Middel'
         HIGH = 'HIGH', 'Hoog'
 
     class RiskCategory(models.TextChoices):
-        LEGAL = 'LEGAL', 'Regelgeving & toetsing'
+        GOVERNANCE = 'GOVERNANCE', 'Regelgeving & toetsing'
         FINANCIAL = 'FINANCIAL', 'Budget'
         OPERATIONAL = 'OPERATIONAL', 'Operationeel'
         REPUTATIONAL = 'REPUTATIONAL', 'Reputatie'
         STRATEGIC = 'STRATEGIC', 'Strategisch'
 
-    process = models.ForeignKey(DueDiligenceProcess, on_delete=models.CASCADE, related_name='dd_risks')
+    process = models.ForeignKey(CaseIntakeProcess, on_delete=models.CASCADE, related_name='dd_risks')
     title = models.CharField(max_length=200)
     category = models.CharField(max_length=20, choices=RiskCategory.choices)
     description = models.TextField()
@@ -1379,14 +1403,11 @@ class DueDiligenceRisk(models.Model):
     status = models.CharField(max_length=20, default='OPEN')
     created_at = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        db_table = 'contracts_caserisksignal'
+
     def __str__(self):
         return f'{self.process.title} - {self.title} ({self.risk_level})'
-
-
-# Canonical care-native aliases retained while schema and field names stay stable.
-CaseIntakeProcess = DueDiligenceProcess
-IntakeTask = DueDiligenceTask
-CaseRiskSignal = DueDiligenceRisk
 
 
 class Budget(models.Model):
@@ -1434,13 +1455,13 @@ class Budget(models.Model):
         help_text='Optioneel: koppel aanbieders aan dit budget.'
     )
     linked_cases = models.ManyToManyField(
-        'DueDiligenceProcess',
+        'CaseIntakeProcess',
         blank=True,
         related_name='capacity_budgets',
         verbose_name='Gekoppelde casussen'
     )
     linked_placements = models.ManyToManyField(
-        'TrademarkRequest',
+        'PlacementRequest',
         blank=True,
         related_name='capacity_budgets',
         verbose_name='Gekoppelde plaatsingen'
@@ -1501,326 +1522,46 @@ class BudgetExpense(models.Model):
         return f'{self.budget} - {self.description} (${self.amount})'
 
 
-class NegotiationThread(models.Model):
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='negotiation_threads')
-    title = models.CharField(max_length=200)
-    content = models.TextField()
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['created_at']
-
-    def __str__(self):
-        return f"{self.contract.title} - {self.title}"
-
-
-class SignatureRequest(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        SENT = 'SENT', 'Sent'
-        VIEWED = 'VIEWED', 'Viewed'
-        SIGNED = 'SIGNED', 'Signed'
-        DECLINED = 'DECLINED', 'Declined'
-        EXPIRED = 'EXPIRED', 'Expired'
-        CANCELLED = 'CANCELLED', 'Cancelled'
-
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='signature_requests')
-    document = models.ForeignKey(Document, on_delete=models.SET_NULL, null=True, blank=True, related_name='signature_requests')
-    signer_name = models.CharField(max_length=200)
-    signer_email = models.EmailField()
-    signer_role = models.CharField(max_length=100, blank=True, help_text='Bijv. Teamleider, Regiecoordinator')
-    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
-    external_id = models.CharField(max_length=200, blank=True, help_text='External provider reference ID')
-    sent_at = models.DateTimeField(null=True, blank=True)
-    viewed_at = models.DateTimeField(null=True, blank=True)
-    signed_at = models.DateTimeField(null=True, blank=True)
-    declined_at = models.DateTimeField(null=True, blank=True)
-    decline_reason = models.TextField(blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    execution_certificate_url = models.URLField(blank=True)
-    order = models.PositiveIntegerField(default=0)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['order', 'created_at']
-
-    def __str__(self):
-        return f'{self.contract.title} - {self.signer_name} ({self.get_status_display()})'
-
-
-ProviderResponseRequest = SignatureRequest
-
-
-class DataInventoryRecord(models.Model):
-    class LawfulBasis(models.TextChoices):
-        CONSENT = 'CONSENT', 'Toestemming'
-        CONTRACT = 'CONTRACT', 'Uitvoering zorgtraject'
-        LEGAL_OBLIGATION = 'LEGAL_OBLIGATION', 'Wettelijke verplichting'
-        VITAL_INTEREST = 'VITAL_INTEREST', 'Vitaal belang'
-        PUBLIC_INTEREST = 'PUBLIC_INTEREST', 'Publiek belang'
-        LEGITIMATE_INTEREST = 'LEGITIMATE_INTEREST', 'Gerechtvaardigd belang'
-
-    title = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    data_categories = models.TextField(help_text='Categories of personal data processed')
-    data_subjects = models.TextField(help_text='Categories of data subjects')
-    purpose = models.TextField(help_text='Purpose of processing')
-    lawful_basis = models.CharField(max_length=25, choices=LawfulBasis.choices)
-    retention_period = models.CharField(max_length=200, help_text='e.g. 7 years, until consent withdrawn')
-    recipients = models.TextField(blank=True, help_text='Categories of recipients')
-    third_country_transfers = models.BooleanField(default=False)
-    transfer_safeguards = models.TextField(blank=True, help_text='SCC, DPF, adequacy decision, etc.')
-    technical_measures = models.TextField(blank=True, help_text='Encryption, pseudonymization, etc.')
-    organizational_measures = models.TextField(blank=True, help_text='Access controls, training, etc.')
-    dpia_required = models.BooleanField(default=False, help_text='Data Protection Impact Assessment required')
-    dpia_completed = models.BooleanField(default=False)
-    controller = models.CharField(max_length=200, blank=True)
-    processor = models.CharField(max_length=200, blank=True)
-    dpo_contact = models.CharField(max_length=200, blank=True)
-    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='data_inventory')
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return self.title
-
-
-class DSARRequest(models.Model):
-    class RequestType(models.TextChoices):
-        ACCESS = 'ACCESS', 'Right of Access'
-        RECTIFICATION = 'RECTIFICATION', 'Right to Rectification'
-        ERASURE = 'ERASURE', 'Right to Erasure'
-        RESTRICT = 'RESTRICT', 'Right to Restrict Processing'
-        PORTABILITY = 'PORTABILITY', 'Right to Data Portability'
-        OBJECTION = 'OBJECTION', 'Right to Object'
-
-    class Status(models.TextChoices):
-        RECEIVED = 'RECEIVED', 'Received'
-        VERIFIED = 'VERIFIED', 'Identity Verified'
-        IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
-        COMPLETED = 'COMPLETED', 'Completed'
-        DENIED = 'DENIED', 'Denied'
-        EXTENDED = 'EXTENDED', 'Extended'
-
-    reference_number = models.CharField(max_length=50, unique=True)
-    request_type = models.CharField(max_length=15, choices=RequestType.choices)
-    status = models.CharField(max_length=15, choices=Status.choices, default=Status.RECEIVED)
-    requester_name = models.CharField(max_length=200)
-    requester_email = models.EmailField()
-    requester_id_verified = models.BooleanField(default=False)
-    description = models.TextField()
-    response = models.TextField(blank=True)
-    denial_reason = models.TextField(blank=True)
-    received_date = models.DateField()
-    due_date = models.DateField(help_text='Must respond within 30 days (GDPR)')
-    completed_date = models.DateField(null=True, blank=True)
-    extended = models.BooleanField(default=False, help_text='Extension requested (up to 60 additional days)')
-    client = models.ForeignKey(Client, on_delete=models.SET_NULL, null=True, blank=True, related_name='dsar_requests')
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_dsars')
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = 'DSAR Request'
-
-    def __str__(self):
-        return f'{self.reference_number} - {self.get_request_type_display()}'
-
-    def save(self, *args, **kwargs):
-        if not self.reference_number:
-            last = DSARRequest.objects.order_by('-id').first()
-            next_num = (last.id + 1) if last else 1
-            self.reference_number = f'DSAR-{next_num:05d}'
-        super().save(*args, **kwargs)
-
-    @property
-    def is_overdue(self):
-        if self.status not in ['COMPLETED', 'DENIED'] and self.due_date:
-            return date.today() > self.due_date
-        return False
-
-
-class Subprocessor(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    service_type = models.CharField(max_length=200, help_text='e.g. Cloud hosting, Payment processing')
-    country = models.CharField(max_length=100)
-    is_eu_based = models.BooleanField(default=False)
-    dpa_in_place = models.BooleanField(default=False)
-    scc_in_place = models.BooleanField(default=False)
-    dpf_certified = models.BooleanField(default=False, help_text='Data Privacy Framework certified')
-    data_categories = models.TextField(blank=True, help_text='Types of data shared')
-    contact_email = models.EmailField(blank=True)
-    contract_start_date = models.DateField(null=True, blank=True)
-    contract_end_date = models.DateField(null=True, blank=True)
-    last_audit_date = models.DateField(null=True, blank=True)
-    risk_level = models.CharField(max_length=10, choices=[
-        ('LOW', 'Low'), ('MEDIUM', 'Medium'), ('HIGH', 'High'),
-    ], default='LOW')
-    is_active = models.BooleanField(default=True)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f'{self.name} ({self.country})'
-
-
-class TransferRecord(models.Model):
-    class TransferMechanism(models.TextChoices):
-        ADEQUACY = 'ADEQUACY', 'Adequacy Decision'
-        SCC = 'SCC', 'Standard Contractual Clauses'
-        BCR = 'BCR', 'Binding Corporate Rules'
-        DPF = 'DPF', 'Data Privacy Framework'
-        CONSENT = 'CONSENT', 'Explicit Consent'
-        DEROGATION = 'DEROGATION', 'Derogation'
-
-    title = models.CharField(max_length=200)
-    source_country = models.CharField(max_length=100)
-    destination_country = models.CharField(max_length=100)
-    transfer_mechanism = models.CharField(max_length=15, choices=TransferMechanism.choices)
-    data_categories = models.TextField(help_text='Types of data transferred')
-    subprocessor = models.ForeignKey(Subprocessor, on_delete=models.SET_NULL, null=True, blank=True, related_name='transfers')
-    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, related_name='data_transfers')
-    tia_completed = models.BooleanField(default=False, help_text='Transfer Impact Assessment completed')
-    supplementary_measures = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    start_date = models.DateField(null=True, blank=True)
-    review_date = models.DateField(null=True, blank=True)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'{self.title} ({self.source_country} → {self.destination_country})'
-
-
-class RetentionPolicy(models.Model):
-    class Category(models.TextChoices):
-        CONTRACTS = 'CONTRACTS', 'Contracts'
-        CLIENT_DATA = 'CLIENT_DATA', 'Client Data'
-        EMPLOYEE_DATA = 'EMPLOYEE_DATA', 'Employee Data'
-        FINANCIAL = 'FINANCIAL', 'Financial Records'
-        CORRESPONDENCE = 'CORRESPONDENCE', 'Correspondence'
-        LITIGATION = 'LITIGATION', 'Litigation Files'
-        COMPLIANCE = 'COMPLIANCE', 'Compliance Records'
-        OTHER = 'OTHER', 'Other'
-
-    title = models.CharField(max_length=200)
-    category = models.CharField(max_length=20, choices=Category.choices)
-    description = models.TextField(blank=True)
-    retention_period_days = models.PositiveIntegerField(help_text='Retention period in days')
-    legal_basis = models.TextField(blank=True, help_text='Legal requirement for retention')
-    deletion_method = models.CharField(max_length=200, blank=True, help_text='How data is destroyed')
-    auto_delete = models.BooleanField(default=False)
-    review_frequency_days = models.PositiveIntegerField(default=365)
-    last_reviewed = models.DateField(null=True, blank=True)
-    next_review = models.DateField(null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        verbose_name_plural = 'Retention policies'
-
-    def __str__(self):
-        return f'{self.title} ({self.retention_period_days} days)'
-
-
-class ApprovalRule(models.Model):
-    class TriggerType(models.TextChoices):
-        VALUE_ABOVE = 'VALUE_ABOVE', 'Contract Value Above'
-        JURISDICTION = 'JURISDICTION', 'Specific Jurisdiction'
-        CONTRACT_TYPE = 'CONTRACT_TYPE', 'Contract Type'
-        RISK_LEVEL = 'RISK_LEVEL', 'Risk Level'
-        DATA_TRANSFER = 'DATA_TRANSFER', 'Cross-border Data Transfer'
-
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True)
-    trigger_type = models.CharField(max_length=20, choices=TriggerType.choices)
-    trigger_value = models.CharField(max_length=200, help_text='Threshold value or matching text')
-    approval_step = models.CharField(max_length=20, choices=[
-        ('LEGAL', 'Legal Review'),
-        ('FINANCE', 'Finance Review'),
-        ('PRIVACY', 'Privacy Review'),
-        ('EXECUTIVE', 'Executive Approval'),
-        ('COMPLIANCE', 'Compliance Review'),
-    ])
-    approver_role = models.CharField(max_length=20, choices=UserProfile.Role.choices)
-    specific_approver = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_rules')
-    sla_hours = models.PositiveIntegerField(default=48, help_text='SLA in hours for approval')
-    escalation_after_hours = models.PositiveIntegerField(default=72, help_text='Auto-escalate after hours')
-    is_active = models.BooleanField(default=True)
-    order = models.PositiveIntegerField(default=0)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['order']
-
-    def __str__(self):
-        return f'{self.name} ({self.get_trigger_type_display()})'
-
-
-class ApprovalRequest(models.Model):
-    class Status(models.TextChoices):
-        PENDING = 'PENDING', 'Pending'
-        APPROVED = 'APPROVED', 'Approved'
-        REJECTED = 'REJECTED', 'Rejected'
-        ESCALATED = 'ESCALATED', 'Escalated'
-
-    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='approval_requests')
-    rule = models.ForeignKey(ApprovalRule, on_delete=models.SET_NULL, null=True, blank=True)
-    approval_step = models.CharField(max_length=50)
-    status = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
-    assigned_to = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_assignments')
-    comments = models.TextField(blank=True)
-    due_date = models.DateTimeField(null=True, blank=True)
-    decided_at = models.DateTimeField(null=True, blank=True)
-    decided_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approval_decisions')
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f'{self.contract.title} - {self.approval_step} ({self.get_status_display()})'
-
-
 # ============================================
 # MUNICIPALITY & REGIONAL CONFIGURATION MODELS
 # ============================================
 
 class MunicipalityConfiguration(models.Model):
     """Gemeente-level configuration for care network management"""
-    
+
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Actief'
         INACTIVE = 'INACTIVE', 'Inactief'
         DRAFT = 'DRAFT', 'Concept'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='municipality_configs')
-    
+
     # Municipality info
     municipality_name = models.CharField(max_length=150, verbose_name='Gemeente')
     municipality_code = models.CharField(max_length=50, blank=True, verbose_name='Gemeentecode')
-    
+
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
-    
+
     # Care configuration
     care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='municipality_configs', verbose_name='Zorgdomeinen')
     linked_providers = models.ManyToManyField(Client, blank=True, related_name='municipality_configs', verbose_name='Gekoppelde aanbieders')
-    
+
     # Performance management
     max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
     priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
-    
+
     # Contact & administration
-    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='municipality_configs', verbose_name='Verantwoordelijke')
+    responsible_coordinator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='municipality_configs',
+        verbose_name='Verantwoordelijke',
+    )
     notes = models.TextField(blank=True, verbose_name='Notities')
-    
+
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_municipality_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1848,36 +1589,43 @@ class MunicipalityConfiguration(models.Model):
 
 class RegionalConfiguration(models.Model):
     """Regio-level configuration for multi-municipality care coordination"""
-    
+
     class Status(models.TextChoices):
         ACTIVE = 'ACTIVE', 'Actief'
         INACTIVE = 'INACTIVE', 'Inactief'
         DRAFT = 'DRAFT', 'Concept'
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='regional_configs')
-    
+
     # Region info
     region_name = models.CharField(max_length=150, verbose_name='Regio')
     region_code = models.CharField(max_length=50, blank=True, verbose_name='Regiode')
-    
+
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
-    
+
     # Served municipalities
     served_municipalities = models.ManyToManyField(MunicipalityConfiguration, blank=True, related_name='regions', verbose_name='Bediende gemeenten')
-    
+
     # Care configuration
     care_domains = models.ManyToManyField(CareCategoryMain, blank=True, related_name='regional_configs', verbose_name='Zorgdomeinen')
     linked_providers = models.ManyToManyField(Client, blank=True, related_name='regional_configs', verbose_name='Gekoppelde aanbieders')
-    
+
     # Performance management
     max_wait_days = models.PositiveIntegerField(null=True, blank=True, verbose_name='Maximale wachttijd (dagen)')
     priority_rules = models.TextField(blank=True, verbose_name='Prioriteringsregels')
-    
+
     # Contact & administration
-    responsible_attorney = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='regional_configs', verbose_name='Verantwoordelijke')
+    responsible_coordinator = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='regional_configs',
+        verbose_name='Verantwoordelijke',
+    )
     notes = models.TextField(blank=True, verbose_name='Notities')
-    
+
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_regional_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -1905,3 +1653,6 @@ class RegionalConfiguration(models.Model):
         if names:
             return ', '.join(names)
         return 'Niet ingesteld'
+
+
+# Legacy model aliases removed. Use canonical Care* / Intake* / Placement* symbols.

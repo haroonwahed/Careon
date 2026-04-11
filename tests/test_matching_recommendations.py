@@ -6,8 +6,8 @@ from django.urls import reverse
 
 from contracts.models import (
     CaseAssessment,
+    CaseIntakeProcess,
     Client as CareProvider,
-    DueDiligenceProcess,
     Organization,
     OrganizationMembership,
     ProviderProfile,
@@ -52,24 +52,24 @@ class MatchingRecommendationsTests(TestCase):
             average_wait_days=12,
         )
 
-        intake = DueDiligenceProcess.objects.create(
+        intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Intake Matching Test',
-            status=DueDiligenceProcess.ProcessStatus.ASSESSMENT,
-            urgency=DueDiligenceProcess.Urgency.MEDIUM,
-            preferred_care_form=DueDiligenceProcess.CareForm.OUTPATIENT,
+            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date='2026-04-10',
             target_completion_date='2026-04-20',
-            lead_attorney=self.user,
+            case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            due_diligence_process=intake,
+            intake=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:matching_dashboard'))
+        response = self.client.get(reverse('careon:matching_dashboard'))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Score')

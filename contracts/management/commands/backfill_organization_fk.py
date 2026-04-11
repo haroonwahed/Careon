@@ -79,7 +79,7 @@ class Command(BaseCommand):
             )
             dd_updated, dd_skipped = self._backfill_queryset(
                 dd_qs,
-                user_attr_name='lead_attorney',
+                user_attr_name='case_coordinator',
                 apply_changes=apply_changes,
             )
 

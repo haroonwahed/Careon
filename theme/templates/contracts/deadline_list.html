@@ -6,7 +6,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Taken</h1>
         <p class="text-sm text-gray-500">Dagelijkse werkplek voor casusopvolging</p>
     </div>
-    <a href="{% url 'contracts:task_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Nieuwe taak</a>
+    <a href="{% url 'careon:task_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Nieuwe taak</a>
 </div>
 
 <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
@@ -83,12 +83,12 @@
                 <td class="px-5 py-3 text-right">
                     <div class="inline-flex items-center gap-3">
                         {% if not row.deadline.is_completed %}
-                        <form method="post" action="{% url 'contracts:deadline_complete' row.deadline.pk %}">
+                        <form method="post" action="{% url 'careon:deadline_complete' row.deadline.pk %}">
                             {% csrf_token %}
                             <button type="submit" class="text-xs text-green-700 hover:text-green-900">Voltooien</button>
                         </form>
                         {% endif %}
-                        <a href="{% url 'contracts:task_update' row.deadline.pk %}" class="text-xs text-gray-600 hover:text-blue-700">Bewerken</a>
+                        <a href="{% url 'careon:task_update' row.deadline.pk %}" class="text-xs text-gray-600 hover:text-blue-700">Bewerken</a>
                     </div>
                 </td>
             </tr>

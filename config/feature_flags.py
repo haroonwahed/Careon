@@ -8,7 +8,7 @@ def get_feature_flag(flag_name, default=False):
     env_value = os.environ.get(flag_name)
     if env_value is not None:
         return env_value.lower() in ('true', '1', 'yes', 'on')
-    
+
     # Then check Django settings
     return getattr(settings, flag_name, default)
 

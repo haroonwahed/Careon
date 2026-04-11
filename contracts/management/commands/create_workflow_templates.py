@@ -89,10 +89,10 @@ class Command(BaseCommand):
                     'is_active': True,
                 }
             )
-            
+
             if created:
                 self.stdout.write(f"Template aangemaakt: {template.name}")
-                
+
                 # Create template steps
                 for step_type, order in template_data['steps']:
                     WorkflowTemplateStep.objects.create(

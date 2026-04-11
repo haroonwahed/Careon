@@ -26,7 +26,7 @@ class Command(BaseCommand):
                 'organization',
                 'created_by',
                 'matter__responsible_care_coordinator',
-                'client__responsible_attorney',
+                'client__responsible_coordinator',
             )
         )
 
@@ -46,12 +46,13 @@ class Command(BaseCommand):
                 continue
 
             recipients = set()
+            configuration = case_record.configuration
             if case_record.created_by_id:
                 recipients.add(case_record.created_by)
-            if case_record.matter and case_record.matter.responsible_attorney_id:
-                recipients.add(case_record.matter.responsible_attorney)
-            if case_record.client and case_record.client.responsible_attorney_id:
-                recipients.add(case_record.client.responsible_attorney)
+            if configuration and configuration.responsible_coordinator_id:
+                recipients.add(configuration.responsible_coordinator)
+            if case_record.client and case_record.client.responsible_coordinator_id:
+                recipients.add(case_record.client.responsible_coordinator)
 
             admins = (
                 OrganizationMembership.objects
@@ -65,7 +66,7 @@ class Command(BaseCommand):
             for membership in admins:
                 recipients.add(membership.user)
 
-            case_link = reverse('contracts:case_detail', kwargs={'pk': case_record.id})
+            case_link = reverse('careon:case_detail', kwargs={'pk': case_record.id})
 
             for event_name, event_date, days_remaining in events:
                 for recipient in recipients:

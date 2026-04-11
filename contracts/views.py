@@ -23,24 +23,22 @@ import csv
 import logging
 
 from .forms import (
-    BudgetForm, LegalTaskForm, BudgetExpenseForm,
+    BudgetForm, CareTaskForm, BudgetExpenseForm,
     ClientForm, CareConfigurationForm, DocumentForm,
     DeadlineForm, UserProfileForm,
     RegistrationForm,
     OrganizationInvitationForm,
     MunicipalityConfigurationForm, RegionalConfigurationForm,
-    CaseAssessmentForm, DueDiligenceProcessForm,
+    CaseAssessmentForm, CaseIntakeProcessForm,
 )
 from .models import (
     Organization, OrganizationMembership, OrganizationInvitation,
-    CareCase, PlacementRequest, ProviderResponseRequest, LegalTask, RiskLog,
+    CareCase, PlacementRequest, CareTask, CareSignal,
     Workflow,
     CaseIntakeProcess, Budget, BudgetExpense,
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
-    DSARRequest, RetentionPolicy, ApprovalRequest,
     MunicipalityConfiguration, RegionalConfiguration,
-    DueDiligenceProcess,
 )
 from .middleware import log_action
 from .permissions import (
@@ -78,12 +76,12 @@ AUTO_INTAKE_TASKS = {
 }
 
 
-def _resolve_deadline_contract(deadline):
-    if getattr(deadline, 'contract_id', None):
-        return deadline.contract
+def _resolve_deadline_case(deadline):
+    if getattr(deadline, 'case_record_id', None):
+        return deadline.case_record
     process = getattr(deadline, 'due_diligence_process', None)
     if process and getattr(process, 'contract_id', None):
-        return process.contract
+        return process.case_record
     return None
 
 
@@ -120,7 +118,7 @@ def sync_intake_auto_tasks(process, user=None):
             'description': f'Automatisch aangemaakt vanuit {task_config["source"].lower()} voor {process.title}.',
             'priority': task_config['priority'],
             'due_date': due_date,
-            'assigned_to': process.lead_attorney,
+            'assigned_to': process.case_coordinator,
             'created_by': user,
         },
     )
@@ -135,8 +133,8 @@ def sync_intake_auto_tasks(process, user=None):
     if current_task.due_date != due_date:
         current_task.due_date = due_date
         update_fields.append('due_date')
-    if current_task.assigned_to_id != process.lead_attorney_id:
-        current_task.assigned_to = process.lead_attorney
+    if current_task.assigned_to_id != process.case_coordinator_id:
+        current_task.assigned_to = process.case_coordinator
         update_fields.append('assigned_to')
     if update_fields:
         current_task.save(update_fields=update_fields)
@@ -158,7 +156,7 @@ def sync_case_phase_auto_tasks(case, user=None):
             'source': Deadline.GenerationSource.PLACEMENT,
         }
 
-    auto_tasks = Deadline.objects.filter(contract=case, auto_generated=True)
+    auto_tasks = Deadline.objects.filter(case_record=case, auto_generated=True)
 
     if not phase_task:
         auto_tasks.filter(is_completed=False).update(
@@ -170,7 +168,7 @@ def sync_case_phase_auto_tasks(case, user=None):
 
     due_date = _resolve_task_due_date(fallback_days=1)
     current_task, created = Deadline.objects.get_or_create(
-        contract=case,
+        case_record=case,
         auto_generated=True,
         generation_source=phase_task['source'],
         task_type=phase_task['task_type'],
@@ -210,7 +208,7 @@ def sync_case_phase_auto_tasks(case, user=None):
 def sync_automatic_deadlines_for_organization(org, user=None):
     if not org:
         return
-    for process in CaseIntakeProcess.objects.filter(organization=org).select_related('lead_attorney'):
+    for process in CaseIntakeProcess.objects.filter(organization=org).select_related('case_coordinator'):
         sync_intake_auto_tasks(process, user=user)
     for case in CareCase.objects.filter(organization=org):
         sync_case_phase_auto_tasks(case, user=user)
@@ -227,7 +225,7 @@ PHASE_TO_PROCESS_STATUS = {
 
 
 def get_case_section_url(case, section=None):
-    url = reverse('contracts:case_detail', kwargs={'pk': case.pk})
+    url = reverse('careon:case_detail', kwargs={'pk': case.pk})
     if section:
         return f'{url}#{section}'
     return url
@@ -241,7 +239,7 @@ def _coerce_case_process_defaults(case):
         'contract': case,
         'title': case.title,
         'status': PHASE_TO_PROCESS_STATUS.get(case.case_phase, CaseIntakeProcess.ProcessStatus.INTAKE),
-        'lead_attorney': case.created_by if case.created_by_id else None,
+        'case_coordinator': case.created_by if case.created_by_id else None,
         'start_date': start_date,
         'target_completion_date': target_date,
         'assessment_summary': case.content or '',
@@ -270,7 +268,7 @@ def ensure_case_flow(case, user=None):
             if field_name in {'assessment_summary', 'description'}:
                 if current_value or not field_value:
                     continue
-            elif field_name in {'lead_attorney', 'start_date', 'target_completion_date'}:
+            elif field_name in {'case_coordinator', 'start_date', 'target_completion_date'}:
                 if current_value:
                     continue
             if current_value != field_value:
@@ -389,7 +387,7 @@ def favicon(request):
 
 class TenantScopedQuerysetMixin:
     """Mixin to automatically scope querysets to the user's organization.
-    
+
     Caches organization in request to avoid repeated lookups.
     Use self.get_organization() to access cached org in any view method.
     """
@@ -398,7 +396,7 @@ class TenantScopedQuerysetMixin:
         if not hasattr(self.request, '_cached_organization'):
             self.request._cached_organization = get_user_organization(self.request.user)
         return self.request._cached_organization
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
         org = self.get_organization()
@@ -464,9 +462,7 @@ class ClientDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
         configurations = self.object.matters.all()[:10]
         case_records = self.object.contracts.all()[:10]
         ctx['configurations'] = configurations
-        ctx['matters'] = configurations
         ctx['case_records'] = case_records
-        ctx['contracts'] = case_records
         ctx['documents'] = self.object.documents.all()[:10]
         return ctx
 
@@ -475,7 +471,7 @@ class ClientCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     model = Client
     form_class = ClientForm
     template_name = 'contracts/client_form.html'
-    success_url = reverse_lazy('contracts:client_list')
+    success_url = reverse_lazy('careon:client_list')
 
     def form_valid(self, form):
         set_organization_on_instance(form.instance, get_user_organization(self.request.user))
@@ -490,7 +486,7 @@ class ClientUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
     model = Client
     form_class = ClientForm
     template_name = 'contracts/client_form.html'
-    success_url = reverse_lazy('contracts:client_list')
+    success_url = reverse_lazy('careon:client_list')
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
@@ -587,7 +583,6 @@ class CareConfigurationListView(TenantScopedQuerysetMixin, LoginRequiredMixin, L
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['matters'] = ctx.get('configurations', [])
         org = self.get_organization()
         current_scope = self._get_scope_filter()
         tenant_configurations = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
@@ -610,13 +605,10 @@ class CareConfigurationListView(TenantScopedQuerysetMixin, LoginRequiredMixin, L
 
         ctx['total_configurations'] = configuration_stats['total']
         ctx['active_configurations'] = configuration_stats['active']
-        ctx['total_matters'] = ctx['total_configurations']
-        ctx['active_matters'] = ctx['active_configurations']
         ctx['search_query'] = self.request.GET.get('q', '')
         ctx['current_scope'] = current_scope
         ctx.update(get_configuration_scope_content(current_scope))
         ctx['configuration_rows'] = configuration_rows
-        ctx['matter_rows'] = configuration_rows
         return ctx
 
 
@@ -631,10 +623,8 @@ class CareConfigurationDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin,
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['matter'] = self.object
         case_records = self.object.contracts.all()
         ctx['case_records'] = case_records
-        ctx['contracts'] = case_records
         ctx['linked_providers'] = self.object.linked_providers.all().order_by('name')
         ctx['documents'] = self.object.documents.all()[:10]
         ctx['time_entries'] = []
@@ -668,14 +658,14 @@ class CareConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, C
         ctx = super().get_context_data(**kwargs)
         scope = ctx['form'].initial.get('scope') or CareConfiguration.Scope.GEMEENTE
         ctx.update(get_configuration_scope_content(scope))
-        ctx['cancel_url'] = f"{reverse('contracts:configuration_list')}?scope={scope}"
+        ctx['cancel_url'] = f"{reverse('careon:configuration_list')}?scope={scope}"
         ctx['is_edit'] = False
         selected_provider_ids = ctx['form'].initial.get('linked_providers') or []
         ctx['prefilled_provider'] = ctx['form'].fields['linked_providers'].queryset.filter(pk__in=selected_provider_ids).first()
         return ctx
 
     def get_success_url(self):
-        return reverse('contracts:configuration_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:configuration_detail', kwargs={'pk': self.object.pk})
 
     def form_valid(self, form):
         set_organization_on_instance(form.instance, get_user_organization(self.request.user))
@@ -697,7 +687,7 @@ class CareConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin,
     template_name = 'contracts/matter_form.html'
 
     def get_success_url(self):
-        return reverse('contracts:configuration_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:configuration_detail', kwargs={'pk': self.object.pk})
 
     def get_queryset(self):
         org = self.get_organization()
@@ -706,7 +696,7 @@ class CareConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update(get_configuration_scope_content(self.object.scope))
-        ctx['cancel_url'] = f"{reverse('contracts:configuration_list')}?scope={self.object.scope}"
+        ctx['cancel_url'] = f"{reverse('careon:configuration_list')}?scope={self.object.scope}"
         ctx['is_edit'] = True
         return ctx
 
@@ -720,13 +710,6 @@ class CareConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin,
         scope_content = get_configuration_scope_content(self.object.scope)
         messages.success(self.request, f'{scope_content["entity_label"]} "{self.object.title}" bijgewerkt.')
         return response
-
-
-get_matter_scope_content = get_configuration_scope_content
-MatterListView = CareConfigurationListView
-MatterDetailView = CareConfigurationDetailView
-MatterCreateView = CareConfigurationCreateView
-MatterUpdateView = CareConfigurationUpdateView
 
 
 # ==================== DOCUMENT VIEWS ====================
@@ -771,7 +754,7 @@ class DocumentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView
     model = Document
     form_class = DocumentForm
     template_name = 'contracts/document_form.html'
-    success_url = reverse_lazy('contracts:document_list')
+    success_url = reverse_lazy('careon:document_list')
 
     def form_valid(self, form):
         set_organization_on_instance(form.instance, get_user_organization(self.request.user))
@@ -788,7 +771,7 @@ class DocumentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
     model = Document
     form_class = DocumentForm
     template_name = 'contracts/document_form.html'
-    success_url = reverse_lazy('contracts:document_list')
+    success_url = reverse_lazy('careon:document_list')
 
     def get_queryset(self):
         org = self.get_organization()
@@ -823,7 +806,7 @@ class DeadlineListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         org = self.get_organization()
         sync_automatic_deadlines_for_organization(org, user=self.request.user)
-        qs = Deadline.objects.select_related('due_diligence_process', 'assigned_to', 'contract').for_organization(org)
+        qs = Deadline.objects.select_related('due_diligence_process', 'assigned_to', 'case_record').for_organization(org)
         show = self.request.GET.get('show', 'mine')
         if show == 'mine':
             qs = qs.filter(assigned_to=self.request.user, is_completed=False)
@@ -885,15 +868,15 @@ class DeadlineListView(LoginRequiredMixin, ListView):
                 row_status = 'Open'
                 row_status_class = 'bg-blue-100 text-blue-800'
 
-            if deadline.due_diligence_process:
-                if deadline.due_diligence_process.contract_id:
-                    open_href = get_contract_section_url(deadline.due_diligence_process.contract, 'intake-section')
+            if deadline.intake:
+                if deadline.intake.case_record_id:
+                    open_href = get_contract_section_url(deadline.intake.case_record, 'intake-section')
                 else:
-                    open_href = reverse('contracts:intake_detail', kwargs={'pk': deadline.due_diligence_process.pk})
-                case_title = deadline.due_diligence_process.title
-            elif deadline.contract:
-                open_href = reverse('contracts:case_detail', kwargs={'pk': deadline.contract.pk})
-                case_title = deadline.contract.title
+                    open_href = reverse('careon:intake_detail', kwargs={'pk': deadline.intake.pk})
+                case_title = deadline.intake.title
+            elif deadline.case_record:
+                open_href = reverse('careon:case_detail', kwargs={'pk': deadline.case_record.pk})
+                case_title = deadline.case_record.title
             else:
                 open_href = None
                 case_title = 'Niet gekoppeld'
@@ -924,7 +907,7 @@ class DeadlineCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView
     model = Deadline
     form_class = DeadlineForm
     template_name = 'contracts/deadline_form.html'
-    success_url = reverse_lazy('contracts:deadline_list')
+    success_url = reverse_lazy('careon:deadline_list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -960,7 +943,7 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
     model = Deadline
     form_class = DeadlineForm
     template_name = 'contracts/deadline_form.html'
-    success_url = reverse_lazy('contracts:deadline_list')
+    success_url = reverse_lazy('careon:deadline_list')
 
     def get_queryset(self):
         org = self.get_organization()
@@ -986,8 +969,8 @@ class DeadlineUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
 
     def dispatch(self, request, *args, **kwargs):
         deadline = self.get_object()
-        linked_contract = _resolve_deadline_contract(deadline)
-        if linked_contract and not can_access_case_action(request.user, linked_contract, CaseAction.EDIT):
+        linked_case = _resolve_deadline_case(deadline)
+        if linked_case and not can_access_case_action(request.user, linked_case, CaseAction.EDIT):
             return HttpResponseForbidden('Je hebt geen rechten om opvolgtaken van deze casus te bewerken.')
         return super().dispatch(request, *args, **kwargs)
 
@@ -999,11 +982,11 @@ def deadline_complete(request, pk):
     if not hasattr(request, '_cached_organization'):
         request._cached_organization = get_user_organization(request.user)
     organization = request._cached_organization
-    
+
     deadline_qs = Deadline.objects.for_organization(organization)
     deadline = get_object_or_404(deadline_qs, pk=pk)
-    linked_contract = _resolve_deadline_contract(deadline)
-    if linked_contract and not can_access_case_action(request.user, linked_contract, CaseAction.EDIT):
+    linked_case = _resolve_deadline_case(deadline)
+    if linked_case and not can_access_case_action(request.user, linked_case, CaseAction.EDIT):
         return HttpResponseForbidden('Je hebt geen rechten om opvolgtaken van deze casus af te ronden.')
     deadline.is_completed = True
     deadline.completed_at = timezone.now()
@@ -1011,7 +994,7 @@ def deadline_complete(request, pk):
     deadline.save()
     log_action(request.user, 'UPDATE', 'OpvolgingTaak', deadline.id, str(deadline), request=request)
     messages.success(request, f'Taak "{deadline.title}" gemarkeerd als afgerond.')
-    return redirect('contracts:deadline_list')
+    return redirect('careon:deadline_list')
 
 
 # ==================== AUDIT LOG VIEW ====================
@@ -1054,14 +1037,14 @@ def mark_notification_read(request, pk):
     notification.save()
     if notification.link:
         return redirect(notification.link)
-    return redirect('contracts:notification_list')
+    return redirect('careon:notification_list')
 
 
 @login_required
 @require_POST
 def mark_all_notifications_read(request):
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
-    return redirect('contracts:notification_list')
+    return redirect('careon:notification_list')
 
 
 @login_required
@@ -1099,7 +1082,7 @@ def switch_organization(request):
 
 def _build_invite_url(request, invitation):
     return request.build_absolute_uri(
-        reverse('contracts:accept_organization_invite', kwargs={'token': invitation.token})
+        reverse('careon:accept_organization_invite', kwargs={'token': invitation.token})
     )
 
 
@@ -1143,7 +1126,7 @@ def organization_team(request):
             )
             if existing_member:
                 messages.warning(request, f'{email} is al een actief lid van deze organisatie.')
-                return redirect('contracts:organization_team')
+                return redirect('careon:organization_team')
 
             pending_invitation = (
                 OrganizationInvitation.objects
@@ -1158,7 +1141,7 @@ def organization_team(request):
             if pending_invitation and (not pending_invitation.expires_at or pending_invitation.expires_at > timezone.now()):
                 invite_url = _build_invite_url(request, pending_invitation)
                 messages.info(request, f'Er bestaat al een actieve uitnodiging voor {email}: {invite_url}')
-                return redirect('contracts:organization_team')
+                return redirect('careon:organization_team')
 
             invitation = OrganizationInvitation.objects.create(
                 organization=organization,
@@ -1187,7 +1170,7 @@ def organization_team(request):
                 messages.success(request, f'Uitnodiging aangemaakt en verzonden naar {email}. Link: {invite_url}')
             except Exception:
                 messages.warning(request, f'Uitnodiging aangemaakt voor {email}, maar e-mailbezorging mislukte. Deel deze link handmatig: {invite_url}')
-            return redirect('contracts:organization_team')
+            return redirect('careon:organization_team')
     else:
         form = OrganizationInvitationForm()
 
@@ -1251,7 +1234,7 @@ def revoke_organization_invite(request, invite_id):
         messages.success(request, f'Uitnodiging voor {invitation.email} is ingetrokken.')
     else:
         messages.info(request, 'Alleen openstaande uitnodigingen kunnen worden ingetrokken.')
-    return redirect('contracts:organization_team')
+    return redirect('careon:organization_team')
 
 
 @login_required
@@ -1264,7 +1247,7 @@ def resend_organization_invite(request, invite_id):
     invitation = get_object_or_404(OrganizationInvitation, id=invite_id, organization=organization)
     if invitation.status != OrganizationInvitation.Status.PENDING:
         messages.info(request, 'Alleen openstaande uitnodigingen kunnen opnieuw worden verzonden.')
-        return redirect('contracts:organization_team')
+        return redirect('careon:organization_team')
 
     invitation.status = OrganizationInvitation.Status.REVOKED
     invitation.save(update_fields=['status'])
@@ -1300,7 +1283,7 @@ def resend_organization_invite(request, invite_id):
         messages.success(request, f'Uitnodiging opnieuw verzonden naar {new_invitation.email}.')
     except Exception:
         messages.warning(request, f'Nieuwe uitnodiging aangemaakt, maar e-mailbezorging mislukte. Deel deze link handmatig: {invite_url}')
-    return redirect('contracts:organization_team')
+    return redirect('careon:organization_team')
 
 
 @login_required
@@ -1315,12 +1298,12 @@ def update_membership_role(request, membership_id):
     allowed_roles = {choice[0] for choice in OrganizationMembership.Role.choices}
     if requested_role not in allowed_roles:
         messages.error(request, 'Ongeldige rolselectie.')
-        return redirect('contracts:organization_team')
+        return redirect('careon:organization_team')
 
     actor_is_owner = is_organization_owner(request.user, organization)
     if requested_role == OrganizationMembership.Role.OWNER and not actor_is_owner:
         messages.error(request, 'Alleen organisatie-eigenaren kunnen de rol Eigenaar toekennen.')
-        return redirect('contracts:organization_team')
+        return redirect('careon:organization_team')
 
     if membership.user_id == request.user.id and membership.role == OrganizationMembership.Role.OWNER and requested_role != OrganizationMembership.Role.OWNER:
         owner_count = OrganizationMembership.objects.filter(
@@ -1330,7 +1313,7 @@ def update_membership_role(request, membership_id):
         ).count()
         if owner_count <= 1:
             messages.error(request, 'Er moet minimaal een actieve eigenaar in de organisatie overblijven.')
-            return redirect('contracts:organization_team')
+            return redirect('careon:organization_team')
 
     membership.role = requested_role
     membership.save(update_fields=['role'])
@@ -1344,7 +1327,7 @@ def update_membership_role(request, membership_id):
         request=request,
     )
     messages.success(request, f'Rol bijgewerkt voor {membership.user.email or membership.user.username}.')
-    return redirect('contracts:organization_team')
+    return redirect('careon:organization_team')
 
 
 @login_required
@@ -1357,7 +1340,7 @@ def deactivate_organization_member(request, membership_id):
     membership = get_object_or_404(OrganizationMembership, id=membership_id, organization=organization, is_active=True)
     if membership.user_id == request.user.id:
         messages.error(request, 'Je kunt je eigen lidmaatschap niet deactiveren.')
-        return redirect('contracts:organization_team')
+        return redirect('careon:organization_team')
 
     if membership.role == OrganizationMembership.Role.OWNER:
         owner_count = OrganizationMembership.objects.filter(
@@ -1367,7 +1350,7 @@ def deactivate_organization_member(request, membership_id):
         ).count()
         if owner_count <= 1:
             messages.error(request, 'Er moet minimaal een actieve eigenaar in de organisatie overblijven.')
-            return redirect('contracts:organization_team')
+            return redirect('careon:organization_team')
 
     membership.is_active = False
     membership.save(update_fields=['is_active'])
@@ -1381,7 +1364,7 @@ def deactivate_organization_member(request, membership_id):
         request=request,
     )
     messages.success(request, f'Lidmaatschap gedeactiveerd voor {membership.user.email or membership.user.username}.')
-    return redirect('contracts:organization_team')
+    return redirect('careon:organization_team')
 
 
 @login_required
@@ -1394,7 +1377,7 @@ def reactivate_organization_member(request, membership_id):
     membership = get_object_or_404(OrganizationMembership, id=membership_id, organization=organization)
     if membership.is_active:
         messages.info(request, 'Dit lidmaatschap is al actief.')
-        return redirect('contracts:organization_team')
+        return redirect('careon:organization_team')
 
     membership.is_active = True
     membership.save(update_fields=['is_active'])
@@ -1408,7 +1391,7 @@ def reactivate_organization_member(request, membership_id):
         request=request,
     )
     messages.success(request, f'Lidmaatschap opnieuw geactiveerd voor {membership.user.email or membership.user.username}.')
-    return redirect('contracts:organization_team')
+    return redirect('careon:organization_team')
 
 
 def _filter_organization_activity_logs(request, organization):
@@ -1568,13 +1551,13 @@ def reports_dashboard(request):
     if org:
         cases_qs = CaseIntakeProcess.objects.filter(organization=org)
         indications_qs = PlacementRequest.objects.filter(due_diligence_process__organization=org)
-        risks_qs = RiskLog.objects.for_organization(org)
+        risks_qs = CareSignal.objects.for_organization(org)
         provider_profiles_qs = ProviderProfile.objects.filter(client__organization=org)
         waittime_qs = TrustAccount.objects.filter(provider__organization=org).select_related('provider')
     else:
         cases_qs = CaseIntakeProcess.objects.none()
         indications_qs = PlacementRequest.objects.none()
-        risks_qs = RiskLog.objects.none()
+        risks_qs = CareSignal.objects.none()
         provider_profiles_qs = ProviderProfile.objects.none()
         waittime_qs = TrustAccount.objects.none()
 
@@ -1588,7 +1571,7 @@ def reports_dashboard(request):
         cases_qs
         .filter(status__in=[CaseIntakeProcess.ProcessStatus.MATCHING, CaseIntakeProcess.ProcessStatus.DECISION])
         .exclude(id__in=matched_case_ids)
-        .select_related('lead_attorney', 'care_category_main')
+        .select_related('case_coordinator', 'care_category_main')
         .order_by('target_completion_date', '-updated_at')
     )
     cases_without_match_count = unmatched_cases_qs.count()
@@ -1611,7 +1594,7 @@ def reports_dashboard(request):
             ],
             start_date__lt=stagnation_limit_date,
         )
-        .select_related('lead_attorney', 'care_category_main')
+        .select_related('case_coordinator', 'care_category_main')
         .order_by('start_date')
     )
     stagnation_count = stagnated_cases_qs.count()
@@ -1619,8 +1602,8 @@ def reports_dashboard(request):
     # KPI 4: Escalaties
     escalation_qs = (
         risks_qs
-        .filter(status__in=[RiskLog.SignalStatus.OPEN, RiskLog.SignalStatus.IN_PROGRESS])
-        .filter(Q(signal_type=RiskLog.SignalType.ESCALATION) | Q(risk_level__in=[RiskLog.RiskLevel.HIGH, RiskLog.RiskLevel.CRITICAL]))
+        .filter(status__in=[CareSignal.SignalStatus.OPEN, CareSignal.SignalStatus.IN_PROGRESS])
+        .filter(Q(signal_type=CareSignal.SignalType.ESCALATION) | Q(risk_level__in=[CareSignal.RiskLevel.HIGH, CareSignal.RiskLevel.CRITICAL]))
         .select_related('due_diligence_process', 'assigned_to')
         .order_by('-updated_at')
     )
@@ -1638,7 +1621,7 @@ def reports_dashboard(request):
                 'kind_label': 'Casus zonder match',
                 'title': case.title,
                 'meta': f"{case.get_status_display()} · {case.get_urgency_display()} · doel {case.target_completion_date:%d-%m-%Y}",
-                'href': reverse('contracts:intake_detail', kwargs={'pk': case.pk}),
+                'href': reverse('careon:intake_detail', kwargs={'pk': case.pk}),
             })
     if attention_filter in ['all', 'stagnation']:
         for case in stagnated_cases_qs[:6]:
@@ -1648,7 +1631,7 @@ def reports_dashboard(request):
                 'kind_label': 'Stagnatie',
                 'title': case.title,
                 'meta': f"{days_open} dagen in traject · {case.get_status_display()}",
-                'href': reverse('contracts:intake_detail', kwargs={'pk': case.pk}),
+                'href': reverse('careon:intake_detail', kwargs={'pk': case.pk}),
             })
     if attention_filter in ['all', 'capacity']:
         for wt in no_capacity_qs[:6]:
@@ -1658,17 +1641,17 @@ def reports_dashboard(request):
                 'kind_label': 'Geen capaciteit',
                 'title': provider_name,
                 'meta': f"{wt.region} · wachtlijst {wt.waiting_list_size} · wachttijd {wt.wait_days} dagen",
-                'href': reverse('contracts:waittime_detail', kwargs={'pk': wt.pk}),
+                'href': reverse('careon:waittime_detail', kwargs={'pk': wt.pk}),
             })
     if attention_filter in ['all', 'escalation']:
         for signal in escalation_qs[:6]:
-            case_title = signal.due_diligence_process.title if signal.due_diligence_process else 'Niet gekoppelde casus'
+            case_title = signal.intake.title if signal.intake else 'Niet gekoppelde casus'
             attention_rows.append({
                 'kind': 'escalation',
                 'kind_label': 'Escalatie',
                 'title': case_title,
                 'meta': f"{signal.get_signal_type_display()} · {signal.get_risk_level_display()} · {signal.get_status_display()}",
-                'href': reverse('contracts:risk_log_update', kwargs={'pk': signal.pk}),
+                'href': reverse('careon:risk_log_update', kwargs={'pk': signal.pk}),
             })
 
     # Doorstroomtrend start aanvraag → casus → beoordeling → matching → intake → plaatsing
@@ -1728,21 +1711,21 @@ def reports_dashboard(request):
         recommendations.append({
             'title': 'Herverdeel casussen zonder match naar matchingteam',
             'detail': f'{cases_without_match_count} casussen wachten op aanbiederkeuze.',
-            'href': reverse('contracts:matching_dashboard'),
+            'href': reverse('careon:matching_dashboard'),
             'action': 'Open matchingoverzicht',
         })
     if no_capacity_qs.count() > 0:
         recommendations.append({
             'title': 'Optimaliseer capaciteit bij aanbieders zonder vrije plekken',
             'detail': f'{no_capacity_qs.count()} aanbieders hebben geen open plekken.',
-            'href': reverse('contracts:waittime_list'),
+            'href': reverse('careon:waittime_list'),
             'action': 'Bekijk wachttijden',
         })
     if float(avg_wait_days) > 28:
         recommendations.append({
             'title': 'Wachttijdwaarschuwing: gemiddelde boven 28 dagen',
             'detail': f'Huidig gemiddelde is {avg_wait_days:.1f} dagen.',
-            'href': reverse('contracts:client_list'),
+            'href': reverse('careon:client_list'),
             'action': 'Open aanbieders',
         })
 
@@ -1762,11 +1745,6 @@ def reports_dashboard(request):
         'total_contract_value': total_case_value,
         'total_configurations': total_configurations,
         'active_configurations': total_active_configurations,
-        'total_matters': total_configurations,
-        'active_matters': total_active_configurations,
-        'monthly_hours': 0,
-        'yearly_revenue': 0,
-        'outstanding': 0,
         'overdue_deadlines': 0,
         'upcoming_deadlines': 0,
         'high_risks': high_risk_cases,
@@ -1789,77 +1767,77 @@ def reports_dashboard(request):
 
 # ==================== TASK VIEWS ====================
 
-class LegalTaskKanbanView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    model = LegalTask
+class CareTaskKanbanView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
+    model = CareTask
     template_name = 'contracts/task_board.html'
-    context_object_name = 'legal_tasks'
+    context_object_name = 'care_tasks'
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
         if not org:
-            return LegalTask.objects.none()
-        return LegalTask.objects.select_related('contract', 'matter', 'assigned_to').filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
+            return CareTask.objects.none()
+        return CareTask.objects.select_related('case_record', 'configuration', 'assigned_to').filter(
+            Q(case_record__organization=org) | Q(configuration__organization=org)
         ).order_by('-updated_at', '-created_at')
 
 
-class LegalTaskCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
-    model = LegalTask
-    form_class = LegalTaskForm
+class CareTaskCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
+    model = CareTask
+    form_class = CareTaskForm
     template_name = 'contracts/task_form.html'
-    success_url = reverse_lazy('contracts:task_list')
+    success_url = reverse_lazy('careon:task_list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         org = get_user_organization(self.request.user)
         if org:
-            form.fields['contract'].queryset = scope_queryset_for_organization(CareCase.objects.all(), org)
-            form.fields['matter'].queryset = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
+            form.fields['case_record'].queryset = scope_queryset_for_organization(CareCase.objects.all(), org)
+            form.fields['configuration'].queryset = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
         else:
-            form.fields['contract'].queryset = CareCase.objects.none()
-            form.fields['matter'].queryset = CareConfiguration.objects.none()
+            form.fields['case_record'].queryset = CareCase.objects.none()
+            form.fields['configuration'].queryset = CareConfiguration.objects.none()
         return form
 
     def form_valid(self, form):
         org = get_user_organization(self.request.user)
-        if form.instance.contract and not can_access_case_action(self.request.user, form.instance.contract, CaseAction.EDIT):
+        if form.instance.case_record and not can_access_case_action(self.request.user, form.instance.case_record, CaseAction.EDIT):
             return HttpResponseForbidden('Je hebt geen rechten om taken voor deze casus aan te maken.')
-        if form.instance.matter and org and form.instance.matter.organization_id != org.id:
+        if form.instance.configuration and org and form.instance.configuration.organization_id != org.id:
             return HttpResponseForbidden('Je hebt geen rechten om taken voor deze configuratie aan te maken.')
         return super().form_valid(form)
 
 
-class LegalTaskUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
-    model = LegalTask
-    form_class = LegalTaskForm
+class CareTaskUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
+    model = CareTask
+    form_class = CareTaskForm
     template_name = 'contracts/task_form.html'
-    success_url = reverse_lazy('contracts:task_list')
+    success_url = reverse_lazy('careon:task_list')
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
         if not org:
-            return LegalTask.objects.none()
-        return LegalTask.objects.filter(
-            Q(contract__organization=org) | Q(matter__organization=org)
+            return CareTask.objects.none()
+        return CareTask.objects.filter(
+            Q(case_record__organization=org) | Q(configuration__organization=org)
         )
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
         org = get_user_organization(self.request.user)
         if org:
-            form.fields['contract'].queryset = scope_queryset_for_organization(CareCase.objects.all(), org)
-            form.fields['matter'].queryset = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
+            form.fields['case_record'].queryset = scope_queryset_for_organization(CareCase.objects.all(), org)
+            form.fields['configuration'].queryset = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
         else:
-            form.fields['contract'].queryset = CareCase.objects.none()
-            form.fields['matter'].queryset = CareConfiguration.objects.none()
+            form.fields['case_record'].queryset = CareCase.objects.none()
+            form.fields['configuration'].queryset = CareConfiguration.objects.none()
         return form
 
     def dispatch(self, request, *args, **kwargs):
         task = self.get_object()
-        if task.contract and not can_access_case_action(request.user, task.contract, CaseAction.EDIT):
+        if task.case_record and not can_access_case_action(request.user, task.case_record, CaseAction.EDIT):
             return HttpResponseForbidden('Je hebt geen rechten om taken voor deze casus te bewerken.')
         org = get_user_organization(request.user)
-        if task.matter and org and task.matter.organization_id != org.id:
+        if task.configuration and org and task.configuration.organization_id != org.id:
             return HttpResponseForbidden('Je hebt geen rechten om taken voor deze configuratie te bewerken.')
         return super().dispatch(request, *args, **kwargs)
 
@@ -1930,7 +1908,7 @@ class BudgetListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
             (str(current_year), str(current_year)),
         ]
         configured_scope_labels = {
-            item.title.strip().lower(): f'Gebaseerd op {get_matter_scope_content(item.scope)["entity_label_lower"]}'
+            item.title.strip().lower(): f'Gebaseerd op {get_configuration_scope_content(item.scope)["entity_label_lower"]}'
             for item in tenant_configs.only('title', 'scope')
         }
         budget_rows = []
@@ -1948,7 +1926,7 @@ class BudgetCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     model = Budget
     form_class = BudgetForm
     template_name = 'contracts/budget_form.html'
-    success_url = reverse_lazy('contracts:budget_list')
+    success_url = reverse_lazy('careon:budget_list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -1990,7 +1968,7 @@ class BudgetUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
     model = Budget
     form_class = BudgetForm
     template_name = 'contracts/budget_form.html'
-    success_url = reverse_lazy('contracts:budget_list')
+    success_url = reverse_lazy('careon:budget_list')
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -2025,7 +2003,7 @@ class SignUpView(CreateView):
             org_slug = f'{base_slug}-{n}'
             n += 1
 
-        org_name = f"{self.object.get_full_name().strip() or self.object.username}'s Firm"
+        org_name = f"{self.object.get_full_name().strip() or self.object.username}'s Regie"
         organization = Organization.objects.create(name=org_name, slug=org_slug)
         OrganizationMembership.objects.create(
             organization=organization,
@@ -2052,7 +2030,7 @@ class AddExpenseView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('contracts:budget_detail', kwargs={'pk': self.kwargs['budget_pk']})
+        return reverse_lazy('careon:budget_detail', kwargs={'pk': self.kwargs['budget_pk']})
 
 
 # ==================== FUNCTION-BASED VIEWS ====================
@@ -2084,7 +2062,7 @@ def settings_hub(request):
 @login_required
 def case_flow_list_redirect(request, step=None):
     """Route legacy list entry points to the case-first workspace."""
-    target = reverse('contracts:case_list')
+    target = reverse('careon:case_list')
     if step:
         target = f'{target}?flow={step}'
     return redirect(target)
@@ -2093,7 +2071,7 @@ def case_flow_list_redirect(request, step=None):
 @login_required
 def case_flow_create_redirect(request, step=None):
     """Route legacy create entry points to case creation as single start object."""
-    target = reverse('contracts:case_create')
+    target = reverse('careon:case_create')
     if step:
         target = f'{target}?flow={step}'
     return redirect(target)
@@ -2102,13 +2080,13 @@ def case_flow_create_redirect(request, step=None):
 @login_required
 def case_flow_detail_redirect(request, pk):
     """Route legacy intake detail URLs to the canonical case detail page."""
-    return redirect('contracts:case_detail', pk=pk)
+    return redirect('careon:case_detail', pk=pk)
 
 
 @login_required
 def case_flow_update_redirect(request, pk):
     """Route legacy intake edit URLs to the canonical case edit page."""
-    return redirect('contracts:case_update', pk=pk)
+    return redirect('careon:case_update', pk=pk)
 
 
 @login_required
@@ -2116,8 +2094,8 @@ def legacy_configuration_list_redirect(request):
     """Route old configuration list URL to municipality/regional entry points."""
     scope = (request.GET.get('scope') or '').strip().upper()
     if scope == CareConfiguration.Scope.REGIO:
-        return redirect('contracts:regional_list')
-    return redirect('contracts:municipality_list')
+        return redirect('careon:regional_list')
+    return redirect('careon:municipality_list')
 
 
 @login_required
@@ -2125,8 +2103,8 @@ def legacy_configuration_create_redirect(request):
     """Route old configuration create URL to municipality/regional create pages."""
     scope = (request.GET.get('scope') or '').strip().upper()
     if scope == CareConfiguration.Scope.REGIO:
-        return redirect('contracts:regional_create')
-    return redirect('contracts:municipality_create')
+        return redirect('careon:regional_create')
+    return redirect('careon:municipality_create')
 
 
 @login_required
@@ -2152,14 +2130,15 @@ def matching_dashboard(request):
             Client.objects.filter(organization=org, status='ACTIVE'),
             pk=request.POST.get('provider_id'),
         )
+        intake = assessment.intake
 
         placement, created = PlacementRequest.objects.get_or_create(
-            due_diligence_process=assessment.due_diligence_process,
+            due_diligence_process=intake,
             defaults={
                 'status': PlacementRequest.Status.IN_REVIEW,
                 'proposed_provider': provider,
                 'selected_provider': provider,
-                'care_form': assessment.due_diligence_process.preferred_care_form,
+                'care_form': intake.preferred_care_form,
                 'decision_notes': 'Automatisch toegewezen vanuit matching-dashboard.',
             },
         )
@@ -2167,19 +2146,19 @@ def matching_dashboard(request):
             placement.proposed_provider = provider
             placement.selected_provider = provider
             if not placement.care_form:
-                placement.care_form = assessment.due_diligence_process.preferred_care_form
+                placement.care_form = intake.preferred_care_form
             placement.status = PlacementRequest.Status.IN_REVIEW
             placement.save(update_fields=['proposed_provider', 'selected_provider', 'care_form', 'status', 'updated_at'])
 
-        if assessment.due_diligence_process.status != DueDiligenceProcess.ProcessStatus.MATCHING:
-            assessment.due_diligence_process.status = DueDiligenceProcess.ProcessStatus.MATCHING
-            assessment.due_diligence_process.save(update_fields=['status', 'updated_at'])
+        if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
+            intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
+            intake.save(update_fields=['status', 'updated_at'])
 
         messages.success(
             request,
-            f'Aanbieder {provider.name} gekoppeld aan casus "{assessment.due_diligence_process.title}".',
+            f'Aanbieder {provider.name} gekoppeld aan casus "{intake.title}".',
         )
-        return redirect('contracts:matching_dashboard')
+        return redirect('careon:matching_dashboard')
 
     provider_profiles = (
         ProviderProfile.objects.filter(client__organization=org, client__status='ACTIVE')
@@ -2199,23 +2178,23 @@ def matching_dashboard(request):
 
     def _form_match(profile, intake):
         return {
-            DueDiligenceProcess.CareForm.OUTPATIENT: profile.offers_outpatient,
-            DueDiligenceProcess.CareForm.DAY_TREATMENT: profile.offers_day_treatment,
-            DueDiligenceProcess.CareForm.RESIDENTIAL: profile.offers_residential,
-            DueDiligenceProcess.CareForm.CRISIS: profile.offers_crisis,
+            CaseIntakeProcess.CareForm.OUTPATIENT: profile.offers_outpatient,
+            CaseIntakeProcess.CareForm.DAY_TREATMENT: profile.offers_day_treatment,
+            CaseIntakeProcess.CareForm.RESIDENTIAL: profile.offers_residential,
+            CaseIntakeProcess.CareForm.CRISIS: profile.offers_crisis,
         }.get(intake.preferred_care_form, False)
 
     def _urgency_match(profile, intake):
         return {
-            DueDiligenceProcess.Urgency.LOW: profile.handles_low_urgency,
-            DueDiligenceProcess.Urgency.MEDIUM: profile.handles_medium_urgency,
-            DueDiligenceProcess.Urgency.HIGH: profile.handles_high_urgency,
-            DueDiligenceProcess.Urgency.CRISIS: profile.handles_crisis_urgency,
+            CaseIntakeProcess.Urgency.LOW: profile.handles_low_urgency,
+            CaseIntakeProcess.Urgency.MEDIUM: profile.handles_medium_urgency,
+            CaseIntakeProcess.Urgency.HIGH: profile.handles_high_urgency,
+            CaseIntakeProcess.Urgency.CRISIS: profile.handles_crisis_urgency,
         }.get(intake.urgency, False)
 
     rows = []
     for assessment in assessments:
-        intake = assessment.due_diligence_process
+        intake = assessment.intake
         suggestions = []
         for profile in provider_profiles:
             score = 0
@@ -2304,21 +2283,9 @@ def dashboard(request):
     documents_qs = scope_queryset_for_organization(Document.objects.all(), org)
     due_diligence_qs = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
 
-    tasks_qs = LegalTask.objects.for_organization(org) if org else LegalTask.objects.none()
-    risks_qs = RiskLog.objects.for_organization(org) if org else RiskLog.objects.none()
+    tasks_qs = CareTask.objects.for_organization(org) if org else CareTask.objects.none()
+    risks_qs = CareSignal.objects.for_organization(org) if org else CareSignal.objects.none()
     deadlines_qs = Deadline.objects.for_organization(org)
-    approvals_qs = (
-        ApprovalRequest.objects.filter(contract__organization=org).select_related('contract', 'assigned_to')
-        if org else ApprovalRequest.objects.none()
-    )
-    signatures_qs = (
-        ProviderResponseRequest.objects.filter(contract__organization=org).select_related('contract')
-        if org else ProviderResponseRequest.objects.none()
-    )
-    dsars_qs = (
-        DSARRequest.objects.filter(client__organization=org).select_related('client', 'assigned_to')
-        if org else DSARRequest.objects.none()
-    )
     case_assessments_qs = (
         CaseAssessment.objects.filter(due_diligence_process__organization=org)
         .select_related('due_diligence_process', 'due_diligence_process__contract')
@@ -2364,16 +2331,6 @@ def dashboard(request):
             due_date__gte=today,
             due_date__lte=seven_days,
         )),
-    )
-
-    approval_stats = approvals_qs.aggregate(
-        pending=Count('id', filter=Q(status='PENDING')),
-    )
-    signature_stats = signatures_qs.aggregate(
-        pending=Count('id', filter=Q(status__in=['PENDING', 'SENT', 'VIEWED'])),
-    )
-    dsar_stats = dsars_qs.aggregate(
-        open=Count('id', filter=Q(status__in=['RECEIVED', 'IN_PROGRESS'])),
     )
 
     unread_notifications = 0
@@ -2429,12 +2386,7 @@ def dashboard(request):
     overdue_deadlines = deadline_stats['overdue'] or 0
     upcoming_deadline_count = deadline_stats['upcoming'] or 0
 
-    pending_approvals = approval_stats['pending'] or 0
-    pending_signatures = signature_stats['pending'] or 0
-    open_dsars = dsar_stats['open'] or 0
-
     stale_cutoff = now - timedelta(days=stagnation_days)
-    provider_response_cutoff = now - timedelta(days=provider_response_days)
 
     urgent_case_ids = set(
         contract_id for contract_id in case_records_qs.filter(risk_level__in=['HIGH', 'CRITICAL']).values_list('id', flat=True)
@@ -2444,23 +2396,16 @@ def dashboard(request):
         contract_id for contract_id in deadlines_qs.filter(
             is_completed=False,
             due_date__lt=today,
-            contract__isnull=False,
-        ).values_list('contract_id', flat=True)
+            case_record__isnull=False,
+        ).values_list('case_record_id', flat=True)
         if contract_id
     )
     urgent_case_ids.update(
         contract_id for contract_id in tasks_qs.filter(
             status='PENDING',
             priority__in=['HIGH', 'URGENT'],
-            contract__isnull=False,
-        ).values_list('contract_id', flat=True)
-        if contract_id
-    )
-    urgent_case_ids.update(
-        contract_id for contract_id in signatures_qs.filter(
-            status__in=['PENDING', 'SENT', 'VIEWED'],
-            created_at__lt=provider_response_cutoff,
-        ).values_list('contract_id', flat=True)
+            case_record__isnull=False,
+        ).values_list('case_record_id', flat=True)
         if contract_id
     )
     urgent_case_count = len(urgent_case_ids)
@@ -2498,10 +2443,6 @@ def dashboard(request):
             ]
         ).order_by('created_at')[:4]
     )
-    pending_provider_responses = list(
-        signatures_qs.filter(status__in=['PENDING', 'SENT', 'VIEWED'], created_at__lt=provider_response_cutoff)
-        .order_by('created_at')[:4]
-    )
 
     action_required = []
     action_seen = set()
@@ -2521,7 +2462,7 @@ def dashboard(request):
                 'meta': f'Geen match gekozen • {days_open} dagen open',
                 'badge': 'Zonder match',
                 'badge_class': 'badge-purple',
-                'href': reverse('contracts:case_detail', args=[case_record.pk]),
+                'href': reverse('careon:case_detail', args=[case_record.pk]),
             },
         )
 
@@ -2534,12 +2475,12 @@ def dashboard(request):
                 'meta': f'Geen update sinds {days_stale} dagen',
                 'badge': 'Stagnatie',
                 'badge_class': 'badge-red',
-                'href': reverse('contracts:case_detail', args=[case_record.pk]),
+                'href': reverse('careon:case_detail', args=[case_record.pk]),
             },
         )
 
     for review in pending_reviews:
-        subject = review.due_diligence_process.title
+        subject = review.intake.title
         days_waiting = max((today - review.created_at.date()).days, 0)
         add_action(
             f'review-{review.id}',
@@ -2548,20 +2489,7 @@ def dashboard(request):
                 'meta': f'Wacht op beoordeling ({review.get_assessment_status_display()}) • {days_waiting} dagen open',
                 'badge': 'Beoordeling',
                 'badge_class': 'badge-yellow',
-                'href': reverse('contracts:assessment_update', args=[review.pk]),
-            },
-        )
-
-    for signature in pending_provider_responses:
-        days_waiting = max((today - signature.created_at.date()).days, 0)
-        add_action(
-            f'signature-{signature.id}',
-            {
-                'title': signature.contract.title,
-                'meta': f'Wacht op aanbiederreactie van {signature.signer_name} • {days_waiting} dagen',
-                'badge': 'Aanbiederreactie',
-                'badge_class': 'badge-blue',
-                'href': reverse('contracts:case_detail', args=[signature.contract_id]),
+                'href': reverse('careon:assessment_update', args=[review.pk]),
             },
         )
 
@@ -2569,7 +2497,6 @@ def dashboard(request):
         cases_without_match
         + len(stale_cases)
         + len(pending_reviews)
-        + len(pending_provider_responses)
         + risk_count
     )
 
@@ -2579,20 +2506,10 @@ def dashboard(request):
             filter=Q(contracts__status__in=['ACTIVE', 'PENDING', 'IN_REVIEW', 'APPROVED']),
             distinct=True,
         ),
-        active_matter_load=Count('matters', filter=Q(matters__status='ACTIVE'), distinct=True),
-        pending_reactions=Count(
-            'contracts__signature_requests',
-            filter=Q(contracts__signature_requests__status__in=['PENDING', 'SENT', 'VIEWED']),
-            distinct=True,
-        ),
-        open_match_decisions=Count(
-            'contracts__approval_requests',
-            filter=Q(contracts__approval_requests__status='PENDING'),
-            distinct=True,
-        ),
-    ).order_by('-active_case_load', '-pending_reactions', 'name')
+        active_configuration_load=Count('matters', filter=Q(matters__status='ACTIVE'), distinct=True),
+    ).order_by('-active_case_load', '-active_configuration_load', 'name')
 
-    provider_candidates = list(provider_capacity_qs.order_by('active_case_load', 'pending_reactions', 'name')[:6])
+    provider_candidates = list(provider_capacity_qs.order_by('active_case_load', 'active_configuration_load', 'name')[:6])
     provider_ids = [provider.id for provider in provider_candidates]
     provider_profiles = ProviderProfile.objects.filter(client_id__in=provider_ids).prefetch_related('target_care_categories')
     profile_by_provider_id = {profile.client_id: profile for profile in provider_profiles}
@@ -2610,9 +2527,10 @@ def dashboard(request):
     for case_record in recommendation_cases:
         if not case_record:
             continue
+        configuration = case_record.configuration
         case_domain_ids = set()
-        if case_record.matter_id:
-            case_domain_ids = set(case_record.matter.care_domains.values_list('id', flat=True))
+        if configuration is not None:
+            case_domain_ids = set(configuration.care_domains.values_list('id', flat=True))
 
         suggestions = []
         for provider in provider_candidates:
@@ -2697,9 +2615,9 @@ def dashboard(request):
             match_recommendations.append({
                 'case_record': case_record,
                 'contract': case_record,
-                'href': reverse('contracts:case_detail', args=[case_record.pk]),
+                'href': reverse('careon:case_detail', args=[case_record.pk]),
                 'days_open': max((today - case_record.created_at.date()).days, 0),
-                'action_href': f"{reverse('contracts:case_detail', args=[case_record.pk])}?flow=matching",
+                'action_href': f"{reverse('careon:case_detail', args=[case_record.pk])}?flow=matching",
                 'suggestions': suggestions,
             })
 
@@ -2707,7 +2625,7 @@ def dashboard(request):
     provider_capacity_critical_count = 0
     providers_with_capacity = 0
     for provider in provider_capacity_qs[:8]:
-        max_load = max(provider.active_case_load, provider.active_matter_load)
+        max_load = max(provider.active_case_load, provider.active_configuration_load)
         signal = None
         if max_load >= overload_threshold:
             signal = {
@@ -2715,14 +2633,6 @@ def dashboard(request):
                 'signal': 'Overbelasting',
                 'detail': f'{max_load} lopende casussen of dossiers',
                 'badge_class': 'badge-red',
-            }
-            provider_capacity_critical_count += 1
-        elif provider.pending_reactions >= wait_threshold or provider.open_match_decisions >= wait_threshold:
-            signal = {
-                'name': provider.name,
-                'signal': 'Wachttijd boven drempel',
-                'detail': f'{provider.pending_reactions + provider.open_match_decisions} open reacties of besluiten',
-                'badge_class': 'badge-yellow',
             }
             provider_capacity_critical_count += 1
         elif max_load >= low_capacity_threshold:
@@ -2738,13 +2648,8 @@ def dashboard(request):
         if signal and len(provider_capacity_signals) < 5:
             provider_capacity_signals.append(signal)
 
-    placement_cases = case_records_qs.annotate(
-        first_approval_decision=Min('approval_requests__decided_at', filter=Q(approval_requests__status='APPROVED')),
-        first_signature=Min('signature_requests__signed_at', filter=Q(signature_requests__status='SIGNED')),
-    ).filter(
+    placement_cases = case_records_qs.filter(
         Q(approved_at__isnull=False)
-        | Q(first_approval_decision__isnull=False)
-        | Q(first_signature__isnull=False)
         | Q(start_date__isnull=False)
     )
 
@@ -2753,10 +2658,6 @@ def dashboard(request):
         placement_dates = []
         if case_record.approved_at:
             placement_dates.append(case_record.approved_at.date())
-        if case_record.first_approval_decision:
-            placement_dates.append(case_record.first_approval_decision.date())
-        if case_record.first_signature:
-            placement_dates.append(case_record.first_signature.date())
         if case_record.start_date:
             placement_dates.append(case_record.start_date)
         if placement_dates:
@@ -2771,17 +2672,10 @@ def dashboard(request):
         'intake_cases': intake_cases,
         'cases_without_match': cases_without_match,
         'completed_cases': completed_cases,
-        'total_contracts': total_cases,
-        'active_contracts': active_cases,
-        'draft_contracts': intake_cases,
-        'pending_contracts': cases_without_match,
-        'completed_contracts': completed_cases,
         'total_clients': total_clients,
         'active_clients': active_clients,
         'active_configurations': active_configurations,
         'total_configurations': total_configurations,
-        'active_matters': active_configurations,
-        'total_matters': total_configurations,
         'pending_tasks': pending_tasks,
         'urgent_task_count': urgent_task_count,
         'active_workflows': active_workflows,
@@ -2791,13 +2685,9 @@ def dashboard(request):
         'overdue_deadlines': overdue_deadlines,
         'upcoming_deadline_count': upcoming_deadline_count,
         'total_documents': total_documents,
-        'pending_approvals': pending_approvals,
-        'pending_signatures': pending_signatures,
-        'open_dsars': open_dsars,
         'unread_notifications': unread_notifications,
         'recent_audit': recent_audit,
         'case_status_data': case_status_data_values,
-        'contract_status_data': case_status_data_values,
         'flow_total': max(total_cases, 1),
         'open_cases': active_cases,
         'urgent_cases': urgent_case_count,
@@ -2845,12 +2735,10 @@ def global_search(request):
         )[:10]
 
         results['case_records'] = case_records
-        results['contracts'] = case_records
         results['clients'] = client_qs.filter(
             Q(name__icontains=q) | Q(email__icontains=q) | Q(industry__icontains=q)
         )[:10]
         results['configurations'] = configurations
-        results['matters'] = configurations
         results['documents'] = document_qs.filter(
             Q(title__icontains=q) | Q(description__icontains=q) | Q(tags__icontains=q)
         )[:10]
@@ -2870,7 +2758,7 @@ class MunicipalityConfigurationListView(TenantScopedQuerysetMixin, LoginRequired
     def get_queryset(self):
         org = self.get_organization()
         qs = scope_queryset_for_organization(
-            MunicipalityConfiguration.objects.prefetch_related('care_domains', 'linked_providers', 'responsible_attorney'),
+            MunicipalityConfiguration.objects.prefetch_related('care_domains', 'linked_providers', 'responsible_coordinator'),
             org,
         )
         q = self.request.GET.get('q')
@@ -2914,7 +2802,7 @@ class MunicipalityConfigurationCreateView(TenantAssignCreateMixin, LoginRequired
     template_name = 'contracts/municipality_form.html'
 
     def get_success_url(self):
-        return reverse('contracts:municipality_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:municipality_detail', kwargs={'pk': self.object.pk})
 
 
 class MunicipalityConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -2927,7 +2815,7 @@ class MunicipalityConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequir
         return scope_queryset_for_organization(MunicipalityConfiguration.objects.all(), org)
 
     def get_success_url(self):
-        return reverse('contracts:municipality_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:municipality_detail', kwargs={'pk': self.object.pk})
 
 
 # ============================================
@@ -2943,7 +2831,7 @@ class RegionalConfigurationListView(TenantScopedQuerysetMixin, LoginRequiredMixi
     def get_queryset(self):
         org = self.get_organization()
         qs = scope_queryset_for_organization(
-            RegionalConfiguration.objects.prefetch_related('care_domains', 'linked_providers', 'served_municipalities', 'responsible_attorney'),
+            RegionalConfiguration.objects.prefetch_related('care_domains', 'linked_providers', 'served_municipalities', 'responsible_coordinator'),
             org,
         )
         q = self.request.GET.get('q')
@@ -2987,7 +2875,7 @@ class RegionalConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixi
     template_name = 'contracts/regional_form.html'
 
     def get_success_url(self):
-        return reverse('contracts:regional_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:regional_detail', kwargs={'pk': self.object.pk})
 
 
 class RegionalConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -3000,65 +2888,64 @@ class RegionalConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMi
         return scope_queryset_for_organization(RegionalConfiguration.objects.all(), org)
 
     def get_success_url(self):
-        return reverse('contracts:regional_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:regional_detail', kwargs={'pk': self.object.pk})
 
 
-# ==================== CARE INTAKE (DueDiligence) VIEWS ====================
-# FIX #1: Reroute /casussen/ to DueDiligenceProcess model
+# ==================== CARE INTAKE VIEWS ====================
 
-class DueDiligenceProcessListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    """List all care intakes (DueDiligenceProcess) for the organization."""
-    model = DueDiligenceProcess
-    template_name = 'contracts/duediligence_list.html'
+class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
+    """List all care intakes for the organization."""
+    model = CaseIntakeProcess
+    template_name = 'contracts/intake_list.html'
     context_object_name = 'intakes'
     paginate_by = 25
 
     def get_queryset(self):
         org = self.get_organization()
         qs = scope_queryset_for_organization(
-            DueDiligenceProcess.objects.select_related(
-                'organization', 'lead_attorney', 'care_category_main', 'contract'
+            CaseIntakeProcess.objects.select_related(
+                'organization', 'case_coordinator', 'care_category_main', 'contract'
             ).prefetch_related('risk_factors'),
             org,
         )
-        
-        # Search by title, case ID (contract FK), or lead attorney
+
+        # Search by title, case ID, or case coordinator
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(
                 Q(title__icontains=q)
-                | Q(lead_attorney__first_name__icontains=q)
-                | Q(lead_attorney__last_name__icontains=q)
+                | Q(case_coordinator__first_name__icontains=q)
+                | Q(case_coordinator__last_name__icontains=q)
                 | Q(contract__id__icontains=q)
             ).distinct()
-        
+
         # Filter by status
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
-        
+
         # Filter by urgency
         urgency = self.request.GET.get('urgency')
         if urgency:
             qs = qs.filter(urgency=urgency)
-        
+
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
-        
+
         # Statistics
-        org_intakes = scope_queryset_for_organization(DueDiligenceProcess.objects.all(), org)
+        org_intakes = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
         ctx.update({
             'total_intakes': org_intakes.count(),
-            'active_intakes': org_intakes.exclude(status=DueDiligenceProcess.ProcessStatus.COMPLETED).count(),
-            'urgent_intakes': org_intakes.filter(urgency__in=[DueDiligenceProcess.Urgency.HIGH, DueDiligenceProcess.Urgency.CRISIS]).count(),
+            'active_intakes': org_intakes.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count(),
+            'urgent_intakes': org_intakes.filter(urgency__in=[CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS]).count(),
             'search_query': self.request.GET.get('q', ''),
-            'status_choices': DueDiligenceProcess.ProcessStatus.choices,
-            'urgency_choices': DueDiligenceProcess.Urgency.choices,
+            'status_choices': CaseIntakeProcess.ProcessStatus.choices,
+            'urgency_choices': CaseIntakeProcess.Urgency.choices,
         })
-        
+
         # Build intake rows for display
         intake_rows = []
         for intake in ctx['intakes']:
@@ -3067,26 +2954,26 @@ class DueDiligenceProcessListView(TenantScopedQuerysetMixin, LoginRequiredMixin,
                 'title': intake.title,
                 'status': intake.get_status_display(),
                 'urgency': intake.get_urgency_display(),
-                'lead': intake.lead_attorney.get_full_name() if intake.lead_attorney else '—',
+                'lead': intake.case_coordinator.get_full_name() if intake.case_coordinator else '—',
                 'category': intake.care_category_main.name if intake.care_category_main else '—',
                 'created': intake.start_date,
             })
-        
+
         ctx['intake_rows'] = intake_rows
         return ctx
 
 
-class DueDiligenceProcessDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
+class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
     """Show details of a specific care intake."""
-    model = DueDiligenceProcess
-    template_name = 'contracts/duediligence_detail.html'
+    model = CaseIntakeProcess
+    template_name = 'contracts/intake_detail.html'
     context_object_name = 'intake'
 
     def get_queryset(self):
         org = self.get_organization()
         return scope_queryset_for_organization(
-            DueDiligenceProcess.objects.select_related(
-                'organization', 'lead_attorney', 'care_category_main', 'care_category_sub', 'contract'
+            CaseIntakeProcess.objects.select_related(
+                'organization', 'case_coordinator', 'care_category_main', 'care_category_sub', 'contract'
             ).prefetch_related('risk_factors'),
             org,
         )
@@ -3094,11 +2981,11 @@ class DueDiligenceProcessDetailView(TenantScopedQuerysetMixin, LoginRequiredMixi
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         intake = self.object
-        
+
         # Assessment records linked to this intake
         from django.db.models import Q
         assessments = CaseAssessment.objects.filter(due_diligence_process=intake)
-        
+
         ctx.update({
             'assessment_list': assessments,
             'has_assessment': assessments.exists(),
@@ -3107,15 +2994,15 @@ class DueDiligenceProcessDetailView(TenantScopedQuerysetMixin, LoginRequiredMixi
             'next_action': 'assessment' if not assessments.exists() else 'matching',
             'contract': intake.contract,
         })
-        
+
         return ctx
 
 
-class DueDiligenceProcessCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
+class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
     """Create a new care intake."""
-    model = DueDiligenceProcess
-    form_class = DueDiligenceProcessForm
-    template_name = 'contracts/duediligence_form.html'
+    model = CaseIntakeProcess
+    form_class = CaseIntakeProcessForm
+    template_name = 'contracts/intake_form.html'
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3132,23 +3019,23 @@ class DueDiligenceProcessCreateView(TenantAssignCreateMixin, LoginRequiredMixin,
         if not form.instance.start_date:
             form.instance.start_date = date.today()
         response = super().form_valid(form)
-        log_action(self.request.user, 'CREATE', 'DueDiligenceProcess', self.object.id, str(self.object), request=self.request)
+        log_action(self.request.user, 'CREATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
         messages.success(self.request, f'Intake "{self.object.title}" aangemaakt. Volgende stap: beoordeling.')
         return response
 
     def get_success_url(self):
-        return reverse('contracts:case_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:case_detail', kwargs={'pk': self.object.pk})
 
 
-class DueDiligenceProcessUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
+class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
     """Update an existing care intake."""
-    model = DueDiligenceProcess
-    form_class = DueDiligenceProcessForm
-    template_name = 'contracts/duediligence_form.html'
+    model = CaseIntakeProcess
+    form_class = CaseIntakeProcessForm
+    template_name = 'contracts/intake_form.html'
 
     def get_queryset(self):
         org = self.get_organization()
-        return scope_queryset_for_organization(DueDiligenceProcess.objects.all(), org)
+        return scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3161,12 +3048,12 @@ class DueDiligenceProcessUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixi
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        log_action(self.request.user, 'UPDATE', 'DueDiligenceProcess', self.object.id, str(self.object), request=self.request)
+        log_action(self.request.user, 'UPDATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
         messages.success(self.request, f'Intake "{self.object.title}" bijgewerkt.')
         return response
 
     def get_success_url(self):
-        return reverse('contracts:case_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:case_detail', kwargs={'pk': self.object.pk})
 
 
 # ==================== CASE ASSESSMENT VIEWS ====================
@@ -3186,26 +3073,26 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
         ).select_related(
             'due_diligence_process', 'assessed_by'
         )
-        
+
         # Filter by status
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(assessment_status=status)
-        
+
         # Search by case title/ID
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(
                 Q(due_diligence_process__title__icontains=q)
             ).distinct()
-        
+
         return qs.order_by('-updated_at')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         org_assessments = CaseAssessment.objects.filter(due_diligence_process__organization=org)
-        
+
         ctx.update({
             'total_assessments': org_assessments.count(),
             'pending_assessments': org_assessments.filter(
@@ -3217,7 +3104,7 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
             'status_choices': CaseAssessment.AssessmentStatus.choices,
             'search_query': self.request.GET.get('q', ''),
         })
-        
+
         return ctx
 
 
@@ -3238,12 +3125,12 @@ class CaseAssessmentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, De
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         assessment = self.object
-        
+
         ctx.update({
-            'intake': assessment.due_diligence_process,
+            'intake': assessment.intake,
             'next_action': 'matching',
         })
-        
+
         return ctx
 
 
@@ -3261,10 +3148,10 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
             try:
                 org = self.get_organization()
                 intake = scope_queryset_for_organization(
-                    DueDiligenceProcess.objects.all(), org
+                    CaseIntakeProcess.objects.all(), org
                 ).get(pk=intake_id)
                 initial['due_diligence_process'] = intake
-            except DueDiligenceProcess.DoesNotExist:
+            except CaseIntakeProcess.DoesNotExist:
                 pass
         return initial
 
@@ -3289,7 +3176,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
         return response
 
     def get_success_url(self):
-        return reverse('contracts:assessment_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:assessment_detail', kwargs={'pk': self.object.pk})
 
 
 class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -3318,4 +3205,4 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
         return response
 
     def get_success_url(self):
-        return reverse('contracts:assessment_detail', kwargs={'pk': self.object.pk})
+        return reverse('careon:assessment_detail', kwargs={'pk': self.object.pk})

@@ -1,4 +1,4 @@
-# CMS-Aegis Secret & Credential Inventory
+# CareOn Secret & Credential Inventory
 
 > **Purpose** — Single source of truth for every secret, key, credential, and
 > token the application depends on. Update this file whenever a secret is
@@ -56,7 +56,7 @@ print(get_random_secret_key())
 ```
 1. Go to: https://console.cloud.google.com/
    → APIs & Services → Credentials → OAuth 2.0 Client IDs
-   → Select the CMS-Aegis client
+   → Select the CareOn client
    → "Reset Secret" (or "Add Secret")
 
 2. Copy the new secret value.
@@ -68,7 +68,7 @@ print(get_random_secret_key())
    gh secret set OIDC_RP_CLIENT_SECRET --body "<new-value>"
 
 5. Restart the application server:
-   sudo systemctl restart gunicorn-cms-aegis
+   sudo systemctl restart gunicorn-careon
 
 6. Test SSO login end-to-end in staging before deploying to production.
 
@@ -101,7 +101,7 @@ DEBUG=False
 ALLOWED_HOSTS=yourdomain.com,www.yourdomain.com
 
 # Database
-DATABASE_URL=postgres://user:password@host:5432/cms_aegis
+DATABASE_URL=postgres://user:password@host:5432/careon
 
 # Google SSO (mozilla-django-oidc)
 OIDC_RP_CLIENT_ID=<google-oauth-client-id>

@@ -1,9 +1,9 @@
 from django.contrib import admin
 from .models import (
     Organization, OrganizationMembership, OrganizationInvitation,
-    PlacementRequest, LegalTask, RiskLog, ComplianceChecklist,
-    Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep, ChecklistItem,
-    CaseIntakeProcess, IntakeTask, CaseRiskSignal, Budget, BudgetExpense, CareCase, Contract
+    PlacementRequest, CareTask, CareSignal,
+    Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
+    CaseIntakeProcess, IntakeTask, CaseRiskSignal, Budget, BudgetExpense, CareCase
 )
 
 
@@ -27,45 +27,34 @@ class OrganizationInvitationAdmin(admin.ModelAdmin):
     list_filter = ('role', 'status')
     search_fields = ('organization__name', 'email', 'invited_by__username')
 
-@admin.register(RiskLog)
-class RiskLogAdmin(admin.ModelAdmin):
+@admin.register(CareSignal)
+class CareSignalAdmin(admin.ModelAdmin):
     list_display = ('title', 'risk_level', 'case_label', 'created_by', 'created_at')
     list_filter = ('risk_level', 'created_at')
     search_fields = ('title', 'description')
 
     @admin.display(description='Casus')
     def case_label(self, obj):
-        if obj.due_diligence_process:
-            return obj.due_diligence_process.title
+        if obj.intake:
+            return obj.intake.title
         if obj.contract:
             return obj.contract.title
         return '-'
-
-class ChecklistItemInline(admin.TabularInline):
-    model = ChecklistItem
-    extra = 1
-
-@admin.register(ComplianceChecklist)
-class ComplianceChecklistAdmin(admin.ModelAdmin):
-    list_display = ('title', 'regulation_type', 'created_at')
-    list_filter = ('regulation_type',)
-    search_fields = ('title', 'description')
-    inlines = [ChecklistItemInline]
 
 @admin.register(PlacementRequest)
 class PlacementRequestAdmin(admin.ModelAdmin):
     list_display = ('placement_label', 'status', 'created_at')
     list_filter = ('status',)
-    search_fields = ('mark_text', 'description', 'due_diligence_process__title')
+    search_fields = ('description', 'due_diligence_process__title')
 
     @admin.display(description='Plaatsing')
     def placement_label(self, obj):
-        if obj.due_diligence_process:
-            return obj.due_diligence_process.title
-        return obj.mark_text or f'Indicatie #{obj.pk}'
+        if obj.intake:
+            return obj.intake.title
+        return f'Indicatie #{obj.pk}'
 
-@admin.register(LegalTask)
-class LegalTaskAdmin(admin.ModelAdmin):
+@admin.register(CareTask)
+class CareTaskAdmin(admin.ModelAdmin):
     list_display = ('title', 'priority', 'status', 'due_date', 'assigned_to')
     list_filter = ('priority', 'status')
     search_fields = ('title', 'description')
@@ -81,17 +70,19 @@ class CaseRiskSignalInline(admin.TabularInline):
 @admin.register(CaseIntakeProcess)
 class CaseIntakeProcessAdmin(admin.ModelAdmin):
     list_display = ('title', 'target_group_label', 'care_type_label', 'status', 'target_completion_date')
-    list_filter = ('transaction_type', 'status', 'created_at')
-    search_fields = ('title', 'target_company')
+    list_filter = ('urgency', 'status', 'created_at')
+    search_fields = ('title', 'description', 'case_coordinator__first_name', 'case_coordinator__last_name')
     inlines = [IntakeTaskInline, CaseRiskSignalInline]
 
     @admin.display(description='Doelgroep')
     def target_group_label(self, obj):
-        return obj.target_company or '-'
+        if obj.care_category_main:
+            return obj.care_category_main.name
+        return '-'
 
     @admin.display(description='Zorgvraagtype')
     def care_type_label(self, obj):
-        return obj.get_transaction_type_display()
+        return obj.get_urgency_display()
 
 @admin.register(IntakeTask)
 class IntakeTaskAdmin(admin.ModelAdmin):
@@ -164,6 +155,3 @@ class CareCaseAdmin(admin.ModelAdmin):
     @admin.display(description='Voorkeursaanbieder')
     def preferred_provider_display(self, obj):
         return obj.preferred_provider or '-'
-
-
-ContractAdmin = CareCaseAdmin

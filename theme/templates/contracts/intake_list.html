@@ -8,7 +8,7 @@
         <h1 class="text-2xl font-bold text-gray-900">Zorgintakes</h1>
         <p class="text-sm text-gray-500 mt-1">{{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent</p>
     </div>
-    <a href="{% url 'contracts:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+    <a href="{% url 'careon:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
         Nieuwe intake
     </a>
@@ -52,7 +52,7 @@
             {% for intake in intakes %}
             <tr class="hover:bg-gray-50">
                 <td class="px-5 py-3">
-                    <a href="{% url 'contracts:case_detail' intake.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
+                    <a href="{% url 'careon:case_detail' intake.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
                 </td>
                 <td class="px-5 py-3">
                     <span class="text-xs px-2 py-1 rounded-full 
@@ -77,8 +77,8 @@
                 <td class="px-5 py-3 text-sm text-gray-600">{{ intake.lead }}</td>
                 <td class="px-5 py-3 text-sm text-gray-400">{{ intake.created|date:"d-m-Y" }}</td>
                 <td class="px-5 py-3 text-right text-sm">
-                    <a href="{% url 'contracts:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">Bekijken</a>
-                    <a href="{% url 'contracts:case_update' intake.pk %}" class="ml-3 text-gray-500 hover:text-gray-700">Bewerken</a>
+                    <a href="{% url 'careon:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">Bekijken</a>
+                    <a href="{% url 'careon:case_update' intake.pk %}" class="ml-3 text-gray-500 hover:text-gray-700">Bewerken</a>
                 </td>
             </tr>
             {% endfor %}
@@ -112,7 +112,7 @@
     </svg>
     <h3 class="text-lg font-medium text-gray-900 mb-1">Geen intakes gevonden</h3>
     <p class="text-gray-500 mb-4">Begin met het aanmaken van uw eerste intake.</p>
-    <a href="{% url 'contracts:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+    <a href="{% url 'careon:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
         Nieuwe intake aanmaken
     </a>

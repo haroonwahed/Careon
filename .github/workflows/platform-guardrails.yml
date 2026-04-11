@@ -28,6 +28,9 @@ jobs:
       - name: Python compile smoke
         run: python -m compileall config contracts
 
+      - name: Terminology guard (CareOn blueprint)
+        run: python scripts/terminology_guard.py
+
       - name: Deploy checks (production profile)
         env:
           DJANGO_ENV: production

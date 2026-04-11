@@ -35,6 +35,9 @@ jobs:
       - name: Python compile smoke
         run: python -m compileall config contracts
 
+      - name: Terminology guard (CareOn blueprint)
+        run: python scripts/terminology_guard.py
+
       - name: Ensure verifier is executable
         run: chmod +x scripts/verify_ui.sh
 

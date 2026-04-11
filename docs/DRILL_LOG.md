@@ -1,4 +1,4 @@
-# CMS Aegis Drill Log
+# CareOn Drill Log
 
 ## 2026-04-10: Migration Rollback Drill
 
@@ -10,10 +10,10 @@
 Commands:
 
 ```bash
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py audit_null_organizations
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py audit_null_organizations
 ```
 
 Result:
@@ -28,8 +28,8 @@ Result:
 Commands:
 
 ```bash
-cp db.sqlite3 /tmp/cms-aegis-drill.sqlite3
-SQLITE_PATH=/tmp/cms-aegis-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+cp db.sqlite3 /tmp/careon-drill.sqlite3
+SQLITE_PATH=/tmp/careon-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
 ```
 
 Result:
@@ -42,7 +42,7 @@ Conclusion:
 - populated downgrade is not currently safe after tenant-owned starter content was duplicated per org
 - rollback from `0006` to `0005` needs a dedicated downgrade/data-collapse strategy before it should be attempted on real data
 
-## 2026-04-10: Migration Rollback Drill Re-Run (Ironclad Activation)
+## 2026-04-10: Migration Rollback Drill Re-Run
 
 - Environment: local scratch SQLite databases
 - Scope: repeatability verification for `contracts` migration rollback and re-apply around `0006_approvalrequest_organization_and_more`
@@ -52,10 +52,10 @@ Conclusion:
 Commands:
 
 ```bash
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py audit_null_organizations
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py audit_null_organizations
 ```
 
 Result:
@@ -70,8 +70,8 @@ Result:
 Commands:
 
 ```bash
-cp db.sqlite3 /tmp/cms-aegis-drill.sqlite3
-SQLITE_PATH=/tmp/cms-aegis-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+cp db.sqlite3 /tmp/careon-drill.sqlite3
+SQLITE_PATH=/tmp/careon-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
 ```
 
 Result:

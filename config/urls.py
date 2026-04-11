@@ -15,27 +15,38 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
-from django.shortcuts import render
-from django.views.generic import TemplateView # Import TemplateView
-from contracts import views as contract_views
+from django.http import HttpResponsePermanentRedirect
+from contracts import views as careon_views
 
 from django.contrib.auth import views as auth_views
 
+
+def redirect_legacy_contracts_prefix(request, path=''):
+    query = request.META.get('QUERY_STRING', '')
+    target = f'/care/{path}'
+    if query:
+        target = f'{target}?{query}'
+    return HttpResponsePermanentRedirect(target)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', contract_views.index, name='index'),
-    path('_health/', contract_views.health_check, name='health_check'),
-    path('dashboard/', contract_views.dashboard, name='dashboard'),
-    path('contracts/', include('contracts.urls')),
-    path('profile/', contract_views.profile, name='profile'),
-    path('settings/', contract_views.settings_hub, name='settings_hub'),
-    path('register/', contract_views.SignUpView.as_view(), name='register'),
+    path('', careon_views.index, name='index'),
+    path('_health/', careon_views.health_check, name='health_check'),
+    path('dashboard/', careon_views.dashboard, name='dashboard'),
+    path('care/', include(('contracts.urls', 'careon'), namespace='careon')),
+    # Legacy prefix is deprecated: keep redirects temporarily, then remove after
+    # 60-90 days once external bookmarks/integrations are confirmed updated.
+    re_path(r'^contracts/(?P<path>.*)$', redirect_legacy_contracts_prefix, name='legacy_contracts_redirect'),
+    path('contracts/', redirect_legacy_contracts_prefix, name='legacy_contracts_root_redirect'),
+    path('profile/', careon_views.profile, name='profile'),
+    path('settings/', careon_views.settings_hub, name='settings_hub'),
+    path('register/', careon_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('toggle-redesign/', contract_views.toggle_redesign, name='toggle_redesign'),
+    path('toggle-redesign/', careon_views.toggle_redesign, name='toggle_redesign'),
     path('__reload__/', include('django_browser_reload.urls')),
 ]
 

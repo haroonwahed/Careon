@@ -2,7 +2,7 @@ from django.urls import path
 from . import views
 from .api import views as api_views
 
-app_name = 'contracts'
+app_name = 'careon'
 
 urlpatterns = [
     # API
@@ -52,9 +52,9 @@ urlpatterns = [
     path('taken/', views.DeadlineListView.as_view(), name='task_kanban'),
     path('taken/new/', views.DeadlineCreateView.as_view(), name='task_create'),
     path('taken/<int:pk>/edit/', views.DeadlineUpdateView.as_view(), name='task_update'),
-    path('tasks/', views.LegalTaskKanbanView.as_view(), name='legal_task_kanban'),
-    path('tasks/new/', views.LegalTaskCreateView.as_view(), name='legal_task_create'),
-    path('tasks/<int:pk>/edit/', views.LegalTaskUpdateView.as_view(), name='legal_task_update'),
+    path('tasks/', views.CareTaskKanbanView.as_view(), name='care_task_kanban'),
+    path('tasks/new/', views.CareTaskCreateView.as_view(), name='care_task_create'),
+    path('tasks/<int:pk>/edit/', views.CareTaskUpdateView.as_view(), name='care_task_update'),
 
     path('audit-log/', views.AuditLogListView.as_view(), name='audit_log_list'),
     path('notifications/', views.notification_list, name='notification_list'),
@@ -87,26 +87,26 @@ urlpatterns = [
 
     path('matching/', views.matching_dashboard, name='matching_dashboard'),
     path('workflows/', views.reports_dashboard, name='workflow_dashboard'),
-    path('workflows/<int:pk>/', views.MatterDetailView.as_view(), name='workflow_detail'),
-    path('workflows/step/<int:pk>/update/', views.MatterUpdateView.as_view(), name='update_workflow_step'),
+    path('workflows/<int:pk>/', views.CareConfigurationDetailView.as_view(), name='workflow_detail'),
+    path('workflows/step/<int:pk>/update/', views.CareConfigurationUpdateView.as_view(), name='update_workflow_step'),
 
 
     path('plaatsingen/', views.case_flow_list_redirect, {'step': 'placement'}, name='placement_list'),
     path('plaatsingen/new/', views.case_flow_create_redirect, {'step': 'placement'}, name='placement_create'),
-    path('plaatsingen/<int:pk>/', views.MatterDetailView.as_view(), name='placement_detail'),
-    path('plaatsingen/<int:pk>/edit/', views.MatterUpdateView.as_view(), name='placement_update'),
+    path('plaatsingen/<int:pk>/', views.CareConfigurationDetailView.as_view(), name='placement_detail'),
+    path('plaatsingen/<int:pk>/edit/', views.CareConfigurationUpdateView.as_view(), name='placement_update'),
 
-    path('signalen/', views.MatterListView.as_view(), name='signal_list'),
-    path('signalen/new/', views.MatterCreateView.as_view(), name='signal_create'),
-    path('signalen/<int:pk>/edit/', views.MatterUpdateView.as_view(), name='signal_update'),
-    path('risks/', views.MatterListView.as_view(), name='risk_log_list'),
-    path('risks/new/', views.MatterCreateView.as_view(), name='risk_log_create'),
-    path('risks/<int:pk>/edit/', views.MatterUpdateView.as_view(), name='risk_log_update'),
+    path('signalen/', views.CareConfigurationListView.as_view(), name='signal_list'),
+    path('signalen/new/', views.CareConfigurationCreateView.as_view(), name='signal_create'),
+    path('signalen/<int:pk>/edit/', views.CareConfigurationUpdateView.as_view(), name='signal_update'),
+    path('risks/', views.CareConfigurationListView.as_view(), name='risk_log_list'),
+    path('risks/new/', views.CareConfigurationCreateView.as_view(), name='risk_log_create'),
+    path('risks/<int:pk>/edit/', views.CareConfigurationUpdateView.as_view(), name='risk_log_update'),
 
-    path('casussen/', views.DueDiligenceProcessListView.as_view(), name='case_list'),
-    path('casussen/new/', views.DueDiligenceProcessCreateView.as_view(), name='case_create'),
-    path('casussen/<int:pk>/', views.DueDiligenceProcessDetailView.as_view(), name='case_detail'),
-    path('casussen/<int:pk>/edit/', views.DueDiligenceProcessUpdateView.as_view(), name='case_update'),
+    path('casussen/', views.CaseIntakeListView.as_view(), name='case_list'),
+    path('casussen/new/', views.CaseIntakeCreateView.as_view(), name='case_create'),
+    path('casussen/<int:pk>/', views.CaseIntakeDetailView.as_view(), name='case_detail'),
+    path('casussen/<int:pk>/edit/', views.CaseIntakeUpdateView.as_view(), name='case_update'),
 
     # Assessments (Beoordelingen)
     path('beoordelingen/', views.CaseAssessmentListView.as_view(), name='assessment_list'),

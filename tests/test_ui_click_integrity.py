@@ -73,8 +73,8 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         )
         CareCase.objects.create(
             organization=self.organization,
-            title='UI Integrity Contract',
-            content='Contract used for link/form target checks.',
+            title='UI Integrity Case',
+            content='Case used for link/form target checks.',
             status=CareCase.Status.DRAFT,
             created_by=self.user,
         )
@@ -108,19 +108,19 @@ class UIButtonAndFlowIntegrityTests(TestCase):
     def test_click_targets_and_forms_are_wired_on_core_pages(self):
         pages = [
             reverse('dashboard'),
-            reverse('contracts:case_list'),
-            reverse('contracts:document_list'),
-            reverse('contracts:deadline_list'),
-            reverse('contracts:task_kanban'),
-            reverse('contracts:risk_log_list'),
-            reverse('contracts:budget_list'),
-            reverse('contracts:placement_list'),
-            reverse('contracts:intake_list'),
-            reverse('contracts:workflow_dashboard'),
-            reverse('contracts:configuration_list'),
-            reverse('contracts:reports_dashboard'),
-            reverse('contracts:organization_team'),
-            reverse('contracts:notification_list'),
+            reverse('careon:case_list'),
+            reverse('careon:document_list'),
+            reverse('careon:deadline_list'),
+            reverse('careon:task_kanban'),
+            reverse('careon:risk_log_list'),
+            reverse('careon:budget_list'),
+            reverse('careon:placement_list'),
+            reverse('careon:intake_list'),
+            reverse('careon:workflow_dashboard'),
+            reverse('careon:configuration_list'),
+            reverse('careon:reports_dashboard'),
+            reverse('careon:organization_team'),
+            reverse('careon:notification_list'),
         ]
 
         for page in pages:

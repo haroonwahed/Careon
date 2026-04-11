@@ -40,7 +40,7 @@ class OrganizationInvitationTests(TestCase):
     def test_owner_can_create_invitation(self):
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:organization_team'),
+            reverse('careon:organization_team'),
             {'email': 'newuser@example.com', 'role': OrganizationMembership.Role.ADMIN},
             follow=True,
         )
@@ -57,7 +57,7 @@ class OrganizationInvitationTests(TestCase):
 
     def test_non_admin_member_cannot_manage_team(self):
         self.client.login(username='member', password='testpass123')
-        response = self.client.get(reverse('contracts:organization_team'))
+        response = self.client.get(reverse('careon:organization_team'))
 
         self.assertEqual(response.status_code, 403)
 
@@ -71,7 +71,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='invitee', password='testpass123')
         response = self.client.get(
-            reverse('contracts:accept_organization_invite', kwargs={'token': invitation.token}),
+            reverse('careon:accept_organization_invite', kwargs={'token': invitation.token}),
             follow=True,
         )
 
@@ -96,7 +96,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='invitee', password='testpass123')
         response = self.client.get(
-            reverse('contracts:accept_organization_invite', kwargs={'token': invitation.token}),
+            reverse('careon:accept_organization_invite', kwargs={'token': invitation.token}),
             follow=True,
         )
 
@@ -120,7 +120,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:revoke_organization_invite', kwargs={'invite_id': invitation.id}),
+            reverse('careon:revoke_organization_invite', kwargs={'invite_id': invitation.id}),
             follow=True,
         )
 
@@ -138,7 +138,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:resend_organization_invite', kwargs={'invite_id': invitation.id}),
+            reverse('careon:resend_organization_invite', kwargs={'invite_id': invitation.id}),
             follow=True,
         )
 
@@ -159,7 +159,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:update_membership_role', kwargs={'membership_id': target.id}),
+            reverse('careon:update_membership_role', kwargs={'membership_id': target.id}),
             {'role': OrganizationMembership.Role.ADMIN},
             follow=True,
         )
@@ -173,7 +173,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:deactivate_organization_member', kwargs={'membership_id': target.id}),
+            reverse('careon:deactivate_organization_member', kwargs={'membership_id': target.id}),
             follow=True,
         )
 
@@ -186,7 +186,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:deactivate_organization_member', kwargs={'membership_id': owner_membership.id}),
+            reverse('careon:deactivate_organization_member', kwargs={'membership_id': owner_membership.id}),
             follow=True,
         )
 
@@ -197,7 +197,7 @@ class OrganizationInvitationTests(TestCase):
     def test_invite_creation_writes_audit_log(self):
         self.client.login(username='owner', password='testpass123')
         self.client.post(
-            reverse('contracts:organization_team'),
+            reverse('careon:organization_team'),
             {'email': 'audit@example.com', 'role': OrganizationMembership.Role.MEMBER},
             follow=True,
         )
@@ -214,7 +214,7 @@ class OrganizationInvitationTests(TestCase):
         target = OrganizationMembership.objects.get(organization=self.organization, user=self.member)
         self.client.login(username='owner', password='testpass123')
         self.client.post(
-            reverse('contracts:update_membership_role', kwargs={'membership_id': target.id}),
+            reverse('careon:update_membership_role', kwargs={'membership_id': target.id}),
             {'role': OrganizationMembership.Role.ADMIN},
             follow=True,
         )
@@ -245,7 +245,7 @@ class OrganizationInvitationTests(TestCase):
         )
 
         self.client.login(username='owner', password='testpass123')
-        response = self.client.get(reverse('contracts:organization_team'))
+        response = self.client.get(reverse('careon:organization_team'))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'accepted@example.com')
@@ -258,7 +258,7 @@ class OrganizationInvitationTests(TestCase):
 
         self.client.login(username='owner', password='testpass123')
         response = self.client.post(
-            reverse('contracts:reactivate_organization_member', kwargs={'membership_id': target.id}),
+            reverse('careon:reactivate_organization_member', kwargs={'membership_id': target.id}),
             follow=True,
         )
 
@@ -268,30 +268,30 @@ class OrganizationInvitationTests(TestCase):
 
     def test_non_admin_cannot_view_organization_activity(self):
         self.client.login(username='member', password='testpass123')
-        response = self.client.get(reverse('contracts:organization_activity'))
+        response = self.client.get(reverse('careon:organization_activity'))
         self.assertEqual(response.status_code, 403)
 
     def test_owner_can_view_organization_activity(self):
         self.client.login(username='owner', password='testpass123')
         self.client.post(
-            reverse('contracts:organization_team'),
+            reverse('careon:organization_team'),
             {'email': 'activity@example.com', 'role': OrganizationMembership.Role.MEMBER},
             follow=True,
         )
 
-        response = self.client.get(reverse('contracts:organization_activity'))
+        response = self.client.get(reverse('careon:organization_activity'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'OrganizationInvitation')
 
     def test_owner_can_export_organization_activity_csv(self):
         self.client.login(username='owner', password='testpass123')
         self.client.post(
-            reverse('contracts:organization_team'),
+            reverse('careon:organization_team'),
             {'email': 'export@example.com', 'role': OrganizationMembership.Role.MEMBER},
             follow=True,
         )
 
-        response = self.client.get(reverse('contracts:organization_activity_export'))
+        response = self.client.get(reverse('careon:organization_activity_export'))
         self.assertEqual(response.status_code, 200)
         self.assertIn('text/csv', response['Content-Type'])
         body = response.content.decode()
@@ -300,18 +300,18 @@ class OrganizationInvitationTests(TestCase):
 
     def test_non_admin_cannot_export_organization_activity_csv(self):
         self.client.login(username='member', password='testpass123')
-        response = self.client.get(reverse('contracts:organization_activity_export'))
+        response = self.client.get(reverse('careon:organization_activity_export'))
         self.assertEqual(response.status_code, 403)
 
     def test_activity_filters_apply(self):
         self.client.login(username='owner', password='testpass123')
         self.client.post(
-            reverse('contracts:organization_team'),
+            reverse('careon:organization_team'),
             {'email': 'filter@example.com', 'role': OrganizationMembership.Role.MEMBER},
             follow=True,
         )
 
-        response = self.client.get(reverse('contracts:organization_activity'), {
+        response = self.client.get(reverse('careon:organization_activity'), {
             'action': 'CREATE',
             'model': 'OrganizationInvitation',
             'start_date': '2000-01-01',

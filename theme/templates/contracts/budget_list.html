@@ -9,7 +9,7 @@
         <h1 class="text-2xl font-bold c-primary">Budgetten</h1>
         <p class="text-sm mt-1 c-muted">Stuur op budget, capaciteit en inzet per gemeente of regio.</p>
     </div>
-    <a href="{% url 'contracts:budget_create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90 btn-primary-grad">
+    <a href="{% url 'careon:budget_create' %}" class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-lg transition-opacity hover:opacity-90 btn-primary-grad">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
         Nieuw budget
     </a>
@@ -61,7 +61,7 @@
         </select>
         <button type="submit" class="flex-shrink-0 px-3 py-2 text-sm font-medium rounded-lg border btn-ghost">Zoeken</button>
         {% if search_query or selected_year %}
-        <a href="{% url 'contracts:budget_list' %}" class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5 btn-ghost">Wissen</a>
+        <a href="{% url 'careon:budget_list' %}" class="flex-shrink-0 px-3 py-2 text-sm rounded-lg border inline-flex items-center gap-1.5 btn-ghost">Wissen</a>
         {% endif %}
     </form>
 </div>
@@ -86,7 +86,7 @@
             {% with budget=row.budget %}
             <tr class="border-b transition-colors tbl-row" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">
                 <td class="px-5 py-3.5">
-                    <a href="{% url 'contracts:budget_detail' budget.pk %}" class="font-medium c-link">{{ budget.get_scope_type_display }} {{ budget.scope_name }}</a>
+                    <a href="{% url 'careon:budget_detail' budget.pk %}" class="font-medium c-link">{{ budget.get_scope_type_display }} {{ budget.scope_name }}</a>
                     {% if budget.department %}
                     <p class="text-xs mt-0.5 c-muted">{{ budget.department }}</p>
                     {% endif %}
@@ -105,11 +105,11 @@
                     <p class="text-[11px] {% if budget.utilization_percentage >= 80 %}c-red{% else %}c-muted{% endif %}">{{ budget.utilization_percentage|floatformat:0 }}% benut</p>
                 </td>
                 <td class="px-5 py-3.5 tbl-td">{{ budget.linked_cases.count }} / {{ budget.linked_placements.count }}</td>
-                <td class="px-5 py-3.5 text-right"><a href="{% url 'contracts:budget_detail' budget.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-ghost">Bekijken</a></td>
+                <td class="px-5 py-3.5 text-right"><a href="{% url 'careon:budget_detail' budget.pk %}" class="text-xs font-medium px-2.5 py-1 rounded-md border transition-opacity hover:opacity-80 btn-ghost">Bekijken</a></td>
             </tr>
             {% endwith %}
             {% empty %}
-            <tr><td colspan="9" class="px-5 py-20 text-center"><div class="flex flex-col items-center gap-3"><div class="w-12 h-12 rounded-full flex items-center justify-center surface-bubble"><svg class="w-6 h-6 c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg></div><div><p class="font-medium c-primary">Geen budgetten gevonden</p><p class="text-sm mt-1 c-muted">{% if search_query or selected_year %}Pas je filters aan of <a href="{% url 'contracts:budget_list' %}" class="c-link">wis de zoekopdracht</a>.{% else %}Begin met <a href="{% url 'contracts:budget_create' %}" class="c-link">je eerste capaciteitbudget aanmaken</a>.{% endif %}</p></div></div></td></tr>
+            <tr><td colspan="9" class="px-5 py-20 text-center"><div class="flex flex-col items-center gap-3"><div class="w-12 h-12 rounded-full flex items-center justify-center surface-bubble"><svg class="w-6 h-6 c-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/></svg></div><div><p class="font-medium c-primary">Geen budgetten gevonden</p><p class="text-sm mt-1 c-muted">{% if search_query or selected_year %}Pas je filters aan of <a href="{% url 'careon:budget_list' %}" class="c-link">wis de zoekopdracht</a>.{% else %}Begin met <a href="{% url 'careon:budget_create' %}" class="c-link">je eerste capaciteitbudget aanmaken</a>.{% endif %}</p></div></div></td></tr>
             {% endfor %}
         </tbody>
     </table>

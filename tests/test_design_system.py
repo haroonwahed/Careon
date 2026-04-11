@@ -70,7 +70,7 @@ class DesignSystemTests(TestCase):
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
         self.assertContains(response, 'title="Search"')
-        self.assertContains(response, '/contracts/search/')
+        self.assertContains(response, '/care/search/')
         self.assertContains(response, 'title="Meldingen"')
 
     def tearDown(self):

@@ -5,7 +5,7 @@ This project supports OIDC SSO via `mozilla-django-oidc`.
 ## 1. Register app in Azure Entra ID
 
 1. Go to Azure Portal -> Entra ID -> App registrations -> New registration.
-2. Name: `CMS Aegis`.
+2. Name: `CareOn`.
 3. Supported account types: choose what you need (single-tenant is typical).
 4. Redirect URI (Web):
    - `http://127.0.0.1:8000/oidc/callback/` (local dev)

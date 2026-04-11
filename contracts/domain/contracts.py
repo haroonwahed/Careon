@@ -9,7 +9,7 @@ from enum import Enum
 
 class CareCaseStatus(Enum):
     DRAFT = "DRAFT"
-    ACTIVE = "ACTIVE" 
+    ACTIVE = "ACTIVE"
     EXPIRED = "EXPIRED"
     TERMINATED = "TERMINATED"
 
@@ -22,7 +22,7 @@ class ListParams:
     sort: str = "updated_desc"
     page: int = 1
     page_size: int = 25
-    
+
     def __post_init__(self):
         if self.status is None:
             self.status = []
@@ -43,7 +43,7 @@ class CareCaseData:
     updated_at: Optional[str] = None
     created_at: Optional[str] = None
     content: str = ""
-    
+
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
         return asdict(self)
@@ -51,12 +51,12 @@ class CareCaseData:
 @dataclass
 class ListResult:
     """Result of case listing operation."""
-    contracts: List[CareCaseData]
+    careon: List[CareCaseData]
     total_count: int
     page: int
     page_size: int
     total_pages: int
-    
+
     def to_dict(self):
         """Convert to dictionary for JSON serialization"""
         return {

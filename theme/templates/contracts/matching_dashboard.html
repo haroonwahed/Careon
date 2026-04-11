@@ -14,7 +14,7 @@
         <div class="flex items-start justify-between mb-4">
             <div>
                 <h2 class="text-lg font-semibold text-gray-900">
-                    <a href="{% url 'contracts:case_detail' row.intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ row.intake.title }}</a>
+                    <a href="{% url 'careon:case_detail' row.intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ row.intake.title }}</a>
                 </h2>
                 <p class="text-sm text-gray-500">
                     {{ row.intake.care_category_main.name|default:"Onbekende categorie" }}

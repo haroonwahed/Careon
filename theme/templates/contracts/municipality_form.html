@@ -7,10 +7,10 @@
     <nav style="font-size: 13px; color: var(--text-secondary);">
         <a href="{% url 'dashboard' %}" style="color: var(--primary); text-decoration: none;">Dashboard</a>
         <span> / </span>
-        <a href="{% url 'contracts:municipality_list' %}" style="color: var(--primary); text-decoration: none;">Gemeenten</a>
+        <a href="{% url 'careon:municipality_list' %}" style="color: var(--primary); text-decoration: none;">Gemeenten</a>
         {% if municipality %}
         <span> / </span>
-        <a href="{% url 'contracts:municipality_detail' municipality.pk %}" style="color: var(--primary); text-decoration: none;">{{ municipality.municipality_name }}</a>
+        <a href="{% url 'careon:municipality_detail' municipality.pk %}" style="color: var(--primary); text-decoration: none;">{{ municipality.municipality_name }}</a>
         <span> / </span>
         <span style="color: var(--text-muted);">Bewerken</span>
         {% else %}
@@ -67,10 +67,10 @@
                 </div>
 
                 <div>
-                    <label for="{{ form.responsible_attorney.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.responsible_attorney.label }}</label>
-                    {{ form.responsible_attorney }}
-                    {% if form.responsible_attorney.errors %}
-                    <p class="mt-1 text-sm text-red-600">{{ form.responsible_attorney.errors.0 }}</p>
+                    <label for="{{ form.responsible_coordinator.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ form.responsible_coordinator.label }}</label>
+                    {{ form.responsible_coordinator }}
+                    {% if form.responsible_coordinator.errors %}
+                    <p class="mt-1 text-sm text-red-600">{{ form.responsible_coordinator.errors.0 }}</p>
                     {% endif %}
                 </div>
             </div>
@@ -145,7 +145,7 @@
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                 {% if municipality %}Wijzigingen opslaan{% else %}Gemeente aanmaken{% endif %}
             </button>
-            <a href="{% url 'contracts:municipality_list' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
+            <a href="{% url 'careon:municipality_list' %}" class="inline-flex items-center gap-2 px-6 py-3 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
                 Annuleren
             </a>
         </div>

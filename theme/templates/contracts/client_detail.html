@@ -7,8 +7,8 @@
         <p class="text-sm text-gray-500">{{ client.get_client_type_display }} &middot; {{ client.get_status_display }} {% if client.industry %}&middot; {{ client.industry }}{% endif %}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{% url 'contracts:configuration_create' %}?client={{ client.pk }}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Nieuwe configuratie</a>
-        <a href="{% url 'contracts:client_update' client.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
+        <a href="{% url 'careon:configuration_create' %}?client={{ client.pk }}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Nieuwe configuratie</a>
+        <a href="{% url 'careon:client_update' client.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
     </div>
 </div>
 
@@ -33,7 +33,7 @@
     <div class="bg-white rounded-xl border border-gray-200 p-5">
         <h3 class="text-sm font-semibold text-gray-500 uppercase mb-3">Capaciteitsoverzicht</h3>
         <div class="space-y-2 text-sm">
-            <div><span class="text-gray-500">Actieve configuraties:</span> {{ client.active_configurations_count|default:client.active_matters_count }}</div>
+            <div><span class="text-gray-500">Actieve configuraties:</span> {{ client.active_configurations_count }}</div>
             <div><span class="text-gray-500">Actieve casussen:</span> {{ client.total_billed|floatformat:0 }}</div>
             <div><span class="text-gray-500">Openstaande casussen:</span> {{ client.outstanding_balance|floatformat:0 }}</div>
         </div>
@@ -43,8 +43,8 @@
 <div class="bg-white rounded-xl border border-gray-200 mb-6">
     <div class="px-5 py-4 border-b border-gray-100"><h2 class="font-semibold text-gray-900">Configuraties</h2></div>
     <div class="divide-y divide-gray-100">
-        {% for configuration in configurations|default:matters %}
-        <a href="{% url 'contracts:configuration_detail' configuration.pk %}" class="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
+        {% for configuration in configurations %}
+        <a href="{% url 'careon:configuration_detail' configuration.pk %}" class="flex items-center justify-between px-5 py-3 hover:bg-gray-50">
             <div>
                 <div class="text-sm font-medium text-gray-900">{{ configuration.configuration_id }} - {{ configuration.title }}</div>
                 <div class="text-xs text-gray-500">{{ configuration.care_domains_display }}</div>

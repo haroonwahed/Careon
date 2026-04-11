@@ -2,7 +2,7 @@
 {% block title %}Rapportages & Regie - Careon{% endblock %}
 {% block content %}
 <div class="page-wrap">
-    
+
     <div class="page-header">
         <div>
             <h1 class="page-title">Rapportages & Regie</h1>
@@ -12,7 +12,7 @@
 
     <!-- KPI Cards: Stagnation, Matching, Escalation, Waittime -->
     <div class="dash-grid dash-grid-4 mb-6">
-        
+
         <!-- Stagnatie -->
         <a href="?attention=stagnation" class="kpi-card kpi-card-link" style="text-decoration: none;">
             <div class="kpi-glow kpi-glow-amber"></div>
@@ -94,7 +94,7 @@
                     <div class="dot dot-green"></div>
                     <span class="panel-title">Aanbieders capaciteit</span>
                 </div>
-                <a href="{% url 'contracts:waittime_list' %}" class="panel-link">
+                <a href="{% url 'careon:waittime_list' %}" class="panel-link">
                     Bekijk alle
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                 </a>
@@ -142,7 +142,7 @@
             <a href="{{ row.href }}" class="list-row" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 22px; border-bottom: 1px solid var(--card-border); transition: background 0.15s; color: inherit;">
                 <div class="item-row">
                     <div>
-                        <span class="badge-sm 
+                        <span class="badge-sm
                             {% if row.kind == 'unmatched' %}badge-purple{% elif row.kind == 'stagnation' %}badge-yellow{% elif row.kind == 'capacity' %}badge-yellow{% elif row.kind == 'escalation' %}badge-yellow{% else %}badge-gray{% endif %}"
                             style="margin-bottom: 6px; display: inline-block;">
                             {{ row.kind_label }}

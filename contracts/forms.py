@@ -2,14 +2,11 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import (
-    CareCase, NegotiationThread, PlacementRequest, LegalTask, RiskLog, ComplianceChecklist, ChecklistItem,
+    CareCase, PlacementRequest, CareTask, CareSignal,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
     CaseIntakeProcess, IntakeTask, CaseRiskSignal, Budget, BudgetExpense,
     Client, CareConfiguration, Document, TrustAccount,
     Deadline, UserProfile, CaseAssessment,
-    ProviderResponseRequest,
-    DataInventoryRecord, DSARRequest, Subprocessor, TransferRecord, RetentionPolicy,
-    ApprovalRule, ApprovalRequest,
     OrganizationInvitation,
     CareCategoryMain,
     MunicipalityConfiguration, RegionalConfiguration,
@@ -31,21 +28,17 @@ class UserProfileForm(forms.ModelForm):
 
     class Meta:
         model = UserProfile
-        fields = ['role', 'phone', 'bar_number', 'department', 'hourly_rate', 'bio']
+        fields = ['role', 'phone', 'department', 'bio']
         widgets = {
             'role': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'phone': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'bar_number': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'department': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'hourly_rate': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
             'bio': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
         }
         labels = {
             'role': 'Rol',
             'phone': 'Telefoon',
-            'bar_number': 'Registratienummer',
             'department': 'Team / afdeling',
-            'hourly_rate': 'Interne uurtariefindicatie',
             'bio': 'Korte profielnotitie',
         }
 
@@ -56,7 +49,7 @@ class ClientForm(forms.ModelForm):
         fields = ['name', 'client_type', 'status', 'email', 'phone', 'address', 'city',
                   'state', 'zip_code', 'country', 'tax_id', 'website', 'industry',
                   'primary_contact', 'primary_contact_email', 'primary_contact_phone',
-                  'responsible_attorney', 'originating_attorney', 'notes']
+                  'responsible_coordinator', 'intake_coordinator', 'notes']
         widgets = {
             'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'client_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
@@ -74,8 +67,8 @@ class ClientForm(forms.ModelForm):
             'primary_contact': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'primary_contact_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
             'primary_contact_phone': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'responsible_attorney': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'originating_attorney': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'responsible_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'intake_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
         }
         labels = {
@@ -83,8 +76,8 @@ class ClientForm(forms.ModelForm):
             'client_type': 'Type aanbieder',
             'status': 'Beschikbaarheidsstatus',
             'industry': 'Specialisatie',
-            'responsible_attorney': 'Casusregisseur',
-            'originating_attorney': 'Backoffice contact',
+            'responsible_coordinator': 'Casusregisseur',
+            'intake_coordinator': 'Backoffice contact',
             'notes': 'Notities en voorwaarden',
         }
 
@@ -144,10 +137,6 @@ class CareConfigurationForm(forms.ModelForm):
         self.fields['linked_providers'].queryset = Client.objects.filter(status='ACTIVE').order_by('name')
         self.fields['care_domains'].required = False
         self.fields['linked_providers'].required = False
-
-
-MatterForm = CareConfigurationForm
-
 
 class DocumentForm(forms.ModelForm):
     class Meta:
@@ -253,7 +242,7 @@ class DeadlineForm(forms.ModelForm):
 
 class CaseAssessmentForm(forms.ModelForm):
     """Form for care case assessment (Casusbeoordeling)"""
-    
+
     # Multi-select for care signals
     risk_signals = forms.MultipleChoiceField(
         choices=CaseAssessment.RiskSignal.choices,
@@ -261,7 +250,7 @@ class CaseAssessmentForm(forms.ModelForm):
         required=False,
         label='Signalen'
     )
-    
+
     class Meta:
         model = CaseAssessment
         fields = [
@@ -279,7 +268,7 @@ class CaseAssessmentForm(forms.ModelForm):
             'reason_not_ready': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
             'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.pk and self.instance.risk_signals:
@@ -287,7 +276,7 @@ class CaseAssessmentForm(forms.ModelForm):
             self.fields['risk_signals'].initial = [
                 s.strip() for s in self.instance.risk_signals.split(',')
             ]
-    
+
     def save(self, commit=True):
         instance = super().save(commit=False)
         # Convert list of selected signals to comma-separated storage.
@@ -302,8 +291,7 @@ class CareCaseForm(forms.ModelForm):
     class Meta:
         model = CareCase
         fields = ['title', 'contract_type', 'content', 'status', 'preferred_provider', 'value', 'currency',
-                  'governing_law', 'jurisdiction', 'language', 'risk_level',
-                  'data_transfer_flag', 'dpa_attached', 'scc_attached', 'lifecycle_stage',
+                  'risk_level', 'lifecycle_stage',
                   'start_date', 'end_date', 'renewal_date', 'auto_renew', 'notice_period_days',
                   'termination_notice_date', 'client', 'matter']
         widgets = {
@@ -314,13 +302,7 @@ class CareCaseForm(forms.ModelForm):
             'preferred_provider': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'value': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
             'currency': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'governing_law': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. Gemeentelijk kader of regionaal beleid'}),
-            'jurisdiction': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. Regio Midden of landelijk'}),
-            'language': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'risk_level': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'data_transfer_flag': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'dpa_attached': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'scc_attached': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
             'lifecycle_stage': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'end_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
@@ -350,19 +332,6 @@ class CareCaseForm(forms.ModelForm):
         }
 
 
-ContractForm = CareCaseForm
-
-
-class NegotiationThreadForm(forms.ModelForm):
-    class Meta:
-        model = NegotiationThread
-        fields = ['title', 'content']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'content': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 5}),
-        }
-
-
 class RegistrationForm(UserCreationForm):
     class Meta(UserCreationForm.Meta):
         model = User
@@ -386,39 +355,27 @@ class OrganizationInvitationForm(forms.ModelForm):
         return self.cleaned_data['email'].strip().lower()
 
 
-class ChecklistItemForm(forms.ModelForm):
-    class Meta:
-        model = ChecklistItem
-        fields = ['title', 'description', 'is_completed', 'order']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'is_completed': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-        }
-
-
 class CaseIntakeProcessForm(forms.ModelForm):
     class Meta:
         model = CaseIntakeProcess
-        fields = ['title', 'transaction_type', 'target_company', 'deal_value',
-                 'lead_attorney', 'start_date', 'target_completion_date', 'description']
+        fields = ['title', 'urgency', 'care_category_main', 'care_category_sub',
+                 'case_coordinator', 'start_date', 'target_completion_date', 'description']
         widgets = {
             'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'transaction_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'target_company': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'deal_value': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': '0.01'}),
-            'lead_attorney': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'urgency': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'care_category_main': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'care_category_sub': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'case_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'target_completion_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
         }
         labels = {
             'title': 'Intaketitel',
-            'transaction_type': 'Type zorgvraag',
-            'target_company': 'Cliëntprofiel / doelgroep',
-            'deal_value': 'Urgentie/complexiteit score',
-            'lead_attorney': 'Casusregisseur',
+            'urgency': 'Urgentie',
+            'care_category_main': 'Hoofdcategorie zorgvraag',
+            'care_category_sub': 'Subcategorie zorgvraag',
+            'case_coordinator': 'Casusregisseur',
             'start_date': 'Start intake',
             'target_completion_date': 'Doeldatum matchbesluit',
             'description': 'Intake samenvatting',
@@ -587,8 +544,8 @@ class PlacementRequestForm(forms.ModelForm):
         instance = super().save(commit=False)
 
         # Keep compatibility storage fields populated while the schema catches up.
-        if instance.due_diligence_process:
-            instance.mark_text = instance.mark_text or f'Indicatie {instance.due_diligence_process.title}'
+        if instance.intake:
+            instance.mark_text = instance.mark_text or f'Indicatie {instance.intake.title}'
             instance.description = instance.description or instance.decision_notes or 'Indicatiebesluit'
 
         if commit:
@@ -596,24 +553,18 @@ class PlacementRequestForm(forms.ModelForm):
         return instance
 
 
-TrademarkRequestForm = PlacementRequestForm
-DueDiligenceProcessForm = CaseIntakeProcessForm
-DueDiligenceTaskForm = IntakeTaskForm
-DueDiligenceRiskForm = CaseRiskSignalForm
-
-
-class LegalTaskForm(forms.ModelForm):
+class CareTaskForm(forms.ModelForm):
     class Meta:
-        model = LegalTask
-        fields = ['title', 'description', 'priority', 'due_date', 'assigned_to', 'contract', 'matter']
+        model = CareTask
+        fields = ['title', 'description', 'priority', 'due_date', 'assigned_to', 'case_record', 'configuration']
         widgets = {
             'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
             'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
             'priority': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'due_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
             'assigned_to': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'matter': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'case_record': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'configuration': forms.Select(attrs={'class': TAILWIND_SELECT}),
         }
         labels = {
             'title': 'Taaktitel',
@@ -621,14 +572,14 @@ class LegalTaskForm(forms.ModelForm):
             'priority': 'Prioriteit',
             'due_date': 'Streefdatum',
             'assigned_to': 'Toegewezen aan',
-            'contract': 'Casus',
-            'matter': 'Configuratie',
+            'case_record': 'Casus',
+            'configuration': 'Configuratie',
         }
 
 
-class RiskLogForm(forms.ModelForm):
+class CareSignalForm(forms.ModelForm):
     class Meta:
-        model = RiskLog
+        model = CareSignal
         fields = [
             'due_diligence_process',
             'signal_type',
@@ -658,225 +609,6 @@ class RiskLogForm(forms.ModelForm):
         }
 
 
-class ComplianceChecklistForm(forms.ModelForm):
-    class Meta:
-        model = ComplianceChecklist
-        fields = ['title', 'description', 'regulation_type', 'contract']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
-            'regulation_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
-        }
-
-
-class ProviderResponseRequestForm(forms.ModelForm):
-    class Meta:
-        model = ProviderResponseRequest
-        fields = ['contract', 'document', 'signer_name', 'signer_email', 'signer_role', 'status', 'order']
-        widgets = {
-            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'document': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'signer_name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'signer_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
-            'signer_role': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. Teamleider, Regiecoordinator'}),
-            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-        }
-        labels = {
-            'contract': 'Casus',
-            'document': 'Document',
-            'signer_name': 'Naam contactpersoon',
-            'signer_email': 'E-mailadres contactpersoon',
-            'signer_role': 'Rol contactpersoon',
-            'status': 'Status',
-            'order': 'Volgorde',
-        }
-
-
-SignatureRequestForm = ProviderResponseRequestForm
-
-
-class DataInventoryForm(forms.ModelForm):
-    class Meta:
-        model = DataInventoryRecord
-        fields = ['title', 'description', 'data_categories', 'data_subjects', 'purpose',
-                  'lawful_basis', 'retention_period', 'recipients', 'third_country_transfers',
-                  'transfer_safeguards', 'technical_measures', 'organizational_measures',
-                  'dpia_required', 'dpia_completed', 'controller', 'processor', 'dpo_contact', 'client']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'data_subjects': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'purpose': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'lawful_basis': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'retention_period': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'recipients': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'third_country_transfers': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'transfer_safeguards': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'technical_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'organizational_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'dpia_required': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'dpia_completed': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'controller': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'processor': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'dpo_contact': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
-        }
-
-
-class DSARRequestForm(forms.ModelForm):
-    class Meta:
-        model = DSARRequest
-        fields = ['request_type', 'status', 'requester_name', 'requester_email',
-                  'requester_id_verified', 'description', 'response', 'denial_reason',
-                  'received_date', 'due_date', 'completed_date', 'extended', 'client', 'assigned_to']
-        widgets = {
-            'request_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'requester_name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'requester_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
-            'requester_id_verified': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
-            'response': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
-            'denial_reason': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'received_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'due_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'completed_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'extended': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'client': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'assigned_to': forms.Select(attrs={'class': TAILWIND_SELECT}),
-        }
-
-
-class SubprocessorForm(forms.ModelForm):
-    class Meta:
-        model = Subprocessor
-        fields = ['name', 'description', 'service_type', 'country', 'is_eu_based',
-                  'dpa_in_place', 'scc_in_place', 'dpf_certified', 'data_categories',
-                  'contact_email', 'contract_start_date', 'contract_end_date',
-                  'last_audit_date', 'risk_level', 'is_active', 'notes']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'service_type': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'is_eu_based': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'dpa_in_place': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'scc_in_place': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'dpf_certified': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'contact_email': forms.EmailInput(attrs={'class': TAILWIND_INPUT}),
-            'contract_start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'contract_end_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'last_audit_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'risk_level': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-        }
-
-
-class TransferRecordForm(forms.ModelForm):
-    class Meta:
-        model = TransferRecord
-        fields = ['title', 'source_country', 'destination_country', 'transfer_mechanism',
-                  'data_categories', 'subprocessor', 'contract', 'tia_completed',
-                  'supplementary_measures', 'is_active', 'start_date', 'review_date', 'notes']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'source_country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'destination_country': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'transfer_mechanism': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'data_categories': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'subprocessor': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'tia_completed': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'supplementary_measures': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'start_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'review_date': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-        }
-
-
-class RetentionPolicyForm(forms.ModelForm):
-    class Meta:
-        model = RetentionPolicy
-        fields = ['title', 'category', 'description', 'retention_period_days', 'legal_basis',
-                  'deletion_method', 'auto_delete', 'review_frequency_days', 'last_reviewed',
-                  'next_review', 'is_active']
-        widgets = {
-            'title': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'category': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'retention_period_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-            'legal_basis': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 2}),
-            'deletion_method': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'auto_delete': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'review_frequency_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-            'last_reviewed': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'next_review': forms.DateInput(attrs={'class': TAILWIND_INPUT, 'type': 'date'}),
-            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-        }
-
-
-class ApprovalRuleForm(forms.ModelForm):
-    class Meta:
-        model = ApprovalRule
-        fields = ['name', 'description', 'trigger_type', 'trigger_value', 'approval_step',
-                  'approver_role', 'specific_approver', 'sla_hours', 'escalation_after_hours',
-                  'is_active', 'order']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-            'trigger_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'trigger_value': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'approval_step': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'approver_role': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'specific_approver': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'sla_hours': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-            'escalation_after_hours': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-            'is_active': forms.CheckboxInput(attrs={'class': TAILWIND_CHECKBOX}),
-            'order': forms.NumberInput(attrs={'class': TAILWIND_INPUT}),
-        }
-        labels = {
-            'name': 'Naam indicatieregel',
-            'description': 'Omschrijving',
-            'trigger_type': 'Startvoorwaarde',
-            'trigger_value': 'Waarde startvoorwaarde',
-            'approval_step': 'Indicatiestap',
-            'approver_role': 'Beoordelaarsrol',
-            'specific_approver': 'Specifieke beoordelaar',
-            'sla_hours': 'Doorlooptijd (uren)',
-            'escalation_after_hours': 'Escalatie na (uren)',
-            'is_active': 'Actief',
-            'order': 'Volgorde',
-        }
-
-
-class ApprovalRequestForm(forms.ModelForm):
-    class Meta:
-        model = ApprovalRequest
-        fields = ['contract', 'approval_step', 'status', 'assigned_to', 'comments', 'due_date']
-        widgets = {
-            'contract': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'approval_step': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
-            'status': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'assigned_to': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'comments': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
-            'due_date': forms.DateTimeInput(attrs={'class': TAILWIND_INPUT, 'type': 'datetime-local'}),
-        }
-        labels = {
-            'contract': 'Casus',
-            'approval_step': 'Indicatiestap',
-            'status': 'Status',
-            'assigned_to': 'Toegewezen aan',
-            'comments': 'Toelichting',
-            'due_date': 'Streefmoment',
-        }
-
-
 # ============================================
 # MUNICIPALITY & REGIONAL CONFIGURATION FORMS
 # ============================================
@@ -888,7 +620,7 @@ class MunicipalityConfigurationForm(forms.ModelForm):
             'municipality_name', 'municipality_code', 'status',
             'care_domains', 'linked_providers',
             'max_wait_days', 'priority_rules',
-            'responsible_attorney', 'notes'
+            'responsible_coordinator', 'notes'
         ]
         widgets = {
             'municipality_name': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. Amsterdam'}),
@@ -898,7 +630,7 @@ class MunicipalityConfigurationForm(forms.ModelForm):
             'linked_providers': forms.CheckboxSelectMultiple(attrs={'class': 'h-4 w-4'}),
             'max_wait_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. 14'}),
             'priority_rules': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4, 'placeholder': 'Prioriteringsregels...'}),
-            'responsible_attorney': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'responsible_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3, 'placeholder': 'Aanvullende notities...'}),
         }
         labels = {
@@ -909,7 +641,7 @@ class MunicipalityConfigurationForm(forms.ModelForm):
             'linked_providers': 'Gekoppelde aanbieders',
             'max_wait_days': 'Maximale wachttijd (dagen)',
             'priority_rules': 'Prioriteringsregels',
-            'responsible_attorney': 'Verantwoordelijke',
+            'responsible_coordinator': 'Verantwoordelijke',
             'notes': 'Notities',
         }
 
@@ -921,7 +653,7 @@ class RegionalConfigurationForm(forms.ModelForm):
             'region_name', 'region_code', 'status',
             'served_municipalities', 'care_domains', 'linked_providers',
             'max_wait_days', 'priority_rules',
-            'responsible_attorney', 'notes'
+            'responsible_coordinator', 'notes'
         ]
         widgets = {
             'region_name': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. Metropoolregio Amsterdam'}),
@@ -932,7 +664,7 @@ class RegionalConfigurationForm(forms.ModelForm):
             'linked_providers': forms.CheckboxSelectMultiple(attrs={'class': 'h-4 w-4'}),
             'max_wait_days': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. 14'}),
             'priority_rules': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4, 'placeholder': 'Prioriteringsregels...'}),
-            'responsible_attorney': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'responsible_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'notes': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3, 'placeholder': 'Aanvullende notities...'}),
         }
         labels = {
@@ -944,6 +676,6 @@ class RegionalConfigurationForm(forms.ModelForm):
             'linked_providers': 'Gekoppelde aanbieders',
             'max_wait_days': 'Maximale wachttijd (dagen)',
             'priority_rules': 'Prioriteringsregels',
-            'responsible_attorney': 'Verantwoordelijke',
+            'responsible_coordinator': 'Verantwoordelijke',
             'notes': 'Notities',
         }

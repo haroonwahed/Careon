@@ -14,12 +14,12 @@ class Command(BaseCommand):
             '--interval-minutes',
             type=int,
             default=60,
-            help='How often to execute send_contract_reminders (default: 60).',
+            help='How often to execute send_case_reminders (default: 60).',
         )
         parser.add_argument(
             '--once',
             action='store_true',
-            help='Run send_contract_reminders once and exit.',
+            help='Run send_case_reminders once and exit.',
         )
 
     def handle(self, *args, **options):
@@ -27,7 +27,7 @@ class Command(BaseCommand):
         run_once = options['once']
 
         if run_once:
-            call_command('send_contract_reminders')
+            call_command('send_case_reminders')
             self.stdout.write(self.style.SUCCESS('Herinneringsplanner eenmalig uitgevoerd.'))
             return
 
@@ -41,7 +41,7 @@ class Command(BaseCommand):
         while True:
             now = timezone.now()
             if now >= next_run:
-                call_command('send_contract_reminders')
+                call_command('send_case_reminders')
                 next_run = now + timedelta(minutes=interval_minutes)
                 self.stdout.write(
                     self.style.SUCCESS(f'Volgende herinneringsrun gepland om {next_run.isoformat()}.')

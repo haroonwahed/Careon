@@ -6,7 +6,7 @@
 <div class="mb-4 text-sm">
     <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
     <span class="text-gray-400 mx-1">/</span>
-    <a href="{% url 'contracts:assessment_list' %}" class="text-blue-600 hover:text-blue-800">Beoordelingen</a>
+    <a href="{% url 'careon:assessment_list' %}" class="text-blue-600 hover:text-blue-800">Beoordelingen</a>
     <span class="text-gray-400 mx-1">/</span>
     <span class="text-gray-600">{% if form.instance.pk %}Bewerken{% else %}Nieuw{% endif %}</span>
 </div>
@@ -92,7 +92,7 @@
         {% endif %}
 
         <div class="flex justify-between items-center gap-4">
-            <a href="{% url 'contracts:assessment_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
+            <a href="{% url 'careon:assessment_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
                 Annuleren
             </a>
             <button type="submit" class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">

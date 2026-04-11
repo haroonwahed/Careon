@@ -1,4 +1,4 @@
-# CMS-Aegis Rollback Runbook
+# CareOn Rollback Runbook
 
 > **Purpose** — Authoritative step-by-step guide for reverting the application
 > to a known-good state. Use this when a deployment introduces a regression,
@@ -12,10 +12,10 @@
 | Prerequisite | Command |
 |---|---|
 | SSH onto the app server | `ssh deploy@<host>` |
-| Activate the virtualenv | `source /opt/cms-aegis/.venv/bin/activate` |
-| Confirm current HEAD | `git -C /opt/cms-aegis log -1 --oneline` |
+| Activate the virtualenv | `source /opt/careon/.venv/bin/activate` |
+| Confirm current HEAD | `git -C /opt/careon log -1 --oneline` |
 | Check migration state | `python manage.py showmigrations` |
-| Verify backup exists | `ls -lth /backups/cms-aegis/ \| head -5` |
+| Verify backup exists | `ls -lth /backups/careon/ \| head -5` |
 
 > **Never roll back without a database backup confirmed within the last hour.**
 
@@ -38,10 +38,10 @@ Determine the rollback level needed before acting:
 
 ```bash
 # 1. Edit the env file
-nano /opt/cms-aegis/.env
+nano /opt/careon/.env
 
 # 2. Restart the application server
-sudo systemctl restart gunicorn-cms-aegis
+sudo systemctl restart gunicorn-careon
 
 # 3. Smoke-test
 curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
@@ -62,7 +62,7 @@ set_flag('FEATURE_REDESIGN', False)
 ## 3. L2 — Code-Only Rollback
 
 ```bash
-cd /opt/cms-aegis
+cd /opt/careon
 
 # 1. Identify the last good commit
 git log --oneline -10
@@ -79,7 +79,7 @@ pip install -r requirements/runtime.txt
 python manage.py collectstatic --noinput
 
 # 5. Restart
-sudo systemctl restart gunicorn-cms-aegis
+sudo systemctl restart gunicorn-careon
 
 # 6. Verify health
 curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
@@ -101,12 +101,12 @@ curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
 ### 4.2 Reverting a migration
 
 ```bash
-cd /opt/cms-aegis
+cd /opt/careon
 
 # 1. Back up the database FIRST
-pg_dump -Fc cms_aegis > /backups/cms-aegis/pre-rollback-$(date +%Y%m%dT%H%M%S).dump
+pg_dump -Fc careon > /backups/careon/pre-rollback-$(date +%Y%m%dT%H%M%S).dump
 # SQLite equivalent:
-cp db.sqlite3 /backups/cms-aegis/db-pre-rollback-$(date +%Y%m%dT%H%M%S).sqlite3
+cp db.sqlite3 /backups/careon/db-pre-rollback-$(date +%Y%m%dT%H%M%S).sqlite3
 
 # 2. Identify the migration to revert to
 python manage.py showmigrations contracts
@@ -122,7 +122,7 @@ git revert <migration-commit-sha> --no-edit
 pip install -r requirements/runtime.txt
 
 # 6. Restart
-sudo systemctl restart gunicorn-cms-aegis
+sudo systemctl restart gunicorn-careon
 ```
 
 > **Data warning**: reversing a migration that adds columns is usually safe.
@@ -134,10 +134,10 @@ sudo systemctl restart gunicorn-cms-aegis
 Successful scratch-db rehearsal on a clean SQLite file:
 
 ```bash
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
-SQLITE_PATH=/tmp/cms-aegis-drill-clean.sqlite3 python manage.py audit_null_organizations
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py migrate contracts 0006_approvalrequest_organization_and_more --noinput
+SQLITE_PATH=/tmp/careon-drill-clean.sqlite3 python manage.py audit_null_organizations
 ```
 
 Observed result:
@@ -150,8 +150,8 @@ Observed result:
 Production-like caveat discovered on a populated copy:
 
 ```bash
-cp db.sqlite3 /tmp/cms-aegis-drill.sqlite3
-SQLITE_PATH=/tmp/cms-aegis-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
+cp db.sqlite3 /tmp/careon-drill.sqlite3
+SQLITE_PATH=/tmp/careon-drill.sqlite3 python manage.py migrate contracts 0005_add_org_fk_to_budget_and_due_diligence --noinput
 ```
 
 Observed failure:
@@ -180,25 +180,25 @@ python manage.py migrate contracts zero
 ```bash
 # --- PostgreSQL ---
 # 1. Stop the application
-sudo systemctl stop gunicorn-cms-aegis
+sudo systemctl stop gunicorn-careon
 
 # 2. Drop and recreate the database
-psql -U postgres -c "DROP DATABASE cms_aegis;"
-psql -U postgres -c "CREATE DATABASE cms_aegis OWNER cms_user;"
+psql -U postgres -c "DROP DATABASE careon;"
+psql -U postgres -c "CREATE DATABASE careon OWNER careon_user;"
 
 # 3. Restore from backup
-pg_restore -Fc -d cms_aegis /backups/cms-aegis/<backup-file>.dump
+pg_restore -Fc -d careon /backups/careon/<backup-file>.dump
 
 # 4. Re-run any migrations added after the backup was taken
 python manage.py migrate --run-syncdb
 
 # 5. Restart
-sudo systemctl restart gunicorn-cms-aegis
+sudo systemctl restart gunicorn-careon
 
 # --- SQLite (development / small deployments) ---
-sudo systemctl stop gunicorn-cms-aegis
-cp /backups/cms-aegis/<backup>.sqlite3 db.sqlite3
-sudo systemctl start gunicorn-cms-aegis
+sudo systemctl stop gunicorn-careon
+cp /backups/careon/<backup>.sqlite3 db.sqlite3
+sudo systemctl start gunicorn-careon
 ```
 
 ---
@@ -225,14 +225,14 @@ cd client && E2E_BASE_URL=https://<host> npx playwright test tests/e2e/
 ```
 
 For release and rollback verification, use the full two-org checklist in
-[`docs/MANUAL_SMOKE_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/CMS-Aegis/docs/MANUAL_SMOKE_CHECKLIST.md).
+[`docs/MANUAL_SMOKE_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/CareOn/docs/MANUAL_SMOKE_CHECKLIST.md).
 
 ---
 
 ## 7. Comms Template
 
 > **TO:** eng-alerts channel  
-> **SUBJECT:** [CMS-Aegis] Rollback executed — \<date\>  
+> **SUBJECT:** [CareOn] Rollback executed — \<date\>  
 >
 > **Incident summary:** \<one-line description\>  
 > **Rollback level:** L\<1-4\>  

@@ -1,6 +1,6 @@
 # Observability Bootstrap (SLO + Alerting)
 
-This document defines the minimum monitoring baseline for CMS Aegis.
+This document defines the minimum monitoring baseline for CareOn.
 
 ## Scope
 
@@ -48,8 +48,8 @@ This document defines the minimum monitoring baseline for CMS Aegis.
 
 ## Runbook Links
 
-- Rollback: [`docs/ROLLBACK_RUNBOOK.md`](/Users/haroonwahed/Documents/Projects/CMS-Aegis/docs/ROLLBACK_RUNBOOK.md)
-- Manual smoke: [`docs/MANUAL_SMOKE_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/CMS-Aegis/docs/MANUAL_SMOKE_CHECKLIST.md)
+- Rollback: [`docs/ROLLBACK_RUNBOOK.md`](/Users/haroonwahed/Documents/Projects/CareOn/docs/ROLLBACK_RUNBOOK.md)
+- Manual smoke: [`docs/MANUAL_SMOKE_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/CareOn/docs/MANUAL_SMOKE_CHECKLIST.md)
 
 ## Implementation Checklist
 

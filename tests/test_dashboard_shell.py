@@ -70,7 +70,7 @@ class DashboardShellTestCase(TestCase):
             created_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:case_list'))
+        response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Zorgintakes')
         self.assertContains(response, 'Zoek intakes op titel, casus-ID...')

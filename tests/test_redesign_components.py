@@ -48,7 +48,7 @@ class RedesignComponentsTestCase(TestCase):
             created_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:case_list'))
+        response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Zorgintakes')
         self.assertContains(response, 'Zoek intakes op titel, casus-ID...')
@@ -76,19 +76,19 @@ class RedesignComponentsTestCase(TestCase):
             organization=self.organization,
             year=2025,
             quarter=Budget.Quarter.Q3,
-            department='Legal Ops',
+            department='Regie Operaties',
             allocated_amount='120000.00',
             description='Core operations budget',
             created_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:budget_list'))
+        response = self.client.get(reverse('careon:budget_list'))
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Budgetten')
         self.assertContains(response, 'Zoek budgetten op afdeling of omschrijving...')
         self.assertContains(response, 'Nieuw budget')
-        self.assertContains(response, 'Legal Ops')
+        self.assertContains(response, 'Regie Operaties')
 
     def test_placement_list_alias_uses_configuration_view(self):
         client_record = ClientModel.objects.create(
@@ -105,28 +105,28 @@ class RedesignComponentsTestCase(TestCase):
         )
         PlacementRequest.objects.create(
             mark_text='CAREON MARK',
-            description='Primary trademark filing for the platform.',
-            goods_services='Legal software services',
+            description='Primary placement request for the platform.',
+            goods_services='Care coordination services',
             filing_basis='Use in commerce',
             status=PlacementRequest.Status.PENDING,
             client=client_record,
             matter=configuration,
         )
 
-        response = self.client.get(reverse('contracts:placement_list'))
+        response = self.client.get(reverse('careon:placement_list'))
 
         self.assertRedirects(
             response,
-            f"{reverse('contracts:case_list')}?flow=placement",
+            f"{reverse('careon:case_list')}?flow=placement",
             status_code=302,
             target_status_code=200,
         )
 
     def test_configuration_list_uses_current_authenticated_shell(self):
-        response = self.client.get(reverse('contracts:configuration_list'))
+        response = self.client.get(reverse('careon:configuration_list'))
 
         self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('contracts:municipality_list'), response['Location'])
+        self.assertIn(reverse('careon:municipality_list'), response['Location'])
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

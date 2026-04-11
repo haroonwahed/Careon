@@ -7,7 +7,7 @@
         <h1 class="page-title">Gemeenten</h1>
         <p class="page-subtitle">{{ total_municipalities }} totaal &middot; {{ active_municipalities }} actief</p>
     </div>
-    <a href="{% url 'contracts:municipality_create' %}" class="action-chip">
+    <a href="{% url 'careon:municipality_create' %}" class="action-chip">
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
         Nieuwe gemeente
     </a>
@@ -40,7 +40,7 @@
         <tbody class="divide-y divide-gray-100">
             {% for municipality in municipalities %}
             <tr class="tbl-row hover:bg-gray-50">
-                <td class="px-5 py-3"><a href="{% url 'contracts:municipality_detail' municipality.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ municipality.municipality_name }}</a></td>
+                <td class="px-5 py-3"><a href="{% url 'careon:municipality_detail' municipality.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ municipality.municipality_name }}</a></td>
                 <td class="px-5 py-3 text-sm text-gray-600 font-mono">{{ municipality.municipality_code|default:"—" }}</td>
                 <td class="px-5 py-3 text-sm"><span class="badge-sm badge-blue">{{ municipality.provider_count }}</span></td>
                 <td class="px-5 py-3 text-sm text-gray-600">{{ municipality.care_domains_display|truncatechars:40 }}</td>
@@ -49,16 +49,16 @@
                         {{ municipality.get_status_display }}
                     </span>
                 </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ municipality.responsible_attorney.get_full_name|default:"—" }}</td>
+                <td class="px-5 py-3 text-sm text-gray-600">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</td>
                 <td class="px-5 py-3 text-right">
-                    <a href="{% url 'contracts:municipality_update' municipality.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a>
+                    <a href="{% url 'careon:municipality_update' municipality.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a>
                 </td>
             </tr>
             {% empty %}
             <tr><td colspan="7" class="px-5 py-12 text-center">
                 <div style="color: var(--text-muted);">
                     <p style="font-size: 14px; margin-bottom: 8px;">U hebt nog geen gemeenten ingesteld.</p>
-                    <a href="{% url 'contracts:municipality_create' %}" style="color: var(--primary); text-decoration: none; font-weight: 500;">+ Voeg eerste gemeente toe</a>
+                    <a href="{% url 'careon:municipality_create' %}" style="color: var(--primary); text-decoration: none; font-weight: 500;">+ Voeg eerste gemeente toe</a>
                 </div>
             </td></tr>
             {% endfor %}

@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 from contracts.models import (
-    Organization, OrganizationMembership, CaseIntakeProcess, 
-    Client as CareProvider, RiskLog, TrustAccount, PlacementRequest,
+    Organization, OrganizationMembership, CaseIntakeProcess,
+    Client as CareProvider, CareSignal, TrustAccount, PlacementRequest,
     CareConfiguration
 )
 
@@ -34,14 +34,14 @@ class ReportsDashboardTestCase(TestCase):
 
     def test_reports_dashboard_loads(self):
         """Verify reports dashboard template renders with new dashboard design."""
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Rapportages & Regie')
         self.assertContains(response, 'kpi-card')
 
     def test_reports_dashboard_kpi_cards_are_clickable(self):
         """Verify KPI cards link to filtered attention list."""
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
         # Check that KPI cards have href attributes
         self.assertContains(response, '?attention=stagnation')
@@ -59,15 +59,15 @@ class ReportsDashboardTestCase(TestCase):
             start_date=date.today(),
             target_completion_date=date.today(),
         )
-        
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Aandacht vereist')
         self.assertContains(response, 'badge-sm')
 
     def test_reports_dashboard_flow_analysis(self):
         """Verify casusflow analysis panel displays."""
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Casusflow analyse')
         self.assertContains(response, 'Intake')
@@ -76,15 +76,15 @@ class ReportsDashboardTestCase(TestCase):
 
     def test_reports_dashboard_filter_by_attention_type(self):
         """Verify filtering by attention type works."""
-        response = self.client.get(reverse('contracts:reports_dashboard'), {'attention': 'stagnation'})
+        response = self.client.get(reverse('careon:reports_dashboard'), {'attention': 'stagnation'})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Stagnatie')
 
     def test_reports_dashboard_no_generic_theater(self):
         """Verify no meaningless empty metrics or generic dashboard theater."""
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
-        
+
         # Should show regie/flow-focused metrics, not generic "contracts" metrics
         content = response.content.decode()
         # Check for dashboard design classes
@@ -108,10 +108,10 @@ class ReportsDashboardTestCase(TestCase):
             start_date=date.today(),
             target_completion_date=date.today(),
         )
-        
-        response = self.client.get(reverse('contracts:reports_dashboard'))
+
+        response = self.client.get(reverse('careon:reports_dashboard'))
         self.assertEqual(response.status_code, 200)
-        
+
         # Check that page contains recommendation links or attention items
         content = response.content.decode()
         self.assertIn('Aanbevelingen', content)

@@ -7,8 +7,8 @@
         <p class="text-sm text-gray-500">Toegekend: ${{ budget.allocated_amount|floatformat:2 }}</p>
     </div>
     <div class="flex gap-2">
-        <a href="{% url 'contracts:add_expense' budget.pk %}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Uitgave toevoegen</a>
-        <a href="{% url 'contracts:budget_update' budget.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
+        <a href="{% url 'careon:add_expense' budget.pk %}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700">Uitgave toevoegen</a>
+        <a href="{% url 'careon:budget_update' budget.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
     </div>
 </div>
 <div class="grid grid-cols-3 gap-4 mb-6">

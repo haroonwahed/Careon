@@ -7,7 +7,7 @@
         <p class="text-sm text-gray-500">{{ unread_count }} ongelezen</p>
     </div>
     {% if unread_count > 0 %}
-    <form method="post" action="{% url 'contracts:mark_all_notifications_read' %}">
+    <form method="post" action="{% url 'careon:mark_all_notifications_read' %}">
         {% csrf_token %}
         <button type="submit" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Markeer alles als gelezen</button>
     </form>
@@ -32,7 +32,7 @@
                 <div class="text-xs text-gray-400 mt-1">{{ notification.created_at|timesince }} geleden</div>
             </div>
             {% if not notification.is_read %}
-            <form method="post" action="{% url 'contracts:mark_notification_read' notification.pk %}">
+            <form method="post" action="{% url 'careon:mark_notification_read' notification.pk %}">
                 {% csrf_token %}
                 <button type="submit" class="text-xs text-blue-600 hover:text-blue-800">Markeer als gelezen</button>
             </form>

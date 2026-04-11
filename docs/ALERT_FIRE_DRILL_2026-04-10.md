@@ -1,7 +1,7 @@
 # Alert Fire Drill - 2026-04-10
 
 ## Objective
-Validate P1 and P2 routing for CMS Aegis observability bootstrap.
+Validate P1 and P2 routing for CareOn observability bootstrap.
 
 ## Drill Scope
 - P1 path: high 5xx and stalled scheduler heartbeat

@@ -6,8 +6,8 @@ from django.urls import reverse
 
 from contracts.models import (
     CaseAssessment,
+    CaseIntakeProcess,
     Client as CareProvider,
-    DueDiligenceProcess,
     Organization,
     OrganizationMembership,
     PlacementRequest,
@@ -48,34 +48,34 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             average_wait_days=10,
         )
 
-        intake = DueDiligenceProcess.objects.create(
+        intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Flow Intake',
-            status=DueDiligenceProcess.ProcessStatus.INTAKE,
-            urgency=DueDiligenceProcess.Urgency.MEDIUM,
-            preferred_care_form=DueDiligenceProcess.CareForm.OUTPATIENT,
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date=date.today(),
             target_completion_date=date.today() + timedelta(days=7),
-            lead_attorney=self.user,
+            case_coordinator=self.user,
         )
         assessment = CaseAssessment.objects.create(
-            due_diligence_process=intake,
+            intake=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
         )
 
-        assessment_list_response = self.client.get(reverse('contracts:assessment_list'))
+        assessment_list_response = self.client.get(reverse('careon:assessment_list'))
         self.assertEqual(assessment_list_response.status_code, 200)
         self.assertContains(assessment_list_response, 'Flow Intake')
 
-        matching_response = self.client.get(reverse('contracts:matching_dashboard'))
+        matching_response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(matching_response.status_code, 200)
         self.assertContains(matching_response, 'Flow Intake')
         self.assertContains(matching_response, 'Flow Aanbieder')
 
         assign_response = self.client.post(
-            reverse('contracts:matching_dashboard'),
+            reverse('careon:matching_dashboard'),
             {
                 'action': 'assign',
                 'assessment_id': str(assessment.pk),
@@ -90,51 +90,51 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(placement.proposed_provider_id, provider.id)
 
         intake.refresh_from_db()
-        self.assertEqual(intake.status, DueDiligenceProcess.ProcessStatus.MATCHING)
+        self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.MATCHING)
         self.assertContains(assign_response, 'Toegewezen: Flow Aanbieder')
 
     def test_matching_dashboard_empty_state_without_approved_assessments(self):
-        intake = DueDiligenceProcess.objects.create(
+        intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Draft Intake',
-            status=DueDiligenceProcess.ProcessStatus.INTAKE,
-            urgency=DueDiligenceProcess.Urgency.MEDIUM,
-            preferred_care_form=DueDiligenceProcess.CareForm.OUTPATIENT,
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date=date.today(),
             target_completion_date=date.today() + timedelta(days=7),
-            lead_attorney=self.user,
+            case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            due_diligence_process=intake,
+            intake=intake,
             assessment_status=CaseAssessment.AssessmentStatus.DRAFT,
             matching_ready=False,
             assessed_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:matching_dashboard'))
+        response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Geen beoordelingen met status "Goedgekeurd voor matching".')
         self.assertNotContains(response, 'Draft Intake')
 
     def test_matching_dashboard_shows_no_provider_profile_fallback(self):
-        intake = DueDiligenceProcess.objects.create(
+        intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Approved Intake Zonder Profiel',
-            status=DueDiligenceProcess.ProcessStatus.ASSESSMENT,
-            urgency=DueDiligenceProcess.Urgency.MEDIUM,
-            preferred_care_form=DueDiligenceProcess.CareForm.OUTPATIENT,
+            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date=date.today(),
             target_completion_date=date.today() + timedelta(days=7),
-            lead_attorney=self.user,
+            case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            due_diligence_process=intake,
+            intake=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
         )
 
-        response = self.client.get(reverse('contracts:matching_dashboard'))
+        response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Approved Intake Zonder Profiel')
         self.assertContains(response, 'Geen providers met profieldata beschikbaar voor deze beoordeling.')

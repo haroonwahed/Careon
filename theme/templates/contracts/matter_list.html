@@ -4,9 +4,9 @@
 <div class="flex items-center justify-between mb-6">
     <div>
         <h1 class="text-2xl font-bold text-gray-900">Configuraties</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ total_configurations|default:total_matters }} totaal &middot; {{ active_configurations|default:active_matters }} actief</p>
+        <p class="text-sm text-gray-500 mt-1">{{ total_configurations }} totaal &middot; {{ active_configurations }} actief</p>
     </div>
-    <a href="{% url 'contracts:configuration_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+    <a href="{% url 'careon:configuration_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
         Nieuwe configuratie
     </a>
@@ -38,12 +38,12 @@
             {% for configuration in configurations %}
             <tr class="hover:bg-gray-50">
                 <td class="px-5 py-3 text-sm font-mono text-gray-600">{{ configuration.configuration_id }}</td>
-                <td class="px-5 py-3"><a href="{% url 'contracts:configuration_detail' configuration.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ configuration.title|truncatechars:40 }}</a></td>
+                <td class="px-5 py-3"><a href="{% url 'careon:configuration_detail' configuration.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ configuration.title|truncatechars:40 }}</a></td>
                 <td class="px-5 py-3 text-sm text-gray-600">{{ configuration.client.name|truncatechars:25 }}</td>
                 <td class="px-5 py-3 text-sm text-gray-600">{{ configuration.care_domains_display }}</td>
                 <td class="px-5 py-3"><span class="text-xs px-2 py-1 rounded-full {% if configuration.status == 'ACTIVE' %}bg-green-100 text-green-800{% elif configuration.status == 'ON_HOLD' %}bg-yellow-100 text-yellow-800{% else %}bg-gray-100 text-gray-600{% endif %}">{{ configuration.get_status_display }}</span></td>
                 <td class="px-5 py-3 text-sm text-gray-600">{{ configuration.responsible_care_coordinator.get_full_name|default:"—" }}</td>
-                <td class="px-5 py-3 text-right"><a href="{% url 'contracts:configuration_update' configuration.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a></td>
+                <td class="px-5 py-3 text-right"><a href="{% url 'careon:configuration_update' configuration.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a></td>
             </tr>
             {% empty %}
             <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">Geen configuraties gevonden.</td></tr>

@@ -8,18 +8,15 @@ from django.urls import reverse
 from django.utils import timezone
 
 from contracts.models import (
-    ChecklistItem,
-    ComplianceChecklist,
     CareCase,
     CareConfiguration,
     Deadline,
     Document,
-    LegalTask,
-    NegotiationThread,
+    CareTask,
     Notification,
     Organization,
     OrganizationMembership,
-    RiskLog,
+    CareSignal,
     Workflow,
     WorkflowStep,
 )
@@ -48,8 +45,8 @@ class MentionsAiAndReminderTests(TestCase):
             password='testpass123',
         )
 
-        self.organization = Organization.objects.create(name='Acme Firm', slug='acme-firm-main')
-        self.other_organization = Organization.objects.create(name='Other Firm', slug='other-firm')
+        self.organization = Organization.objects.create(name='Acme Regie', slug='acme-regie-main')
+        self.other_organization = Organization.objects.create(name='Other Regie', slug='other-regie')
 
         OrganizationMembership.objects.create(
             organization=self.organization,
@@ -95,51 +92,37 @@ class MentionsAiAndReminderTests(TestCase):
             status=CareConfiguration.Status.ACTIVE,
         )
         self.deadline = Deadline.objects.create(
-            title='Contract review checkpoint',
+            title='Case review checkpoint',
             due_date=timezone.localdate() + timedelta(days=5),
-            contract=self.contract,
+            case_record=self.contract,
             created_by=self.owner,
-        )
-        self.checklist = ComplianceChecklist.objects.create(
-            title='Contract compliance gate',
-            description='Checklist linked to contract',
-            regulation_type=ComplianceChecklist.RegulationType.GDPR,
-            contract=self.contract,
-            created_by=self.owner,
-        )
-        self.checklist_item = ChecklistItem.objects.create(
-            checklist=self.checklist,
-            title='Verify data transfer clauses',
-            description='Ensure DPA/SCC references are present.',
-            is_completed=False,
-            order=1,
         )
         self.workflow = Workflow.objects.create(
-            title='Contract approval workflow',
-            description='Workflow linked to contract',
-            contract=self.contract,
+            title='Case approval workflow',
+            description='Workflow linked to case',
+            case_record=self.contract,
             created_by=self.owner,
         )
         self.workflow_step = WorkflowStep.objects.create(
             workflow=self.workflow,
-            name='Legal signoff',
-            description='Complete legal review and signoff.',
+            name='Case signoff',
+            description='Complete case review and signoff.',
             status=WorkflowStep.Status.PENDING,
             order=1,
         )
-        self.risk_log = RiskLog.objects.create(
+        self.risk_log = CareSignal.objects.create(
             title='Data transfer compliance risk',
             description='Potential non-compliance if SCCs are missing.',
-            risk_level=RiskLog.RiskLevel.HIGH,
-            contract=self.contract,
+            risk_level=CareSignal.RiskLevel.HIGH,
+            case_record=self.contract,
             created_by=self.owner,
         )
-        self.legal_task = LegalTask.objects.create(
+        self.legal_task = CareTask.objects.create(
             title='Finalize execution package',
             description='Collect signatures and archive final PDFs.',
-            priority=LegalTask.Priority.HIGH,
+            priority=CareTask.Priority.HIGH,
             due_date=timezone.localdate() + timedelta(days=10),
-            contract=self.contract,
+            case_record=self.contract,
             assigned_to=self.owner,
         )
 
@@ -147,7 +130,7 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
+            reverse('careon:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -156,16 +139,16 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
+            reverse('careon:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
         self.assertEqual(response.status_code, 200)
 
-    def test_document_create_requires_contract_edit_permission(self):
+    def test_document_create_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.post(
-            reverse('contracts:document_create'),
+            reverse('careon:document_create'),
             {
                 'title': 'Unapproved upload',
                 'document_type': 'CONTRACT',
@@ -177,11 +160,11 @@ class MentionsAiAndReminderTests(TestCase):
         self.assertEqual(response.status_code, 403)
         self.assertFalse(Document.objects.filter(title='Unapproved upload').exists())
 
-    def test_document_create_allows_admin_for_contract(self):
+    def test_document_create_allows_admin_for_case(self):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.post(
-            reverse('contracts:document_create'),
+            reverse('careon:document_create'),
             {
                 'title': 'Approved upload',
                 'document_type': 'CONTRACT',
@@ -193,31 +176,31 @@ class MentionsAiAndReminderTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertTrue(Document.objects.filter(title='Approved upload').exists())
 
-    def test_deadline_update_requires_contract_edit_permission(self):
+    def test_deadline_update_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:deadline_update', kwargs={'pk': self.deadline.id}),
+            reverse('careon:deadline_update', kwargs={'pk': self.deadline.id}),
         )
 
         self.assertEqual(response.status_code, 403)
 
-    def test_deadline_complete_requires_contract_edit_permission(self):
+    def test_deadline_complete_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.post(
-            reverse('contracts:deadline_complete', kwargs={'pk': self.deadline.id}),
+            reverse('careon:deadline_complete', kwargs={'pk': self.deadline.id}),
         )
 
         self.assertEqual(response.status_code, 403)
         self.deadline.refresh_from_db()
         self.assertFalse(self.deadline.is_completed)
 
-    def test_deadline_complete_allows_admin_for_contract(self):
+    def test_deadline_complete_allows_admin_for_case(self):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.post(
-            reverse('contracts:deadline_complete', kwargs={'pk': self.deadline.id}),
+            reverse('careon:deadline_complete', kwargs={'pk': self.deadline.id}),
         )
 
         self.assertEqual(response.status_code, 302)
@@ -228,24 +211,24 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.post(
-            reverse('contracts:legal_task_create'),
+            reverse('careon:care_task_create'),
             {
                 'title': 'Unauthorized task',
                 'description': 'Should fail for member.',
-                'priority': LegalTask.Priority.MEDIUM,
+                'priority': CareTask.Priority.MEDIUM,
                 'due_date': (timezone.localdate() + timedelta(days=12)).isoformat(),
-                'contract': self.contract.id,
+                'case_record': self.contract.id,
             },
         )
 
         self.assertEqual(response.status_code, 403)
-        self.assertFalse(LegalTask.objects.filter(title='Unauthorized task').exists())
+        self.assertFalse(CareTask.objects.filter(title='Unauthorized task').exists())
 
     def test_task_update_requires_case_edit_permission(self):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('careon:task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 403)
@@ -254,7 +237,7 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('careon:task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 200)
@@ -263,13 +246,13 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('contracts:configuration_update', kwargs={'pk': self.configuration.id}),
+            reverse('careon:configuration_update', kwargs={'pk': self.configuration.id}),
         )
 
         self.assertEqual(response.status_code, 200)
 
-    def test_contract_reminder_command_creates_and_deduplicates_notifications(self):
-        call_command('send_contract_reminders')
+    def test_case_reminder_command_creates_and_deduplicates_notifications(self):
+        call_command('send_case_reminders')
 
         owner_notifications = Notification.objects.filter(recipient=self.owner, title__icontains='herinnering')
         admin_notifications = Notification.objects.filter(recipient=self.admin, title__icontains='herinnering')
@@ -277,6 +260,6 @@ class MentionsAiAndReminderTests(TestCase):
         self.assertGreater(admin_notifications.count(), 0)
 
         first_count = Notification.objects.count()
-        call_command('send_contract_reminders')
+        call_command('send_case_reminders')
         second_count = Notification.objects.count()
         self.assertEqual(first_count, second_count)

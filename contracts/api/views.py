@@ -80,9 +80,9 @@ def contracts_api(request):
             page_size=params.page_size,
             total_pages=paginator.num_pages,
         )
-        
+
         return JsonResponse(result.to_dict())
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -99,12 +99,12 @@ def case_detail_api(request, contract_id=None, case_id=None):
             case = queryset.get(id=record_id)
         except CareCase.DoesNotExist:
             case = None
-        
+
         if not case:
             return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
-            
+
         return JsonResponse(_build_case_data(case).to_dict())
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -124,9 +124,9 @@ def cases_bulk_update_api(request):
             organization,
         )
         result = queryset.update(**updates)
-        
+
         return JsonResponse({'success': True, 'updated_count': result})
-        
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
 from contracts.models import (
     CareCase, Client, CareConfiguration, Document, TrustAccount,
-    Deadline, LegalTask, RiskLog, UserProfile
+    Deadline, CareTask, CareSignal, UserProfile
 )
 from datetime import date, timedelta
 from decimal import Decimal
@@ -35,7 +35,7 @@ class Command(BaseCommand):
             email='intake@acme.com', phone='555-0100', industry='Technology',
             address='123 Tech Blvd', city='San Francisco', state='CA', zip_code='94105',
             primary_contact='Jane Doe', primary_contact_email='jane@acme.com',
-            responsible_attorney=coordinator1, originating_attorney=coordinator1,
+            responsible_care_coordinator=coordinator1, intake_creator=coordinator1,
             created_by=admin
         )
         client2 = Client.objects.create(
@@ -43,29 +43,27 @@ class Command(BaseCommand):
             email='zorgregie@globalind.com', phone='555-0200', industry='Manufacturing',
             address='456 Industrial Way', city='Chicago', state='IL', zip_code='60601',
             primary_contact='Bob Smith', primary_contact_email='bob@globalind.com',
-            responsible_attorney=coordinator2, originating_attorney=coordinator1,
+            responsible_coordinator=coordinator2, intake_coordinator=coordinator1,
             created_by=admin
         )
         client3 = Client.objects.create(
             name='Sarah Williams', client_type='INDIVIDUAL', status='ACTIVE',
             email='swilliams@email.com', phone='555-0300',
-            responsible_attorney=coordinator2, created_by=admin
+            responsible_coordinator=coordinator2, created_by=admin
         )
 
         today = date.today()
 
         matter1 = CareConfiguration.objects.create(
             title='Plaatsingsaanvraag - Acme Zorgteam', client=client1,
-            practice_area='CORPORATE', status='ACTIVE',
-            responsible_attorney=coordinator1, originating_attorney=coordinator1,
-            billing_type='HOURLY', budget_amount=Decimal('50000'),
+            status='ACTIVE',
+            responsible_coordinator=coordinator1, intake_coordinator=coordinator1,
             open_date=today - timedelta(days=30), created_by=admin
         )
         matter2 = CareConfiguration.objects.create(
             title='Intake escalatie - Williams', client=client3,
-            practice_area='LABOR', status='ACTIVE',
-            responsible_attorney=coordinator2,
-            billing_type='HOURLY', budget_amount=Decimal('15000'),
+            status='ACTIVE',
+            responsible_care_coordinator=coordinator2,
             open_date=today - timedelta(days=60),
             opposing_party='Regionaal crisisteam', opposing_counsel='Coordinatiepunt Noord',
             court_name='Externe beoordelingscommissie', case_number='2026-CASE-12345',
@@ -73,9 +71,8 @@ class Command(BaseCommand):
         )
         matter3 = CareConfiguration.objects.create(
             title='Regionale capaciteitsafstemming - Global Industries', client=client2,
-            practice_area='IP', status='ACTIVE',
-            responsible_attorney=coordinator1, originating_attorney=coordinator2,
-            billing_type='FLAT_FEE', budget_amount=Decimal('25000'),
+            status='ACTIVE',
+            responsible_care_coordinator=coordinator1, intake_creator=coordinator2,
             open_date=today - timedelta(days=15), created_by=admin
         )
 
@@ -114,36 +111,36 @@ class Command(BaseCommand):
         Deadline.objects.create(
             title='Intake afronden', task_type='INTAKE_COMPLETE',
             priority='HIGH', due_date=today + timedelta(days=5),
-            matter=matter2, assigned_to=coordinator2, created_by=admin
+            configuration=matter2, assigned_to=coordinator2, created_by=admin
         )
         Deadline.objects.create(
             title='Beoordeling uitvoeren', task_type='ASSESSMENT_PERFORM',
             priority='URGENT', due_date=today + timedelta(days=14),
-            matter=matter1, assigned_to=coordinator1, created_by=admin
+            configuration=matter1, assigned_to=coordinator1, created_by=admin
         )
         Deadline.objects.create(
             title='Plaatsing bevestigen', task_type='CONFIRM_PLACEMENT',
             priority='MEDIUM', due_date=today + timedelta(days=30),
-            contract=contract2, assigned_to=coordinator2, created_by=admin
+            case_record=contract2, assigned_to=coordinator2, created_by=admin
         )
 
-        LegalTask.objects.create(
+        CareTask.objects.create(
             title='Bereid intakevragen voor', description='Stel de eerste set intakevragen op voor het gezin',
             priority='HIGH', status='PENDING',
             due_date=today + timedelta(days=7), assigned_to=coordinator2,
-            matter=matter2
+            configuration=matter2
         )
-        LegalTask.objects.create(
+        CareTask.objects.create(
             title='Controleer aanbiederprofiel', description='Rond beoordeling van het aanbiederprofiel af',
             priority='MEDIUM', status='IN_PROGRESS',
             due_date=today + timedelta(days=10), assigned_to=coordinator1,
-            matter=matter3
+            configuration=matter3
         )
 
-        RiskLog.objects.create(
+        CareSignal.objects.create(
             title='Capaciteitsrisico - Regio Noord', description='Verhoogde kans op wachttijd door beperkte plekken',
             risk_level='HIGH', mitigation_plan='Stem extra inkoop en tijdelijke overbrugging af met gemeenten',
-            contract=contract1, matter=matter1, created_by=admin
+            case_record=contract1, configuration=matter1, created_by=admin
         )
 
         self.stdout.write(self.style.SUCCESS('Seeddata succesvol aangemaakt.'))
