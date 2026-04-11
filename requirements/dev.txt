@@ -4,6 +4,12 @@
 django-browser-reload==1.18.0
 django-debug-toolbar==4.4.6
 
+# Git hooks / terminology enforcement
+pre-commit
+
+# Type stubs for Django (reduces Pylance false positives)
+django-stubs[compatible-mypy]
+
 # Test/data helpers
 Faker==17.3.0
 
