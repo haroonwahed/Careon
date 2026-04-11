@@ -9,14 +9,8 @@ LOG_DIR="$ROOT_DIR/logs"
 PID_FILE="$LOG_DIR/dev_https.pid"
 LOG_FILE="$LOG_DIR/dev_https.log"
 
-ROOT_CA_KEY="$CERT_DIR/dev-root-ca-key.pem"
-ROOT_CA_CERT="$CERT_DIR/dev-root-ca-cert.pem"
-ROOT_CA_CFG="$CERT_DIR/dev-root-ca.cnf"
-
 LEAF_KEY="$CERT_DIR/localhost-leaf-key.pem"
-LEAF_CSR="$CERT_DIR/localhost-leaf.csr"
 LEAF_CERT="$CERT_DIR/localhost-leaf-cert.pem"
-LEAF_CFG="$CERT_DIR/localhost-leaf.cnf"
 
 HOST="127.0.0.1"
 PORT="8000"
@@ -35,21 +29,13 @@ Examples:
 EOF
 }
 
-command_exists() {
-  command -v "$1" >/dev/null 2>&1
-}
-
 require_tools() {
   if [[ ! -x "$ROOT_DIR/.venv/bin/python" ]]; then
     echo "Missing Python virtualenv at .venv/bin/python"
     exit 1
   fi
-  if ! command_exists openssl; then
-    echo "openssl is required"
-    exit 1
-  fi
-  if ! command_exists security; then
-    echo "macOS security tool is required"
+  if ! command -v mkcert >/dev/null 2>&1; then
+    echo "mkcert is required. Install it with: brew install mkcert"
     exit 1
   fi
 }
@@ -69,95 +55,20 @@ stop_existing() {
   fi
 }
 
-generate_root_ca_if_needed() {
+ensure_mkcert_certs() {
   mkdir -p "$CERT_DIR"
 
-  if [[ -f "$ROOT_CA_KEY" && -f "$ROOT_CA_CERT" ]]; then
-    return
-  fi
+  # Install mkcert root CA into macOS keychain + Chrome NSS store (idempotent)
+  mkcert -install
 
-  cat > "$ROOT_CA_CFG" <<'EOF'
-[req]
-default_bits = 4096
-prompt = no
-default_md = sha256
-distinguished_name = dn
-x509_extensions = v3_ca
-
-[dn]
-C = NL
-ST = Noord-Holland
-L = Amsterdam
-O = Careon Local Dev
-CN = Careon Local Root CA
-
-[v3_ca]
-subjectKeyIdentifier = hash
-authorityKeyIdentifier = keyid:always,issuer
-basicConstraints = critical, CA:true
-keyUsage = critical, keyCertSign, cRLSign
-EOF
-
-  openssl req -x509 -new -nodes -days 3650 \
-    -keyout "$ROOT_CA_KEY" \
-    -out "$ROOT_CA_CERT" \
-    -config "$ROOT_CA_CFG"
-}
-
-generate_leaf_cert() {
-  cat > "$LEAF_CFG" <<'EOF'
-[req]
-default_bits = 2048
-prompt = no
-default_md = sha256
-distinguished_name = dn
-req_extensions = req_ext
-
-[dn]
-C = NL
-ST = Noord-Holland
-L = Amsterdam
-O = Careon Local Dev
-CN = localhost
-
-[req_ext]
-subjectAltName = @alt_names
-basicConstraints = critical, CA:false
-keyUsage = critical, digitalSignature, keyEncipherment
-extendedKeyUsage = serverAuth
-
-[alt_names]
-DNS.1 = localhost
-IP.1 = 127.0.0.1
-EOF
-
-  openssl req -new -nodes \
-    -keyout "$LEAF_KEY" \
-    -out "$LEAF_CSR" \
-    -config "$LEAF_CFG"
-
-  openssl x509 -req \
-    -in "$LEAF_CSR" \
-    -CA "$ROOT_CA_CERT" \
-    -CAkey "$ROOT_CA_KEY" \
-    -CAcreateserial \
-    -out "$LEAF_CERT" \
-    -days 825 \
-    -sha256 \
-    -extfile "$LEAF_CFG" \
-    -extensions req_ext
-}
-
-trust_root_ca() {
-  security delete-certificate -c localhost "$HOME/Library/Keychains/login.keychain-db" >/dev/null 2>&1 || true
-
-  local sha
-  sha="$(openssl x509 -in "$ROOT_CA_CERT" -noout -fingerprint -sha256 | cut -d'=' -f2 | tr -d ':')"
-
-  if ! security find-certificate -a -Z "$HOME/Library/Keychains/login.keychain-db" | grep -q "$sha"; then
-    security add-trusted-cert -d -r trustRoot \
-      -k "$HOME/Library/Keychains/login.keychain-db" \
-      "$ROOT_CA_CERT"
+  # Regenerate leaf cert if missing or older than 800 days
+  if [[ ! -f "$LEAF_CERT" || ! -f "$LEAF_KEY" ]] || \
+     ! openssl x509 -checkend $((800 * 86400)) -noout -in "$LEAF_CERT" >/dev/null 2>&1; then
+    CAROOT="$(mkcert -CAROOT)"
+    mkcert \
+      -key-file  "$LEAF_KEY" \
+      -cert-file "$LEAF_CERT" \
+      127.0.0.1 localhost
   fi
 }
 
@@ -239,9 +150,7 @@ case "$ACTION" in
   up)
     require_tools
     stop_existing
-    generate_root_ca_if_needed
-    generate_leaf_cert
-    trust_root_ca
+    ensure_mkcert_certs
     start_server
     ;;
   down)
