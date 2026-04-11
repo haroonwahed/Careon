@@ -32,31 +32,23 @@ start_proc() {
   echo "Started $name (pid $pid)."
 }
 
-adopt_existing_dev_server() {
-  local pid_file="logs/devserver.pid"
-  local port_pid
+start_https_server() {
+  local pid_file="logs/dev_https.pid"
 
   if [[ -f "$pid_file" ]] && kill -0 "$(cat "$pid_file")" 2>/dev/null; then
-    echo "dev server already running (pid $(cat "$pid_file"))."
+    echo "HTTPS dev server already running (pid $(cat "$pid_file"))."
     return 0
   fi
 
-  port_pid="$(lsof -ti tcp:8000 -sTCP:LISTEN 2>/dev/null | head -n 1 || true)"
-  if [[ -n "$port_pid" ]]; then
-    echo "$port_pid" > "$pid_file"
-    echo "Adopted existing dev server on port 8000 (pid $port_pid)."
-    return 0
-  fi
-
-  start_proc "dev server" "logs/devserver.pid" "logs/devserver.log" \
-    "$ROOT_DIR/.venv/bin/python" -u manage.py runserver 0.0.0.0:8000 --noreload
+  bash "$ROOT_DIR/scripts/dev_https.sh" up --background
 }
 
-adopt_existing_dev_server
+start_https_server
 
 start_proc "reminder scheduler" "logs/reminder_scheduler.pid" "logs/reminder_scheduler.log" \
   "$ROOT_DIR/.venv/bin/python" -u manage.py run_reminder_scheduler --interval-minutes "$INTERVAL_MINUTES"
 
 echo "Services started."
-echo "- Server log: logs/devserver.log"
+echo "- HTTPS server: https://127.0.0.1:8000/"
+echo "- HTTPS log:    logs/dev_https.log"
 echo "- Scheduler log: logs/reminder_scheduler.log"
