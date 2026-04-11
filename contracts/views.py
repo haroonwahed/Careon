@@ -387,7 +387,7 @@ def favicon(request):
 
 class TenantScopedQuerysetMixin:
     """Mixin to automatically scope querysets to the user's organization.
-    
+
     Caches organization in request to avoid repeated lookups.
     Use self.get_organization() to access cached org in any view method.
     """
@@ -396,7 +396,7 @@ class TenantScopedQuerysetMixin:
         if not hasattr(self.request, '_cached_organization'):
             self.request._cached_organization = get_user_organization(self.request.user)
         return self.request._cached_organization
-    
+
     def get_queryset(self):
         queryset = super().get_queryset()
         org = self.get_organization()
@@ -982,7 +982,7 @@ def deadline_complete(request, pk):
     if not hasattr(request, '_cached_organization'):
         request._cached_organization = get_user_organization(request.user)
     organization = request._cached_organization
-    
+
     deadline_qs = Deadline.objects.for_organization(organization)
     deadline = get_object_or_404(deadline_qs, pk=pk)
     linked_case = _resolve_deadline_case(deadline)
@@ -2907,7 +2907,7 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             ).prefetch_related('risk_factors'),
             org,
         )
-        
+
         # Search by title, case ID, or case coordinator
         q = self.request.GET.get('q')
         if q:
@@ -2917,23 +2917,23 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
                 | Q(case_coordinator__last_name__icontains=q)
                 | Q(contract__id__icontains=q)
             ).distinct()
-        
+
         # Filter by status
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(status=status)
-        
+
         # Filter by urgency
         urgency = self.request.GET.get('urgency')
         if urgency:
             qs = qs.filter(urgency=urgency)
-        
+
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
-        
+
         # Statistics
         org_intakes = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
         ctx.update({
@@ -2944,7 +2944,7 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             'status_choices': CaseIntakeProcess.ProcessStatus.choices,
             'urgency_choices': CaseIntakeProcess.Urgency.choices,
         })
-        
+
         # Build intake rows for display
         intake_rows = []
         for intake in ctx['intakes']:
@@ -2957,7 +2957,7 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
                 'category': intake.care_category_main.name if intake.care_category_main else '—',
                 'created': intake.start_date,
             })
-        
+
         ctx['intake_rows'] = intake_rows
         return ctx
 
@@ -2980,11 +2980,11 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         intake = self.object
-        
+
         # Assessment records linked to this intake
         from django.db.models import Q
         assessments = CaseAssessment.objects.filter(due_diligence_process=intake)
-        
+
         ctx.update({
             'assessment_list': assessments,
             'has_assessment': assessments.exists(),
@@ -2993,7 +2993,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'next_action': 'assessment' if not assessments.exists() else 'matching',
             'case_record': intake.case_record,
         })
-        
+
         return ctx
 
 
@@ -3072,26 +3072,26 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
         ).select_related(
             'due_diligence_process', 'assessed_by'
         )
-        
+
         # Filter by status
         status = self.request.GET.get('status')
         if status:
             qs = qs.filter(assessment_status=status)
-        
+
         # Search by case title/ID
         q = self.request.GET.get('q')
         if q:
             qs = qs.filter(
                 Q(due_diligence_process__title__icontains=q)
             ).distinct()
-        
+
         return qs.order_by('-updated_at')
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         org_assessments = CaseAssessment.objects.filter(due_diligence_process__organization=org)
-        
+
         ctx.update({
             'total_assessments': org_assessments.count(),
             'pending_assessments': org_assessments.filter(
@@ -3103,7 +3103,7 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
             'status_choices': CaseAssessment.AssessmentStatus.choices,
             'search_query': self.request.GET.get('q', ''),
         })
-        
+
         return ctx
 
 
@@ -3124,12 +3124,12 @@ class CaseAssessmentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, De
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         assessment = self.object
-        
+
         ctx.update({
             'intake': assessment.intake,
             'next_action': 'matching',
         })
-        
+
         return ctx
 
 
