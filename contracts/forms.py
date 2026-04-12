@@ -679,3 +679,10 @@ class RegionalConfigurationForm(forms.ModelForm):
             'responsible_coordinator': 'Verantwoordelijke',
             'notes': 'Notities',
         }
+
+
+# Temporary compatibility aliases for legacy care-oriented views.
+CareConfigurationForm = MatterForm
+MunicipalityConfigurationForm = MatterForm
+RegionalConfigurationForm = MatterForm
+CaseAssessmentForm = DueDiligenceProcessForm
