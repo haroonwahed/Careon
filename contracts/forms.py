@@ -371,14 +371,14 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
         }
         labels = {
-            'title': 'Intaketitel',
+            'title': 'Casustitel',
             'urgency': 'Urgentie',
             'care_category_main': 'Hoofdcategorie zorgvraag',
             'care_category_sub': 'Subcategorie zorgvraag',
             'case_coordinator': 'Casusregisseur',
-            'start_date': 'Start intake',
+            'start_date': 'Startdatum casus',
             'target_completion_date': 'Doeldatum matchbesluit',
-            'description': 'Intake samenvatting',
+            'description': 'Casussamenvatting',
         }
 
 
