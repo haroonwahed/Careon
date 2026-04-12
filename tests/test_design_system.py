@@ -1,10 +1,13 @@
 
 import os
+from importlib import reload
 
 from django.contrib.auth.models import User
 from django.template import Context, Template
-from django.test import Client, TestCase
-from django.urls import reverse
+from django.test import Client, TestCase, override_settings
+from django.urls import clear_url_caches, reverse
+
+import config.urls as project_urls
 
 
 class DesignSystemTests(TestCase):
@@ -72,6 +75,13 @@ class DesignSystemTests(TestCase):
         self.assertContains(response, 'title="Search"')
         self.assertContains(response, '/care/search/')
         self.assertContains(response, 'title="Meldingen"')
+
+    @override_settings(DEBUG=True)
+    def test_debug_urlconf_exposes_static_files(self):
+        clear_url_caches()
+        reloaded_urls = reload(project_urls)
+        patterns = [str(pattern.pattern) for pattern in reloaded_urls.urlpatterns]
+        self.assertIn('^static/(?P<path>.*)$', patterns)
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

@@ -117,7 +117,7 @@ class UIButtonAndFlowIntegrityTests(TestCase):
             reverse('careon:placement_list'),
             reverse('careon:intake_list'),
             reverse('careon:workflow_dashboard'),
-            reverse('careon:configuration_list'),
+            reverse('careon:municipality_list'),
             reverse('careon:reports_dashboard'),
             reverse('careon:organization_team'),
             reverse('careon:notification_list'),

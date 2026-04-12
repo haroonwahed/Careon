@@ -27,9 +27,8 @@ class RedesignLayoutTests(TestCase):
 
     def test_sidebar_navigation_sections_and_links(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'WERK')
+        self.assertContains(response, 'CASEMANAGEMENT')
         self.assertContains(response, 'Casussen')
-        self.assertContains(response, 'Beoordelingen')
         self.assertContains(response, 'Dashboard')
         self.assertContains(response, 'Casussen')
         self.assertContains(response, 'Taken')
@@ -45,17 +44,18 @@ class RedesignLayoutTests(TestCase):
     def test_dashboard_kpis_and_panels(self):
         response = self.client.get(reverse('dashboard'))
         self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Casussen zonder match')
-        self.assertContains(response, 'Gem. doorlooptijd intake → plaatsing')
-        self.assertContains(response, 'Capaciteit signalen')
-        self.assertContains(response, 'Actie vereist')
-        self.assertContains(response, 'Match aanbevelingen open')
+        self.assertContains(response, 'Zonder match')
+        self.assertContains(response, 'Systeemoverzicht')
+        self.assertContains(response, 'Knelpuntfocus')
+        self.assertContains(response, 'Signalen')
+        self.assertContains(response, 'Systeemstatus')
 
     def test_dashboard_quick_actions(self):
         response = self.client.get(reverse('dashboard'))
         self.assertContains(response, 'Nieuwe casus')
-        self.assertContains(response, 'Nieuwe aanbieder')
-        self.assertContains(response, 'Start intake')
+        self.assertContains(response, 'Start matching')
+        self.assertContains(response, 'Bekijk capaciteit')
+        self.assertContains(response, 'Plan overleg')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

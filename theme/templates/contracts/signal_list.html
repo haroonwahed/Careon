@@ -1,110 +1,144 @@
 {% extends "base.html" %}
 {% block title %}Signalen - Zorgregie{% endblock %}
 {% block content %}
-
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="page-title">Signalen</h1>
-        <p class="page-subtitle">
-            {{ total_count }} totaal &middot; {{ open_count }} open &middot; {{ critical_count }} kritisch
-        </p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Signalen</h1>
+            <p class="page-subtitle">{{ total_count }} totaal &middot; {{ open_count }} open &middot; {{ critical_count }} kritisch</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'careon:signal_create' %}" class="btn btn-primary">Nieuw signaal</a>
+        </div>
     </div>
-    <a href="{% url 'careon:signal_create' %}" class="action-chip">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-        Nieuw signaal
-    </a>
-</div>
 
-<form method="get" class="mb-4 flex gap-2 flex-wrap">
-    <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek op casus, beschrijving..." class="flex-1 min-w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle statussen</option>
-        {% for val, label in status_choices %}
-        <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-    </select>
-    <select name="risk_level" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle niveaus</option>
-        {% for val, label in risk_level_choices %}
-        <option value="{{ val }}" {% if request.GET.risk_level == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Zoeken</button>
-</form>
+    <div class="signal-kpi-grid">
+        <div class="ds-card signal-kpi-card">
+            <div class="kpi-label">Totaal</div>
+            <div class="kpi-value">{{ total_count }}</div>
+        </div>
+        <div class="ds-card signal-kpi-card">
+            <div class="kpi-label">Open</div>
+            <div class="kpi-value tone-warning">{{ open_count }}</div>
+        </div>
+        <div class="ds-card signal-kpi-card">
+            <div class="kpi-label">Kritisch</div>
+            <div class="kpi-value tone-critical">{{ critical_count }}</div>
+        </div>
+    </div>
 
-<div class="panel">
-    <table class="w-full">
-        <thead class="tbl-head">
-            <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Signaal</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Casus</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Niveau</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Verantwoordelijke</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for signal in signals %}
-            <tr class="tbl-row hover:bg-gray-50">
-                <td class="px-5 py-3">
-                    <a href="{% url 'careon:signal_detail' signal.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                        {% if signal.title %}{{ signal.title }}{% else %}{{ signal.get_signal_type_display }}{% endif %}
-                    </a>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">
-                    {% if signal.intake %}
-                    <a href="{% url 'careon:case_detail' signal.intake.pk %}" class="hover:text-blue-600">{{ signal.intake.title }}</a>
-                    {% else %}—{% endif %}
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ signal.get_signal_type_display }}</td>
-                <td class="px-5 py-3">
-                    <span class="badge-sm
-                        {% if signal.risk_level == 'CRITICAL' %}badge-red
-                        {% elif signal.risk_level == 'HIGH' %}badge-amber
-                        {% elif signal.risk_level == 'MEDIUM' %}badge-yellow
-                        {% else %}badge-gray{% endif %}">
-                        {{ signal.get_risk_level_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3">
-                    <span class="badge-sm
-                        {% if signal.status == 'OPEN' %}badge-red
-                        {% elif signal.status == 'IN_PROGRESS' %}badge-blue
-                        {% else %}badge-green{% endif %}">
-                        {{ signal.get_status_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ signal.assigned_to.get_full_name|default:"—" }}</td>
-                <td class="px-5 py-3 text-right text-sm">
-                    <a href="{% url 'careon:signal_update' signal.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7" class="px-5 py-12 text-center">
-                    <div style="color: var(--text-muted);">
-                        <p style="font-size: 14px; margin-bottom: 8px;">Geen signalen gevonden.</p>
-                        <a href="{% url 'careon:signal_create' %}" style="color: var(--primary); text-decoration: none; font-weight: 500;">+ Voeg eerste signaal toe</a>
-                    </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <form method="get" class="ds-card action-card form-grid-4">
+        <div>
+            <label for="signal-q" class="field-label">Zoeken</label>
+            <input id="signal-q" type="text" name="q" value="{{ search_query }}" placeholder="Zoek op casus, beschrijving...">
+        </div>
+        <div>
+            <label for="signal-status" class="field-label">Status</label>
+            <select id="signal-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle statussen</option>
+                {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="signal-risk" class="field-label">Niveau</label>
+            <select id="signal-risk" name="risk_level" onchange="this.form.submit()">
+                <option value="">Alle niveaus</option>
+                {% for val, label in risk_level_choices %}
+                <option value="{{ val }}" {% if request.GET.risk_level == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Zoeken</button>
+    </form>
 
-{% if is_paginated %}
-<div class="mt-6 flex justify-center gap-2">
-    {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Vorige</a>
+    <div class="ds-card table-card">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Signaal</th>
+                        <th>Casus</th>
+                        <th>Type</th>
+                        <th>Niveau</th>
+                        <th>Status</th>
+                        <th>Verantwoordelijke</th>
+                        <th class="th-right">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for signal in signals %}
+                    <tr>
+                        <td><a href="{% url 'careon:signal_detail' signal.pk %}">{% if signal.title %}{{ signal.title }}{% else %}{{ signal.get_signal_type_display }}{% endif %}</a></td>
+                        <td>
+                            {% if signal.intake %}
+                            <a href="{% url 'careon:case_detail' signal.intake.pk %}">{{ signal.intake.title }}</a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>{{ signal.get_signal_type_display }}</td>
+                        <td>
+                            <span class="ds-badge {% if signal.risk_level == 'CRITICAL' %}badge-critical{% elif signal.risk_level == 'HIGH' %}badge-high{% elif signal.risk_level == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">
+                                {{ signal.get_risk_level_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="ds-badge {% if signal.status == 'OPEN' %}badge-medium{% elif signal.status == 'IN_PROGRESS' %}badge-blue{% else %}badge-capacity-open{% endif %}">
+                                {{ signal.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ signal.assigned_to.get_full_name|default:"—" }}</td>
+                        <td class="td-right">
+                            {% if signal.pk in editable_signal_ids %}
+                            <a href="{% url 'careon:signal_update' signal.pk %}" class="btn btn-ghost" style="min-height:34px;">Bewerken</a>
+                            {% else %}
+                            <span class="c-secondary" style="font-size:11px;">Alleen-lezen</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="td-empty">
+                            Geen signalen gevonden.
+                            <div style="margin-top:10px;"><a href="{% url 'careon:signal_create' %}" class="btn btn-primary">Voeg eerste signaal toe</a></div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="ds-card feed-card feed-row">
+        <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+        <div class="feed-actions">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="min-height:36px;">Vorige</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="min-height:36px;">Volgende</a>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
-    <span class="px-3 py-2 text-sm">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Volgende</a>
-    {% endif %}
 </div>
-{% endif %}
+
+<style>
+    .signal-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--card-gap);
+    }
+    .signal-kpi-card { padding: 14px 16px; }
+    .kpi-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-secondary); font-weight: 700; }
+    .kpi-value { margin-top: 8px; font-size: 30px; line-height: 1; font-weight: 800; color: var(--text-primary); }
+    .tone-critical { color: #fca5a5; }
+    .tone-warning { color: #fcd34d; }
+    .td-empty { text-align: center; padding: 28px 16px; color: var(--text-secondary); }
+    @media (max-width: 920px) {
+        .signal-kpi-grid { grid-template-columns: 1fr; }
+    }
+</style>
 
 {% endblock %}

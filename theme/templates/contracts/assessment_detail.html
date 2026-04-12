@@ -1,125 +1,160 @@
 {% extends "base.html" %}
-{% block title %}Beoordeling Detail - Careon{% endblock %}
+{% block title %}Beoordeling - {{ intake.title }} - Careon{% endblock %}
 {% block content %}
 
-<!-- Breadcrumb -->
-<div class="mb-4 text-sm">
-    <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
-    <span class="text-gray-400 mx-1">/</span>
-    <a href="{% url 'careon:assessment_list' %}" class="text-blue-600 hover:text-blue-800">Beoordelingen</a>
-    <span class="text-gray-400 mx-1">/</span>
-    <span class="text-gray-600">Beoordeling #{{ assessment.pk }}</span>
-</div>
+<nav class="mb-6 text-sm" style="color: var(--text-muted);">
+    <a href="{% url 'dashboard' %}" style="color: var(--text-muted); text-decoration: none;">Dashboard</a>
+    <span class="mx-2">/</span>
+    <a href="{% url 'careon:case_list' %}" style="color: var(--text-muted); text-decoration: none;">Casussen</a>
+    <span class="mx-2">/</span>
+    <a href="{% url 'careon:case_detail' intake.pk %}" style="color: var(--text-muted); text-decoration: none;">{{ intake.title }}</a>
+    <span class="mx-2">/</span>
+    <span style="color: var(--primary);">Beoordeling</span>
+</nav>
 
-<div class="flex items-start justify-between mb-6">
+<div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="text-3xl font-bold text-gray-900">Beoordeling</h1>
-        <p class="text-gray-500 mt-2">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
+        <h1 class="page-title">Beoordeling</h1>
+        <p class="page-subtitle">
+            Casus: {{ intake.title }}
+            &middot;
+            {{ intake.care_category_main.name|default:"Categorie onbekend" }}
+        </p>
     </div>
-    <div class="flex gap-2">
-        <a href="{% url 'careon:assessment_update' assessment.pk %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+    <div class="flex gap-3">
+        <a href="{% url 'careon:case_detail' intake.pk %}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">
+            Naar casus
+        </a>
+        {% if can_edit_assessment %}
+        <a href="{% url 'careon:assessment_update' assessment.pk %}" class="action-chip">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
             Bewerken
         </a>
+        {% else %}
+        <span class="action-chip" style="opacity:0.6;cursor:not-allowed;">Alleen-lezen</span>
+        {% endif %}
     </div>
 </div>
 
-<!-- Status Bar -->
-<div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
-    <div class="grid grid-cols-3 gap-4">
-        <div>
-            <p class="text-xs text-gray-500 uppercase font-semibold">Status Beoordeling</p>
-            <p class="text-lg font-semibold text-gray-900">{{ assessment.get_assessment_status_display }}</p>
-        </div>
-        <div>
-            <p class="text-xs text-gray-500 uppercase font-semibold">Beoordelaar</p>
-            <p class="text-lg font-semibold text-gray-900">{{ assessment.assessed_by.get_full_name|default:"—" }}</p>
-        </div>
-        <div>
-            <p class="text-xs text-gray-500 uppercase font-semibold">Gerelateerde Intake</p>
-            <p class="text-lg font-semibold text-gray-900">
-                <a href="{% url 'careon:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
-            </p>
-        </div>
+<div class="dash-grid dash-grid-3 mb-6">
+    <div class="panel panel-inner">
+        <p class="metric-label">Status beoordeling</p>
+        <span class="badge-sm mt-1
+            {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}badge-green
+            {% elif assessment.assessment_status == 'DRAFT' %}badge-yellow
+            {% elif assessment.assessment_status == 'INCOMPLETE_INTAKE' %}badge-red
+            {% else %}badge-gray{% endif %}">
+            {{ assessment.get_assessment_status_display }}
+        </span>
+    </div>
+    <div class="panel panel-inner">
+        <p class="metric-label">Beoordelaar</p>
+        <p class="metric-md">{{ assessment.assessed_by.get_full_name|default:"—" }}</p>
+    </div>
+    <div class="panel panel-inner">
+        <p class="metric-label">Klaar voor matching</p>
+        <p class="metric-md">{% if assessment.matching_ready %}Ja{% else %}Nee{% endif %}</p>
     </div>
 </div>
 
-<!-- Main Content -->
-<div class="grid grid-cols-3 gap-6">
-    <div class="col-span-2 space-y-6">
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Beoordelingsgegevens</h2>
-            <dl class="space-y-4 text-sm">
-                <div>
-                    <dt class="font-medium text-gray-500 uppercase">Klaar voor matching</dt>
-                    <dd class="text-gray-900">{% if assessment.matching_ready %}Ja{% else %}Nee{% endif %}</dd>
+<div class="dash-grid dash-grid-2">
+    <div class="space-y-5">
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-head-inner">
+                    <h2 class="panel-title">Beoordelingsgegevens</h2>
                 </div>
+            </div>
+            <div class="panel-inner space-y-4">
                 {% if assessment.reason_not_ready %}
                 <div>
-                    <dt class="font-medium text-gray-500 uppercase">Reden nog niet klaar</dt>
-                    <dd class="text-gray-900">{{ assessment.reason_not_ready }}</dd>
+                    <p class="text-xs font-medium uppercase tracking-wide mb-1" style="color: var(--text-muted);">Reden niet klaar voor matching</p>
+                    <p class="text-sm">{{ assessment.reason_not_ready }}</p>
                 </div>
                 {% endif %}
                 {% if assessment.notes %}
                 <div>
-                    <dt class="font-medium text-gray-500 uppercase">Notities</dt>
-                    <dd class="text-gray-900 whitespace-pre-line">{{ assessment.notes }}</dd>
+                    <p class="text-xs font-medium uppercase tracking-wide mb-1" style="color: var(--text-muted);">Notities</p>
+                    <p class="text-sm whitespace-pre-line">{{ assessment.notes }}</p>
                 </div>
                 {% endif %}
-            </dl>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Risicosignalen</h2>
-            {% with signals=assessment.get_risk_signals_display %}
-                {% if signals %}
-                    <div class="flex flex-wrap gap-2">
-                        {% for signal in signals %}
-                            <span class="px-3 py-1 bg-amber-100 text-amber-800 text-sm rounded-full">{{ signal }}</span>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <p class="text-sm text-gray-500">Geen signalen geregistreerd.</p>
+                {% if not assessment.reason_not_ready and not assessment.notes %}
+                <p class="text-sm" style="color: var(--text-muted);">Geen aanvullende gegevens.</p>
                 {% endif %}
-            {% endwith %}
+            </div>
         </div>
 
-        <!-- Connected Intake Details -->
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Gekoppelde Intake</h2>
-            <dl class="space-y-4 text-sm">
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-head-inner">
+                    <h2 class="panel-title">Risicosignalen</h2>
+                </div>
+            </div>
+            <div class="panel-inner">
+                {% with signals=assessment.get_risk_signals_display %}
+                    {% if signals %}
+                        <div class="flex flex-wrap gap-2">
+                            {% for signal in signals %}
+                                <span class="badge-sm badge-yellow">{{ signal }}</span>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm" style="color: var(--text-muted);">Geen signalen geregistreerd.</p>
+                    {% endif %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-head-inner">
+                    <h2 class="panel-title">Gekoppelde casus</h2>
+                </div>
+            </div>
+            <div class="panel-inner space-y-4">
                 <div>
-                    <dt class="font-medium text-gray-500 uppercase">Identiteit</dt>
-                    <dd class="text-gray-900"><a href="{% url 'careon:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ intake.title }}</a></dd>
+                    <p class="text-xs font-medium uppercase tracking-wide mb-1" style="color: var(--text-muted);">Casus</p>
+                    <a href="{% url 'careon:case_detail' intake.pk %}" class="text-sm text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
                 </div>
                 <div>
-                    <dt class="font-medium text-gray-500 uppercase">Zorgvraag</dt>
-                    <dd class="text-gray-900">{{ intake.care_category_main.name|default:"—" }}</dd>
+                    <p class="text-xs font-medium uppercase tracking-wide mb-1" style="color: var(--text-muted);">Zorgvraag</p>
+                    <p class="text-sm">{{ intake.care_category_main.name|default:"—" }}</p>
                 </div>
                 <div>
-                    <dt class="font-medium text-gray-500 uppercase">Urgentie</dt>
-                    <dd class="text-gray-900">{{ intake.get_urgency_display }}</dd>
+                    <p class="text-xs font-medium uppercase tracking-wide mb-1" style="color: var(--text-muted);">Urgentie</p>
+                    <p class="text-sm">{{ intake.get_urgency_display }}</p>
                 </div>
-            </dl>
+            </div>
         </div>
     </div>
 
-    <div class="space-y-6">
-        {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}
-        <div class="bg-green-50 rounded-xl border border-green-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-3">Gereed voor Matching</h3>
-            <p class="text-sm text-gray-700 mb-4">Deze beoordeling is goedgekeurd voor matching.</p>
-            <a href="{% url 'careon:matching_dashboard' %}" class="block w-full text-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700">
-                Ga naar Matching
-            </a>
+    <div class="space-y-5">
+        <div class="panel" style="border-color: rgba(37,99,235,0.3);">
+            <div class="panel-inner space-y-3">
+                <p class="panel-title mb-1">Gereedheid voor matching</p>
+                {% for item in matching_requirements %}
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm">{{ item.label }}</span>
+                    <span class="badge-sm {% if item.ok %}badge-green{% else %}badge-red{% endif %}">{% if item.ok %}OK{% else %}Ontbreekt{% endif %}</span>
+                </div>
+                {% endfor %}
+                {% if matching_ready %}
+                <a href="{{ matching_href }}" class="btn btn-primary" style="display:block;text-align:center;">
+                    Naar matching
+                </a>
+                {% else %}
+                <a href="{{ matching_href }}" aria-disabled="true" class="btn btn-secondary" style="display:block;width:100%;text-align:center;opacity:0.6;pointer-events:none;cursor:not-allowed;">
+                    Naar matching
+                </a>
+                <p class="text-xs" style="color: var(--text-muted);">Nog niet gereed: {{ matching_missing|join:", " }}.</p>
+                {% if can_edit_assessment %}
+                <a href="{% url 'careon:assessment_update' assessment.pk %}" class="btn btn-ghost" style="display:block;text-align:center;">Beoordeling bijwerken</a>
+                {% endif %}
+                {% endif %}
+            </div>
         </div>
-        {% elif assessment.assessment_status == 'DRAFT' %}
-        <div class="bg-yellow-50 rounded-xl border border-yellow-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-3">Concept</h3>
-            <p class="text-sm text-gray-700 mb-4">Deze beoordeling is nog in concept. Voltooi deze om door te gaan naar matching.</p>
-        </div>
-        {% endif %}
 
-        <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-xs text-gray-600 space-y-1">
+        <div class="panel panel-inner text-xs space-y-1" style="color: var(--text-muted);">
             <p>Aangemaakt: {{ assessment.created_at|date:"d-m-Y H:i"|default:"—" }}</p>
             <p>Gewijzigd: {{ assessment.updated_at|date:"d-m-Y H:i" }}</p>
         </div>

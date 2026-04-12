@@ -9,7 +9,11 @@
         </div>
         <div class="flex gap-2">
             {% if document.file %}<a href="{{ document.file.url }}" class="px-3 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700" download>Downloaden</a>{% endif %}
+            {% if can_edit_document %}
             <a href="{% url 'careon:document_update' document.pk %}" class="px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Bewerken</a>
+            {% else %}
+            <span class="px-3 py-2 bg-gray-100 text-gray-400 text-sm rounded-lg">Alleen-lezen</span>
+            {% endif %}
         </div>
     </div>
     <div class="bg-white rounded-xl border border-gray-200 p-5 mb-6">

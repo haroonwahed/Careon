@@ -23,7 +23,7 @@
         <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
     </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Zoeken</button>
+    <button type="submit" class="btn btn-secondary">Zoeken</button>
 </form>
 
 <div class="panel">
@@ -33,13 +33,14 @@
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Casus</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Toegewezen aanbieder</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Zorgvorm</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Startdatum</th>
+                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Startdatum</th>
                 <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
-            {% for placement in placements %}
+            {% for row in placement_rows %}
+            {% with placement=row.placement %}
             <tr class="tbl-row hover:bg-gray-50">
                 <td class="px-5 py-3">
                     <a href="{% url 'careon:placement_detail' placement.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
@@ -53,21 +54,27 @@
                     {{ placement.selected_provider.name|default:placement.proposed_provider.name|default:"—" }}
                 </td>
                 <td class="px-5 py-3 text-sm text-gray-600">{{ placement.get_care_form_display|default:"—" }}</td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ placement.start_date|date:"d-m-Y"|default:"—" }}</td>
+                <td class="px-5 py-3 text-sm text-gray-600 text-right tabular-nums">{{ placement.start_date|date:"d-m-Y"|default:"—" }}</td>
                 <td class="px-5 py-3">
                     <span class="badge-sm
                         {% if placement.status == 'APPROVED' %}badge-green
-                        {% elif placement.status == 'IN_REVIEW' %}badge-blue
+                        {% elif placement.status == 'IN_REVIEW' %}badge-yellow
                         {% elif placement.status == 'REJECTED' %}badge-red
                         {% else %}badge-gray{% endif %}">
                         {{ placement.get_status_display }}
                     </span>
+                    <p class="text-xs text-gray-500 mt-1">Fase: {{ row.phase_label }}</p>
                 </td>
                 <td class="px-5 py-3 text-right text-sm">
                     <a href="{% url 'careon:placement_detail' placement.pk %}" class="text-xs text-blue-600 hover:text-blue-800 mr-2">Bekijken</a>
+                    {% if placement.pk in editable_placement_ids %}
                     <a href="{% url 'careon:placement_update' placement.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a>
+                    {% else %}
+                    <span class="text-xs text-gray-400">Alleen-lezen</span>
+                    {% endif %}
                 </td>
             </tr>
+            {% endwith %}
             {% empty %}
             <tr>
                 <td colspan="6" class="px-5 py-12 text-center">

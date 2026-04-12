@@ -1,85 +1,134 @@
 {% extends "base.html" %}
 {% block title %}Gemeenten - Zorgregie{% endblock %}
 {% block content %}
-
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="page-title">Gemeenten</h1>
-        <p class="page-subtitle">{{ total_municipalities }} totaal &middot; {{ active_municipalities }} actief</p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Gemeenten</h1>
+            <p class="page-subtitle">{{ total_municipalities }} totaal &middot; {{ active_municipalities }} actief</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Nieuwe gemeente</a>
+        </div>
     </div>
-    <a href="{% url 'careon:municipality_create' %}" class="action-chip">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
-        Nieuwe gemeente
-    </a>
-</div>
 
-<form method="get" class="mb-4 flex gap-2">
-    <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek gemeenten..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle statussen</option>
-        <option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Actief</option>
-        <option value="INACTIVE" {% if request.GET.status == 'INACTIVE' %}selected{% endif %}>Inactief</option>
-        <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Concept</option>
-    </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Zoeken</button>
-</form>
+    <div class="municipality-kpi-grid">
+        <div class="ds-card municipality-kpi-card">
+            <div class="kpi-label">Totaal</div>
+            <div class="kpi-value">{{ total_municipalities }}</div>
+        </div>
+        <div class="ds-card municipality-kpi-card">
+            <div class="kpi-label">Actief</div>
+            <div class="kpi-value tone-good">{{ active_municipalities }}</div>
+        </div>
+    </div>
 
-<div class="panel">
-    <table class="w-full">
-        <thead class="tbl-head">
-            <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Gemeente</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Code</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Aanbieders</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Zorgdomeinen</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Verantwoordelijke</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for municipality in municipalities %}
-            <tr class="tbl-row hover:bg-gray-50">
-                <td class="px-5 py-3"><a href="{% url 'careon:municipality_detail' municipality.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ municipality.municipality_name }}</a></td>
-                <td class="px-5 py-3 text-sm text-gray-600 font-mono">{{ municipality.municipality_code|default:"—" }}</td>
-                <td class="px-5 py-3 text-sm"><span class="badge-sm badge-blue">{{ municipality.provider_count }}</span></td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ municipality.care_domains_display|truncatechars:40 }}</td>
-                <td class="px-5 py-3">
-                    <span class="badge-sm {% if municipality.status == 'ACTIVE' %}badge-green{% elif municipality.status == 'INACTIVE' %}badge-gray{% else %}badge-yellow{% endif %}">
-                        {{ municipality.get_status_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</td>
-                <td class="px-5 py-3 text-right">
-                    <a href="{% url 'careon:municipality_update' municipality.pk %}" class="text-xs text-gray-500 hover:text-blue-600">Bewerken</a>
-                </td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="7" class="px-5 py-12 text-center">
-                <div style="color: var(--text-muted);">
-                    <p style="font-size: 14px; margin-bottom: 8px;">U hebt nog geen gemeenten ingesteld.</p>
-                    <a href="{% url 'careon:municipality_create' %}" style="color: var(--primary); text-decoration: none; font-weight: 500;">+ Voeg eerste gemeente toe</a>
-                </div>
-            </td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <form method="get" class="ds-card action-card form-grid-3">
+        <div>
+            <label for="municipality-q" class="field-label">Zoeken</label>
+            <input id="municipality-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek gemeenten...">
+        </div>
+        <div>
+            <label for="municipality-status" class="field-label">Status</label>
+            <select id="municipality-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle statussen</option>
+                <option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Actief</option>
+                <option value="INACTIVE" {% if request.GET.status == 'INACTIVE' %}selected{% endif %}>Inactief</option>
+                <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Concept</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Zoeken</button>
+    </form>
 
-{% if is_paginated %}
-<div class="mt-6 flex justify-center gap-2">
-    {% if page_obj.has_previous %}
-    <a href="?page=1" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Eerste</a>
-    <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Vorige</a>
+    <div class="ds-card table-card">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Gemeente</th>
+                        <th>Code</th>
+                        <th>Aanbieders</th>
+                        <th>Zorgdomeinen</th>
+                        <th>Status</th>
+                        <th>Verantwoordelijke</th>
+                        <th class="th-right">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for municipality in municipalities %}
+                    <tr>
+                        <td><a href="{% url 'careon:municipality_detail' municipality.pk %}">{{ municipality.municipality_name }}</a></td>
+                        <td>{{ municipality.municipality_code|default:"—" }}</td>
+                        <td><span class="ds-badge badge-blue">{{ municipality.provider_count }}</span></td>
+                        <td>{{ municipality.care_domains_display|truncatechars:40 }}</td>
+                        <td>
+                            <span class="ds-badge {% if municipality.status == 'ACTIVE' %}badge-capacity-open{% elif municipality.status == 'INACTIVE' %}badge-low{% else %}badge-medium{% endif %}">
+                                {{ municipality.get_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</td>
+                        <td class="td-right"><a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-ghost" style="min-height:34px;">Bewerken</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="td-empty">
+                            U hebt nog geen gemeenten ingesteld.
+                            <div style="margin-top:10px;"><a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Voeg eerste gemeente toe</a></div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="ds-card feed-card feed-row">
+        <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+        <div class="feed-actions">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-secondary" style="min-height:36px;">Eerste</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="min-height:36px;">Vorige</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="min-height:36px;">Volgende</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary" style="min-height:36px;">Laatste</a>
+            {% endif %}
+        </div>
+    </div>
     {% endif %}
-
-    <span class="px-3 py-2 text-sm">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
-
-    {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Volgende</a>
-    <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">Laatste</a>
-    {% endif %}
 </div>
-{% endif %}
+
+<style>
+    .municipality-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--card-gap);
+    }
+    .municipality-kpi-card { padding: 14px 16px; }
+    .kpi-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+    .kpi-value {
+        margin-top: 8px;
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .tone-good { color: #86efac; }
+    .td-empty {
+        text-align: center;
+        padding: 28px 16px;
+        color: var(--text-secondary);
+    }
+    @media (max-width: 740px) {
+        .municipality-kpi-grid { grid-template-columns: 1fr; }
+    }
+</style>
 
 {% endblock %}

@@ -72,8 +72,8 @@ class MatchingRecommendationsTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Score')
+        self.assertContains(response, 'Matchscore')
         self.assertContains(response, 'Wachttijd')
         self.assertContains(response, 'Capaciteit')
-        self.assertContains(response, 'Match')
-        self.assertContains(response, 'Toewijzen')
+        self.assertContains(response, 'Matching')
+        self.assertContains(response, 'Wijs toe')

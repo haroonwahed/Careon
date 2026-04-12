@@ -30,9 +30,10 @@ class RedesignComponentsTestCase(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Capaciteit signalen')
-        self.assertContains(response, 'Actie vereist')
-        self.assertContains(response, 'Regie-activiteit')
+        self.assertContains(response, 'Systeemoverzicht')
+        self.assertContains(response, 'Knelpuntfocus')
+        self.assertContains(response, 'Signalen')
+        self.assertContains(response, 'Regiekamer')
 
     def test_case_list_alias_renders_configuration_components(self):
         provider = ClientModel.objects.create(
@@ -50,10 +51,10 @@ class RedesignComponentsTestCase(TestCase):
 
         response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Zorgintakes')
-        self.assertContains(response, 'Zoek intakes op titel, casus-ID...')
+        self.assertContains(response, 'Casussen')
+        self.assertContains(response, 'Zoek op titel of casus-ID...')
         self.assertContains(response, 'Alle statussen')
-        self.assertContains(response, 'Nieuwe intake')
+        self.assertContains(response, 'Nieuwe casus')
 
     def test_navigation_structure(self):
         response = self.client.get(reverse('dashboard'))
@@ -90,7 +91,7 @@ class RedesignComponentsTestCase(TestCase):
         self.assertContains(response, 'Nieuw budget')
         self.assertContains(response, 'Regie Operaties')
 
-    def test_placement_list_shows_real_list_view(self):
+    def test_placement_list_alias_uses_configuration_view(self):
         client_record = ClientModel.objects.create(
             organization=self.organization,
             name='Acme Client',
@@ -118,11 +119,11 @@ class RedesignComponentsTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Plaatsingen')
 
-    def test_configuration_list_uses_current_authenticated_shell(self):
-        response = self.client.get(reverse('careon:configuration_list'))
+    def test_municipality_list_uses_current_authenticated_shell(self):
+        response = self.client.get(reverse('careon:municipality_list'))
 
-        self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('careon:municipality_list'), response['Location'])
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Gemeenten')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

@@ -111,11 +111,21 @@ class CrossTenantFixtureMixin:
             case_record=self.contract_a,
             created_by=self.user_a,
         )
+        self.intake_a = CaseIntakeProcess.objects.create(
+            organization=self.org_a,
+            contract=self.contract_a,
+            title='Alpha Intake',
+            start_date=datetime.date.today(),
+            target_completion_date=datetime.date.today() + datetime.timedelta(days=30),
+        )
         # PlacementRequest linked to org_a via client FK
         self.placement_a = PlacementRequest.objects.create(
+            due_diligence_process=self.intake_a,
             mark_text='AlphaMark', description='desc',
             goods_services='software', filing_basis='use',
             client=self.client_a,
+            proposed_provider=self.client_a,
+            selected_provider=self.client_a,
         )
 
         # ---- Org B resources (parallel set so list queries have data to check) ----
@@ -153,10 +163,20 @@ class CrossTenantFixtureMixin:
             case_record=self.contract_b,
             created_by=self.user_b,
         )
+        self.intake_b = CaseIntakeProcess.objects.create(
+            organization=self.org_b,
+            contract=self.contract_b,
+            title='Beta Intake',
+            start_date=datetime.date.today(),
+            target_completion_date=datetime.date.today() + datetime.timedelta(days=30),
+        )
         self.placement_b = PlacementRequest.objects.create(
+            due_diligence_process=self.intake_b,
             mark_text='BetaMark', description='desc',
             goods_services='software', filing_basis='use',
             client=self.client_b,
+            proposed_provider=self.client_b,
+            selected_provider=self.client_b,
         )
 
 
@@ -172,7 +192,7 @@ class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
         response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
         body = response.content.decode('utf-8')
-        self.assertIn('Zorgintakes', body)
+        self.assertIn('Intake', body)
         self.assertNotIn('Alpha NDA', body)
 
     def test_detail_cross_org_returns_404(self):
@@ -237,11 +257,10 @@ class ClientIsolationTest(CrossTenantFixtureMixin, TestCase):
 class CareConfigurationIsolationTest(CrossTenantFixtureMixin, TestCase):
     """CareConfiguration records carry organization FK."""
 
-    def test_list_redirects_to_municipality_workspace(self):
+    def test_municipality_list_scoped_to_own_org(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('careon:configuration_list'))
-        self.assertEqual(response.status_code, 302)
-        self.assertIn(reverse('careon:municipality_list'), response['Location'])
+        response = self.client.get(reverse('careon:municipality_list'))
+        self.assertEqual(response.status_code, 200)
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
@@ -353,15 +372,16 @@ class CareSignalIsolationTest(CrossTenantFixtureMixin, TestCase):
 
     def test_list_excludes_other_org(self):
         self.client.login(username='user_b', password='passB1234!')
-        response = self.client.get(reverse('careon:signal_list'))
+        response = self.client.get(reverse('careon:risk_log_list'))
         self.assertEqual(response.status_code, 200)
-        ids = [m.id for m in response.context.get('signals', [])]
+        ids = [signal.id for signal in response.context.get('signals', [])]
         self.assertNotIn(self.risk_a.id, ids,
-                 'risk_a (Org A) must not appear for Org B')
+                         'risk_a (Org A) must not appear for Org B')
+        self.assertIn(self.risk_b.id, ids)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('careon:signal_update', kwargs={'pk': self.risk_a.pk})
+        url = reverse('careon:risk_log_update', kwargs={'pk': self.risk_a.pk})
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
@@ -375,9 +395,9 @@ class PlacementRequestIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.client.login(username='user_b', password='passB1234!')
         response = self.client.get(reverse('careon:placement_list'))
         self.assertEqual(response.status_code, 200)
-        content = response.content.decode('utf-8')
-        self.assertNotIn('AlphaMark', content,
-                 'Org A placements must not appear for Org B user')
+        ids = [placement.id for placement in response.context.get('placements', [])]
+        self.assertNotIn(self.placement_a.id, ids)
+        self.assertIn(self.placement_b.id, ids)
 
     def test_detail_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
@@ -401,9 +421,9 @@ class UnauthenticatedAccessTest(TestCase):
         ('careon:case_list', {}),
         ('careon:document_list', {}),
         ('careon:client_list', {}),
-        ('careon:configuration_list', {}),
-        ('careon:task_list', {}),
-        ('careon:signal_list', {}),
+        ('careon:municipality_list', {}),
+        ('careon:task_kanban', {}),
+        ('careon:risk_log_list', {}),
         ('careon:deadline_list', {}),
         ('careon:placement_list', {}),
         ('careon:budget_list', {}),

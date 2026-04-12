@@ -83,6 +83,27 @@ Intake, assessment, indication, placement are sub-flows inside a case — not pr
 4. Implement it fully.
 5. Check for ripple effects across urls, views, forms, templates, and tests.
 
+## Task Classification and Skill Routing
+
+Before acting on a request, first classify the task type:
+
+- architecture
+- data ingestion
+- matching logic
+- backend/API
+- frontend/UX
+- compliance/security
+
+Then prefer the most relevant available skill for that task.
+
+If multiple skills apply, prioritize in this order:
+
+1. architecture constraints
+2. domain compliance
+3. task-specific implementation skill
+
+If no skill is clearly relevant, fall back to general instructions and preserve current architecture.
+
 ## Implementation Priority Order
 
 1. `CareCase` list/detail/create is the most important flow — fix this before anything else

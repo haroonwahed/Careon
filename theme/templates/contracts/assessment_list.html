@@ -1,101 +1,96 @@
 {% extends "base.html" %}
 {% block title %}Beoordelingen - Careon{% endblock %}
 {% block content %}
-
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Beoordelingen</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ total_assessments }} totaal &middot; {{ pending_assessments }} in behandeling &middot; {{ ready_for_matching }} gereed voor matching</p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Beoordelingen</h1>
+            <p class="page-subtitle">{{ total_assessments }} totaal &middot; {{ pending_assessments }} in behandeling &middot; {{ ready_for_matching }} gereed voor matching</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'careon:assessment_create' %}" class="btn btn-primary">Nieuwe beoordeling</a>
+        </div>
     </div>
-    <a href="{% url 'careon:assessment_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        Nieuwe beoordeling
-    </a>
-</div>
 
-<form method="get" class="mb-4 flex gap-2">
-    <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek beoordelingen..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle statussen</option>
-        {% for choice_id, choice_label in status_choices %}
-            <option value="{{ choice_id }}" {% if request.GET.status == choice_id %}selected{% endif %}>{{ choice_label }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Zoeken</button>
-</form>
+    <form method="get" class="ds-card action-card form-grid-3">
+        <div>
+            <label for="assessment-q" class="field-label">Zoeken</label>
+            <input id="assessment-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op casus...">
+        </div>
+        <div>
+            <label for="assessment-status" class="field-label">Status</label>
+            <select id="assessment-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle statussen</option>
+                {% for choice_id, choice_label in status_choices %}
+                    <option value="{{ choice_id }}" {% if request.GET.status == choice_id %}selected{% endif %}>{{ choice_label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+    </form>
 
-{% if assessments %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Intake</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Beoordelaar</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Gewijzigd</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for assessment in assessments %}
-            <tr class="hover:bg-gray-50">
-                <td class="px-5 py-3">
-                    <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">
-                        {{ assessment.intake.title }}
-                    </a>
-                </td>
-                <td class="px-5 py-3">
-                    <span class="text-xs px-2 py-1 rounded-full
-                        {% if assessment.assessment_status == 'DRAFT' %}bg-yellow-100 text-yellow-800
-                        {% elif assessment.assessment_status == 'UNDER_REVIEW' %}bg-orange-100 text-orange-800
-                        {% elif assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}bg-green-100 text-green-800
-                        {% else %}bg-gray-100 text-gray-600{% endif %}">
-                        {{ assessment.get_assessment_status_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ assessment.assessed_by.get_full_name|default:"—" }}</td>
-                <td class="px-5 py-3 text-sm text-gray-500">{{ assessment.updated_at|date:"d-m-Y H:i" }}</td>
-                <td class="px-5 py-3 text-right text-sm">
-                    <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">Bekijken</a>
-                    <a href="{% url 'careon:assessment_update' assessment.pk %}" class="ml-3 text-gray-500 hover:text-gray-700">Bewerken</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Pagination -->
-{% if is_paginated %}
-<div class="mt-4 flex justify-between items-center">
-    <div class="text-sm text-gray-500">
-        Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}
+    {% if assessments %}
+    <div class="ds-card table-card">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Casus</th>
+                        <th>Status</th>
+                        <th>Beoordelaar</th>
+                        <th>Gewijzigd</th>
+                        <th style="text-align:right;">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for assessment in assessments %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'careon:assessment_detail' assessment.pk %}">{{ assessment.intake.title }}</a>
+                        </td>
+                        <td>
+                            <span class="ds-badge
+                                {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}badge-low
+                                {% elif assessment.assessment_status == 'DRAFT' %}badge-high
+                                {% else %}badge-medium{% endif %}">
+                                {{ assessment.get_assessment_status_display }}
+                            </span>
+                        </td>
+                        <td>{{ assessment.assessed_by.get_full_name|default:"—" }}</td>
+                        <td>{{ assessment.updated_at|date:"d-m-Y H:i" }}</td>
+                        <td style="text-align:right;">
+                            <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="btn btn-ghost" style="min-height:36px;">Bekijken</a>
+                            <a href="{% url 'careon:assessment_update' assessment.pk %}" class="btn btn-ghost" style="min-height:36px;">Bewerken</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-    <div class="flex gap-2">
-        {% if page_obj.has_previous %}
-            <a href="?page=1" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Eerste</a>
-            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Vorige</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Volgende</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Laatste</a>
-        {% endif %}
+
+    {% if is_paginated %}
+    <div class="ds-card feed-card feed-row">
+        <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+        <div class="feed-actions">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-secondary" style="min-height:36px;">Eerste</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="min-height:36px;">Vorige</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="min-height:36px;">Volgende</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary" style="min-height:36px;">Laatste</a>
+            {% endif %}
+        </div>
     </div>
-</div>
-{% endif %}
+    {% endif %}
 
-{% else %}
-<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-    <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-    </svg>
-    <h3 class="text-lg font-medium text-gray-900 mb-1">Geen beoordelingen gevonden</h3>
-    <p class="text-gray-500 mb-4">Begin met het aanmaken van een nieuwe beoordeling.</p>
-    <a href="{% url 'careon:assessment_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        Nieuwe beoordeling
-    </a>
+    {% else %}
+    <div class="ds-card empty-state">
+        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Geen beoordelingen gevonden.
+        <div style="margin-top:10px;"><a href="{% url 'careon:assessment_create' %}" class="btn btn-primary">Nieuwe beoordeling</a></div>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
-
 {% endblock %}

@@ -28,8 +28,6 @@ urlpatterns = [
     path("regio's/<int:pk>/", views.RegionalConfigurationDetailView.as_view(), name='regional_detail'),
     path("regio's/<int:pk>/edit/", views.RegionalConfigurationUpdateView.as_view(), name='regional_update'),
 
-    path('configuraties/', views.legacy_configuration_list_redirect, name='configuration_list'),
-    path('configuraties/new/', views.legacy_configuration_create_redirect, name='configuration_create'),
     path('configuraties/<int:pk>/', views.CareConfigurationDetailView.as_view(), name='configuration_detail'),
     path('configuraties/<int:pk>/edit/', views.CareConfigurationUpdateView.as_view(), name='configuration_update'),
 
@@ -53,6 +51,7 @@ urlpatterns = [
     path('taken/new/', views.DeadlineCreateView.as_view(), name='task_create'),
     path('taken/<int:pk>/edit/', views.DeadlineUpdateView.as_view(), name='task_update'),
     path('tasks/', views.CareTaskKanbanView.as_view(), name='care_task_kanban'),
+    path('tasks/board/', views.CareTaskKanbanView.as_view(), name='task_kanban'),
     path('tasks/new/', views.CareTaskCreateView.as_view(), name='care_task_create'),
     path('tasks/<int:pk>/edit/', views.CareTaskUpdateView.as_view(), name='care_task_update'),
 
@@ -100,12 +99,16 @@ urlpatterns = [
     path('signalen/new/', views.CareSignalCreateView.as_view(), name='signal_create'),
     path('signalen/<int:pk>/', views.CareSignalDetailView.as_view(), name='signal_detail'),
     path('signalen/<int:pk>/edit/', views.CareSignalUpdateView.as_view(), name='signal_update'),
-    path('risks/', RedirectView.as_view(pattern_name='careon:signal_list', permanent=False), name='risk_log_list'),
+    path('risks/', views.CareSignalListView.as_view(), name='risk_log_list'),
+    path('risks/<int:pk>/edit/', views.CareSignalUpdateView.as_view(), name='risk_log_update'),
 
     path('casussen/', views.CaseIntakeListView.as_view(), name='case_list'),
     path('casussen/new/', views.CaseIntakeCreateView.as_view(), name='case_create'),
     path('casussen/<int:pk>/', views.CaseIntakeDetailView.as_view(), name='case_detail'),
     path('casussen/<int:pk>/edit/', views.CaseIntakeUpdateView.as_view(), name='case_update'),
+    path('casussen/<int:pk>/documenten/new/', views.CaseScopedDocumentCreateView.as_view(), name='case_document_create'),
+    path('casussen/<int:pk>/taken/new/', views.CaseScopedDeadlineCreateView.as_view(), name='case_task_create'),
+    path('casussen/<int:pk>/signalen/new/', views.CaseScopedCareSignalCreateView.as_view(), name='case_signal_create'),
 
     # Assessments (Beoordelingen)
     path('beoordelingen/', views.CaseAssessmentListView.as_view(), name='assessment_list'),

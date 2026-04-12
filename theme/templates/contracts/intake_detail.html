@@ -2,33 +2,43 @@
 {% block title %}{{ intake.title }} - Careon{% endblock %}
 {% block content %}
 
+<div class="page-wrap page-stack">
+
 <!-- Breadcrumb -->
 <div class="mb-4 text-sm">
     <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
     <span class="text-gray-400 mx-1">/</span>
-    <a href="{% url 'careon:case_list' %}" class="text-blue-600 hover:text-blue-800">Intakes</a>
+    <a href="{% url 'careon:case_list' %}" class="text-blue-600 hover:text-blue-800">Casussen</a>
     <span class="text-gray-400 mx-1">/</span>
     <span class="text-gray-600">{{ intake.title }}</span>
 </div>
 
 <div class="flex items-start justify-between mb-6">
     <div>
-        <h1 class="text-3xl font-bold text-gray-900">{{ intake.title }}</h1>
-        <p class="text-gray-500 mt-2">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
+        <h1 class="page-title">{{ intake.title }}</h1>
+        <p class="page-subtitle">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
     </div>
     <div class="flex gap-2">
+        {% if can_edit_case %}
         <a href="{% url 'careon:case_update' intake.pk %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
             Bewerken
         </a>
+        {% else %}
+        <span class="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">Alleen-lezen</span>
+        {% endif %}
     </div>
 </div>
 
 <!-- Status Bar -->
 <div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
-    <div class="grid grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div>
-            <p class="text-xs text-gray-500 uppercase font-semibold">Status</p>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Huidige fase</p>
             <p class="text-lg font-semibold text-gray-900">{{ intake.get_status_display }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-gray-500 uppercase font-semibold">Casusstatus</p>
+            <p class="text-lg font-semibold text-gray-900">{{ case_record.get_case_phase_display|default:"Niet gekoppeld" }}</p>
         </div>
         <div>
             <p class="text-xs text-gray-500 uppercase font-semibold">Urgentie</p>
@@ -47,14 +57,43 @@
     </div>
 </div>
 
+<!-- Workflow Hub -->
+<div class="mb-6 bg-white rounded-xl border border-gray-200 p-5">
+    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Casusworkflow</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+        <div class="rounded-lg border border-gray-200 p-3">
+            <p class="text-xs text-gray-500 uppercase font-semibold">1. Intake</p>
+            <p class="text-sm font-semibold text-gray-900 mt-1">{{ intake.get_status_display }}</p>
+            <p class="text-xs text-gray-500 mt-1">Samenvatting: {{ intake.assessment_summary|default:"Nog geen samenvatting"|truncatechars:90 }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+            <p class="text-xs text-gray-500 uppercase font-semibold">2. Beoordeling</p>
+            <p class="text-sm font-semibold text-gray-900 mt-1">{{ assessment_status_label }}</p>
+            <a href="{{ assessment_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">{{ assessment_action_label }}</a>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+            <p class="text-xs text-gray-500 uppercase font-semibold">3. Matching</p>
+            <p class="text-sm font-semibold text-gray-900 mt-1">{{ matching_status_label }}</p>
+            <a href="{{ matching_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">Naar matching</a>
+        </div>
+        <div class="rounded-lg border border-gray-200 p-3">
+            <p class="text-xs text-gray-500 uppercase font-semibold">4. Plaatsing</p>
+            <p class="text-sm font-semibold text-gray-900 mt-1">{{ placement_status_label }}</p>
+            <p class="text-xs text-gray-500 mt-1">Fase: {{ placement_phase_label }}</p>
+            <a href="{{ placement_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">{{ placement_action_label }}</a>
+        </div>
+    </div>
+</div>
+
 <!-- Main Content -->
 <div class="grid grid-cols-3 gap-6">
     <!-- Left Column: Details -->
     <div class="col-span-2 space-y-6">
-        <!-- Care Details -->
+        <!-- Intake Summary -->
         <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Zorggegevens</h2>
-            <dl class="space-y-4">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">Intake samenvatting</h2>
+            <p class="text-sm text-gray-700 mb-4">{{ intake.assessment_summary|default:"Nog geen samenvatting beschikbaar." }}</p>
+            <dl class="space-y-3">
                 <div>
                     <dt class="text-sm font-medium text-gray-500 uppercase">Hoofdcategorie</dt>
                     <dd class="text-sm text-gray-900">{{ intake.care_category_main.name|default:"—" }}</dd>
@@ -67,11 +106,90 @@
                     <dt class="text-sm font-medium text-gray-500 uppercase">Gewenste zorgvorm</dt>
                     <dd class="text-sm text-gray-900">{{ intake.get_preferred_care_form_display }}</dd>
                 </div>
-                <div>
-                    <dt class="text-sm font-medium text-gray-500 uppercase">Samenvatting hulpvraag</dt>
-                    <dd class="text-sm text-gray-900">{{ intake.assessment_summary|default:"—" }}</dd>
-                </div>
             </dl>
+        </div>
+
+        <!-- Open Tasks -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Open taken ({{ open_tasks_count }})</h2>
+                {% if can_create_case_task %}
+                <a href="{% url 'careon:case_task_create' intake.pk %}" class="text-xs text-blue-600 hover:text-blue-800">+ Taak toevoegen</a>
+                {% endif %}
+            </div>
+            {% if open_tasks %}
+            <div class="space-y-3">
+                {% for task in open_tasks %}
+                <div class="rounded-lg border border-gray-200 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ task.title }}</p>
+                            <p class="text-xs text-gray-500">Deadline: {{ task.due_date|date:"d-m-Y" }}{% if task.assigned_to %} · {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}{% endif %}</p>
+                        </div>
+                        {% if can_edit_case %}
+                        <a href="{% url 'careon:task_update' task.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+                        {% else %}
+                        <span class="text-xs text-gray-400">Alleen-lezen</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">Geen open taken voor deze casus.</p>
+            {% endif %}
+        </div>
+
+        <!-- Open Signals -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Open signalen ({{ open_signals_count }})</h2>
+                {% if can_create_case_signal %}
+                <a href="{% url 'careon:case_signal_create' intake.pk %}" class="text-xs text-blue-600 hover:text-blue-800">+ Signaal toevoegen</a>
+                {% endif %}
+            </div>
+            {% if open_signals %}
+            <div class="space-y-3">
+                {% for signal in open_signals %}
+                <div class="rounded-lg border border-gray-200 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ signal.title|default:signal.get_signal_type_display }}</p>
+                            <p class="text-xs text-gray-500">{{ signal.get_status_display }} · {{ signal.get_risk_level_display }}</p>
+                        </div>
+                        <a href="{% url 'careon:signal_detail' signal.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">Geen open signalen voor deze casus.</p>
+            {% endif %}
+        </div>
+
+        <!-- Relevant Documents -->
+        <div class="bg-white rounded-xl border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-gray-900">Relevante documenten ({{ documents_count }})</h2>
+                <a href="{{ case_document_href }}" class="text-xs text-blue-600 hover:text-blue-800">+ {{ case_document_action_label }}</a>
+            </div>
+            {% if documents %}
+            <div class="space-y-3">
+                {% for document in documents %}
+                <div class="rounded-lg border border-gray-200 p-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-sm font-medium text-gray-900">{{ document.title }}</p>
+                            <p class="text-xs text-gray-500">{{ document.get_status_display }} · {{ document.created_at|date:"d-m-Y" }}</p>
+                        </div>
+                        <a href="{% url 'careon:document_detail' document.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-500">Nog geen documenten gekoppeld aan deze casus.</p>
+            {% endif %}
         </div>
 
         <!-- Client Profile -->
@@ -116,6 +234,59 @@
 
     <!-- Right Column: Sidebar -->
     <div class="space-y-6">
+        <!-- Single Next Action CTA -->
+        <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+            <h3 class="font-semibold text-gray-900 mb-2">Beste volgende actie</h3>
+            <p class="text-sm text-gray-700 mb-4">{{ next_action.help }}</p>
+            <a href="{{ next_action.href }}" class="btn btn-primary" style="display:block;text-align:center;">
+                {{ next_action.label }}
+            </a>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-head-inner">
+                    <h3 class="panel-title">Gereedheid voor matching</h3>
+                </div>
+            </div>
+            <div class="panel-inner space-y-3">
+                {% for item in matching_requirements %}
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm">{{ item.label }}</span>
+                    <span class="badge-sm {% if item.ok %}badge-green{% else %}badge-red{% endif %}">{% if item.ok %}OK{% else %}Ontbreekt{% endif %}</span>
+                </div>
+                {% endfor %}
+                {% if ready_for_matching %}
+                <a href="{{ matching_href }}" class="btn btn-primary" style="display:block;text-align:center;">Naar matching</a>
+                {% else %}
+                <button type="button" class="btn btn-secondary" style="display:block;width:100%;text-align:center;opacity:0.6;cursor:not-allowed;" disabled>Naar matching</button>
+                <p class="text-xs" style="color: var(--text-muted);">Nog niet gereed: {{ matching_missing|join:", " }}.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-head">
+                <div class="panel-head-inner">
+                    <h3 class="panel-title">Gereedheid voor plaatsing</h3>
+                </div>
+            </div>
+            <div class="panel-inner space-y-3">
+                {% for item in placement_requirements %}
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-sm">{{ item.label }}</span>
+                    <span class="badge-sm {% if item.ok %}badge-green{% else %}badge-red{% endif %}">{% if item.ok %}OK{% else %}Ontbreekt{% endif %}</span>
+                </div>
+                {% endfor %}
+                {% if ready_for_placement %}
+                <a href="{{ placement_href }}" class="btn btn-primary" style="display:block;text-align:center;">{{ placement_action_label }}</a>
+                {% else %}
+                <button type="button" class="btn btn-secondary" style="display:block;width:100%;text-align:center;opacity:0.6;cursor:not-allowed;" disabled>{{ placement_action_label }}</button>
+                <p class="text-xs" style="color: var(--text-muted);">Nog niet gereed: {{ placement_missing|join:", " }}.</p>
+                {% endif %}
+            </div>
+        </div>
+
         <!-- Dates -->
         <div class="bg-white rounded-xl border border-gray-200 p-6">
             <h3 class="font-semibold text-gray-900 mb-3">Datums</h3>
@@ -131,38 +302,12 @@
             </dl>
         </div>
 
-        <!-- Next Action -->
-        <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-3">Volgende Stap</h3>
-            {% if not has_assessment %}
-                <p class="text-sm text-gray-700 mb-4">Deze intake is nog niet beoordeeld. Ga door naar beoordeling.</p>
-                <a href="{% url 'careon:assessment_create' %}?intake={{ intake.pk }}" class="block w-full text-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-                    + Beoordeling Toevoegen
-                </a>
-            {% else %}
-                <p class="text-sm text-gray-700 mb-4">Status beoordeling: <strong>{{ assessment_status }}</strong></p>
-                <a href="{% url 'careon:assessment_list' %}" class="block text-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200">
-                    Naar Beoordelingen
-                </a>
-            {% endif %}
-        </div>
-
-        <!-- Assessments -->
-        {% if assessment_list %}
+        <!-- Linked Assessment -->
         <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 class="font-semibold text-gray-900 mb-3">Beoordelingen ({{ assessment_list.count }})</h3>
-            <div class="space-y-2">
-                {% for assessment in assessment_list %}
-                <div class="text-sm">
-                    <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">
-                        Beoordeling #{{ assessment.pk }}
-                    </a>
-                    <p class="text-gray-500 text-xs">{{ assessment.get_assessment_status_display }}</p>
-                </div>
-                {% endfor %}
-            </div>
+            <h3 class="font-semibold text-gray-900 mb-3">Beoordeling</h3>
+            <p class="text-sm text-gray-700 mb-3">Status: <strong>{{ assessment_status_label }}</strong></p>
+            <a href="{{ assessment_href }}" class="text-sm text-blue-600 hover:text-blue-800">{{ assessment_action_label }}</a>
         </div>
-        {% endif %}
 
         <!-- Metadata -->
         <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-xs text-gray-600 space-y-1">
@@ -170,6 +315,8 @@
             <p>Gewijzigd: {{ intake.updated_at|date:"d-m-Y H:i" }}</p>
         </div>
     </div>
+</div>
+
 </div>
 
 {% endblock %}

@@ -1,105 +1,112 @@
 {% extends "base.html" %}
-{% block title %}{% if form.instance.pk %}Beoordeling Bewerken{% else %}Nieuwe Beoordeling{% endif %} - Careon{% endblock %}
+{% block title %}{% if form.instance.pk %}Beoordeling bewerken{% else %}Nieuwe beoordeling{% endif %} - Careon{% endblock %}
 {% block content %}
 
-<!-- Breadcrumb -->
-<div class="mb-4 text-sm">
-    <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
-    <span class="text-gray-400 mx-1">/</span>
-    <a href="{% url 'careon:assessment_list' %}" class="text-blue-600 hover:text-blue-800">Beoordelingen</a>
-    <span class="text-gray-400 mx-1">/</span>
-    <span class="text-gray-600">{% if form.instance.pk %}Bewerken{% else %}Nieuw{% endif %}</span>
-</div>
-
-<h1 class="text-3xl font-bold text-gray-900 mb-6">{% if form.instance.pk %}Beoordeling Bewerken{% else %}Nieuwe Beoordeling Aanmaken{% endif %}</h1>
-
-<form method="POST" class="max-w-4xl">
-    {% csrf_token %}
-
-    <div class="space-y-6">
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Koppeling en status</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label for="{{ form.due_diligence_process.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ form.due_diligence_process.label }}
-                    </label>
-                    {{ form.due_diligence_process }}
-                    {% if form.due_diligence_process.errors %}
-                        <div class="text-red-500 text-xs mt-1">{{ form.due_diligence_process.errors.0 }}</div>
-                    {% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.assessment_status.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ form.assessment_status.label }}
-                    </label>
-                    {{ form.assessment_status }}
-                    {% if form.assessment_status.errors %}
-                        <div class="text-red-500 text-xs mt-1">{{ form.assessment_status.errors.0 }}</div>
-                    {% endif %}
-                </div>
-            </div>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">{% if form.instance.pk %}Beoordeling bewerken{% else %}Beoordeling invullen{% endif %}</h1>
+            <p class="page-subtitle">
+                {% if form.instance.pk and form.instance.intake %}Casus: {{ form.instance.intake.title }}{% else %}Selecteer een casus en vul de beoordeling in.{% endif %}
+            </p>
         </div>
+    </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Signalen en matching</h2>
-            <div class="space-y-4">
-                <div>
-                    <p class="block text-sm font-medium text-gray-700 mb-2">{{ form.risk_signals.label }}</p>
-                    <div class="space-y-2 text-sm text-gray-700">
-                        {{ form.risk_signals }}
-                    </div>
-                    {% if form.risk_signals.errors %}
-                        <div class="text-red-500 text-xs mt-1">{{ form.risk_signals.errors.0 }}</div>
-                    {% endif %}
-                </div>
+    <nav class="text-sm mb-2" style="color: var(--text-muted);">
+        <a href="{% url 'dashboard' %}" style="color: var(--text-muted); text-decoration: none;">Dashboard</a>
+        <span class="mx-2">/</span>
+        {% if form.instance.pk and form.instance.intake %}
+        <a href="{% url 'careon:case_detail' form.instance.intake.pk %}" style="color: var(--text-muted); text-decoration: none;">{{ form.instance.intake.title }}</a>
+        <span class="mx-2">/</span>
+        <a href="{% url 'careon:assessment_detail' form.instance.pk %}" style="color: var(--text-muted); text-decoration: none;">Beoordeling</a>
+        <span class="mx-2">/</span>
+        {% else %}
+        <a href="{% url 'careon:assessment_list' %}" style="color: var(--text-muted); text-decoration: none;">Beoordelingen</a>
+        <span class="mx-2">/</span>
+        {% endif %}
+        <span style="color: var(--primary);">{% if form.instance.pk %}Bewerken{% else %}Nieuw{% endif %}</span>
+    </nav>
 
-                <div class="flex items-center gap-2">
-                    {{ form.matching_ready }}
-                    <label for="{{ form.matching_ready.id_for_label }}" class="text-sm font-medium text-gray-700">{{ form.matching_ready.label }}</label>
-                </div>
-
-                <div>
-                    <label for="{{ form.reason_not_ready.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ form.reason_not_ready.label }}
-                    </label>
-                    {{ form.reason_not_ready }}
-                    {% if form.reason_not_ready.errors %}
-                        <div class="text-red-500 text-xs mt-1">{{ form.reason_not_ready.errors.0 }}</div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 p-6">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Notities</h2>
-            <label for="{{ form.notes.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">{{ form.notes.label }}</label>
-            {{ form.notes }}
-            {% if form.notes.errors %}
-                <div class="text-red-500 text-xs mt-1">{{ form.notes.errors.0 }}</div>
-            {% endif %}
-        </div>
+    <form method="POST" class="page-stack">
+        {% csrf_token %}
 
         {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p class="text-red-800 text-sm font-medium">Controleer alstublieft de volgende fouten:</p>
-            <ul class="mt-2 text-red-700 text-sm space-y-1 list-disc list-inside">
-                {% for error in form.non_field_errors %}
-                    <li>{{ error }}</li>
-                {% endfor %}
-            </ul>
+        <div class="error-state">
+            <p style="margin:0 0 8px;font-weight:700;">Controleer de invoer:</p>
+            {% for error in form.non_field_errors %}
+            <p style="margin:0;font-size:13px;">{{ error }}</p>
+            {% endfor %}
         </div>
         {% endif %}
 
-        <div class="flex justify-between items-center gap-4">
-            <a href="{% url 'careon:assessment_list' %}" class="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50">
-                Annuleren
-            </a>
-            <button type="submit" class="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-                {% if form.instance.pk %}Opslaan{% else %}Aanmaken{% endif %}
+        <section class="ds-card action-card field-group">
+            <div class="form-section-head">
+                <div class="form-section-number">1</div>
+                <div>
+                    <div class="form-section-title">Casus &amp; status</div>
+                    <div class="form-section-desc">Selecteer de casus en stel de beoordelingsstatus in</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                <div>
+                    <label for="{{ form.due_diligence_process.id_for_label }}" class="field-label">Casus {% if form.due_diligence_process.field.required %}*{% endif %}</label>
+                    {{ form.due_diligence_process }}
+                    {% if form.due_diligence_process.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.due_diligence_process.errors.0 }}</div>{% endif %}
+                </div>
+                <div>
+                    <label for="{{ form.assessment_status.id_for_label }}" class="field-label">{{ form.assessment_status.label }} {% if form.assessment_status.field.required %}*{% endif %}</label>
+                    {{ form.assessment_status }}
+                    {% if form.assessment_status.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.assessment_status.errors.0 }}</div>{% endif %}
+                </div>
+            </div>
+        </section>
+
+        <section class="ds-card action-card field-group">
+            <div class="form-section-head">
+                <div class="form-section-number">2</div>
+                <div>
+                    <div class="form-section-title">Signalen &amp; matching</div>
+                    <div class="form-section-desc">Selecteer van toepassing zijnde signalen en geef aan of de casus klaar is voor matching</div>
+                </div>
+            </div>
+            <div>
+                <p class="field-label">{{ form.risk_signals.label }}</p>
+                <div class="space-y-2 text-sm mt-2">{{ form.risk_signals }}</div>
+                {% if form.risk_signals.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.risk_signals.errors.0 }}</div>{% endif %}
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:4px;">
+                {{ form.matching_ready }}
+                <label for="{{ form.matching_ready.id_for_label }}" class="field-label" style="margin:0;cursor:pointer;">{{ form.matching_ready.label }}</label>
+            </div>
+            <div>
+                <label for="{{ form.reason_not_ready.id_for_label }}" class="field-label">{{ form.reason_not_ready.label }}</label>
+                {{ form.reason_not_ready }}
+                {% if form.reason_not_ready.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.reason_not_ready.errors.0 }}</div>{% endif %}
+            </div>
+        </section>
+
+        <section class="ds-card action-card field-group">
+            <div class="form-section-head">
+                <div class="form-section-number">3</div>
+                <div>
+                    <div class="form-section-title">Notities</div>
+                    <div class="form-section-desc">Aanvullende opmerkingen bij de beoordeling</div>
+                </div>
+            </div>
+            <div>
+                <label for="{{ form.notes.id_for_label }}" class="field-label">{{ form.notes.label }}</label>
+                {{ form.notes }}
+                {% if form.notes.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.notes.errors.0 }}</div>{% endif %}
+            </div>
+        </section>
+
+        <div class="ds-card action-card" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+            <a href="{% url 'careon:assessment_list' %}" class="btn btn-secondary">Annuleren</a>
+            <button type="submit" class="btn btn-primary">
+                {% if form.instance.pk %}Wijzigingen opslaan{% else %}Beoordeling aanmaken{% endif %}
             </button>
         </div>
-    </div>
-</form>
+    </form>
+</div>
 
 {% endblock %}

@@ -1,105 +1,212 @@
 {% extends "base.html" %}
 {% block title %}Taken - Careon{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Taken</h1>
-        <p class="text-sm text-gray-500">Dagelijkse werkplek voor casusopvolging</p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Taken</h1>
+            <p class="page-subtitle">Dagelijkse werkplek voor casusopvolging</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'careon:task_create' %}" class="btn btn-primary">Nieuwe taak</a>
+        </div>
     </div>
-    <a href="{% url 'careon:task_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Nieuwe taak</a>
+
+    <div class="task-kpi-grid">
+        <div class="ds-card task-kpi-card">
+            <div class="kpi-label">Mijn taken</div>
+            <div class="kpi-value">{{ my_open_count|default:0 }}</div>
+        </div>
+        <div class="ds-card task-kpi-card">
+            <div class="kpi-label">Vandaag</div>
+            <div class="kpi-value">{{ today_count }}</div>
+        </div>
+        <div class="ds-card task-kpi-card">
+            <div class="kpi-label">Achterstallig</div>
+            <div class="kpi-value tone-critical">{{ overdue_count }}</div>
+        </div>
+        <div class="ds-card task-kpi-card">
+            <div class="kpi-label">Hoge prioriteit</div>
+            <div class="kpi-value tone-warning">{{ high_priority_count }}</div>
+        </div>
+        <div class="ds-card task-kpi-card">
+            <div class="kpi-label">Voltooid</div>
+            <div class="kpi-value tone-good">{{ completed_count }}</div>
+        </div>
+    </div>
+
+    <div class="ds-card feed-card filter-pills">
+        <a href="?show=mine" class="filter-pill {% if show == 'mine' %}active{% endif %}">Mijn taken</a>
+        <a href="?show=today" class="filter-pill {% if show == 'today' %}active{% endif %}">Vandaag</a>
+        <a href="?show=overdue" class="filter-pill {% if show == 'overdue' %}active filter-pill-critical{% endif %}">Achterstallig</a>
+        <a href="?show=high" class="filter-pill {% if show == 'high' %}active filter-pill-warning{% endif %}">Hoge prioriteit</a>
+        <a href="?show=all" class="filter-pill {% if show == 'all' %}active{% endif %}">Alles</a>
+    </div>
+
+    <div class="ds-card table-card">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Taak</th>
+                        <th>Casus</th>
+                        <th>Type</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Bron</th>
+                        <th class="th-right">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in task_rows %}
+                    <tr{% if row.deadline.is_overdue and not row.deadline.is_completed %} class="row-overdue"{% endif %}>
+                        <td>
+                            <div class="c-primary" style="font-size:13px;font-weight:600;">{{ row.deadline.title|truncatechars:52 }}</div>
+                            <div class="c-secondary" style="font-size:11px;">{{ row.deadline.get_priority_display }}</div>
+                        </td>
+                        <td>
+                            <div class="c-primary">{{ row.case_title }}</div>
+                            {% if row.open_href %}
+                            <a href="{{ row.open_href }}" class="c-link" style="font-size:11px;">Open casus</a>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.deadline.get_task_type_display }}</td>
+                        <td{% if row.deadline.is_overdue and not row.deadline.is_completed %} class="td-overdue"{% endif %}>
+                            {{ row.deadline.due_date|date:"d-m-Y" }}{% if row.deadline.due_time %} {{ row.deadline.due_time|time:"H:i" }}{% endif %}
+                        </td>
+                        <td>
+                            {% if row.row_status == 'Afgerond' %}
+                            <span class="ds-badge badge-status-done">{{ row.row_status }}</span>
+                            {% elif row.row_status == 'Te laat' %}
+                            <span class="ds-badge badge-status-overdue">{{ row.row_status }}</span>
+                            {% elif row.row_status == 'Vandaag' %}
+                            <span class="ds-badge badge-status-today">{{ row.row_status }}</span>
+                            {% else %}
+                            <span class="ds-badge badge-status-open">{{ row.row_status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.deadline.auto_generated %}
+                            <span class="ds-badge badge-flow">Flow · {{ row.deadline.get_generation_source_display }}</span>
+                            {% else %}
+                            <span class="ds-badge badge-low">Handmatig</span>
+                            {% endif %}
+                        </td>
+                        <td class="td-right">
+                            <div class="task-actions">
+                                {% if row.can_edit and not row.deadline.is_completed %}
+                                <form method="post" action="{% url 'careon:deadline_complete' row.deadline.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-ghost" style="min-height:34px;">Voltooien</button>
+                                </form>
+                                {% endif %}
+                                {% if row.can_edit %}
+                                <a href="{% url 'careon:task_update' row.deadline.pk %}" class="btn btn-ghost" style="min-height:34px;">Bewerken</a>
+                                {% else %}
+                                <span class="c-secondary" style="font-size:11px;">Alleen-lezen</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="td-empty">Geen taken gevonden voor dit filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
-<div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-        <div class="text-xs text-gray-500">Mijn taken</div>
-        <div class="text-xl font-semibold text-gray-900">{{ my_open_count|default:0 }}</div>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-        <div class="text-xs text-gray-500">Vandaag</div>
-        <div class="text-xl font-semibold text-gray-900">{{ today_count }}</div>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-        <div class="text-xs text-gray-500">Achterstallig</div>
-        <div class="text-xl font-semibold text-red-700">{{ overdue_count }}</div>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-        <div class="text-xs text-gray-500">Hoge prioriteit</div>
-        <div class="text-xl font-semibold text-orange-700">{{ high_priority_count }}</div>
-    </div>
-    <div class="bg-white border border-gray-200 rounded-lg p-3">
-        <div class="text-xs text-gray-500">Voltooid</div>
-        <div class="text-xl font-semibold text-green-700">{{ completed_count }}</div>
-    </div>
-</div>
-
-<div class="flex gap-2 mb-4 flex-wrap">
-    <a href="?show=mine" class="px-3 py-1.5 text-sm rounded-lg {% if show == 'mine' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-700{% endif %}">Mijn taken</a>
-    <a href="?show=today" class="px-3 py-1.5 text-sm rounded-lg {% if show == 'today' %}bg-blue-100 text-blue-800{% else %}bg-gray-100 text-gray-700{% endif %}">Vandaag</a>
-    <a href="?show=overdue" class="px-3 py-1.5 text-sm rounded-lg {% if show == 'overdue' %}bg-red-100 text-red-800{% else %}bg-gray-100 text-gray-700{% endif %}">Achterstallig</a>
-    <a href="?show=high" class="px-3 py-1.5 text-sm rounded-lg {% if show == 'high' %}bg-orange-100 text-orange-800{% else %}bg-gray-100 text-gray-700{% endif %}">Hoge prioriteit</a>
-    <a href="?show=all" class="px-3 py-1.5 text-sm rounded-lg {% if show == 'all' %}bg-gray-200 text-gray-900{% else %}bg-gray-100 text-gray-700{% endif %}">Alles</a>
-</div>
-
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Taak</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Casus</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Deadline</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Bron</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for row in task_rows %}
-            <tr class="hover:bg-gray-50 {% if row.deadline.is_overdue and not row.deadline.is_completed %}bg-red-50{% endif %}">
-                <td class="px-5 py-3">
-                    <div class="text-sm font-medium text-gray-900">{{ row.deadline.title|truncatechars:52 }}</div>
-                    <div class="text-xs text-gray-500">{{ row.deadline.get_priority_display }}</div>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-700">
-                    <div>{{ row.case_title }}</div>
-                    {% if row.open_href %}
-                    <a href="{{ row.open_href }}" class="text-xs text-blue-600 hover:text-blue-800">Open casus</a>
-                    {% endif %}
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-700">{{ row.deadline.get_task_type_display }}</td>
-                <td class="px-5 py-3 text-sm {% if row.deadline.is_overdue and not row.deadline.is_completed %}text-red-700 font-medium{% else %}text-gray-700{% endif %}">
-                    {{ row.deadline.due_date|date:"d-m-Y" }}{% if row.deadline.due_time %} {{ row.deadline.due_time|time:"H:i" }}{% endif %}
-                </td>
-                <td class="px-5 py-3">
-                    <span class="text-xs px-2 py-1 rounded-full {{ row.row_status_class }}">{{ row.row_status }}</span>
-                </td>
-                <td class="px-5 py-3">
-                    {% if row.deadline.auto_generated %}
-                    <span class="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-800">Flow · {{ row.deadline.get_generation_source_display }}</span>
-                    {% else %}
-                    <span class="text-xs px-2 py-1 rounded-full bg-gray-100 text-gray-700">Handmatig</span>
-                    {% endif %}
-                </td>
-                <td class="px-5 py-3 text-right">
-                    <div class="inline-flex items-center gap-3">
-                        {% if not row.deadline.is_completed %}
-                        <form method="post" action="{% url 'careon:deadline_complete' row.deadline.pk %}">
-                            {% csrf_token %}
-                            <button type="submit" class="text-xs text-green-700 hover:text-green-900">Voltooien</button>
-                        </form>
-                        {% endif %}
-                        <a href="{% url 'careon:task_update' row.deadline.pk %}" class="text-xs text-gray-600 hover:text-blue-700">Bewerken</a>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="7" class="px-5 py-12 text-center text-gray-400">
-                    Geen taken gevonden voor dit filter.
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+<style>
+    .task-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: var(--card-gap);
+    }
+    .task-kpi-card { padding: 14px 16px; }
+    .kpi-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+    .kpi-value {
+        margin-top: 8px;
+        font-size: 32px;
+        line-height: 1;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .tone-critical { color: #f87171; }
+    .tone-warning { color: #f59e0b; }
+    .tone-good { color: #34d399; }
+    .filter-pills {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .filter-pill {
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        background: color-mix(in srgb, var(--surface-alt) 88%, #1b2f5d 12%);
+        border: 1px solid color-mix(in srgb, var(--border) 82%, #24427a 18%);
+        padding: 6px 12px;
+        border-radius: 10px;
+    }
+    .filter-pill:hover {
+        color: var(--text-primary);
+        border-color: color-mix(in srgb, var(--primary) 42%, var(--border) 58%);
+    }
+    .filter-pill.active {
+        color: #dbe8ff;
+        background: color-mix(in srgb, var(--primary) 28%, var(--surface-alt) 72%);
+        border-color: color-mix(in srgb, var(--primary) 55%, var(--border) 45%);
+    }
+    .filter-pill-critical.active {
+        color: #ffe2e2;
+        background: color-mix(in srgb, #ef4444 32%, var(--surface-alt) 68%);
+        border-color: color-mix(in srgb, #ef4444 52%, var(--border) 48%);
+    }
+    .filter-pill-warning.active {
+        color: #ffe7bf;
+        background: color-mix(in srgb, #f59e0b 28%, var(--surface-alt) 72%);
+        border-color: color-mix(in srgb, #f59e0b 48%, var(--border) 52%);
+    }
+    .row-overdue td {
+        background: color-mix(in srgb, #7f1d1d 22%, transparent);
+    }
+    .td-overdue {
+        color: #fca5a5;
+        font-weight: 700;
+    }
+    .task-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+    }
+    .badge-status-done { background: rgba(34, 197, 94, 0.2); color: #86efac; border-color: rgba(34, 197, 94, 0.35); }
+    .badge-status-overdue { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
+    .badge-status-today { background: rgba(245, 158, 11, 0.2); color: #fcd34d; border-color: rgba(245, 158, 11, 0.35); }
+    .badge-status-open { background: rgba(59, 130, 246, 0.2); color: #93c5fd; border-color: rgba(59, 130, 246, 0.35); }
+    .badge-flow { background: rgba(139, 92, 246, 0.2); color: #c4b5fd; border-color: rgba(139, 92, 246, 0.35); }
+    .td-empty {
+        text-align: center;
+        padding: 28px 16px;
+        color: var(--text-secondary);
+    }
+    @media (max-width: 1100px) {
+        .task-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px) {
+        .task-kpi-grid { grid-template-columns: 1fr; }
+    }
+</style>
 {% endblock %}

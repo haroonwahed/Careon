@@ -16,7 +16,7 @@
         </div>
         <div class="flex gap-3 pt-4">
             <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">{% if form.instance.pk %}Bijwerken{% else %}Opslaan{% endif %}</button>
-            <a href="{% url 'careon:document_list' %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Annuleren</a>
+            <a href="{% if cancel_href %}{{ cancel_href }}{% else %}{% url 'careon:document_list' %}{% endif %}" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200">Annuleren</a>
         </div>
     </form>
 </div>

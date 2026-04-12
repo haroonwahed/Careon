@@ -86,6 +86,43 @@ def _resolve_deadline_case(deadline):
     return None
 
 
+def _can_edit_intake(user, intake):
+    if intake is None:
+        return False
+
+    linked_case = intake.case_record
+    if linked_case is not None:
+        return can_access_case_action(user, linked_case, CaseAction.EDIT)
+
+    if intake.organization and can_manage_organization(user, intake.organization):
+        return True
+
+    return bool(intake.case_coordinator_id and intake.case_coordinator_id == user.id)
+
+
+def _can_edit_assessment(user, assessment):
+    if assessment is None:
+        return False
+
+    if _can_edit_intake(user, assessment.intake):
+        return True
+
+    return bool(assessment.assessed_by_id and assessment.assessed_by_id == user.id)
+
+
+def _log_pilot_issue(request, *, category, detail, level='warning'):
+    user = getattr(request, 'user', None)
+    user_label = getattr(user, 'username', 'anonymous') if user and getattr(user, 'is_authenticated', False) else 'anonymous'
+    log_method = getattr(logger, level, logger.warning)
+    log_method(
+        'pilot.%s user=%s path=%s detail=%s',
+        category,
+        user_label,
+        getattr(request, 'path', '-'),
+        detail,
+    )
+
+
 def _resolve_task_due_date(*, base_date=None, fallback_days=2):
     if base_date:
         return base_date
@@ -535,82 +572,15 @@ def get_configuration_scope_content(scope):
         'submit_label_update': 'Bijwerken gemeenteconfiguratie',
     }
 
-class CareConfigurationListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    model = CareConfiguration
-    template_name = 'contracts/matter_list.html'
-    context_object_name = 'configurations'
-    paginate_by = 25
-
-    SCOPE_QUERY_ALIASES = {
-        'gemeente': CareConfiguration.Scope.GEMEENTE,
-        'gemeenten': CareConfiguration.Scope.GEMEENTE,
-        CareConfiguration.Scope.GEMEENTE: CareConfiguration.Scope.GEMEENTE,
-        'regio': CareConfiguration.Scope.REGIO,
-        'regios': CareConfiguration.Scope.REGIO,
-        "regio's": CareConfiguration.Scope.REGIO,
-        CareConfiguration.Scope.REGIO: CareConfiguration.Scope.REGIO,
-    }
-
-    def _get_scope_filter(self):
-        raw_scope = (self.request.GET.get('scope') or '').strip()
-        if not raw_scope:
-            return ''
-        return self.SCOPE_QUERY_ALIASES.get(raw_scope, self.SCOPE_QUERY_ALIASES.get(raw_scope.upper(), ''))
-
-    def get_queryset(self):
-        org = self.get_organization()
-        qs = scope_queryset_for_organization(
-            CareConfiguration.objects.select_related('client', 'responsible_care_coordinator').prefetch_related('care_domains', 'linked_providers'),
-            org,
-        )
-        q = self.request.GET.get('q')
-        status = self.request.GET.get('status')
-        care_domain_id = self.request.GET.get('care_domain')
-        scope_filter = self._get_scope_filter()
-        if q:
-            qs = qs.filter(
-                Q(title__icontains=q)
-                | Q(configuration_id__icontains=q)
-                | Q(client__name__icontains=q)
-                | Q(linked_providers__name__icontains=q)
-            ).distinct()
-        if status:
-            qs = qs.filter(status=status)
-        if care_domain_id:
-            qs = qs.filter(care_domains__id=care_domain_id)
-        if scope_filter:
-            qs = qs.filter(scope=scope_filter)
-        return qs.order_by('-created_at')
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        org = self.get_organization()
-        current_scope = self._get_scope_filter()
-        tenant_configurations = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
-        if current_scope:
-            tenant_configurations = tenant_configurations.filter(scope=current_scope)
-        configuration_stats = tenant_configurations.aggregate(
-            total=Count('id'),
-            active=Count('id', filter=Q(is_active=True)),
-        )
-        configuration_rows = []
-        for configuration in ctx['configurations']:
-            configuration_rows.append({
-                'obj': configuration,
-                'provider_total': configuration.provider_total,
-                'domains': list(configuration.care_domains.values_list('name', flat=True)),
-                'avg_wait_days': configuration.average_wait_days,
-                'case_total': configuration.case_total,
-                'capacity_status': configuration.capacity_status,
-            })
-
-        ctx['total_configurations'] = configuration_stats['total']
-        ctx['active_configurations'] = configuration_stats['active']
-        ctx['search_query'] = self.request.GET.get('q', '')
-        ctx['current_scope'] = current_scope
-        ctx.update(get_configuration_scope_content(current_scope))
-        ctx['configuration_rows'] = configuration_rows
-        return ctx
+_SCOPE_QUERY_ALIASES = {
+    'gemeente': CareConfiguration.Scope.GEMEENTE,
+    'gemeenten': CareConfiguration.Scope.GEMEENTE,
+    CareConfiguration.Scope.GEMEENTE: CareConfiguration.Scope.GEMEENTE,
+    'regio': CareConfiguration.Scope.REGIO,
+    'regios': CareConfiguration.Scope.REGIO,
+    "regio's": CareConfiguration.Scope.REGIO,
+    CareConfiguration.Scope.REGIO: CareConfiguration.Scope.REGIO,
+}
 
 
 class CareConfigurationDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
@@ -644,7 +614,7 @@ class CareConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, C
     def get_initial(self):
         initial = super().get_initial()
         raw_scope = (self.request.GET.get('scope') or '').strip()
-        normalized_scope = CareConfigurationListView.SCOPE_QUERY_ALIASES.get(raw_scope, CareConfigurationListView.SCOPE_QUERY_ALIASES.get(raw_scope.upper()))
+        normalized_scope = _SCOPE_QUERY_ALIASES.get(raw_scope, _SCOPE_QUERY_ALIASES.get(raw_scope.upper()))
         if normalized_scope:
             initial['scope'] = normalized_scope
         client_id = (self.request.GET.get('client') or '').strip()
@@ -659,7 +629,7 @@ class CareConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, C
         ctx = super().get_context_data(**kwargs)
         scope = ctx['form'].initial.get('scope') or CareConfiguration.Scope.GEMEENTE
         ctx.update(get_configuration_scope_content(scope))
-        ctx['cancel_url'] = f"{reverse('careon:configuration_list')}?scope={scope}"
+        ctx['cancel_url'] = reverse('careon:regional_list') if scope == CareConfiguration.Scope.REGIO else reverse('careon:municipality_list')
         ctx['is_edit'] = False
         selected_provider_ids = ctx['form'].initial.get('linked_providers') or []
         ctx['prefilled_provider'] = ctx['form'].fields['linked_providers'].queryset.filter(pk__in=selected_provider_ids).first()
@@ -697,7 +667,7 @@ class CareConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin,
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update(get_configuration_scope_content(self.object.scope))
-        ctx['cancel_url'] = f"{reverse('careon:configuration_list')}?scope={self.object.scope}"
+        ctx['cancel_url'] = reverse('careon:regional_list') if self.object.scope == CareConfiguration.Scope.REGIO else reverse('careon:municipality_list')
         ctx['is_edit'] = True
         return ctx
 
@@ -735,6 +705,22 @@ class DocumentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
             qs = qs.filter(document_type=doc_type)
         return qs.order_by('-created_at')
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        org = self.get_organization()
+        all_docs = scope_queryset_for_organization(Document.objects.all(), org)
+        editable_document_ids = set()
+        for doc in ctx['documents']:
+            if not doc.contract or can_access_case_action(self.request.user, doc.contract, CaseAction.EDIT):
+                editable_document_ids.add(doc.pk)
+        ctx.update({
+            'total_documents': all_docs.count(),
+            'review_documents': all_docs.filter(status=Document.Status.REVIEW).count(),
+            'draft_documents': all_docs.filter(status=Document.Status.DRAFT).count(),
+            'editable_document_ids': editable_document_ids,
+        })
+        return ctx
+
 
 class DocumentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
     model = Document
@@ -748,6 +734,11 @@ class DocumentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailVi
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['versions'] = Document.objects.filter(parent_document=self.object).order_by('-version')
+        ctx['can_edit_document'] = (not self.object.contract) or can_access_case_action(
+            self.request.user,
+            self.object.contract,
+            CaseAction.EDIT,
+        )
         return ctx
 
 
@@ -869,13 +860,16 @@ class DeadlineListView(LoginRequiredMixin, ListView):
                 row_status = 'Open'
                 row_status_class = 'bg-blue-100 text-blue-800'
 
+            linked_case = None
             if deadline.intake:
-                if deadline.intake.case_record_id:
-                    open_href = get_contract_section_url(deadline.intake.case_record, 'intake-section')
+                linked_case = getattr(deadline.intake, 'contract', None)
+                if linked_case:
+                    open_href = get_contract_section_url(linked_case, 'intake-section')
                 else:
                     open_href = reverse('careon:intake_detail', kwargs={'pk': deadline.intake.pk})
                 case_title = deadline.intake.title
             elif deadline.case_record:
+                linked_case = deadline.case_record
                 open_href = reverse('careon:case_detail', kwargs={'pk': deadline.case_record.pk})
                 case_title = deadline.case_record.title
             else:
@@ -898,6 +892,7 @@ class DeadlineListView(LoginRequiredMixin, ListView):
                 'row_status': row_status,
                 'row_status_class': row_status_class,
                 'priority_class': priority_class,
+                'can_edit': (linked_case is None) or can_access_case_action(self.request.user, linked_case, CaseAction.EDIT),
             })
 
         ctx['task_rows'] = task_rows
@@ -931,6 +926,9 @@ class DeadlineCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView
         return form
 
     def form_valid(self, form):
+        intake = form.instance.intake
+        if intake and not _can_edit_intake(self.request.user, intake):
+            return HttpResponseForbidden('Je hebt geen rechten om opvolgtaken voor deze casus toe te voegen.')
         form.instance.created_by = self.request.user
         response = super().form_valid(form)
         if self.object.generation_source == Deadline.GenerationSource.MANUAL:
@@ -1652,33 +1650,30 @@ def reports_dashboard(request):
                 'kind_label': 'Escalatie',
                 'title': case_title,
                 'meta': f"{signal.get_signal_type_display()} · {signal.get_risk_level_display()} · {signal.get_status_display()}",
-                'href': reverse('careon:risk_log_update', kwargs={'pk': signal.pk}),
+                'href': reverse('careon:signal_update', kwargs={'pk': signal.pk}),
             })
 
-    # Doorstroomtrend start aanvraag → casus → beoordeling → matching → intake → plaatsing
+    # Doorstroomtrend op basis van het centrale zorgproces
     flow_counts = {
-        'start_request': case_records_qs.filter(status=CareCase.Status.DRAFT).count(),
-        'case_profile': case_records_qs.filter(status=CareCase.Status.IN_REVIEW).count(),
+        'case': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE).count(),
         'assessment': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT).count(),
         'matching': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.MATCHING).count(),
-        'intake': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE).count(),
         'placement': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.DECISION).count(),
+        'follow_up': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count(),
     }
     max_flow = max(max(flow_counts.values()), 1)
     flow_stages = [
-        {'key': 'start_request', 'label': 'Start aanvraag', 'count': flow_counts['start_request'], 'width': int((flow_counts['start_request'] / max_flow) * 100)},
-        {'key': 'case_profile', 'label': 'Casus (persoonsbeeld, diagnoses, indicatie)', 'count': flow_counts['case_profile'], 'width': int((flow_counts['case_profile'] / max_flow) * 100)},
+        {'key': 'case', 'label': 'Intake', 'count': flow_counts['case'], 'width': int((flow_counts['case'] / max_flow) * 100)},
         {'key': 'assessment', 'label': 'Beoordeling', 'count': flow_counts['assessment'], 'width': int((flow_counts['assessment'] / max_flow) * 100)},
         {'key': 'matching', 'label': 'Matching', 'count': flow_counts['matching'], 'width': int((flow_counts['matching'] / max_flow) * 100)},
-        {'key': 'intake', 'label': 'Intake', 'count': flow_counts['intake'], 'width': int((flow_counts['intake'] / max_flow) * 100)},
         {'key': 'placement', 'label': 'Plaatsing', 'count': flow_counts['placement'], 'width': int((flow_counts['placement'] / max_flow) * 100)},
+        {'key': 'follow_up', 'label': 'Opvolging', 'count': flow_counts['follow_up'], 'width': int((flow_counts['follow_up'] / max_flow) * 100)},
     ]
     flow_drops = [
-        ('Start aanvraag → Casus', max(flow_counts['start_request'] - flow_counts['case_profile'], 0)),
-        ('Casus → Beoordeling', max(flow_counts['case_profile'] - flow_counts['assessment'], 0)),
-        ('Beoordeling → Matching', max(flow_counts['assessment'] - flow_counts['matching'], 0)),
-        ('Matching → Intake', max(flow_counts['matching'] - flow_counts['intake'], 0)),
-        ('Intake → Plaatsing', max(flow_counts['intake'] - flow_counts['placement'], 0)),
+        ('Intake -> Beoordeling', max(flow_counts['case'] - flow_counts['assessment'], 0)),
+        ('Beoordeling -> Matching', max(flow_counts['assessment'] - flow_counts['matching'], 0)),
+        ('Matching -> Plaatsing', max(flow_counts['matching'] - flow_counts['placement'], 0)),
+        ('Plaatsing -> Opvolging', max(flow_counts['placement'] - flow_counts['follow_up'], 0)),
     ]
     bottleneck_label, bottleneck_value = max(flow_drops, key=lambda x: x[1])
 
@@ -2091,24 +2086,6 @@ def case_flow_update_redirect(request, pk):
 
 
 @login_required
-def legacy_configuration_list_redirect(request):
-    """Route old configuration list URL to municipality/regional entry points."""
-    scope = (request.GET.get('scope') or '').strip().upper()
-    if scope == CareConfiguration.Scope.REGIO:
-        return redirect('careon:regional_list')
-    return redirect('careon:municipality_list')
-
-
-@login_required
-def legacy_configuration_create_redirect(request):
-    """Route old configuration create URL to municipality/regional create pages."""
-    scope = (request.GET.get('scope') or '').strip().upper()
-    if scope == CareConfiguration.Scope.REGIO:
-        return redirect('careon:regional_create')
-    return redirect('careon:municipality_create')
-
-
-@login_required
 def matching_dashboard(request):
     """Show actionable assessment-to-provider matching suggestions and assignments."""
     org = get_user_organization(request.user)
@@ -2125,6 +2102,20 @@ def matching_dashboard(request):
         .order_by('-updated_at')
     )
 
+    selected_intake = None
+    selected_intake_raw = (request.GET.get('intake') or '').strip()
+    if selected_intake_raw.isdigit():
+        selected_intake = CaseIntakeProcess.objects.filter(organization=org, pk=int(selected_intake_raw)).first()
+        if selected_intake:
+            approved_assessments_qs = approved_assessments_qs.filter(due_diligence_process=selected_intake)
+        else:
+            messages.warning(request, 'De gekozen casus is niet gevonden. Alle matchingitems worden getoond.')
+            _log_pilot_issue(
+                request,
+                category='matching_invalid_intake_filter',
+                detail=f'intake={selected_intake_raw}',
+            )
+
     if request.method == 'POST' and request.POST.get('action') == 'assign':
         assessment = get_object_or_404(approved_assessments_qs, pk=request.POST.get('assessment_id'))
         provider = get_object_or_404(
@@ -2132,6 +2123,13 @@ def matching_dashboard(request):
             pk=request.POST.get('provider_id'),
         )
         intake = assessment.intake
+        if not _can_edit_intake(request.user, intake):
+            _log_pilot_issue(
+                request,
+                category='matching_forbidden',
+                detail=f'intake={getattr(intake, "pk", "-")}',
+            )
+            return HttpResponseForbidden('Je hebt geen rechten om matching voor deze casus bij te werken.')
 
         placement, created = PlacementRequest.objects.get_or_create(
             due_diligence_process=intake,
@@ -2196,6 +2194,7 @@ def matching_dashboard(request):
     rows = []
     for assessment in assessments:
         intake = assessment.intake
+        can_assign = _can_edit_intake(request.user, intake)
         suggestions = []
         for profile in provider_profiles:
             score = 0
@@ -2250,6 +2249,7 @@ def matching_dashboard(request):
             {
                 'assessment': assessment,
                 'intake': intake,
+                'can_assign': can_assign,
                 'assigned_provider': _assignment.selected_provider if _assignment else None,
                 'placement_pk': _assignment.pk if _assignment else None,
                 'suggestions': suggestions[:5],
@@ -2260,6 +2260,7 @@ def matching_dashboard(request):
         'rows': rows,
         'total_ready': len(rows),
         'assigned_count': len(assigned_by_intake),
+        'selected_intake': selected_intake,
     }
     return render(request, 'contracts/matching_dashboard.html', context)
 
@@ -2350,7 +2351,7 @@ def dashboard(request):
     phase_counts = case_records_qs.values('case_phase').annotate(count=Count('id'))
     phase_counts_dict = {item['case_phase']: item['count'] for item in phase_counts}
     case_status_data_values = [
-        {'label': 'Start aanvraag', 'count': status_counts_dict.get(CareCase.Status.DRAFT, 0), 'tone': 'pf-draft'},
+        {'label': 'Nieuwe casus', 'count': status_counts_dict.get(CareCase.Status.DRAFT, 0), 'tone': 'pf-draft'},
         {'label': 'Casus (persoonsbeeld, diagnoses, indicatie)', 'count': status_counts_dict.get(CareCase.Status.IN_REVIEW, 0), 'tone': 'pf-review'},
         {'label': 'Beoordeling', 'count': phase_counts_dict.get(CareCase.CasePhase.BEOORDELING, 0), 'tone': 'pf-review'},
         {'label': 'Matching', 'count': phase_counts_dict.get(CareCase.CasePhase.MATCHING, 0), 'tone': 'pf-other'},
@@ -2371,7 +2372,12 @@ def dashboard(request):
     total_configurations = configuration_stats['total'] or 0
     active_configurations = configuration_stats['active'] or 0
 
-    intake_phase_count = intake_cases + (intake_stats['in_progress'] or 0)
+    case_phase_count = due_diligence_qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE).count()
+    assessment_phase_count = due_diligence_qs.filter(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT).count()
+    matching_phase_count = due_diligence_qs.filter(status=CaseIntakeProcess.ProcessStatus.MATCHING).count()
+    placement_phase_count = due_diligence_qs.filter(status=CaseIntakeProcess.ProcessStatus.DECISION).count()
+    followup_phase_count = due_diligence_qs.filter(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count()
+    intake_phase_count = case_phase_count
     pending_tasks = task_stats['pending'] or 0
     urgent_task_count = task_stats['urgent'] or 0
     active_workflows = workflow_stats['active'] or 0
@@ -2668,6 +2674,109 @@ def dashboard(request):
                 placement_durations.append(placement_days)
     avg_intake_to_placement_days = round(sum(placement_durations) / len(placement_durations), 1) if placement_durations else 0
 
+    # Single decision entrypoint for dashboard: one primary action only.
+    if total_cases == 0:
+        primary_action = {
+            'title': 'Nog geen actieve casussen',
+            'cta_label': 'Nieuwe casus',
+            'cta_href': reverse('careon:case_create'),
+            'state': 'stable',
+            'tone': 'neutral',
+        }
+    elif urgent_case_count > 0:
+        primary_action = {
+            'title': f'{urgent_case_count} casussen vereisen direct aandacht',
+            'cta_label': 'Bekijk casussen',
+            'cta_href': reverse('careon:case_list'),
+            'state': 'attention',
+            'tone': 'danger',
+        }
+    elif cases_without_match > 0:
+        primary_action = {
+            'title': f'{cases_without_match} casussen wachten op matching',
+            'cta_label': 'Start matching',
+            'cta_href': f"{reverse('careon:case_list')}?flow=matching",
+            'state': 'attention',
+            'tone': 'warning',
+        }
+    elif provider_capacity_critical_count > 0:
+        primary_action = {
+            'title': 'Capaciteit bijna vol',
+            'cta_label': 'Bekijk capaciteit',
+            'cta_href': reverse('careon:client_list'),
+            'state': 'attention',
+            'tone': 'warning',
+        }
+    else:
+        primary_action = {
+            'title': 'Alles onder controle',
+            'cta_label': 'Bekijk overzicht',
+            'cta_href': reverse('careon:case_list'),
+            'state': 'stable',
+            'tone': 'neutral',
+        }
+
+    flow_attention_candidates = {
+        'intake': intake_phase_count,
+        'beoordeling': assessment_phase_count,
+        'matching': matching_phase_count,
+        'indicatie': placement_phase_count,
+        'opvolging': followup_phase_count,
+    }
+    flow_attention_stage = max(flow_attention_candidates, key=flow_attention_candidates.get)
+    flow_attention_value = flow_attention_candidates[flow_attention_stage]
+    if flow_attention_value == 0:
+        flow_attention_stage = 'none'
+        flow_attention_tone = 'neutral'
+    elif flow_attention_stage in {'indicatie', 'opvolging'}:
+        flow_attention_tone = 'active'
+    else:
+        flow_attention_tone = 'warning'
+
+    flow_attention_labels = {
+        'intake': 'Intake',
+        'beoordeling': 'Beoordeling',
+        'matching': 'Matching',
+        'indicatie': 'Indicatie',
+        'opvolging': 'Opvolging',
+        'none': 'Geen knelpunt',
+    }
+
+    signal_attention_count = len(recent_signals)
+    has_critical_signal = any(signal.risk_level == CareSignal.RiskLevel.CRITICAL for signal in recent_signals)
+    signal_card_tone = 'danger' if has_critical_signal else ('warning' if signal_attention_count > 0 else 'neutral')
+
+    flow_order = ['intake', 'beoordeling', 'matching', 'indicatie', 'opvolging']
+    flow_counts = {
+        'intake': intake_phase_count,
+        'beoordeling': assessment_phase_count,
+        'matching': matching_phase_count,
+        'indicatie': placement_phase_count,
+        'opvolging': followup_phase_count,
+    }
+    flow_states = {step: 'future' for step in flow_order}
+
+    first_active_step = next((step for step in flow_order if flow_counts[step] > 0), None)
+    if first_active_step:
+        active_idx = flow_order.index(first_active_step)
+        for idx, step in enumerate(flow_order):
+            if idx < active_idx and flow_counts[step] > 0:
+                flow_states[step] = 'completed'
+        flow_states[first_active_step] = 'active'
+
+    warning_step = None
+    warning_count = 0
+    for step in ['intake', 'beoordeling', 'matching', 'indicatie', 'opvolging']:
+        if flow_counts[step] > warning_count:
+            warning_step = step
+            warning_count = flow_counts[step]
+
+    flow_danger_step = None
+    if warning_step and warning_count > 0 and flow_states.get(warning_step) != 'active':
+        flow_states[warning_step] = 'warning'
+        if warning_count >= 5:
+            flow_danger_step = warning_step
+
     context = {
         'total_cases': total_cases,
         'active_cases': active_cases,
@@ -2701,6 +2810,11 @@ def dashboard(request):
         'regional_bottlenecks': provider_capacity_critical_count,
         'urgent_case_count': urgent_case_count,
         'cases_without_match_count': cases_without_match,
+        'case_phase_count': case_phase_count,
+        'assessment_phase_count': assessment_phase_count,
+        'matching_phase_count': matching_phase_count,
+        'placement_phase_count': placement_phase_count,
+        'followup_phase_count': followup_phase_count,
         'intake_phase_count': intake_phase_count,
         'avg_intake_to_placement_days': avg_intake_to_placement_days,
         'action_required': action_required,
@@ -2710,9 +2824,21 @@ def dashboard(request):
         'provider_capacity_signals': provider_capacity_signals,
         'provider_capacity_critical_count': provider_capacity_critical_count,
         'providers_with_capacity': providers_with_capacity,
+        'primary_action': primary_action,
+        'has_dashboard_attention': primary_action['state'] == 'attention',
+        'flow_attention_stage': flow_attention_stage,
+        'flow_attention_value': flow_attention_value,
+        'flow_attention_label': flow_attention_labels[flow_attention_stage],
+        'flow_attention_tone': flow_attention_tone,
+        'signal_attention_count': signal_attention_count,
+        'signal_card_tone': signal_card_tone,
+        'flow_counts': flow_counts,
+        'flow_states': flow_states,
+        'flow_danger_step': flow_danger_step,
         'has_cases': total_cases > 0,
         'has_providers': total_clients > 0,
         'today': today,
+        'dashboard_updated_at': now,
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
@@ -2926,6 +3052,18 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
         if status:
             qs = qs.filter(status=status)
 
+        # flow=intake is a dashboard shortcut — filters to INTAKE-phase cases only
+        flow = self.request.GET.get('flow')
+        if flow == 'intake':
+            qs = qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE)
+        elif flow == 'assessment':
+            qs = qs.filter(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT)
+        elif flow == 'matching':
+            qs = qs.filter(status__in=[
+                CaseIntakeProcess.ProcessStatus.MATCHING,
+                CaseIntakeProcess.ProcessStatus.DECISION,
+            ])
+
         # Filter by urgency
         urgency = self.request.GET.get('urgency')
         if urgency:
@@ -2984,17 +3122,147 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         ctx = super().get_context_data(**kwargs)
         intake = self.object
 
-        # Assessment records linked to this intake
-        from django.db.models import Q
-        assessments = CaseAssessment.objects.filter(due_diligence_process=intake)
+        assessment = CaseAssessment.objects.filter(due_diligence_process=intake).select_related('assessed_by').first()
+        placement = PlacementRequest.objects.filter(due_diligence_process=intake).select_related('selected_provider').order_by('-updated_at').first()
+        case_record = intake.case_record
+        can_edit_case = _can_edit_intake(self.request.user, intake)
+
+        open_tasks = Deadline.objects.for_organization(self.get_organization()).filter(
+            due_diligence_process=intake,
+            is_completed=False,
+        ).select_related('assigned_to').order_by('due_date')[:5]
+        open_signals = CareSignal.objects.for_organization(self.get_organization()).filter(
+            due_diligence_process=intake,
+            status__in=[CareSignal.SignalStatus.OPEN, CareSignal.SignalStatus.IN_PROGRESS],
+        ).select_related('assigned_to').order_by('-updated_at')[:5]
+        documents = Document.objects.filter(contract=case_record).order_by('-created_at')[:5] if case_record else Document.objects.none()
+
+        assessment_href = reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}) if assessment else f"{reverse('careon:assessment_create')}?intake={intake.pk}"
+        assessment_action_label = 'Open beoordeling' if assessment else 'Beoordeling starten'
+        assessment_status_label = assessment.get_assessment_status_display() if assessment else 'Nog niet gestart'
+
+        matching_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
+        matching_status_label = 'Klaar voor matching' if assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING else 'Wacht op beoordeling'
+
+        placement_href = reverse('careon:placement_detail', kwargs={'pk': placement.pk}) if placement else reverse('careon:matching_dashboard')
+        placement_action_label = 'Open plaatsing' if placement else 'Start via matching'
+        placement_status_label = placement.get_status_display() if placement else 'Nog niet gestart'
+
+        if not placement:
+            placement_phase_label = 'Nog niet gestart'
+        elif placement.status == PlacementRequest.Status.APPROVED:
+            placement_phase_label = 'Plaatsing bevestigd'
+        elif placement.status == PlacementRequest.Status.IN_REVIEW:
+            placement_phase_label = 'Aanbieder beoordeelt'
+        elif placement.status == PlacementRequest.Status.REJECTED:
+            placement_phase_label = 'Opnieuw matchen'
+        else:
+            placement_phase_label = 'Indicatie voorbereiding'
+
+        if not can_edit_case:
+            next_action = {
+                'label': 'Alleen-lezen toegang',
+                'href': reverse('careon:case_list'),
+                'help': 'Je kunt deze casus bekijken, maar niet wijzigen. Neem contact op met een beheerder.',
+            }
+        elif not assessment:
+            next_action = {
+                'label': 'Start beoordeling',
+                'href': assessment_href,
+                'help': 'Deze casus heeft nog geen beoordeling. Rond eerst de beoordeling af.',
+            }
+        elif assessment.assessment_status != CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
+            next_action = {
+                'label': 'Werk beoordeling bij',
+                'href': assessment_href,
+                'help': 'De beoordeling is nog niet gereed voor matching.',
+            }
+        elif not placement:
+            next_action = {
+                'label': 'Koppel aanbieder',
+                'href': matching_href,
+                'help': 'Koppel nu een passende aanbieder via matching.',
+            }
+        else:
+            next_action = {
+                'label': 'Bevestig plaatsing',
+                'href': placement_href,
+                'help': 'Werk de plaatsingsbeslissing af en start opvolging.',
+            }
+
+        matching_requirements = [
+            {
+                'label': 'Beoordeling bestaat',
+                'ok': bool(assessment),
+            },
+            {
+                'label': 'Beoordelingstatus is Gereed voor matching',
+                'ok': bool(assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING),
+            },
+            {
+                'label': 'Beoordeling staat op klaar voor matching',
+                'ok': bool(assessment and assessment.matching_ready),
+            },
+        ]
+        ready_for_matching = all(item['ok'] for item in matching_requirements)
+        matching_missing = [item['label'] for item in matching_requirements if not item['ok']]
+
+        placement_requirements = [
+            {
+                'label': 'Aanbieder is toegewezen in matching',
+                'ok': bool(placement and placement.selected_provider_id),
+            },
+            {
+                'label': 'Plaatsing staat in beoordeling of bevestigd',
+                'ok': bool(placement and placement.status in [PlacementRequest.Status.IN_REVIEW, PlacementRequest.Status.APPROVED]),
+            },
+        ]
+        ready_for_placement = all(item['ok'] for item in placement_requirements)
+        placement_missing = [item['label'] for item in placement_requirements if not item['ok']]
+
+        can_create_case_document = bool(case_record) and can_edit_case
+        case_document_href = reverse('careon:case_document_create', kwargs={'pk': intake.pk}) if can_create_case_document else reverse('careon:case_update', kwargs={'pk': intake.pk})
+        if can_create_case_document:
+            case_document_action_label = 'Document toevoegen'
+        elif not case_record:
+            case_document_action_label = 'Koppel eerst een casus'
+        else:
+            case_document_action_label = 'Geen bewerkrechten'
 
         ctx.update({
-            'assessment_list': assessments,
-            'has_assessment': assessments.exists(),
-            'assessment_status': assessments.first().get_assessment_status_display() if assessments.exists() else None,
+            'assessment_list': CaseAssessment.objects.filter(due_diligence_process=intake),
+            'has_assessment': bool(assessment),
+            'assessment_status': assessment_status_label if assessment else None,
+            'assessment_status_label': assessment_status_label,
+            'assessment_href': assessment_href,
+            'assessment_action_label': assessment_action_label,
             'risk_factors_list': intake.risk_factors.all(),
-            'next_action': 'assessment' if not assessments.exists() else 'matching',
-            'case_record': intake.case_record,
+            'case_record': case_record,
+            'can_edit_case': can_edit_case,
+            'matching_status_label': matching_status_label,
+            'matching_href': matching_href,
+            'placement_status_label': placement_status_label,
+            'placement_phase_label': placement_phase_label,
+            'placement_href': placement_href,
+            'placement_action_label': placement_action_label,
+            'open_tasks': open_tasks,
+            'open_tasks_count': open_tasks.count(),
+            'open_signals': open_signals,
+            'open_signals_count': open_signals.count(),
+            'documents': documents,
+            'documents_count': documents.count(),
+            'next_action': next_action,
+            'can_create_case_document': can_create_case_document,
+            'can_create_case_task': can_edit_case,
+            'can_create_case_signal': can_edit_case,
+            'case_document_href': case_document_href,
+            'case_document_action_label': case_document_action_label,
+            'matching_requirements': matching_requirements,
+            'ready_for_matching': ready_for_matching,
+            'matching_missing': matching_missing,
+            'placement_requirements': placement_requirements,
+            'ready_for_placement': ready_for_placement,
+            'placement_missing': placement_missing,
         })
 
         return ctx
@@ -3010,8 +3278,8 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': False,
-            'page_title': 'Nieuwe intake',
-            'button_text': 'Intake aanmaken',
+            'page_title': 'Nieuwe casus',
+            'button_text': 'Casus aanmaken',
         })
         return ctx
 
@@ -3022,7 +3290,7 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
             form.instance.start_date = date.today()
         response = super().form_valid(form)
         log_action(self.request.user, 'CREATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, f'Intake "{self.object.title}" aangemaakt. Volgende stap: beoordeling.')
+        messages.success(self.request, f'Casus "{self.object.title}" aangemaakt. Volgende stap: ga verder met de intakefase.')
         return response
 
     def get_success_url(self):
@@ -3039,11 +3307,22 @@ class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
         org = self.get_organization()
         return scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
 
+    def dispatch(self, request, *args, **kwargs):
+        intake = self.get_object()
+        if not _can_edit_intake(request.user, intake):
+            _log_pilot_issue(
+                request,
+                category='case_update_forbidden',
+                detail=f'intake={intake.pk}',
+            )
+            return HttpResponseForbidden('Je hebt geen rechten om deze casus te bewerken.')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': True,
-            'page_title': f'Intake bewerken: {self.object.title}',
+            'page_title': f'Casus bewerken: {self.object.title}',
             'button_text': 'Wijzigingen opslaan',
         })
         return ctx
@@ -3051,7 +3330,7 @@ class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
     def form_valid(self, form):
         response = super().form_valid(form)
         log_action(self.request.user, 'UPDATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, f'Intake "{self.object.title}" bijgewerkt.')
+        messages.success(self.request, f'Casus "{self.object.title}" bijgewerkt.')
         return response
 
     def get_success_url(self):
@@ -3127,10 +3406,34 @@ class CaseAssessmentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, De
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         assessment = self.object
+        intake = assessment.intake
+        can_edit_assessment = _can_edit_assessment(self.request.user, assessment)
+        matching_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
+
+        matching_requirements = [
+            {
+                'label': 'Status op Gereed voor matching',
+                'ok': assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            },
+            {
+                'label': 'Klaar voor matching staat op Ja',
+                'ok': bool(assessment.matching_ready),
+            },
+            {
+                'label': 'Minimaal 1 signaal beoordeeld',
+                'ok': bool((assessment.risk_signals or '').strip()),
+            },
+        ]
+        matching_ready = all(item['ok'] for item in matching_requirements)
+        matching_missing = [item['label'] for item in matching_requirements if not item['ok']]
 
         ctx.update({
-            'intake': assessment.intake,
-            'next_action': 'matching',
+            'intake': intake,
+            'can_edit_assessment': can_edit_assessment,
+            'matching_href': matching_href,
+            'matching_requirements': matching_requirements,
+            'matching_ready': matching_ready,
+            'matching_missing': matching_missing,
         })
 
         return ctx
@@ -3169,6 +3472,13 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
     def form_valid(self, form):
         org = get_user_organization(self.request.user)
         set_organization_on_instance(form.instance, org)
+        if form.instance.intake and not _can_edit_intake(self.request.user, form.instance.intake):
+            _log_pilot_issue(
+                self.request,
+                category='assessment_create_forbidden',
+                detail=f'intake={form.instance.intake.pk}',
+            )
+            return HttpResponseForbidden('Je hebt geen rechten om voor deze casus een beoordeling aan te maken.')
         form.instance.assessed_by = self.request.user
         if not form.instance.assessment_status:
             form.instance.assessment_status = CaseAssessment.AssessmentStatus.DRAFT
@@ -3191,6 +3501,17 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
         org = self.get_organization()
         return CaseAssessment.objects.filter(due_diligence_process__organization=org)
 
+    def dispatch(self, request, *args, **kwargs):
+        assessment = self.get_object()
+        if not _can_edit_assessment(request.user, assessment):
+            _log_pilot_issue(
+                request,
+                category='assessment_update_forbidden',
+                detail=f'assessment={assessment.pk}',
+            )
+            return HttpResponseForbidden('Je hebt geen rechten om deze beoordeling te bewerken.')
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx.update({
@@ -3211,10 +3532,8 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
 
 
 # ==================== WAIT TIME VIEWS (Wachttijden) ====================
-# TrustAccount is the underlying model — not surfaced in any user-facing label.
 
 class WaitTimeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    """List wait time records per provider (Wachttijden)."""
     model = TrustAccount
     template_name = 'contracts/waittime_list.html'
     context_object_name = 'waittimes'
@@ -3225,9 +3544,7 @@ class WaitTimeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         qs = TrustAccount.objects.filter(provider__organization=org).select_related('provider').order_by('provider__name', 'region')
         q = self.request.GET.get('q')
         if q:
-            qs = qs.filter(
-                Q(provider__name__icontains=q) | Q(region__icontains=q) | Q(care_type__icontains=q)
-            )
+            qs = qs.filter(Q(provider__name__icontains=q) | Q(region__icontains=q) | Q(care_type__icontains=q))
         return qs
 
     def get_context_data(self, **kwargs):
@@ -3244,7 +3561,6 @@ class WaitTimeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
 
 class WaitTimeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
-    """Detail view for a single wait time record."""
     model = TrustAccount
     template_name = 'contracts/waittime_detail.html'
     context_object_name = 'waittime'
@@ -3255,7 +3571,6 @@ class WaitTimeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailVi
 
 
 class WaitTimeCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, CreateView):
-    """Create a new wait time record."""
     model = TrustAccount
     form_class = TrustAccountForm
     template_name = 'contracts/waittime_form.html'
@@ -3267,6 +3582,7 @@ class WaitTimeCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, CreateVi
         return ctx
 
     def form_valid(self, form):
+        form.instance.created_by = self.request.user
         response = super().form_valid(form)
         messages.success(self.request, 'Wachttijd geregistreerd.')
         return response
@@ -3276,7 +3592,6 @@ class WaitTimeCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, CreateVi
 
 
 class WaitTimeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
-    """Update a wait time record."""
     model = TrustAccount
     form_class = TrustAccountForm
     template_name = 'contracts/waittime_form.html'
@@ -3303,7 +3618,6 @@ class WaitTimeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateVi
 # ==================== CARE SIGNAL VIEWS (Signalen) ====================
 
 class CareSignalListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    """List care signals (signalen) for the organisation."""
     model = CareSignal
     template_name = 'contracts/signal_list.html'
     context_object_name = 'signals'
@@ -3311,9 +3625,7 @@ class CareSignalListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
 
     def get_queryset(self):
         org = self.get_organization()
-        qs = CareSignal.objects.for_organization(org).select_related(
-            'due_diligence_process', 'assigned_to', 'case_record'
-        ).order_by('-created_at')
+        qs = CareSignal.objects.for_organization(org).select_related('due_diligence_process', 'assigned_to', 'case_record').order_by('-created_at')
 
         q = self.request.GET.get('q')
         if q:
@@ -3337,6 +3649,11 @@ class CareSignalListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         all_qs = CareSignal.objects.for_organization(org)
+        editable_signal_ids = set()
+        for signal in ctx['signals']:
+            linked_case = signal.case_record or (signal.intake.case_record if signal.intake else None)
+            if linked_case is None or can_access_case_action(self.request.user, linked_case, CaseAction.EDIT):
+                editable_signal_ids.add(signal.pk)
         ctx.update({
             'total_count': all_qs.count(),
             'open_count': all_qs.filter(status=CareSignal.SignalStatus.OPEN).count(),
@@ -3347,25 +3664,32 @@ class CareSignalListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             'status_choices': CareSignal.SignalStatus.choices,
             'risk_level_choices': CareSignal.RiskLevel.choices,
             'search_query': self.request.GET.get('q', ''),
+            'editable_signal_ids': editable_signal_ids,
         })
         return ctx
 
 
 class CareSignalDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
-    """Detail view for a single care signal."""
     model = CareSignal
     template_name = 'contracts/signal_detail.html'
     context_object_name = 'signal'
 
     def get_queryset(self):
         org = self.get_organization()
-        return CareSignal.objects.for_organization(org).select_related(
-            'due_diligence_process', 'assigned_to', 'case_record', 'created_by'
+        return CareSignal.objects.for_organization(org).select_related('due_diligence_process', 'assigned_to', 'case_record', 'created_by')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        linked_case = self.object.case_record or (self.object.intake.case_record if self.object.intake else None)
+        ctx['can_edit_signal'] = (linked_case is None) or can_access_case_action(
+            self.request.user,
+            linked_case,
+            CaseAction.EDIT,
         )
+        return ctx
 
 
 class CareSignalCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, CreateView):
-    """Create a new care signal."""
     model = CareSignal
     form_class = CareSignalForm
     template_name = 'contracts/signal_form.html'
@@ -3389,7 +3713,12 @@ class CareSignalCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Create
         return ctx
 
     def form_valid(self, form):
+        intake = form.cleaned_data.get('due_diligence_process')
+        if intake and intake.case_record and not can_access_case_action(self.request.user, intake.case_record, CaseAction.EDIT):
+            return HttpResponseForbidden('Je hebt geen rechten om signalen voor deze casus toe te voegen.')
         form.instance.created_by = self.request.user
+        if intake and intake.contract_id and not form.instance.case_record_id:
+            form.instance.case_record = intake.case_record
         response = super().form_valid(form)
         log_action(self.request.user, 'CREATE', 'CareSignal', self.object.id, str(self.object), request=self.request)
         messages.success(self.request, 'Signaal aangemaakt.')
@@ -3400,7 +3729,6 @@ class CareSignalCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Create
 
 
 class CareSignalUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
-    """Update a care signal."""
     model = CareSignal
     form_class = CareSignalForm
     template_name = 'contracts/signal_form.html'
@@ -3408,6 +3736,13 @@ class CareSignalUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
     def get_queryset(self):
         org = self.get_organization()
         return CareSignal.objects.for_organization(org)
+
+    def dispatch(self, request, *args, **kwargs):
+        signal = self.get_object()
+        linked_case = signal.case_record or (signal.intake.case_record if signal.intake else None)
+        if linked_case and not can_access_case_action(request.user, linked_case, CaseAction.EDIT):
+            return HttpResponseForbidden('Je hebt geen rechten om signalen van deze casus te bewerken.')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3427,8 +3762,19 @@ class CareSignalUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
 
 # ==================== PLACEMENT REQUEST VIEWS (Plaatsingen) ====================
 
+def _placement_phase_label(placement):
+    if placement.status == PlacementRequest.Status.APPROVED:
+        return 'Plaatsing bevestigd'
+    if placement.status == PlacementRequest.Status.IN_REVIEW:
+        return 'Aanbieder beoordeelt'
+    if placement.status == PlacementRequest.Status.NEEDS_INFO:
+        return 'Aanvullende informatie nodig'
+    if placement.status == PlacementRequest.Status.REJECTED:
+        return 'Opnieuw matchen'
+    return 'Indicatie voorbereiding'
+
+
 class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    """List placement requests (indicaties / plaatsingen)."""
     model = PlacementRequest
     template_name = 'contracts/placement_list.html'
     context_object_name = 'placements'
@@ -3436,9 +3782,7 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
 
     def get_queryset(self):
         org = self.get_organization()
-        qs = PlacementRequest.objects.filter(
-            due_diligence_process__organization=org
-        ).select_related(
+        qs = PlacementRequest.objects.filter(due_diligence_process__organization=org).select_related(
             'due_diligence_process', 'proposed_provider', 'selected_provider'
         ).order_by('-updated_at')
 
@@ -3460,31 +3804,53 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         all_qs = PlacementRequest.objects.filter(due_diligence_process__organization=org)
+        editable_placement_ids = set()
+        for placement in ctx['placements']:
+            linked_case = placement.intake.case_record if placement.intake else None
+            if linked_case is None or can_access_case_action(self.request.user, linked_case, CaseAction.EDIT):
+                editable_placement_ids.add(placement.pk)
         ctx.update({
             'total_count': all_qs.count(),
             'approved_count': all_qs.filter(status=PlacementRequest.Status.APPROVED).count(),
             'in_review_count': all_qs.filter(status=PlacementRequest.Status.IN_REVIEW).count(),
             'status_choices': PlacementRequest.Status.choices,
             'search_query': self.request.GET.get('q', ''),
+            'editable_placement_ids': editable_placement_ids,
+            'placement_rows': [
+                {
+                    'placement': placement,
+                    'phase_label': _placement_phase_label(placement),
+                }
+                for placement in ctx['placements']
+            ],
         })
         return ctx
 
 
 class PlacementRequestDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
-    """Detail view for a placement request."""
     model = PlacementRequest
     template_name = 'contracts/placement_detail.html'
     context_object_name = 'placement'
 
     def get_queryset(self):
         org = self.get_organization()
-        return PlacementRequest.objects.filter(
-            due_diligence_process__organization=org
-        ).select_related('due_diligence_process', 'proposed_provider', 'selected_provider')
+        return PlacementRequest.objects.filter(due_diligence_process__organization=org).select_related(
+            'due_diligence_process', 'proposed_provider', 'selected_provider'
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['placement_phase_label'] = _placement_phase_label(self.object)
+        linked_case = self.object.intake.case_record if self.object.intake else None
+        ctx['can_edit_placement'] = (linked_case is None) or can_access_case_action(
+            self.request.user,
+            linked_case,
+            CaseAction.EDIT,
+        )
+        return ctx
 
 
 class PlacementRequestUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
-    """Update a placement request (confirm, reject, adjust)."""
     model = PlacementRequest
     form_class = PlacementRequestForm
     template_name = 'contracts/placement_form.html'
@@ -3492,6 +3858,13 @@ class PlacementRequestUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
     def get_queryset(self):
         org = self.get_organization()
         return PlacementRequest.objects.filter(due_diligence_process__organization=org)
+
+    def dispatch(self, request, *args, **kwargs):
+        placement = self.get_object()
+        linked_case = placement.intake.case_record if placement.intake else None
+        if linked_case and not can_access_case_action(request.user, linked_case, CaseAction.EDIT):
+            return HttpResponseForbidden('Je hebt geen rechten om plaatsing voor deze casus te wijzigen.')
+        return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
@@ -3508,3 +3881,128 @@ class PlacementRequestUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
 
     def get_success_url(self):
         return reverse('careon:placement_detail', kwargs={'pk': self.object.pk})
+
+
+# ==================== CASE-SCOPED CREATE VIEWS ====================
+
+class _CaseScopedIntakeMixin(TenantScopedQuerysetMixin):
+    intake = None
+
+    def _load_intake(self):
+        if self.intake is None:
+            org = get_user_organization(self.request.user)
+            self.intake = get_object_or_404(
+                scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+                pk=self.kwargs['pk'],
+            )
+        return self.intake
+
+    def dispatch(self, request, *args, **kwargs):
+        intake = self._load_intake()
+        if not _can_edit_intake(request.user, intake):
+            _log_pilot_issue(
+                request,
+                category='case_scoped_create_forbidden',
+                detail=f'intake={intake.pk}',
+            )
+            return HttpResponseForbidden('Je hebt geen rechten om deze casus bij te werken.')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class CaseScopedDeadlineCreateView(_CaseScopedIntakeMixin, DeadlineCreateView):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            data = kwargs.get('data', self.request.POST).copy()
+            data['due_diligence_process'] = str(self._load_intake().pk)
+            kwargs['data'] = data
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['due_diligence_process'] = self._load_intake()
+        return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        intake = self._load_intake()
+        form.initial['due_diligence_process'] = intake.pk
+        return form
+
+    def form_valid(self, form):
+        intake = self._load_intake()
+        form.instance.due_diligence_process = intake
+        if intake.contract_id:
+            form.instance.case_record = intake.case_record
+        response = super().form_valid(form)
+        messages.success(self.request, f'Taak toegevoegd aan casus "{intake.title}".')
+        return response
+
+    def get_success_url(self):
+        return reverse('careon:case_detail', kwargs={'pk': self._load_intake().pk})
+
+
+class CaseScopedCareSignalCreateView(_CaseScopedIntakeMixin, CareSignalCreateView):
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        if self.request.method in ('POST', 'PUT'):
+            data = kwargs.get('data', self.request.POST).copy()
+            data['due_diligence_process'] = str(self._load_intake().pk)
+            kwargs['data'] = data
+        return kwargs
+
+    def get_initial(self):
+        initial = super().get_initial()
+        initial['due_diligence_process'] = self._load_intake()
+        return initial
+
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        intake = self._load_intake()
+        form.initial['due_diligence_process'] = intake.pk
+        return form
+
+    def form_valid(self, form):
+        intake = self._load_intake()
+        form.instance.due_diligence_process = intake
+        if intake.contract_id:
+            form.instance.case_record = intake.case_record
+        response = super().form_valid(form)
+        messages.success(self.request, f'Signaal toegevoegd aan casus "{intake.title}".')
+        return response
+
+    def get_success_url(self):
+        return reverse('careon:case_detail', kwargs={'pk': self._load_intake().pk})
+
+
+class CaseScopedDocumentCreateView(_CaseScopedIntakeMixin, DocumentCreateView):
+    def dispatch(self, request, *args, **kwargs):
+        intake = self._load_intake()
+        if not intake.contract_id:
+            messages.error(request, 'Koppel eerst een casusrecord voordat je documenten toevoegt.')
+            return redirect('careon:case_detail', pk=intake.pk)
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_initial(self):
+        initial = super().get_initial()
+        intake = self._load_intake()
+        if intake.contract_id:
+            initial['contract'] = intake.case_record
+        return initial
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        intake = self._load_intake()
+        ctx['intake'] = intake
+        ctx['cancel_href'] = reverse('careon:case_detail', kwargs={'pk': intake.pk})
+        return ctx
+
+    def form_valid(self, form):
+        intake = self._load_intake()
+        form.instance.contract = intake.case_record
+        response = super().form_valid(form)
+        messages.success(self.request, f'Document toegevoegd aan casus "{intake.title}".')
+        return response
+
+    def get_success_url(self):
+        return reverse('careon:case_detail', kwargs={'pk': self._load_intake().pk})

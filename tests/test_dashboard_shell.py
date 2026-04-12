@@ -29,15 +29,15 @@ class DashboardShellTestCase(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Casussen zonder match')
-        self.assertContains(response, 'Casussen in intakefase')
-        self.assertContains(response, 'Gem. doorlooptijd intake')
-        self.assertContains(response, 'kpi-card')
+        self.assertContains(response, 'Zonder match')
+        self.assertContains(response, 'Intake wachtend')
+        self.assertContains(response, 'Systeemoverzicht')
+        self.assertContains(response, 'Systeemstatus')
 
     def test_dashboard_container_constraint(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'max-width: 1400px')
+        self.assertContains(response, 'max-width: 1440px')
 
     def test_dashboard_top_bar(self):
         response = self.client.get(reverse('dashboard'))
@@ -51,10 +51,10 @@ class DashboardShellTestCase(TestCase):
     def test_dashboard_panels(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Actie vereist')
-        self.assertContains(response, 'Match aanbevelingen open')
-        self.assertContains(response, 'Regie-activiteit')
-        self.assertContains(response, 'Regie snapshot')
+        self.assertContains(response, 'Stabiel')
+        self.assertContains(response, 'Knelpuntfocus')
+        self.assertContains(response, 'Signalen')
+        self.assertContains(response, 'Laatst bijgewerkt')
 
     def test_case_list_alias_uses_configuration_shell(self):
         provider = CareProvider.objects.create(
@@ -72,9 +72,9 @@ class DashboardShellTestCase(TestCase):
 
         response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Zorgintakes')
-        self.assertContains(response, 'Zoek intakes op titel, casus-ID...')
-        self.assertContains(response, 'Nieuwe intake')
+        self.assertContains(response, 'Casussen')
+        self.assertContains(response, 'Zoek op titel of casus-ID...')
+        self.assertContains(response, 'Nieuwe casus')
 
     def test_accessibility_features(self):
         response = self.client.get(reverse('dashboard'))

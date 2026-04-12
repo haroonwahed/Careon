@@ -1,66 +1,102 @@
 {% extends "base.html" %}
 {% block title %}Matching - Careon{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Matching Dashboard</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ total_ready }} beoordelingen gereed, {{ assigned_count }} met aanbieder toegewezen</p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Matching</h1>
+            <p class="page-subtitle">{{ total_ready }} beoordelingen gereed &middot; {{ assigned_count }} toegewezen</p>
+        </div>
     </div>
-</div>
 
-<div class="space-y-6">
+    <div class="matching-kpi-grid">
+        <div class="ds-card matching-kpi-card">
+            <div class="kpi-label">Gereed</div>
+            <div class="kpi-value">{{ total_ready }}</div>
+        </div>
+        <div class="ds-card matching-kpi-card">
+            <div class="kpi-label">Toegewezen</div>
+            <div class="kpi-value tone-good">{{ assigned_count }}</div>
+        </div>
+        <div class="ds-card matching-kpi-card">
+            <div class="kpi-label">Wacht op toewijzing</div>
+            <div class="kpi-value tone-warning">{{ total_ready }}</div>
+        </div>
+    </div>
+
+    {% if selected_intake %}
+    <div class="ds-card action-card action-row">
+        <div>
+            <div class="field-label field-label-tight">Geselecteerde casus</div>
+            <div class="selected-title">{{ selected_intake.title }}</div>
+            <div class="selected-meta">{{ selected_intake.get_urgency_display }} &middot; {{ selected_intake.get_preferred_care_form_display }}</div>
+        </div>
+        <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Filter wissen</a>
+    </div>
+    {% elif not rows %}
+    <div class="loading-state">Geen actieve matchingcontext geselecteerd. Selecteer een casus om aanbevelingen te laden.</div>
+    {% endif %}
+
     {% for row in rows %}
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-start justify-between mb-4">
+    <div class="ds-card table-card matching-card">
+        <div class="feed-card feed-row-top feed-row-bordered">
             <div>
-                <h2 class="text-lg font-semibold text-gray-900">
-                    <a href="{% url 'careon:case_detail' row.intake.pk %}" class="text-blue-600 hover:text-blue-800">{{ row.intake.title }}</a>
-                </h2>
-                <p class="text-sm text-gray-500">
-                    {{ row.intake.care_category_main.name|default:"Onbekende categorie" }}
-                    &middot; Urgentie: {{ row.intake.get_urgency_display }}
-                    &middot; Zorgvorm: {{ row.intake.get_preferred_care_form_display }}
-                </p>
+                <h2 class="match-row-title"><a href="{% url 'careon:case_detail' row.intake.pk %}" class="c-link">{{ row.intake.title }}</a></h2>
+                <p class="match-row-meta">{{ row.intake.care_category_main.name|default:"Onbekende categorie" }} &middot; Urgentie: {{ row.intake.get_urgency_display }} &middot; Zorgvorm: {{ row.intake.get_preferred_care_form_display }}</p>
             </div>
             {% if row.assigned_provider %}
-            <span class="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">Toegewezen: {{ row.assigned_provider.name }}</span>
-            {% if row.placement_pk %}
-            <a href="{% url 'careon:placement_detail' row.placement_pk %}" class="text-xs text-blue-600 hover:text-blue-800 ml-2">&rarr; Bekijk plaatsing</a>
-            {% endif %}
+            <div class="match-assigned">
+                <span class="ds-badge badge-low">Toegewezen: {{ row.assigned_provider.name }}</span>
+                {% if row.placement_pk %}
+                <div style="margin-top:8px;"><a href="{% url 'careon:placement_detail' row.placement_pk %}" class="btn btn-ghost" style="min-height:34px;">Bekijk plaatsing</a></div>
+                {% endif %}
+            </div>
             {% else %}
-            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Nog niet toegewezen</span>
+            <span class="ds-badge badge-high">Nog niet toegewezen</span>
             {% endif %}
         </div>
 
         {% if row.suggestions %}
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-50">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
                     <tr>
-                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Aanbieder</th>
-                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Score</th>
-                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Match</th>
-                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Capaciteit</th>
-                        <th class="text-left px-3 py-2 text-xs font-medium text-gray-500 uppercase">Wachttijd</th>
-                        <th class="text-right px-3 py-2 text-xs font-medium text-gray-500 uppercase">Actie</th>
+                        <th>Aanbieder</th>
+                        <th>Matchscore</th>
+                        <th>Toelichting</th>
+                        <th>Capaciteit</th>
+                        <th>Wachttijd</th>
+                        <th style="text-align:right;">Actie</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     {% for suggestion in row.suggestions %}
                     <tr>
-                        <td class="px-3 py-2 text-sm text-gray-900">{{ suggestion.provider_name }}</td>
-                        <td class="px-3 py-2 text-sm font-semibold text-blue-700">{{ suggestion.match_score }}%</td>
-                        <td class="px-3 py-2 text-xs text-gray-600">{{ suggestion.reason }}</td>
-                        <td class="px-3 py-2 text-sm text-gray-700">{{ suggestion.free_slots }} vrij</td>
-                        <td class="px-3 py-2 text-sm text-gray-700">{{ suggestion.avg_wait_days }} dagen</td>
-                        <td class="px-3 py-2 text-right">
+                        <td>{{ suggestion.provider_name }}</td>
+                        <td class="td-num"><span class="ds-badge badge-blue">{{ suggestion.match_score }}%</span></td>
+                        <td>{{ suggestion.reason }}</td>
+                        <td>
+                            {% if suggestion.free_slots|default:0 > 3 %}
+                            <span class="ds-badge badge-capacity-open">Beschikbaar ({{ suggestion.free_slots }})</span>
+                            {% elif suggestion.free_slots|default:0 > 0 %}
+                            <span class="ds-badge badge-capacity-limited">Beperkt ({{ suggestion.free_slots }})</span>
+                            {% else %}
+                            <span class="ds-badge badge-capacity-full">Vol</span>
+                            {% endif %}
+                        </td>
+                        <td class="td-num">{{ suggestion.avg_wait_days }} d</td>
+                        <td class="td-right">
+                            {% if row.can_assign %}
                             <form method="post" class="inline">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="assign">
                                 <input type="hidden" name="assessment_id" value="{{ row.assessment.pk }}">
                                 <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
-                                <button type="submit" class="px-3 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-700">Toewijzen</button>
+                                <button type="submit" class="btn btn-primary" style="min-height:36px;">Wijs toe</button>
                             </form>
+                            {% else %}
+                            <span class="text-xs text-gray-400">Geen bewerkrechten</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -68,13 +104,63 @@
             </table>
         </div>
         {% else %}
-        <p class="text-sm text-gray-500">Geen providers met profieldata beschikbaar voor deze beoordeling.</p>
+        <div class="empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
         {% endif %}
     </div>
     {% empty %}
-    <div class="bg-white rounded-xl border border-gray-200 p-12 text-center text-gray-500">
+    <div class="ds-card empty-state">
+        <svg class="empty-icon icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         Geen beoordelingen met status "Goedgekeurd voor matching".
+        <div style="margin-top:10px;"><a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordelingen</a></div>
     </div>
     {% endfor %}
 </div>
+
+<style>
+    .matching-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--card-gap);
+    }
+    .matching-kpi-card { padding: 14px 16px; }
+    .kpi-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+    .kpi-value {
+        margin-top: 8px;
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .tone-good { color: #86efac; }
+    .tone-warning { color: #fcd34d; }
+    .selected-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-primary);
+    }
+    .selected-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+    .matching-card { overflow: hidden; }
+    .match-row-title {
+        margin: 0 0 4px;
+        font-size: 16px;
+    }
+    .match-row-meta {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-secondary);
+    }
+    .match-assigned { text-align: right; }
+    @media (max-width: 920px) {
+        .matching-kpi-grid { grid-template-columns: 1fr; }
+    }
+</style>
 {% endblock %}

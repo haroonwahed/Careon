@@ -1,122 +1,156 @@
 {% extends "base.html" %}
-{% block title %}Intakes - Careon{% endblock %}
+{% block title %}Casussen - Careon{% endblock %}
 {% block content %}
 {% load static %}
-
-<div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">Zorgintakes</h1>
-        <p class="text-sm text-gray-500 mt-1">{{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent</p>
+<div class="page-wrap page-stack">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Casussen</h1>
+            <p class="page-subtitle">{{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent in intakefase</p>
+        </div>
     </div>
-    <a href="{% url 'careon:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        Nieuwe intake
-    </a>
-</div>
 
-<form method="get" class="mb-4 flex gap-2 flex-wrap">
-    <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek intakes op titel, casus-ID..." class="flex-1 min-w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm">
-    <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle statussen</option>
-        <option value="INTAKE" {% if request.GET.status == 'INTAKE' %}selected{% endif %}>Intake</option>
-        <option value="ASSESSMENT" {% if request.GET.status == 'ASSESSMENT' %}selected{% endif %}>Beoordeling</option>
-        <option value="MATCHING" {% if request.GET.status == 'MATCHING' %}selected{% endif %}>Matching</option>
-        <option value="DECISION" {% if request.GET.status == 'DECISION' %}selected{% endif %}>Matchbesluit</option>
-        <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Afgerond</option>
-    </select>
-    <select name="urgency" class="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" onchange="this.form.submit()">
-        <option value="">Alle urgentie</option>
-        <option value="LOW" {% if request.GET.urgency == 'LOW' %}selected{% endif %}>Laag</option>
-        <option value="MEDIUM" {% if request.GET.urgency == 'MEDIUM' %}selected{% endif %}>Middel</option>
-        <option value="HIGH" {% if request.GET.urgency == 'HIGH' %}selected{% endif %}>Hoog</option>
-        <option value="CRISIS" {% if request.GET.urgency == 'CRISIS' %}selected{% endif %}>Crisis</option>
-    </select>
-    <button type="submit" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm hover:bg-gray-200">Zoeken</button>
-</form>
-
-{% if intakes %}
-<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
-    <table class="w-full">
-        <thead class="bg-gray-50">
-            <tr>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Identification</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Urgentie</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Zorgvraag</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Regisseur</th>
-                <th class="text-left px-5 py-3 text-xs font-medium text-gray-500 uppercase">Intakedatum</th>
-                <th class="text-right px-5 py-3 text-xs font-medium text-gray-500 uppercase">Acties</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-gray-100">
-            {% for intake in intakes %}
-            <tr class="hover:bg-gray-50">
-                <td class="px-5 py-3">
-                    <a href="{% url 'careon:case_detail' intake.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-800">{{ intake.title }}</a>
-                </td>
-                <td class="px-5 py-3">
-                    <span class="text-xs px-2 py-1 rounded-full
-                        {% if intake.status == 'INTAKE' %}bg-blue-100 text-blue-800
-                        {% elif intake.status == 'ASSESSMENT' %}bg-purple-100 text-purple-800
-                        {% elif intake.status == 'MATCHING' %}bg-orange-100 text-orange-800
-                        {% elif intake.status == 'COMPLETED' %}bg-green-100 text-green-800
-                        {% else %}bg-gray-100 text-gray-600{% endif %}">
-                        {{ intake.get_status_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3">
-                    <span class="text-xs px-2 py-1 rounded-full
-                        {% if intake.urgency == 'CRISIS' %}bg-red-100 text-red-800
-                        {% elif intake.urgency == 'HIGH' %}bg-orange-100 text-orange-800
-                        {% elif intake.urgency == 'MEDIUM' %}bg-yellow-100 text-yellow-800
-                        {% else %}bg-green-100 text-green-800{% endif %}">
-                        {{ intake.get_urgency_display }}
-                    </span>
-                </td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ intake.category }}</td>
-                <td class="px-5 py-3 text-sm text-gray-600">{{ intake.lead }}</td>
-                <td class="px-5 py-3 text-sm text-gray-400">{{ intake.created|date:"d-m-Y" }}</td>
-                <td class="px-5 py-3 text-right text-sm">
-                    <a href="{% url 'careon:case_detail' intake.pk %}" class="text-blue-600 hover:text-blue-800 font-medium">Bekijken</a>
-                    <a href="{% url 'careon:case_update' intake.pk %}" class="ml-3 text-gray-500 hover:text-gray-700">Bewerken</a>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-<!-- Pagination -->
-{% if is_paginated %}
-<div class="mt-4 flex justify-between items-center">
-    <div class="text-sm text-gray-500">
-        Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}
+    <div class="intake-kpi-grid">
+        <div class="ds-card intake-kpi-card">
+            <div class="kpi-label">Totaal</div>
+            <div class="kpi-value">{{ total_intakes }}</div>
+        </div>
+        <div class="ds-card intake-kpi-card">
+            <div class="kpi-label">Actief</div>
+            <div class="kpi-value">{{ active_intakes }}</div>
+        </div>
+        <div class="ds-card intake-kpi-card">
+            <div class="kpi-label">Urgent</div>
+            <div class="kpi-value tone-critical">{{ urgent_intakes }}</div>
+        </div>
     </div>
-    <div class="flex gap-2">
-        {% if page_obj.has_previous %}
-            <a href="?page=1" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Eerste</a>
-            <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Vorige</a>
-        {% endif %}
-        {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Volgende</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50">Laatste</a>
-        {% endif %}
-    </div>
-</div>
-{% endif %}
 
-{% else %}
-<div class="bg-white rounded-xl border border-gray-200 p-12 text-center">
-    <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-    </svg>
-    <h3 class="text-lg font-medium text-gray-900 mb-1">Geen intakes gevonden</h3>
-    <p class="text-gray-500 mb-4">Begin met het aanmaken van uw eerste intake.</p>
-    <a href="{% url 'careon:case_create' %}" class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
-        Nieuwe intake aanmaken
-    </a>
+    <form method="get" class="ds-card action-card form-grid-4">
+        <div>
+            <label for="intake-q" class="field-label">Zoeken</label>
+            <input id="intake-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op titel of casus-ID...">
+        </div>
+        <div>
+            <label for="intake-status" class="field-label">Fase</label>
+            <select id="intake-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle statussen</option>
+                <option value="INTAKE" {% if request.GET.status == 'INTAKE' %}selected{% endif %}>Intake</option>
+                <option value="ASSESSMENT" {% if request.GET.status == 'ASSESSMENT' %}selected{% endif %}>Beoordeling</option>
+                <option value="MATCHING" {% if request.GET.status == 'MATCHING' %}selected{% endif %}>Matching</option>
+                <option value="DECISION" {% if request.GET.status == 'DECISION' %}selected{% endif %}>Matchbesluit</option>
+                <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Afgerond</option>
+            </select>
+        </div>
+        <div>
+            <label for="intake-urgency" class="field-label">Urgentie</label>
+            <select id="intake-urgency" name="urgency" onchange="this.form.submit()">
+                <option value="">Alle urgentie</option>
+                <option value="LOW" {% if request.GET.urgency == 'LOW' %}selected{% endif %}>Laag</option>
+                <option value="MEDIUM" {% if request.GET.urgency == 'MEDIUM' %}selected{% endif %}>Middel</option>
+                <option value="HIGH" {% if request.GET.urgency == 'HIGH' %}selected{% endif %}>Hoog</option>
+                <option value="CRISIS" {% if request.GET.urgency == 'CRISIS' %}selected{% endif %}>Crisis</option>
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+    </form>
+
+    {% if intakes %}
+    <div class="ds-card table-card">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Identificatie</th>
+                        <th>Status</th>
+                        <th>Urgentie</th>
+                        <th>Zorgvraag</th>
+                        <th>Regisseur</th>
+                        <th class="th-right">Intakedatum</th>
+                        <th style="text-align:right;">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for intake in intakes %}
+                    <tr>
+                        <td><a href="{% url 'careon:case_detail' intake.pk %}">{{ intake.title }}</a></td>
+                        <td>
+                            <span class="ds-badge {% if intake.status == 'COMPLETED' %}badge-low{% elif intake.status == 'MATCHING' %}badge-high{% else %}badge-medium{% endif %}">{{ intake.get_status_display }}</span>
+                        </td>
+                        <td>
+                            <span class="ds-badge {% if intake.urgency == 'CRISIS' %}badge-critical{% elif intake.urgency == 'HIGH' %}badge-high{% elif intake.urgency == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">{{ intake.get_urgency_display }}</span>
+                        </td>
+                        <td>{{ intake.category }}</td>
+                        <td>{{ intake.lead }}</td>
+                        <td class="td-date">{{ intake.created|date:"d-m-Y" }}</td>
+                        <td class="td-right">
+                            <div class="case-actions">
+                                <a href="{% url 'careon:case_detail' intake.pk %}" class="btn btn-ghost" style="min-height:36px;">Bekijken</a>
+                                <a href="{% url 'careon:case_update' intake.pk %}" class="btn btn-ghost" style="min-height:36px;">Bewerken</a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="ds-card feed-card feed-row">
+        <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+        <div class="feed-actions">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-secondary" style="min-height:36px;">Eerste</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary" style="min-height:36px;">Vorige</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary" style="min-height:36px;">Volgende</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary" style="min-height:36px;">Laatste</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="ds-card empty-state">
+        <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        Nog geen casussen.
+        <div style="margin-top:10px;"><a href="{% url 'careon:case_create' %}" class="btn btn-primary">Maak je eerste casus aan</a></div>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
+
+<style>
+    .intake-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--card-gap);
+    }
+    .intake-kpi-card { padding: 14px 16px; }
+    .kpi-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-secondary);
+        font-weight: 700;
+    }
+    .kpi-value {
+        margin-top: 8px;
+        font-size: 30px;
+        line-height: 1;
+        font-weight: 800;
+        color: var(--text-primary);
+    }
+    .tone-critical { color: #fca5a5; }
+    .case-actions {
+        display: inline-flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 8px;
+    }
+    @media (max-width: 920px) {
+        .intake-kpi-grid { grid-template-columns: 1fr; }
+    }
+</style>
 
 {% endblock %}
