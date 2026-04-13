@@ -11,26 +11,12 @@
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px;">
-        <a href="{% url 'profile' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
+        <div style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface);">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Profiel</h2>
+                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Instellingenoverzicht</h2>
             </div>
-            <p style="font-size: 13px; color: var(--text-secondary);">Werk persoonlijke gegevens en profielmetadata bij.</p>
-        </a>
-
-        <a href="{% url 'careon:organization_team' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Organisatieteam</h2>
-            </div>
-            <p style="font-size: 13px; color: var(--text-secondary);">Beheer leden, rollen en uitnodigingen.</p>
-        </a>
-
-        <a href="{% url 'careon:organization_activity' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
-            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                <h2 style="font-size: 16px; font-weight: 700; color: var(--text-primary);">Teamactiviteit</h2>
-            </div>
-            <p style="font-size: 13px; color: var(--text-secondary);">Bekijk activiteitenlogs op organisatieniveau.</p>
-        </a>
+            <p style="font-size: 13px; color: var(--text-secondary);">Niet-kritieke account- en organisatiepagina's zijn uit de primaire navigatie gehaald voor de MVP-flow.</p>
+        </div>
 
         <a href="{% url 'careon:audit_log_list' %}" style="display: block; padding: 18px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); text-decoration: none; transition: all 0.2s ease;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">

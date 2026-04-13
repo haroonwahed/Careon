@@ -20,6 +20,7 @@
 
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link href="{% static 'css/zorgregie-design-system.css' %}" rel="stylesheet">
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -37,57 +38,36 @@
                     <!-- Tab Navigation -->
                     <div class="hidden lg:flex space-x-6">
                         <a href="{% url 'dashboard' %}" class="nav-tab {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
-                            Overzicht
+                            Dashboard
                         </a>
                         <a href="{% url 'careon:case_list' %}" class="nav-tab">
                             Casussen
                         </a>
-                        <a href="#" class="nav-tab">
-                            Dossiers
+                        <a href="{% url 'careon:assessment_list' %}" class="nav-tab">
+                            Beoordelingen
                         </a>
-                        <a href="{% url 'careon:workflow_dashboard' %}" class="nav-tab">
-                            Regiestappen
+                        <a href="{% url 'careon:matching_dashboard' %}" class="nav-tab">
+                            Matching
                         </a>
-                        <a href="#" class="nav-tab">
-                            Inzichten
+                        <a href="{% url 'careon:placement_list' %}" class="nav-tab">
+                            Plaatsingen
                         </a>
-                        <a href="#" class="nav-tab">
-                            Actiepunten
+                        <a href="{% url 'careon:task_list' %}" class="nav-tab">
+                            Taken
                         </a>
-                        <a href="#" class="nav-tab">
-                            Entiteiten
+                        <a href="{% url 'careon:reports_dashboard' %}" class="nav-tab">
+                            Rapportages
                         </a>
                     </div>
                 </div>
 
                 <!-- Right side -->
                 <div class="flex items-center space-x-4">
-                    <!-- Global Search -->
+                    <a href="{% url 'careon:case_create' %}" class="nav-tab">Nieuwe casus</a>
                     <div class="relative">
-                        <input type="search"
-                               placeholder="Zoek casussen en dossiers..."
-                               class="w-64 pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <svg class="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
+                        <span class="text-sm font-medium text-gray-700">{{ user.get_full_name|default:user.username }}</span>
                     </div>
-
-                    <!-- User Menu -->
-                    <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
-                            <span class="text-sm font-medium">{{ user.get_full_name|default:user.username }}</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-
-                        <div x-show="open" @click.away="open = false" x-cloak
-                             class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg">
-                            <a href="{% url 'profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Profiel</a>
-                            <a href="{% url 'settings_hub' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Instellingen</a>
-                            <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Uitloggen</a>
-                        </div>
-                    </div>
+                    <a href="{% url 'logout' %}" class="nav-tab">Uitloggen</a>
                 </div>
             </div>
         </div>

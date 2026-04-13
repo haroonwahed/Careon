@@ -127,16 +127,37 @@
         min-width: 156px;
     }
 
-    .command-bar {
-        margin-top: 8px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
+    .action-list {
+        align-items: flex-start;
     }
-
     .action-list .btn {
-        width: 100%;
+        width: auto;
+        min-width: 176px;
+        justify-content: flex-start;
+        min-height: 40px;
+        border-radius: 11px;
+        padding: 0 14px;
+        font-size: 13px;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+    }
+    .action-surface .btn-primary {
+        background: linear-gradient(135deg, #1848cc 0%, #2563eb 100%);
+        border-color: #3b82f6;
+        color: #EAF2FF;
+    }
+    .action-surface .btn-primary:hover {
+        background: linear-gradient(135deg, #1f55de 0%, #3b82f6 100%);
+        border-color: #60a5fa;
+    }
+    .action-surface .btn-secondary {
+        background: rgba(255,255,255,0.03);
+        border-color: #1e2e44;
+        color: var(--text-secondary);
+    }
+    .action-surface .btn-secondary:hover {
+        background: rgba(255,255,255,0.07);
+        border-color: #2f4165;
+        color: var(--text-primary);
     }
 
     .flow-wrap {
@@ -340,10 +361,6 @@
             <h1 class="page-title title-strong">Regiekamer</h1>
             <p class="sub-quiet">Overzicht van alle lopende zorgprocessen</p>
         </div>
-        <div class="command-bar" aria-label="Commandobalk">
-            <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
-            <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Casusoverzicht</a>
-        </div>
     </div>
 
     <div class="kpi-grid">
@@ -403,7 +420,7 @@
                     {% endif %}
                 </div>
                 <div class="flow-grid">
-                    <a href="{% url 'careon:intake_list' %}" class="wf-step stage-intake state-{{ flow_states.intake }}{% if flow_states.intake == 'warning' and flow_danger_step == 'intake' %} danger{% endif %}">
+                    <a href="{% url 'careon:case_list' %}" class="wf-step stage-intake state-{{ flow_states.intake }}{% if flow_states.intake == 'warning' and flow_danger_step == 'intake' %} danger{% endif %}">
                         <div class="wf-value{% if flow_counts.intake == 0 %} is-zero{% endif %}">{{ flow_counts.intake }}</div>
                         <div class="wf-label">Intake</div>
                         <div class="wf-status">{% if flow_states.intake == 'active' %}Actief{% elif flow_states.intake == 'warning' %}{% if flow_danger_step == 'intake' %}Kritiek{% else %}Aandacht{% endif %}{% elif flow_states.intake == 'completed' %}Voltooid{% else %}Gepland{% endif %}</div>
@@ -463,10 +480,22 @@
                     </div>
                 </div>
                 <div class="action-list">
-                    <a href="{{ primary_action.cta_href|default:'#' }}" class="btn btn-primary">{{ primary_action.cta_label|default:"Nieuwe casus" }}</a>
-                    <a href="{% url 'careon:case_list' %}?flow=matching" class="btn btn-secondary">Start matching</a>
-                    <a href="{% url 'careon:client_list' %}" class="btn btn-secondary">Bekijk capaciteit</a>
-                    <a href="{% url 'careon:task_create' %}" class="btn btn-secondary">Plan overleg</a>
+                    <a href="{{ primary_action.cta_href|default:'#' }}" class="btn btn-primary">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                        {{ primary_action.cta_label|default:"Nieuwe casus" }}
+                    </a>
+                    <a href="{% url 'careon:case_list' %}?flow=matching" class="btn btn-secondary">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        Start matching
+                    </a>
+                    <a href="{% url 'careon:client_list' %}" class="btn btn-secondary">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        Bekijk capaciteit
+                    </a>
+                    <a href="{% url 'careon:task_create' %}" class="btn btn-secondary">
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Plan overleg
+                    </a>
                 </div>
             </div>
         </div>
