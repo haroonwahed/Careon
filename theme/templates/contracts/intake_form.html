@@ -2,38 +2,27 @@
 {% block title %}{% if is_edit %}Casus bewerken{% else %}Nieuwe casus{% endif %} - Careon{% endblock %}
 {% block content %}
 <div class="page-wrap page-stack">
-    <div class="page-header">
+    <div class="page-header form-shell">
         <div>
             <h1 class="page-title">{% if is_edit %}Casus bewerken{% else %}Nieuwe casus{% endif %}</h1>
-            <p class="page-subtitle">4 stappen naar een complete intake binnen de casusflow en direct inzetbare matching.</p>
+            <p class="page-subtitle">Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling en matching.</p>
+            <p class="form-note required-note">Velden met <strong>*</strong> zijn verplicht.</p>
         </div>
     </div>
 
-    <div class="ds-card action-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
-            <span class="ds-badge badge-status">Stap 1 Identificatie</span>
-            <span class="ds-badge badge-status">Stap 2 Zorgvraag</span>
-            <span class="ds-badge badge-status">Stap 3 Matching</span>
-            <span class="ds-badge badge-status">Stap 4 Cliëntprofiel</span>
-        </div>
-        <div class="progress-bar-bg" style="height:8px;">
-            <div class="progress-bar-fill pf-active" style="width:100%;"></div>
-        </div>
-    </div>
-
-    <form method="post" class="page-stack">
+    <form method="post" class="page-stack form-shell">
         {% csrf_token %}
 
         {% if form.non_field_errors %}
         <div class="error-state">
-            <p style="margin:0 0 8px;font-weight:700;">Controleer de invoer:</p>
+            <p class="form-error-title">Controleer de invoer:</p>
             {% for error in form.non_field_errors %}
-            <p style="margin:0;font-size:13px;">{{ error }}</p>
+            <p class="form-error-item">{{ error }}</p>
             {% endfor %}
         </div>
         {% endif %}
 
-        <section class="ds-card action-card field-group">
+        <section class="ds-card action-card field-group workflow-identificatie">
             <div class="form-section-head">
                 <div class="form-section-number">1</div>
                 <div>
@@ -44,23 +33,23 @@
             <div>
                 <label for="{{ form.title.id_for_label }}" class="field-label">{{ form.title.label }} {% if form.title.field.required %}*{% endif %}</label>
                 {{ form.title }}
-                {% if form.title.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.title.errors.0 }}</div>{% endif %}
+                {% if form.title.errors %}<div class="form-field-error">{{ form.title.errors.0 }}</div>{% endif %}
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label for="{{ form.start_date.id_for_label }}" class="field-label">{{ form.start_date.label }} {% if form.start_date.field.required %}*{% endif %}</label>
                     {{ form.start_date }}
-                    {% if form.start_date.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.start_date.errors.0 }}</div>{% endif %}
+                    {% if form.start_date.errors %}<div class="form-field-error">{{ form.start_date.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.target_completion_date.id_for_label }}" class="field-label">{{ form.target_completion_date.label }} {% if form.target_completion_date.field.required %}*{% endif %}</label>
                     {{ form.target_completion_date }}
-                    {% if form.target_completion_date.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.target_completion_date.errors.0 }}</div>{% endif %}
+                    {% if form.target_completion_date.errors %}<div class="form-field-error">{{ form.target_completion_date.errors.0 }}</div>{% endif %}
                 </div>
             </div>
         </section>
 
-        <section class="ds-card action-card field-group">
+        <section class="ds-card action-card field-group workflow-zorgvraag">
             <div class="form-section-head">
                 <div class="form-section-number">2</div>
                 <div>
@@ -68,26 +57,26 @@
                     <div class="form-section-desc">Categorie, subcategorie en beschrijving van de zorgbehoefte</div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label for="{{ form.care_category_main.id_for_label }}" class="field-label">{{ form.care_category_main.label }} {% if form.care_category_main.field.required %}*{% endif %}</label>
                     {{ form.care_category_main }}
-                    {% if form.care_category_main.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.care_category_main.errors.0 }}</div>{% endif %}
+                    {% if form.care_category_main.errors %}<div class="form-field-error">{{ form.care_category_main.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.care_category_sub.id_for_label }}" class="field-label">{{ form.care_category_sub.label }}</label>
                     {{ form.care_category_sub }}
-                    {% if form.care_category_sub.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.care_category_sub.errors.0 }}</div>{% endif %}
+                    {% if form.care_category_sub.errors %}<div class="form-field-error">{{ form.care_category_sub.errors.0 }}</div>{% endif %}
                 </div>
             </div>
             <div>
                 <label for="{{ form.assessment_summary.id_for_label }}" class="field-label">{{ form.assessment_summary.label }}</label>
                 {{ form.assessment_summary }}
-                {% if form.assessment_summary.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.assessment_summary.errors.0 }}</div>{% endif %}
+                {% if form.assessment_summary.errors %}<div class="form-field-error">{{ form.assessment_summary.errors.0 }}</div>{% endif %}
             </div>
         </section>
 
-        <section class="ds-card action-card field-group">
+        <section class="ds-card action-card field-group workflow-analyse">
             <div class="form-section-head">
                 <div class="form-section-number">3</div>
                 <div>
@@ -95,58 +84,63 @@
                     <div class="form-section-desc">Urgentie, complexiteit en gewenste zorgvorm</div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
+            <div class="form-grid-3">
                 <div>
                     <label for="{{ form.urgency.id_for_label }}" class="field-label">{{ form.urgency.label }} {% if form.urgency.field.required %}*{% endif %}</label>
                     {{ form.urgency }}
-                    {% if form.urgency.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.urgency.errors.0 }}</div>{% endif %}
+                    {% if form.urgency.errors %}<div class="form-field-error">{{ form.urgency.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.complexity.id_for_label }}" class="field-label">{{ form.complexity.label }} {% if form.complexity.field.required %}*{% endif %}</label>
                     {{ form.complexity }}
-                    {% if form.complexity.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.complexity.errors.0 }}</div>{% endif %}
+                    {% if form.complexity.errors %}<div class="form-field-error">{{ form.complexity.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.preferred_care_form.id_for_label }}" class="field-label">{{ form.preferred_care_form.label }} {% if form.preferred_care_form.field.required %}*{% endif %}</label>
                     {{ form.preferred_care_form }}
-                    {% if form.preferred_care_form.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.preferred_care_form.errors.0 }}</div>{% endif %}
+                    {% if form.preferred_care_form.errors %}<div class="form-field-error">{{ form.preferred_care_form.errors.0 }}</div>{% endif %}
                 </div>
             </div>
         </section>
 
-        <section class="ds-card action-card field-group">
+        <section class="ds-card action-card field-group workflow-matching">
             <div class="form-section-head">
                 <div class="form-section-number">4</div>
                 <div>
                     <div class="form-section-title">Cliëntprofiel</div>
-                    <div class="form-section-desc">Leeftijdscategorie, gezinssituatie en aanvullende context</div>
+                    <div class="form-section-desc">Leeftijdscategorie, gezinssituatie, regie en aanvullende context</div>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div class="form-grid-2">
                 <div>
                     <label for="{{ form.client_age_category.id_for_label }}" class="field-label">{{ form.client_age_category.label }}</label>
                     {{ form.client_age_category }}
-                    {% if form.client_age_category.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.client_age_category.errors.0 }}</div>{% endif %}
+                    {% if form.client_age_category.errors %}<div class="form-field-error">{{ form.client_age_category.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.family_situation.id_for_label }}" class="field-label">{{ form.family_situation.label }}</label>
                     {{ form.family_situation }}
-                    {% if form.family_situation.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.family_situation.errors.0 }}</div>{% endif %}
+                    {% if form.family_situation.errors %}<div class="form-field-error">{{ form.family_situation.errors.0 }}</div>{% endif %}
                 </div>
+            </div>
+            <div>
+                <label for="{{ form.case_coordinator.id_for_label }}" class="field-label">{{ form.case_coordinator.label }}</label>
+                {{ form.case_coordinator }}
+                {% if form.case_coordinator.errors %}<div class="form-field-error">{{ form.case_coordinator.errors.0 }}</div>{% endif %}
             </div>
             <div>
                 <label for="{{ form.school_work_status.id_for_label }}" class="field-label">{{ form.school_work_status.label }}</label>
                 {{ form.school_work_status }}
-                {% if form.school_work_status.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.school_work_status.errors.0 }}</div>{% endif %}
+                {% if form.school_work_status.errors %}<div class="form-field-error">{{ form.school_work_status.errors.0 }}</div>{% endif %}
             </div>
             <div>
                 <label for="{{ form.description.id_for_label }}" class="field-label">{{ form.description.label }}</label>
                 {{ form.description }}
-                {% if form.description.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.description.errors.0 }}</div>{% endif %}
+                {% if form.description.errors %}<div class="form-field-error">{{ form.description.errors.0 }}</div>{% endif %}
             </div>
         </section>
 
-        <div class="ds-card feed-card" style="display:flex;gap:12px;justify-content:flex-end;">
+        <div class="ds-card feed-card form-actions">
             <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Annuleren</a>
             <button type="submit" class="btn btn-primary">{{ button_text|default:"Casus opslaan" }}</button>
         </div>

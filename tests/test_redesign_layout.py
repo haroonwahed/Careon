@@ -21,13 +21,13 @@ class RedesignLayoutTests(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Careon')
-        self.assertContains(response, 'data-theme="dark"')
+        self.assertContains(response, 'zorgregie-design-system.css')
         self.assertContains(response, 'toggleTheme()')
         self.assertContains(response, 'title="Search"')
 
     def test_sidebar_navigation_sections_and_links(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'CASEMANAGEMENT')
+        self.assertContains(response, 'CASUSMANAGEMENT')
         self.assertContains(response, 'Casussen')
         self.assertContains(response, 'Dashboard')
         self.assertContains(response, 'Casussen')
@@ -39,7 +39,7 @@ class RedesignLayoutTests(TestCase):
         self.assertContains(response, 'title="Meldingen"')
         self.assertContains(response, 'Nieuwe casus')
         self.assertContains(response, 'Uitloggen')
-        self.assertContains(response, '/profile/')
+        self.assertContains(response, '/care/casussen/new/')
 
     def test_dashboard_kpis_and_panels(self):
         response = self.client.get(reverse('dashboard'))

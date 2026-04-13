@@ -1,5 +1,11 @@
 {
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-    "python.analysis.typeCheckingMode": "basic"
+    "python.analysis.typeCheckingMode": "basic",
+    "github.copilot.chat.codeGeneration.useInstructionFiles": false,
+    "github.copilot.chat.promptFileContextProvider.enabled": false,
+    "github.copilot.chat.summarizeAgentConversationHistory.enabled": true,
+    "github.copilot.chat.imageUpload.enabled": true,
+    "github.copilot.chat.agent.largeToolResultsToDisk.enabled": true,
+    "github.copilot.chat.agent.largeToolResultsToDisk.thresholdBytes": 12000
 }

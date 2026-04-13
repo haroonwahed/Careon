@@ -5,162 +5,292 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Matching</h1>
-            <p class="page-subtitle">{{ total_ready }} beoordelingen gereed &middot; {{ assigned_count }} toegewezen</p>
+            <p class="page-subtitle">Beslisruimte voor aanbiederkeuze</p>
         </div>
     </div>
 
-    <div class="matching-kpi-grid">
-        <div class="ds-card matching-kpi-card">
-            <div class="kpi-label">Gereed</div>
-            <div class="kpi-value">{{ total_ready }}</div>
-        </div>
-        <div class="ds-card matching-kpi-card">
-            <div class="kpi-label">Toegewezen</div>
-            <div class="kpi-value tone-good">{{ assigned_count }}</div>
-        </div>
-        <div class="ds-card matching-kpi-card">
-            <div class="kpi-label">Wacht op toewijzing</div>
-            <div class="kpi-value tone-warning">{{ total_ready }}</div>
-        </div>
-    </div>
-
-    {% if selected_intake %}
-    <div class="ds-card action-card action-row">
-        <div>
-            <div class="field-label field-label-tight">Geselecteerde casus</div>
-            <div class="selected-title">{{ selected_intake.title }}</div>
-            <div class="selected-meta">{{ selected_intake.get_urgency_display }} &middot; {{ selected_intake.get_preferred_care_form_display }}</div>
-        </div>
-        <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Filter wissen</a>
-    </div>
-    {% elif not rows %}
-    <div class="loading-state">Geen actieve matchingcontext geselecteerd. Selecteer een casus om aanbevelingen te laden.</div>
-    {% endif %}
-
-    {% for row in rows %}
-    <div class="ds-card table-card matching-card">
-        <div class="feed-card feed-row-top feed-row-bordered">
-            <div>
-                <h2 class="match-row-title"><a href="{% url 'careon:case_detail' row.intake.pk %}" class="c-link">{{ row.intake.title }}</a></h2>
-                <p class="match-row-meta">{{ row.intake.care_category_main.name|default:"Onbekende categorie" }} &middot; Urgentie: {{ row.intake.get_urgency_display }} &middot; Zorgvorm: {{ row.intake.get_preferred_care_form_display }}</p>
+    {% if rows %}
+    {% with focus_row=rows.0 %}
+    <section class="ds-card matching-context-card">
+        <div class="matching-context-head">
+            <div class="matching-context-meta">
+                <div class="matching-id-line">
+                    <span class="ds-badge badge-blue">Casus {{ focus_row.intake.pk }}</span>
+                    <span class="ds-badge {% if focus_row.intake.urgency == 'CRISIS' %}badge-high{% elif focus_row.intake.urgency == 'HIGH' %}badge-medium{% else %}badge-low{% endif %}">{{ focus_row.intake.get_urgency_display }}</span>
+                    <span class="ds-badge badge-status">{{ focus_row.intake.get_status_display }}</span>
+                </div>
+                <h2 class="matching-case-title">{{ focus_row.intake.title|truncatechars:60 }}</h2>
+                <div class="matching-case-submeta">
+                    <span>Regio/Gemeente: {% firstof focus_row.intake.region focus_row.intake.region_name "Onbekend" %}</span>
+                    <span>&middot;</span>
+                    <span>Zorgvorm: {{ focus_row.intake.get_preferred_care_form_display }}</span>
+                </div>
             </div>
-            {% if row.assigned_provider %}
-            <div class="match-assigned">
-                <span class="ds-badge badge-low">Toegewezen: {{ row.assigned_provider.name }}</span>
-                {% if row.placement_pk %}
-                <div style="margin-top:8px;"><a href="{% url 'careon:placement_detail' row.placement_pk %}" class="btn btn-ghost" style="min-height:34px;">Bekijk plaatsing</a></div>
+            <div class="matching-context-actions">
+                <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost">Terug naar casus</a>
+                {% if selected_intake %}
+                <a href="{% url 'careon:matching_dashboard' %}?intake={{ selected_intake.pk }}" class="btn btn-ghost">Ververs matching</a>
+                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Filter wissen</a>
+                {% else %}
+                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Ververs matching</a>
                 {% endif %}
             </div>
+        </div>
+    </section>
+
+    <section class="matching-summary-strip">
+        <div class="summary-item">
+            <div class="summary-label">Huidige staat</div>
+            <div class="summary-value">{{ focus_row.suggestions|length }} geschikte matches</div>
+        </div>
+        <div class="summary-item summary-risk">
+            <div class="summary-label">Blokkade</div>
+            <div class="summary-value">
+                {% if focus_row.suggestions and focus_row.suggestions.0.avg_wait_days > 28 %}
+                Lange wachttijd
+                {% elif focus_row.suggestions and focus_row.suggestions.0.free_slots|default:0 == 0 %}
+                Geen vrije plek bij topmatch
+                {% else %}
+                Geen directe blokkade
+                {% endif %}
+            </div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Volgende actie</div>
+            <div class="summary-value">
+                {% if focus_row.assigned_provider %}
+                Controleer plaatsing
+                {% elif focus_row.suggestions and focus_row.can_assign %}
+                Wijs beste match toe
+                {% elif focus_row.suggestions %}
+                Vergelijk top opties
+                {% else %}
+                Vul profielgegevens aan
+                {% endif %}
+            </div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-label">Beslisregel</div>
+            <div class="summary-value">Systeem adviseert, regie beslist</div>
+        </div>
+    </section>
+
+    <div class="matching-workspace-grid">
+        <section class="matching-main-col">
+            <div class="recommendation-head">
+                <h3 class="panel-title">Top aanbevelingen</h3>
+                <span class="text-xs text-gray-400">Gerangschikt op matchscore</span>
+            </div>
+
+            {% if focus_row.suggestions %}
+            <div class="recommendation-stack">
+                {% for suggestion in focus_row.suggestions|slice:":3" %}
+                <article class="ds-card recommendation-card {% if forloop.first %}recommendation-best{% endif %}">
+                    <div class="rec-top">
+                        <div class="rec-rank">{% if forloop.first %}Beste match{% else %}Optie {{ forloop.counter }}{% endif %}</div>
+                        <span class="ds-badge badge-blue">Fitscore {{ suggestion.match_score }}%</span>
+                    </div>
+                    <h4 class="rec-provider">{{ suggestion.provider_name }}</h4>
+                    <div class="rec-chip-row">
+                        {% if suggestion.free_slots|default:0 > 3 %}
+                        <span class="ds-badge badge-capacity-open">Capaciteit: beschikbaar</span>
+                        {% elif suggestion.free_slots|default:0 > 0 %}
+                        <span class="ds-badge badge-capacity-limited">Capaciteit: beperkt</span>
+                        {% else %}
+                        <span class="ds-badge badge-capacity-full">Capaciteit: vol</span>
+                        {% endif %}
+                        <span class="ds-badge badge-low">Regio: {% firstof focus_row.intake.region focus_row.intake.region_name "n.b." %}</span>
+                        <span class="ds-badge badge-medium">Wachttijd {{ suggestion.avg_wait_days }} dagen</span>
+                    </div>
+                    <div class="rec-grid">
+                        <div>
+                            <div class="rec-label">Waarom dit past</div>
+                            <div class="rec-copy">{{ suggestion.reason }}</div>
+                        </div>
+                        <div>
+                            <div class="rec-label">Aandachtspunt</div>
+                            <div class="rec-copy">
+                                {% if suggestion.free_slots|default:0 == 0 %}
+                                Geen vrije plekken nu
+                                {% elif suggestion.avg_wait_days > 28 %}
+                                Wachttijd is relatief lang
+                                {% elif suggestion.match_score < 70 %}
+                                Lagere zekerheid dan topmatch
+                                {% else %}
+                                Bevestig intake fit handmatig
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="rec-actions">
+                        {% if focus_row.can_assign %}
+                        <form method="post" class="inline">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="assign">
+                            <input type="hidden" name="assessment_id" value="{{ focus_row.assessment.pk }}">
+                            <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
+                            <button type="submit" class="btn {% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %}">Wijs toe</button>
+                        </form>
+                        {% else %}
+                        <span class="text-xs text-gray-400">Geen bewerkrechten</span>
+                        {% endif %}
+                        <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="btn btn-ghost">Bekijk profiel</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
             {% else %}
-            <span class="ds-badge badge-high">Nog niet toegewezen</span>
+            <div class="ds-card empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
+            {% endif %}
+        </section>
+
+        <aside class="matching-side-col">
+            <section class="ds-card rail-card rail-next">
+                <h4 class="rail-title">Beslisactie</h4>
+                {% if focus_row.assigned_provider %}
+                <p class="rail-note">Toegewezen: {{ focus_row.assigned_provider.name }}</p>
+                {% if focus_row.placement_pk %}
+                <a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-ghost">Bekijk plaatsing</a>
+                {% endif %}
+                {% elif focus_row.suggestions %}
+                {% if focus_row.can_assign %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="assign">
+                    <input type="hidden" name="assessment_id" value="{{ focus_row.assessment.pk }}">
+                    <input type="hidden" name="provider_id" value="{{ focus_row.suggestions.0.provider_id }}">
+                    <button type="submit" class="btn btn-primary">Wijs beste match toe</button>
+                </form>
+                {% else %}
+                <span class="text-xs text-gray-400">Geen bewerkrechten</span>
+                {% endif %}
+                {% else %}
+                <p class="rail-note">Vul profielgegevens aan voor betere matching.</p>
+                {% endif %}
+            </section>
+
+            <section class="ds-card rail-card">
+                <h4 class="rail-title">Matchcriteria</h4>
+                <div class="rail-list">
+                    <div class="rail-row"><span>Categorie</span><strong>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</strong></div>
+                    <div class="rail-row"><span>Urgentie</span><strong>{{ focus_row.intake.get_urgency_display }}</strong></div>
+                    <div class="rail-row"><span>Zorgvorm</span><strong>{{ focus_row.intake.get_preferred_care_form_display }}</strong></div>
+                </div>
+            </section>
+
+            <section class="ds-card rail-card">
+                <h4 class="rail-title">Beoordeling snapshot</h4>
+                <div class="rail-list">
+                    <div class="rail-row"><span>Status</span><strong>{{ focus_row.assessment.get_assessment_status_display }}</strong></div>
+                    <div class="rail-row"><span>Laatst bijgewerkt</span><strong>{{ focus_row.assessment.updated_at|date:"d-m-Y H:i" }}</strong></div>
+                    <div class="rail-row"><span>Beoordelaar</span><strong>{{ focus_row.assessment.assessed_by.get_full_name|default:"-" }}</strong></div>
+                </div>
+            </section>
+
+            <section class="ds-card rail-card">
+                <h4 class="rail-title">Capaciteitsoverzicht</h4>
+                <div class="rail-list">
+                    <div class="rail-row"><span>Fitscore top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.match_score }}%{% else %}-{% endif %}</strong></div>
+                    <div class="rail-row"><span>Capaciteit top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.free_slots|default:0 }} plekken{% else %}-{% endif %}</strong></div>
+                    <div class="rail-row"><span>Wachttijd top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.avg_wait_days }} dagen{% else %}-{% endif %}</strong></div>
+                </div>
+            </section>
+        </aside>
+    </div>
+
+    <section class="ds-card matching-detail-card">
+        <div class="detail-segments">
+            <a href="#vergelijking" class="tab-chip tab-chip-active">Vergelijking</a>
+            <a href="#matchgeschiedenis" class="tab-chip">Matchgeschiedenis</a>
+            <a href="#afgevallen" class="tab-chip">Niet passend / afgevallen aanbieders</a>
+        </div>
+
+        <div id="vergelijking" class="detail-block">
+            <h4 class="detail-title">Vergelijking</h4>
+            {% if focus_row.suggestions %}
+            <div class="ds-table-wrap">
+                <table class="ds-table">
+                    <thead>
+                        <tr>
+                            <th>Aanbieder</th>
+                            <th>Matchscore</th>
+                            <th>Capaciteit</th>
+                            <th>Wachttijd</th>
+                            <th>Waarom</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for suggestion in focus_row.suggestions %}
+                        <tr>
+                            <td>{{ suggestion.provider_name }}</td>
+                            <td><span class="ds-badge badge-blue">{{ suggestion.match_score }}%</span></td>
+                            <td>
+                                {% if suggestion.free_slots|default:0 > 3 %}
+                                Beschikbaar ({{ suggestion.free_slots }})
+                                {% elif suggestion.free_slots|default:0 > 0 %}
+                                Beperkt ({{ suggestion.free_slots }})
+                                {% else %}
+                                Vol
+                                {% endif %}
+                            </td>
+                            <td>{{ suggestion.avg_wait_days }} dagen</td>
+                            <td>{{ suggestion.reason }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
             {% endif %}
         </div>
 
-        {% if row.suggestions %}
-        <div class="ds-table-wrap">
-            <table class="ds-table">
-                <thead>
-                    <tr>
-                        <th>Aanbieder</th>
-                        <th>Matchscore</th>
-                        <th>Toelichting</th>
-                        <th>Capaciteit</th>
-                        <th>Wachttijd</th>
-                        <th style="text-align:right;">Actie</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for suggestion in row.suggestions %}
-                    <tr>
-                        <td>{{ suggestion.provider_name }}</td>
-                        <td class="td-num"><span class="ds-badge badge-blue">{{ suggestion.match_score }}%</span></td>
-                        <td>{{ suggestion.reason }}</td>
-                        <td>
-                            {% if suggestion.free_slots|default:0 > 3 %}
-                            <span class="ds-badge badge-capacity-open">Beschikbaar ({{ suggestion.free_slots }})</span>
-                            {% elif suggestion.free_slots|default:0 > 0 %}
-                            <span class="ds-badge badge-capacity-limited">Beperkt ({{ suggestion.free_slots }})</span>
-                            {% else %}
-                            <span class="ds-badge badge-capacity-full">Vol</span>
-                            {% endif %}
-                        </td>
-                        <td class="td-num">{{ suggestion.avg_wait_days }} d</td>
-                        <td class="td-right">
-                            {% if row.can_assign %}
-                            <form method="post" class="inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="action" value="assign">
-                                <input type="hidden" name="assessment_id" value="{{ row.assessment.pk }}">
-                                <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
-                                <button type="submit" class="btn btn-primary" style="min-height:36px;">Wijs toe</button>
-                            </form>
-                            {% else %}
-                            <span class="text-xs text-gray-400">Geen bewerkrechten</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div id="matchgeschiedenis" class="detail-block">
+            <h4 class="detail-title">Matchgeschiedenis</h4>
+            {% if focus_row.assigned_provider %}
+            <p class="text-sm text-gray-200">Toegewezen: {{ focus_row.assigned_provider.name }}</p>
+            {% if focus_row.placement_pk %}
+            <a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-ghost">Bekijk plaatsing</a>
+            {% endif %}
+            {% else %}
+            <p class="text-sm text-gray-400">Nog niet toegewezen</p>
+            {% endif %}
         </div>
-        {% else %}
-        <div class="empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
-        {% endif %}
-    </div>
-    {% empty %}
+
+        <div id="afgevallen" class="detail-block">
+            <h4 class="detail-title">Niet passend / afgevallen aanbieders</h4>
+            {% if focus_row.suggestions|slice:"3:" %}
+            <div class="detail-tags">
+                {% for suggestion in focus_row.suggestions|slice:"3:" %}
+                <span class="ds-badge badge-low">{{ suggestion.provider_name }} · {{ suggestion.match_score }}%</span>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm text-gray-400">Geen extra afgevallen aanbieders.</p>
+            {% endif %}
+        </div>
+    </section>
+
+    {% if not selected_intake and rows|length > 1 %}
+    <section class="ds-card queue-card">
+        <h4 class="queue-title">Andere casussen gereed voor matching</h4>
+        <div class="queue-list">
+            {% for row in rows|slice:"1:6" %}
+            <a href="{% url 'careon:matching_dashboard' %}?intake={{ row.intake.pk }}" class="queue-item">
+                <span class="queue-item-title">{{ row.intake.title|truncatechars:38 }}</span>
+                <span class="queue-item-meta">{{ row.suggestions|length }} matches</span>
+            </a>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+    {% endwith %}
+    {% else %}
     <div class="ds-card empty-state">
         <svg class="empty-icon icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
         Geen beoordelingen met status "Goedgekeurd voor matching".
         <div style="margin-top:10px;"><a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordelingen</a></div>
     </div>
-    {% endfor %}
+    {% endif %}
 </div>
-
-<style>
-    .matching-kpi-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: var(--card-gap);
-    }
-    .matching-kpi-card { padding: 14px 16px; }
-    .kpi-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-secondary);
-        font-weight: 700;
-    }
-    .kpi-value {
-        margin-top: 8px;
-        font-size: 30px;
-        line-height: 1;
-        font-weight: 800;
-        color: var(--text-primary);
-    }
-    .tone-good { color: #86efac; }
-    .tone-warning { color: #fcd34d; }
-    .selected-title {
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-    .selected-meta {
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-    .matching-card { overflow: hidden; }
-    .match-row-title {
-        margin: 0 0 4px;
-        font-size: 16px;
-    }
-    .match-row-meta {
-        margin: 0;
-        font-size: 12px;
-        color: var(--text-secondary);
-    }
-    .match-assigned { text-align: right; }
-    @media (max-width: 920px) {
-        .matching-kpi-grid { grid-template-columns: 1fr; }
-    }
-</style>
 {% endblock %}

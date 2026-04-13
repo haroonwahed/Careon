@@ -1,0 +1,1514 @@
+diff --git a/.vscode/settings.json b/.vscode/settings.json
+index 4269201..fae0ac7 100644
+--- a/.vscode/settings.json
++++ b/.vscode/settings.json
+@@ -1,5 +1,11 @@
+ {
+     "python-envs.defaultEnvManager": "ms-python.python:system",
+     "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+-    "python.analysis.typeCheckingMode": "basic"
++    "python.analysis.typeCheckingMode": "basic",
++    "github.copilot.chat.codeGeneration.useInstructionFiles": false,
++    "github.copilot.chat.promptFileContextProvider.enabled": false,
++    "github.copilot.chat.summarizeAgentConversationHistory.enabled": true,
++    "github.copilot.chat.imageUpload.enabled": true,
++    "github.copilot.chat.agent.largeToolResultsToDisk.enabled": true,
++    "github.copilot.chat.agent.largeToolResultsToDisk.thresholdBytes": 12000
+ }
+diff --git a/tests/test_redesign_layout.py b/tests/test_redesign_layout.py
+index 31db2ee..23430e3 100644
+--- a/tests/test_redesign_layout.py
++++ b/tests/test_redesign_layout.py
+@@ -21,13 +21,13 @@ class RedesignLayoutTests(TestCase):
+         response = self.client.get(reverse('dashboard'))
+         self.assertEqual(response.status_code, 200)
+         self.assertContains(response, 'Careon')
+-        self.assertContains(response, 'data-theme="dark"')
++        self.assertContains(response, 'zorgregie-design-system.css')
+         self.assertContains(response, 'toggleTheme()')
+         self.assertContains(response, 'title="Search"')
+ 
+     def test_sidebar_navigation_sections_and_links(self):
+         response = self.client.get(reverse('dashboard'))
+-        self.assertContains(response, 'CASEMANAGEMENT')
++        self.assertContains(response, 'CASUSMANAGEMENT')
+         self.assertContains(response, 'Casussen')
+         self.assertContains(response, 'Dashboard')
+         self.assertContains(response, 'Casussen')
+@@ -39,7 +39,7 @@ class RedesignLayoutTests(TestCase):
+         self.assertContains(response, 'title="Meldingen"')
+         self.assertContains(response, 'Nieuwe casus')
+         self.assertContains(response, 'Uitloggen')
+-        self.assertContains(response, '/profile/')
++        self.assertContains(response, '/care/casussen/new/')
+ 
+     def test_dashboard_kpis_and_panels(self):
+         response = self.client.get(reverse('dashboard'))
+diff --git a/theme/templates/contracts/intake_detail.html b/theme/templates/contracts/intake_detail.html
+index 867b284..5fabed4 100644
+--- a/theme/templates/contracts/intake_detail.html
++++ b/theme/templates/contracts/intake_detail.html
+@@ -3,320 +3,369 @@
+ {% block content %}
+ 
+ <div class="page-wrap page-stack">
+-
+-<!-- Breadcrumb -->
+-<div class="mb-4 text-sm">
+-    <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
+-    <span class="text-gray-400 mx-1">/</span>
+-    <a href="{% url 'careon:case_list' %}" class="text-blue-600 hover:text-blue-800">Casussen</a>
+-    <span class="text-gray-400 mx-1">/</span>
+-    <span class="text-gray-600">{{ intake.title }}</span>
+-</div>
+-
+-<div class="flex items-start justify-between mb-6">
+-    <div>
+-        <h1 class="page-title">{{ intake.title }}</h1>
+-        <p class="page-subtitle">{{ intake.care_category_main.name|default:"Categorie onbekend" }}</p>
+-    </div>
+-    <div class="flex gap-2">
+-        {% if can_edit_case %}
+-        <a href="{% url 'careon:case_update' intake.pk %}" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">
+-            Bewerken
+-        </a>
+-        {% else %}
+-        <span class="px-4 py-2 bg-gray-100 text-gray-500 text-sm font-medium rounded-lg">Alleen-lezen</span>
+-        {% endif %}
++    <div class="mb-4 text-sm">
++        <a href="{% url 'dashboard' %}" class="text-blue-600 hover:text-blue-800">Dashboard</a>
++        <span class="text-gray-400 mx-1">/</span>
++        <a href="{% url 'careon:case_list' %}" class="text-blue-600 hover:text-blue-800">Casussen</a>
++        <span class="text-gray-400 mx-1">/</span>
++        <span class="text-gray-600">{{ anonymized_title }}</span>
+     </div>
+-</div>
+ 
+-<!-- Status Bar -->
+-<div class="mb-6 bg-white rounded-xl border border-gray-200 p-4">
+-    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+-        <div>
+-            <p class="text-xs text-gray-500 uppercase font-semibold">Huidige fase</p>
+-            <p class="text-lg font-semibold text-gray-900">{{ intake.get_status_display }}</p>
+-        </div>
+-        <div>
+-            <p class="text-xs text-gray-500 uppercase font-semibold">Casusstatus</p>
+-            <p class="text-lg font-semibold text-gray-900">{{ case_record.get_case_phase_display|default:"Niet gekoppeld" }}</p>
+-        </div>
+-        <div>
+-            <p class="text-xs text-gray-500 uppercase font-semibold">Urgentie</p>
+-            <p class="text-lg font-semibold {% if intake.urgency == 'CRISIS' %}text-red-600{% elif intake.urgency == 'HIGH' %}text-orange-600{% else %}text-green-600{% endif %}">
+-                {{ intake.get_urgency_display }}
+-            </p>
+-        </div>
+-        <div>
+-            <p class="text-xs text-gray-500 uppercase font-semibold">Complexiteit</p>
+-            <p class="text-lg font-semibold text-gray-900">{{ intake.get_complexity_display }}</p>
+-        </div>
+-        <div>
+-            <p class="text-xs text-gray-500 uppercase font-semibold">Regisseur</p>
+-            <p class="text-lg font-semibold text-gray-900">{{ intake.case_coordinator.get_full_name|default:"—" }}</p>
+-        </div>
+-    </div>
+-</div>
++    <section class="ds-card mb-4 intake-identity-card">
++        <div class="flex flex-wrap items-start justify-between gap-4">
++            <div class="min-w-0 space-y-2">
++                <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
++                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1">Casus {{ intake.pk }}</span>
++                    <span class="inline-flex items-center rounded-full px-2.5 py-1 {% if intake.urgency == 'CRISIS' %}bg-red-100 text-red-700{% elif intake.urgency == 'HIGH' %}bg-orange-100 text-orange-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ intake.get_urgency_display }}</span>
++                    <span class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-1 text-blue-700">{{ intake.get_status_display }}</span>
++                </div>
++                <h1 class="truncate text-2xl font-semibold leading-tight text-gray-900">{{ anonymized_title }}</h1>
++                <dl class="grid gap-x-5 gap-y-1 text-xs sm:grid-cols-3">
++                    <div>
++                        <dt class="uppercase tracking-wide text-gray-500">Regio/Gemeente</dt>
++                        <dd class="font-semibold text-gray-900">{{ region_municipality_label }}</dd>
++                    </div>
++                    <div>
++                        <dt class="uppercase tracking-wide text-gray-500">Laatste update</dt>
++                        <dd class="font-semibold text-gray-900">{{ intake.updated_at|date:"d-m-Y H:i" }}</dd>
++                    </div>
++                    <div>
++                        <dt class="uppercase tracking-wide text-gray-500">Regie</dt>
++                        <dd class="font-semibold text-gray-900">{{ intake.case_coordinator.get_full_name|default:"-" }}</dd>
++                    </div>
++                </dl>
++            </div>
+ 
+-<!-- Workflow Hub -->
+-<div class="mb-6 bg-white rounded-xl border border-gray-200 p-5">
+-    <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">Casusworkflow</h2>
+-    <div class="grid grid-cols-1 lg:grid-cols-4 gap-3">
+-        <div class="rounded-lg border border-gray-200 p-3">
+-            <p class="text-xs text-gray-500 uppercase font-semibold">1. Intake</p>
+-            <p class="text-sm font-semibold text-gray-900 mt-1">{{ intake.get_status_display }}</p>
+-            <p class="text-xs text-gray-500 mt-1">Samenvatting: {{ intake.assessment_summary|default:"Nog geen samenvatting"|truncatechars:90 }}</p>
+-        </div>
+-        <div class="rounded-lg border border-gray-200 p-3">
+-            <p class="text-xs text-gray-500 uppercase font-semibold">2. Beoordeling</p>
+-            <p class="text-sm font-semibold text-gray-900 mt-1">{{ assessment_status_label }}</p>
+-            <a href="{{ assessment_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">{{ assessment_action_label }}</a>
+-        </div>
+-        <div class="rounded-lg border border-gray-200 p-3">
+-            <p class="text-xs text-gray-500 uppercase font-semibold">3. Matching</p>
+-            <p class="text-sm font-semibold text-gray-900 mt-1">{{ matching_status_label }}</p>
+-            <a href="{{ matching_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">Naar matching</a>
+-        </div>
+-        <div class="rounded-lg border border-gray-200 p-3">
+-            <p class="text-xs text-gray-500 uppercase font-semibold">4. Plaatsing</p>
+-            <p class="text-sm font-semibold text-gray-900 mt-1">{{ placement_status_label }}</p>
+-            <p class="text-xs text-gray-500 mt-1">Fase: {{ placement_phase_label }}</p>
+-            <a href="{{ placement_href }}" class="text-xs text-blue-600 hover:text-blue-800 mt-2 inline-block">{{ placement_action_label }}</a>
++            <div class="flex flex-col items-stretch gap-2 sm:items-end">
++                <a href="{{ next_action.href }}" class="btn btn-secondary">{{ next_action.label }}</a>
++                <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium text-gray-600">
++                    <a href="{{ assessment_href }}" class="hover:text-gray-900">{{ assessment_action_label }}</a>
++                    <a href="{{ matching_href }}" class="hover:text-gray-900">Matching</a>
++                    <a href="{{ placement_href }}" class="hover:text-gray-900">{{ placement_action_label }}</a>
++                </div>
++            </div>
+         </div>
+-    </div>
+-</div>
++    </section>
+ 
+-<!-- Main Content -->
+-<div class="grid grid-cols-3 gap-6">
+-    <!-- Left Column: Details -->
+-    <div class="col-span-2 space-y-6">
+-        <!-- Intake Summary -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Intake samenvatting</h2>
+-            <p class="text-sm text-gray-700 mb-4">{{ intake.assessment_summary|default:"Nog geen samenvatting beschikbaar." }}</p>
+-            <dl class="space-y-3">
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">Hoofdcategorie</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.care_category_main.name|default:"—" }}</dd>
++    <section class="mb-5 intake-summary-strip">
++        <div class="summary-item">
++                <p class="summary-label">Huidige staat</p>
++                <p class="mt-1 text-base font-semibold text-gray-900">{{ case_record.get_case_phase_display|default:intake.get_status_display }}</p>
++            </div>
++            <div class="summary-item summary-risk">
++                <p class="summary-label">Blokkade</p>
++                <p class="mt-1 text-sm font-semibold text-gray-900">{{ blocker_label }}</p>
++                <p class="text-xs font-medium text-gray-700">{{ progress_label }}</p>
++            </div>
++            <div class="summary-item">
++                <p class="summary-label">Volgende actie</p>
++                <a href="{{ next_action.href }}" class="mt-1 inline-flex text-sm font-semibold text-blue-800 hover:text-blue-900">{{ next_action.label }}</a>
++            </div>
++            <div class="summary-item">
++                <p class="summary-label">Beslisregel</p>
++                <p class="mt-1 text-sm font-semibold text-gray-900">Systeem adviseert</p>
++                <p class="text-xs font-medium text-gray-700">Regie beslist en bevestigt</p>
++            </div>
++    </section>
++
++    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
++        <div class="space-y-6 xl:col-span-8">
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <h2 class="mb-3 text-base font-semibold text-gray-900">Casussamenvatting</h2>
++                <dl class="divide-y divide-gray-100 rounded-lg border border-gray-100 text-sm">
++                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
++                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Hoofdcategorie</dt>
++                        <dd class="text-right font-medium text-gray-900">{{ intake.care_category_main.name|default:"-" }}</dd>
++                    </div>
++                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
++                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Subcategorie</dt>
++                        <dd class="text-right font-medium text-gray-900">{{ intake.care_category_sub.name|default:"-" }}</dd>
++                    </div>
++                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
++                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Zorgvorm</dt>
++                        <dd class="text-right font-medium text-gray-900">{{ intake.get_preferred_care_form_display }}</dd>
++                    </div>
++                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
++                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Leeftijd</dt>
++                        <dd class="text-right font-medium text-gray-900">{{ intake.get_client_age_category_display|default:"-" }}</dd>
++                    </div>
++                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
++                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Gezinssituatie</dt>
++                        <dd class="text-right font-medium text-gray-900">{{ intake.get_family_situation_display|default:"-" }}</dd>
++                    </div>
++                </dl>
++            </section>
++
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-3 flex items-center justify-between gap-3">
++                    <h2 class="text-base font-semibold text-gray-900">Flow voortgang</h2>
++                    <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-700">{{ progress_label }}</span>
+                 </div>
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">Subcategorie</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.care_category_sub.name|default:"—" }}</dd>
++                <div class="space-y-2">
++                    {% for stage in flow_rail %}
++                    <div class="flex items-center gap-3 rounded-lg border px-3 py-2 {% if stage.active %}border-blue-300 bg-blue-50{% elif stage.completed %}border-emerald-200 bg-emerald-50{% else %}border-gray-200 bg-gray-50{% endif %}">
++                        <span class="inline-flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold {% if stage.active %}bg-blue-600 text-white{% elif stage.completed %}bg-emerald-600 text-white{% else %}bg-gray-200 text-gray-700{% endif %}">{{ forloop.counter }}</span>
++                        <div class="flex-1 min-w-0">
++                            <p class="truncate text-sm font-semibold text-gray-900">{{ stage.label }}</p>
++                        </div>
++                        <span class="text-[11px] font-semibold uppercase tracking-wide {% if stage.active %}text-blue-700{% elif stage.completed %}text-emerald-700{% else %}text-gray-500{% endif %}">
++                            {% if stage.active %}Actief{% elif stage.completed %}Klaar{% else %}Wacht{% endif %}
++                        </span>
++                        </div>
++                    {% endfor %}
+                 </div>
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">Gewenste zorgvorm</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.get_preferred_care_form_display }}</dd>
++            </section>
++
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <h2 class="mb-3 text-base font-semibold text-gray-900">Beoordeling</h2>
++                <div class="grid gap-2 sm:grid-cols-3">
++                    <div class="rounded-lg border border-gray-200 px-3 py-2">
++                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Complexiteit</p>
++                        <p class="mt-1 text-sm font-semibold text-gray-900">{{ intake.get_complexity_display }}</p>
++                    </div>
++                    <div class="rounded-lg border border-gray-200 px-3 py-2">
++                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Risico</p>
++                        <p class="mt-1 text-sm font-semibold text-gray-900">{{ intake.get_urgency_display }}</p>
++                    </div>
++                    <div class="rounded-lg border border-gray-200 px-3 py-2">
++                        <p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500">Matching</p>
++                        <p class="mt-1 text-sm font-semibold text-gray-900">{% if ready_for_matching %}Klaar{% else %}Niet klaar{% endif %}</p>
++                    </div>
+                 </div>
+-            </dl>
+-        </div>
++                <p class="mt-2 text-xs text-gray-700">{{ assessment_interpretation }}</p>
++            </section>
+ 
+-        <!-- Open Tasks -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <div class="flex items-center justify-between mb-4">
+-                <h2 class="text-lg font-semibold text-gray-900">Open taken ({{ open_tasks_count }})</h2>
+-                {% if can_create_case_task %}
+-                <a href="{% url 'careon:case_task_create' intake.pk %}" class="text-xs text-blue-600 hover:text-blue-800">+ Taak toevoegen</a>
+-                {% endif %}
+-            </div>
+-            {% if open_tasks %}
+-            <div class="space-y-3">
+-                {% for task in open_tasks %}
+-                <div class="rounded-lg border border-gray-200 p-3">
+-                    <div class="flex items-center justify-between gap-3">
+-                        <div>
+-                            <p class="text-sm font-medium text-gray-900">{{ task.title }}</p>
+-                            <p class="text-xs text-gray-500">Deadline: {{ task.due_date|date:"d-m-Y" }}{% if task.assigned_to %} · {{ task.assigned_to.get_full_name|default:task.assigned_to.username }}{% endif %}</p>
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-3 flex items-center justify-between gap-3">
++                    <h2 class="text-base font-semibold text-gray-900">Matching preview</h2>
++                    <a href="{{ matching_href }}" class="btn btn-ghost">Open matching</a>
++                </div>
++                {% if not ready_for_matching %}
++                <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
++                    <p class="text-sm font-medium text-gray-800">Beoordeling eerst afronden</p>
++                    <a href="{{ assessment_href }}" class="btn btn-secondary" style="margin-top:10px;">{{ assessment_action_label }}</a>
++                </div>
++                {% elif matching_preview_candidates %}
++                <div class="space-y-2">
++                    {% for candidate in matching_preview_candidates %}
++                    <div class="rounded-lg border border-gray-200 px-3 py-2">
++                        <div class="flex flex-wrap items-center justify-between gap-3">
++                            <div class="min-w-0">
++                                <p class="text-sm font-semibold text-gray-900">{{ candidate.provider_name }}</p>
++                                <p class="truncate text-xs text-gray-600">{{ candidate.reason }} · {{ candidate.capacity }}</p>
++                            </div>
++                            <div class="flex items-center gap-2">
++                                <span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Fitscore {{ candidate.fit_score }}%</span>
++                                <a href="{{ candidate.cta_href }}" class="btn btn-ghost">{{ candidate.cta_label }}</a>
++                            </div>
+                         </div>
+-                        {% if can_edit_case %}
+-                        <a href="{% url 'careon:task_update' task.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+-                        {% else %}
+-                        <span class="text-xs text-gray-400">Alleen-lezen</span>
+-                        {% endif %}
+                     </div>
++                    {% endfor %}
+                 </div>
+-                {% endfor %}
+-            </div>
+-            {% else %}
+-            <p class="text-sm text-gray-500">Geen open taken voor deze casus.</p>
+-            {% endif %}
+-        </div>
+-
+-        <!-- Open Signals -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <div class="flex items-center justify-between mb-4">
+-                <h2 class="text-lg font-semibold text-gray-900">Open signalen ({{ open_signals_count }})</h2>
+-                {% if can_create_case_signal %}
+-                <a href="{% url 'careon:case_signal_create' intake.pk %}" class="text-xs text-blue-600 hover:text-blue-800">+ Signaal toevoegen</a>
++                {% else %}
++                <p class="text-sm text-gray-600">Nog geen kandidaat-aanbieders.</p>
+                 {% endif %}
+-            </div>
+-            {% if open_signals %}
+-            <div class="space-y-3">
+-                {% for signal in open_signals %}
+-                <div class="rounded-lg border border-gray-200 p-3">
+-                    <div class="flex items-center justify-between gap-3">
+-                        <div>
+-                            <p class="text-sm font-medium text-gray-900">{{ signal.title|default:signal.get_signal_type_display }}</p>
+-                            <p class="text-xs text-gray-500">{{ signal.get_status_display }} · {{ signal.get_risk_level_display }}</p>
++            </section>
++
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-3 flex flex-wrap gap-2">
++                    <a href="?tab=tijdlijn" class="tab-chip {% if selected_tab == 'tijdlijn' %}tab-chip-active{% endif %}">Tijdlijn</a>
++                    <a href="?tab=documenten" class="tab-chip {% if selected_tab == 'documenten' %}tab-chip-active{% endif %}">Documenten</a>
++                    <a href="?tab=taken" class="tab-chip {% if selected_tab == 'taken' %}tab-chip-active{% endif %}">Taken</a>
++                    <a href="?tab=signalen" class="tab-chip {% if selected_tab == 'signalen' %}tab-chip-active{% endif %}">Signalen</a>
++                    <a href="?tab=plaatsing" class="tab-chip {% if selected_tab == 'plaatsing' %}tab-chip-active{% endif %}">Plaatsing</a>
++                </div>
++
++                {% if selected_tab == 'tijdlijn' %}
++                <div class="space-y-3 text-sm">
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <p class="font-semibold text-gray-900">Intake gestart</p>
++                        <p class="text-gray-600">{{ intake.start_date|date:"d-m-Y" }}</p>
++                    </div>
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <p class="font-semibold text-gray-900">Doeldatum matchbesluit</p>
++                        <p class="text-gray-600">{{ intake.target_completion_date|date:"d-m-Y" }}</p>
++                    </div>
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <p class="font-semibold text-gray-900">Laatste wijziging</p>
++                        <p class="text-gray-600">{{ intake.updated_at|date:"d-m-Y H:i" }}</p>
++                    </div>
++                </div>
++                {% elif selected_tab == 'documenten' %}
++                <div class="mb-3 flex items-center justify-between gap-3">
++                    <p class="text-sm font-semibold text-gray-900">Documenten ({{ documents_count }})</p>
++                    <a href="{{ case_document_href }}" class="btn btn-secondary">{{ case_document_action_label }}</a>
++                </div>
++                {% if documents %}
++                <div class="space-y-2">
++                    {% for document in documents %}
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <div class="flex items-center justify-between gap-2">
++                            <div>
++                                <p class="text-sm font-medium text-gray-900">{{ document.title }}</p>
++                                <p class="text-xs text-gray-500">{{ document.get_status_display }} · {{ document.created_at|date:"d-m-Y" }}</p>
++                            </div>
++                            <a href="{% url 'careon:document_detail' document.pk %}" class="btn btn-ghost">Open</a>
+                         </div>
+-                        <a href="{% url 'careon:signal_detail' signal.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+                     </div>
++                    {% endfor %}
+                 </div>
+-                {% endfor %}
+-            </div>
+-            {% else %}
+-            <p class="text-sm text-gray-500">Geen open signalen voor deze casus.</p>
+-            {% endif %}
+-        </div>
+-
+-        <!-- Relevant Documents -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <div class="flex items-center justify-between mb-4">
+-                <h2 class="text-lg font-semibold text-gray-900">Relevante documenten ({{ documents_count }})</h2>
+-                <a href="{{ case_document_href }}" class="text-xs text-blue-600 hover:text-blue-800">+ {{ case_document_action_label }}</a>
+-            </div>
+-            {% if documents %}
+-            <div class="space-y-3">
+-                {% for document in documents %}
+-                <div class="rounded-lg border border-gray-200 p-3">
+-                    <div class="flex items-center justify-between gap-3">
+-                        <div>
+-                            <p class="text-sm font-medium text-gray-900">{{ document.title }}</p>
+-                            <p class="text-xs text-gray-500">{{ document.get_status_display }} · {{ document.created_at|date:"d-m-Y" }}</p>
++                {% else %}
++                <p class="text-sm text-gray-600">Nog geen documenten gekoppeld aan deze casus.</p>
++                {% endif %}
++                {% elif selected_tab == 'taken' %}
++                <div class="mb-3 flex items-center justify-between gap-3">
++                    <p class="text-sm font-semibold text-gray-900">Open taken ({{ open_tasks_count }})</p>
++                    {% if can_create_case_task %}
++                    <a href="{% url 'careon:case_task_create' intake.pk %}" class="btn btn-secondary">+ Taak toevoegen</a>
++                    {% endif %}
++                </div>
++                {% if open_tasks %}
++                <div class="space-y-2">
++                    {% for task in open_tasks %}
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <div class="flex items-center justify-between gap-2">
++                            <div>
++                                <p class="text-sm font-medium text-gray-900">{{ task.title }}</p>
++                                <p class="text-xs text-gray-500">Deadline: {{ task.due_date|date:"d-m-Y" }}</p>
++                            </div>
++                            {% if can_edit_case %}
++                            <a href="{% url 'careon:task_update' task.pk %}" class="btn btn-ghost">Open</a>
++                            {% endif %}
+                         </div>
+-                        <a href="{% url 'careon:document_detail' document.pk %}" class="text-xs text-blue-600 hover:text-blue-800">Open</a>
+                     </div>
++                    {% endfor %}
+                 </div>
+-                {% endfor %}
+-            </div>
+-            {% else %}
+-            <p class="text-sm text-gray-500">Nog geen documenten gekoppeld aan deze casus.</p>
+-            {% endif %}
+-        </div>
+-
+-        <!-- Client Profile -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Cliënt Profiel</h2>
+-            <dl class="space-y-4">
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">Leeftijdscategorie</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.get_client_age_category_display|default:"—" }}</dd>
++                {% else %}
++                <p class="text-sm text-gray-600">Geen open taken voor deze casus.</p>
++                {% endif %}
++                {% elif selected_tab == 'signalen' %}
++                <div class="mb-3 flex items-center justify-between gap-3">
++                    <p class="text-sm font-semibold text-gray-900">Open signalen ({{ open_signals_count }})</p>
++                    {% if can_create_case_signal %}
++                    <a href="{% url 'careon:case_signal_create' intake.pk %}" class="btn btn-secondary">+ Signaal toevoegen</a>
++                    {% endif %}
+                 </div>
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">Gezinssituatie</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.get_family_situation_display|default:"—" }}</dd>
++                {% if open_signals %}
++                <div class="space-y-2">
++                    {% for signal in open_signals %}
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <div class="flex items-center justify-between gap-2">
++                            <div>
++                                <p class="text-sm font-medium text-gray-900">{{ signal.title|default:signal.get_signal_type_display }}</p>
++                                <p class="text-xs text-gray-500">{{ signal.get_status_display }} · {{ signal.get_risk_level_display }}</p>
++                            </div>
++                            <a href="{% url 'careon:signal_detail' signal.pk %}" class="btn btn-ghost">Open</a>
++                        </div>
++                    </div>
++                    {% endfor %}
+                 </div>
+-                <div>
+-                    <dt class="text-sm font-medium text-gray-500 uppercase">School-/werkstatus</dt>
+-                    <dd class="text-sm text-gray-900">{{ intake.school_work_status|default:"—" }}</dd>
++                {% else %}
++                <p class="text-sm text-gray-600">Geen open signalen voor deze casus.</p>
++                {% endif %}
++                {% else %}
++                <div class="space-y-3 text-sm">
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <p class="font-semibold text-gray-900">Status</p>
++                        <p class="text-gray-600">{{ placement_status_label }}</p>
++                    </div>
++                    <div class="rounded-lg border border-gray-200 p-3">
++                        <p class="font-semibold text-gray-900">Fase</p>
++                        <p class="text-gray-600">{{ placement_phase_label }}</p>
++                    </div>
++                    <a href="{{ placement_href }}" class="btn btn-secondary">{{ placement_action_label }}</a>
+                 </div>
+-            </dl>
+-        </div>
+-
+-        <!-- Additional Notes -->
+-        {% if intake.description %}
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Aanvullende Opmerkingen</h2>
+-            <p class="text-sm text-gray-600">{{ intake.description }}</p>
++                {% endif %}
++            </section>
+         </div>
+-        {% endif %}
+ 
+-        <!-- Risk Factors -->
+-        {% if risk_factors_list %}
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Risicofactoren</h2>
+-            <div class="flex flex-wrap gap-2">
+-                {% for risk in risk_factors_list %}
+-                    <span class="px-3 py-1 bg-red-100 text-red-800 text-sm rounded-full">{{ risk.name }}</span>
+-                {% endfor %}
+-            </div>
+-        </div>
+-        {% endif %}
+-    </div>
++        <aside class="space-y-4 xl:col-span-4">
++            <section class="rounded-xl border border-blue-200 bg-blue-50 p-4">
++                <h3 class="rail-title">Beslisactie</h3>
++                <p class="mt-1 text-sm font-semibold text-gray-900">{{ next_action.label }}</p>
++                <p class="mt-1 text-xs text-gray-700">{{ next_action.help }}</p>
++                <a href="{{ next_action.href }}" class="btn btn-primary" style="margin-top:10px;display:block;text-align:center;">{{ next_action.label }}</a>
++            </section>
+ 
+-    <!-- Right Column: Sidebar -->
+-    <div class="space-y-6">
+-        <!-- Single Next Action CTA -->
+-        <div class="bg-blue-50 rounded-xl border border-blue-200 p-6">
+-            <h3 class="font-semibold text-gray-900 mb-2">Beste volgende actie</h3>
+-            <p class="text-sm text-gray-700 mb-4">{{ next_action.help }}</p>
+-            <a href="{{ next_action.href }}" class="btn btn-primary" style="display:block;text-align:center;">
+-                {{ next_action.label }}
+-            </a>
+-        </div>
+-
+-        <div class="panel">
+-            <div class="panel-head">
+-                <div class="panel-head-inner">
+-                    <h3 class="panel-title">Gereedheid voor matching</h3>
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-2 flex items-center justify-between gap-2">
++                    <h3 class="rail-title">Taken</h3>
++                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">{{ open_tasks_count }}</span>
+                 </div>
+-            </div>
+-            <div class="panel-inner space-y-3">
+-                {% for item in matching_requirements %}
+-                <div class="flex items-center justify-between gap-2">
+-                    <span class="text-sm">{{ item.label }}</span>
+-                    <span class="badge-sm {% if item.ok %}badge-green{% else %}badge-red{% endif %}">{% if item.ok %}OK{% else %}Ontbreekt{% endif %}</span>
++                {% if open_tasks %}
++                <div class="space-y-2">
++                    {% for task in open_tasks|slice:":3" %}
++                    <div class="rounded-lg border border-gray-200 px-2.5 py-2">
++                        <p class="text-xs font-semibold text-gray-900">{{ task.title }}</p>
++                        <p class="text-xs text-gray-600">{{ task.due_date|date:"d-m-Y" }}</p>
++                    </div>
++                    {% endfor %}
+                 </div>
+-                {% endfor %}
+-                {% if ready_for_matching %}
+-                <a href="{{ matching_href }}" class="btn btn-primary" style="display:block;text-align:center;">Naar matching</a>
+                 {% else %}
+-                <button type="button" class="btn btn-secondary" style="display:block;width:100%;text-align:center;opacity:0.6;cursor:not-allowed;" disabled>Naar matching</button>
+-                <p class="text-xs" style="color: var(--text-muted);">Nog niet gereed: {{ matching_missing|join:", " }}.</p>
++                <p class="text-xs text-gray-600">Geen open taken</p>
+                 {% endif %}
+-            </div>
+-        </div>
++            </section>
+ 
+-        <div class="panel">
+-            <div class="panel-head">
+-                <div class="panel-head-inner">
+-                    <h3 class="panel-title">Gereedheid voor plaatsing</h3>
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-2 flex items-center justify-between gap-2">
++                    <h3 class="rail-title">Signalen</h3>
++                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">{{ open_signals_count }}</span>
+                 </div>
+-            </div>
+-            <div class="panel-inner space-y-3">
+-                {% for item in placement_requirements %}
+-                <div class="flex items-center justify-between gap-2">
+-                    <span class="text-sm">{{ item.label }}</span>
+-                    <span class="badge-sm {% if item.ok %}badge-green{% else %}badge-red{% endif %}">{% if item.ok %}OK{% else %}Ontbreekt{% endif %}</span>
++                {% if open_signals %}
++                <div class="space-y-2">
++                    {% for signal in open_signals|slice:":3" %}
++                    <div class="rounded-lg border border-gray-200 px-2.5 py-2">
++                        <p class="text-xs font-semibold text-gray-900">{{ signal.title|default:signal.get_signal_type_display }}</p>
++                        <p class="text-xs text-gray-600">{{ signal.get_risk_level_display }}</p>
++                    </div>
++                    {% endfor %}
+                 </div>
+-                {% endfor %}
+-                {% if ready_for_placement %}
+-                <a href="{{ placement_href }}" class="btn btn-primary" style="display:block;text-align:center;">{{ placement_action_label }}</a>
+                 {% else %}
+-                <button type="button" class="btn btn-secondary" style="display:block;width:100%;text-align:center;opacity:0.6;cursor:not-allowed;" disabled>{{ placement_action_label }}</button>
+-                <p class="text-xs" style="color: var(--text-muted);">Nog niet gereed: {{ placement_missing|join:", " }}.</p>
++                <p class="text-xs text-gray-600">Geen open signalen</p>
+                 {% endif %}
+-            </div>
+-        </div>
++            </section>
+ 
+-        <!-- Dates -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h3 class="font-semibold text-gray-900 mb-3">Datums</h3>
+-            <dl class="space-y-3 text-sm">
+-                <div>
+-                    <dt class="text-gray-500">Intakedatum</dt>
+-                    <dd class="font-medium text-gray-900">{{ intake.start_date|date:"d-m-Y" }}</dd>
+-                </div>
+-                <div>
+-                    <dt class="text-gray-500">Doeldatum matchbesluit</dt>
+-                    <dd class="font-medium text-gray-900">{{ intake.target_completion_date|date:"d-m-Y" }}</dd>
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-2 flex items-center justify-between gap-2">
++                    <h3 class="rail-title">Plaatsing</h3>
++                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">{{ placement_phase_label }}</span>
+                 </div>
+-            </dl>
+-        </div>
++                <p class="text-xs uppercase tracking-wide text-gray-500">Status</p>
++                <p class="text-sm font-semibold text-gray-900">{{ placement_status_label }}</p>
++                <a href="{{ placement_href }}" class="btn btn-ghost" style="margin-top:10px;">{{ placement_action_label }}</a>
++            </section>
+ 
+-        <!-- Linked Assessment -->
+-        <div class="bg-white rounded-xl border border-gray-200 p-6">
+-            <h3 class="font-semibold text-gray-900 mb-3">Beoordeling</h3>
+-            <p class="text-sm text-gray-700 mb-3">Status: <strong>{{ assessment_status_label }}</strong></p>
+-            <a href="{{ assessment_href }}" class="text-sm text-blue-600 hover:text-blue-800">{{ assessment_action_label }}</a>
+-        </div>
+-
+-        <!-- Metadata -->
+-        <div class="bg-gray-50 rounded-xl border border-gray-200 p-6 text-xs text-gray-600 space-y-1">
+-            <p>Aangemaakt: {{ intake.created_at|date:"d-m-Y H:i" }}</p>
+-            <p>Gewijzigd: {{ intake.updated_at|date:"d-m-Y H:i" }}</p>
+-        </div>
++            <section class="rounded-xl border border-gray-200 bg-white p-4">
++                <div class="mb-2 flex items-center justify-between gap-2">
++                    <h3 class="rail-title">Documenten</h3>
++                    <span class="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">{{ documents_count }}</span>
++                </div>
++                {% if documents %}
++                <div class="space-y-2">
++                    {% for document in documents|slice:":2" %}
++                    <div class="rounded-lg border border-gray-200 px-2.5 py-2">
++                        <p class="text-xs font-semibold text-gray-900">{{ document.title }}</p>
++                        <p class="text-xs text-gray-600">{{ document.get_status_display }}</p>
++                    </div>
++                    {% endfor %}
++                </div>
++                {% else %}
++                <p class="text-xs text-gray-600">Nog geen documenten</p>
++                {% endif %}
++            </section>
++        </aside>
+     </div>
+-</div>
+ 
++    {% if risk_factors_list %}
++    <section class="mt-5 rounded-xl border border-gray-200 bg-white p-4">
++        <h2 class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Risicofactoren</h2>
++        <div class="flex flex-wrap gap-2">
++            {% for risk in risk_factors_list %}
++            <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">{{ risk.name }}</span>
++            {% endfor %}
++        </div>
++    </section>
++    {% endif %}
+ </div>
+ 
+ {% endblock %}
+diff --git a/theme/templates/contracts/intake_form.html b/theme/templates/contracts/intake_form.html
+index ff18170..0115c65 100644
+--- a/theme/templates/contracts/intake_form.html
++++ b/theme/templates/contracts/intake_form.html
+@@ -2,38 +2,27 @@
+ {% block title %}{% if is_edit %}Casus bewerken{% else %}Nieuwe casus{% endif %} - Careon{% endblock %}
+ {% block content %}
+ <div class="page-wrap page-stack">
+-    <div class="page-header">
++    <div class="page-header form-shell">
+         <div>
+             <h1 class="page-title">{% if is_edit %}Casus bewerken{% else %}Nieuwe casus{% endif %}</h1>
+-            <p class="page-subtitle">4 stappen naar een complete intake binnen de casusflow en direct inzetbare matching.</p>
++            <p class="page-subtitle">Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling en matching.</p>
++            <p class="form-note required-note">Velden met <strong>*</strong> zijn verplicht.</p>
+         </div>
+     </div>
+ 
+-    <div class="ds-card action-card">
+-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+-            <span class="ds-badge badge-status">Stap 1 Identificatie</span>
+-            <span class="ds-badge badge-status">Stap 2 Zorgvraag</span>
+-            <span class="ds-badge badge-status">Stap 3 Matching</span>
+-            <span class="ds-badge badge-status">Stap 4 Cliëntprofiel</span>
+-        </div>
+-        <div class="progress-bar-bg" style="height:8px;">
+-            <div class="progress-bar-fill pf-active" style="width:100%;"></div>
+-        </div>
+-    </div>
+-
+-    <form method="post" class="page-stack">
++    <form method="post" class="page-stack form-shell">
+         {% csrf_token %}
+ 
+         {% if form.non_field_errors %}
+         <div class="error-state">
+-            <p style="margin:0 0 8px;font-weight:700;">Controleer de invoer:</p>
++            <p class="form-error-title">Controleer de invoer:</p>
+             {% for error in form.non_field_errors %}
+-            <p style="margin:0;font-size:13px;">{{ error }}</p>
++            <p class="form-error-item">{{ error }}</p>
+             {% endfor %}
+         </div>
+         {% endif %}
+ 
+-        <section class="ds-card action-card field-group">
++        <section class="ds-card action-card field-group workflow-identificatie">
+             <div class="form-section-head">
+                 <div class="form-section-number">1</div>
+                 <div>
+@@ -44,23 +33,23 @@
+             <div>
+                 <label for="{{ form.title.id_for_label }}" class="field-label">{{ form.title.label }} {% if form.title.field.required %}*{% endif %}</label>
+                 {{ form.title }}
+-                {% if form.title.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.title.errors.0 }}</div>{% endif %}
++                {% if form.title.errors %}<div class="form-field-error">{{ form.title.errors.0 }}</div>{% endif %}
+             </div>
+-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
++            <div class="form-grid-2">
+                 <div>
+                     <label for="{{ form.start_date.id_for_label }}" class="field-label">{{ form.start_date.label }} {% if form.start_date.field.required %}*{% endif %}</label>
+                     {{ form.start_date }}
+-                    {% if form.start_date.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.start_date.errors.0 }}</div>{% endif %}
++                    {% if form.start_date.errors %}<div class="form-field-error">{{ form.start_date.errors.0 }}</div>{% endif %}
+                 </div>
+                 <div>
+                     <label for="{{ form.target_completion_date.id_for_label }}" class="field-label">{{ form.target_completion_date.label }} {% if form.target_completion_date.field.required %}*{% endif %}</label>
+                     {{ form.target_completion_date }}
+-                    {% if form.target_completion_date.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.target_completion_date.errors.0 }}</div>{% endif %}
++                    {% if form.target_completion_date.errors %}<div class="form-field-error">{{ form.target_completion_date.errors.0 }}</div>{% endif %}
+                 </div>
+             </div>
+         </section>
+ 
+-        <section class="ds-card action-card field-group">
++        <section class="ds-card action-card field-group workflow-zorgvraag">
+             <div class="form-section-head">
+                 <div class="form-section-number">2</div>
+                 <div>
+@@ -68,26 +57,26 @@
+                     <div class="form-section-desc">Categorie, subcategorie en beschrijving van de zorgbehoefte</div>
+                 </div>
+             </div>
+-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
++            <div class="form-grid-2">
+                 <div>
+                     <label for="{{ form.care_category_main.id_for_label }}" class="field-label">{{ form.care_category_main.label }} {% if form.care_category_main.field.required %}*{% endif %}</label>
+                     {{ form.care_category_main }}
+-                    {% if form.care_category_main.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.care_category_main.errors.0 }}</div>{% endif %}
++                    {% if form.care_category_main.errors %}<div class="form-field-error">{{ form.care_category_main.errors.0 }}</div>{% endif %}
+                 </div>
+                 <div>
+                     <label for="{{ form.care_category_sub.id_for_label }}" class="field-label">{{ form.care_category_sub.label }}</label>
+                     {{ form.care_category_sub }}
+-                    {% if form.care_category_sub.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.care_category_sub.errors.0 }}</div>{% endif %}
++                    {% if form.care_category_sub.errors %}<div class="form-field-error">{{ form.care_category_sub.errors.0 }}</div>{% endif %}
+                 </div>
+             </div>
+             <div>
+                 <label for="{{ form.assessment_summary.id_for_label }}" class="field-label">{{ form.assessment_summary.label }}</label>
+                 {{ form.assessment_summary }}
+-                {% if form.assessment_summary.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.assessment_summary.errors.0 }}</div>{% endif %}
++                {% if form.assessment_summary.errors %}<div class="form-field-error">{{ form.assessment_summary.errors.0 }}</div>{% endif %}
+             </div>
+         </section>
+ 
+-        <section class="ds-card action-card field-group">
++        <section class="ds-card action-card field-group workflow-analyse">
+             <div class="form-section-head">
+                 <div class="form-section-number">3</div>
+                 <div>
+@@ -95,58 +84,63 @@
+                     <div class="form-section-desc">Urgentie, complexiteit en gewenste zorgvorm</div>
+                 </div>
+             </div>
+-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;">
++            <div class="form-grid-3">
+                 <div>
+                     <label for="{{ form.urgency.id_for_label }}" class="field-label">{{ form.urgency.label }} {% if form.urgency.field.required %}*{% endif %}</label>
+                     {{ form.urgency }}
+-                    {% if form.urgency.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.urgency.errors.0 }}</div>{% endif %}
++                    {% if form.urgency.errors %}<div class="form-field-error">{{ form.urgency.errors.0 }}</div>{% endif %}
+                 </div>
+                 <div>
+                     <label for="{{ form.complexity.id_for_label }}" class="field-label">{{ form.complexity.label }} {% if form.complexity.field.required %}*{% endif %}</label>
+                     {{ form.complexity }}
+-                    {% if form.complexity.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.complexity.errors.0 }}</div>{% endif %}
++                    {% if form.complexity.errors %}<div class="form-field-error">{{ form.complexity.errors.0 }}</div>{% endif %}
+                 </div>
+                 <div>
+                     <label for="{{ form.preferred_care_form.id_for_label }}" class="field-label">{{ form.preferred_care_form.label }} {% if form.preferred_care_form.field.required %}*{% endif %}</label>
+                     {{ form.preferred_care_form }}
+-                    {% if form.preferred_care_form.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.preferred_care_form.errors.0 }}</div>{% endif %}
++                    {% if form.preferred_care_form.errors %}<div class="form-field-error">{{ form.preferred_care_form.errors.0 }}</div>{% endif %}
+                 </div>
+             </div>
+         </section>
+ 
+-        <section class="ds-card action-card field-group">
++        <section class="ds-card action-card field-group workflow-matching">
+             <div class="form-section-head">
+                 <div class="form-section-number">4</div>
+                 <div>
+                     <div class="form-section-title">Cliëntprofiel</div>
+-                    <div class="form-section-desc">Leeftijdscategorie, gezinssituatie en aanvullende context</div>
++                    <div class="form-section-desc">Leeftijdscategorie, gezinssituatie, regie en aanvullende context</div>
+                 </div>
+             </div>
+-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
++            <div class="form-grid-2">
+                 <div>
+                     <label for="{{ form.client_age_category.id_for_label }}" class="field-label">{{ form.client_age_category.label }}</label>
+                     {{ form.client_age_category }}
+-                    {% if form.client_age_category.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.client_age_category.errors.0 }}</div>{% endif %}
++                    {% if form.client_age_category.errors %}<div class="form-field-error">{{ form.client_age_category.errors.0 }}</div>{% endif %}
+                 </div>
+                 <div>
+                     <label for="{{ form.family_situation.id_for_label }}" class="field-label">{{ form.family_situation.label }}</label>
+                     {{ form.family_situation }}
+-                    {% if form.family_situation.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.family_situation.errors.0 }}</div>{% endif %}
++                    {% if form.family_situation.errors %}<div class="form-field-error">{{ form.family_situation.errors.0 }}</div>{% endif %}
+                 </div>
+             </div>
++            <div>
++                <label for="{{ form.case_coordinator.id_for_label }}" class="field-label">{{ form.case_coordinator.label }}</label>
++                {{ form.case_coordinator }}
++                {% if form.case_coordinator.errors %}<div class="form-field-error">{{ form.case_coordinator.errors.0 }}</div>{% endif %}
++            </div>
+             <div>
+                 <label for="{{ form.school_work_status.id_for_label }}" class="field-label">{{ form.school_work_status.label }}</label>
+                 {{ form.school_work_status }}
+-                {% if form.school_work_status.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.school_work_status.errors.0 }}</div>{% endif %}
++                {% if form.school_work_status.errors %}<div class="form-field-error">{{ form.school_work_status.errors.0 }}</div>{% endif %}
+             </div>
+             <div>
+                 <label for="{{ form.description.id_for_label }}" class="field-label">{{ form.description.label }}</label>
+                 {{ form.description }}
+-                {% if form.description.errors %}<div style="color:#f87171;font-size:12px;margin-top:4px;">{{ form.description.errors.0 }}</div>{% endif %}
++                {% if form.description.errors %}<div class="form-field-error">{{ form.description.errors.0 }}</div>{% endif %}
+             </div>
+         </section>
+ 
+-        <div class="ds-card feed-card" style="display:flex;gap:12px;justify-content:flex-end;">
++        <div class="ds-card feed-card form-actions">
+             <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Annuleren</a>
+             <button type="submit" class="btn btn-primary">{{ button_text|default:"Casus opslaan" }}</button>
+         </div>
+diff --git a/theme/templates/contracts/matching_dashboard.html b/theme/templates/contracts/matching_dashboard.html
+index 08de985..aeaaffa 100644
+--- a/theme/templates/contracts/matching_dashboard.html
++++ b/theme/templates/contracts/matching_dashboard.html
+@@ -5,162 +5,292 @@
+     <div class="page-header">
+         <div>
+             <h1 class="page-title">Matching</h1>
+-            <p class="page-subtitle">{{ total_ready }} beoordelingen gereed &middot; {{ assigned_count }} toegewezen</p>
++            <p class="page-subtitle">Beslisruimte voor aanbiederkeuze</p>
+         </div>
+     </div>
+ 
+-    <div class="matching-kpi-grid">
+-        <div class="ds-card matching-kpi-card">
+-            <div class="kpi-label">Gereed</div>
+-            <div class="kpi-value">{{ total_ready }}</div>
++    {% if rows %}
++    {% with focus_row=rows.0 %}
++    <section class="ds-card matching-context-card">
++        <div class="matching-context-head">
++            <div class="matching-context-meta">
++                <div class="matching-id-line">
++                    <span class="ds-badge badge-blue">Casus {{ focus_row.intake.pk }}</span>
++                    <span class="ds-badge {% if focus_row.intake.urgency == 'CRISIS' %}badge-high{% elif focus_row.intake.urgency == 'HIGH' %}badge-medium{% else %}badge-low{% endif %}">{{ focus_row.intake.get_urgency_display }}</span>
++                    <span class="ds-badge badge-status">{{ focus_row.intake.get_status_display }}</span>
++                </div>
++                <h2 class="matching-case-title">{{ focus_row.intake.title|truncatechars:60 }}</h2>
++                <div class="matching-case-submeta">
++                    <span>Regio/Gemeente: {% firstof focus_row.intake.region focus_row.intake.region_name "Onbekend" %}</span>
++                    <span>&middot;</span>
++                    <span>Zorgvorm: {{ focus_row.intake.get_preferred_care_form_display }}</span>
++                </div>
++            </div>
++            <div class="matching-context-actions">
++                <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost">Terug naar casus</a>
++                {% if selected_intake %}
++                <a href="{% url 'careon:matching_dashboard' %}?intake={{ selected_intake.pk }}" class="btn btn-ghost">Ververs matching</a>
++                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Filter wissen</a>
++                {% else %}
++                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Ververs matching</a>
++                {% endif %}
++            </div>
++        </div>
++    </section>
++
++    <section class="matching-summary-strip">
++        <div class="summary-item">
++            <div class="summary-label">Huidige staat</div>
++            <div class="summary-value">{{ focus_row.suggestions|length }} geschikte matches</div>
+         </div>
+-        <div class="ds-card matching-kpi-card">
+-            <div class="kpi-label">Toegewezen</div>
+-            <div class="kpi-value tone-good">{{ assigned_count }}</div>
++        <div class="summary-item summary-risk">
++            <div class="summary-label">Blokkade</div>
++            <div class="summary-value">
++                {% if focus_row.suggestions and focus_row.suggestions.0.avg_wait_days > 28 %}
++                Lange wachttijd
++                {% elif focus_row.suggestions and focus_row.suggestions.0.free_slots|default:0 == 0 %}
++                Geen vrije plek bij topmatch
++                {% else %}
++                Geen directe blokkade
++                {% endif %}
++            </div>
++        </div>
++        <div class="summary-item">
++            <div class="summary-label">Volgende actie</div>
++            <div class="summary-value">
++                {% if focus_row.assigned_provider %}
++                Controleer plaatsing
++                {% elif focus_row.suggestions and focus_row.can_assign %}
++                Wijs beste match toe
++                {% elif focus_row.suggestions %}
++                Vergelijk top opties
++                {% else %}
++                Vul profielgegevens aan
++                {% endif %}
++            </div>
+         </div>
+-        <div class="ds-card matching-kpi-card">
+-            <div class="kpi-label">Wacht op toewijzing</div>
+-            <div class="kpi-value tone-warning">{{ total_ready }}</div>
++        <div class="summary-item">
++            <div class="summary-label">Beslisregel</div>
++            <div class="summary-value">Systeem adviseert, regie beslist</div>
+         </div>
++    </section>
++
++    <div class="matching-workspace-grid">
++        <section class="matching-main-col">
++            <div class="recommendation-head">
++                <h3 class="panel-title">Top aanbevelingen</h3>
++                <span class="text-xs text-gray-400">Gerangschikt op matchscore</span>
++            </div>
++
++            {% if focus_row.suggestions %}
++            <div class="recommendation-stack">
++                {% for suggestion in focus_row.suggestions|slice:":3" %}
++                <article class="ds-card recommendation-card {% if forloop.first %}recommendation-best{% endif %}">
++                    <div class="rec-top">
++                        <div class="rec-rank">{% if forloop.first %}Beste match{% else %}Optie {{ forloop.counter }}{% endif %}</div>
++                        <span class="ds-badge badge-blue">Fitscore {{ suggestion.match_score }}%</span>
++                    </div>
++                    <h4 class="rec-provider">{{ suggestion.provider_name }}</h4>
++                    <div class="rec-chip-row">
++                        {% if suggestion.free_slots|default:0 > 3 %}
++                        <span class="ds-badge badge-capacity-open">Capaciteit: beschikbaar</span>
++                        {% elif suggestion.free_slots|default:0 > 0 %}
++                        <span class="ds-badge badge-capacity-limited">Capaciteit: beperkt</span>
++                        {% else %}
++                        <span class="ds-badge badge-capacity-full">Capaciteit: vol</span>
++                        {% endif %}
++                        <span class="ds-badge badge-low">Regio: {% firstof focus_row.intake.region focus_row.intake.region_name "n.b." %}</span>
++                        <span class="ds-badge badge-medium">Wachttijd {{ suggestion.avg_wait_days }} dagen</span>
++                    </div>
++                    <div class="rec-grid">
++                        <div>
++                            <div class="rec-label">Waarom dit past</div>
++                            <div class="rec-copy">{{ suggestion.reason }}</div>
++                        </div>
++                        <div>
++                            <div class="rec-label">Aandachtspunt</div>
++                            <div class="rec-copy">
++                                {% if suggestion.free_slots|default:0 == 0 %}
++                                Geen vrije plekken nu
++                                {% elif suggestion.avg_wait_days > 28 %}
++                                Wachttijd is relatief lang
++                                {% elif suggestion.match_score < 70 %}
++                                Lagere zekerheid dan topmatch
++                                {% else %}
++                                Bevestig intake fit handmatig
++                                {% endif %}
++                            </div>
++                        </div>
++                    </div>
++                    <div class="rec-actions">
++                        {% if focus_row.can_assign %}
++                        <form method="post" class="inline">
++                            {% csrf_token %}
++                            <input type="hidden" name="action" value="assign">
++                            <input type="hidden" name="assessment_id" value="{{ focus_row.assessment.pk }}">
++                            <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
++                            <button type="submit" class="btn {% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %}">Wijs toe</button>
++                        </form>
++                        {% else %}
++                        <span class="text-xs text-gray-400">Geen bewerkrechten</span>
++                        {% endif %}
++                        <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="btn btn-ghost">Bekijk profiel</a>
++                    </div>
++                </article>
++                {% endfor %}
++            </div>
++            {% else %}
++            <div class="ds-card empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
++            {% endif %}
++        </section>
++
++        <aside class="matching-side-col">
++            <section class="ds-card rail-card rail-next">
++                <h4 class="rail-title">Beslisactie</h4>
++                {% if focus_row.assigned_provider %}
++                <p class="rail-note">Toegewezen: {{ focus_row.assigned_provider.name }}</p>
++                {% if focus_row.placement_pk %}
++                <a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-ghost">Bekijk plaatsing</a>
++                {% endif %}
++                {% elif focus_row.suggestions %}
++                {% if focus_row.can_assign %}
++                <form method="post">
++                    {% csrf_token %}
++                    <input type="hidden" name="action" value="assign">
++                    <input type="hidden" name="assessment_id" value="{{ focus_row.assessment.pk }}">
++                    <input type="hidden" name="provider_id" value="{{ focus_row.suggestions.0.provider_id }}">
++                    <button type="submit" class="btn btn-primary">Wijs beste match toe</button>
++                </form>
++                {% else %}
++                <span class="text-xs text-gray-400">Geen bewerkrechten</span>
++                {% endif %}
++                {% else %}
++                <p class="rail-note">Vul profielgegevens aan voor betere matching.</p>
++                {% endif %}
++            </section>
++
++            <section class="ds-card rail-card">
++                <h4 class="rail-title">Matchcriteria</h4>
++                <div class="rail-list">
++                    <div class="rail-row"><span>Categorie</span><strong>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</strong></div>
++                    <div class="rail-row"><span>Urgentie</span><strong>{{ focus_row.intake.get_urgency_display }}</strong></div>
++                    <div class="rail-row"><span>Zorgvorm</span><strong>{{ focus_row.intake.get_preferred_care_form_display }}</strong></div>
++                </div>
++            </section>
++
++            <section class="ds-card rail-card">
++                <h4 class="rail-title">Beoordeling snapshot</h4>
++                <div class="rail-list">
++                    <div class="rail-row"><span>Status</span><strong>{{ focus_row.assessment.get_assessment_status_display }}</strong></div>
++                    <div class="rail-row"><span>Laatst bijgewerkt</span><strong>{{ focus_row.assessment.updated_at|date:"d-m-Y H:i" }}</strong></div>
++                    <div class="rail-row"><span>Beoordelaar</span><strong>{{ focus_row.assessment.assessed_by.get_full_name|default:"-" }}</strong></div>
++                </div>
++            </section>
++
++            <section class="ds-card rail-card">
++                <h4 class="rail-title">Capaciteitsoverzicht</h4>
++                <div class="rail-list">
++                    <div class="rail-row"><span>Fitscore top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.match_score }}%{% else %}-{% endif %}</strong></div>
++                    <div class="rail-row"><span>Capaciteit top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.free_slots|default:0 }} plekken{% else %}-{% endif %}</strong></div>
++                    <div class="rail-row"><span>Wachttijd top</span><strong>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.avg_wait_days }} dagen{% else %}-{% endif %}</strong></div>
++                </div>
++            </section>
++        </aside>
+     </div>
+ 
+-    {% if selected_intake %}
+-    <div class="ds-card action-card action-row">
+-        <div>
+-            <div class="field-label field-label-tight">Geselecteerde casus</div>
+-            <div class="selected-title">{{ selected_intake.title }}</div>
+-            <div class="selected-meta">{{ selected_intake.get_urgency_display }} &middot; {{ selected_intake.get_preferred_care_form_display }}</div>
++    <section class="ds-card matching-detail-card">
++        <div class="detail-segments">
++            <a href="#vergelijking" class="tab-chip tab-chip-active">Vergelijking</a>
++            <a href="#matchgeschiedenis" class="tab-chip">Matchgeschiedenis</a>
++            <a href="#afgevallen" class="tab-chip">Niet passend / afgevallen aanbieders</a>
+         </div>
+-        <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost">Filter wissen</a>
+-    </div>
+-    {% elif not rows %}
+-    <div class="loading-state">Geen actieve matchingcontext geselecteerd. Selecteer een casus om aanbevelingen te laden.</div>
+-    {% endif %}
+ 
+-    {% for row in rows %}
+-    <div class="ds-card table-card matching-card">
+-        <div class="feed-card feed-row-top feed-row-bordered">
+-            <div>
+-                <h2 class="match-row-title"><a href="{% url 'careon:case_detail' row.intake.pk %}" class="c-link">{{ row.intake.title }}</a></h2>
+-                <p class="match-row-meta">{{ row.intake.care_category_main.name|default:"Onbekende categorie" }} &middot; Urgentie: {{ row.intake.get_urgency_display }} &middot; Zorgvorm: {{ row.intake.get_preferred_care_form_display }}</p>
++        <div id="vergelijking" class="detail-block">
++            <h4 class="detail-title">Vergelijking</h4>
++            {% if focus_row.suggestions %}
++            <div class="ds-table-wrap">
++                <table class="ds-table">
++                    <thead>
++                        <tr>
++                            <th>Aanbieder</th>
++                            <th>Matchscore</th>
++                            <th>Capaciteit</th>
++                            <th>Wachttijd</th>
++                            <th>Waarom</th>
++                        </tr>
++                    </thead>
++                    <tbody>
++                        {% for suggestion in focus_row.suggestions %}
++                        <tr>
++                            <td>{{ suggestion.provider_name }}</td>
++                            <td><span class="ds-badge badge-blue">{{ suggestion.match_score }}%</span></td>
++                            <td>
++                                {% if suggestion.free_slots|default:0 > 3 %}
++                                Beschikbaar ({{ suggestion.free_slots }})
++                                {% elif suggestion.free_slots|default:0 > 0 %}
++                                Beperkt ({{ suggestion.free_slots }})
++                                {% else %}
++                                Vol
++                                {% endif %}
++                            </td>
++                            <td>{{ suggestion.avg_wait_days }} dagen</td>
++                            <td>{{ suggestion.reason }}</td>
++                        </tr>
++                        {% endfor %}
++                    </tbody>
++                </table>
+             </div>
+-            {% if row.assigned_provider %}
+-            <div class="match-assigned">
+-                <span class="ds-badge badge-low">Toegewezen: {{ row.assigned_provider.name }}</span>
+-                {% if row.placement_pk %}
+-                <div style="margin-top:8px;"><a href="{% url 'careon:placement_detail' row.placement_pk %}" class="btn btn-ghost" style="min-height:34px;">Bekijk plaatsing</a></div>
+-                {% endif %}
++            {% else %}
++            <div class="empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
++            {% endif %}
++        </div>
++
++        <div id="matchgeschiedenis" class="detail-block">
++            <h4 class="detail-title">Matchgeschiedenis</h4>
++            {% if focus_row.assigned_provider %}
++            <p class="text-sm text-gray-200">Toegewezen: {{ focus_row.assigned_provider.name }}</p>
++            {% if focus_row.placement_pk %}
++            <a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-ghost">Bekijk plaatsing</a>
++            {% endif %}
++            {% else %}
++            <p class="text-sm text-gray-400">Nog niet toegewezen</p>
++            {% endif %}
++        </div>
++
++        <div id="afgevallen" class="detail-block">
++            <h4 class="detail-title">Niet passend / afgevallen aanbieders</h4>
++            {% if focus_row.suggestions|slice:"3:" %}
++            <div class="detail-tags">
++                {% for suggestion in focus_row.suggestions|slice:"3:" %}
++                <span class="ds-badge badge-low">{{ suggestion.provider_name }} · {{ suggestion.match_score }}%</span>
++                {% endfor %}
+             </div>
+             {% else %}
+-            <span class="ds-badge badge-high">Nog niet toegewezen</span>
++            <p class="text-sm text-gray-400">Geen extra afgevallen aanbieders.</p>
+             {% endif %}
+         </div>
++    </section>
+ 
+-        {% if row.suggestions %}
+-        <div class="ds-table-wrap">
+-            <table class="ds-table">
+-                <thead>
+-                    <tr>
+-                        <th>Aanbieder</th>
+-                        <th>Matchscore</th>
+-                        <th>Toelichting</th>
+-                        <th>Capaciteit</th>
+-                        <th>Wachttijd</th>
+-                        <th style="text-align:right;">Actie</th>
+-                    </tr>
+-                </thead>
+-                <tbody>
+-                    {% for suggestion in row.suggestions %}
+-                    <tr>
+-                        <td>{{ suggestion.provider_name }}</td>
+-                        <td class="td-num"><span class="ds-badge badge-blue">{{ suggestion.match_score }}%</span></td>
+-                        <td>{{ suggestion.reason }}</td>
+-                        <td>
+-                            {% if suggestion.free_slots|default:0 > 3 %}
+-                            <span class="ds-badge badge-capacity-open">Beschikbaar ({{ suggestion.free_slots }})</span>
+-                            {% elif suggestion.free_slots|default:0 > 0 %}
+-                            <span class="ds-badge badge-capacity-limited">Beperkt ({{ suggestion.free_slots }})</span>
+-                            {% else %}
+-                            <span class="ds-badge badge-capacity-full">Vol</span>
+-                            {% endif %}
+-                        </td>
+-                        <td class="td-num">{{ suggestion.avg_wait_days }} d</td>
+-                        <td class="td-right">
+-                            {% if row.can_assign %}
+-                            <form method="post" class="inline">
+-                                {% csrf_token %}
+-                                <input type="hidden" name="action" value="assign">
+-                                <input type="hidden" name="assessment_id" value="{{ row.assessment.pk }}">
+-                                <input type="hidden" name="provider_id" value="{{ suggestion.provider_id }}">
+-                                <button type="submit" class="btn btn-primary" style="min-height:36px;">Wijs toe</button>
+-                            </form>
+-                            {% else %}
+-                            <span class="text-xs text-gray-400">Geen bewerkrechten</span>
+-                            {% endif %}
+-                        </td>
+-                    </tr>
+-                    {% endfor %}
+-                </tbody>
+-            </table>
++    {% if not selected_intake and rows|length > 1 %}
++    <section class="ds-card queue-card">
++        <h4 class="queue-title">Andere casussen gereed voor matching</h4>
++        <div class="queue-list">
++            {% for row in rows|slice:"1:6" %}
++            <a href="{% url 'careon:matching_dashboard' %}?intake={{ row.intake.pk }}" class="queue-item">
++                <span class="queue-item-title">{{ row.intake.title|truncatechars:38 }}</span>
++                <span class="queue-item-meta">{{ row.suggestions|length }} matches</span>
++            </a>
++            {% endfor %}
+         </div>
+-        {% else %}
+-        <div class="empty-state">Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.</div>
+-        {% endif %}
+-    </div>
+-    {% empty %}
++    </section>
++    {% endif %}
++    {% endwith %}
++    {% else %}
+     <div class="ds-card empty-state">
+         <svg class="empty-icon icon-lg" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+         Geen beoordelingen met status "Goedgekeurd voor matching".
+         <div style="margin-top:10px;"><a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordelingen</a></div>
+     </div>
+-    {% endfor %}
++    {% endif %}
+ </div>
+-
+-<style>
+-    .matching-kpi-grid {
+-        display: grid;
+-        grid-template-columns: repeat(3, minmax(0, 1fr));
+-        gap: var(--card-gap);
+-    }
+-    .matching-kpi-card { padding: 14px 16px; }
+-    .kpi-label {
+-        font-size: 11px;
+-        text-transform: uppercase;
+-        letter-spacing: 0.08em;
+-        color: var(--text-secondary);
+-        font-weight: 700;
+-    }
+-    .kpi-value {
+-        margin-top: 8px;
+-        font-size: 30px;
+-        line-height: 1;
+-        font-weight: 800;
+-        color: var(--text-primary);
+-    }
+-    .tone-good { color: #86efac; }
+-    .tone-warning { color: #fcd34d; }
+-    .selected-title {
+-        font-size: 14px;
+-        font-weight: 700;
+-        color: var(--text-primary);
+-    }
+-    .selected-meta {
+-        font-size: 12px;
+-        color: var(--text-secondary);
+-    }
+-    .matching-card { overflow: hidden; }
+-    .match-row-title {
+-        margin: 0 0 4px;
+-        font-size: 16px;
+-    }
+-    .match-row-meta {
+-        margin: 0;
+-        font-size: 12px;
+-        color: var(--text-secondary);
+-    }
+-    .match-assigned { text-align: right; }
+-    @media (max-width: 920px) {
+-        .matching-kpi-grid { grid-template-columns: 1fr; }
+-    }
+-</style>
+ {% endblock %}
+diff --git a/theme/templates/contracts/reports_dashboard.html b/theme/templates/contracts/reports_dashboard.html
+index c6e35e1..18a179a 100644
+--- a/theme/templates/contracts/reports_dashboard.html
++++ b/theme/templates/contracts/reports_dashboard.html
+@@ -3,43 +3,43 @@
+ {% block content %}
+ <div class="page-wrap page-stack">
+ 
+-    <div class="header-row">
++    <div class="page-header">
+         <div>
+             <h1 class="page-title title-strong">Rapportages & Regie</h1>
+             <p class="sub-quiet">Waar knelpunten zitten, waar druk oploopt en welke actie nu logisch is</p>
+         </div>
++        <div class="reports-page-actions">
++            <a href="?attention=capacity" class="btn btn-secondary">Capaciteitsdruk</a>
++            <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">Stuur op matching</a>
++        </div>
+     </div>
+ 
+-    <div class="panel" style="border-color: color-mix(in srgb, var(--danger) 30%, var(--card-border));">
++    <div class="panel panel-attention">
+         <div class="panel-head">
+             <div class="panel-head-inner">
+                 <div class="dot dot-red"></div>
+                 <span class="panel-title">Bestuurlijke samenvatting</span>
+             </div>
+-            <div class="flex gap-2 items-center">
+-                <a href="?attention=capacity" class="btn btn-secondary">Capaciteitsdruk</a>
+-                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">Stuur op matching</a>
+-            </div>
+         </div>
+         <div class="panel-inner">
+-            <div class="dash-grid dash-grid-4">
+-                <div class="kpi-card" style="padding:16px 18px;">
+-                    <div class="kpi-value" style="font-size:24px;">{{ attention_rows|length }}</div>
++            <div class="dash-grid reports-kpi-grid dash-grid-4">
++                <div class="kpi-card summary-kpi">
++                    <div class="kpi-value">{{ attention_rows|length }}</div>
+                     <div class="kpi-label">Actiepunten nu</div>
+                     <div class="kpi-sub kpi-sub-red">Direct bestuurlijk overzicht</div>
+                 </div>
+-                <div class="kpi-card" style="padding:16px 18px;">
+-                    <div class="kpi-value" style="font-size:24px;">{{ bottleneck_value }}</div>
++                <div class="kpi-card summary-kpi">
++                    <div class="kpi-value">{{ bottleneck_value }}</div>
+                     <div class="kpi-label">Grootste bottleneck</div>
+                     <div class="kpi-sub kpi-sub-amber">{{ bottleneck_label }}</div>
+                 </div>
+-                <div class="kpi-card" style="padding:16px 18px;">
+-                    <div class="kpi-value" style="font-size:24px;">{{ cases_without_match_count }}</div>
++                <div class="kpi-card summary-kpi">
++                    <div class="kpi-value">{{ cases_without_match_count }}</div>
+                     <div class="kpi-label">Vraag zonder match</div>
+                     <div class="kpi-sub kpi-sub-purple">Wachten op aanbiederkeuze</div>
+                 </div>
+-                <div class="kpi-card" style="padding:16px 18px;">
+-                    <div class="kpi-value" style="font-size:24px;">{{ avg_wait_days|floatformat:1 }}</div>
++                <div class="kpi-card summary-kpi">
++                    <div class="kpi-value">{{ avg_wait_days|floatformat:1 }}</div>
+                     <div class="kpi-label">Gem. wachttijd</div>
+                     <div class="kpi-sub kpi-sub-blue">Dagen tot plaatsing</div>
+                 </div>
+@@ -47,7 +47,7 @@
+         </div>
+     </div>
+ 
+-    <div class="panel" style="border-color: color-mix(in srgb, var(--danger) 28%, var(--card-border));">
++    <div class="panel panel-attention">
+         <div class="panel-head">
+             <div class="panel-head-inner">
+                 <div class="dot dot-red"></div>
+@@ -59,7 +59,7 @@
+                 </span>
+                 {% endif %}
+             </div>
+-            <a href="?" class="panel-link">
++            <a href="?" class="btn btn-ghost">
+                 Alle filters
+                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+             </a>
+@@ -71,12 +71,12 @@
+             <a href="{{ row.href }}" class="list-row" {% if forloop.first %}style="background: color-mix(in srgb, var(--danger) 9%, transparent);"{% endif %}>
+                 <div class="item-row">
+                     <div>
+-                        <span class="ds-badge badge-sm {% if row.kind == 'escalation' %}badge-critical{% else %}badge-high{% endif %}" style="margin-bottom:6px;display:inline-block;">{{ row.kind_label }}</span>
++                        <span class="ds-badge badge-sm {% if row.kind == 'escalation' %}badge-critical{% else %}badge-high{% endif %} badge-inline">{{ row.kind_label }}</span>
+                         <div class="item-title">{{ row.title|truncatechars:52 }}</div>
+                         <div class="item-meta">{{ row.meta|truncatechars:84 }}</div>
+                     </div>
+                 </div>
+-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm" style="opacity:0.5;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
++                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm ic-faded"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+             </a>
+             {% endif %}
+             {% endfor %}
+@@ -85,12 +85,12 @@
+             <a href="{{ row.href }}" class="list-row">
+                 <div class="item-row">
+                     <div>
+-                        <span class="ds-badge badge-sm badge-high" style="margin-bottom:6px;display:inline-block;">{{ row.kind_label }}</span>
++                        <span class="ds-badge badge-sm badge-high badge-inline">{{ row.kind_label }}</span>
+                         <div class="item-title">{{ row.title|truncatechars:52 }}</div>
+                         <div class="item-meta">{{ row.meta|truncatechars:84 }}</div>
+                     </div>
+                 </div>
+-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm" style="opacity:0.5;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
++                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm ic-faded"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+             </a>
+             {% endif %}
+             {% endfor %}
+@@ -99,12 +99,12 @@
+             <a href="{{ row.href }}" class="list-row">
+                 <div class="item-row">
+                     <div>
+-                        <span class="ds-badge badge-sm badge-medium" style="margin-bottom:6px;display:inline-block;">{{ row.kind_label }}</span>
++                        <span class="ds-badge badge-sm badge-medium badge-inline">{{ row.kind_label }}</span>
+                         <div class="item-title">{{ row.title|truncatechars:52 }}</div>
+                         <div class="item-meta">{{ row.meta|truncatechars:84 }}</div>
+                     </div>
+                 </div>
+-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm" style="opacity:0.5;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
++                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="ic-sm ic-faded"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+             </a>
+             {% endif %}
+             {% endfor %}
+@@ -118,7 +118,7 @@
+     </div>
+ 
+     <div class="dash-grid dash-grid-4">
+-        <a href="?attention=escalation" class="kpi-card kpi-card-link" style="padding:18px 20px;">
++        <a href="?attention=escalation" class="kpi-card kpi-card-link kpi-card-regular">
+             <div class="kpi-glow kpi-glow-amber"></div>
+             <div class="kpi-icon kpi-icon-amber">
+                 <svg class="ic-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+@@ -128,7 +128,7 @@
+             <div class="kpi-sub kpi-sub-amber">Hoog risico</div>
+         </a>
+ 
+-        <a href="?attention=capacity" class="kpi-card kpi-card-link" style="padding:18px 20px;">
++        <a href="?attention=capacity" class="kpi-card kpi-card-link kpi-card-regular">
+             <div class="kpi-glow kpi-glow-blue"></div>
+             <div class="kpi-icon kpi-icon-blue">
+                 <svg class="ic-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+@@ -138,22 +138,22 @@
+             <div class="kpi-sub kpi-sub-blue">Dagen</div>
+         </a>
+ 
+-        <a href="?attention=stagnation" class="kpi-card kpi-card-link" style="padding:16px 18px;">
++        <a href="?attention=stagnation" class="kpi-card kpi-card-link kpi-card-tight">
+             <div class="kpi-glow kpi-glow-amber"></div>
+             <div class="kpi-icon kpi-icon-amber">
+                 <svg class="ic-amber" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+             </div>
+-            <div class="kpi-value" style="font-size:24px;">{{ stagnation_count }}</div>
++            <div class="kpi-value">{{ stagnation_count }}</div>
+             <div class="kpi-label">Stagnatie ({{ stagnation_days }}+)</div>
+             <div class="kpi-sub kpi-sub-amber">Dagen zonder voortgang</div>
+         </a>
+ 
+-        <a href="?attention=unmatched" class="kpi-card kpi-card-link" style="padding:16px 18px;">
++        <a href="?attention=unmatched" class="kpi-card kpi-card-link kpi-card-tight">
+             <div class="kpi-glow kpi-glow-purple"></div>
+             <div class="kpi-icon kpi-icon-purple">
+                 <svg class="ic-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+             </div>
+-            <div class="kpi-value" style="font-size:24px;">{{ cases_without_match_count }}</div>
++            <div class="kpi-value">{{ cases_without_match_count }}</div>
+             <div class="kpi-label">Zonder match</div>
+             <div class="kpi-sub kpi-sub-purple">Open vraag</div>
+         </a>
+@@ -166,7 +166,7 @@
+                     <div class="dot dot-blue"></div>
+                     <span class="panel-title">Casusflow analyse</span>
+                 </div>
+-                <a href="{% url 'careon:case_list' %}" class="panel-link">
++                <a href="{% url 'careon:case_list' %}" class="btn btn-ghost">
+                     Open casussen
+                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                 </a>
+@@ -198,7 +198,7 @@
+                     <div class="dot dot-green"></div>
+                     <span class="panel-title">Capaciteit versus vraag</span>
+                 </div>
+-                <a href="{% url 'careon:waittime_list' %}" class="panel-link">
++                <a href="{% url 'careon:waittime_list' %}" class="btn btn-ghost">
+                     Bekijk alle
+                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                 </a>
+@@ -244,8 +244,8 @@
+                     <div class="item-title">{{ rec.title|truncatechars:66 }}</div>
+                     <div class="item-meta">{{ rec.detail|truncatechars:90 }}</div>
+                 </div>
+-                <div style="text-align:right;flex-shrink:0;">
+-                    <div class="c-link" style="font-size:12px;font-weight:600;">{{ rec.action }}</div>
++                <div class="recommendation-action">
++                    <span class="btn btn-ghost">{{ rec.action }}</span>
+                 </div>
+             </a>
+             {% endfor %}
