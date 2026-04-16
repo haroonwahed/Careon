@@ -3,24 +3,24 @@
 {% block content %}
 <div class="ds-detail-shell">
 
-<nav class="mb-4 ds-i-10k60uh">
-    <a class="ds-i-r3c69b" href="{% url 'dashboard' %}">Regiekamer</a>
+<nav class="mb-4">
+    <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
     <span class="mx-2 ds-muted-label">/</span>
-    <a class="ds-i-r3c69b" href="{% url 'careon:placement_list' %}">Plaatsingen</a>
+    <a class="" href="{% url 'careon:placement_list' %}">Plaatsingen</a>
     {% if is_edit %}
     <span class="mx-2 ds-muted-label">/</span>
-    <a class="ds-i-r3c69b" href="{% url 'careon:placement_detail' object.pk %}">
+    <a class="" href="{% url 'careon:placement_detail' object.pk %}">
         {% if object.intake %}{{ object.intake.title }}{% else %}Plaatsing #{{ object.pk }}{% endif %}
     </a>
     {% endif %}
     <span class="mx-2 ds-muted-label">/</span>
-    <span class="ds-i-19irvnf">{% if is_edit %}Wijzigen{% else %}Nieuw{% endif %}</span>
+    <span class="">{% if is_edit %}Wijzigen{% else %}Nieuw{% endif %}</span>
 </nav>
 
 <h1 class="page-title ds-section-title">{{ page_title }}</h1>
 
 {% if intake %}
-<div class="mb-4 px-4 py-3 rounded-lg text-sm ds-i-lilo15">
+<div class="mb-4 px-4 py-3 rounded-lg text-sm">
     Plaatsing voor casus: <strong>{{ intake.title }}</strong>
 </div>
 {% endif %}

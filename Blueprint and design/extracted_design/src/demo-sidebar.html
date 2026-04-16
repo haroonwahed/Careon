@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sidebar Vintsy - Demo Variantes</title>
+  <style>
+    /* Pour ouvrir cette démo dans le navigateur, remplacer App.tsx temporairement par:
+       
+       import { SidebarDemo } from "./components/SidebarDemo";
+       export default function App() { return <SidebarDemo />; }
+       
+       Puis accéder à l'application normalement.
+    */
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="module">
+    // Cette page est juste un helper - voir instructions ci-dessus
+    document.body.innerHTML = `
+      <div style="padding: 40px; font-family: system-ui; max-width: 800px; margin: 0 auto;">
+        <h1 style="font-size: 32px; margin-bottom: 20px;">🎨 Sidebar Vintsy - Demo</h1>
+        
+        <div style="background: #f5f5f5; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+          <h2 style="font-size: 20px; margin-bottom: 12px;">📋 Pour tester les variantes :</h2>
+          <ol style="line-height: 1.8;">
+            <li>Ouvrir <code style="background: #e0e0e0; padding: 2px 6px; border-radius: 4px;">/App.tsx</code></li>
+            <li>Remplacer temporairement le contenu par :
+              <pre style="background: #2d2d2d; color: #f0f0f0; padding: 16px; border-radius: 8px; margin-top: 8px; overflow-x: auto;"><code>import { SidebarDemo } from "./components/SidebarDemo";
+
+export default function App() {
+  return &lt;SidebarDemo /&gt;;
+}</code></pre>
+            </li>
+            <li>Sauvegarder et voir le résultat dans l'application</li>
+            <li>Utiliser les boutons en haut à droite pour basculer entre :
+              <ul style="margin-top: 8px;">
+                <li><strong>Compact Soft</strong> (recommandé, confortable)</li>
+                <li><strong>Compact Max</strong> (ultra-dense, maximise l'espace)</li>
+              </ul>
+            </li>
+          </ol>
+        </div>
+
+        <div style="background: #e8f5e9; border-radius: 12px; padding: 24px; margin-bottom: 20px;">
+          <h2 style="font-size: 20px; margin-bottom: 12px;">✅ Ce qui a été créé :</h2>
+          <ul style="line-height: 1.8;">
+            <li><code>/components/SidebarExtended.tsx</code> - Composant avec 2 variantes</li>
+            <li><code>/components/SidebarDemo.tsx</code> - Page de démo/comparaison</li>
+            <li><code>/styles/globals.css</code> - Scrollbar violette personnalisée</li>
+            <li><code>/SIDEBAR_VARIANTS.md</code> - Documentation complète</li>
+          </ul>
+        </div>
+
+        <div style="background: #fff3e0; border-radius: 12px; padding: 24px;">
+          <h2 style="font-size: 20px; margin-bottom: 12px;">📊 Différences clés :</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+            <thead>
+              <tr style="background: #ffe0b2;">
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Élément</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Compact Soft</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #ddd;">Compact Max</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">Hauteur items</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">36px</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>32px</strong></td>
+              </tr>
+              <tr style="background: #fafafa;">
+                <td style="padding: 8px; border: 1px solid #ddd;">Labels</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">13px</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>12px</strong></td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border: 1px solid #ddd;">Espacement sections</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">16px</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>12px</strong></td>
+              </tr>
+              <tr style="background: #fafafa;">
+                <td style="padding: 8px; border: 1px solid #ddd;">Hauteur totale</td>
+                <td style="padding: 8px; border: 1px solid #ddd;">~700px</td>
+                <td style="padding: 8px; border: 1px solid #ddd;"><strong>~600px</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; color: #666;">
+          <p>📖 Voir <code>SIDEBAR_VARIANTS.md</code> pour la documentation complète</p>
+        </div>
+      </div>
+    `;
+  </script>
+</body>
+</html>

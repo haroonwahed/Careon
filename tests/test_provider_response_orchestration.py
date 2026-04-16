@@ -124,6 +124,23 @@ class ProviderResponseOrchestrationTests(TestCase):
             ).exists()
         )
 
+    def test_resend_accepts_safe_monitor_next_redirect(self):
+        self._login_owner()
+        response = self.client.post(
+            reverse('careon:case_provider_response_action', kwargs={'pk': self.intake.pk}),
+            {
+                'action': 'resend_request',
+                'next': f"{reverse('careon:provider_response_monitor')}?q=Provider+Orchestration+Intake&sort=urgency",
+            },
+            follow=False,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response['Location'],
+            f"{reverse('careon:provider_response_monitor')}?q=Provider+Orchestration+Intake&sort=urgency",
+        )
+
     def test_resend_blocked_when_provider_response_accepted(self):
         self._login_owner()
         PlacementRequest.objects.filter(pk=self.placement.pk).update(
@@ -255,7 +272,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         response = self._post_action('rematch', follow=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit of wachtlijstreactie.')
+        self.assertContains(response, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
         self.placement.refresh_from_db()
         self.assertEqual(self.placement.status, before_status)
 
@@ -317,6 +334,142 @@ class ProviderResponseOrchestrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Providerreactie orchestration')
         self.assertContains(response, 'Afgewezen')
+
+    def test_case_detail_provider_response_block_renders_sla_badge_waiting_and_countdown(self):
+        self._login_owner()
+        requested_at = timezone.now() - timedelta(hours=50)
+        PlacementRequest.objects.filter(pk=self.placement.pk).update(
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            provider_response_requested_at=requested_at,
+            provider_response_deadline_at=requested_at + timedelta(days=3),
+        )
+
+        response = self.client.get(
+            f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'SLA AT_RISK')
+        self.assertContains(response, 'Waiting: 50 hours')
+        self.assertContains(response, 'Escalates in')
+        self.assertContains(response, 'Action required by')
+        self.assertContains(response, 'Recommended action')
+        self.assertContains(response, 'Escalation level')
+        self.assertContains(response, 'Regievoerder')
+
+    def test_forced_action_case_detail_shows_critical_banner_and_rematch_primary(self):
+        self._login_owner()
+        requested_at = timezone.now() - timedelta(hours=130)
+        PlacementRequest.objects.filter(pk=self.placement.pk).update(
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            provider_response_requested_at=requested_at,
+            provider_response_deadline_at=requested_at + timedelta(days=2),
+            status=PlacementRequest.Status.IN_REVIEW,
+        )
+
+        response = self.client.get(
+            f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Kritiek: SLA FORCED_ACTION bereikt')
+        actions = response.context['provider_response_actions']
+        self.assertGreaterEqual(len(actions), 2)
+        self.assertEqual(actions[0]['action'], 'trigger_rematch')
+        self.assertEqual(actions[0]['visual_tone'], 'primary')
+        self.assertEqual(actions[1]['action'], 'provide_missing_info')
+        self.assertTrue(any(action['action'] == 'continue_waiting' for action in actions))
+
+    def test_rematch_allowed_when_forced_action_even_if_status_pending(self):
+        self._login_owner()
+        requested_at = timezone.now() - timedelta(hours=130)
+        PlacementRequest.objects.filter(pk=self.placement.pk).update(
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            provider_response_requested_at=requested_at,
+            provider_response_deadline_at=requested_at + timedelta(days=2),
+            status=PlacementRequest.Status.IN_REVIEW,
+        )
+
+        response = self._post_action('rematch', follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Her-match geactiveerd. Casus staat weer in matchingfase.')
+        self.placement.refresh_from_db()
+        self.intake.refresh_from_db()
+        self.assertEqual(self.placement.status, PlacementRequest.Status.REJECTED)
+        self.assertEqual(self.intake.status, CaseIntakeProcess.ProcessStatus.MATCHING)
+
+    def test_continue_waiting_requires_explicit_confirmation_and_is_audited(self):
+        self._login_owner()
+        requested_at = timezone.now() - timedelta(hours=130)
+        PlacementRequest.objects.filter(pk=self.placement.pk).update(
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            provider_response_requested_at=requested_at,
+            provider_response_deadline_at=requested_at + timedelta(days=2),
+            status=PlacementRequest.Status.IN_REVIEW,
+        )
+
+        no_confirm_response = self.client.post(
+            reverse('careon:case_provider_response_action', kwargs={'pk': self.intake.pk}),
+            {
+                'action': 'continue_waiting',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+        self.assertEqual(no_confirm_response.status_code, 200)
+        self.assertContains(no_confirm_response, 'Bevestig expliciet dat je blijft wachten ondanks SLA FORCED_ACTION.')
+        self.assertFalse(
+            AuditLog.objects.filter(
+                model_name='PlacementRequest',
+                action=AuditLog.Action.UPDATE,
+                changes__provider_response_action='continue_waiting_forced_action',
+            ).exists()
+        )
+
+        confirmed_response = self.client.post(
+            reverse('careon:case_provider_response_action', kwargs={'pk': self.intake.pk}),
+            {
+                'action': 'continue_waiting',
+                'confirm_forced_wait': '1',
+                'forced_wait_reason': 'Aanbieder bevestigde telefonisch terugkoppeling vandaag.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+        self.assertEqual(confirmed_response.status_code, 200)
+        self.assertContains(confirmed_response, 'Je hebt expliciet gekozen om te blijven wachten ondanks SLA FORCED_ACTION. Deze keuze is gelogd.')
+        self.assertTrue(
+            AuditLog.objects.filter(
+                model_name='PlacementRequest',
+                action=AuditLog.Action.UPDATE,
+                changes__provider_response_action='continue_waiting_forced_action',
+                changes__sla_state='FORCED_ACTION',
+            ).exists()
+        )
+
+    def test_continue_waiting_not_available_without_forced_action(self):
+        self._login_owner()
+        PlacementRequest.objects.filter(pk=self.placement.pk).update(
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            provider_response_requested_at=timezone.now() - timedelta(hours=10),
+            provider_response_deadline_at=timezone.now() + timedelta(days=2),
+        )
+
+        response = self.client.post(
+            reverse('careon:case_provider_response_action', kwargs={'pk': self.intake.pk}),
+            {
+                'action': 'continue_waiting',
+                'confirm_forced_wait': '1',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Doorgaan met wachten is alleen beschikbaar bij open providerreacties met SLA FORCED_ACTION.')
 
     def test_endpoint_actions_work_when_legacy_alias_is_stored(self):
         self._login_owner()

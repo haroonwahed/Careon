@@ -1,40 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="nl" data-theme="light">
 {% load static %}
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Careon{% endblock %}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="{% static 'css/zorgregie-design-system.css' %}" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-                }
-            }
-        }
-    </script>
     <script>
         (function() {
-            var t = localStorage.getItem('careon-theme') || 'dark';
-            if (['light', 'dark', 'careon-premium'].indexOf(t) === -1) {
-                t = 'dark';
-            }
-            document.documentElement.setAttribute('data-theme', t);
+            var stored = localStorage.getItem('careon-theme') || 'light';
+            var theme = stored === 'dark' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', theme);
         })();
     </script>
-    <script defer src="{% static 'js/theme-switcher.js' %}"></script>
-    
 </head>
-<body class="ds-i-1eylhh7 ds-page-shell ds-detail-shell ds-list-shell ds-analytics-shell ds-detail-sections ds-list-container">
+<body class="auth-page-body">
     {% block body %}
-    <div class="flex items-center justify-center min-h-screen p-4 ds-detail-sections ds-page-shell ds-detail-shell ds-list-shell ds-analytics-section ds-analytics-section-inner ds-detail-grid-2 ds-list-container ds-muted-panel ds-detail-card-inner ds-hero-card ds-action-rail ds-flow-stages ds-summary-strip ds-status-bar ds-signal-list ds-contact-list">
-        <div class="w-full max-w-md ds-detail-card ds-card ds-sidebar-card ds-detail-card-head ds-detail-card-inner ds-detail-head ds-page-header ds-list-header ds-analytics-section-head ds-detail-metric-item ds-signal-item ds-mini-list">
+    <div class="auth-frame">
+        <div class="auth-card-shell">
             {% block content %}{% endblock %}
         </div>
     </div>

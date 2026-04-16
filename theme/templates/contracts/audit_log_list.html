@@ -49,14 +49,14 @@
             <tbody>
                 {% for log in logs %}
                 <tr>
-                    <td class="ds-i-6oi7h7">{{ log.timestamp|date:"d M Y H:i" }}</td>
+                    <td class="">{{ log.timestamp|date:"d M Y H:i" }}</td>
                     <td>{{ log.user.get_full_name|default:log.user.username }}</td>
                     <td>
                         <span class="badge-sm {% if log.action == 'CREATE' %}badge-green{% elif log.action == 'UPDATE' %}badge-blue{% elif log.action == 'DELETE' %}badge-red{% else %}badge-gray{% endif %}">{{ log.get_action_display }}</span>
                     </td>
                     <td>{{ log.model_name }}</td>
                     <td>{{ log.object_repr|truncatechars:50 }}</td>
-                    <td class="ds-i-a7g9rm">{{ log.ip_address|default:"—" }}</td>
+                    <td class="">{{ log.ip_address|default:"—" }}</td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="6" class="ds-list-empty"><span class="ds-list-empty-title">Geen activiteiten gevonden.</span></td></tr>
@@ -69,7 +69,7 @@
 {% if is_paginated %}
 <div class="ds-list-pagination"><div class="ds-list-pagination-buttons">
     {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn btn btn-ghost">Vorige</a>{% endif %}
-    <span class="ds-i-1p8k879">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+    <span class="">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
     {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn btn btn-ghost">Volgende</a>{% endif %}
 </div>
 {% endif %}

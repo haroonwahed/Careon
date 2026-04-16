@@ -9,19 +9,19 @@
             </div>
     </div>
 
-    <nav class="text-sm mb-2 ds-i-1vkpsqq">
-        <a class="ds-i-r3c69b" href="{% url 'dashboard' %}">Regiekamer</a>
+    <nav class="text-sm mb-2">
+        <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
         <span class="mx-2">/</span>
         {% if form.instance.pk and form.instance.intake %}
-        <a class="ds-i-r3c69b" href="{% url 'careon:case_detail' form.instance.intake.pk %}">{{ form.instance.intake.title }}</a>
+        <a class="" href="{% url 'careon:case_detail' form.instance.intake.pk %}">{{ form.instance.intake.title }}</a>
         <span class="mx-2">/</span>
-        <a class="ds-i-r3c69b" href="{% url 'careon:assessment_detail' form.instance.pk %}">Beoordeling</a>
+        <a class="" href="{% url 'careon:assessment_detail' form.instance.pk %}">Beoordeling</a>
         <span class="mx-2">/</span>
         {% else %}
-        <a class="ds-i-r3c69b" href="{% url 'careon:assessment_list' %}">Beoordelingen</a>
+        <a class="" href="{% url 'careon:assessment_list' %}">Beoordelingen</a>
         <span class="mx-2">/</span>
         {% endif %}
-        <span class="ds-i-19irvnf">{% if form.instance.pk %}Wijzigen{% else %}Nieuw{% endif %}</span>
+        <span class="">{% if form.instance.pk %}Wijzigen{% else %}Nieuw{% endif %}</span>
     </nav>
 
     <form method="POST" class="page-stack">
@@ -29,9 +29,9 @@
 
         {% if form.non_field_errors %}
         <div class="error-state">
-            <p class="ds-i-8ca6iq">Controleer de invoer:</p>
+            <p class="">Controleer de invoer:</p>
             {% for error in form.non_field_errors %}
-            <p class="ds-i-r34wp0">{{ error }}</p>
+            <p class="">{{ error }}</p>
             {% endfor %}
         </div>
         {% endif %}
@@ -43,16 +43,16 @@
                     <div class="form-section-title">Casus &amp; status</div>
                     </div>
             </div>
-            <div class="ds-i-3a51mi">
+            <div class="">
                 <div>
                     <label for="{{ form.due_diligence_process.id_for_label }}" class="field-label">Casus {% if form.due_diligence_process.field.required %}*{% endif %}</label>
                     {{ form.due_diligence_process }}
-                    {% if form.due_diligence_process.errors %}<div class="ds-i-1ynt37i">{{ form.due_diligence_process.errors.0 }}</div>{% endif %}
+                    {% if form.due_diligence_process.errors %}<div class="">{{ form.due_diligence_process.errors.0 }}</div>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.assessment_status.id_for_label }}" class="field-label">{{ form.assessment_status.label }} {% if form.assessment_status.field.required %}*{% endif %}</label>
                     {{ form.assessment_status }}
-                    {% if form.assessment_status.errors %}<div class="ds-i-1ynt37i">{{ form.assessment_status.errors.0 }}</div>{% endif %}
+                    {% if form.assessment_status.errors %}<div class="">{{ form.assessment_status.errors.0 }}</div>{% endif %}
                 </div>
             </div>
         </section>
@@ -67,16 +67,16 @@
             <div>
                 <p class="field-label">{{ form.risk_signals.label }}</p>
                 <div class="space-y-2 text-sm mt-2">{{ form.risk_signals }}</div>
-                {% if form.risk_signals.errors %}<div class="ds-i-1ynt37i">{{ form.risk_signals.errors.0 }}</div>{% endif %}
+                {% if form.risk_signals.errors %}<div class="">{{ form.risk_signals.errors.0 }}</div>{% endif %}
             </div>
-            <div class="ds-i-judbrp">
+            <div class="">
                 {{ form.matching_ready }}
-                <label for="{{ form.matching_ready.id_for_label }}" class="field-label ds-i-st9uus">{{ form.matching_ready.label }}</label>
+                <label for="{{ form.matching_ready.id_for_label }}" class="field-label">{{ form.matching_ready.label }}</label>
             </div>
             <div>
                 <label for="{{ form.reason_not_ready.id_for_label }}" class="field-label">{{ form.reason_not_ready.label }}</label>
                 {{ form.reason_not_ready }}
-                {% if form.reason_not_ready.errors %}<div class="ds-i-1ynt37i">{{ form.reason_not_ready.errors.0 }}</div>{% endif %}
+                {% if form.reason_not_ready.errors %}<div class="">{{ form.reason_not_ready.errors.0 }}</div>{% endif %}
             </div>
         </section>
 
@@ -90,11 +90,11 @@
             <div>
                 <label for="{{ form.notes.id_for_label }}" class="field-label">{{ form.notes.label }}</label>
                 {{ form.notes }}
-                {% if form.notes.errors %}<div class="ds-i-1ynt37i">{{ form.notes.errors.0 }}</div>{% endif %}
+                {% if form.notes.errors %}<div class="">{{ form.notes.errors.0 }}</div>{% endif %}
             </div>
         </section>
 
-        <div class="ds-card action-card ds-i-13w0mgh">
+        <div class="ds-card action-card">
             <a href="{% url 'careon:assessment_list' %}" class="btn btn-secondary">Annuleren</a>
             <button type="submit" class="btn btn-primary">
                 {% if form.instance.pk %}Wijzigingen opslaan{% else %}Beoordeling aanmaken{% endif %}

@@ -66,13 +66,13 @@
                             </span>
                         </td>
                         <td>{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</td>
-                        <td class="td-right"><a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-ghost ds-i-okgsyj">Wijzigen</a></td>
+                        <td class="td-right"><a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-ghost">Wijzigen</a></td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="7" class="td-empty">
                             U hebt nog geen gemeenten ingesteld.
-                            <div class="ds-i-1tei6ul"><a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Voeg eerste gemeente toe</a></div>
+                            <div class=""><a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Voeg eerste gemeente toe</a></div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -86,12 +86,12 @@
         <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
         <div class="feed-actions">
             {% if page_obj.has_previous %}
-            <a href="?page=1" class="btn btn-secondary ds-i-alf985">Eerste</a>
-            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary ds-i-alf985">Vorige</a>
+            <a href="?page=1" class="btn btn-secondary">Eerste</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Vorige</a>
             {% endif %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary ds-i-alf985">Volgende</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary ds-i-alf985">Laatste</a>
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Volgende</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary">Laatste</a>
             {% endif %}
         </div>
     </div>

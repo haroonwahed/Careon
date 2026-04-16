@@ -72,7 +72,7 @@ urlpatterns = [
     path('organizations/activity/export/', views.organization_activity_export, name='organization_activity_export'),
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
-    path('regiekamer/provider-responses/', views.provider_response_monitor, name='provider_response_monitor'),
+    # path('regiekamer/provider-responses/', views.provider_response_monitor, name='provider_response_monitor'),  # TODO: implement provider_response_monitor view
     path('search/', views.global_search, name='global_search'),
 
     path('wachttijden/', views.WaitTimeListView.as_view(), name='waittime_list'),
@@ -112,8 +112,8 @@ urlpatterns = [
     path('casussen/<int:pk>/edit/', views.CaseIntakeUpdateView.as_view(), name='case_update'),
     path('casussen/<int:pk>/matching/action/', views.case_matching_action, name='case_matching_action'),
     path('casussen/<int:pk>/placement/action/', views.case_placement_action, name='case_placement_action'),
-    path('casussen/<int:pk>/provider-response/action/', views.case_provider_response_action, name='case_provider_response_action'),
-    path('casussen/<int:pk>/outcomes/action/', views.case_outcome_action, name='case_outcome_action'),
+    # path('casussen/<int:pk>/provider-response/action/', views.case_provider_response_action, name='case_provider_response_action'),  # TODO: implement provider_response_action view
+    # path('casussen/<int:pk>/outcomes/action/', views.case_outcome_action, name='case_outcome_action'),  # TODO: implement outcome_action view
     path('casussen/<int:pk>/documenten/new/', views.CaseScopedDocumentCreateView.as_view(), name='case_document_create'),
     path('casussen/<int:pk>/taken/new/', views.CaseScopedDeadlineCreateView.as_view(), name='case_task_create'),
     path('casussen/<int:pk>/signalen/new/', views.CaseScopedCareSignalCreateView.as_view(), name='case_signal_create'),

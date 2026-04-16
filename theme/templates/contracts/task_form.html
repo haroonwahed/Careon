@@ -14,7 +14,7 @@
     <form method="post" class="ds-detail-card ds-detail-card-inner">
         {% csrf_token %}
         <div class="ds-detail-grid-2 form-grid-2">
-            <div class="ds-i-ozql2z">
+            <div class="">
                 <label for="{{ form.title.id_for_label }}" class="ds-detail-label field-label">Titel</label>
                 {{ form.title }}
             </div>
@@ -26,7 +26,7 @@
                 <label for="{{ form.priority.id_for_label }}" class="ds-detail-label field-label">Prioriteit</label>
                 {{ form.priority }}
             </div>
-            <div class="ds-i-ozql2z">
+            <div class="">
                 <label for="{{ form.subject.id_for_label }}" class="ds-detail-label field-label">Onderwerp / Omschrijving</label>
                 {{ form.subject }}
             </div>
@@ -42,9 +42,9 @@
                 <label for="{{ form.status.id_for_label }}" class="ds-detail-label field-label">Taakstatus</label>
                 {{ form.status }}
             </div>
-            <div class="ds-i-atapg0">
+            <div class="">
                 {{ form.is_recurring }}
-                <label for="{{ form.is_recurring.id_for_label }}" class="field-label ds-i-19gmeoo">Is dit een terugkerende taak?</label>
+                <label for="{{ form.is_recurring.id_for_label }}" class="field-label">Is dit een terugkerende taak?</label>
             </div>
         </div>
         <div class="ds-list-actions">

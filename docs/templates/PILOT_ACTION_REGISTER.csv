@@ -1,0 +1,5 @@
+week,action_id,finding_type,pattern_summary,action,owner_role,owner_name,due_date,status,success_signal,notes
+2026-W16,ACT-001,high_overrides,,Audit top override cases for rationale quality and missing data,Care Coordinator,,,open,,
+2026-W16,ACT-002,both_suboptimal,,Review intake-assessment handoff quality for repeated weak matches,Team Lead,,,open,,
+2026-W16,ACT-003,sla_issues,,Tighten ownership handoff for escalated and forced-action cases,Regiekamer Lead,,,open,,
+2026-W16,ACT-004,provider_issues,,Run provider friction review for no-capacity and slow-response clusters,Matching Operator,,,open,,

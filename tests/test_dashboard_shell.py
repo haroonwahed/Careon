@@ -25,13 +25,14 @@ class DashboardShellTestCase(TestCase):
         self.client.login(username='testuser', password='testpass123')
         os.environ['FEATURE_REDESIGN'] = 'true'
 
-    def test_dashboard_alert_strip(self):
+    def test_dashboard_primary_focus(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Cases without match')
-        self.assertContains(response, 'Cases waiting too long')
-        self.assertContains(response, 'Missing beoordeling')
-        self.assertContains(response, 'Urgent cases')
+        self.assertContains(response, 'Deze casus is geblokkeerd')
+        self.assertContains(response, 'Start beoordeling')
+        self.assertContains(response, 'Andere actieve casussen')
+        self.assertContains(response, 'Beoordeling ontbreekt')
+        self.assertContains(response, 'Wachttijd: 2 dagen')
 
     def test_dashboard_container_constraint(self):
         response = self.client.get(reverse('dashboard'))
@@ -41,7 +42,9 @@ class DashboardShellTestCase(TestCase):
     def test_dashboard_top_bar(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'title="Search"')
+        self.assertContains(response, 'id="global-search-input"')
+        self.assertContains(response, 'Zoek casus, client, document of actie')
+        self.assertNotContains(response, 'header-org-chip')
         self.assertContains(response, 'title="Thema wisselen"')
         self.assertContains(response, 'title="Meldingen"')
         self.assertContains(response, 'Nieuwe casus')
@@ -50,10 +53,19 @@ class DashboardShellTestCase(TestCase):
     def test_dashboard_panels(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Priority Case Queue')
-        self.assertContains(response, 'Active Case Panel')
-        self.assertContains(response, 'Bottlenecks')
-        self.assertContains(response, 'Capacity Signals')
+        self.assertContains(response, 'Welkom terug')
+        self.assertContains(response, 'Operationele signalen')
+        self.assertContains(response, 'Casussen zonder match')
+        self.assertContains(response, 'Wachttijd overschreden')
+        self.assertContains(response, 'Beoordeling ontbreekt')
+        self.assertContains(response, 'Urgente casussen')
+        self.assertContains(response, 'Blokkerende casus')
+        self.assertContains(response, 'Andere actieve casussen')
+        self.assertContains(response, 'Actieve casus')
+        self.assertContains(response, 'Kerngegevens')
+        self.assertContains(response, 'Tijdlijn')
+        self.assertContains(response, 'Knelpunten')
+        self.assertContains(response, 'Capaciteitssignalen')
         self.assertContains(response, 'Laatst bijgewerkt')
 
     def test_case_list_alias_uses_configuration_shell(self):
@@ -79,7 +91,7 @@ class DashboardShellTestCase(TestCase):
     def test_accessibility_features(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'title="Search"')
+        self.assertContains(response, 'aria-label="Globaal zoeken"')
         self.assertContains(response, 'title="Thema wisselen"')
         self.assertContains(response, 'type="submit"')
 
@@ -87,7 +99,13 @@ class DashboardShellTestCase(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'command-grid')
-        self.assertContains(response, 'command-alert-strip')
+        self.assertContains(response, 'decision-alert-strip')
+        self.assertContains(response, 'decision-alert-card')
+        self.assertContains(response, 'decision-focus-panel')
+        self.assertContains(response, 'decision-rail-column')
+        self.assertContains(response, 'decision-rail-card')
+        self.assertContains(response, 'ds-insight-section')
+        self.assertContains(response, 'ds-insight-head')
         self.assertContains(response, 'queue-row')
 
     def tearDown(self):

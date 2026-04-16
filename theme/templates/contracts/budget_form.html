@@ -7,7 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="ds-detail-shell ds-i-1gamyep">
+<div class="ds-detail-shell">
     <div class="ds-detail-header">
         <div>
             <h1 class="page-title ds-section-title">{% if object %}Budget bewerken{% else %}Nieuw budget aanmaken{% endif %}</h1>
@@ -21,61 +21,61 @@
                 <div>
                     <label for="{{ form.scope_type.id_for_label }}" class="ds-detail-label field-label">{{ form.scope_type.label }}</label>
                     {{ form.scope_type }}
-                    {% if form.scope_type.errors %}<p class="ds-i-1ynt37i">{{ form.scope_type.errors.0 }}</p>{% endif %}
+                    {% if form.scope_type.errors %}<p class="">{{ form.scope_type.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
                     <label for="{{ form.scope_name.id_for_label }}" class="ds-detail-label field-label">{{ form.scope_name.label }}</label>
                     {{ form.scope_name }}
-                    {% if form.scope_name.errors %}<p class="ds-i-1ynt37i">{{ form.scope_name.errors.0 }}</p>{% endif %}
+                    {% if form.scope_name.errors %}<p class="">{{ form.scope_name.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
                     <label for="{{ form.target_group.id_for_label }}" class="ds-detail-label field-label">{{ form.target_group.label }}</label>
                     {{ form.target_group }}
-                    {% if form.target_group.errors %}<p class="ds-i-1ynt37i">{{ form.target_group.errors.0 }}</p>{% endif %}
+                    {% if form.target_group.errors %}<p class="">{{ form.target_group.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
                     <label for="{{ form.care_type.id_for_label }}" class="ds-detail-label field-label">{{ form.care_type.label }}</label>
                     {{ form.care_type }}
-                    {% if form.care_type.errors %}<p class="ds-i-1ynt37i">{{ form.care_type.errors.0 }}</p>{% endif %}
+                    {% if form.care_type.errors %}<p class="">{{ form.care_type.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
                     <label for="{{ form.year.id_for_label }}" class="ds-detail-label field-label">{{ form.year.label }}</label>
                     {{ form.year }}
-                    {% if form.year.errors %}<p class="ds-i-1ynt37i">{{ form.year.errors.0 }}</p>{% endif %}
+                    {% if form.year.errors %}<p class="">{{ form.year.errors.0 }}</p>{% endif %}
                 </div>
 
                 <div>
                     <label for="{{ form.allocated_amount.id_for_label }}" class="ds-detail-label field-label">{{ form.allocated_amount.label }}</label>
                     {{ form.allocated_amount }}
-                    {% if form.allocated_amount.errors %}<p class="ds-i-1ynt37i">{{ form.allocated_amount.errors.0 }}</p>{% endif %}
+                    {% if form.allocated_amount.errors %}<p class="">{{ form.allocated_amount.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div class="ds-i-1uxxfx9">
+                <div class="">
                     <label for="{{ form.linked_providers.id_for_label }}" class="ds-detail-label field-label">{{ form.linked_providers.label }}</label>
                     {{ form.linked_providers }}
-                    {% if form.linked_providers.errors %}<p class="ds-i-1ynt37i">{{ form.linked_providers.errors.0 }}</p>{% endif %}
+                    {% if form.linked_providers.errors %}<p class="">{{ form.linked_providers.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div class="ds-i-1uxxfx9">
+                <div class="">
                     <label for="{{ form.linked_cases.id_for_label }}" class="ds-detail-label field-label">{{ form.linked_cases.label }}</label>
                     {{ form.linked_cases }}
-                    {% if form.linked_cases.errors %}<p class="ds-i-1ynt37i">{{ form.linked_cases.errors.0 }}</p>{% endif %}
+                    {% if form.linked_cases.errors %}<p class="">{{ form.linked_cases.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div class="ds-i-1uxxfx9">
+                <div class="">
                     <label for="{{ form.linked_placements.id_for_label }}" class="ds-detail-label field-label">{{ form.linked_placements.label }}</label>
                     {{ form.linked_placements }}
-                    {% if form.linked_placements.errors %}<p class="ds-i-1ynt37i">{{ form.linked_placements.errors.0 }}</p>{% endif %}
+                    {% if form.linked_placements.errors %}<p class="">{{ form.linked_placements.errors.0 }}</p>{% endif %}
                 </div>
 
-                <div class="ds-i-1uxxfx9">
+                <div class="">
                     <label for="{{ form.description.id_for_label }}" class="ds-detail-label field-label">{{ form.description.label }}</label>
                     {{ form.description }}
-                    {% if form.description.errors %}<p class="ds-i-1ynt37i">{{ form.description.errors.0 }}</p>{% endif %}
+                    {% if form.description.errors %}<p class="">{{ form.description.errors.0 }}</p>{% endif %}
                 </div>
             </div>
 

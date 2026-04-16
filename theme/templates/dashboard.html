@@ -1,199 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Zorgregie - Regiekamer{% endblock %}
+{% block title %}Dashboard - Careon{% endblock %}
 {% block content %}
-<div class="page-wrap page-wrap-command" data-layout="max-width: 1440px">
-    <span class="visually-hidden">Urgente casussen</span>
-    <!-- @media (max-width: 1024px) -->
-    <header class="ds-list-header">
-        <div>
-            <h1 class="page-title">Regiekamer</h1>
-            <p class="page-subtitle">Command center voor zorgtoewijzing en doorstroom</p>
-        </div>
-        <div class="ds-list-actions">
-            <a href="{% url 'careon:provider_response_monitor' %}" class="btn btn-secondary">Provider Response Monitor</a>
-            <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Open volledige queue</a>
-            <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
+<div class="page-wrap analytics-dashboard">
+    <header class="analytics-dashboard-head">
+        <div class="analytics-dashboard-copy">
+            <h1 class="analytics-dashboard-title">Dashboard</h1>
+            <p class="analytics-dashboard-subtitle">Multi-account overview: revenue, sales, margin</p>
         </div>
     </header>
 
-    <section class="command-alert-strip">
-        {% for alert in alert_strip %}
-        <a href="{{ alert.href }}" class="command-alert-link">
-            <div class="command-alert-meta">
-                <span>{{ alert.icon }}</span>
-                <span class="command-alert-label">{{ alert.label }}</span>
-            </div>
-            <span class="command-alert-count">{{ alert.count }}</span>
-        </a>
-        {% endfor %}
-    </section>
+    <div class="analytics-divider"></div>
 
-    <div class="command-grid">
-        <section class="ds-card" data-row-template-class="queue-row">
-            <div class="ds-detail-header">
-                <h2 class="ds-card-title">Priority Case Queue</h2>
-                <span class="ds-note-text">{{ total_active_cases }} actief</span>
-            </div>
-
-            {% if priority_queue %}
-            <div class="queue-list">
-                {% for row in priority_queue %}
-                <article class="queue-row{% if selected_case_id == row.id %} is-selected{% endif %}">
-                    <div class="queue-head">
-                        <a href="?case={{ row.id }}" class="queue-title">{{ row.title }}</a>
-                        <a href="{{ row.case_href }}" class="btn btn-ghost">Open case</a>
-                    </div>
-
-                    <div class="queue-meta">
-                        <span class="ds-badge badge-blue">{{ row.phase }}</span>
-                        <span class="ds-badge {% if row.urgency_code == 'CRISIS' %}badge-critical{% elif row.urgency_code == 'HIGH' %}badge-high{% elif row.urgency_code == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">{{ row.urgency }}</span>
-                        <span class="ds-badge badge-low">{{ row.waiting_label }}</span>
-                        {% if row.blocker_key %}
-                        <span class="ds-badge badge-critical">{{ row.blocker }}</span>
-                        {% else %}
-                        <span class="ds-badge badge-low">Geen blokkade</span>
-                        {% endif %}
-                    </div>
-
-                    <div class="queue-next">
-                        <div>
-                            <div class="queue-next-label">Next best action</div>
-                            <strong>{{ row.next_action.label }}</strong>
-                        </div>
-                        <a href="{{ row.next_action.href }}" class="btn btn-primary">{{ row.next_action.label }}</a>
-                    </div>
-
-                    <div class="ds-list-actions">
-                        <a href="{{ row.quick_assign_href }}" class="btn btn-secondary">Assign</a>
-                        <a href="{{ row.quick_escalate_href }}" class="btn btn-secondary">Escalate</a>
-                        <a href="{{ row.quick_review_href }}" class="btn btn-secondary">Review</a>
-                    </div>
-                </article>
-                {% endfor %}
-            </div>
-            {% else %}
-            <div class="ds-empty-state">Geen actieve cases in de queue.</div>
-            {% endif %}
-        </section>
-
-        <section class="ds-card">
-            <div class="ds-detail-header">
-                <h2 class="ds-card-title">Active Case Panel</h2>
-                <span class="ds-note-text">Laatst bijgewerkt: {{ dashboard_updated_at|date:"d-m-Y H:i" }}</span>
-            </div>
-
-            {% if active_case %}
-            <div class="ds-summary-strip">
-                <div class="ds-summary-item">
-                    <span class="ds-summary-label">Fase</span>
-                    <strong>{{ active_case.phase }}</strong>
-                </div>
-                <div class="ds-summary-item ds-summary-item--risk">
-                    <span class="ds-summary-label">Urgentie</span>
-                    <strong>{{ active_case.urgency }}</strong>
-                </div>
-                <div class="ds-summary-item">
-                    <span class="ds-summary-label">Wachttijd</span>
-                    <strong>{{ active_case.waiting_label }}</strong>
-                </div>
-                <div class="ds-summary-item">
-                    <span class="ds-summary-label">Blokkade</span>
-                    <strong>{{ active_case.blocker }}</strong>
-                </div>
-            </div>
-
-            <div class="ds-detail-grid-2 command-detail-grid">
-                <div class="ds-card">
-                    <h3 class="ds-card-title">Key details</h3>
-                    <dl class="ds-field-list">
-                        <div class="ds-field-item">
-                            <dt>Casus</dt>
-                            <dd>{{ active_case.title }}</dd>
-                        </div>
-                        <div class="ds-field-item">
-                            <dt>Regievoerder</dt>
-                            <dd>{{ active_case.coordinator }}</dd>
-                        </div>
-                        <div class="ds-field-item">
-                            <dt>Regio</dt>
-                            <dd>{{ active_case.region }}</dd>
-                        </div>
-                        <div class="ds-field-item">
-                            <dt>Beoordeling</dt>
-                            <dd>{{ active_case.assessment_status }}</dd>
-                        </div>
-                        <div class="ds-field-item">
-                            <dt>Plaatsing</dt>
-                            <dd>{{ active_case.placement_status }}</dd>
-                        </div>
-                    </dl>
-                </div>
-
-                <div class="ds-card">
-                    <h3 class="ds-card-title">Timeline preview</h3>
-                    <div class="timeline-list">
-                        {% for item in active_case.timeline %}
-                        <div class="timeline-item">
-                            <span>{{ item.label }}</span>
-                            <strong>{{ item.value|date:"d-m-Y" }}</strong>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-            </div>
-
-            <div class="ds-card command-match-card">
-                <h3 class="ds-card-title">Match status</h3>
-                <p class="ds-note-text--strong">{{ active_case.match_status }}</p>
-                <div class="ds-list-actions command-match-actions">
-                    <a href="{{ active_case.next_action.href }}" class="btn btn-primary">{{ active_case.next_action.label }}</a>
-                    <a href="{{ active_case.case_href }}" class="btn btn-secondary">Open case detail</a>
-                </div>
-            </div>
-            {% else %}
-            <div class="ds-empty-state">Selecteer een case in de queue om besliscontext te tonen.</div>
-            {% endif %}
-        </section>
-
-        <aside class="ds-detail-sections">
-            <section class="ds-card">
-                <div class="ds-detail-header">
-                    <h2 class="ds-card-title">Bottlenecks</h2>
-                    <span class="ds-note-text">Top 3</span>
-                </div>
-                {% if bottleneck_signals %}
-                <div class="signal-list">
-                    {% for signal in bottleneck_signals %}
-                    <a href="{{ signal.href }}" class="signal-item">
-                        <div class="signal-title">{{ signal.label }}</div>
-                        <div class="signal-meta">{{ signal.count }} casussen · gem. {{ signal.avg_delay }} dagen vertraging</div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="ds-empty-state">Geen dominante bottlenecks gedetecteerd.</div>
-                {% endif %}
-            </section>
-
-            <section class="ds-card">
-                <div class="ds-detail-header">
-                    <h2 class="ds-card-title">Capacity Signals</h2>
-                    <span class="ds-note-text">Aanbieders en regio</span>
-                </div>
-                {% if capacity_signals %}
-                <div class="signal-list">
-                    {% for signal in capacity_signals %}
-                    <a href="{{ signal.href }}" class="signal-item">
-                        <div class="signal-title">{{ signal.label }}</div>
-                        <div class="signal-meta">{{ signal.detail }}</div>
-                    </a>
-                    {% endfor %}
-                </div>
-                {% else %}
-                <div class="ds-empty-state">Geen directe capaciteitsproblemen in beeld.</div>
-                {% endif %}
-            </section>
-        </aside>
+    <div class="analytics-filter-bar">
+        <div class="analytics-filter-group">
+            <a href="{% url 'careon:case_list' %}" class="analytics-filter-pill">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5h18l-7 8v5l-4 2v-7L3 5z"/></svg>
+                <span>All accounts</span>
+            </a>
+            <a href="{% url 'dashboard' %}" class="analytics-icon-pill" aria-label="Refresh dashboard" title="Refresh dashboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-2.64-6.36"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 3v6h-6"/></svg>
+            </a>
+        </div>
+        <div class="analytics-filter-pill analytics-filter-pill--date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 3v4M8 3v4M3 11h18"/></svg>
+            <span>Last 7 days</span>
+        </div>
     </div>
+
+    <section class="analytics-section">
+        <div class="analytics-section-copy">
+            <h2 class="analytics-section-title">Sales</h2>
+            <p class="analytics-section-subtitle">Overview of revenue and sales</p>
+        </div>
+
+        <div class="analytics-kpi-grid analytics-kpi-grid-vintsy">
+            <article class="analytics-kpi-card analytics-kpi-card-vintsy">
+                <div class="analytics-kpi-card-head">
+                    <span class="analytics-kpi-label">Revenue</span>
+                    <span class="analytics-kpi-icon analytics-kpi-icon-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7H14a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </span>
+                </div>
+                <div class="analytics-kpi-value">€5,280.00</div>
+                <div class="analytics-kpi-trend analytics-kpi-trend--positive">▲ +8.7%</div>
+                <div class="analytics-kpi-meta">3 Accounts</div>
+            </article>
+
+            <article class="analytics-kpi-card analytics-kpi-card-vintsy">
+                <div class="analytics-kpi-card-head">
+                    <span class="analytics-kpi-label">Number of sales</span>
+                    <span class="analytics-kpi-icon analytics-kpi-icon-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h8M8 14h5"/></svg>
+                    </span>
+                </div>
+                <div class="analytics-kpi-value">210</div>
+                <div class="analytics-kpi-trend analytics-kpi-trend--positive">▲ +8.8%</div>
+                <div class="analytics-kpi-meta">3 Accounts</div>
+            </article>
+
+            <article class="analytics-kpi-card analytics-kpi-card-vintsy">
+                <div class="analytics-kpi-card-head">
+                    <span class="analytics-kpi-label">Margin %</span>
+                    <span class="analytics-kpi-icon analytics-kpi-icon-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 5 5 19M7 7h.01M17 17h.01"/><circle cx="7" cy="7" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                    </span>
+                </div>
+                <div class="analytics-kpi-value">37.7%</div>
+                <div class="analytics-kpi-trend analytics-kpi-trend--neutral">- 0%</div>
+                <div class="analytics-kpi-meta">3 Accounts</div>
+            </article>
+
+            <article class="analytics-kpi-card analytics-kpi-card-vintsy">
+                <div class="analytics-kpi-card-head">
+                    <span class="analytics-kpi-label">Net margin</span>
+                    <span class="analytics-kpi-icon analytics-kpi-icon-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="m7 14 3-3 3 2 4-5"/><path stroke-linecap="round" stroke-linejoin="round" d="M7 19h10"/></svg>
+                    </span>
+                </div>
+                <div class="analytics-kpi-value">€1,992.00</div>
+                <div class="analytics-kpi-trend analytics-kpi-trend--positive">▲ +8.7%</div>
+                <div class="analytics-kpi-meta">3 Accounts</div>
+            </article>
+
+            <article class="analytics-kpi-card analytics-kpi-card-vintsy">
+                <div class="analytics-kpi-card-head">
+                    <span class="analytics-kpi-label">Average basket</span>
+                    <span class="analytics-kpi-icon analytics-kpi-icon-purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h15l-1.5 9h-11z"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 7 4.5 3H2"/><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
+                    </span>
+                </div>
+                <div class="analytics-kpi-value">€25.14</div>
+                <div class="analytics-kpi-trend analytics-kpi-trend--neutral">- 0.4%</div>
+                <div class="analytics-kpi-meta">3 Accounts</div>
+            </article>
+        </div>
+
+        <div class="analytics-chart-grid">
+            <article class="analytics-chart-card">
+                <div class="analytics-chart-head">
+                    <h3 class="analytics-chart-title">Revenue &amp; Net Margin</h3>
+                    <div class="analytics-chart-number">€5,280</div>
+                    <div class="analytics-chart-trend">↗ +8.7%</div>
+                </div>
+                <div class="analytics-chart-canvas">
+                    <svg viewBox="0 0 100 42" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M0 30 C10 36, 16 39, 24 27 C30 18, 38 14, 46 30 C54 40, 62 28, 68 22 C74 18, 80 24, 86 30 C90 34, 95 36, 100 39"/>
+                    </svg>
+                </div>
+            </article>
+
+            <article class="analytics-chart-card">
+                <div class="analytics-chart-head">
+                    <h3 class="analytics-chart-title">Sales</h3>
+                    <div class="analytics-chart-number">210</div>
+                    <div class="analytics-chart-trend">↗ +8.8%</div>
+                </div>
+                <div class="analytics-chart-canvas analytics-chart-canvas--purple">
+                    <svg viewBox="0 0 100 42" preserveAspectRatio="none" aria-hidden="true">
+                        <path d="M0 16 C8 24, 16 32, 24 24 C30 16, 36 8, 42 12 C50 18, 54 28, 62 24 C70 20, 78 14, 86 18 C92 22, 96 25, 100 28"/>
+                    </svg>
+                </div>
+            </article>
+        </div>
+    </section>
 </div>
 {% endblock %}

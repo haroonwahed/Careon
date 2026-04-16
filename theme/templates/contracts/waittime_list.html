@@ -64,13 +64,13 @@
                             {% endif %}
                         </td>
                         <td class="td-num">{{ wt.waiting_list_size }}</td>
-                        <td class="td-right"><a href="{% url 'careon:waittime_update' wt.pk %}" class="btn btn-ghost ds-i-okgsyj">Bijwerken</a></td>
+                        <td class="td-right"><a href="{% url 'careon:waittime_update' wt.pk %}" class="btn btn-ghost">Bijwerken</a></td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="7" class="td-empty">
                             Nog geen wachttijden geregistreerd.
-                            <div class="ds-i-1tei6ul"><a href="{% url 'careon:waittime_create' %}" class="btn btn-primary">Eerste wachttijd registreren</a></div>
+                            <div class=""><a href="{% url 'careon:waittime_create' %}" class="btn btn-primary">Eerste wachttijd registreren</a></div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -84,10 +84,10 @@
         <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
         <div class="feed-actions">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary ds-i-alf985">Vorige</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Vorige</a>
             {% endif %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary ds-i-alf985">Volgende</a>
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Volgende</a>
             {% endif %}
         </div>
     </div>

@@ -83,7 +83,7 @@
             </div>
             <div class="ds-detail-grid-2 form-grid-2">
                 {% for checkbox in form.diagnostiek %}
-                <label class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700">
+                <label class="intake-choice-card">
                     {{ checkbox.tag }}
                     <span>{{ checkbox.choice_label }}</span>
                 </label>
@@ -104,13 +104,13 @@
                     <label for="{{ form.urgency.id_for_label }}" class="ds-detail-label field-label">{{ form.urgency.label }} {% if form.urgency.field.required %}*{% endif %}</label>
                     {{ form.urgency }}
                     {% if form.urgency.errors %}<div class="form-field-error">{{ form.urgency.errors.0 }}</div>{% endif %}
-                    <label class="mt-3 flex items-center gap-2 text-sm font-medium text-gray-700">
+                    <label class="intake-inline-checkbox">
                         {{ form.urgency_applied }}
                         <span>{{ form.urgency_applied.label }}</span>
                     </label>
                     {% if form.urgency_applied.errors %}<div class="form-field-error">{{ form.urgency_applied.errors.0 }}</div>{% endif %}
 
-                    <div id="urgency-applied-since-wrap" class="mt-3 {% if not form.urgency_applied.value %}ds-hidden{% endif %}">
+                    <div id="urgency-applied-since-wrap" class="intake-urgency-wrap {% if not form.urgency_applied.value %}ds-hidden{% endif %}">
                         <label for="{{ form.urgency_applied_since.id_for_label }}" class="ds-detail-label field-label">{{ form.urgency_applied_since.label }}</label>
                         {{ form.urgency_applied_since }}
                         {% if form.urgency_applied_since.errors %}<div class="form-field-error">{{ form.urgency_applied_since.errors.0 }}</div>{% endif %}
@@ -118,13 +118,13 @@
                 </div>
                 <div>
                     <label for="{{ form.preferred_care_form.id_for_label }}" class="ds-detail-label field-label">{{ form.preferred_care_form.label }} {% if form.preferred_care_form.field.required %}*{% endif %}</label>
-                    <p class="text-xs text-gray-600 mb-2">Kies 1 zorgvorm</p>
-                    <div class="grid gap-2">
+                    <p class="form-helper-text">Kies 1 zorgvorm</p>
+                    <div class="form-choice-grid">
                         {% for choice in form.preferred_care_form.field.choices %}
-                        <label class="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700">
+                        <label class="intake-choice-card">
                             <input
                                 type="checkbox"
-                                class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                class="intake-choice-input"
                                 data-care-form-choice
                                 value="{{ choice.0 }}"
                                 {% if form.preferred_care_form.value == choice.0 %}checked{% endif %}
@@ -133,7 +133,7 @@
                         </label>
                         {% endfor %}
                     </div>
-                    <div class="ds-i-1tei6ul ds-hidden">
+                    <div class="intake-hidden-field ds-hidden">
                         {{ form.preferred_care_form }}
                     </div>
                     {% if form.preferred_care_form.errors %}<div class="form-field-error">{{ form.preferred_care_form.errors.0 }}</div>{% endif %}

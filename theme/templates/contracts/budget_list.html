@@ -83,13 +83,13 @@
                         <td>
                             <a href="{% url 'careon:budget_detail' budget.pk %}">{{ budget.get_scope_type_display }} {{ budget.scope_name }}</a>
                             {% if budget.department %}
-                            <div class="c-secondary ds-i-yj6n0e">{{ budget.department }}</div>
+                            <div class="c-secondary">{{ budget.department }}</div>
                             {% endif %}
                             {% if row.configuration_hint %}
-                            <div class="c-secondary ds-i-yj6n0e">{{ row.configuration_hint }}</div>
+                            <div class="c-secondary">{{ row.configuration_hint }}</div>
                             {% endif %}
                             {% if budget.description %}
-                            <div class="c-secondary ds-i-yj6n0e">{{ budget.description|truncatechars:72 }}</div>
+                            <div class="c-secondary">{{ budget.description|truncatechars:72 }}</div>
                             {% endif %}
                         </td>
                         <td>{{ budget.target_group|default:'-' }}</td>
@@ -99,17 +99,17 @@
                         <td class="td-num">${{ budget.spent_amount|floatformat:2 }}</td>
                         <td class="td-num {% if budget.is_over_budget %}tone-critical{% endif %}">
                             ${{ budget.remaining_amount|floatformat:2 }}
-                            <div class="ds-i-yj6n0e" class="{% if budget.utilization_percentage >= 80 %}tone-critical{% else %}c-secondary{% endif %}">{{ budget.utilization_percentage|floatformat:0 }}% benut</div>
+                            <div class="" class="{% if budget.utilization_percentage >= 80 %}tone-critical{% else %}c-secondary{% endif %}">{{ budget.utilization_percentage|floatformat:0 }}% benut</div>
                         </td>
                         <td>{{ budget.linked_cases.count }} / {{ budget.linked_placements.count }}</td>
-                        <td class="td-right"><a href="{% url 'careon:budget_detail' budget.pk %}" class="btn btn-ghost ds-i-okgsyj">Openen</a></td>
+                        <td class="td-right"><a href="{% url 'careon:budget_detail' budget.pk %}" class="btn btn-ghost">Openen</a></td>
                     </tr>
                     {% endwith %}
                     {% empty %}
                     <tr>
                         <td colspan="9" class="td-empty">
                             Geen budgetten gevonden.
-                            <div class="ds-i-1tei6ul">
+                            <div class="">
                                 {% if search_query or selected_year %}
                                 <a href="{% url 'careon:budget_list' %}" class="btn btn-secondary">Wis filters</a>
                                 {% else %}

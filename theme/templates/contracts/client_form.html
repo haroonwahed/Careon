@@ -2,7 +2,7 @@
 {% block title %}{% if form.instance.pk %}Aanbieder bewerken{% else %}Nieuwe aanbieder{% endif %} - Careon{% endblock %}
 {% block content %}
 <div class="ds-detail-shell">
-    <nav class="ds-i-10k60uh"><a class="ds-i-1iadm4s" href="{% url 'dashboard' %}">Regiekamer</a><span class="ds-muted-label"> / </span><span class="ds-i-1vkpsqq">Formulier</span></nav>
+    <nav class=""><a class="" href="{% url 'dashboard' %}">Regiekamer</a><span class="ds-muted-label"> / </span><span class="">Formulier</span></nav>
     <div class="ds-detail-header">
         <div class="ds-detail-meta">
             <span class="ds-detail-indicator">Formulier</span>
@@ -19,10 +19,10 @@
             <div class="ds-detail-card-inner">
                 <div class="ds-detail-grid-2 form-grid-2">
             {% for field in form %}
-            <div class="ds-detail-row ds-i-1uxxfx9"{% if field.name == 'address' or field.name == 'notes' %}{% endif %}>
+            <div class="ds-detail-row"{% if field.name == 'address' or field.name == 'notes' %}{% endif %}>
                 <label class="ds-detail-label field-label">{{ field.label }}</label>
                 {{ field }}
-                {% if field.errors %}<p class="ds-i-1ynt37i ds-helper-text">{{ field.errors.0 }}</p>{% endif %}
+                {% if field.errors %}<p class="ds-helper-text">{{ field.errors.0 }}</p>{% endif %}
             </div>
             {% endfor %}
                 </div>

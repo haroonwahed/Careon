@@ -4,10 +4,10 @@
 <div class="ds-detail-shell">
 
 <div class="page-header">
-    <div class="ds-i-g2rnps">
+    <div class="">
         <h1 class="page-title">{{ document.title }}</h1>
         </div>
-    <div class="ds-i-sepgbk">
+    <div class="">
         {% if document.file %}<a href="{{ document.file.url }}" class="btn btn-primary" download>Downloaden</a>{% endif %}
         {% if can_edit_document %}
         {% if document.contract and document.contract.due_diligence_process %}
@@ -16,7 +16,7 @@
         <a href="{% url 'careon:document_update' document.pk %}" class="btn btn-secondary">Wijzigen</a>
         {% endif %}
         {% else %}
-        <span class="btn btn-secondary ds-i-l6r8m6">Alleen-lezen</span>
+        <span class="btn btn-secondary">Alleen-lezen</span>
         {% endif %}
     </div>
 </div>
@@ -24,16 +24,16 @@
 <div class="ds-detail-card">
     <div class="ds-detail-sections">
     <div class="ds-detail-card-inner">
-        {% if document.matter %}<div><span class="ds-i-mdwyme">Configuratie:</span> {{ document.matter }}</div>{% endif %}
-        {% if document.client %}<div><span class="ds-i-mdwyme">Aanbieder:</span> {{ document.client }}</div>{% endif %}
-        {% if document.contract %}<div><span class="ds-i-mdwyme">Casus:</span> {{ document.contract }}</div>{% endif %}
-        <div><span class="ds-i-mdwyme">Geüpload door:</span> {{ document.uploaded_by.get_full_name|default:"—" }}</div>
-        <div><span class="ds-i-mdwyme">Aangemaakt:</span> {{ document.created_at|date:"d M Y H:i" }}</div>
-        {% if document.file_size %}<div><span class="ds-i-mdwyme">Grootte:</span> {{ document.file_size|filesizeformat }}</div>{% endif %}
-        {% if document.tags %}<div><span class="ds-i-mdwyme">Tags:</span> {{ document.tags }}</div>{% endif %}
+        {% if document.matter %}<div><span class="">Configuratie:</span> {{ document.matter }}</div>{% endif %}
+        {% if document.client %}<div><span class="">Aanbieder:</span> {{ document.client }}</div>{% endif %}
+        {% if document.contract %}<div><span class="">Casus:</span> {{ document.contract }}</div>{% endif %}
+        <div><span class="">Geüpload door:</span> {{ document.uploaded_by.get_full_name|default:"—" }}</div>
+        <div><span class="">Aangemaakt:</span> {{ document.created_at|date:"d M Y H:i" }}</div>
+        {% if document.file_size %}<div><span class="">Grootte:</span> {{ document.file_size|filesizeformat }}</div>{% endif %}
+        {% if document.tags %}<div><span class="">Tags:</span> {{ document.tags }}</div>{% endif %}
     </div>
     {% if document.is_privileged or document.is_confidential %}
-    <div class="ds-i-z6y7vu">
+    <div class="">
         {% if document.is_privileged %}<span class="badge-sm badge-yellow">Vertrouwelijk voor aanbieder</span>{% endif %}
         {% if document.is_confidential %}<span class="badge-sm badge-red">Vertrouwelijk</span>{% endif %}
     </div>
@@ -42,8 +42,8 @@
 
 {% if document.description %}
 <div class="ds-card action-card">
-    <h3 class="ds-i-1exkhas">Beschrijving</h3>
-    <p class="ds-i-7u6iw1">{{ document.description }}</p>
+    <h3 class="">Beschrijving</h3>
+    <p class="">{{ document.description }}</p>
 </div>
 {% endif %}
 

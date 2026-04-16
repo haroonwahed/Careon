@@ -43,7 +43,7 @@
                     <th>Datum</th>
                     <th>Omschrijving</th>
                     <th>Categorie</th>
-                    <th class="ds-i-58t0wj">Bedrag</th>
+                    <th class="">Bedrag</th>
                 </tr></thead>
                 <tbody>
                     {% for expense in budget.expenses.all %}
@@ -51,7 +51,7 @@
                         <td>{{ expense.date|date:"d M Y" }}</td>
                         <td>{{ expense.description }}</td>
                         <td>{{ expense.get_category_display }}</td>
-                        <td class="ds-i-1cz7zao">€{{ expense.amount|floatformat:2 }}</td>
+                        <td class="">€{{ expense.amount|floatformat:2 }}</td>
                     </tr>
                     {% empty %}
                     <tr><td class="ds-list-empty" colspan="4">Geen uitgaven geregistreerd.</td></tr>

@@ -45,7 +45,7 @@
                         <th>Casus</th>
                         <th>Versie</th>
                         <th>Datum</th>
-                        <th class="ds-i-58t0wj">Acties</th>
+                        <th class="">Acties</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,8 +53,8 @@
                     <tr>
                         <td>
                             <a href="{% url 'careon:document_detail' row.document.pk %}">{{ row.document.title|truncatechars:40 }}</a>
-                            {% if row.document.is_privileged %}<span class="ds-badge badge-high ds-i-17295w0">Beperkte inzage</span>{% endif %}
-                            {% if row.document.is_confidential %}<span class="ds-badge badge-critical ds-i-17295w0">Vertrouwelijk</span>{% endif %}
+                            {% if row.document.is_privileged %}<span class="ds-badge badge-high">Beperkte inzage</span>{% endif %}
+                            {% if row.document.is_confidential %}<span class="ds-badge badge-critical">Vertrouwelijk</span>{% endif %}
                         </td>
                         <td>{{ row.document.get_document_type_display }}</td>
                         <td><span class="ds-badge {% if row.document.status == 'FINAL' %}badge-low{% elif row.document.status == 'REVIEW' %}badge-high{% else %}badge-medium{% endif %}">{{ row.document.get_status_display }}</span></td>
@@ -69,18 +69,18 @@
                         </td>
                         <td>v{{ row.document.version }}</td>
                         <td>{{ row.document.created_at|date:"d-m-Y" }}</td>
-                        <td class="ds-i-58t0wj">
+                        <td class="">
                             {% if row.case_href %}
-                            <a href="{{ row.case_href }}" class="btn btn-ghost ds-i-alf985">Open casus</a>
+                            <a href="{{ row.case_href }}" class="btn btn-ghost">Open casus</a>
                             {% endif %}
-                            <a href="{% url 'careon:document_detail' row.document.pk %}" class="btn btn-ghost ds-i-alf985">Openen</a>
+                            <a href="{% url 'careon:document_detail' row.document.pk %}" class="btn btn-ghost">Openen</a>
                             {% if not row.case_href and not row.can_edit %}
-                            <span class="btn btn-ghost ds-i-1iuxl16">Alleen-lezen</span>
+                            <span class="btn btn-ghost">Alleen-lezen</span>
                             {% elif not row.case_href %}
-                            <span class="btn btn-ghost ds-i-1iuxl16">Inspectie</span>
+                            <span class="btn btn-ghost">Inspectie</span>
                             {% endif %}
                             {% if row.case_href and not row.can_edit %}
-                            <span class="btn btn-ghost ds-i-1iuxl16">Alleen-lezen</span>
+                            <span class="btn btn-ghost">Alleen-lezen</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -89,7 +89,7 @@
                         <td colspan="7" class="ds-list-empty">
                             <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
                             Geen documenten gevonden. Open een casus om daar documenten toe te voegen.
-                            <div class="ds-i-1tei6ul"><a href="{% url 'careon:case_list' %}" class="btn btn-primary">Open casussen</a></div>
+                            <div class=""><a href="{% url 'careon:case_list' %}" class="btn btn-primary">Open casussen</a></div>
                         </td>
                     </tr>
                     {% endfor %}

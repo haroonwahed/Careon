@@ -45,21 +45,21 @@ class RedesignLayoutTests(TestCase):
         self.assertContains(response, 'Uitloggen')
         self.assertContains(response, '/care/casussen/new/')
 
-    def test_dashboard_kpis_and_panels(self):
+    def test_dashboard_decision_screen_structure(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Priority Case Queue')
-        self.assertContains(response, 'Active Case Panel')
-        self.assertContains(response, 'Bottlenecks')
-        self.assertContains(response, 'Signalen')
-        self.assertContains(response, 'Capacity Signals')
+        self.assertContains(response, 'Deze casus is geblokkeerd')
+        self.assertContains(response, 'Start beoordeling')
+        self.assertContains(response, 'Andere actieve casussen')
+        self.assertContains(response, 'Zonder beoordeling kan deze casus niet naar matching')
 
-    def test_dashboard_quick_actions(self):
+    def test_dashboard_reduces_secondary_actions(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'Nieuwe casus')
-        self.assertContains(response, 'Open volledige queue')
-        self.assertContains(response, 'command-alert-strip')
-        self.assertContains(response, '/care/matching/')
+        self.assertContains(response, 'decision-focus-panel')
+        self.assertContains(response, 'decision-secondary-panel')
+        self.assertNotContains(response, 'command-alert-strip')
+        self.assertNotContains(response, 'Toewijzen')
+        self.assertNotContains(response, 'Escaleren')
+        self.assertNotContains(response, 'Beoordelen')
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

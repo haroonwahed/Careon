@@ -1,7 +1,6 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from .models import (
     CareCase, PlacementRequest, CareTask, CareSignal,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
@@ -12,7 +11,6 @@ from .models import (
     CareCategoryMain,
     CareCategorySubcategory,
     MunicipalityConfiguration, RegionalConfiguration,
-    OutcomeReasonCode,
 )
 
 User = get_user_model()
@@ -678,69 +676,6 @@ class PlacementRequestForm(forms.ModelForm):
         if commit:
             instance.save()
         return instance
-
-
-class CaseOutcomeUpdateForm(forms.Form):
-    OUTCOME_TYPE_INTAKE = 'intake'
-    OUTCOME_TYPE_PROVIDER_RESPONSE = 'provider_response'
-    OUTCOME_TYPE_PLACEMENT_QUALITY = 'placement_quality'
-
-    OUTCOME_TYPE_CHOICES = [
-        (OUTCOME_TYPE_INTAKE, 'Intake-uitkomst'),
-        (OUTCOME_TYPE_PROVIDER_RESPONSE, 'Reactie aanbieder'),
-        (OUTCOME_TYPE_PLACEMENT_QUALITY, 'Plaatsingskwaliteit'),
-    ]
-
-    outcome_type = forms.ChoiceField(
-        choices=OUTCOME_TYPE_CHOICES,
-        widget=forms.HiddenInput(),
-    )
-    status = forms.ChoiceField(
-        choices=[],
-        widget=forms.Select(attrs={'class': TAILWIND_SELECT}),
-        label='Status',
-    )
-    reason_code = forms.ChoiceField(
-        choices=OutcomeReasonCode.choices,
-        widget=forms.Select(attrs={'class': TAILWIND_SELECT}),
-        label='Reden',
-    )
-    notes = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
-        label='Notities',
-    )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        outcome_type = self.data.get('outcome_type') or self.initial.get('outcome_type')
-        self.fields['status'].choices = self._status_choices_for_outcome_type(outcome_type)
-
-    def clean_outcome_type(self):
-        outcome_type = self.cleaned_data['outcome_type']
-        valid_types = {choice[0] for choice in self.OUTCOME_TYPE_CHOICES}
-        if outcome_type not in valid_types:
-            raise ValidationError('Ongeldig uitkomsttype.')
-        return outcome_type
-
-    def clean(self):
-        cleaned_data = super().clean()
-        outcome_type = cleaned_data.get('outcome_type')
-        status = cleaned_data.get('status')
-        valid_statuses = {choice[0] for choice in self._status_choices_for_outcome_type(outcome_type)}
-        if status and status not in valid_statuses:
-            raise ValidationError('Ongeldige status voor dit uitkomsttype.')
-        return cleaned_data
-
-    @classmethod
-    def _status_choices_for_outcome_type(cls, outcome_type):
-        if outcome_type == cls.OUTCOME_TYPE_INTAKE:
-            return CaseIntakeProcess.IntakeOutcomeStatus.choices
-        if outcome_type == cls.OUTCOME_TYPE_PROVIDER_RESPONSE:
-            return PlacementRequest.ProviderResponseStatus.choices
-        if outcome_type == cls.OUTCOME_TYPE_PLACEMENT_QUALITY:
-            return PlacementRequest.PlacementQualityStatus.choices
-        return []
 
 
 class CareTaskForm(forms.ModelForm):

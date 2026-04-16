@@ -29,11 +29,12 @@ class RedesignComponentsTestCase(TestCase):
     def test_dashboard_component_labels(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Priority Case Queue')
-        self.assertContains(response, 'Bottlenecks')
-        self.assertContains(response, 'Signalen')
-        self.assertContains(response, 'Regiekamer')
+        self.assertContains(response, 'Welkom terug')
+        self.assertContains(response, 'Casussen zonder match')
+        self.assertContains(response, 'Wachttijd overschreden')
+        self.assertContains(response, 'Deze casus is geblokkeerd')
+        self.assertContains(response, 'Andere actieve casussen')
+        self.assertContains(response, 'Start beoordeling')
 
     def test_case_list_alias_renders_configuration_components(self):
         provider = ClientModel.objects.create(
@@ -68,7 +69,8 @@ class RedesignComponentsTestCase(TestCase):
     def test_accessibility_and_responsive_markers(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'title="Search"')
+        self.assertContains(response, 'id="global-search-input"')
+        self.assertContains(response, 'aria-label="Globaal zoeken"')
         self.assertContains(response, '@media (max-width: 1024px)')
         self.assertContains(response, 'visually-hidden')
 

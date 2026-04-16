@@ -25,7 +25,7 @@ class DesignSystemTests(TestCase):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Careon')
-        self.assertContains(response, 'Urgente casussen')
+        self.assertContains(response, 'Deze casus is geblokkeerd')
 
     def test_dashboard_loads_with_feature_flag_disabled(self):
         os.environ['FEATURE_REDESIGN'] = 'false'
@@ -72,7 +72,8 @@ class DesignSystemTests(TestCase):
         os.environ['FEATURE_REDESIGN'] = 'true'
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'title="Search"')
+        self.assertContains(response, 'id="global-search-input"')
+        self.assertContains(response, 'Zoek casus, client, document of actie')
         self.assertContains(response, '/care/search/')
         self.assertContains(response, 'title="Meldingen"')
 

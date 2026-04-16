@@ -1,0 +1,377 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Modern Light Theme */
+  --background: #ffffff;
+  --foreground: #0B0B0B;
+  --card: #fafafa;
+  --card-foreground: #0B0B0B;
+  --popover: #ffffff;
+  --popover-foreground: #0B0B0B;
+  --primary: #7C3AED;
+  --primary-foreground: #ffffff;
+  --secondary: #A78BFA;
+  --secondary-foreground: #0B0B0B;
+  --muted: #F5F5F5;
+  --muted-foreground: #737373;
+  --accent: #22D3EE;
+  --accent-foreground: #0B0B0B;
+  --destructive: #EF4444;
+  --destructive-foreground: #ffffff;
+  --border: #EAEAEA;
+  --input: #EAEAEA;
+  --input-background: #fafafa;
+  --switch-background: #E5E5E5;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  --ring: #7C3AED;
+  --chart-1: #7C3AED;
+  --chart-2: #22D3EE;
+  --chart-3: #EC4899;
+  --chart-4: #8B5CF6;
+  --chart-5: #A78BFA;
+  --radius: 0.75rem;
+  
+  /* Sidebar */
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0B0B0B;
+  --sidebar-primary: #7C3AED;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #F5F5F5;
+  --sidebar-accent-foreground: #0B0B0B;
+  --sidebar-border: #EAEAEA;
+  --sidebar-ring: #7C3AED;
+  
+  /* Theme transition duration */
+  --theme-transition-duration: 250ms;
+}
+
+.dark {
+  /* Modern Dark Theme - Premium Deep Black */
+  --background: #0A0A0F;
+  --foreground: #E8E8F0;
+  --card: #12121C;
+  --card-foreground: #E8E8F0;
+  --popover: #12121C;
+  --popover-foreground: #E8E8F0;
+  --primary: #8B5CF6;
+  --primary-foreground: #ffffff;
+  --secondary: #A78BFA;
+  --secondary-foreground: #0A0A0F;
+  --muted: #1A1A28;
+  --muted-foreground: #A1A1B5;
+  --accent: #22D3EE;
+  --accent-foreground: #0A0A0F;
+  --destructive: #FF5C8A;
+  --destructive-foreground: #ffffff;
+  --border: rgba(139, 92, 246, 0.2);
+  --input: rgba(139, 92, 246, 0.15);
+  --ring: rgba(139, 92, 246, 0.5);
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  --chart-1: #8B5CF6;
+  --chart-2: #22D3EE;
+  --chart-3: #EC4899;
+  --chart-4: #A78BFA;
+  --chart-5: #7C3AED;
+  
+  /* KPIs & Charts */
+  --kpi-value: #C7B8FF;
+  --delta-positive: #2AF07A;
+  --delta-negative: #FF5C8A;
+  --grid-line: rgba(139, 92, 246, 0.08);
+  
+  /* Modern Sidebar */
+  --sidebar: #0E0E18;
+  --sidebar-foreground: #E8E8F0;
+  --sidebar-primary: #8B5CF6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #1A1A28;
+  --sidebar-accent-foreground: #E8E8F0;
+  --sidebar-border: rgba(139, 92, 246, 0.15);
+  --sidebar-ring: #8B5CF6;
+  
+  /* Premium Accents */
+  --surface-elevated: #16162A;
+  --surface-hover: rgba(139, 92, 246, 0.08);
+  --glow-primary: rgba(139, 92, 246, 0.3);
+  --glow-primary-soft: rgba(139, 92, 246, 0.15);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-kpi-value: var(--kpi-value);
+  --color-delta-positive: var(--delta-positive);
+  --color-delta-negative: var(--delta-negative);
+  --color-grid-line: var(--grid-line);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+  --color-glow-primary: var(--glow-primary);
+  --color-glow-primary-soft: var(--glow-primary-soft);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Modern Typography System
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.4;
+    }
+
+    h4 {
+      font-size: 1rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-normal);
+      line-height: 1.6;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+/* Premium card effects */
+.premium-card {
+  @apply bg-card border border-border rounded-2xl;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .premium-card {
+  background: linear-gradient(135deg, rgba(18, 18, 28, 0.95) 0%, rgba(22, 22, 34, 0.92) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 0.5px rgba(139, 92, 246, 0.1);
+}
+
+.premium-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.dark .premium-card:hover {
+  border-color: rgba(139, 92, 246, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(139, 92, 246, 0.25), 0 0 20px rgba(139, 92, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+/* KPI Card hover effects */
+.kpi-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(139, 92, 246, 0.2) !important;
+  transform: translateY(-2px);
+}
+
+.dark .kpi-card:hover {
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+/* Subtle glow for primary elements */
+.glow-primary {
+  box-shadow: 0 0 20px var(--color-glow-primary-soft);
+}
+
+.glow-primary:hover {
+  box-shadow: 0 0 28px var(--color-glow-primary);
+}
+
+/* Remove default tap highlight colors (blue/green) */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Modern violet-based active states - NO TEAL/BLUE-GREEN */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+[role="tab"]:active:not([data-state="active"]),
+[role="menuitem"]:active {
+  @apply dark:bg-primary/10 bg-primary/8;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom scrollbar for sidebar (premium dark mode) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Thin scrollbar for messages/conversations lists */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.25);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Premium subtle animations for modals, dropdowns, popovers - NO SCALE/ZOOM */
+@keyframes subtle-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes subtle-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-subtle-in {
+  animation: subtle-fade-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-subtle-out {
+  animation: subtle-fade-out 100ms cubic-bezier(0.4, 0, 1, 1);
+}

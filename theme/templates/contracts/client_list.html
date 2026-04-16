@@ -68,7 +68,7 @@
                         <th>Sector</th>
                         <th>Regio's</th>
                         <th>Contact</th>
-                        <th class="ds-i-58t0wj">Acties</th>
+                        <th class="">Acties</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -99,14 +99,14 @@
                             {% endif %}
                         </td>
                         <td>{{ client.email|default:"—" }}</td>
-                        <td class="td-right"><a href="{% url 'careon:client_update' client.pk %}" class="btn btn-ghost ds-i-alf985">Wijzigen</a></td>
+                        <td class="td-right"><a href="{% url 'careon:client_update' client.pk %}" class="btn btn-ghost">Wijzigen</a></td>
                     </tr>
                     {% empty %}
                     <tr>
                         <td colspan="7" class="td-empty">
                             <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             Geen aanbieders gevonden.
-                            <div class="ds-i-1tei6ul"><a href="{% url 'careon:client_create' %}" class="btn btn-primary">Aanbieder toevoegen</a></div>
+                            <div class=""><a href="{% url 'careon:client_create' %}" class="btn btn-primary">Aanbieder toevoegen</a></div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -119,8 +119,8 @@
     <div class="ds-list-pagination">
         <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
         <div class="feed-actions">
-            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary ds-i-alf985">Vorige</a>{% endif %}
-            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary ds-i-alf985">Volgende</a>{% endif %}
+            {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Vorige</a>{% endif %}
+            {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Volgende</a>{% endif %}
         </div>
     </div>
     {% endif %}

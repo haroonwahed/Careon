@@ -90,14 +90,14 @@
                         <td>{{ row.signal.assigned_to.get_full_name|default:"—" }}</td>
                         <td class="td-right">
                             {% if row.case_href %}
-                            <a href="{{ row.case_href }}" class="btn btn-ghost ds-i-okgsyj">Open casus</a>
+                            <a href="{{ row.case_href }}" class="btn btn-ghost">Open casus</a>
                             {% elif not row.case_href and not row.can_edit %}
-                            <span class="c-secondary ds-i-fcjutf">Alleen-lezen</span>
+                            <span class="c-secondary">Alleen-lezen</span>
                             {% else %}
-                            <span class="c-secondary ds-i-fcjutf">Inspectie</span>
+                            <span class="c-secondary">Inspectie</span>
                             {% endif %}
                             {% if row.case_href and not row.can_edit %}
-                            <span class="c-secondary ds-i-fcjutf">Alleen-lezen</span>
+                            <span class="c-secondary">Alleen-lezen</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -105,7 +105,7 @@
                     <tr>
                         <td colspan="7" class="td-empty">
                             Geen signalen gevonden.
-                            <div class="ds-i-1tei6ul"><a href="{% url 'careon:case_list' %}" class="btn btn-primary">Open casussen</a></div>
+                            <div class=""><a href="{% url 'careon:case_list' %}" class="btn btn-primary">Open casussen</a></div>
                         </td>
                     </tr>
                     {% endfor %}
@@ -119,10 +119,10 @@
         <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
         <div class="feed-actions">
             {% if page_obj.has_previous %}
-            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary ds-i-alf985">Vorige</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Vorige</a>
             {% endif %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary ds-i-alf985">Volgende</a>
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Volgende</a>
             {% endif %}
         </div>
     </div>

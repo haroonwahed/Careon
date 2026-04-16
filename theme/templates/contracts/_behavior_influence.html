@@ -1,0 +1,20 @@
+{% comment %}
+_behavior_influence.html
+Reusable secondary explainability block for behavioral influence on matching.
+No numeric modifier values are shown.
+{% endcomment %}
+{% if influence or consideration %}
+<div class="mt-2 rounded-md border border-gray-100 bg-gray-50 px-2 py-2">
+    <p class="text-[10px] font-semibold uppercase tracking-wide ds-text-muted">Gedragsinvloed</p>
+    {% if consideration and consideration != 'Niet toegepast op ranking (onvoldoende nabijheid of historie)' %}
+    <p class="mt-1 text-xs ds-text-secondary">{{ consideration }}</p>
+    {% endif %}
+    {% if influence %}
+    <ul class="mt-1 space-y-0.5">
+        {% for item in influence %}
+        <li class="text-xs ds-text-secondary">• {{ item }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+</div>
+{% endif %}

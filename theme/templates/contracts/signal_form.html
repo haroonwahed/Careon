@@ -2,18 +2,18 @@
 {% block title %}{{ page_title }} - Zorgregie{% endblock %}
 {% block content %}
 <div class="ds-detail-shell">
-    <nav class="ds-i-10k60uh">
-        <a class="ds-i-1iadm4s" href="{% url 'dashboard' %}">Regiekamer</a>
+    <nav class="">
+        <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
         <span class="ds-muted-label"> / </span>
-        <a class="ds-i-1iadm4s" href="{% url 'careon:signal_list' %}">Signalen</a>
+        <a class="" href="{% url 'careon:signal_list' %}">Signalen</a>
         {% if is_edit %}
         <span class="ds-muted-label"> / </span>
-        <a class="ds-i-1iadm4s" href="{% url 'careon:signal_detail' object.pk %}">{{ object }}</a>
+        <a class="" href="{% url 'careon:signal_detail' object.pk %}">{{ object }}</a>
         <span> / </span>
-        <span class="ds-i-1vkpsqq">Wijzigen</span>
+        <span class="">Wijzigen</span>
         {% else %}
         <span> / </span>
-        <span class="ds-i-1vkpsqq">Nieuw</span>
+        <span class="">Nieuw</span>
         {% endif %}
     </nav>
 
@@ -43,7 +43,7 @@
                         {{ field.label }}{% if field.field.required %} *{% endif %}
                     </label>
                     {{ field }}
-                    {% if field.errors %}<p class="ds-i-1ynt37i">{{ field.errors.0 }}</p>{% endif %}
+                    {% if field.errors %}<p class="">{{ field.errors.0 }}</p>{% endif %}
                 </div>
                 {% endfor %}
             </div>

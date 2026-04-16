@@ -3,143 +3,143 @@
 {% block content %}
 <div class="ds-detail-shell">
 
-    <nav class="mb-4 ds-i-j4dftv">
-        <a class="ds-i-1iadm4s" href="{% url 'dashboard' %}">Dashboard</a>
-        <span> / </span>
-        <a class="ds-i-1iadm4s" href="{% url 'careon:municipality_list' %}">Gemeenten</a>
-        <span> / </span>
-        <span class="ds-i-1vkpsqq">{{ municipality.municipality_name }}</span>
+    <nav class="ds-breadcrumb">
+        <a class="ds-breadcrumb-link" href="{% url 'dashboard' %}">Dashboard</a>
+        <span class="ds-breadcrumb-sep">/</span>
+        <a class="ds-breadcrumb-link" href="{% url 'careon:municipality_list' %}">Gemeenten</a>
+        <span class="ds-breadcrumb-sep">/</span>
+        <span class="ds-breadcrumb-current">{{ municipality.municipality_name }}</span>
     </nav>
 
-    <section class="ds-detail-card mb-4">
+    <section class="ds-detail-card">
         <div class="ds-detail-card-head">
             <div class="min-w-0 space-y-2">
-                <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
-                    <span class="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1">Gemeente</span>
-                    <span class="inline-flex items-center rounded-full px-2.5 py-1 {% if municipality.status == 'ACTIVE' %}bg-emerald-100 text-emerald-700{% elif municipality.status == 'INACTIVE' %}bg-gray-100 text-gray-700{% else %}bg-yellow-100 text-yellow-700{% endif %}">{{ municipality.get_status_display }}</span>
+                <div class="ds-detail-meta-badges">
+                    <span class="ds-chip">Gemeente</span>
+                    <span class="ds-chip {% if municipality.status == 'ACTIVE' %}is-active{% elif municipality.status == 'INACTIVE' %}is-inactive{% else %}is-paused{% endif %}">{{ municipality.get_status_display }}</span>
                 </div>
-                <h1 class="truncate text-2xl font-semibold leading-tight text-gray-900">{{ municipality.municipality_name }}</h1>
-                <dl class="grid gap-x-5 gap-y-1 text-xs sm:grid-cols-3">
+                <h1 class="ds-page-title">{{ municipality.municipality_name }}</h1>
+                <dl class="ds-meta-grid">
                     <div>
-                        <dt class="uppercase tracking-wide text-gray-500">Gemeentecode</dt>
-                        <dd class="font-semibold text-gray-900">{{ municipality.municipality_code|default:"—" }}</dd>
+                        <dt class="ds-meta-label">Gemeentecode</dt>
+                        <dd class="ds-meta-value">{{ municipality.municipality_code|default:"—" }}</dd>
                     </div>
                     <div>
-                        <dt class="uppercase tracking-wide text-gray-500">Verantwoordelijke</dt>
-                        <dd class="font-semibold text-gray-900">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</dd>
+                        <dt class="ds-meta-label">Verantwoordelijke</dt>
+                        <dd class="ds-meta-value">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</dd>
                     </div>
                     <div>
-                        <dt class="uppercase tracking-wide text-gray-500">Bijgewerkt</dt>
-                        <dd class="font-semibold text-gray-900">{{ municipality.updated_at|date:"d-m-Y H:i" }}</dd>
+                        <dt class="ds-meta-label">Bijgewerkt</dt>
+                        <dd class="ds-meta-value">{{ municipality.updated_at|date:"d-m-Y H:i" }}</dd>
                     </div>
                 </dl>
             </div>
-            <div class="flex flex-col items-stretch gap-2 sm:items-end">
+            <div class="ds-detail-actions">
                 <a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-secondary">Bewerken</a>
                 <a href="{% url 'careon:municipality_list' %}" class="btn btn-ghost">Terug naar gemeenten</a>
             </div>
         </div>
     </section>
 
-    <section class="mb-5 ds-summary-strip">
+    <section class="ds-summary-strip">
         <div class="ds-summary-item">
             <p class="ds-summary-label">Huidige staat</p>
-            <p class="mt-1 text-base font-semibold text-gray-900">{{ municipality.get_status_display }}</p>
+            <p class="ds-summary-value">{{ municipality.get_status_display }}</p>
         </div>
         <div class="ds-summary-item">
             <p class="ds-summary-label">Aanbieders gekoppeld</p>
-            <p class="mt-1 text-sm font-semibold text-gray-900">{{ municipality.provider_count }}</p>
+            <p class="ds-summary-value">{{ municipality.provider_count }}</p>
         </div>
         <div class="ds-summary-item {% if not municipality.max_wait_days %}ds-summary-item--risk{% endif %}">
             <p class="ds-summary-label">Wachttijdnorm</p>
-            <p class="mt-1 text-sm font-semibold text-gray-900">{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}Niet ingesteld{% endif %}</p>
+            <p class="ds-summary-value">{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}Niet ingesteld{% endif %}</p>
         </div>
         <div class="ds-summary-item">
             <p class="ds-summary-label">Beslisregel</p>
-            <p class="mt-1 text-sm font-semibold text-gray-900">Regie bewaakt capaciteit</p>
-            <p class="text-xs font-medium text-gray-700">Gemeente stuurt op doorstroom</p>
+            <p class="ds-summary-value">Regie bewaakt capaciteit</p>
+            <p class="ds-summary-caption">Gemeente stuurt op doorstroom</p>
         </div>
     </section>
 
-    <div class="grid grid-cols-1 gap-6 xl:grid-cols-12">
-        <div class="space-y-6 xl:col-span-8">
-            <section class="rounded-xl border border-gray-200 bg-white p-4">
-                <h2 class="mb-3 text-base font-semibold text-gray-900">Basisgegevens</h2>
-                <dl class="divide-y divide-gray-100 rounded-lg border border-gray-100 text-sm">
-                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Gemeentenaam</dt>
-                        <dd class="text-right font-medium text-gray-900">{{ municipality.municipality_name }}</dd>
+    <div class="ds-detail-grid">
+        <div class="ds-detail-main">
+            <section class="ds-card ds-detail-section">
+                <h2 class="ds-card-title">Basisgegevens</h2>
+                <dl class="ds-list-shell">
+                    <div class="ds-list-row">
+                        <dt class="ds-list-row-key">Gemeentenaam</dt>
+                        <dd class="ds-list-row-value">{{ municipality.municipality_name }}</dd>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Gemeentecode</dt>
-                        <dd class="text-right font-medium text-gray-900">{{ municipality.municipality_code|default:"—" }}</dd>
+                    <div class="ds-list-row">
+                        <dt class="ds-list-row-key">Gemeentecode</dt>
+                        <dd class="ds-list-row-value">{{ municipality.municipality_code|default:"—" }}</dd>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Status</dt>
-                        <dd class="text-right font-medium text-gray-900">{{ municipality.get_status_display }}</dd>
+                    <div class="ds-list-row">
+                        <dt class="ds-list-row-key">Status</dt>
+                        <dd class="ds-list-row-value">{{ municipality.get_status_display }}</dd>
                     </div>
-                    <div class="grid grid-cols-2 gap-3 px-3 py-2">
-                        <dt class="text-xs font-semibold uppercase tracking-wide text-gray-500">Verantwoordelijke</dt>
-                        <dd class="text-right font-medium text-gray-900">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</dd>
+                    <div class="ds-list-row">
+                        <dt class="ds-list-row-key">Verantwoordelijke</dt>
+                        <dd class="ds-list-row-value">{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</dd>
                     </div>
                 </dl>
             </section>
 
-            <section class="rounded-xl border border-gray-200 bg-white p-4">
-                <h2 class="mb-3 text-base font-semibold text-gray-900">Zorgdomeinen</h2>
+            <section class="ds-card ds-detail-section">
+                <h2 class="ds-card-title">Zorgdomeinen</h2>
                 {% if municipality.care_domains.all %}
-                <div class="divide-y divide-gray-100 rounded-lg border border-gray-100">
+                <div class="ds-list-shell">
                     {% for domain in municipality.care_domains.all %}
-                    <div class="px-3 py-2 text-sm text-gray-700">{{ domain.name }}</div>
+                    <div class="ds-list-row">{{ domain.name }}</div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-sm text-gray-400">Geen zorgdomeinen ingesteld.</p>
+                <p class="ds-note-empty">Geen zorgdomeinen ingesteld.</p>
                 {% endif %}
             </section>
 
-            <section class="rounded-xl border border-gray-200 bg-white p-4">
-                <h2 class="mb-3 text-base font-semibold text-gray-900">Gekoppelde aanbieders ({{ municipality.provider_count }})</h2>
+            <section class="ds-card ds-detail-section">
+                <h2 class="ds-card-title">Gekoppelde aanbieders ({{ municipality.provider_count }})</h2>
                 {% if municipality.linked_providers.all %}
-                <div class="divide-y divide-gray-100 rounded-lg border border-gray-100 text-sm">
+                <div class="ds-list-shell">
                     {% for provider in municipality.linked_providers.all %}
-                    <div class="flex items-center justify-between px-3 py-2">
-                        <a href="{% url 'careon:client_detail' provider.pk %}" class="font-medium text-blue-600 hover:text-blue-800">{{ provider.name }}</a>
+                    <div class="ds-list-row">
+                        <a href="{% url 'careon:client_detail' provider.pk %}" class="ds-link">{{ provider.name }}</a>
                         <span class="badge-sm badge-blue">{{ provider.client_type }}</span>
                     </div>
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="text-sm text-gray-400">Geen aanbieders gekoppeld.</p>
+                <p class="ds-note-empty">Geen aanbieders gekoppeld.</p>
                 {% endif %}
             </section>
 
             {% if municipality.notes %}
-            <section class="rounded-xl border border-gray-200 bg-white p-4">
-                <h2 class="mb-3 text-base font-semibold text-gray-900">Notities</h2>
-                <p class="text-sm text-gray-700 whitespace-pre-wrap">{{ municipality.notes }}</p>
+            <section class="ds-card ds-detail-section">
+                <h2 class="ds-card-title">Notities</h2>
+                <p class="ds-text-secondary whitespace-pre-wrap">{{ municipality.notes }}</p>
             </section>
             {% endif %}
         </div>
 
-        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
-            <section class="rounded-xl border border-blue-200 bg-blue-50 p-4">
-                <h3 class="mb-3 text-sm font-semibold text-blue-900">Capaciteitsinformatie</h3>
-                <dl class="space-y-2 text-sm text-blue-800">
-                    <div class="flex items-center justify-between">
+        <aside class="ds-detail-aside">
+            <section class="ds-card ds-detail-aside--info">
+                <h3 class="ds-aside-title">Capaciteitsinformatie</h3>
+                <dl class="ds-aside-metrics">
+                    <div class="ds-aside-metric">
                         <dt>Gekoppelde aanbieders</dt>
-                        <dd class="font-semibold">{{ municipality.provider_count }}</dd>
+                        <dd>{{ municipality.provider_count }}</dd>
                     </div>
-                    <div class="flex items-center justify-between">
+                    <div class="ds-aside-metric">
                         <dt>Maximale wachttijd</dt>
-                        <dd class="font-semibold">{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}—{% endif %}</dd>
+                        <dd>{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}—{% endif %}</dd>
                     </div>
-                    <div class="flex items-center justify-between">
+                    <div class="ds-aside-metric">
                         <dt>Laatst bijgewerkt</dt>
-                        <dd class="font-semibold">{{ municipality.updated_at|date:"d-m-Y H:i" }}</dd>
+                        <dd>{{ municipality.updated_at|date:"d-m-Y H:i" }}</dd>
                     </div>
                 </dl>
-                <a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-primary mt-4 w-full">Gemeente bijwerken</a>
+                <a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-primary ds-btn-block">Gemeente bijwerken</a>
             </section>
         </aside>
     </div>

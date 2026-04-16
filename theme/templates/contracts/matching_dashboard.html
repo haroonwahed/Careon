@@ -81,7 +81,7 @@
             {% if focus_row.suggestions %}
             <div class="space-y-4">
                 {% for suggestion in focus_row.suggestions|slice:":3" %}
-                <article class="ds-card {% if forloop.first %}ds-sidebar-card--primary{% endif %}">
+                <article id="matching-provider-card-{{ suggestion.provider_id }}" class="ds-card matching-provider-card {% if forloop.first %}ds-sidebar-card--primary{% endif %}" data-provider-card="{{ suggestion.provider_id }}" tabindex="-1">
                     <div class="mb-2 flex items-center justify-between">
                         <span class="text-xs font-semibold uppercase tracking-wide {% if forloop.first %}text-blue-700{% else %}ds-text-muted{% endif %}">{% if forloop.first %}Beste match{% else %}Optie {{ forloop.counter }}{% endif %}</span>
                         <span class="ds-badge ds-stage-matching">Fitscore {{ suggestion.match_score }}%</span>
@@ -116,6 +116,10 @@
                             </dd>
                         </div>
                     </dl>
+                    {% if suggestion.behavior_labels %}
+                    {% include "contracts/_behavior_signals.html" with labels=suggestion.behavior_labels %}
+                    {% endif %}
+                    {% include "contracts/_behavior_influence.html" with influence=suggestion.explanation.behavior_influence consideration=suggestion.explanation.behavior_consideration %}
                     <div class="mt-3 flex flex-wrap gap-2">
                         {% if focus_row.can_assign %}
                         <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching" class="btn {% if forloop.first %}btn-primary{% else %}btn-secondary{% endif %}">Open casus voor toewijzing</a>
@@ -222,6 +226,91 @@
         </section>
 
         <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-6 xl:max-h-[calc(100vh-3rem)] xl:overflow-y-auto">
+            <section class="ds-card ds-sidebar-card matching-map-panel js-matching-map">
+                {{ focus_row.matching_map|json_script:"matching-map-data" }}
+                <div class="matching-map-panel__head">
+                    <div>
+                        <h3 class="ds-sidebar-title">Kaartcontext voor matching</h3>
+                        <p class="ds-note-text">Aanbevelingen blijven leidend. De kaartlaag ondersteunt alleen de geografische validatie van de topkandidaten.</p>
+                    </div>
+                    <span class="ds-badge badge-gray">{{ focus_row.matching_map.summary.candidate_count }} kandidaten</span>
+                </div>
+
+                <div class="matching-map-shell{% if not focus_row.matching_map.summary.can_render_map %} matching-map-shell--empty{% endif %}" data-map-shell>
+                    <div class="matching-map-shell__meta">
+                        <div>
+                            <span class="matching-map-shell__label">Casuslocatie</span>
+                            <strong>{{ focus_row.matching_map.case_location.label }}</strong>
+                            <span>
+                                {% if focus_row.matching_map.case_location.has_coordinates %}
+                                Coordinaten beschikbaar
+                                {% else %}
+                                {% firstof focus_row.matching_map.case_location.municipality_label focus_row.matching_map.case_location.region_label "Coordinaten ontbreken" %}
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="matching-map-shell__label">Aanbieders met coordinaten</span>
+                            <strong>{{ focus_row.matching_map.summary.providers_with_coordinates }} / {{ focus_row.matching_map.summary.candidate_count }}</strong>
+                            <span>
+                                {% if focus_row.matching_map.summary.can_render_map %}
+                                Kaartplot gereed
+                                {% elif focus_row.matching_map.summary.has_partial_geo %}
+                                Gedeeltelijke geo-context
+                                {% else %}
+                                Alleen shell beschikbaar
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if focus_row.matching_map.summary.can_render_map %}
+                    <div class="matching-map-shell__canvas" data-map-canvas role="img" aria-label="Kaart met casuslocatie en topaanbieders"></div>
+                    <p class="matching-map-shell__note">Mapbox-compatibele datafeed staat klaar zodra de kaartengine voor deze flow wordt geactiveerd.</p>
+                    {% else %}
+                    <div class="matching-map-empty">
+                        <strong>{{ focus_row.matching_map.empty_state.title }}</strong>
+                        <p>{{ focus_row.matching_map.empty_state.message }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if focus_row.matching_map.provider_markers %}
+                <div class="matching-map-legend">
+                    <div class="matching-map-legend__section">
+                        <span class="matching-map-legend__label">Top kandidaten</span>
+                        <div class="matching-map-legend__list">
+                            {% for marker in focus_row.matching_map.provider_markers|slice:":3" %}
+                            <button type="button" class="matching-map-legend-item{% if marker.provider_id == focus_row.matching_map.selected_provider_id %} matching-map-legend-item--active{% endif %}" data-provider-marker="{{ marker.provider_id }}" aria-pressed="{% if marker.provider_id == focus_row.matching_map.selected_provider_id %}true{% else %}false{% endif %}">
+                                <span class="matching-map-legend-item__rank">{{ marker.rank }}</span>
+                                <span class="matching-map-legend-item__copy">
+                                    <strong>{{ marker.provider_name }}</strong>
+                                    <span>{{ marker.specialization_summary }}</span>
+                                    <span>
+                                        {% if marker.distance_label %}
+                                        {{ marker.distance_label }}
+                                        {% else %}
+                                        {{ marker.location_label }}
+                                        {% endif %}
+                                         · {{ marker.capacity_status_label }}
+                                    </span>
+                                </span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if focus_row.matching_map.limitations %}
+                <ul class="matching-map-limitations">
+                    {% for limitation in focus_row.matching_map.limitations %}
+                    <li>{{ limitation }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </section>
+
             <section class="ds-card ds-sidebar-card ds-sidebar-card--primary">
                 <h3 class="ds-sidebar-title">Beslisactie</h3>
                 {% if focus_row.assigned_provider %}
@@ -280,4 +369,69 @@
     </div>
     {% endif %}
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        const root = document.querySelector('.js-matching-map');
+        const payload = document.getElementById('matching-map-data');
+        if (!root || !payload) {
+            return;
+        }
+
+        const mapData = JSON.parse(payload.textContent);
+        const cards = Array.from(document.querySelectorAll('[data-provider-card]'));
+        const markers = Array.from(root.querySelectorAll('[data-provider-marker]'));
+        if (!cards.length || !markers.length) {
+            return;
+        }
+
+        const cardById = new Map(cards.map((card) => [String(card.dataset.providerCard), card]));
+        const markerById = new Map(markers.map((marker) => [String(marker.dataset.providerMarker), marker]));
+        let activeProviderId = mapData.selected_provider_id ? String(mapData.selected_provider_id) : String(markers[0].dataset.providerMarker);
+
+        function setActiveProvider(providerId, options) {
+            const nextProviderId = String(providerId);
+            const shouldScroll = Boolean(options && options.scroll);
+            activeProviderId = nextProviderId;
+
+            cards.forEach((card) => {
+                card.classList.toggle('matching-provider-card--active', card.dataset.providerCard === nextProviderId);
+            });
+            markers.forEach((marker) => {
+                const isActive = marker.dataset.providerMarker === nextProviderId;
+                marker.classList.toggle('matching-map-legend-item--active', isActive);
+                marker.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+            });
+
+            if (shouldScroll && cardById.has(nextProviderId)) {
+                cardById.get(nextProviderId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        cards.forEach((card) => {
+            card.addEventListener('mouseenter', function() {
+                setActiveProvider(card.dataset.providerCard);
+            });
+            card.addEventListener('focusin', function() {
+                setActiveProvider(card.dataset.providerCard);
+            });
+        });
+
+        markers.forEach((marker) => {
+            marker.addEventListener('mouseenter', function() {
+                setActiveProvider(marker.dataset.providerMarker);
+            });
+            marker.addEventListener('focus', function() {
+                setActiveProvider(marker.dataset.providerMarker);
+            });
+            marker.addEventListener('click', function() {
+                setActiveProvider(marker.dataset.providerMarker, { scroll: true });
+            });
+        });
+
+        setActiveProvider(activeProviderId);
+    })();
+</script>
 {% endblock %}

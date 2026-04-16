@@ -1,7 +1,9 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import unittest
+from types import SimpleNamespace
 
 from contracts.case_intelligence import (
+    calculate_provider_response_sla,
     detect_missing_information,
     detect_risk_signals,
     determine_next_best_action,
@@ -330,6 +332,113 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
 
         # Next action must be corrective, not permissive.
         self.assertEqual(result["next_best_action"]["code"], "fill_missing_information")
+
+    def test_provider_response_sla_pending_thresholds(self):
+        now = datetime(2026, 4, 15, 12, 0, 0)
+
+        on_track = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="PENDING", provider_response_requested_at=now - timedelta(hours=30), updated_at=None),
+            now=now,
+        )
+        at_risk = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="PENDING", provider_response_requested_at=now - timedelta(hours=60), updated_at=None),
+            now=now,
+        )
+        overdue = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="PENDING", provider_response_requested_at=now - timedelta(hours=84), updated_at=None),
+            now=now,
+        )
+        escalated = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="PENDING", provider_response_requested_at=now - timedelta(hours=108), updated_at=None),
+            now=now,
+        )
+        forced_action = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="PENDING", provider_response_requested_at=now - timedelta(hours=121), updated_at=None),
+            now=now,
+        )
+
+        self.assertEqual(on_track["sla_state"], "ON_TRACK")
+        self.assertEqual(at_risk["sla_state"], "AT_RISK")
+        self.assertEqual(overdue["sla_state"], "OVERDUE")
+        self.assertEqual(escalated["sla_state"], "ESCALATED")
+        self.assertEqual(forced_action["sla_state"], "FORCED_ACTION")
+
+    def test_provider_response_sla_needs_info_thresholds(self):
+        now = datetime(2026, 4, 15, 12, 0, 0)
+        on_track = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="NEEDS_INFO", provider_response_requested_at=now - timedelta(hours=12), updated_at=None),
+            now=now,
+        )
+        at_risk = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="NEEDS_INFO", provider_response_requested_at=now - timedelta(hours=36), updated_at=None),
+            now=now,
+        )
+        overdue = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="NEEDS_INFO", provider_response_requested_at=now - timedelta(hours=60), updated_at=None),
+            now=now,
+        )
+        escalated = calculate_provider_response_sla(
+            SimpleNamespace(provider_response_status="NEEDS_INFO", provider_response_requested_at=now - timedelta(hours=80), updated_at=None),
+            now=now,
+        )
+
+        self.assertEqual(on_track["sla_state"], "ON_TRACK")
+        self.assertEqual(at_risk["sla_state"], "AT_RISK")
+        self.assertEqual(overdue["sla_state"], "OVERDUE")
+        self.assertEqual(escalated["sla_state"], "ESCALATED")
+
+    def test_provider_response_sla_waitlist_and_alias_normalization(self):
+        now = datetime(2026, 4, 15, 12, 0, 0)
+
+        waitlist_at_risk = calculate_provider_response_sla(
+            {
+                "provider_response_status": "WAITLIST",
+                "provider_response_requested_at": now - timedelta(hours=50),
+            },
+            now=now,
+        )
+        waitlist_escalated = calculate_provider_response_sla(
+            {
+                "provider_response_status": "WAITLIST",
+                "provider_response_requested_at": now - timedelta(hours=73),
+            },
+            now=now,
+        )
+        declined_alias = calculate_provider_response_sla(
+            {
+                "provider_response_status": "DECLINED",
+                "provider_response_requested_at": now - timedelta(hours=10),
+            },
+            now=now,
+        )
+        no_response_alias = calculate_provider_response_sla(
+            {
+                "provider_response_status": "NO_RESPONSE",
+                "provider_response_requested_at": now - timedelta(hours=50),
+            },
+            now=now,
+        )
+
+        self.assertEqual(waitlist_at_risk["sla_state"], "AT_RISK")
+        self.assertEqual(waitlist_escalated["sla_state"], "ESCALATED")
+        self.assertEqual(declined_alias["sla_state"], "ON_TRACK")
+        self.assertEqual(no_response_alias["sla_state"], "AT_RISK")
+
+    def test_provider_response_sla_is_deterministic_and_handles_missing_timestamps(self):
+        now = datetime(2026, 4, 15, 12, 0, 0)
+        placement = {
+            "provider_response_status": "PENDING",
+            "provider_response_requested_at": None,
+            "provider_response_last_reminder_at": None,
+            "updated_at": None,
+        }
+
+        first = calculate_provider_response_sla(placement, now=now)
+        second = calculate_provider_response_sla(placement, now=now)
+
+        self.assertEqual(first, second)
+        self.assertEqual(first["hours_waiting"], 0)
+        self.assertEqual(first["sla_state"], "ON_TRACK")
 
 
 if __name__ == "__main__":

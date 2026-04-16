@@ -13,38 +13,201 @@
         </div>
     </header>
 
+    <form method="get" class="ds-list-filters">
+        <div class="ds-list-filter-row">
+            <div class="ds-list-filter-group">
+                <label for="provider-response-priority-mode" class="ds-list-filter-label">Queue mode</label>
+                <select id="provider-response-priority-mode" name="priority_mode" onchange="this.form.submit()">
+                    <option value="0" {% if not monitor_filters.priority_mode %}selected{% endif %}>Standaard queue</option>
+                    <option value="1" {% if monitor_filters.priority_mode %}selected{% endif %}>Priority mode</option>
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-q" class="ds-list-filter-label">Zoeken</label>
+                <input id="provider-response-q" type="search" name="q" value="{{ monitor_filters.search_query }}" placeholder="Zoek op casus-ID, client of aanbieder...">
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-urgency" class="ds-list-filter-label">Urgentie</label>
+                <select id="provider-response-urgency" name="urgency" onchange="this.form.submit()">
+                    <option value="">Alle urgentie</option>
+                    <option value="LOW" {% if monitor_filters.urgency == 'LOW' %}selected{% endif %}>Laag</option>
+                    <option value="MEDIUM" {% if monitor_filters.urgency == 'MEDIUM' %}selected{% endif %}>Middel</option>
+                    <option value="HIGH" {% if monitor_filters.urgency == 'HIGH' %}selected{% endif %}>Hoog</option>
+                    <option value="CRISIS" {% if monitor_filters.urgency == 'CRISIS' %}selected{% endif %}>Crisis</option>
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-status" class="ds-list-filter-label">Providerreactie</label>
+                <select id="provider-response-status" name="provider_response_status" onchange="this.form.submit()">
+                    <option value="">Alle open statussen</option>
+                    {% for value, label in monitor_status_choices %}
+                    <option value="{{ value }}" {% if monitor_filters.provider_response_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-region" class="ds-list-filter-label">Regio</label>
+                <select id="provider-response-region" name="region" onchange="this.form.submit()">
+                    <option value="">Alle regio's</option>
+                    {% for region in monitor_region_choices %}
+                    <option value="{{ region.id }}" {% if monitor_filters.region == region.id|stringformat:"s" %}selected{% endif %}>{{ region.label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-overdue" class="ds-list-filter-label">Over tijd</label>
+                <select id="provider-response-overdue" name="overdue_only" onchange="this.form.submit()">
+                    <option value="0" {% if not monitor_filters.overdue_only %}selected{% endif %}>Alles</option>
+                    <option value="1" {% if monitor_filters.overdue_only %}selected{% endif %}>Alleen overdue</option>
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-rematch" class="ds-list-filter-label">Hermatch</label>
+                <select id="provider-response-rematch" name="rematch_recommended_only" onchange="this.form.submit()">
+                    <option value="0" {% if not monitor_filters.rematch_recommended_only %}selected{% endif %}>Alles</option>
+                    <option value="1" {% if monitor_filters.rematch_recommended_only %}selected{% endif %}>Alleen aanbevolen</option>
+                </select>
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="provider-response-sort" class="ds-list-filter-label">Sortering</label>
+                <select id="provider-response-sort" name="sort" onchange="this.form.submit()">
+                    {% for value, label in monitor_sort_choices %}
+                    <option value="{{ value }}" {% if monitor_filters.sort == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-secondary ds-btn-compact">Filter</button>
+            {% if monitor_has_active_filters %}
+            <a href="{% url 'careon:provider_response_monitor' %}" class="btn btn-ghost ds-btn-compact">Filters wissen</a>
+            {% endif %}
+        </div>
+        <div class="mt-2 flex flex-wrap gap-2">
+            <a href="{% url 'careon:provider_response_monitor' %}?priority_mode=1&sort=urgency" class="btn btn-ghost ds-btn-compact">Urgent queue</a>
+            <a href="{% url 'careon:provider_response_monitor' %}?priority_mode=1&sort=default" class="btn btn-ghost ds-btn-compact">SLA breaches</a>
+            <a href="{% url 'careon:provider_response_monitor' %}?priority_mode=1&overdue_only=1&sort=urgency" class="btn btn-ghost ds-btn-compact">Immediate action</a>
+        </div>
+    </form>
+
     <section class="ds-analytics-kpi-grid">
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.waiting_count }}</div>
             <div class="ds-analytics-kpi-label">Wacht op reactie</div>
-            <div class="ds-analytics-kpi-trend">Open providerreacties</div>
+            <div class="ds-analytics-kpi-trend">Open providerreacties · globaal</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.overdue_count }}</div>
             <div class="ds-analytics-kpi-label">Over deadline</div>
-            <div class="ds-analytics-kpi-trend">Direct opvolgen</div>
+            <div class="ds-analytics-kpi-trend">Direct opvolgen · globaal</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.rematch_recommended_count }}</div>
             <div class="ds-analytics-kpi-label">Hermatch aanbevolen</div>
-            <div class="ds-analytics-kpi-trend">Reactie blokkeert plaatsing</div>
+            <div class="ds-analytics-kpi-trend">Reactie blokkeert plaatsing · globaal</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.waitlist_no_capacity_count }}</div>
             <div class="ds-analytics-kpi-label">Wachtlijst / Geen capaciteit</div>
-            <div class="ds-analytics-kpi-trend">Escaleren of alternatieven</div>
+            <div class="ds-analytics-kpi-trend">Escaleren of alternatieven · globaal</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.avg_age_days|floatformat:1 }}</div>
             <div class="ds-analytics-kpi-label">Gem. leeftijd open reacties</div>
-            <div class="ds-analytics-kpi-trend">In dagen</div>
+            <div class="ds-analytics-kpi-trend">In dagen · globaal</div>
+        </article>
+        <article class="ds-analytics-kpi-card">
+            <div class="ds-analytics-kpi-value">{{ monitor_summary.sla_breach_count }}</div>
+            <div class="ds-analytics-kpi-label">SLA breaches</div>
+            <div class="ds-analytics-kpi-trend">OVERDUE of hoger · globaal</div>
+        </article>
+        <article class="ds-analytics-kpi-card">
+            <div class="ds-analytics-kpi-value">{{ monitor_summary.escalation_required_count }}</div>
+            <div class="ds-analytics-kpi-label">Escalations required</div>
+            <div class="ds-analytics-kpi-trend">ESCALATED of hoger · globaal</div>
+        </article>
+        <article class="ds-analytics-kpi-card">
+            <div class="ds-analytics-kpi-value">{{ monitor_summary.forced_action_count }}</div>
+            <div class="ds-analytics-kpi-label">Forced actions</div>
+            <div class="ds-analytics-kpi-trend">Kritieke beslissingen · globaal</div>
         </article>
     </section>
 
     <section class="panel mt-4">
         <div class="ds-detail-header">
+            <h2 class="ds-card-title">Provider Response Overview</h2>
+            <span class="ds-note-text">Context voor operators · gefilterde queue{% if monitor_provider_overview_is_truncated %} · top {{ monitor_provider_overview_rows|length }} van {{ monitor_provider_overview_total_provider_count }}{% endif %}</span>
+        </div>
+        {% if monitor_provider_overview_rows %}
+        <div class="ds-table-wrap mt-2">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Aanbieder</th>
+                        <th>Open reacties</th>
+                        <th>Overdue reacties</th>
+                        <th>Gem. reactieleeftijd</th>
+                        <th>Recent geen capaciteit</th>
+                        <th>Recent afgewezen</th>
+                        <th>Signalen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in monitor_provider_overview_rows %}
+                    <tr>
+                        <td>{{ row.provider_name }}</td>
+                        <td>{{ row.open_response_count }}</td>
+                        <td>{{ row.overdue_response_count }}</td>
+                        <td>{{ row.avg_response_age_days|floatformat:1 }} dagen</td>
+                        <td>{{ row.recent_no_capacity_count }}</td>
+                        <td>{{ row.recent_rejection_count }}</td>
+                        <td>
+                            {% if row.patterns %}
+                            <div class="flex flex-wrap gap-1">
+                                {% for pattern in row.patterns %}
+                                <span class="ds-badge badge-medium">{{ pattern }}</span>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <span class="item-meta">-</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="ds-empty-state">Geen aanbieders in de huidige monitorfilter.</div>
+        {% endif %}
+    </section>
+
+    <section class="panel mt-4">
+        <div class="ds-detail-header">
+            <h2 class="ds-card-title">Requires Immediate Action</h2>
+            <span class="ds-note-text">{{ monitor_immediate_action_rows|length }} in huidige queue</span>
+        </div>
+        {% if monitor_immediate_action_rows %}
+        <div class="ds-list-container mt-2">
+            {% for row in monitor_immediate_action_rows %}
+            <div class="ds-list-row ds-list-row--compact provider-action-row {% if row.sla_state == 'FORCED_ACTION' %}provider-action-row--forced{% else %}provider-action-row--escalated{% endif %}">
+                <div>
+                    <div class="ds-row-title">{{ row.case_title }}</div>
+                    <div class="ds-row-meta">#{{ row.case_id }} · {{ row.provider_name }} · SLA {{ row.sla_state }} · Waiting {{ row.sla_hours_waiting }}h</div>
+                    <div class="item-meta"><strong>Owner:</strong> {{ row.next_owner_label }} · <strong>Escalation:</strong> {{ row.escalation_level_label }}</div>
+                    <div class="item-meta"><strong>{{ row.recommended_action_label }}</strong> · {{ row.recommended_action_detail }}</div>
+                </div>
+                <a href="{{ row.case_href }}" class="btn btn-primary">Open plaatsing</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="ds-empty-state">Geen ESCALATED of FORCED_ACTION casussen in de huidige queue.</div>
+        {% endif %}
+    </section>
+
+    <section class="panel mt-4">
+        <div class="ds-detail-header">
             <h2 class="ds-card-title">Actiequeue providerreacties</h2>
-            <span class="ds-note-text">{{ monitor_summary.total_cases }} casussen · bijgewerkt {{ monitor_updated_at|date:"d-m-Y H:i" }}</span>
+            <span class="ds-note-text">{{ monitor_queue_rows|length }} in queue{% if monitor_filters.priority_mode %} · priority mode actief{% endif %} · {{ monitor_summary.total_cases }} totaal globaal · sortering en filters alleen op queue · bijgewerkt {{ monitor_updated_at|date:"d-m-Y H:i" }}</span>
         </div>
 
         {% if monitor_queue_rows %}
@@ -55,18 +218,21 @@
                         <th>Casus</th>
                         <th>Aanbieder</th>
                         <th>Status providerreactie</th>
+                        <th>SLA</th>
+                        <th>Owner</th>
+                        <th>Regio</th>
                         <th>Leeftijd</th>
                         <th>Deadline</th>
-                        <th>Signalen</th>
+                        <th>Aanbevolen vervolgstap</th>
                         <th>Actie</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in monitor_queue_rows %}
-                    <tr>
+                    <tr class="provider-queue-row {% if row.sla_state == 'FORCED_ACTION' %}provider-queue-row--forced{% elif row.sla_state == 'ESCALATED' %}provider-queue-row--escalated{% elif row.sla_state == 'OVERDUE' %}provider-queue-row--overdue{% endif %}">
                         <td>
                             <div class="font-600">{{ row.case_title }}</div>
-                            <div class="item-meta">{{ row.phase_label }} · {{ row.urgency_label }}</div>
+                            <div class="item-meta">#{{ row.case_id }} · {{ row.phase_label }} · {{ row.urgency_label }}{% if row.client_name %} · {{ row.client_name }}{% endif %}</div>
                         </td>
                         <td>{{ row.provider_name }}</td>
                         <td>
@@ -74,7 +240,24 @@
                                 {{ row.status_label }}
                             </span>
                         </td>
-                        <td>{{ row.age_days }} dagen</td>
+                        <td>
+                            <span class="ds-badge {% if row.sla_state == 'FORCED_ACTION' or row.sla_state == 'ESCALATED' %}badge-critical{% elif row.sla_state == 'OVERDUE' %}badge-high{% else %}badge-medium{% endif %}">SLA {{ row.sla_state }}</span>
+                            <div class="item-meta">Waiting {{ row.sla_hours_waiting }}h</div>
+                            {% if row.sla_escalates_in_hours > 0 %}
+                            <div class="item-meta">Escalates in {{ row.sla_escalates_in_hours }}h</div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="ds-badge {% if row.next_owner == 'regievoerder' %}badge-high{% else %}badge-medium{% endif %}">{{ row.next_owner_label }}</span>
+                            <div class="item-meta">Escalation {{ row.escalation_level_label }}</div>
+                        </td>
+                        <td>{{ row.region_label }}</td>
+                        <td>
+                            <div>{{ row.age_days }} dagen</div>
+                            {% if row.requested_at %}
+                            <div class="item-meta">Laatste aanvraag {{ row.requested_at|date:"d-m-Y H:i" }}</div>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if row.deadline_at %}
                             {{ row.deadline_at|date:"d-m-Y H:i" }}
@@ -83,21 +266,22 @@
                             {% endif %}
                         </td>
                         <td>
-                            {% if row.flags.is_overdue %}
-                            <span class="ds-badge badge-high">Over tijd</span>
-                            {% endif %}
-                            {% if row.flags.is_waitlist_or_no_capacity %}
-                            <span class="ds-badge badge-critical">Capaciteitsblokkade</span>
-                            {% endif %}
-                            {% if row.flags.is_rematch_recommended %}
-                            <span class="ds-badge badge-critical">Hermatch</span>
-                            {% endif %}
-                            {% if row.flags.is_waiting %}
-                            <span class="ds-badge badge-medium">Wachten</span>
-                            {% endif %}
+                            <span class="ds-badge {% if row.recommended_action_tone == 'critical' %}badge-critical{% elif row.recommended_action_tone == 'high' %}badge-high{% else %}badge-medium{% endif %}">{{ row.recommended_action_label }}</span>
+                            <div class="item-meta item-meta--spaced">{{ row.recommended_action_detail }}</div>
+                            <div class="item-meta">{{ row.action_deadline_label }}</div>
                         </td>
                         <td>
-                            <a href="{{ row.case_href }}" class="btn btn-primary">Open plaatsing</a>
+                            <div class="flex flex-wrap gap-2">
+                                <a href="{{ row.case_href }}" class="btn btn-primary">Open plaatsing</a>
+                                {% if row.resend_action %}
+                                <form method="post" action="{{ row.resend_action.href }}" onsubmit="return confirm('{{ row.resend_action.confirm_text }}')">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="{{ row.resend_action.action }}">
+                                    <input type="hidden" name="next" value="{{ row.resend_action.next }}">
+                                    <button type="submit" class="btn btn-secondary ds-btn-compact">Herstuur</button>
+                                </form>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                     {% endfor %}

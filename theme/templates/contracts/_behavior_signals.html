@@ -1,0 +1,18 @@
+{% comment %}
+_behavior_signals.html
+Reusable partial for rendering provider behavior signals as subtle chips.
+
+Usage:
+  {% include "contracts/_behavior_signals.html" with signals=candidate.behavior_signals labels=candidate.behavior_labels %}
+
+Renders nothing when labels is empty or all signals are None.
+No numeric values, no scoring language, no color-coded judgment.
+{% endcomment %}
+{% if labels %}
+<div class="mt-2 flex flex-wrap items-center gap-1.5">
+    <span class="text-[10px] font-semibold uppercase tracking-wide ds-text-muted">Gedragspatroon</span>
+    {% for label in labels %}
+    <span class="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-2 py-0.5 text-[11px] font-medium text-gray-600">{{ label }}</span>
+    {% endfor %}
+</div>
+{% endif %}

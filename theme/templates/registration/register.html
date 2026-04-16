@@ -4,33 +4,33 @@
 {% block title %}Account aanmaken - Careon{% endblock %}
 
 {% block body %}
-<div class="min-h-screen flex ds-i-1h8zv4t">
+<div class="auth-layout auth-shell">
     <!-- Left marketing panel -->
-    <div class="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden login-panel-left">
-        <div class="login-divider ds-i-1kdf55f"></div>
-        <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full ds-i-l7yhdy"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full ds-i-1b71qar"></div>
+    <div class="auth-marketing-panel login-panel-left">
+        <div class="login-divider"></div>
+        <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full login-glow-large"></div>
+        <div class="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full login-glow-small"></div>
         <div class="relative z-10 px-12 max-w-lg">
-            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 ds-i-18rszp4">
-                <svg class="w-7 h-7 ds-i-19irvnf" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 login-icon-tile">
+                <svg class="w-7 h-7 login-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </div>
             <h2 class="text-3xl font-bold mb-4 leading-tight login-title">Start vandaag met<br>effectieve zorgregie</h2>
             <p class="text-[15px] leading-relaxed login-subtitle">Richt je werkomgeving in enkele minuten in. Krijg direct toegang tot aanbiederbeheer, casusregie, matching en sturing.</p>
             <div class="mt-12 grid grid-cols-2 gap-4">
-                <div class="rounded-xl p-4 ds-i-1ruqy04">
-                    <p class="text-2xl font-bold ds-i-19irvnf">15+</p>
+                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-primary">
+                    <p class="text-2xl font-bold login-icon">15+</p>
                     <p class="text-xs mt-1 login-dim">Ingebouwde modules</p>
                 </div>
-                <div class="rounded-xl p-4 ds-i-hjmiw1">
-                    <p class="text-2xl font-bold ds-i-ogxnl1">AVG</p>
+                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-soft">
+                    <p class="text-2xl font-bold auth-link-primary">AVG</p>
                     <p class="text-xs mt-1 login-dim">Privacy op orde</p>
                 </div>
-                <div class="rounded-xl p-4 ds-i-1ruqy04">
-                    <p class="text-2xl font-bold ds-i-19irvnf">RBAC</p>
+                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-primary">
+                    <p class="text-2xl font-bold login-icon">RBAC</p>
                     <p class="text-xs mt-1 login-dim">Rolgebaseerde toegang</p>
                 </div>
-                <div class="rounded-xl p-4 ds-i-hjmiw1">
-                    <p class="text-2xl font-bold ds-i-ogxnl1">100%</p>
+                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-soft">
+                    <p class="text-2xl font-bold auth-link-primary">100%</p>
                     <p class="text-xs mt-1 login-dim">Auditdekking</p>
                 </div>
             </div>
@@ -38,11 +38,11 @@
     </div>
 
     <!-- Right sign-up panel -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center p-8 login-panel-right">
-        <div class="w-full max-w-md">
+    <div class="auth-form-panel login-panel-right">
+        <div class="auth-form-container">
             <div class="flex items-center justify-between mb-10">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center ds-i-1ylufl">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center auth-brand-tile">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                     </div>
                     <span class="text-xl font-bold tracking-tight login-title">Careon</span>
@@ -58,9 +58,9 @@
             <p class="text-sm mb-8 login-subtitle">Start met Careon in een paar stappen</p>
 
             {% if form.non_field_errors %}
-            <div class="mb-6 p-4 rounded-xl ds-i-1eenwym">
+            <div class="mb-6 p-4 rounded-xl auth-error-box">
                 {% for error in form.non_field_errors %}
-                <p class="text-sm ds-i-1j7mh1n">{{ error }}</p>
+                <p class="text-sm auth-error-text">{{ error }}</p>
                 {% endfor %}
             </div>
             {% endif %}
@@ -72,30 +72,30 @@
                     <input type="text" name="username" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" autofocus required autocomplete="username"
                         class="login-input{% if form.username.errors %} has-error{% endif %}"
                         placeholder="Kies een gebruikersnaam">
-                    {% if form.username.errors %}<p class="mt-1.5 text-xs ds-i-1j7mh1n">{% for e in form.username.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                    {% if form.username.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.username.errors %}{{ e }}{% endfor %}</p>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">E-mailadres</label>
                     <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}" required autocomplete="email"
                         class="login-input{% if form.email.errors %} has-error{% endif %}"
                         placeholder="naam@organisatie.nl">
-                    {% if form.email.errors %}<p class="mt-1.5 text-xs ds-i-1j7mh1n">{% for e in form.email.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                    {% if form.email.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.email.errors %}{{ e }}{% endfor %}</p>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.password1.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">Wachtwoord</label>
                     <input type="password" name="password1" id="{{ form.password1.id_for_label }}" required autocomplete="new-password"
                         class="login-input{% if form.password1.errors %} has-error{% endif %}"
                         placeholder="Maak een sterk wachtwoord">
-                    {% if form.password1.errors %}<p class="mt-1.5 text-xs ds-i-1j7mh1n">{% for e in form.password1.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                    {% if form.password1.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.password1.errors %}{{ e }}{% endfor %}</p>{% endif %}
                 </div>
                 <div>
                     <label for="{{ form.password2.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">Bevestig wachtwoord</label>
                     <input type="password" name="password2" id="{{ form.password2.id_for_label }}" required autocomplete="new-password"
                         class="login-input{% if form.password2.errors %} has-error{% endif %}"
                         placeholder="Bevestig je wachtwoord">
-                    {% if form.password2.errors %}<p class="mt-1.5 text-xs ds-i-1j7mh1n">{% for e in form.password2.errors %}{{ e }}{% endfor %}</p>{% endif %}
+                    {% if form.password2.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.password2.errors %}{{ e }}{% endfor %}</p>{% endif %}
                 </div>
-                <button type="submit" class="glow-btn w-full py-3.5 text-white rounded-xl font-semibold text-sm transition-all duration-200 ds-i-1skgtkv">
+                <button type="submit" class="glow-btn w-full py-3.5 text-white rounded-xl font-semibold text-sm transition-all duration-200">
                     Account aanmaken
                 </button>
             </form>
@@ -107,7 +107,7 @@
             <div class="mt-6 text-center">
                 <p class="text-sm login-subtitle">
                     Heb je al een account?
-                    <a href="{% url 'login' %}" class="font-semibold transition-colors duration-200 ds-i-19irvnf">Inloggen</a>
+                    <a href="{% url 'login' %}" class="font-semibold transition-colors duration-200 auth-link-primary">Inloggen</a>
                 </p>
             </div>
         </div>

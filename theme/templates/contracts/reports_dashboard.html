@@ -4,12 +4,16 @@
 <div class="page-wrap">
 <div class="ds-analytics-shell dash-grid">
 
+    {% url 'careon:provider_response_monitor' as provider_response_monitor_href %}
+
     <div class="ds-analytics-hero">
         <div>
             <h1 class="ds-analytics-headline">Rapportages & Regie</h1>
             </div>
         <div class="ds-list-actions">
-            <a href="{% url 'careon:provider_response_monitor' %}" class="btn btn-secondary">Provider Response Monitor</a>
+            {% if provider_response_monitor_href %}
+            <a href="{{ provider_response_monitor_href }}" class="btn btn-secondary">Provider Response Monitor</a>
+            {% endif %}
             <a href="?attention=capacity" class="btn btn-secondary">Capaciteitsdruk</a>
             <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">Stuur op matching</a>
         </div>
@@ -77,7 +81,7 @@
                 <span class="panel-title">Knelpunten en drukregio's</span>
                 <span class="ds-analytics-list-item-meta">Aandacht vereist</span>
                 {% if attention_filter != 'all' %}
-                <span class="ds-badge badge-critical ds-i-1snbm56">
+                <span class="ds-badge badge-critical">
                     {% if attention_filter == 'unmatched' %}Geen match{% elif attention_filter == 'stagnation' %}Stagnatie{% elif attention_filter == 'capacity' %}Capaciteit{% elif attention_filter == 'escalation' %}Escalatie{% endif %}
                 </span>
                 {% endif %}
@@ -88,10 +92,10 @@
             </a>
         </div>
         {% if attention_rows %}
-        <div>
+        <div class="ds-insight-list">
             {% for row in attention_rows %}
             {% if row.kind == 'capacity' or row.kind == 'escalation' %}
-            <a href="{{ row.href }}" class="ds-analytics-list-item {% if forloop.first %}is-attention{% endif %}">
+            <a href="{{ row.href }}" class="ds-analytics-list-item ds-insight-item {% if forloop.first %}is-attention{% endif %}">
                 <div class="ds-analytics-list-item-title">
                     <div>
                         <span class="ds-badge badge-sm {% if row.kind == 'escalation' %}badge-critical{% else %}badge-high{% endif %} badge-inline">{{ row.kind_label }}</span>
@@ -105,7 +109,7 @@
             {% endfor %}
             {% for row in attention_rows %}
             {% if row.kind == 'stagnation' %}
-            <a href="{{ row.href }}" class="ds-analytics-list-item">
+            <a href="{{ row.href }}" class="ds-analytics-list-item ds-insight-item">
                 <div class="ds-analytics-list-item-title">
                     <div>
                         <span class="ds-badge badge-sm badge-high badge-inline">{{ row.kind_label }}</span>
@@ -119,7 +123,7 @@
             {% endfor %}
             {% for row in attention_rows %}
             {% if row.kind == 'unmatched' %}
-            <a href="{{ row.href }}" class="ds-analytics-list-item">
+            <a href="{{ row.href }}" class="ds-analytics-list-item ds-insight-item">
                 <div class="ds-analytics-list-item-title">
                     <div>
                         <span class="ds-badge badge-sm badge-medium badge-inline">{{ row.kind_label }}</span>
@@ -133,7 +137,7 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="empty-state">
+        <div class="empty-state ds-empty-state">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             Geen aandachtspunten op dit moment.
         </div>
@@ -198,7 +202,7 @@
                 <div class="space-y-4">
                     {% for stage in flow_stages %}
                     <div>
-                        <div class="flex justify-between item-center mb-2">
+                        <div class="flex justify-between items-center mb-2">
                             <span class="text-sm font-600 text-gray-900">{{ stage.label }}</span>
                             <span class="text-sm font-700 text-gray-900">{{ stage.count }}</span>
                         </div>
@@ -231,7 +235,7 @@
                 <div class="space-y-2">
                     {% for pa in practice_areas %}
                     <div>
-                        <div class="flex justify-between item-center mb-1 gap-2">
+                        <div class="flex justify-between items-center mb-1 gap-2">
                             <span class="text-sm text-gray-700">{{ pa.label }}</span>
                             <div class="flex items-center gap-2">
                                 <span class="text-xs text-gray-500">{{ pa.count }} config</span>

@@ -3,10 +3,10 @@
 {% block content %}
 <div class="ds-detail-shell">
 
-    <nav class="ds-i-10k60uh">
-        <a class="ds-i-1iadm4s" href="{% url 'dashboard' %}">Regiekamer</a>
+    <nav class="">
+        <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
         <span class="ds-muted-label"> / </span>
-        <span class="ds-i-1vkpsqq">Uitgave toevoegen</span>
+        <span class="">Uitgave toevoegen</span>
     </nav>
 
     <div class="ds-detail-header">
@@ -21,7 +21,7 @@
 
         {% if form.non_field_errors %}
         <div class="ds-detail-card">
-            {% for error in form.non_field_errors %}<p class="ds-i-1ynt37i">{{ error }}</p>{% endfor %}
+            {% for error in form.non_field_errors %}<p class="">{{ error }}</p>{% endfor %}
         </div>
         {% endif %}
 
@@ -35,7 +35,7 @@
                 <div class="ds-detail-row">
                     <label class="ds-detail-label field-label">{{ field.label }}</label>
                     {{ field }}
-                    {% if field.errors %}<p class="ds-i-1ynt37i">{{ field.errors.0 }}</p>{% endif %}
+                    {% if field.errors %}<p class="">{{ field.errors.0 }}</p>{% endif %}
                 </div>
                 {% endfor %}
             </div>

@@ -38,3 +38,13 @@
 - The redesign contract list and dashboard markers covered by the test suite are part of the supported UI surface.
 - Template changes should preserve tested user-facing markers unless the tests are intentionally updated in the same change.
 - Light/dark mode on auth pages is implemented with CSS variables rather than hardcoded colors.
+
+## Pilot Operations Governance
+
+- Week 16 pilot execution uses a simulation-backed Friday dry-run deck as the mandatory facilitation artifact before relying on live weekly case volume.
+- Friday sessions must enforce forced classification, forced primary reason, and one evidence sentence per case.
+- Pilot quality outcomes are tracked through: matching quality signals, waiting-time loop reduction, and data-quality improvements in case completeness and explanations.
+- On 2026-04-15, pilot mode moved from planning to live daily execution using a dated worksheet and command-backed evidence snapshot.
+- On 2026-04-15, Friday facilitation moved to execution readiness with a pattern-covered case shortlist and pre-populated weekly case review sheet.
+- On 2026-04-15, dry-run execution results were recorded, action owners were assigned, and completion-gate status was formalized with live-case validation pending.
+- On 2026-04-15, real-case execution was activated in local pilot environment by creating append-only governance events for existing case IDs and refreshing weekly output to 6 candidate cases.
