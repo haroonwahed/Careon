@@ -115,11 +115,6 @@ export function CaseTriageCard({
         ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
         hover:border-opacity-60 hover:shadow-lg
       `}
-      style={{
-        background: isUrgent 
-          ? `linear-gradient(135deg, ${urgency === "critical" ? "rgba(254, 242, 242, 1)" : "rgba(255, 251, 235, 1)"} 0%, rgba(255, 255, 255, 0.9) 100%)`
-          : undefined
-      }}
     >
       {/* Selection Checkbox */}
       {onSelect && (

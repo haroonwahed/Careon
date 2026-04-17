@@ -502,7 +502,7 @@ Error generating stack: `+i.message+`
         ${A?D.glow:""}
         ${w?"ring-2 ring-primary ring-offset-2 ring-offset-background":""}
         hover:border-opacity-60 hover:shadow-lg
-      `,style:{background:A?`linear-gradient(135deg, ${p==="critical"?"rgba(254, 242, 242, 1)":"rgba(255, 251, 235, 1)"} 0%, rgba(255, 255, 255, 0.9) 100%)`:void 0},children:[E&&t.jsx("div",{className:"absolute top-4 left-4 z-10",children:t.jsx("input",{type:"checkbox",checked:w,onChange:P=>E(P.target.checked),className:`w-4 h-4 rounded border-2 border-muted-foreground/30 bg-background/50 
+      `,children:[E&&t.jsx("div",{className:"absolute top-4 left-4 z-10",children:t.jsx("input",{type:"checkbox",checked:w,onChange:P=>E(P.target.checked),className:`w-4 h-4 rounded border-2 border-muted-foreground/30 bg-background/50 
                      checked:bg-primary checked:border-primary cursor-pointer`})}),t.jsxs("div",{className:`p-5 ${E?"pl-12":""}`,children:[t.jsxs("div",{className:"flex items-start justify-between gap-4 mb-4",children:[t.jsxs("div",{className:"flex-1",children:[t.jsxs("div",{className:"flex items-center gap-2 mb-2",children:[t.jsx("span",{className:`
                 px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide
                 ${D.bg} ${D.text} border ${D.border}
