@@ -20,7 +20,7 @@ import { IntakeListPage } from "../care/IntakeListPage";
 import { CasussenPage } from "../care/CasussenPage";
 import { ZorgaanbiedersPage } from "../care/ZorgaanbiedersPage";
 import { GemeentenPage } from "../care/GemeentenPage";
-import { CaseDetailPage } from "../care/CaseDetailPage";
+import { CasusControlCenter } from "../care/CasusControlCenter";
 import { SignalenPage } from "../care/SignalenPage";
 import { ActiesPage } from "../care/ActiesPage";
 import { DocumentenPage } from "../care/DocumentenPage";
@@ -378,8 +378,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       {selectedCase && (
         <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 overflow-y-auto">
           <div className="min-h-screen">
-            <div className="p-6">
-              <CaseDetailPage
+            <div className="p-6 max-w-[1400px] mx-auto">
+              <CasusControlCenter
                 caseId={selectedCase}
                 onBack={handleCloseCaseDetail}
                 onStartMatching={handleStartMatching}

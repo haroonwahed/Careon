@@ -35,8 +35,10 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('toggle-redesign/', careon_views.toggle_redesign, name='toggle_redesign'),
-    path('__reload__/', include('django_browser_reload.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns.append(path('__reload__/', include('django_browser_reload.urls')))
 
 if settings.SSO_ENABLED:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))
