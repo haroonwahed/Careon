@@ -16,15 +16,17 @@ The repository includes a Render blueprint in `render.yaml`.
 It provisions:
 
 - one Django web service
-- one managed PostgreSQL database
 
 The build step installs Python and Node dependencies, builds the React client, copies the generated SPA into `theme/static/spa`, then runs `collectstatic` and `migrate`.
 
+This setup expects an external PostgreSQL database. Add its connection string manually as `DATABASE_URL` in Render.
+
 Before first production traffic, set these host-specific values in Render:
 
+- `DATABASE_URL`
 - `ALLOWED_HOSTS`
 - `CSRF_TRUSTED_ORIGINS`
 - `DEFAULT_FROM_EMAIL`
 
-The blueprint already wires `DATABASE_URL`, `DJANGO_SECRET_KEY`, and `DJANGO_SETTINGS_MODULE=config.settings_production`.
+The blueprint already wires `DJANGO_SECRET_KEY` and `DJANGO_SETTINGS_MODULE=config.settings_production`.
   
