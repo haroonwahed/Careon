@@ -2,7 +2,7 @@ services:
   - type: web
     name: careon-web
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: |
       pip install -r requirements/runtime.txt
       npm ci --prefix client

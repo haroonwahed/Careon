@@ -17,6 +17,8 @@ It provisions:
 
 - one Django web service
 
+The blueprint is configured for Render's free web plan. If Render still asks for payment, your account or selected region likely does not have free instances available, and Render will require a paid plan at creation time.
+
 The build step installs Python and Node dependencies, builds the React client, copies the generated SPA into `theme/static/spa`, then runs `collectstatic` and `migrate`.
 
 This setup expects an external PostgreSQL database. Add its connection string manually as `DATABASE_URL` in Render.
