@@ -99,14 +99,14 @@ export function AddPurchaseModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-2xl rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="max-w-2xl rounded-2xl bg-card border border-border overflow-hidden max-h-[90vh] overflow-y-auto"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 48px rgba(168,85,247,0.15)",
         }}
       >
-        <DialogHeader className="border-b dark:border-[rgba(168,85,247,0.25)] border-border pb-4">
-          <DialogTitle className="text-xl dark:text-[#E7E7F0] text-foreground">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="text-xl text-foreground">
             {language === "fr" ? "Ajouter un achat" : "Add purchase"}
           </DialogTitle>
           <DialogDescription className="sr-only">
@@ -119,7 +119,7 @@ export function AddPurchaseModal({
         <div className="space-y-6 py-6">
           {/* Photo Upload */}
           <div className="space-y-2">
-            <Label className="dark:text-[#E7E7F0] text-foreground">
+            <Label className="text-foreground">
               {language === "fr" ? "Photo" : "Photo"} *
             </Label>
             <div className="flex items-center gap-4">
@@ -128,7 +128,7 @@ export function AddPurchaseModal({
                   <img
                     src={photoPreview}
                     alt="Preview"
-                    className="w-24 h-24 rounded-xl object-cover border dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="w-24 h-24 rounded-xl object-cover border border-border"
                   />
                   <Button
                     size="sm"
@@ -140,8 +140,8 @@ export function AddPurchaseModal({
                   </Button>
                 </div>
               ) : (
-                <label className="flex items-center justify-center w-24 h-24 rounded-xl border-2 border-dashed dark:border-[rgba(168,85,247,0.30)] border-primary/30 dark:bg-[rgba(139,92,246,0.05)] bg-primary/5 cursor-pointer hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10 transition-colors">
-                  <Upload className="w-6 h-6 dark:text-[#A78BFA] text-primary" />
+                <label className="flex items-center justify-center w-24 h-24 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 cursor-pointer hover:bg-primary/10 hover:bg-primary/10 transition-colors">
+                  <Upload className="w-6 h-6 text-primary" />
                   <input
                     type="file"
                     accept="image/*"
@@ -157,7 +157,7 @@ export function AddPurchaseModal({
           <div className="space-y-2">
             <Label
               htmlFor="title"
-              className="dark:text-[#E7E7F0] text-foreground"
+              className="text-foreground"
             >
               {language === "fr" ? "Titre de l'achat" : "Purchase title"} *
             </Label>
@@ -170,7 +170,7 @@ export function AddPurchaseModal({
                   ? "Ex: T-shirt Vintage Nike"
                   : "Ex: Vintage Nike T-shirt"
               }
-              className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+              className="rounded-xl bg-background/50 bg-background border-border"
             />
           </div>
 
@@ -179,7 +179,7 @@ export function AddPurchaseModal({
             <div className="space-y-2">
               <Label
                 htmlFor="amount"
-                className="dark:text-[#E7E7F0] text-foreground"
+                className="text-foreground"
               >
                 {language === "fr" ? "Montant (€)" : "Amount (€)"} *
               </Label>
@@ -190,14 +190,14 @@ export function AddPurchaseModal({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+                className="rounded-xl bg-background/50 bg-background border-border"
               />
             </div>
 
             <div className="space-y-2">
               <Label
                 htmlFor="quantity"
-                className="dark:text-[#E7E7F0] text-foreground"
+                className="text-foreground"
               >
                 {language === "fr" ? "Quantité" : "Quantity"}
               </Label>
@@ -207,7 +207,7 @@ export function AddPurchaseModal({
                 min="1"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+                className="rounded-xl bg-background/50 bg-background border-border"
               />
             </div>
           </div>
@@ -216,14 +216,14 @@ export function AddPurchaseModal({
           <div className="space-y-2">
             <Label
               htmlFor="account"
-              className="dark:text-[#E7E7F0] text-foreground"
+              className="text-foreground"
             >
               {language === "fr" ? "Compte" : "Account"} *
             </Label>
             <Select value={accountId} onValueChange={setAccountId}>
               <SelectTrigger
                 id="account"
-                className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+                className="rounded-xl bg-background/50 bg-background border-border"
               >
                 <SelectValue
                   placeholder={
@@ -247,7 +247,7 @@ export function AddPurchaseModal({
           <div className="space-y-2">
             <Label
               htmlFor="seller"
-              className="dark:text-[#E7E7F0] text-foreground"
+              className="text-foreground"
             >
               {language === "fr" ? "Vendeur (optionnel)" : "Seller (optional)"}
             </Label>
@@ -256,13 +256,13 @@ export function AddPurchaseModal({
               value={seller}
               onChange={(e) => setSeller(e.target.value)}
               placeholder={language === "fr" ? "Ex: @username" : "Ex: @username"}
-              className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+              className="rounded-xl bg-background/50 bg-background border-border"
             />
           </div>
 
           {/* Tracking (optional) */}
-          <div className="space-y-4 p-4 rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-gray-50 border dark:border-[rgba(168,85,247,0.15)] border-gray-200">
-            <h3 className="text-sm dark:text-[#E7E7F0] text-foreground">
+          <div className="space-y-4 p-4 rounded-xl bg-primary/5 bg-gray-50 border border-primary/15 border-gray-200">
+            <h3 className="text-sm text-foreground">
               {language === "fr"
                 ? "Suivi (optionnel)"
                 : "Tracking (optional)"}
@@ -271,14 +271,14 @@ export function AddPurchaseModal({
               <div className="space-y-2">
                 <Label
                   htmlFor="carrier"
-                  className="dark:text-[#E7E7F0] text-foreground text-xs"
+                  className="text-foreground text-xs"
                 >
                   {language === "fr" ? "Transporteur" : "Carrier"}
                 </Label>
                 <Select value={carrier} onValueChange={setCarrier}>
                   <SelectTrigger
                     id="carrier"
-                    className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border h-9"
+                    className="rounded-xl bg-background/50 bg-background border-border h-9"
                   >
                     <SelectValue
                       placeholder={
@@ -301,7 +301,7 @@ export function AddPurchaseModal({
               <div className="space-y-2">
                 <Label
                   htmlFor="tracking"
-                  className="dark:text-[#E7E7F0] text-foreground text-xs"
+                  className="text-foreground text-xs"
                 >
                   {language === "fr" ? "N° de suivi" : "Tracking #"}
                 </Label>
@@ -310,7 +310,7 @@ export function AddPurchaseModal({
                   value={trackingNumber}
                   onChange={(e) => setTrackingNumber(e.target.value)}
                   placeholder="6A12345..."
-                  className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border h-9"
+                  className="rounded-xl bg-background/50 bg-background border-border h-9"
                 />
               </div>
             </div>
@@ -318,18 +318,18 @@ export function AddPurchaseModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t dark:border-[rgba(168,85,247,0.25)] border-border pt-4 flex gap-3">
+        <div className="border-t border-border pt-4 flex gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+            className="flex-1 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
           >
             {language === "fr" ? "Annuler" : "Cancel"}
           </Button>
           <Button
             onClick={handleSave}
             disabled={!title || !amount || !accountId}
-            className="flex-1 rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground"
+            className="flex-1 rounded-xl bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground"
             style={{
               boxShadow: "0 0 20px rgba(139,92,246,0.4)",
             }}

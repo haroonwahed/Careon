@@ -47,7 +47,7 @@ export function ListingCardNew({
   return (
     <div
       onClick={handleCardClick}
-      className="group rounded-2xl overflow-hidden border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card cursor-pointer transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.3)]"
+      className="group rounded-2xl overflow-hidden border border-border bg-card cursor-pointer transition-all hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(139,92,246,0.3)]"
     >
       {/* Image area */}
       <div className="relative aspect-square overflow-hidden">
@@ -70,7 +70,7 @@ export function ListingCardNew({
           ))}
           
           {/* SKU badge */}
-          <Badge className="text-[11px] px-3 py-1.5 h-7 dark:bg-[rgba(14,14,20,0.95)] bg-black/90 dark:text-[#9CA3AF] text-gray-200 border dark:border-[rgba(168,85,247,0.30)] border-white/20 backdrop-blur-sm">
+          <Badge className="text-[11px] px-3 py-1.5 h-7 dark:bg-[rgba(14,14,20,0.95)] bg-black/90 text-gray-200 border border-white/20 backdrop-blur-sm">
             {listing.sku}
           </Badge>
         </div>
@@ -79,27 +79,27 @@ export function ListingCardNew({
       {/* Content */}
       <div className="p-4">
         {/* Title */}
-        <h3 className={`dark:text-[#E7E7F0] text-foreground truncate mb-3 ${listing.isHidden ? "opacity-60" : ""}`}>
+        <h3 className={`text-foreground truncate mb-3 ${listing.isHidden ? "opacity-60" : ""}`}>
           {listing.title}
         </h3>
 
         {/* Stats row */}
         <div className="flex items-center gap-4 mb-2 text-sm">
-          <div className="flex items-center gap-1.5 dark:text-[#9CA3AF] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <Eye className="w-4 h-4" />
             <span>{listing.analytics.views}</span>
           </div>
-          <div className="flex items-center gap-1.5 dark:text-[#9CA3AF] text-muted-foreground">
+          <div className="flex items-center gap-1.5 text-muted-foreground">
             <Heart className="w-4 h-4" />
             <span>{listing.analytics.favorites}</span>
           </div>
-          <div className="ml-auto dark:text-[#A78BFA] text-primary">
+          <div className="ml-auto text-primary">
             {formatCurrency(listing.price, language)}
           </div>
         </div>
 
         {/* Published date */}
-        <div className="text-xs dark:text-[#6B7280] text-muted-foreground mb-4">
+        <div className="text-xs text-muted-foreground mb-4">
           {formatDateTime(listing.publishedDate, language)}
         </div>
 
@@ -113,8 +113,8 @@ export function ListingCardNew({
             size="sm"
             className={`flex-1 rounded-xl gap-2 ${
               listing.boostActive
-                ? "dark:bg-[rgba(139,92,246,0.20)] bg-primary/20 dark:text-[#A78BFA] text-primary dark:border-[rgba(168,85,247,0.40)] border-primary/40 border hover:dark:bg-[rgba(139,92,246,0.30)] hover:bg-primary/30"
-                : "dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+                ? "bg-primary/20 text-primary border-primary/40 border hover:bg-primary/30 hover:bg-primary/30"
+                : "bg-primary hover:bg-primary/90"
             }`}
             style={!listing.boostActive ? {
               boxShadow: "0 0 16px rgba(139,92,246,0.3)"
@@ -131,7 +131,7 @@ export function ListingCardNew({
             }}
             size="sm"
             variant="outline"
-            className="flex-1 rounded-xl dark:border-[rgba(168,85,247,0.40)] border-primary dark:text-[#A78BFA] text-primary hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10 gap-2"
+            className="flex-1 rounded-xl border-primary text-primary hover:bg-primary/10 hover:bg-primary/10 gap-2"
           >
             <RefreshCw className="w-4 h-4" />
             <span>{t(language, "published.button.repost")}</span>
@@ -144,14 +144,14 @@ export function ListingCardNew({
                 onClick={(e) => e.stopPropagation()}
                 size="sm"
                 variant="ghost"
-                className="rounded-xl dark:text-[#9CA3AF] text-muted-foreground"
+                className="rounded-xl text-muted-foreground"
               >
                 <MoreVertical className="w-4 h-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
               align="end" 
-              className="rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border"
+              className="rounded-xl bg-popover border border-border"
               onClick={(e) => e.stopPropagation()}
             >
               <DropdownMenuItem
@@ -178,7 +178,7 @@ export function ListingCardNew({
                   e.stopPropagation();
                   onHideToggle();
                 }}
-                className="rounded-lg cursor-pointer dark:text-[#9CA3AF] text-muted-foreground"
+                className="rounded-lg cursor-pointer text-muted-foreground"
               >
                 {listing.isHidden 
                   ? (language === "fr" ? "Afficher" : "Unhide")

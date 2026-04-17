@@ -45,7 +45,7 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
           {[1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-24 rounded-xl dark:bg-[#1A1A24] bg-muted animate-pulse"
+              className="h-24 rounded-xl bg-muted animate-pulse"
             />
           ))}
         </div>
@@ -53,11 +53,11 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
           {[1, 2].map((i) => (
             <div
               key={i}
-              className="h-24 rounded-xl dark:bg-[#1A1A24] bg-muted animate-pulse"
+              className="h-24 rounded-xl bg-muted animate-pulse"
             />
           ))}
         </div>
-        <div className="h-96 rounded-xl dark:bg-[#1A1A24] bg-muted animate-pulse" />
+        <div className="h-96 rounded-xl bg-muted animate-pulse" />
       </div>
     );
   }
@@ -128,19 +128,19 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
 
       {/* Distribution Chart */}
       <div
-        className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+        className="rounded-2xl border border-border bg-card p-6"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
         }}
       >
         <div className="mb-6">
-          <h3 className="text-lg dark:text-[#E7E7F0] text-foreground mb-2">
+          <h3 className="text-lg text-foreground mb-2">
             {language === "fr"
               ? "Répartition des ventes"
               : "Sales distribution"}
           </h3>
-          <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             {language === "fr" ? (
               <>
                 1 produit sur 4 est vendu à moins de{" "}
@@ -212,13 +212,13 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
               />
               <XAxis
                 dataKey="price"
-                className="dark:text-[#9CA3AF] text-muted-foreground"
+                className="text-muted-foreground"
                 style={{ fontSize: "12px" }}
                 axisLine={false}
                 tickLine={false}
               />
               <YAxis
-                className="dark:text-[#9CA3AF] text-muted-foreground"
+                className="text-muted-foreground"
                 style={{ fontSize: "12px" }}
                 axisLine={false}
                 tickLine={false}
@@ -258,25 +258,25 @@ function KPICard({
 }: KPICardProps) {
   return (
     <div
-      className="rounded-xl border dark:border-[rgba(168,85,247,0.20)] border-border dark:bg-[#0E0E14] bg-card p-5"
+      className="rounded-xl border border-border bg-card p-5"
       style={{
         boxShadow: "0 0 0 1px rgba(168,85,247,0.15)",
       }}
     >
       <div className="flex items-start justify-between mb-3">
         <div
-          className={`p-2.5 rounded-lg dark:bg-[#1A1A24] bg-muted ${iconColor}`}
+          className={`p-2.5 rounded-lg bg-muted ${iconColor}`}
         >
           <Icon className="w-5 h-5" />
         </div>
       </div>
-      <div className="text-2xl dark:text-[#E7E7F0] text-foreground font-semibold mb-1 tabular-nums">
+      <div className="text-2xl text-foreground font-semibold mb-1 tabular-nums">
         {value}
       </div>
-      <div className="text-sm dark:text-[#E7E7F0] text-foreground mb-1">
+      <div className="text-sm text-foreground mb-1">
         {label}
       </div>
-      <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+      <div className="text-xs text-muted-foreground">
         {subtitle}
       </div>
     </div>
@@ -288,16 +288,16 @@ function CustomTooltip({ active, payload, language }: any) {
 
   return (
     <div
-      className="rounded-xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border p-3 shadow-lg"
+      className="rounded-xl bg-card border border-border p-3 shadow-lg"
       style={{
         boxShadow:
           "0 0 0 1px rgba(168,85,247,0.25), 0 0 24px rgba(168,85,247,0.15)",
       }}
     >
-      <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-1">
+      <p className="text-xs text-muted-foreground mb-1">
         {payload[0].payload.price}€
       </p>
-      <p className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+      <p className="text-sm text-foreground tabular-nums">
         {payload[0].value}{" "}
         {language === "fr" ? "produits" : "products"}
       </p>

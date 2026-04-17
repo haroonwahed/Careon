@@ -16,15 +16,15 @@ export function SidebarDemo() {
   };
 
   return (
-    <div className="min-h-screen dark:bg-[#0A0A0F] bg-background">
+    <div className="min-h-screen bg-background">
       {/* Variant Switcher */}
       <div className="fixed top-4 right-4 z-50 flex gap-2">
         <button
           onClick={() => setVariant("soft")}
           className={`px-4 py-2 rounded-lg text-sm transition-all ${
             variant === "soft"
-              ? "dark:bg-primary bg-primary dark:text-white text-white"
-              : "dark:bg-[#1A1A24] bg-muted dark:text-[#E7E7F0] text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground"
           }`}
         >
           Compact Soft
@@ -33,15 +33,15 @@ export function SidebarDemo() {
           onClick={() => setVariant("max")}
           className={`px-4 py-2 rounded-lg text-sm transition-all ${
             variant === "max"
-              ? "dark:bg-primary bg-primary dark:text-white text-white"
-              : "dark:bg-[#1A1A24] bg-muted dark:text-[#E7E7F0] text-foreground"
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-foreground"
           }`}
         >
           Compact Max
         </button>
         <button
           onClick={() => setLanguage(language === "fr" ? "en" : "fr")}
-          className="px-4 py-2 rounded-lg text-sm dark:bg-[#1A1A24] bg-muted dark:text-[#E7E7F0] text-foreground"
+          className="px-4 py-2 rounded-lg text-sm bg-muted text-foreground"
         >
           {language === "fr" ? "🇫🇷 FR" : "🇬🇧 EN"}
         </button>
@@ -60,24 +60,24 @@ export function SidebarDemo() {
       {/* Main Content */}
       <div className="ml-56 p-8">
         <div className="max-w-4xl">
-          <h1 className="text-2xl dark:text-[#E7E7F0] text-foreground mb-4">
+          <h1 className="text-2xl text-foreground mb-4">
             Sidebar Extended - {variant === "soft" ? "Compact Soft" : "Compact Max"}
           </h1>
           
           <div
-            className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-8"
+            className="rounded-2xl border border-border bg-card p-8"
             style={{
               boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
             }}
           >
-            <h2 className="text-xl dark:text-[#E7E7F0] text-foreground mb-4">
+            <h2 className="text-xl text-foreground mb-4">
               Active Page: {activePage}
             </h2>
             
-            <div className="space-y-4 text-sm dark:text-[#9CA3AF] text-muted-foreground">
+            <div className="space-y-4 text-sm text-muted-foreground">
               <div>
-                <h3 className="text-base dark:text-[#E7E7F0] text-foreground mb-2">
-                  Variante actuelle: <span className="dark:text-primary text-primary">{variant === "soft" ? "Compact Soft" : "Compact Max"}</span>
+                <h3 className="text-base text-foreground mb-2">
+                  Variante actuelle: <span className="text-primary">{variant === "soft" ? "Compact Soft" : "Compact Max"}</span>
                 </h3>
                 <p className="leading-relaxed">
                   {variant === "soft" 
@@ -88,7 +88,7 @@ export function SidebarDemo() {
               </div>
 
               <div>
-                <h3 className="text-base dark:text-[#E7E7F0] text-foreground mb-2">Sections visibles</h3>
+                <h3 className="text-base text-foreground mb-2">Sections visibles</h3>
                 <ul className="list-disc list-inside space-y-1">
                   <li>COMPTES - Compte Launcher</li>
                   <li>PRINCIPAL - Dashboard, Notifications, Messages</li>
@@ -101,31 +101,31 @@ export function SidebarDemo() {
               </div>
 
               <div>
-                <h3 className="text-base dark:text-[#E7E7F0] text-foreground mb-2">Différences techniques</h3>
+                <h3 className="text-base text-foreground mb-2">Différences techniques</h3>
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs">
                     <thead>
-                      <tr className="border-b dark:border-[rgba(168,85,247,0.15)] border-border">
-                        <th className="text-left py-2 dark:text-[#E7E7F0] text-foreground">Élément</th>
-                        <th className="text-left py-2 dark:text-[#E7E7F0] text-foreground">Compact Soft</th>
-                        <th className="text-left py-2 dark:text-[#E7E7F0] text-foreground">Compact Max</th>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 text-foreground">Élément</th>
+                        <th className="text-left py-2 text-foreground">Compact Soft</th>
+                        <th className="text-left py-2 text-foreground">Compact Max</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y dark:divide-[rgba(168,85,247,0.10)] divide-border">
+                    <tbody className="divide-y divide-border">
                       <tr>
                         <td className="py-2">Container padding</td>
                         <td className="py-2">py-4</td>
-                        <td className="py-2 dark:text-primary text-primary">py-3</td>
+                        <td className="py-2 text-primary">py-3</td>
                       </tr>
                       <tr>
                         <td className="py-2">Section gap</td>
                         <td className="py-2">mb-4</td>
-                        <td className="py-2 dark:text-primary text-primary">mb-3</td>
+                        <td className="py-2 text-primary">mb-3</td>
                       </tr>
                       <tr>
                         <td className="py-2">Item height</td>
                         <td className="py-2">h-9 (36px)</td>
-                        <td className="py-2 dark:text-primary text-primary">h-8 (32px)</td>
+                        <td className="py-2 text-primary">h-8 (32px)</td>
                       </tr>
                       <tr>
                         <td className="py-2">Item gap</td>

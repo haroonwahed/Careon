@@ -518,7 +518,7 @@ export function ProductFormDialog({
             </div>
 
             {/* Pricing Section - 3 prix groupés */}
-            <div className="space-y-3 p-5 rounded-2xl dark:bg-card/50 bg-gray-50/50 border dark:border-primary/20 border-border">
+            <div className="space-y-3 p-5 rounded-2xl dark:bg-card/50 bg-gray-50/50 border dark:border-border">
               <h4 className="text-sm font-semibold uppercase tracking-wide dark:text-muted-foreground/90 text-muted-foreground">
                 {language === "fr" ? "Prix & Coûts" : "Pricing & Costs"}
               </h4>

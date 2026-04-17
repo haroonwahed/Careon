@@ -41,7 +41,7 @@ export function PerformanceSection({
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Top ventes */}
       <Card
-        className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+        className="rounded-2xl border border-border bg-card p-6"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -52,10 +52,10 @@ export function PerformanceSection({
             <TrendingUp className="h-5 w-5 dark:text-primary text-primary" />
           </div>
           <div>
-            <h3 className="dark:text-[#E7E7F0] text-foreground">
+            <h3 className="text-foreground">
               {language === "fr" ? "Top ventes du mois" : "Top sales this month"}
             </h3>
-            <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {language === "fr" ? "Produits les plus vendus" : "Best-selling products"}
             </p>
           </div>
@@ -65,18 +65,18 @@ export function PerformanceSection({
           {topProducts.map((product, index) => (
             <div
               key={index}
-              className="flex items-start justify-between p-3 rounded-xl dark:bg-[#1A1A24] bg-muted/50 border dark:border-[rgba(168,85,247,0.15)] border-border"
+              className="flex items-start justify-between p-3 rounded-xl bg-muted/50 border border-border"
             >
               <div className="flex-1">
-                <p className="text-sm dark:text-[#E7E7F0] text-foreground mb-1 line-clamp-1">
+                <p className="text-sm text-foreground mb-1 line-clamp-1">
                   {product.name}
                 </p>
-                <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {product.sales} {language === "fr" ? "ventes" : "sales"}
                 </p>
               </div>
               <div className="text-right ml-3">
-                <p className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                <p className="text-sm text-foreground tabular-nums">
                   {formatCurrency(product.revenue, language)}
                 </p>
                 <p className="text-xs dark:text-primary text-primary tabular-nums">
@@ -90,7 +90,7 @@ export function PerformanceSection({
 
       {/* Top catégories */}
       <Card
-        className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+        className="rounded-2xl border border-border bg-card p-6"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -101,10 +101,10 @@ export function PerformanceSection({
             <Tag className="h-5 w-5 dark:text-primary text-primary" />
           </div>
           <div>
-            <h3 className="dark:text-[#E7E7F0] text-foreground">
+            <h3 className="text-foreground">
               {language === "fr" ? "Top catégories" : "Top categories"}
             </h3>
-            <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {language === "fr" ? "Classement par CA" : "Ranking by revenue"}
             </p>
           </div>
@@ -114,7 +114,7 @@ export function PerformanceSection({
           {topCategories.map((category, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-3 rounded-xl dark:bg-[#1A1A24] bg-muted/50 border dark:border-[rgba(168,85,247,0.15)] border-border"
+              className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border"
             >
               <div className="flex items-center gap-3 flex-1">
                 <div className="flex items-center justify-center w-8 h-8 rounded-lg dark:bg-primary/10 bg-primary/5">
@@ -123,15 +123,15 @@ export function PerformanceSection({
                   </span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm dark:text-[#E7E7F0] text-foreground mb-0.5">
+                  <p className="text-sm text-foreground mb-0.5">
                     {category.name}
                   </p>
-                  <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {category.count} {language === "fr" ? "articles" : "items"}
                   </p>
                 </div>
               </div>
-              <p className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums ml-3">
+              <p className="text-sm text-foreground tabular-nums ml-3">
                 {formatCurrency(category.revenue, language)}
               </p>
             </div>
@@ -141,7 +141,7 @@ export function PerformanceSection({
 
       {/* Transactions récentes */}
       <Card
-        className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+        className="rounded-2xl border border-border bg-card p-6"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -152,10 +152,10 @@ export function PerformanceSection({
             <Package className="h-5 w-5 dark:text-primary text-primary" />
           </div>
           <div>
-            <h3 className="dark:text-[#E7E7F0] text-foreground">
+            <h3 className="text-foreground">
               {language === "fr" ? "Transactions récentes" : "Recent transactions"}
             </h3>
-            <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {language === "fr" ? "Dernières opérations" : "Latest operations"}
             </p>
           </div>
@@ -165,7 +165,7 @@ export function PerformanceSection({
           {recentTransactions.map((transaction) => (
             <div
               key={transaction.id}
-              className="flex items-center justify-between p-2.5 rounded-lg dark:bg-[#1A1A24] bg-muted/50 border dark:border-[rgba(168,85,247,0.10)] border-border"
+              className="flex items-center justify-between p-2.5 rounded-lg bg-muted/50 border border-border"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -184,15 +184,15 @@ export function PerformanceSection({
                       ? "Achat"
                       : "Purchase"}
                   </span>
-                  <span className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {transaction.date}
                   </span>
                 </div>
-                <p className="text-xs dark:text-[#E7E7F0] text-foreground line-clamp-1">
+                <p className="text-xs text-foreground line-clamp-1">
                   {transaction.item}
                 </p>
               </div>
-              <p className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums ml-3">
+              <p className="text-sm text-foreground tabular-nums ml-3">
                 {formatCurrency(transaction.amount, language)}
               </p>
             </div>

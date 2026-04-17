@@ -40,12 +40,12 @@ export function AnalysisHeader({
   };
 
   return (
-    <div className="sticky top-0 z-10 dark:bg-[#0A0A10] bg-background border-b dark:border-[rgba(168,85,247,0.15)] border-border">
+    <div className="sticky top-0 z-10 bg-background border-b border-border">
       {/* Main header */}
       <div className="p-6">
         <div className="flex items-start gap-4">
           {/* Large thumbnail */}
-          <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 dark:bg-[#1A1A24] bg-muted">
+          <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0 bg-muted">
             <img
               src={analysis.thumbnail}
               alt={analysis.name}
@@ -57,7 +57,7 @@ export function AnalysisHeader({
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between mb-2">
               <div className="flex items-center gap-2 flex-1 min-w-0">
-                <h1 className="text-xl dark:text-[#E7E7F0] text-foreground line-clamp-1">
+                <h1 className="text-xl text-foreground line-clamp-1">
                   {analysis.name}
                 </h1>
                 {analysis.url && (
@@ -76,7 +76,7 @@ export function AnalysisHeader({
               <div className="flex items-center gap-2 flex-shrink-0 ml-4">
                 <button
                   onClick={onRename}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border border-border text-foreground text-sm transition-all duration-200 hover:bg-muted/70"
                 >
                   <Edit2 className="w-4 h-4" />
                   <span className="hidden sm:inline">
@@ -99,7 +99,7 @@ export function AnalysisHeader({
 
             <div className="flex items-center gap-3">
               {getStatusBadge()}
-              <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-sm text-muted-foreground">
                 {language === "fr" ? "Créée le" : "Created on"} {analysis.createdAt}
               </span>
             </div>

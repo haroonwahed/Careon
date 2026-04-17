@@ -140,14 +140,14 @@ export function MarginChart({ data, delta, language, customFrom, customTo, aggre
     
     if (!isNeutral) {
       if (isPositive) {
-        colorClass = "dark:text-[#2AF07A] text-emerald-600";
+        colorClass = "text-green-base text-emerald-600";
         DeltaIcon = TrendingUp;
       } else {
-        colorClass = "dark:text-[#FF5C8A] text-red-600";
+        colorClass = "text-red-base text-red-600";
         DeltaIcon = TrendingDown;
       }
     } else {
-      colorClass = "dark:text-[#9CA3AF] text-neutral-500";
+      colorClass = "text-neutral-500";
     }
     
     const displayValue = isNeutral ? "0%" : `${isPositive ? "+" : ""}${value.toFixed(1)}%`;
@@ -168,19 +168,19 @@ export function MarginChart({ data, delta, language, customFrom, customTo, aggre
       
       return (
         <div 
-          className="rounded-xl border dark:border-[rgba(168,85,247,0.25)] dark:bg-[#0E0E14] bg-popover p-3 min-w-[180px]"
+          className="rounded-xl border bg-popover p-3 min-w-[180px]"
           style={{
             boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)"
           }}
         >
-          <p className="dark:text-[#9CA3AF] text-muted-foreground mb-3" style={{ fontSize: "12px", fontWeight: 600 }}>
+          <p className="text-muted-foreground mb-3" style={{ fontSize: "12px", fontWeight: 600 }}>
             {label}
           </p>
           <div className="space-y-1">
-            <p className="dark:text-[#9CA3AF] text-muted-foreground" style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <p className="text-muted-foreground" style={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               {t(language, "chart.marginPct")}
             </p>
-            <p className="dark:text-[#C7B8FF] text-foreground" style={{ fontSize: "14px", fontWeight: 600 }}>
+            <p className="text-foreground" style={{ fontSize: "14px", fontWeight: 600 }}>
               {currentValue.toFixed(1)}%
             </p>
           </div>
@@ -192,7 +192,7 @@ export function MarginChart({ data, delta, language, customFrom, customTo, aggre
 
   return (
     <Card 
-      className="rounded-2xl border p-6 dark:bg-[#0E0E14] dark:border-[rgba(168,85,247,0.25)] bg-card shadow-sm"
+      className="rounded-2xl border p-6 bg-card shadow-sm"
       style={{
         boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)"
       }}
@@ -201,12 +201,12 @@ export function MarginChart({ data, delta, language, customFrom, customTo, aggre
       <div className="flex items-start justify-between mb-6">
         <div className="space-y-3">
           <h3 
-            className="dark:text-[#E7E7F0] text-foreground"
+            className="text-foreground"
             style={{ fontSize: "18px", fontWeight: 600 }}
           >
             {t(language, "chart.marginPct")} {isHourly && (
               <span 
-                className="dark:text-[#9CA3AF] text-muted-foreground ml-2"
+                className="text-muted-foreground ml-2"
                 style={{ fontSize: "14px", fontWeight: 400 }}
               >
                 (24h)
@@ -217,12 +217,12 @@ export function MarginChart({ data, delta, language, customFrom, customTo, aggre
           <div className="space-y-2">
             <div>
               <div 
-                className="dark:text-[#C7B8FF] text-foreground"
+                className="text-foreground"
                 style={{ fontSize: "24px", fontWeight: 700, letterSpacing: "-0.02em" }}
               >
                 {avgMargin.toFixed(1)}%
               </div>
-              <p className="dark:text-[#9CA3AF] text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-xs">
                 {t(language, "chart.average")}
               </p>
               {delta !== undefined && getDeltaDisplay(delta)}

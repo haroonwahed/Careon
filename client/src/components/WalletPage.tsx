@@ -245,23 +245,23 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         {/* Available Balance */}
         <div
-          className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+          className="rounded-2xl border border-border bg-card p-6"
           style={{
             boxShadow:
               "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
           }}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl dark:bg-primary/15 bg-primary/10 flex items-center justify-center">
-              <Euro className="w-6 h-6 dark:text-primary text-primary" />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Euro className="w-6 h-6 text-primary" />
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t(language, "wallet.kpi.available")}
             </p>
             <p
-              className="dark:text-[#C7B8FF] text-foreground"
+              className="text-foreground"
               style={{ fontSize: "32px", fontWeight: 600, lineHeight: 1.2 }}
             >
               {formatCurrency(availableBalance, language)}
@@ -271,23 +271,23 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
 
         {/* Pending Balance */}
         <div
-          className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+          className="rounded-2xl border border-border bg-card p-6"
           style={{
             boxShadow:
               "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
           }}
         >
           <div className="flex items-start justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl dark:bg-primary/15 bg-primary/10 flex items-center justify-center">
-              <Euro className="w-6 h-6 dark:text-primary text-primary opacity-50" />
+            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Euro className="w-6 h-6 text-primary opacity-50" />
             </div>
           </div>
           <div className="space-y-1">
-            <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t(language, "wallet.kpi.pending")}
             </p>
             <p
-              className="dark:text-[#C7B8FF] text-foreground opacity-70"
+              className="text-foreground opacity-70"
               style={{ fontSize: "32px", fontWeight: 600, lineHeight: 1.2 }}
             >
               {formatCurrency(pendingBalance, language)}
@@ -300,7 +300,7 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
       <div className="mb-8">
         <Button
           onClick={() => setTransferModalOpen(true)}
-          className="gap-2 rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+          className="gap-2 rounded-xl bg-primary hover:bg-primary/90"
           style={{
             boxShadow: "0 0 16px rgba(139,92,246,0.3)",
           }}
@@ -312,25 +312,25 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
 
       {/* Financial Activity List - Compact & Fine Design */}
       <div>
-        <h2 className="text-xl font-semibold dark:text-foreground text-foreground mb-4">
+        <h2 className="text-xl font-semibold text-foreground mb-4">
           {t(language, "wallet.activity.title")}
         </h2>
 
         {filteredActivities.length === 0 ? (
           <div
-            className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-12 text-center"
+            className="rounded-2xl border border-border bg-card p-12 text-center"
             style={{
               boxShadow:
                 "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
             }}
           >
-            <p className="dark:text-muted-foreground text-muted-foreground">
+            <p className="text-muted-foreground">
               {t(language, "wallet.activity.noActivity")}
             </p>
           </div>
         ) : (
           <div
-            className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card overflow-hidden"
+            className="rounded-2xl border border-border bg-card overflow-hidden"
             style={{
               boxShadow:
                 "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -342,11 +342,11 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
                 onClick={() => handleSaleClick(activity)}
                 className={`px-4 py-3 transition-all ${
                   activity.type === "sale"
-                    ? "cursor-pointer hover:dark:bg-[rgba(139,92,246,0.08)] hover:bg-muted/30"
+                    ? "cursor-pointer hover:bg-muted/30"
                     : ""
                 } ${
                   index !== filteredActivities.length - 1
-                    ? "border-b dark:border-[rgba(168,85,247,0.15)] border-border/50"
+                    ? "border-b border-border/50"
                     : ""
                 }`}
               >
@@ -362,21 +362,21 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
                     {/* Item Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <p className="dark:text-foreground text-foreground font-medium truncate text-sm">
+                        <p className="text-foreground font-medium truncate text-sm">
                           {activity.item.title}
                         </p>
                         <Badge
                           variant="outline"
-                          className="shrink-0 dark:bg-primary/10 bg-primary/5 dark:text-primary text-primary dark:border-primary/30 border-primary/20 text-[10px] px-2 py-0.5"
+                          className="shrink-0 bg-primary/5 text-primary dark:border-primary/30 border-primary/20 text-[10px] px-2 py-0.5"
                         >
                           {t(language, "wallet.activity.status.finalized")}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs dark:text-muted-foreground text-muted-foreground flex-wrap">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         <span className="font-mono">{activity.item.sku}</span>
                         <span className="opacity-50">•</span>
-                        <span className="font-semibold dark:text-foreground text-foreground">
+                        <span className="font-semibold text-foreground">
                           {formatCurrency(activity.item.price, language)}
                         </span>
                         <span className="opacity-50">•</span>
@@ -397,26 +397,26 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
                 ) : (
                   <div className="flex items-center gap-3">
                     {/* Transfer Icon */}
-                    <div className="w-12 h-12 rounded-lg dark:bg-primary/10 bg-primary/5 flex items-center justify-center shrink-0">
-                      <ArrowUpRight className="w-5 h-5 dark:text-primary text-primary" />
+                    <div className="w-12 h-12 rounded-lg bg-primary/5 flex items-center justify-center shrink-0">
+                      <ArrowUpRight className="w-5 h-5 text-primary" />
                     </div>
 
                     {/* Transfer Details */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-0.5">
-                        <p className="dark:text-foreground text-foreground font-medium text-sm">
+                        <p className="text-foreground font-medium text-sm">
                           {t(language, "wallet.activity.type.transfer")}
                         </p>
                         <Badge
                           variant="outline"
-                          className="shrink-0 dark:bg-green-500/10 bg-green-500/5 dark:text-green-400 text-green-600 dark:border-green-500/30 border-green-500/20 text-[10px] px-2 py-0.5"
+                          className="shrink-0 bg-green-500/10 text-green-base border-green-500/30 text-[10px] px-2 py-0.5"
                         >
                           {t(language, "wallet.activity.status.completed")}
                         </Badge>
                       </div>
 
-                      <div className="flex items-center gap-3 text-xs dark:text-muted-foreground text-muted-foreground">
-                        <span className="font-semibold dark:text-foreground text-foreground">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="font-semibold text-foreground">
                           {formatCurrency(activity.amount, language)}
                         </span>
                         <span className="opacity-50">•</span>
@@ -436,25 +436,25 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
 
       {/* Transfer Modal */}
       <Dialog open={transferModalOpen} onOpenChange={setTransferModalOpen}>
-        <DialogContent className="rounded-2xl dark:bg-[#12121C] bg-card dark:border-[rgba(168,85,247,0.25)] border-border">
+        <DialogContent className="rounded-2xl bg-card border-border">
           <DialogHeader>
-            <DialogTitle className="dark:text-foreground text-foreground">
+            <DialogTitle className="text-foreground">
               {t(language, "wallet.modal.transfer.title")}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <p className="text-sm dark:text-muted-foreground text-muted-foreground mb-2">
+              <p className="text-sm text-muted-foreground mb-2">
                 {t(language, "wallet.modal.transfer.available")}:{" "}
-                <span className="dark:text-primary text-primary font-semibold">
+                <span className="text-primary font-semibold">
                   {formatCurrency(availableBalance, language)}
                 </span>
               </p>
             </div>
 
             <div>
-              <label className="text-sm font-medium dark:text-foreground text-foreground mb-2 block">
+              <label className="text-sm font-medium text-foreground mb-2 block">
                 {t(language, "wallet.modal.transfer.amountLabel")}
               </label>
               <Input
@@ -480,7 +480,7 @@ export function WalletPage({ language, onNavigateToMessages }: WalletPageProps) 
             </Button>
             <Button
               onClick={handleTransfer}
-              className="rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+              className="rounded-xl bg-primary hover:bg-primary/90"
               style={{
                 boxShadow: "0 0 16px rgba(139,92,246,0.3)",
               }}

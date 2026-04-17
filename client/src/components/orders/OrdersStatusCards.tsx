@@ -20,27 +20,27 @@ export function OrdersStatusCards({ items, activeKey, onPick }: OrdersStatusCard
     switch (tone) {
       case "purple":
         return {
-          bg: "dark:bg-[rgba(139,92,246,0.10)] bg-primary/10",
-          border: "dark:border-[rgba(168,85,247,0.30)] border-primary/30",
-          icon: "dark:text-[#A78BFA] text-primary",
+          bg: "bg-primary/10",
+          border: "border-primary/30",
+          icon: "text-primary",
         };
       case "amber":
         return {
           bg: "dark:bg-[rgba(251,191,36,0.10)] bg-yellow-50",
           border: "dark:border-[rgba(251,191,36,0.30)] border-yellow-300",
-          icon: "dark:text-[#FBBF24] text-yellow-600",
+          icon: "text-yellow-base text-yellow-600",
         };
       case "green":
         return {
           bg: "dark:bg-[rgba(42,240,122,0.10)] bg-green-50",
           border: "dark:border-[rgba(42,240,122,0.30)] border-green-300",
-          icon: "dark:text-[#2AF07A] text-green-600",
+          icon: "text-green-base text-green-600",
         };
       default:
         return {
-          bg: "dark:bg-[rgba(139,92,246,0.10)] bg-primary/10",
-          border: "dark:border-[rgba(168,85,247,0.30)] border-primary/30",
-          icon: "dark:text-[#A78BFA] text-primary",
+          bg: "bg-primary/10",
+          border: "border-primary/30",
+          icon: "text-primary",
         };
     }
   };
@@ -63,10 +63,10 @@ export function OrdersStatusCards({ items, activeKey, onPick }: OrdersStatusCard
             >
               <Icon className={cn("w-4 h-4", iconClass)} />
               <div>
-                <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
                   {item.label}
                 </div>
-                <div className="text-lg dark:text-[#E7E7F0] text-foreground">
+                <div className="text-lg text-foreground">
                   {item.count}
                 </div>
               </div>

@@ -89,13 +89,13 @@ export function PurchasesChart({
 
     return (
       <div
-        className="rounded-xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border p-3 shadow-lg"
+        className="rounded-xl bg-card border border-border p-3 shadow-lg"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 24px rgba(168,85,247,0.15)",
         }}
       >
-        <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
           {formattedDate}
         </p>
         <div className="flex items-center gap-2">
@@ -103,10 +103,10 @@ export function PurchasesChart({
             className="w-2 h-2 rounded-full"
             style={{ backgroundColor: "rgba(251, 146, 60, 1)" }}
           />
-          <span className="text-xs dark:text-[#E7E7F0] text-foreground">
+          <span className="text-xs text-foreground">
             {language === "fr" ? "Achats" : "Purchases"}:
           </span>
-          <span className="text-xs dark:text-[#E7E7F0] text-foreground tabular-nums">
+          <span className="text-xs text-foreground tabular-nums">
             {formatCurrency(payload[0].value, language)}
           </span>
         </div>
@@ -116,17 +116,17 @@ export function PurchasesChart({
 
   return (
     <Card
-      className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+      className="rounded-2xl border border-border bg-card p-6"
       style={{
         boxShadow:
           "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
       }}
     >
       <div className="mb-4">
-        <h3 className="dark:text-[#E7E7F0] text-foreground">
+        <h3 className="text-foreground">
           {language === "fr" ? "Montant des achats" : "Purchase amount"}
         </h3>
-        <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {language === "fr"
             ? "Évolution sur la période sélectionnée"
             : "Trend over selected period"}
@@ -161,7 +161,7 @@ export function PurchasesChart({
             <XAxis
               dataKey="date"
               tickFormatter={formatXAxis}
-              className="dark:text-[#9CA3AF] text-muted-foreground"
+              className="text-muted-foreground"
               style={{ fontSize: "11px" }}
               axisLine={false}
               tickLine={false}
@@ -173,7 +173,7 @@ export function PurchasesChart({
                 }
                 return value.toString();
               }}
-              className="dark:text-[#9CA3AF] text-muted-foreground"
+              className="text-muted-foreground"
               style={{ fontSize: "11px" }}
               axisLine={false}
               tickLine={false}

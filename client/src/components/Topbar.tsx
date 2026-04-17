@@ -9,7 +9,7 @@ interface TopbarProps {
 export function Topbar({ theme, onThemeToggle }: TopbarProps) {
   return (
     <div 
-      className="sticky top-0 z-50 backdrop-blur-md dark:bg-[#0A0A0E]/80 bg-background/80 border-b dark:border-[rgba(168,85,247,0.25)] border-border"
+      className="sticky top-0 z-50 backdrop-blur-md bg-background/80 bg-background/80 border-b border-border"
       style={{
         boxShadow: theme === "dark" ? "0 1px 0 rgba(168,85,247,0.15)" : undefined
       }}
@@ -25,7 +25,7 @@ export function Topbar({ theme, onThemeToggle }: TopbarProps) {
             <span className="text-white" style={{ fontWeight: 700 }}>V</span>
           </div>
           <span 
-            className="dark:text-[#E7E7F0] text-foreground"
+            className="text-foreground"
             style={{ fontWeight: 600, fontSize: "16px" }}
           >
             Vinted Manager
@@ -40,7 +40,7 @@ export function Topbar({ theme, onThemeToggle }: TopbarProps) {
             onClick={onThemeToggle}
           >
             {theme === "dark" ? (
-              <Sun className="h-5 w-5 dark:text-[#9CA3AF]" />
+              <Sun className="h-5 w-5 text-muted-foreground" />
             ) : (
               <Moon className="h-5 w-5" />
             )}

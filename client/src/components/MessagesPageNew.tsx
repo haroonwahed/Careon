@@ -237,7 +237,7 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
       {/* Two-pane layout - flex-1 to take remaining height */}
       <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Pane - Conversations List */}
-        <div className="w-full md:w-80 lg:w-96 border-r dark:border-[rgba(168,85,247,0.25)] border-border bg-card flex flex-col overflow-hidden">
+        <div className="w-full md:w-80 lg:w-96 border-r border-border bg-card flex flex-col overflow-hidden">
           {/* Conversations List - scrollable */}
           <div className="flex-1 overflow-y-auto scrollbar-thin">
             {filteredConversations.length === 0 ? (
@@ -268,7 +268,7 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
         {selectedConversation ? (
           <div className="hidden md:flex flex-1 flex-col bg-background overflow-hidden">
             {/* Top Bar - fixed header within the column */}
-            <div className="border-b dark:border-[rgba(168,85,247,0.25)] border-border bg-card flex-shrink-0">
+            <div className="border-b border-border bg-card flex-shrink-0">
               {/* Buyer info row */}
               <div className="p-4 flex items-center justify-between">
                 {/* Left: Buyer info */}
@@ -277,16 +277,16 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
                   <img
                     src={selectedConversation.buyerAvatar}
                     alt={selectedConversation.buyerName}
-                    className="w-10 h-10 rounded-full object-cover border-2 dark:border-[rgba(168,85,247,0.30)] border-border flex-shrink-0"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-border flex-shrink-0"
                   />
 
                   <div className="flex-1 min-w-0">
                     {/* Buyer Name + Username */}
                     <div className="flex items-baseline gap-2">
-                      <h3 className="dark:text-[#E7E7F0] text-foreground truncate">
+                      <h3 className="text-foreground truncate">
                         {selectedConversation.buyerName}
                       </h3>
-                      <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                      <span className="text-sm text-muted-foreground">
                         {selectedConversation.buyerUsername}
                       </span>
                     </div>
@@ -307,15 +307,15 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
                 <img
                   src={selectedConversation.itemThumbnail}
                   alt={selectedConversation.itemTitle}
-                  className="w-12 h-12 rounded-xl object-cover border dark:border-[rgba(168,85,247,0.20)] border-border flex-shrink-0"
+                  className="w-12 h-12 rounded-xl object-cover border border-border flex-shrink-0"
                 />
 
                 {/* Item info */}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm dark:text-[#E7E7F0] text-foreground truncate">
+                  <div className="text-sm text-foreground truncate">
                     {selectedConversation.itemTitle}
                   </div>
-                  <div className="text-xs dark:text-[#A78BFA] text-primary">
+                  <div className="text-xs text-primary">
                     {formatCurrency(selectedConversation.itemPrice, language)}
                   </div>
                 </div>
@@ -325,7 +325,7 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowOfferModal(true)}
-                  className="rounded-full dark:border-[rgba(168,85,247,0.40)] border-primary dark:text-[#A78BFA] text-primary hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10 flex-shrink-0"
+                  className="rounded-full border-primary text-primary hover:bg-primary/10 hover:bg-primary/10 flex-shrink-0"
                 >
                   {t(language, "messages.offer.makeOffer")}
                 </Button>
@@ -334,9 +334,9 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
 
             {/* Inline Download CTA (if label available) */}
             {selectedConversation.hasLabel && (
-              <div className="p-3 border-b dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-primary/5 flex-shrink-0">
+              <div className="p-3 border-b border-border bg-primary/5 flex-shrink-0">
                 <Button
-                  className="w-full rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 gap-2"
+                  className="w-full rounded-xl bg-primary hover:bg-primary/90 gap-2"
                   style={{
                     boxShadow: "0 0 16px rgba(139,92,246,0.3)"
                   }}
@@ -353,12 +353,12 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
             )}
 
             {/* Messages Area - scrollable */}
-            <div className="flex-1 overflow-y-auto p-6 dark:bg-[#0A0A0E] bg-background scrollbar-thin">
+            <div className="flex-1 overflow-y-auto p-6 bg-background scrollbar-thin">
               {timeline.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center">
-                    <MessageCircle className="w-12 h-12 dark:text-[#9CA3AF] text-muted-foreground mx-auto mb-3" />
-                    <p className="dark:text-[#9CA3AF] text-muted-foreground">
+                    <MessageCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-muted-foreground">
                       {t(language, "messages.empty.noMessagesYet")}
                     </p>
                   </div>
@@ -407,7 +407,7 @@ export function MessagesPageNew({ language }: MessagesPageNewProps) {
             />
           </div>
         ) : (
-          <div className="hidden md:flex flex-1 items-center justify-center dark:bg-[#0A0A0E] bg-background">
+          <div className="hidden md:flex flex-1 items-center justify-center bg-background">
             <EmptyState
               icon={MessageCircle}
               title={t(language, "messages.empty.title")}

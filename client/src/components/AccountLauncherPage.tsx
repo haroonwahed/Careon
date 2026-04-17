@@ -186,13 +186,13 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
   };
 
   return (
-    <div className="h-screen flex flex-col dark:bg-[#0A0A0E] bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
       <div className="border-b border-border bg-background px-6 pb-6 pt-6">
         <div className="flex items-start justify-between mb-2">
           <div>
             <h1 className="text-foreground mb-2">{t(language, "accountLauncher.title")}</h1>
-            <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
               {t(language, "accountLauncher.subtitle")}
             </p>
           </div>
@@ -201,7 +201,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
         {/* Primary CTA */}
         <Button
           onClick={handleCreateProfile}
-          className="mt-4 rounded-xl gap-2 dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+          className="mt-4 rounded-xl gap-2 bg-primary hover:bg-primary/90"
           style={{
             boxShadow: "0 0 16px rgba(139,92,246,0.3)"
           }}
@@ -218,22 +218,22 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
           {profiles.map((profile) => (
             <div
               key={profile.id}
-              className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6 transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.2)]"
+              className="rounded-2xl border border-border bg-card p-6 transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.2)]"
             >
               <div className="flex items-center gap-6">
                 {/* Left: Identity */}
                 <div className="flex items-center gap-4 min-w-[240px]">
                   {/* Avatar */}
-                  <div className="w-14 h-14 rounded-full dark:bg-[rgba(139,92,246,0.20)] bg-primary/20 dark:text-[#A78BFA] text-primary flex items-center justify-center text-xl font-semibold border-2 dark:border-[rgba(168,85,247,0.40)] border-primary/40">
+                  <div className="w-14 h-14 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xl font-semibold border-2 border-primary/40">
                     {profile.avatar}
                   </div>
                   
                   {/* Name + Email */}
                   <div className="flex-1 min-w-0">
-                    <div className="dark:text-[#E7E7F0] text-foreground font-medium mb-0.5">
+                    <div className="text-foreground font-medium mb-0.5">
                       {profile.username}
                     </div>
-                    <div className="text-sm dark:text-[#6B7280] text-muted-foreground">
+                    <div className="text-sm text-muted-foreground">
                       {profile.name}
                     </div>
                   </div>
@@ -246,7 +246,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     onClick={() => handleOpenVinted(profile)}
                     size="sm"
                     variant="outline"
-                    className="rounded-lg gap-2 dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(168,85,247,0.10)] hover:bg-muted"
+                    className="rounded-lg gap-2 border-border text-foreground hover:bg-primary/10"
                   >
                     <ExternalLink className="w-3.5 h-3.5" />
                     {t(language, "accountLauncher.profile.openVinted")}
@@ -258,7 +258,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     disabled={profile.isConnected}
                     size="sm"
                     variant="outline"
-                    className="rounded-lg gap-2 dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(168,85,247,0.10)] hover:bg-muted disabled:opacity-50"
+                    className="rounded-lg gap-2 border-border text-foreground hover:bg-primary/10 disabled:opacity-50"
                   >
                     <Link className="w-3.5 h-3.5" />
                     {t(language, "accountLauncher.profile.connect")}
@@ -270,7 +270,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     disabled={!profile.isRunning}
                     size="sm"
                     variant="outline"
-                    className="rounded-lg gap-2 dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(168,85,247,0.10)] hover:bg-muted disabled:opacity-50"
+                    className="rounded-lg gap-2 border-border text-foreground hover:bg-primary/10 disabled:opacity-50"
                   >
                     <Square className="w-3.5 h-3.5" />
                     {t(language, "accountLauncher.profile.stopVinted")}
@@ -281,7 +281,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     onClick={() => handleStartSession(profile)}
                     disabled={!profile.isConnected || profile.isRunning}
                     size="sm"
-                    className="rounded-lg gap-2 dark:bg-[#8B5CF6] bg-primary dark:text-white text-white hover:dark:bg-[#7C3AED] hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="rounded-lg gap-2 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
                     style={profile.isConnected && !profile.isRunning ? {
                       boxShadow: "0 0 12px rgba(139,92,246,0.4)"
                     } : undefined}
@@ -294,7 +294,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                   <Button
                     onClick={() => handleDeleteProfile(profile)}
                     size="sm"
-                    className="rounded-lg gap-2 dark:bg-[rgba(220,38,38,0.90)] bg-red-500 dark:text-white text-white hover:dark:bg-[rgba(220,38,38,1)] hover:bg-red-600"
+                    className="rounded-lg gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     {t(language, "accountLauncher.profile.deleteProfile")}
@@ -307,29 +307,29 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                   <div className="flex flex-col items-end gap-1.5">
                     {/* Running/Stopped status */}
                     {profile.isRunning ? (
-                      <Badge className="text-[10px] px-3 py-1 dark:bg-[rgba(42,240,122,0.20)] bg-green-500/20 dark:text-[#2AF07A] text-green-300 border dark:border-[#2AF07A] border-green-400">
+                      <Badge className="text-[10px] px-3 py-1 bg-green-light/20 text-green-base border border-green-border">
                         {t(language, "accountLauncher.profile.statusRunning")}
                       </Badge>
                     ) : (
-                      <Badge className="text-[10px] px-3 py-1 dark:bg-[rgba(251,191,36,0.20)] bg-orange-500/20 dark:text-[#FDE68A] text-orange-300 border dark:border-[#FBBF24] border-orange-400">
+                      <Badge className="text-[10px] px-3 py-1 bg-yellow-light/20 text-yellow-border border border-yellow-border">
                         {t(language, "accountLauncher.profile.statusStopped")}
                       </Badge>
                     )}
                     
                     {/* Connection status */}
                     {profile.isConnected ? (
-                      <Badge className="text-[10px] px-3 py-1 dark:bg-[rgba(42,240,122,0.20)] bg-green-500/20 dark:text-[#2AF07A] text-green-300 border dark:border-[#2AF07A] border-green-400">
+                      <Badge className="text-[10px] px-3 py-1 bg-green-light/20 text-green-base border border-green-border">
                         {t(language, "accountLauncher.profile.statusConnected")}
                       </Badge>
                     ) : (
-                      <Badge className="text-[10px] px-3 py-1 dark:bg-[rgba(251,113,133,0.20)] bg-red-500/20 dark:text-[#FCA5A5] text-red-300 border dark:border-[#FB7185] border-red-400">
+                      <Badge className="text-[10px] px-3 py-1 bg-red-light/20 text-red-border border border-red-border">
                         {t(language, "accountLauncher.profile.statusDisconnected")}
                       </Badge>
                     )}
                   </div>
 
                   {/* Proxy info */}
-                  <div className="text-xs dark:text-[#6B7280] text-muted-foreground text-right">
+                  <div className="text-xs text-muted-foreground text-right">
                     {profile.proxy ? (
                       <>
                         {t(language, "accountLauncher.profile.proxyHost")}: {profile.proxy.host} · {t(language, "accountLauncher.profile.proxyPort")}: {profile.proxy.port}
@@ -344,14 +344,14 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
           ))}
 
           {/* Tip callout */}
-          <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.20)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-primary/5 p-5 mt-8">
+          <div className="rounded-2xl border border-border bg-primary/5 p-5 mt-8">
             <div className="flex gap-3">
-              <Lightbulb className="w-5 h-5 dark:text-[#A78BFA] text-primary flex-shrink-0 mt-0.5" />
+              <Lightbulb className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
               <div>
-                <div className="text-sm dark:text-[#E7E7F0] text-foreground font-medium mb-1">
+                <div className="text-sm text-foreground font-medium mb-1">
                   {t(language, "accountLauncher.tip.title")}
                 </div>
-                <div className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   {t(language, "accountLauncher.tip.text")}
                 </div>
               </div>
@@ -362,9 +362,9 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
       {/* Create/Edit Profile Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl rounded-2xl bg-card border border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="dark:text-[#E7E7F0] text-foreground">
+            <DialogTitle className="text-foreground">
               {editingProfile
                 ? t(language, "accountLauncher.modal.editTitle")
                 : t(language, "accountLauncher.modal.createTitle")
@@ -375,13 +375,13 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
           <div className="space-y-6 py-4">
             {/* Section 1: Credentials */}
             <div>
-              <h3 className="text-sm dark:text-[#E7E7F0] text-foreground font-medium mb-4">
+              <h3 className="text-sm text-foreground font-medium mb-4">
                 {t(language, "accountLauncher.modal.sectionCredentials")}
               </h3>
               
               {/* Email */}
               <div className="mb-4">
-                <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                <label className="block text-sm text-muted-foreground mb-2">
                   {t(language, "accountLauncher.modal.email")}
                 </label>
                 <Input
@@ -389,13 +389,13 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder={t(language, "accountLauncher.modal.emailPlaceholder")}
-                  className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                  className="rounded-xl bg-background border-border"
                 />
               </div>
 
               {/* Password */}
               <div className="mb-4">
-                <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                <label className="block text-sm text-muted-foreground mb-2">
                   {t(language, "accountLauncher.modal.password")}
                 </label>
                 <div className="relative">
@@ -404,12 +404,12 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     value={formData.password}
                     onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                     placeholder={t(language, "accountLauncher.modal.passwordPlaceholder")}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border pr-10"
+                    className="rounded-xl bg-background border-border pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-[#E7E7F0] hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -418,13 +418,13 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
               {/* Security notes */}
               <div className="space-y-1">
-                <p className="text-xs dark:text-[#6B7280] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t(language, "accountLauncher.modal.securityNote")}
                 </p>
-                <p className="text-xs dark:text-[#6B7280] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t(language, "accountLauncher.modal.encryptionNote")}
                 </p>
-                <button className="text-xs dark:text-[#A78BFA] text-primary hover:underline">
+                <button className="text-xs text-primary hover:underline">
                   {t(language, "accountLauncher.modal.appPasswordLink")}
                 </button>
               </div>
@@ -432,53 +432,53 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
             {/* Section 2: Proxy */}
             <div>
-              <h3 className="text-sm dark:text-[#E7E7F0] text-foreground font-medium mb-4">
+              <h3 className="text-sm text-foreground font-medium mb-4">
                 {t(language, "accountLauncher.modal.sectionProxy")}
               </h3>
 
               <div className="grid grid-cols-2 gap-4">
                 {/* Proxy host */}
                 <div>
-                  <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                  <label className="block text-sm text-muted-foreground mb-2">
                     {t(language, "accountLauncher.modal.proxyHost")}
                   </label>
                   <Input
                     value={formData.proxyHost}
                     onChange={(e) => setFormData({ ...formData, proxyHost: e.target.value })}
                     placeholder={t(language, "accountLauncher.modal.proxyHostPlaceholder")}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-background border-border"
                   />
                 </div>
 
                 {/* Proxy port */}
                 <div>
-                  <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                  <label className="block text-sm text-muted-foreground mb-2">
                     {t(language, "accountLauncher.modal.proxyPort")}
                   </label>
                   <Input
                     value={formData.proxyPort}
                     onChange={(e) => setFormData({ ...formData, proxyPort: e.target.value })}
                     placeholder={t(language, "accountLauncher.modal.proxyPortPlaceholder")}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-background border-border"
                   />
                 </div>
 
                 {/* Proxy user */}
                 <div>
-                  <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                  <label className="block text-sm text-muted-foreground mb-2">
                     {t(language, "accountLauncher.modal.proxyUser")}
                   </label>
                   <Input
                     value={formData.proxyUser}
                     onChange={(e) => setFormData({ ...formData, proxyUser: e.target.value })}
                     placeholder={t(language, "accountLauncher.modal.proxyUserPlaceholder")}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-background border-border"
                   />
                 </div>
 
                 {/* Proxy password */}
                 <div>
-                  <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                  <label className="block text-sm text-muted-foreground mb-2">
                     {t(language, "accountLauncher.modal.proxyPassword")}
                   </label>
                   <div className="relative">
@@ -487,12 +487,12 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                       value={formData.proxyPassword}
                       onChange={(e) => setFormData({ ...formData, proxyPassword: e.target.value })}
                       placeholder={t(language, "accountLauncher.modal.proxyPasswordPlaceholder")}
-                      className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border pr-10"
+                      className="rounded-xl bg-background border-border pr-10"
                     />
                     <button
                       type="button"
                       onClick={() => setShowProxyPassword(!showProxyPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-[#E7E7F0] hover:text-foreground"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:hover:text-foreground"
                     >
                       {showProxyPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
@@ -503,15 +503,15 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
             {/* Section 3: Interface (ex-VNC) */}
             <div>
-              <h3 className="text-sm dark:text-[#E7E7F0] text-foreground font-medium mb-2">
+              <h3 className="text-sm text-foreground font-medium mb-2">
                 {t(language, "accountLauncher.modal.sectionInterface")}
               </h3>
-              <p className="text-xs dark:text-[#6B7280] text-muted-foreground mb-4">
+              <p className="text-xs text-muted-foreground mb-4">
                 {t(language, "accountLauncher.modal.interfaceHelperText")}
               </p>
 
               <div>
-                <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                <label className="block text-sm text-muted-foreground mb-2">
                   {t(language, "accountLauncher.modal.interfacePassword")}
                 </label>
                 <div className="relative">
@@ -520,12 +520,12 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
                     value={formData.vncPassword}
                     onChange={(e) => setFormData({ ...formData, vncPassword: e.target.value })}
                     placeholder={t(language, "accountLauncher.modal.interfacePasswordPlaceholder")}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border pr-10"
+                    className="rounded-xl bg-background border-border pr-10"
                   />
                   <button
                     type="button"
                     onClick={() => setShowVncPassword(!showVncPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-[#E7E7F0] hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:hover:text-foreground"
                   >
                     {showVncPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -535,26 +535,26 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
             {/* Section 4: Profile name */}
             <div>
-              <h3 className="text-sm dark:text-[#E7E7F0] text-foreground font-medium mb-4">
+              <h3 className="text-sm text-foreground font-medium mb-4">
                 {t(language, "accountLauncher.modal.sectionProfileName")}
               </h3>
               
               <div>
-                <label className="block text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2">
+                <label className="block text-sm text-muted-foreground mb-2">
                   {t(language, "accountLauncher.modal.profileName")}
                 </label>
                 <Input
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder={t(language, "accountLauncher.modal.profileNamePlaceholder")}
-                  className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                  className="rounded-xl bg-background border-border"
                 />
               </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t dark:border-[rgba(168,85,247,0.25)] border-border">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <Button
               onClick={() => setModalOpen(false)}
               variant="outline"
@@ -565,7 +565,7 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
             <Button
               onClick={handleSaveProfile}
               disabled={isSaving || !formData.email || !formData.password || !formData.name}
-              className="rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+              className="rounded-xl bg-primary hover:bg-primary/90"
               style={{
                 boxShadow: "0 0 16px rgba(139,92,246,0.3)"
               }}
@@ -581,12 +581,12 @@ export function AccountLauncherPage({ language }: AccountLauncherPageProps) {
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent className="rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border">
+        <AlertDialogContent className="rounded-2xl bg-card border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-[#E7E7F0] text-foreground">
+            <AlertDialogTitle className="text-foreground">
               {t(language, "accountLauncher.deleteConfirm.title")}
             </AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-[#9CA3AF] text-muted-foreground">
+            <AlertDialogDescription className="text-muted-foreground">
               {t(language, "accountLauncher.deleteConfirm.message")}
             </AlertDialogDescription>
           </AlertDialogHeader>

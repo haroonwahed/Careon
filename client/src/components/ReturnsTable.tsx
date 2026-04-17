@@ -120,7 +120,7 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
       case "dispute":
         return "dark:bg-red-500/20 bg-red-500/10 dark:text-red-400 text-red-600 border-0";
       default:
-        return "dark:bg-[#9CA3AF]/20 bg-neutral-200 dark:text-[#9CA3AF] text-neutral-600 border-0";
+        return "bg-muted/20 bg-neutral-200 text-neutral-600 border-0";
     }
   };
 
@@ -139,7 +139,7 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
 
   return (
     <Card
-      className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+      className="rounded-2xl border border-border bg-card p-6"
       style={{
         boxShadow:
           "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -148,17 +148,17 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="dark:text-[#E7E7F0] text-foreground">
+          <h3 className="text-foreground">
             {language === "fr" ? "Transactions retours" : "Return transactions"}
           </h3>
-          <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {language === "fr"
               ? "Derniers retours effectués"
               : "Recent returns made"}
           </p>
         </div>
         <button
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-primary hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-muted-foreground hover:dark:text-primary hover:text-primary transition-colors"
         >
           {language === "fr" ? "Voir tout" : "View all"}
           <ExternalLink className="w-3 h-3" />
@@ -166,20 +166,20 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
       </div>
 
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-3 px-3 pb-2 mb-2 border-b dark:border-[rgba(168,85,247,0.10)] border-border">
-        <div className="col-span-4 text-[10px] font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wider">
+      <div className="grid grid-cols-12 gap-3 px-3 pb-2 mb-2 border-b border-border">
+        <div className="col-span-4 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
           {language === "fr" ? "Article" : "Item"}
         </div>
-        <div className="col-span-2 text-[10px] font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wider">
+        <div className="col-span-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
           {language === "fr" ? "Statut" : "Status"}
         </div>
-        <div className="col-span-2 text-[10px] font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wider text-right">
+        <div className="col-span-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider text-right">
           {language === "fr" ? "Montant" : "Amount"}
         </div>
-        <div className="col-span-2 text-[10px] font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wider">
+        <div className="col-span-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
           {language === "fr" ? "Compte" : "Account"}
         </div>
-        <div className="col-span-2 text-[10px] font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wider">
+        <div className="col-span-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
           {language === "fr" ? "Date" : "Date"}
         </div>
       </div>
@@ -189,11 +189,11 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
         {displayReturns.slice(0, 6).map((ret) => (
           <div
             key={ret.id}
-            className="grid grid-cols-12 gap-3 p-2.5 rounded-lg dark:bg-[#1A1A24]/40 bg-muted/30 border dark:border-[rgba(168,85,247,0.08)] border-border hover:dark:bg-[#1A1A24] hover:bg-muted/50 transition-all duration-200 cursor-pointer group"
+            className="grid grid-cols-12 gap-3 p-2.5 rounded-lg bg-muted/40 bg-muted/30 border border-border hover:bg-muted hover:bg-muted/50 transition-all duration-200 cursor-pointer group"
           >
             {/* Article (with thumbnail + title + SKU) */}
             <div className="col-span-4 flex items-center gap-2.5 min-w-0">
-              <div className="flex-shrink-0 w-8 h-8 rounded-md overflow-hidden dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.15)] border-border">
+              <div className="flex-shrink-0 w-8 h-8 rounded-md overflow-hidden bg-card border border-border">
                 <img
                   src={ret.thumbnail || "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=200"}
                   alt={ret.title}
@@ -201,11 +201,11 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
                 />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[12px] dark:text-[#E7E7F0] text-foreground line-clamp-1 leading-tight">
+                <p className="text-[12px] text-foreground line-clamp-1 leading-tight">
                   {ret.title}
                 </p>
                 {ret.sku && (
-                  <p className="text-[9px] dark:text-[#9CA3AF] text-muted-foreground mt-0.5">
+                  <p className="text-[9px] text-muted-foreground mt-0.5">
                     {ret.sku}
                   </p>
                 )}
@@ -221,21 +221,21 @@ export function ReturnsTable({ returns, language }: ReturnsTableProps) {
 
             {/* Montant */}
             <div className="col-span-2 flex items-center justify-end">
-              <span className="text-[13px] dark:text-[#E7E7F0] text-foreground font-semibold tabular-nums">
+              <span className="text-[13px] text-foreground font-semibold tabular-nums">
                 {formatCurrency(ret.amount, language)}
               </span>
             </div>
 
             {/* Compte */}
             <div className="col-span-2 flex items-center">
-              <span className="text-[11px] dark:text-[#9CA3AF] text-muted-foreground truncate">
+              <span className="text-[11px] text-muted-foreground truncate">
                 {ret.accountName}
               </span>
             </div>
 
             {/* Date */}
             <div className="col-span-2 flex items-center">
-              <span className="text-[10px] dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground">
                 {formatDateTime(ret.date)}
               </span>
             </div>

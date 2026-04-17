@@ -23,7 +23,7 @@ export function AccountCard({ name, sales, revenue, color }: AccountCardProps) {
 
   return (
     <Card 
-      className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border p-6 dark:bg-[#0E0E14] bg-card shadow-sm"
+      className="rounded-2xl border border-border p-6 bg-card shadow-sm"
       style={{
         boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)"
       }}
@@ -37,7 +37,7 @@ export function AccountCard({ name, sales, revenue, color }: AccountCardProps) {
       </div>
       
       <h4 
-        className="dark:text-[#E7E7F0] text-foreground mb-4"
+        className="text-primary mb-4"
         style={{ fontSize: "16px", fontWeight: 600 }}
       >
         {name}
@@ -46,13 +46,13 @@ export function AccountCard({ name, sales, revenue, color }: AccountCardProps) {
       <div className="space-y-3 mb-4">
         <div>
           <p 
-            className="dark:text-[#9CA3AF] text-muted-foreground"
+            className="text-muted-foreground"
             style={{ fontSize: "13px", fontWeight: 500 }}
           >
             Sales
           </p>
           <p 
-            className="dark:text-[#C7B8FF] text-foreground"
+            className="text-primary"
             style={{ fontSize: "20px", fontWeight: 700 }}
           >
             {sales}
@@ -60,13 +60,13 @@ export function AccountCard({ name, sales, revenue, color }: AccountCardProps) {
         </div>
         <div>
           <p 
-            className="dark:text-[#9CA3AF] text-muted-foreground"
+            className="text-muted-foreground"
             style={{ fontSize: "13px", fontWeight: 500 }}
           >
             Revenue
           </p>
           <p 
-            className="dark:text-[#C7B8FF] text-foreground"
+            className="text-primary"
             style={{ fontSize: "20px", fontWeight: 700 }}
           >
             {formatCurrency(revenue)}
@@ -76,7 +76,7 @@ export function AccountCard({ name, sales, revenue, color }: AccountCardProps) {
       
       <Button 
         variant="outline" 
-        className="w-full rounded-2xl dark:border-[rgba(168,85,247,0.4)] dark:text-[#8B5CF6] dark:hover:bg-[rgba(139,92,246,0.1)]"
+        className="w-full rounded-2xl border-primary/40 hover:bg-primary/10"
       >
         Manage
       </Button>

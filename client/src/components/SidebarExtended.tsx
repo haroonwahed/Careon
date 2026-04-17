@@ -151,8 +151,8 @@ export function SidebarExtended({
         onClick={() => onPageChange(item.id)}
         className={`w-full flex items-center gap-2.5 ${s.itemHeight} ${s.itemPaddingX} rounded-lg transition-all duration-200 ${
           isActive
-            ? "dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 border dark:border-[rgba(168,85,247,0.5)] border-primary dark:text-[#8B5CF6] text-primary"
-            : "dark:text-[#9CA3AF] text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground dark:hover:bg-[#12121A] hover:bg-muted/50"
+            ? "bg-primary/10 border border-primary/50 text-primary"
+            : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
         }`}
         style={isActive ? {
           boxShadow: "0 0 15px rgba(139,92,246,0.25)"
@@ -166,7 +166,7 @@ export function SidebarExtended({
 
   return (
     <div 
-      className={`fixed left-0 top-0 h-screen w-56 border-r dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card z-40 flex flex-col px-3 overflow-hidden`}
+      className={`fixed left-0 top-0 h-screen w-56 border-r border-border bg-card z-40 flex flex-col px-3 overflow-hidden`}
       style={{
         boxShadow: "1px 0 0 rgba(168,85,247,0.15)"
       }}
@@ -176,7 +176,7 @@ export function SidebarExtended({
         {sections.map((section, idx) => (
           <div key={idx} className={idx === 0 ? "mb-2.5" : s.sectionGap}>
             <h3 
-              className={`${s.sectionTitleSize} font-semibold dark:text-primary/70 text-primary uppercase tracking-wider ${s.sectionTitleMb} px-1`}
+              className={`${s.sectionTitleSize} font-semibold text-primary/80 uppercase tracking-wider ${s.sectionTitleMb} px-1`}
             >
               {section.title}
             </h3>
@@ -189,7 +189,7 @@ export function SidebarExtended({
         {/* Settings */}
         <div className={s.sectionGap}>
           <h3 
-            className={`${s.sectionTitleSize} font-semibold dark:text-primary/70 text-primary uppercase tracking-wider ${s.sectionTitleMb} px-1`}
+            className={`${s.sectionTitleSize} font-semibold text-primary/80 uppercase tracking-wider ${s.sectionTitleMb} px-1`}
           >
             {language === "fr" ? "PARAMÈTRES" : "SETTINGS"}
           </h3>
@@ -200,16 +200,16 @@ export function SidebarExtended({
       </div>
 
       {/* Footer - Fixed at bottom */}
-      <div className={`border-t dark:border-[rgba(168,85,247,0.15)] border-border ${s.footerPy} flex flex-col gap-2 flex-shrink-0`}>
+      <div className={`border-t border-border ${s.footerPy} flex flex-col gap-2 flex-shrink-0`}>
         {/* Global Refresh */}
         {onGlobalRefresh && (
           <button
             onClick={handleGlobalRefresh}
             disabled={isRefreshing}
-            className={`w-full flex items-center justify-center gap-2 ${s.footerItemHeight} px-3 rounded-lg transition-all duration-200 dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground ${
+            className={`w-full flex items-center justify-center gap-2 ${s.footerItemHeight} px-3 rounded-lg transition-all duration-200 bg-muted border border-border text-foreground ${
               isRefreshing
                 ? "opacity-50 cursor-not-allowed"
-                : "hover:dark:bg-[#242430] hover:bg-muted/70"
+                : "hover:bg-muted/70"
             }`}
           >
             <RotateCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
@@ -223,7 +223,7 @@ export function SidebarExtended({
         {onCollapse && (
           <button
             onClick={onCollapse}
-            className={`w-full flex items-center justify-center gap-2 ${s.footerItemHeight} px-3 rounded-lg transition-all duration-200 dark:bg-primary bg-primary dark:text-white text-white hover:scale-[1.02] active:scale-[0.98]`}
+            className={`w-full flex items-center justify-center gap-2 ${s.footerItemHeight} px-3 rounded-lg transition-all duration-200 bg-primary text-primary-foreground hover:scale-[1.02] active:scale-[0.98]`}
             style={{
               boxShadow: "0 0 15px rgba(139,92,246,0.3)"
             }}

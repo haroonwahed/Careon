@@ -100,13 +100,13 @@ export function HistoryTab({ language }: HistoryTabProps) {
   return (
     <div className="p-6">
       {/* Sub-tabs */}
-      <div className="flex items-center gap-2 mb-6 border-b dark:border-[rgba(168,85,247,0.15)] border-border">
+      <div className="flex items-center gap-2 mb-6 border-b border-border">
         <button
           onClick={() => setActiveSubTab("sold")}
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "sold"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Ventes" : "Sold"}
@@ -116,7 +116,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "removed"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Retirés" : "Removed"}
@@ -126,7 +126,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "unsold"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Invendus" : "Unsold"}
@@ -136,21 +136,21 @@ export function HistoryTab({ language }: HistoryTabProps) {
       {/* Filters */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
         <div className="flex items-center gap-2 flex-wrap">
-          <select className="px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+          <select className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
             <option>{language === "fr" ? "Toutes les marques" : "All brands"}</option>
             <option>Nike</option>
             <option>Zara</option>
             <option>Levi's</option>
           </select>
 
-          <select className="px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+          <select className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
             <option>{language === "fr" ? "Tous les états" : "All conditions"}</option>
             <option>{language === "fr" ? "Neuf" : "New"}</option>
             <option>{language === "fr" ? "Très bon" : "Very good"}</option>
             <option>{language === "fr" ? "Bon" : "Good"}</option>
           </select>
 
-          <select className="px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
+          <select className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50">
             <option>{language === "fr" ? "Plus récent" : "Most recent"}</option>
             <option>{language === "fr" ? "Plus ancien" : "Oldest"}</option>
             <option>{language === "fr" ? "Prix croissant" : "Price ascending"}</option>
@@ -159,7 +159,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
         </div>
 
         <div className="relative flex-1 w-full sm:w-auto sm:max-w-xs ml-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-[#9CA3AF] text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder={
@@ -167,7 +167,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground placeholder:dark:text-[#9CA3AF] placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-muted border border-border text-foreground placeholder:placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
       </div>
@@ -182,7 +182,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
       {/* Empty state */}
       {filteredProducts.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {language === "fr" ? "Aucun produit trouvé" : "No products found"}
           </p>
         </div>
@@ -217,7 +217,7 @@ function ProductCard({ product, language }: { product: Product; language: Langua
 
   return (
     <div
-      className="rounded-xl border dark:border-[rgba(168,85,247,0.20)] border-border dark:bg-[#0E0E14] bg-card overflow-hidden hover:dark:border-[rgba(168,85,247,0.35)] hover:border-border/80 transition-all duration-200"
+      className="rounded-xl border border-border bg-card overflow-hidden hover:border-primary/35 hover:border-border/80 transition-all duration-200"
       style={{
         boxShadow: "0 0 0 1px rgba(168,85,247,0.15)",
       }}
@@ -225,7 +225,7 @@ function ProductCard({ product, language }: { product: Product; language: Langua
       <div className="flex gap-4 p-4">
         {/* Images */}
         <div className="flex-shrink-0">
-          <div className="w-32 h-32 rounded-lg overflow-hidden dark:bg-[#1A1A24] bg-muted">
+          <div className="w-32 h-32 rounded-lg overflow-hidden bg-muted">
             <img
               src={product.images[0]}
               alt={product.title}
@@ -237,7 +237,7 @@ function ProductCard({ product, language }: { product: Product; language: Langua
               {product.images.slice(1, 4).map((img, i) => (
                 <div
                   key={i}
-                  className="w-9 h-9 rounded overflow-hidden dark:bg-[#1A1A24] bg-muted"
+                  className="w-9 h-9 rounded overflow-hidden bg-muted"
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />
                 </div>
@@ -249,7 +249,7 @@ function ProductCard({ product, language }: { product: Product; language: Langua
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between mb-2">
-            <h4 className="text-sm dark:text-[#E7E7F0] text-foreground line-clamp-2 pr-2">
+            <h4 className="text-sm text-foreground line-clamp-2 pr-2">
               {product.title}
             </h4>
             {getStatusBadge()}
@@ -282,7 +282,7 @@ function ProductCard({ product, language }: { product: Product; language: Langua
             />
           </div>
 
-          <div className="flex items-center justify-between text-xs dark:text-[#9CA3AF] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div>
               <span>
                 {language === "fr" ? "Ajoutée le" : "Added on"} {product.addedDate}
@@ -316,10 +316,10 @@ function ProductCard({ product, language }: { product: Product; language: Langua
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center text-xs">
-      <span className="dark:text-[#9CA3AF] text-muted-foreground w-20">
+      <span className="text-muted-foreground w-20">
         {label}
       </span>
-      <span className="dark:text-[#E7E7F0] text-foreground">{value}</span>
+      <span className="text-foreground">{value}</span>
     </div>
   );
 }

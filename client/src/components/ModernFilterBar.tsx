@@ -55,7 +55,7 @@ export function ModernFilterBar({
       {/* Left: Search */}
       {onSearchChange && (
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 dark:text-muted-foreground text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 dark:text-muted-foreground" />
           <Input
             type="text"
             value={searchValue}

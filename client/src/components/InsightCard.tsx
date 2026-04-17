@@ -16,22 +16,22 @@ export function InsightCard({ insight, language, onAction }: InsightCardProps) {
         return {
           border: "dark:border-[rgba(255,92,138,0.40)] border-red-300",
           bg: "dark:bg-[rgba(255,92,138,0.08)] bg-red-50",
-          icon: "dark:text-[#FF5C8A] text-red-600",
+          icon: "text-red-base text-red-600",
           IconComponent: AlertCircle,
         };
       case "warning":
         return {
           border: "dark:border-[rgba(251,191,36,0.40)] border-yellow-300",
           bg: "dark:bg-[rgba(251,191,36,0.08)] bg-yellow-50",
-          icon: "dark:text-[#FBBF24] text-yellow-600",
+          icon: "text-yellow-base text-yellow-600",
           IconComponent: AlertTriangle,
         };
       case "info":
       default:
         return {
-          border: "dark:border-[rgba(168,85,247,0.40)] border-primary/40",
+          border: "border-primary/40",
           bg: "dark:bg-[rgba(139,92,246,0.08)] bg-primary/8",
-          icon: "dark:text-[#A78BFA] text-primary",
+          icon: "text-primary",
           IconComponent: Info,
         };
     }
@@ -99,7 +99,7 @@ export function InsightCard({ insight, language, onAction }: InsightCardProps) {
         <div className="flex-1 min-w-0">
           {/* Title with severity badge */}
           <div className="flex items-center gap-2 mb-1">
-            <h4 className="dark:text-[#E7E7F0] text-foreground">
+            <h4 className="text-foreground">
               {getTitle()}
             </h4>
             <div className={`flex items-center gap-1 ${styles.icon}`}>
@@ -108,7 +108,7 @@ export function InsightCard({ insight, language, onAction }: InsightCardProps) {
           </div>
 
           {/* Description */}
-          <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-3">
+          <p className="text-sm text-muted-foreground mb-3">
             {getDescription()}
           </p>
 
@@ -117,7 +117,7 @@ export function InsightCard({ insight, language, onAction }: InsightCardProps) {
             onClick={onAction}
             size="sm"
             variant="outline"
-            className="rounded-lg dark:border-[rgba(168,85,247,0.30)] border-primary/30 dark:text-[#A78BFA] text-primary hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10"
+            className="rounded-lg border-primary/30 text-primary hover:bg-primary/10 hover:bg-primary/10"
           >
             {getCTA()}
           </Button>

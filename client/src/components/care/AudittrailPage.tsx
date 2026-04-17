@@ -284,14 +284,11 @@ export function AudittrailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">
+        <h1 className="text-3xl font-semibold text-foreground mb-1">
           Audittrail
         </h1>
-        <p className="text-muted-foreground mb-1">
-          Overzicht van alle systeemactiviteiten
-        </p>
         <p className="text-sm text-muted-foreground">
-          Alle acties binnen het systeem worden hier geregistreerd · {totalEntries} resultaten
+          {totalEntries} activiteiten geregistreerd
         </p>
       </div>
 

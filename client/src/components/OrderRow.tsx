@@ -79,7 +79,7 @@ export function OrderRow({
   };
 
   return (
-    <div className="w-full flex items-center gap-4 p-4 dark:hover:bg-[rgba(139,92,246,0.05)] hover:bg-muted/50 transition-colors border-b border-border last:border-b-0">
+    <div className="w-full flex items-center gap-4 p-4 hover:bg-primary/5 hover:bg-muted/50 transition-colors border-b border-border last:border-b-0">
       {/* Main clickable area */}
       <button
         onClick={onClick}
@@ -98,13 +98,13 @@ export function OrderRow({
         <div className="flex-1 min-w-0">
           {/* Title + SKU */}
           <div className="flex items-start gap-2 mb-1">
-            <p className="dark:text-[#E7E7F0] text-foreground line-clamp-1">
+            <p className="text-foreground line-clamp-1">
               {order.title}
             </p>
             {order.sku && (
               <Badge 
                 variant="outline" 
-                className="text-[11px] px-1.5 py-0 h-5 flex-shrink-0 dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:border-[rgba(168,85,247,0.30)] border-primary/30 dark:text-[#A78BFA] text-primary"
+                className="text-[11px] px-1.5 py-0 h-5 flex-shrink-0 bg-primary/10 border-primary/30 text-primary"
               >
                 {order.sku}
               </Badge>
@@ -112,7 +112,7 @@ export function OrderRow({
           </div>
 
           {/* Price */}
-          <p className="dark:text-[#E7E7F0] text-foreground mb-1">
+          <p className="text-foreground mb-1">
             {formatPrice(order.price)}
           </p>
 
@@ -120,11 +120,11 @@ export function OrderRow({
           <div className="flex items-center gap-2 flex-wrap">
             {/* Seller (for purchases) or Buyer (for sales) */}
             {isPurchase && order.seller ? (
-              <span className="text-[11px] dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground">
                 {language === "fr" ? "Vendeur :" : "Seller:"} {order.seller.name}
               </span>
             ) : !isPurchase && order.buyer ? (
-              <span className="text-[11px] dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-[11px] text-muted-foreground">
                 {language === "fr" ? "Acheteur :" : "Buyer:"} {order.buyer.name}
               </span>
             ) : null}
@@ -133,7 +133,7 @@ export function OrderRow({
             {showAccountChip && (
               <Badge 
                 variant="outline"
-                className="text-[11px] px-2 py-0.5 h-5 dark:bg-[rgba(139,92,246,0.05)] bg-primary/5 dark:border-[rgba(168,85,247,0.20)] border-primary/20 dark:text-[#A78BFA] text-primary"
+                className="text-[11px] px-2 py-0.5 h-5 bg-primary/5 border-primary/20 border-primary/20 text-primary"
               >
                 {order.accountName}
               </Badge>
@@ -148,7 +148,7 @@ export function OrderRow({
           {/* Date */}
           {isPurchase && (
             <div className="mt-1">
-              <span className="text-[10px] dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-[10px] text-muted-foreground">
                 {getDateLabel()}
               </span>
             </div>
@@ -164,7 +164,7 @@ export function OrderRow({
             size="sm"
             variant="outline"
             onClick={(e) => handleActionClick(e, onTracking!)}
-            className="h-9 px-3 gap-2 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100 transition-all duration-200"
+            className="h-9 px-3 gap-2 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100 transition-all duration-200"
           >
             <Truck className="w-4 h-4" />
             <span className="hidden sm:inline">
@@ -179,7 +179,7 @@ export function OrderRow({
             size="sm"
             variant="outline"
             onClick={(e) => handleActionClick(e, onAddTracking!)}
-            className="h-9 px-3 gap-2 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100 transition-all duration-200"
+            className="h-9 px-3 gap-2 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100 transition-all duration-200"
           >
             <Truck className="w-4 h-4" />
             <span className="hidden sm:inline">
@@ -194,7 +194,7 @@ export function OrderRow({
             size="sm"
             variant="outline"
             onClick={(e) => handleActionClick(e, onDownloadLabel!)}
-            className="h-9 px-3 gap-2 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100 transition-all duration-200"
+            className="h-9 px-3 gap-2 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100 transition-all duration-200"
           >
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">
@@ -207,7 +207,7 @@ export function OrderRow({
         {showAddToStock && (
           <Button
             onClick={(e) => handleActionClick(e, onAddToStock!)}
-            className="h-9 px-4 gap-2 rounded-xl dark:bg-primary bg-primary dark:hover:bg-primary/90 hover:bg-primary/90 dark:text-white text-white shadow-md dark:shadow-[0_2px_12px_rgba(124,58,237,0.25)] shadow-primary/20 hover:shadow-lg dark:hover:shadow-[0_4px_16px_rgba(124,58,237,0.35)] hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5"
+            className="h-9 px-4 gap-2 rounded-xl dark:bg-primary dark:hover:bg-primary/90 text-white shadow-md dark:shadow-[0_2px_12px_rgba(124,58,237,0.25)] shadow-primary/20 hover:shadow-lg dark:hover:shadow-[0_4px_16px_rgba(124,58,237,0.35)] hover:shadow-primary/30 transition-all duration-200 hover:-translate-y-0.5"
           >
             <Package className="w-4 h-4" />
             <span className="hidden sm:inline">

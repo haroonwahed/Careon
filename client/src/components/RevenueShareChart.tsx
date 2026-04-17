@@ -33,19 +33,19 @@ export function RevenueShareChart({ data, language }: RevenueShareChartProps) {
       const data = payload[0].payload;
       return (
         <div
-          className="rounded-xl border dark:border-[rgba(168,85,247,0.25)] dark:bg-[#0E0E14] bg-popover p-3"
+          className="rounded-xl border bg-popover p-3"
           style={{
             boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
           }}
         >
           <p
-            className="dark:text-[#E7E7F0] text-foreground mb-1"
+            className="text-foreground mb-1"
             style={{ fontSize: "13px", fontWeight: 600 }}
           >
             {data.account}
           </p>
           <p
-            className="dark:text-[#C7B8FF] text-foreground"
+            className="text-foreground"
             style={{ fontSize: "13px", fontWeight: 500 }}
           >
             {formatCurr(data.revenue)} • {data.percentage.toFixed(1)}% {language === 'fr' ? 'du total' : 'of total'}
@@ -75,13 +75,13 @@ export function RevenueShareChart({ data, language }: RevenueShareChartProps) {
 
   return (
     <Card
-      className="rounded-2xl border p-6 dark:bg-[#0E0E14] dark:border-[rgba(168,85,247,0.25)] bg-card shadow-sm"
+      className="rounded-2xl border p-6 bg-card shadow-sm"
       style={{
         boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
       }}
     >
       <h3
-        className="dark:text-[#E7E7F0] text-foreground mb-6"
+        className="text-foreground mb-6"
         style={{ fontSize: "18px", fontWeight: 600 }}
       >
         {t(language, "kpi.revenueShare")}

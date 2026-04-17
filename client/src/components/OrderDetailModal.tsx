@@ -41,15 +41,15 @@ export function OrderDetailModal({
   return (
     <Dialog open={!!order} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
-        className="max-w-2xl rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border overflow-hidden"
+        className="max-w-2xl rounded-2xl bg-card border border-border overflow-hidden"
         style={{
           boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 48px rgba(168,85,247,0.15)"
         }}
       >
-        <DialogHeader className="border-b dark:border-[rgba(168,85,247,0.25)] border-border pb-4">
+        <DialogHeader className="border-b border-border pb-4">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <DialogTitle className="text-xl dark:text-[#E7E7F0] text-foreground">
+              <DialogTitle className="text-xl text-foreground">
                 {t(language, "orders.modal.title")}
               </DialogTitle>
               <DialogDescription className="sr-only">
@@ -58,13 +58,13 @@ export function OrderDetailModal({
                   : "Order details"}
               </DialogDescription>
               <div className="flex items-center gap-2 mt-2">
-                <span className="dark:text-[#9CA3AF] text-muted-foreground text-sm">
+                <span className="text-muted-foreground text-sm">
                   {order.title}
                 </span>
                 {order.sku && (
                   <Badge 
                     variant="outline" 
-                    className="dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:border-[rgba(168,85,247,0.30)] border-primary/30 dark:text-[#A78BFA] text-primary text-xs"
+                    className="bg-primary/10 border-primary/30 text-primary text-xs"
                   >
                     {order.sku}
                   </Badge>
@@ -80,7 +80,7 @@ export function OrderDetailModal({
             <img
               src={order.thumbnail}
               alt={order.title}
-              className="w-48 h-48 object-cover rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border"
+              className="w-48 h-48 object-cover rounded-2xl border border-border"
             />
           </div>
 
@@ -88,10 +88,10 @@ export function OrderDetailModal({
           <div className="space-y-4">
             {/* Sale Price */}
             <div>
-              <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-1">
+              <div className="text-xs text-muted-foreground mb-1">
                 {t(language, "orders.modal.salePrice")}
               </div>
-              <div className="text-lg dark:text-[#E7E7F0] text-foreground">
+              <div className="text-lg text-foreground">
                 {formatCurrency(order.price, language)}
               </div>
             </div>
@@ -99,10 +99,10 @@ export function OrderDetailModal({
             {/* Net Margin */}
             {netMargin !== null && (
               <div>
-                <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-1">
+                <div className="text-xs text-muted-foreground mb-1">
                   {t(language, "orders.modal.netMargin")}
                 </div>
-                <div className="text-lg dark:text-[#2AF07A] text-green-600">
+                <div className="text-lg text-green-base text-green-600">
                   {formatCurrency(netMargin, language)}
                   {netMarginPct && (
                     <span className="text-sm ml-2">({netMarginPct}%)</span>
@@ -113,29 +113,29 @@ export function OrderDetailModal({
 
             {/* Quantity */}
             <div>
-              <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-1">
+              <div className="text-xs text-muted-foreground mb-1">
                 {t(language, "orders.modal.quantity")}
               </div>
-              <div className="text-lg dark:text-[#E7E7F0] text-foreground">
+              <div className="text-lg text-foreground">
                 {order.quantity || 1}
               </div>
             </div>
 
             {/* Bundle Info */}
             <div>
-              <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-1">
+              <div className="text-xs text-muted-foreground mb-1">
                 Bundle
               </div>
               {isBundle ? (
                 <div className="space-y-2">
-                  <div className="text-sm dark:text-[#E7E7F0] text-foreground">
+                  <div className="text-sm text-foreground">
                     {t(language, "orders.modal.bundle.yes").replace("{count}", String(order.bundle!.items!.length))}
                   </div>
                   <div className="space-y-2 mt-2">
                     {order.bundle!.items!.map((item, idx) => (
                       <div 
                         key={idx}
-                        className="flex items-center gap-2 p-2 rounded-lg dark:bg-[rgba(139,92,246,0.05)] bg-gray-50 border dark:border-[rgba(168,85,247,0.15)] border-gray-200"
+                        className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 bg-gray-50 border border-primary/15 border-gray-200"
                       >
                         <img 
                           src={item.thumbnail} 
@@ -143,11 +143,11 @@ export function OrderDetailModal({
                           className="w-10 h-10 rounded-lg object-cover"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs dark:text-[#E7E7F0] text-foreground truncate">
+                          <div className="text-xs text-foreground truncate">
                             {item.title}
                           </div>
                           {item.sku && (
-                            <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+                            <div className="text-xs text-muted-foreground">
                               {item.sku}
                             </div>
                           )}
@@ -157,7 +157,7 @@ export function OrderDetailModal({
                   </div>
                 </div>
               ) : (
-                <div className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                <div className="text-sm text-muted-foreground">
                   {t(language, "orders.modal.bundle.no")}
                 </div>
               )}
@@ -166,7 +166,7 @@ export function OrderDetailModal({
         </div>
 
         {/* Actions */}
-        <div className="border-t dark:border-[rgba(168,85,247,0.25)] border-border pt-4 flex flex-col sm:flex-row gap-3">
+        <div className="border-t border-border pt-4 flex flex-col sm:flex-row gap-3">
           {/* Mark as Processed */}
           {!order.processed && onMarkProcessed && (
             <Button
@@ -174,7 +174,7 @@ export function OrderDetailModal({
                 onMarkProcessed(order);
                 onClose();
               }}
-              className="flex-1 rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground"
+              className="flex-1 rounded-xl bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground"
               style={{
                 boxShadow: "0 0 20px rgba(139,92,246,0.4)"
               }}
@@ -191,7 +191,7 @@ export function OrderDetailModal({
                 onGoToChat(order);
                 onClose();
               }}
-              className="flex-1 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+              className="flex-1 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
             >
               {t(language, "orders.modal.goToChat")}
             </Button>
@@ -204,7 +204,7 @@ export function OrderDetailModal({
               onClick={() => {
                 onDownloadLabel(order);
               }}
-              className="flex-1 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+              className="flex-1 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
             >
               {t(language, "orders.action.downloadLabel")}
             </Button>

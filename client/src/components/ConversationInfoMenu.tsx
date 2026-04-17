@@ -47,7 +47,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
         <Button
           variant="ghost"
           size="icon"
-          className="rounded-xl dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-[#A78BFA] hover:text-primary transition-all duration-200 dark:hover:bg-primary/10 hover:bg-primary/5"
+          className="rounded-xl text-muted-foreground hover:hover:text-primary transition-all duration-200 dark:hover:bg-primary/10 hover:bg-primary/5"
         >
           <Info className="w-5 h-5" />
         </Button>
@@ -55,7 +55,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
 
       <DropdownMenuContent 
         align="end" 
-        className="w-56 rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border"
+        className="w-56 rounded-xl bg-popover border border-border"
       >
         {hasLabel && (
           <>
@@ -63,7 +63,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
               onClick={handleDownloadLabel}
               className="rounded-lg cursor-pointer"
             >
-              <Download className="w-4 h-4 mr-3 dark:text-[#A78BFA] text-primary" />
+              <Download className="w-4 h-4 mr-3 text-primary" />
               <span>{t(language, "messages.actions.downloadLabel")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="dark:bg-[rgba(168,85,247,0.15)] bg-border" />
@@ -76,7 +76,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
               onClick={handleTrackParcel}
               className="rounded-lg cursor-pointer"
             >
-              <PackageIcon className="w-4 h-4 mr-3 dark:text-[#9CA3AF] text-muted-foreground" />
+              <PackageIcon className="w-4 h-4 mr-3 text-muted-foreground" />
               <span>{t(language, "messages.actions.trackParcel")}</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="dark:bg-[rgba(168,85,247,0.15)] bg-border" />
@@ -85,7 +85,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
 
         <DropdownMenuItem
           onClick={handleCancelOrder}
-          className="rounded-lg cursor-pointer dark:text-[#FF5C8A] text-destructive"
+          className="rounded-lg cursor-pointer text-red-base text-destructive"
         >
           <XCircle className="w-4 h-4 mr-3" />
           <span>{t(language, "messages.actions.cancelOrder")}</span>
@@ -97,7 +97,7 @@ export function ConversationInfoMenu({ hasLabel, isShipped, language }: Conversa
           onClick={handleReportProblem}
           className="rounded-lg cursor-pointer"
         >
-          <AlertCircle className="w-4 h-4 mr-3 dark:text-[#9CA3AF] text-muted-foreground" />
+          <AlertCircle className="w-4 h-4 mr-3 text-muted-foreground" />
           <span>{t(language, "messages.actions.reportProblem")}</span>
         </DropdownMenuItem>
       </DropdownMenuContent>

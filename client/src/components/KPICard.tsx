@@ -25,10 +25,10 @@ export function KPICard({ label, value, subtitle, icon: Icon, delta, language = 
     
     if (!isNeutral) {
       if (isPositive) {
-        colorClass = "dark:text-[#2AF07A] text-emerald-600";
+        colorClass = "text-green-base text-emerald-600";
         arrow = "▲";
       } else {
-        colorClass = "dark:text-[#FF5C8A] text-red-600";
+        colorClass = "text-red-base text-red-600";
         arrow = "▼";
       }
     } else {
@@ -55,7 +55,7 @@ export function KPICard({ label, value, subtitle, icon: Icon, delta, language = 
       }}
     >
       <div className="flex items-start justify-between mb-5">
-        <span className="text-[15px] font-medium dark:text-muted-foreground text-muted-foreground tracking-normal">
+        <span className="text-[15px] font-medium dark:text-muted-foreground tracking-normal">
           {label}
         </span>
         <div 
@@ -85,7 +85,7 @@ export function KPICard({ label, value, subtitle, icon: Icon, delta, language = 
             </div>
           )}
           {subtitle && (
-            <p className="text-xs dark:text-muted-foreground text-muted-foreground">
+            <p className="text-xs dark:text-muted-foreground">
               {subtitle}
             </p>
           )}

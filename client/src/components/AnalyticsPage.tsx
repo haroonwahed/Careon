@@ -632,7 +632,7 @@ export function AnalyticsPage({ language }: AnalyticsPageProps) {
                   </div>
                   <div className="w-full h-2 rounded-full dark:bg-background/50 bg-gray-200 overflow-hidden">
                     <div
-                      className="h-full dark:bg-primary bg-primary rounded-full"
+                      className="h-full dark:bg-primary rounded-full"
                       style={{ width: `${cat.percent}%` }}
                     />
                   </div>

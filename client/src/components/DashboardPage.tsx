@@ -576,7 +576,7 @@ export function DashboardPage({
           <h1 className="text-foreground mb-2">
             {t(language, "nav.dashboard")}
           </h1>
-          <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+          <p className="text-sm dark:text-muted-foreground">
             {dateRange === "today"
               ? language === "fr"
                 ? "Analytique horaire sur 24h de minuit à minuit"
@@ -655,14 +655,14 @@ export function DashboardPage({
       <div className="space-y-12">
         {effectiveAccounts.length === 0 ? (
           <div
-            className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-12 text-center"
+            className="rounded-2xl border border-border bg-card p-12 text-center"
             style={{
               boxShadow:
                 "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
             }}
           >
             <p
-              className="dark:text-[#9CA3AF] text-muted-foreground"
+              className="text-muted-foreground"
               style={{ fontSize: "14px" }}
             >
               {language === "fr"

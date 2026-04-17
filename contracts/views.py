@@ -59,6 +59,7 @@ from .provider_metrics import (
     label_behavior_signals,
 )
 from .case_intelligence import evaluate_case_intelligence
+from .regiekamer_service import build_regiekamer_summary
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from config.feature_flags import is_feature_redesign_enabled
 
@@ -3403,6 +3404,11 @@ def case_placement_action(request, pk):
 # ==================== DASHBOARD VIEW ====================
 
 def dashboard(request):
+    # SPA OVERRIDE NOTE: When theme/static/spa/index.html exists, the React SPA
+    # is served directly and the server-rendered template is bypassed entirely.
+    # The build_regiekamer_summary service below is fully implemented and will
+    # be active once the SPA file is absent (dev-only mode) or a dedicated API
+    # endpoint is wired to expose this data to the SPA.
     spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
     if spa_index_path.exists():
         return HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
@@ -3410,8 +3416,6 @@ def dashboard(request):
     today = date.today()
     now = timezone.now()
     org = get_user_organization(request.user)
-    waiting_threshold_days = 7
-    region_overload_threshold = 5
 
     intakes_qs = scope_queryset_for_organization(
         CaseIntakeProcess.objects.select_related(
@@ -3425,6 +3429,7 @@ def dashboard(request):
 
     base_active_qs = intakes_qs.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED)
 
+    # --- Input validation for filter params ---
     selected_region = (request.GET.get('regio') or '').strip()
     selected_status = (request.GET.get('status') or '').strip()
     selected_urgency = (request.GET.get('urgentie') or '').strip()
@@ -3468,16 +3473,17 @@ def dashboard(request):
 
     active_intakes = list(filtered_qs.order_by('-updated_at'))
 
-    region_counts = {}
+    # --- Filter option builders (unchanged) ---
+    region_counts_map = {}
     for intake in base_active_qs.select_related('preferred_region'):
         if intake.preferred_region_id:
-            region_counts[intake.preferred_region_id] = {
+            region_counts_map[intake.preferred_region_id] = {
                 'id': intake.preferred_region_id,
                 'label': intake.preferred_region.region_name,
-                'count': region_counts.get(intake.preferred_region_id, {}).get('count', 0) + 1,
+                'count': region_counts_map.get(intake.preferred_region_id, {}).get('count', 0) + 1,
             }
 
-    filter_regions = sorted(region_counts.values(), key=lambda item: item['label'])
+    filter_regions = sorted(region_counts_map.values(), key=lambda item: item['label'])
     filter_statuses = [
         {'value': code, 'label': label}
         for code, label in CaseIntakeProcess.ProcessStatus.choices
@@ -3495,524 +3501,29 @@ def dashboard(request):
         {'value': 'all', 'label': 'Alle updates'},
     ]
 
-    placements = PlacementRequest.objects.filter(
-        due_diligence_process__organization=org
-    ).select_related('selected_provider', 'due_diligence_process') if org else PlacementRequest.objects.none()
-    placement_by_intake = {}
-    for placement in placements.order_by('due_diligence_process_id', '-updated_at'):
-        intake_id = placement.due_diligence_process_id
-        if intake_id and intake_id not in placement_by_intake:
-            placement_by_intake[intake_id] = placement
-
+    # --- Scoped signals queryset ---
     signals_qs = CareSignal.objects.for_organization(org).filter(
         status__in=[CareSignal.SignalStatus.OPEN, CareSignal.SignalStatus.IN_PROGRESS]
     )
-    signals_by_intake = {}
-    for signal in signals_qs.select_related('due_diligence_process').order_by('-updated_at'):
-        intake_id = signal.due_diligence_process_id
-        if not intake_id:
-            continue
-        signals_by_intake.setdefault(intake_id, []).append(signal)
 
-    def _phase_rank(status):
-        ranking = {
-            CaseIntakeProcess.ProcessStatus.INTAKE: 1,
-            CaseIntakeProcess.ProcessStatus.ASSESSMENT: 2,
-            CaseIntakeProcess.ProcessStatus.MATCHING: 3,
-            CaseIntakeProcess.ProcessStatus.DECISION: 4,
-            CaseIntakeProcess.ProcessStatus.ON_HOLD: 5,
-            CaseIntakeProcess.ProcessStatus.COMPLETED: 6,
-        }
-        return ranking.get(status, 99)
-
-    def _next_best_action(intake, assessment, placement):
-        if intake.status == CaseIntakeProcess.ProcessStatus.INTAKE:
-            return {
-                'label': 'Start beoordeling',
-                'href': reverse('careon:assessment_create') + f'?intake={intake.pk}',
-                'type': 'review',
-            }
-        if intake.status == CaseIntakeProcess.ProcessStatus.ASSESSMENT:
-            if assessment:
-                return {
-                    'label': 'Complete beoordeling',
-                    'href': reverse('careon:assessment_update', args=[assessment.pk]),
-                    'type': 'review',
-                }
-            return {
-                'label': 'Start beoordeling',
-                'href': reverse('careon:assessment_create') + f'?intake={intake.pk}',
-                'type': 'review',
-            }
-        if intake.status in [CaseIntakeProcess.ProcessStatus.MATCHING, CaseIntakeProcess.ProcessStatus.DECISION]:
-            return {
-                'label': 'Koppel aanbieder',
-                'href': reverse('careon:matching_dashboard') + f'?intake={intake.pk}',
-                'type': 'assign',
-            }
-        if intake.status == CaseIntakeProcess.ProcessStatus.ON_HOLD:
-            return {
-                'label': 'Escaleer blokkade',
-                'href': reverse('careon:case_signal_create', args=[intake.pk]),
-                'type': 'escalate',
-            }
-        return {
-            'label': 'Monitor voortgang',
-            'href': reverse('careon:case_detail', args=[intake.pk]),
-            'type': 'monitor',
-        }
-
-    urgency_weight = {
-        CaseIntakeProcess.Urgency.CRISIS: 400,
-        CaseIntakeProcess.Urgency.HIGH: 300,
-        CaseIntakeProcess.Urgency.MEDIUM: 200,
-        CaseIntakeProcess.Urgency.LOW: 100,
-    }
-
-    priority_queue = []
-    no_match_count = 0
-    waiting_long_count = 0
-    missing_assessment_count = 0
-    urgent_count = 0
-    placements_in_progress_count = 0
-    weak_matching_count = 0
-
-    for intake in active_intakes:
-        assessment = getattr(intake, 'case_assessment', None)
-        placement = placement_by_intake.get(intake.pk)
-        open_signals = signals_by_intake.get(intake.pk, [])
-        high_signal = next((s for s in open_signals if s.risk_level in [CareSignal.RiskLevel.CRITICAL, CareSignal.RiskLevel.HIGH]), None)
-
-        waiting_days = max((today - intake.updated_at.date()).days, 0)
-        missing_assessment = (
-            assessment is None
-            or assessment.assessment_status in [
-                CaseAssessment.AssessmentStatus.DRAFT,
-                CaseAssessment.AssessmentStatus.UNDER_REVIEW,
-                CaseAssessment.AssessmentStatus.NEEDS_INFO,
-            ]
-        )
-        no_match = intake.status in [
-            CaseIntakeProcess.ProcessStatus.MATCHING,
-            CaseIntakeProcess.ProcessStatus.DECISION,
-        ] and placement is None
-        waiting_long = waiting_days >= waiting_threshold_days
-        is_urgent = intake.urgency in [CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS]
-        placement_in_progress = placement and placement.status in [
-            PlacementRequest.Status.DRAFT,
-            PlacementRequest.Status.IN_REVIEW,
-            PlacementRequest.Status.NEEDS_INFO,
-        ]
-        weak_matching = placement and placement.placement_quality_status in [
-            PlacementRequest.PlacementQualityStatus.AT_RISK,
-            PlacementRequest.PlacementQualityStatus.BROKEN_DOWN,
-        ]
-
-        blockers = []
-        if no_match:
-            blockers.append({'key': 'no_match', 'label': 'Geen match', 'score': 120})
-            no_match_count += 1
-        if waiting_long:
-            blockers.append({'key': 'waiting_long', 'label': 'Wacht te lang', 'score': 90})
-            waiting_long_count += 1
-        if missing_assessment:
-            blockers.append({'key': 'missing_assessment', 'label': 'Beoordeling ontbreekt', 'score': 100})
-            missing_assessment_count += 1
-        if high_signal:
-            blockers.append({'key': 'risk_signal', 'label': high_signal.get_signal_type_display(), 'score': 95})
-        if is_urgent:
-            urgent_count += 1
-        if placement_in_progress:
-            placements_in_progress_count += 1
-        if weak_matching:
-            weak_matching_count += 1
-
-        blocker = max(blockers, key=lambda item: item['score']) if blockers else None
-        next_action = _next_best_action(intake, assessment, placement)
-
-        priority_score = urgency_weight.get(intake.urgency, 0) + min(waiting_days, 30) * 5
-        if blocker:
-            priority_score += blocker['score']
-        if intake.status in [CaseIntakeProcess.ProcessStatus.MATCHING, CaseIntakeProcess.ProcessStatus.DECISION]:
-            priority_score += 35
-
-        queue_item = {
-            'id': intake.pk,
-            'title': intake.title,
-            'phase': intake.get_status_display(),
-            'phase_code': intake.status,
-            'phase_rank': _phase_rank(intake.status),
-            'urgency': intake.get_urgency_display(),
-            'urgency_code': intake.urgency,
-            'care_form': intake.get_preferred_care_form_display(),
-            'region': intake.preferred_region.region_name if intake.preferred_region else 'Onbekend',
-            'waiting_days': waiting_days,
-            'waiting_label': f'{waiting_days} dagen',
-            'blocker': blocker['label'] if blocker else 'Geen directe blokkade',
-            'blocker_key': blocker['key'] if blocker else None,
-            'signal_count': len(open_signals),
-            'next_action': next_action,
-            'case_href': reverse('careon:case_detail', args=[intake.pk]),
-            'quick_assign_href': reverse('careon:matching_dashboard') + f'?intake={intake.pk}',
-            'quick_escalate_href': reverse('careon:case_signal_create', args=[intake.pk]),
-            'quick_review_href': (
-                reverse('careon:assessment_update', args=[assessment.pk])
-                if assessment else reverse('careon:assessment_create') + f'?intake={intake.pk}'
-            ),
-            'assessment_status': assessment.get_assessment_status_display() if assessment else 'Niet gestart',
-            'placement_status': placement.get_status_display() if placement else 'Niet gestart',
-            'placement_status_code': placement.status if placement else '',
-            'has_match_issue': no_match or bool(weak_matching),
-            'is_waiting_long': waiting_long,
-            'is_urgent': is_urgent,
-            'priority_score': priority_score,
-        }
-        priority_queue.append(queue_item)
-
-    priority_queue.sort(
-        key=lambda row: (
-            -row['priority_score'],
-            row['phase_rank'],
-            -row['waiting_days'],
-        )
-    )
-
+    # --- Selected case for detail panel ---
     selected_case_id = request.GET.get('case')
     try:
         selected_case_id = int(selected_case_id) if selected_case_id else None
     except (TypeError, ValueError):
         selected_case_id = None
 
-    active_case = None
-    if priority_queue:
-        selected_row = next((item for item in priority_queue if item['id'] == selected_case_id), priority_queue[0])
-        intake = next((obj for obj in active_intakes if obj.pk == selected_row['id']), None)
-        assessment = getattr(intake, 'case_assessment', None) if intake else None
-        placement = placement_by_intake.get(intake.pk) if intake else None
-        signals = signals_by_intake.get(intake.pk, []) if intake else []
-
-        timeline = []
-        if intake:
-            timeline.append({'label': 'Intake gestart', 'value': intake.start_date})
-            timeline.append({'label': 'Laatste update', 'value': intake.updated_at.date()})
-        if assessment:
-            timeline.append({'label': 'Beoordeling', 'value': assessment.updated_at.date()})
-        if placement:
-            timeline.append({'label': 'Plaatsing', 'value': placement.updated_at.date()})
-        if signals:
-            timeline.append({'label': 'Laatste signaal', 'value': signals[0].updated_at.date()})
-
-        if intake and intake.status in [CaseIntakeProcess.ProcessStatus.MATCHING, CaseIntakeProcess.ProcessStatus.DECISION]:
-            if placement and placement.selected_provider:
-                match_status = f'Toegewezen aan {placement.selected_provider.name}'
-            elif assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
-                match_status = 'Klaar voor toewijzing'
-            else:
-                match_status = 'Wacht op beoordeling'
-        else:
-            match_status = 'Nog niet in matchingfase'
-
-        active_case = {
-            'id': selected_row['id'],
-            'title': selected_row['title'],
-            'phase': selected_row['phase'],
-            'urgency': selected_row['urgency'],
-            'waiting_label': selected_row['waiting_label'],
-            'blocker': selected_row['blocker'],
-            'next_action': selected_row['next_action'],
-            'assessment_status': selected_row['assessment_status'],
-            'placement_status': selected_row['placement_status'],
-            'match_status': match_status,
-            'region': intake.preferred_region.region_name if intake and intake.preferred_region else 'Niet gespecificeerd',
-            'coordinator': intake.case_coordinator.get_full_name() if intake and intake.case_coordinator else 'Niet toegewezen',
-            'timeline': timeline,
-            'case_href': selected_row['case_href'],
-        }
-
-    alert_strip = [
-        {
-            'icon': '!',
-            'label': 'Casussen zonder match',
-            'count': no_match_count,
-            'tone': 'critical',
-            'href': reverse('careon:case_list') + '?attention=no_match',
-        },
-        {
-            'icon': 'W',
-            'label': 'Wachttijd overschreden',
-            'count': waiting_long_count,
-            'tone': 'warning',
-            'href': reverse('careon:case_list') + '?attention=waiting_long',
-        },
-        {
-            'icon': 'B',
-            'label': 'Beoordeling ontbreekt',
-            'count': missing_assessment_count,
-            'tone': 'warning',
-            'href': reverse('careon:case_list') + '?attention=missing_assessment',
-        },
-        {
-            'icon': 'U',
-            'label': 'Urgente casussen',
-            'count': urgent_count,
-            'tone': 'critical',
-            'href': reverse('careon:case_list') + '?attention=urgent',
-        },
-    ]
-
-    bottleneck_bucket = {}
-    for row in priority_queue:
-        key = row['blocker_key']
-        if not key:
-            continue
-        bucket = bottleneck_bucket.setdefault(key, {'count': 0, 'days': []})
-        bucket['count'] += 1
-        bucket['days'].append(row['waiting_days'])
-
-    bottleneck_meta = {
-        'no_match': ('Geen match', reverse('careon:case_list') + '?attention=no_match'),
-        'waiting_long': ('Wachttijd overschreden', reverse('careon:case_list') + '?attention=waiting_long'),
-        'missing_assessment': ('Beoordeling ontbreekt', reverse('careon:case_list') + '?attention=missing_assessment'),
-        'risk_signal': ('Kritische signalen', reverse('careon:case_list') + '?attention=urgent'),
-    }
-    bottleneck_signals = []
-    for key, data in sorted(bottleneck_bucket.items(), key=lambda item: item[1]['count'], reverse=True)[:3]:
-        label, href = bottleneck_meta.get(key, (key, reverse('careon:case_list')))
-        avg_delay = round(sum(data['days']) / len(data['days']), 1) if data['days'] else 0
-        bottleneck_signals.append({
-            'label': label,
-            'count': data['count'],
-            'avg_delay': avg_delay,
-            'href': href,
-        })
-
-    provider_profiles = ProviderProfile.objects.filter(client__organization=org).select_related('client') if org else ProviderProfile.objects.none()
-    no_capacity_profiles = []
-    for profile in provider_profiles:
-        free_slots = max((profile.max_capacity or 0) - (profile.current_capacity or 0), 0)
-        if free_slots <= 0:
-            no_capacity_profiles.append(profile)
-
-    capacity_signals = []
-    for profile in no_capacity_profiles[:3]:
-        capacity_signals.append({
-            'label': f'{profile.client.name} heeft geen capaciteit',
-            'detail': f'Bezetting {profile.current_capacity}/{profile.max_capacity}',
-            'href': reverse('careon:case_list') + '?attention=capacity_none',
-        })
-
-    region_counts = {}
-    for intake in active_intakes:
-        if intake.preferred_region_id:
-            region_counts[intake.preferred_region_id] = region_counts.get(intake.preferred_region_id, 0) + 1
-    overloaded_regions = sorted(region_counts.items(), key=lambda item: item[1], reverse=True)
-    for region_id, count in overloaded_regions[:3]:
-        if count < region_overload_threshold:
-            continue
-        region_obj = next((i.preferred_region for i in active_intakes if i.preferred_region_id == region_id), None)
-        if not region_obj:
-            continue
-        capacity_signals.append({
-            'label': f'Regio overbelast: {region_obj.region_name}',
-            'detail': f'{count} actieve casussen in deze regio',
-            'href': reverse('careon:case_list') + f'?region={region_id}',
-        })
-
-    signal_items = []
-    for signal in signals_qs.select_related('due_diligence_process').order_by('-updated_at')[:5]:
-        signal_items.append({
-            'label': signal.get_signal_type_display(),
-            'detail': signal.description[:120],
-            'risk': signal.risk_level,
-            'status': signal.get_status_display(),
-            'href': reverse('careon:signal_detail', args=[signal.pk]),
-        })
-
-    waiting_review_count = sum(
-        1 for row in priority_queue
-        if row['phase_code'] == CaseIntakeProcess.ProcessStatus.ASSESSMENT
-        or row['blocker_key'] == 'missing_assessment'
+    # --- Delegate all decision logic to the Regiekamer service ---
+    summary = build_regiekamer_summary(
+        org=org,
+        active_intakes=active_intakes,
+        signals_qs=signals_qs,
+        selected_case_id=selected_case_id,
+        today=today,
     )
-    manual_matching_count = sum(1 for row in priority_queue if row['has_match_issue'])
-    placement_confirmation_count = sum(
-        1 for row in priority_queue
-        if row['placement_status_code'] in [
-            PlacementRequest.Status.DRAFT,
-            PlacementRequest.Status.IN_REVIEW,
-            PlacementRequest.Status.NEEDS_INFO,
-        ]
-    )
-    escalation_count = sum(
-        1 for row in priority_queue
-        if row['urgency_code'] == CaseIntakeProcess.Urgency.CRISIS
-        or row['blocker_key'] == 'risk_signal'
-    )
-
-    next_actions = [
-        {
-            'label': 'Casussen wachten op beoordeling',
-            'count': waiting_review_count,
-            'href': reverse('careon:assessment_list'),
-            'cta': 'Open beoordelingen',
-        },
-        {
-            'label': 'Matchings handmatig controleren',
-            'count': manual_matching_count,
-            'href': reverse('careon:matching_dashboard'),
-            'cta': 'Open matching',
-        },
-        {
-            'label': 'Plaatsingen vereisen bevestiging',
-            'count': placement_confirmation_count,
-            'href': reverse('careon:placement_list'),
-            'cta': 'Open plaatsingen',
-        },
-        {
-            'label': 'Escalaties naar gemeente',
-            'count': escalation_count,
-            'href': reverse('careon:signal_list'),
-            'cta': 'Open signalen',
-        },
-    ]
-
-    # Determine most critical recommended action
-    recommended_action = None
-    if waiting_review_count > 0:
-        recommended_action = {
-            'title': 'Aanbevolen actie',
-            'action': f'Werk eerst open beoordelingen af ({waiting_review_count} casussen)',
-            'reasons': [
-                'Blokkeert matching',
-                'Verhoogt wachttijd',
-            ],
-            'cta': 'Ga naar beoordelingen',
-            'href': reverse('careon:assessment_list'),
-            'priority': 'critical',
-        }
-    elif manual_matching_count > 0:
-        recommended_action = {
-            'title': 'Aanbevolen actie',
-            'action': f'Controleer matchings ({manual_matching_count} casussen)',
-            'reasons': [
-                'Geen passende aanbieder',
-                'Vereist handmatige review',
-            ],
-            'cta': 'Ga naar matching',
-            'href': reverse('careon:matching_dashboard'),
-            'priority': 'high',
-        }
-    elif escalation_count > 0:
-        recommended_action = {
-            'title': 'Aanbevolen actie',
-            'action': f'Review escalaties ({escalation_count} casussen)',
-            'reasons': [
-                'Crisissignalen gedetecteerd',
-                'Gemeente-melding vereist',
-            ],
-            'cta': 'Ga naar signalen',
-            'href': reverse('careon:signal_list'),
-            'priority': 'critical',
-        }
-
-    phase_distribution_map = {}
-    for row in priority_queue:
-        phase_distribution_map[row['phase']] = phase_distribution_map.get(row['phase'], 0) + 1
-    phase_distribution = [
-        {'label': label, 'count': count}
-        for label, count in sorted(phase_distribution_map.items(), key=lambda item: item[1], reverse=True)
-    ]
-
-    wait_bands = {
-        '0-3 dagen': 0,
-        '4-7 dagen': 0,
-        '8+ dagen': 0,
-    }
-    for row in priority_queue:
-        if row['waiting_days'] <= 3:
-            wait_bands['0-3 dagen'] += 1
-        elif row['waiting_days'] <= 7:
-            wait_bands['4-7 dagen'] += 1
-        else:
-            wait_bands['8+ dagen'] += 1
-
-    operational_insights = [
-        {
-            'title': 'Wachttijdverdeling',
-            'items': [
-                {'label': label, 'count': count}
-                for label, count in wait_bands.items()
-            ],
-        },
-        {
-            'title': 'Casussen per fase',
-            'items': phase_distribution[:5],
-        },
-    ]
-
-    regiekamer_kpis = [
-        {
-            'label': 'Casussen zonder match',
-            'value': no_match_count,
-            'delta': f"{manual_matching_count} vragen handmatige opvolging",
-            'tone': 'critical',
-            'href': reverse('careon:matching_dashboard'),
-        },
-        {
-            'label': 'Open beoordelingen',
-            'value': waiting_review_count,
-            'delta': f"{missing_assessment_count} zonder afgeronde beoordeling",
-            'tone': 'warning',
-            'href': reverse('careon:assessment_list'),
-        },
-        {
-            'label': 'Plaatsingen in behandeling',
-            'value': placements_in_progress_count,
-            'delta': f"{placement_confirmation_count} wachten op besluit",
-            'tone': 'brand',
-            'href': reverse('careon:placement_list'),
-        },
-        {
-            'label': 'Gemiddelde wachttijd',
-            'value': f"{round(sum(row['waiting_days'] for row in priority_queue) / len(priority_queue), 1) if priority_queue else 0} dagen",
-            'delta': f"Norm: {waiting_threshold_days} dagen",
-            'tone': 'warning' if waiting_long_count else 'healthy',
-            'href': reverse('careon:case_list') + '?sort=waiting',
-        },
-        {
-            'label': 'Casussen met hoog risico',
-            'value': urgent_count,
-            'delta': f"{escalation_count} escalaties aanbevolen",
-            'tone': 'critical',
-            'href': reverse('careon:signal_list'),
-        },
-        {
-            'label': 'Capaciteitstekorten',
-            'value': len(capacity_signals),
-            'delta': 'Signalen uit aanbieders en regio-overbelasting',
-            'tone': 'warning',
-            'href': reverse('careon:case_list') + '?attention=capacity_none',
-        },
-    ]
 
     context = {
         'dashboard_updated_at': now,
-        'alert_strip': alert_strip,
-        'priority_queue': priority_queue,
-        'active_case': active_case,
-        'selected_case_id': active_case['id'] if active_case else None,
-        'bottleneck_signals': bottleneck_signals,
-        'capacity_signals': capacity_signals,
-        'total_active_cases': len(priority_queue),
-        'no_match_count': no_match_count,
-        'waiting_long_count': waiting_long_count,
-        'missing_assessment_count': missing_assessment_count,
-        'urgent_count': urgent_count,
-        'avg_wait_days': round(sum(row['waiting_days'] for row in priority_queue) / len(priority_queue), 1) if priority_queue else 0,
-        'recommended_action': recommended_action,
-        'regiekamer_kpis': regiekamer_kpis,
-        'next_actions': next_actions,
-        'signal_items': signal_items,
-        'operational_insights': operational_insights,
         'filter_regions': filter_regions,
         'filter_statuses': filter_statuses,
         'filter_urgencies': filter_urgencies,
@@ -4023,6 +3534,7 @@ def dashboard(request):
         'selected_period': selected_period,
         'search_query': search_query,
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
+        **summary,
     }
     return render(request, 'dashboard.html', context)
 

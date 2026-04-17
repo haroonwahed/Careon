@@ -70,13 +70,13 @@ export function ProfileModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] dark:bg-card bg-card dark:border-primary/40 border-border rounded-2xl p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[500px] dark:bg-card bg-card dark:border-border rounded-2xl p-0 overflow-hidden">
         {/* Header */}
         <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-border border-border">
           <DialogTitle className="text-2xl font-semibold dark:text-foreground text-foreground">
             {language === "fr" ? "Profil" : "Profile"}
           </DialogTitle>
-          <DialogDescription className="dark:text-muted-foreground text-muted-foreground">
+          <DialogDescription className="dark:text-muted-foreground">
             {language === "fr"
               ? "Gérez vos informations personnelles et vos préférences"
               : "Manage your personal information and preferences"}
@@ -87,7 +87,7 @@ export function ProfileModal({
         <div className="px-6 py-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
           {/* Personal Information */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground text-muted-foreground">
+            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground">
               {language === "fr" ? "Informations personnelles" : "Personal Information"}
             </h3>
             
@@ -100,7 +100,7 @@ export function ProfileModal({
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="dark:bg-background bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
+                className="dark:bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
               />
             </div>
 
@@ -114,14 +114,14 @@ export function ProfileModal({
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="dark:bg-background bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
+                className="dark:bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
               />
             </div>
           </div>
 
           {/* Password Change */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground text-muted-foreground">
+            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground">
               {language === "fr" ? "Changer le mot de passe" : "Change Password"}
             </h3>
             
@@ -135,7 +135,7 @@ export function ProfileModal({
                 type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="dark:bg-background bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
+                className="dark:bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
               />
             </div>
 
@@ -148,7 +148,7 @@ export function ProfileModal({
                 type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="dark:bg-background bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
+                className="dark:bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
               />
             </div>
 
@@ -161,24 +161,24 @@ export function ProfileModal({
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="dark:bg-background bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
+                className="dark:bg-background dark:border-input border-input dark:text-foreground text-foreground rounded-xl h-10"
               />
             </div>
           </div>
 
           {/* Subscription */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground text-muted-foreground">
+            <h3 className="text-sm font-semibold uppercase tracking-wider dark:text-muted-foreground">
               {language === "fr" ? "Abonnement" : "Subscription"}
             </h3>
             
-            <div className="rounded-xl dark:bg-background bg-background dark:border-input border-input p-4 space-y-4">
+            <div className="rounded-xl dark:bg-background dark:border-input border-input p-4 space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-medium dark:text-foreground text-foreground">
                     {language === "fr" ? "Plan Pro" : "Pro Plan"}
                   </p>
-                  <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+                  <p className="text-sm dark:text-muted-foreground">
                     {language === "fr" ? "49€/mois" : "€49/month"}
                   </p>
                 </div>
@@ -212,7 +212,7 @@ export function ProfileModal({
           </Button>
           <Button
             onClick={handleSave}
-            className="rounded-xl h-10 dark:bg-primary bg-primary dark:text-white text-white hover:dark:bg-primary/90 hover:bg-primary/90"
+            className="rounded-xl h-10 dark:bg-primary text-white hover:dark:bg-primary/90 hover:bg-primary/90"
           >
             {language === "fr" ? "Enregistrer" : "Save"}
           </Button>

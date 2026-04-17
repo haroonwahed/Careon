@@ -129,14 +129,14 @@ export function TrackingPublicPage({ language }: TrackingPublicPageProps) {
             />
 
             {/* Tabs */}
-            <div className="border-b dark:border-[rgba(168,85,247,0.15)] border-border px-6">
+            <div className="border-b border-border px-6">
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setActiveTab("statistics")}
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "statistics"
                       ? "dark:text-primary text-primary dark:border-primary border-primary"
-                      : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+                      : "text-muted-foreground border-transparent hover:hover:text-foreground"
                   }`}
                 >
                   {language === "fr" ? "Statistiques" : "Statistics"}
@@ -146,7 +146,7 @@ export function TrackingPublicPage({ language }: TrackingPublicPageProps) {
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "niches"
                       ? "dark:text-primary text-primary dark:border-primary border-primary"
-                      : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+                      : "text-muted-foreground border-transparent hover:hover:text-foreground"
                   }`}
                 >
                   {language === "fr" ? "Niches" : "Niches"}
@@ -156,7 +156,7 @@ export function TrackingPublicPage({ language }: TrackingPublicPageProps) {
                   className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "history"
                       ? "dark:text-primary text-primary dark:border-primary border-primary"
-                      : "dark:text-[#9CA3AF] text-muted-foreground border-transparent hover:dark:text-[#E7E7F0] hover:text-foreground"
+                      : "text-muted-foreground border-transparent hover:hover:text-foreground"
                   }`}
                 >
                   {language === "fr" ? "Historique des ventes" : "Sales history"}
@@ -179,14 +179,14 @@ export function TrackingPublicPage({ language }: TrackingPublicPageProps) {
         ) : (
           <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-lg dark:text-[#9CA3AF] text-muted-foreground mb-4">
+              <p className="text-lg text-muted-foreground mb-4">
                 {language === "fr"
                   ? "Aucune catégorie sélectionnée"
                   : "No category selected"}
               </p>
               <button
                 onClick={() => setIsAddModalOpen(true)}
-                className="px-6 py-3 rounded-xl dark:bg-primary bg-primary dark:text-white text-white font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                className="px-6 py-3 rounded-xl dark:bg-primary text-white font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
                 style={{
                   boxShadow: "0 0 20px rgba(139,92,246,0.3)",
                 }}

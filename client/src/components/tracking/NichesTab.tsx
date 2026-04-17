@@ -93,7 +93,7 @@ export function NichesTab({ language }: NichesTabProps) {
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
         {/* Search */}
         <div className="relative flex-1 w-full sm:w-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-[#9CA3AF] text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <input
             type="text"
             placeholder={
@@ -101,16 +101,16 @@ export function NichesTab({ language }: NichesTabProps) {
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground placeholder:dark:text-[#9CA3AF] placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-muted border border-border text-foreground placeholder:placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
           />
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70">
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm transition-all duration-200 hover:bg-muted/70">
             <Filter className="w-4 h-4" />
             <span>{language === "fr" ? "Filtres" : "Filters"}</span>
           </button>
-          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70">
+          <button className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground text-sm transition-all duration-200 hover:bg-muted/70">
             <Download className="w-4 h-4" />
             <span className="hidden sm:inline">
               {language === "fr" ? "Exporter" : "Export"}
@@ -120,32 +120,32 @@ export function NichesTab({ language }: NichesTabProps) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card">
+      <div className="overflow-x-auto rounded-2xl border border-border bg-card">
         <table className="w-full">
           <thead>
-            <tr className="border-b dark:border-[rgba(168,85,247,0.15)] border-border">
-              <th className="text-left px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+            <tr className="border-b border-border">
+              <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Niche" : "Niche"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Prix moyen" : "Avg price"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Produits" : "Products"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "% vente" : "Sale rate"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Ventes/j" : "Sales/day"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Ajouts/j" : "Adds/day"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Temps vente" : "Sale time"}
               </th>
-              <th className="text-right px-6 py-4 text-xs font-semibold dark:text-[#9CA3AF] text-muted-foreground uppercase tracking-wide">
+              <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 {language === "fr" ? "Action" : "Action"}
               </th>
             </tr>
@@ -155,22 +155,22 @@ export function NichesTab({ language }: NichesTabProps) {
               <tr
                 key={niche.id}
                 className={`
-                  border-b dark:border-[rgba(168,85,247,0.10)] border-border last:border-0
-                  hover:dark:bg-[#1A1A24] hover:bg-muted/30 transition-colors
+                  border-b border-border last:border-0
+                  hover:bg-muted hover:bg-muted/30 transition-colors
                 `}
               >
                 <td className="px-6 py-4">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground">
+                  <span className="text-sm text-foreground">
                     {niche.name}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                  <span className="text-sm text-foreground tabular-nums">
                     {formatCurrency(niche.avgPrice, language)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                  <span className="text-sm text-foreground tabular-nums">
                     {niche.productsAnalyzed}
                   </span>
                 </td>
@@ -188,17 +188,17 @@ export function NichesTab({ language }: NichesTabProps) {
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                  <span className="text-sm text-foreground tabular-nums">
                     {niche.salesPerDay.toFixed(1)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                  <span className="text-sm text-foreground tabular-nums">
                     {niche.addsPerDay.toFixed(1)}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  <span className="text-sm dark:text-[#E7E7F0] text-foreground tabular-nums">
+                  <span className="text-sm text-foreground tabular-nums">
                     {niche.saleTime}j
                   </span>
                 </td>
@@ -220,17 +220,17 @@ export function NichesTab({ language }: NichesTabProps) {
           <button
             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-2 rounded-lg dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70"
+            className="px-3 py-2 rounded-lg bg-muted border border-border text-foreground text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-muted/70"
           >
             {language === "fr" ? "Précédent" : "Previous"}
           </button>
-          <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground px-3 tabular-nums">
+          <span className="text-sm text-muted-foreground px-3 tabular-nums">
             {currentPage} / {totalPages}
           </span>
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-2 rounded-lg dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70"
+            className="px-3 py-2 rounded-lg bg-muted border border-border text-foreground text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:bg-muted/70"
           >
             {language === "fr" ? "Suivant" : "Next"}
           </button>

@@ -10,27 +10,32 @@
  * Users do NOT execute workflows here - they decide WHERE to act.
  */
 
-import { useState, useMemo } from "react";
+import { Fragment, useState, useMemo } from "react";
 import { 
   Search,
   Filter,
-  Download,
   AlertTriangle,
   Clock,
   Users,
   TrendingUp,
   ChevronRight,
-  ShieldAlert,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
   MapPin,
   ClipboardList,
-  Siren
+  Siren,
+  Activity
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { mockCases, Case } from "../../lib/casesData";
+import { mockCasusList } from "../../lib/casesData";
+import type { Casus, CasusPhase } from "../../lib/phaseEngine";
+import {
+  buildRegiekamerDecisionSummary,
+  type RegiekamerFilterTarget,
+  type RegiekamerPriorityCard,
+} from "../../lib/regiekamerDecisionEngine";
 
 interface RegiekamerControlCenterProps {
   onCaseClick: (caseId: string) => void;
@@ -43,238 +48,147 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   const [selectedUrgency, setSelectedUrgency] = useState<string>("all");
   const [activeKPIFilter, setActiveKPIFilter] = useState<string | null>(null);
 
-  const systemState = useMemo(() => {
-    const urgent = mockCases.filter(c => c.urgency === "high" || c.urgency === "critical");
-    const blocked = mockCases.filter(c => c.status === "blocked");
-    const delayed = mockCases.filter(c => c.waitingDays > 7);
-    const noMatch = mockCases.filter(c => c.status === "matching" && c.waitingDays > 3);
-    const openAssessments = mockCases.filter(c => c.status === "assessment");
-    const highRisk = mockCases.filter(c => c.risk === "high");
+  const decisionSummary = useMemo(() => buildRegiekamerDecisionSummary(mockCasusList), []);
 
-    const regionPressure = mockCases.reduce<Record<string, number>>((acc, caseItem) => {
-      if (caseItem.status === "blocked" || caseItem.status === "matching") {
-        acc[caseItem.region] = (acc[caseItem.region] || 0) + 1;
-      }
-      return acc;
-    }, {});
+  const applyDecisionTarget = (target: {
+    target_view: string;
+    target_filter: RegiekamerFilterTarget;
+    target_region?: string;
+  }) => {
+    const filter = target.target_filter;
 
-    const busiestRegion = Object.entries(regionPressure).sort((a, b) => b[1] - a[1])[0];
-    
-    return {
-      urgentCount: urgent.length,
-      blockedCount: blocked.length,
-      delayedCount: delayed.length,
-      noMatchCount: noMatch.length,
-      openAssessmentCount: openAssessments.length,
-      busiestRegion: busiestRegion?.[0] || "Utrecht",
-      highRiskCount: highRisk.length
-    };
-  }, []);
-
-  const kpis = useMemo(() => {
-    return {
-      casesWithoutMatch: {
-        value: mockCases.filter(c => c.status === "matching" || c.status === "blocked").length,
-        context: "Vraagt handmatige opvolging",
-        status: "critical" as const,
-        label: "Casussen zonder match",
-        filter: "noMatch"
-      },
-      openAssessments: {
-        value: mockCases.filter(c => c.status === "assessment").length,
-        context: "Blokkeren de volgende stap",
-        status: "warning" as const,
-        label: "Open beoordelingen",
-        filter: "assessment"
-      },
-      placementsInProgress: {
-        value: mockCases.filter(c => c.status === "placement").length,
-        context: "Wachten op bevestiging",
-        status: "good" as const,
-        label: "Plaatsingen bezig",
-        filter: "placement"
-      },
-      avgWaitingTime: {
-        value: Math.round(mockCases.reduce((sum, c) => sum + c.waitingDays, 0) / mockCases.length),
-        context: "Norm is 7 dagen",
-        status: "warning" as const,
-        label: "Gem. wachttijd",
-        filter: "delayed"
-      },
-      highRiskCases: {
-        value: mockCases.filter(c => c.risk === "high").length,
-        context: "Extra regie vereist",
-        status: "critical" as const,
-        label: "Hoog risico casussen",
-        filter: "highRisk"
-      },
-      capacityIssues: {
-        value: 3,
-        context: `Druk in regio ${systemState.busiestRegion}`,
-        status: "critical" as const,
-        label: "Capaciteitstekorten",
-        filter: "capacity"
-      }
-    };
-  }, [systemState.busiestRegion]);
-
-  const highestPriority = useMemo(() => {
-    if (systemState.openAssessmentCount > 0) {
-      return {
-        issue: `${systemState.urgentCount} casussen vereisen directe actie`,
-        reason: `${systemState.openAssessmentCount} dossiers blokkeren matching en wachttijden lopen op`,
-        actionLabel: "Aanbevolen actie",
-        action: "Werk open beoordelingen af",
-        cta: "Bekijk urgente casussen",
-        tone: "critical" as const,
-        apply: () => {
-          setSelectedStatus("assessment");
-          setSelectedUrgency("all");
-          setActiveKPIFilter("assessment");
-        }
-      };
+    if (filter) {
+      setActiveKPIFilter(filter);
     }
 
-    if (systemState.noMatchCount > 0) {
-      return {
-        issue: `${systemState.noMatchCount} casussen lopen vast in matching`,
-        reason: "Beschikbare aanbieders ontbreken of reageren te traag voor een tijdige plaatsing",
-        actionLabel: "Aanbevolen actie",
-        action: "Herzie matching voor vastgelopen dossiers",
-        cta: "Open matchings met blokkade",
-        tone: "warning" as const,
-        apply: () => {
-          setSelectedStatus("matching");
-          setSelectedUrgency("all");
-          setActiveKPIFilter("noMatch");
-        }
-      };
+    if (target.target_region) {
+      setSelectedRegion(target.target_region);
     }
 
-    return {
-      issue: `${systemState.delayedCount} casussen wachten langer dan 7 dagen`,
-      reason: "Wachttijd loopt op en regie moet bepalen welke dossiers eerst versneld worden opgepakt",
-      actionLabel: "Aanbevolen actie",
-      action: "Pak de langst wachtende dossiers eerst op",
-      cta: "Bekijk wachtende casussen",
-      tone: "info" as const,
-      apply: () => {
-        setSelectedUrgency("all");
+    if (target.target_view === "beoordelingen") {
+      setSelectedStatus("beoordeling");
+    } else if (target.target_view === "matching") {
+      setSelectedStatus("matching");
+    } else if (target.target_view === "plaatsingen") {
+      setSelectedStatus("plaatsing");
+    } else if (target.target_view === "casussen") {
+      setSelectedStatus("all");
+    }
+  };
+
+  const getPriorityCard = (key: RegiekamerPriorityCard["key"]) => {
+    return decisionSummary.priority_cards.find((card) => card.key === key);
+  };
+
+  const flowStages = [
+    {
+      id: "casussen",
+      label: "Casussen",
+      count: decisionSummary.flow_counts.casussen,
+      filter: "casussen",
+      onClick: () => {
         setSelectedStatus("all");
-        setActiveKPIFilter("delayed");
+        setActiveKPIFilter("casussen");
       }
-    };
-  }, [systemState.delayedCount, systemState.noMatchCount, systemState.openAssessmentCount, systemState.urgentCount]);
+    },
+    {
+      id: "beoordelingen",
+      label: "Beoordelingen",
+      count: decisionSummary.flow_counts.beoordelingen,
+      filter: "assessment",
+      onClick: () => {
+        setSelectedStatus("beoordeling");
+        setActiveKPIFilter("assessment");
+      }
+    },
+    {
+      id: "matching",
+      label: "Matching",
+      count: decisionSummary.flow_counts.matching,
+      filter: "noMatch",
+      onClick: () => {
+        setSelectedStatus("matching");
+        setActiveKPIFilter("noMatch");
+      }
+    },
+    {
+      id: "plaatsingen",
+      label: "Plaatsingen",
+      count: decisionSummary.flow_counts.plaatsingen,
+      filter: "placement",
+      onClick: () => {
+        setSelectedStatus("plaatsing");
+        setActiveKPIFilter("placement");
+      }
+    }
+  ].map((stage) => ({ ...stage, isBottleneck: stage.id === decisionSummary.bottleneck_stage }));
 
-  const secondarySignals = useMemo(() => {
-    return [
-      {
-        id: "delayed",
-        tone: "warning" as const,
-        icon: Clock,
-        text: `${systemState.delayedCount} casussen wachten langer dan 7 dagen`,
-        onClick: () => {
-          setActiveKPIFilter("delayed");
-          setSelectedUrgency("all");
-        }
-      },
-      {
-        id: "nomatch",
-        tone: "critical" as const,
-        icon: AlertTriangle,
-        text: `${systemState.noMatchCount} casussen zonder beschikbare aanbieder`,
-        onClick: () => {
-          setActiveKPIFilter("noMatch");
-          setSelectedStatus("matching");
-        }
-      },
-      {
-        id: "capacity",
-        tone: "info" as const,
-        icon: MapPin,
-        text: `Capaciteitstekort in regio ${systemState.busiestRegion}`,
-        onClick: () => {
-          setActiveKPIFilter("capacity");
-          setSelectedRegion(systemState.busiestRegion);
-        }
-      }
-    ];
-  }, [systemState.busiestRegion, systemState.delayedCount, systemState.noMatchCount]);
+  const casesWithoutMatchCard = getPriorityCard("casussen_zonder_match");
+  const openAssessmentsCard = getPriorityCard("open_beoordelingen");
+  const waitingOverdueCard = getPriorityCard("wachttijd_overschreden");
+  const placementsInProgressCard = getPriorityCard("plaatsingen_bezig");
+  const avgWaitingTimeCard = getPriorityCard("gem_wachttijd");
+  const capacityIssuesCard = getPriorityCard("capaciteitstekorten");
 
   const filteredCases = useMemo(() => {
-    return mockCases
+    return mockCasusList
       .filter(c => {
-        // Search filter
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
           if (!(
             c.id.toLowerCase().includes(query) ||
             c.clientName.toLowerCase().includes(query) ||
-            c.caseType.toLowerCase().includes(query)
+            c.careType.toLowerCase().includes(query)
           )) return false;
         }
-        
-        // Region filter
         if (selectedRegion !== "all" && c.region !== selectedRegion) return false;
-        
-        // Status filter
-        if (selectedStatus !== "all" && c.status !== selectedStatus) return false;
-        
-        // Urgency filter
+        if (selectedStatus !== "all" && c.phase !== selectedStatus) return false;
         if (selectedUrgency !== "all" && c.urgency !== selectedUrgency) return false;
-        
-        // KPI filter (when user clicks a KPI)
         if (activeKPIFilter) {
-          if (activeKPIFilter === "noMatch" && c.status !== "matching" && c.status !== "blocked") return false;
-          if (activeKPIFilter === "assessment" && c.status !== "assessment") return false;
-          if (activeKPIFilter === "placement" && c.status !== "placement") return false;
-          if (activeKPIFilter === "highRisk" && c.risk !== "high") return false;
+          if (activeKPIFilter === "casussen" && c.phase !== "intake_initial" && c.phase !== "intake_provider") return false;
+          if (activeKPIFilter === "noMatch" && c.phase !== "matching" && c.phase !== "geblokkeerd") return false;
+          if (activeKPIFilter === "assessment" && c.phase !== "beoordeling") return false;
+          if (activeKPIFilter === "placement" && c.phase !== "plaatsing") return false;
+          if (activeKPIFilter === "highRisk" && c.complexity !== "high") return false;
+          if (activeKPIFilter === "waitingOverdue" && c.waitingDays <= 7) return false;
           if (activeKPIFilter === "delayed" && c.waitingDays <= 7) return false;
-          if (activeKPIFilter === "capacity" && c.region !== systemState.busiestRegion) return false;
+          if (activeKPIFilter === "capacity" && decisionSummary.capacity_region && c.region !== decisionSummary.capacity_region) return false;
         }
-        
         return true;
       })
       .sort((a, b) => {
         const urgencyOrder = { critical: 0, high: 1, medium: 2, low: 3 };
-        const riskOrder = { high: 0, medium: 1, low: 2, none: 3 };
+        const complexityOrder = { high: 0, medium: 1, low: 2 };
         const urgencyDiff = urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
-        
         if (urgencyDiff !== 0) return urgencyDiff;
-
         const waitingDiff = b.waitingDays - a.waitingDays;
         if (waitingDiff !== 0) return waitingDiff;
-
-        if (a.status === "blocked" && b.status !== "blocked") return -1;
-        if (b.status === "blocked" && a.status !== "blocked") return 1;
-
-        return riskOrder[a.risk] - riskOrder[b.risk];
+        if (a.phase === "geblokkeerd" && b.phase !== "geblokkeerd") return -1;
+        if (b.phase === "geblokkeerd" && a.phase !== "geblokkeerd") return 1;
+        return complexityOrder[a.complexity] - complexityOrder[b.complexity];
       });
-  }, [activeKPIFilter, searchQuery, selectedRegion, selectedStatus, selectedUrgency, systemState.busiestRegion]);
+  }, [activeKPIFilter, decisionSummary.capacity_region, searchQuery, selectedRegion, selectedStatus, selectedUrgency]);
 
-  const regions = ["all", ...Array.from(new Set(mockCases.map(c => c.region)))];
+  const regions = ["all", ...Array.from(new Set(mockCasusList.map(c => c.region)))];
 
-  // Get next action for a case
-  const getNextAction = (caseItem: Case): { action: string; type: "urgent" | "normal" | "waiting" } => {
-    if (caseItem.status === "intake") {
-      return { action: "Start beoordeling", type: "urgent" };
+  const getNextAction = (caseItem: Casus): { action: string; type: "urgent" | "normal" | "waiting" } => {
+    switch (caseItem.phase) {
+      case "intake_initial": return { action: "Start beoordeling", type: "urgent" };
+      case "beoordeling": return { action: "Voltooi beoordeling", type: "urgent" };
+      case "matching": return { action: "Herzie matching", type: "urgent" };
+      case "plaatsing": return { action: "Volg op bij aanbieder", type: "normal" };
+      case "geblokkeerd": return { action: "Escaleer", type: "urgent" };
+      case "intake_provider": return { action: "Wacht op aanbieder reactie", type: "waiting" };
+      case "afgerond": return { action: "Archiveren", type: "waiting" };
+      default: return { action: "Open", type: "waiting" };
     }
-    if (caseItem.status === "assessment") {
-      return { action: "Voltooi beoordeling", type: "urgent" };
-    }
-    if (caseItem.status === "matching") {
-      return { action: "Herzie matching", type: "urgent" };
-    }
-    if (caseItem.status === "placement") {
-      return { action: "Volg op bij aanbieder", type: "normal" };
-    }
-    if (caseItem.status === "blocked") {
-      return { action: "Escaleer", type: "urgent" };
-    }
-    if (caseItem.status === "completed") {
-      return { action: "Archiveren", type: "waiting" };
-    }
-    return { action: "Wacht op aanbieder reactie", type: "waiting" };
+  };
+
+  const commandToneStyles = {
+    critical: "command-bar-gradient-critical",
+    warning: "command-bar-gradient-warning",
+    info: "command-bar-gradient-info",
+    good: "command-bar-gradient-info"
   };
 
   return (
@@ -286,174 +200,163 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
             Regiekamer
           </h1>
           <p className="text-sm text-muted-foreground">
-            Macro-overzicht voor prioritering, knelpunten en volgende beslissingen
+            Stuur op doorstroom, los blokkades op en bepaal direct de volgende actie
           </p>
         </div>
-        <Button variant="outline" className="gap-2">
-          <Download size={16} />
-          Exporteer rapport
-        </Button>
       </div>
 
-      <section className="premium-card overflow-hidden border border-border bg-card shadow-sm">
-        <div className={`grid gap-5 p-6 md:grid-cols-[1.5fr_0.9fr] md:p-7 ${
-          highestPriority.tone === "critical"
-            ? "bg-[linear-gradient(135deg,rgba(254,242,242,0.96),rgba(255,255,255,1)_45%,rgba(255,251,235,0.88))]"
-            : highestPriority.tone === "warning"
-              ? "bg-[linear-gradient(135deg,rgba(255,251,235,0.96),rgba(255,255,255,1)_45%,rgba(239,246,255,0.88))]"
-              : "bg-[linear-gradient(135deg,rgba(239,246,255,0.96),rgba(255,255,255,1)_45%,rgba(238,233,255,0.88))]"
-        }`}>
-          <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-border bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              <Siren size={14} className={highestPriority.tone === "critical" ? "text-red-base" : highestPriority.tone === "warning" ? "text-yellow-base" : "text-blue-base"} />
-              Hoogste prioriteit
+      <section className={`premium-card command-bar-surface overflow-hidden border border-border ${commandToneStyles[decisionSummary.command_bar_summary.tone]}`}>
+        <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <Siren size={13} className={decisionSummary.command_bar_summary.tone === "critical" ? "text-red-base" : decisionSummary.command_bar_summary.tone === "warning" ? "text-yellow-base" : "text-blue-base"} />
+              Commandocentrum
             </div>
-
-            <div className="space-y-3">
-              <h2 className="max-w-3xl text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-                {highestPriority.issue}
-              </h2>
-              <p className="max-w-2xl text-sm leading-6 text-muted-foreground md:text-base">
-                {highestPriority.reason}
-              </p>
-            </div>
-
-            <div className="grid gap-4 rounded-2xl border border-white/70 bg-white/72 p-4 backdrop-blur md:grid-cols-[1fr_auto] md:items-end">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                  {highestPriority.actionLabel}
-                </p>
-                <p className="mt-1 text-lg font-semibold text-foreground">
-                  {highestPriority.action}
-                </p>
-              </div>
-
-              <Button onClick={highestPriority.apply} className="gap-2 self-start md:self-auto">
-                {highestPriority.cta}
-                <ArrowRight size={15} />
-              </Button>
-            </div>
+            <h2 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
+              {decisionSummary.command_bar_summary.primary_message}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {decisionSummary.command_bar_summary.why_it_matters}
+            </p>
+            <p className="text-sm font-medium text-foreground">
+              Aanbevolen actie: {decisionSummary.recommended_action.label}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {decisionSummary.recommended_action_reason}
+            </p>
           </div>
 
-          <div className="grid gap-3 rounded-2xl border border-white/70 bg-white/72 p-4 backdrop-blur">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                Waarom dit nu telt
-              </p>
-            </div>
-            <PriorityStat
-              icon={ClipboardList}
-              label="Open beoordelingen"
-              value={systemState.openAssessmentCount}
-              tone="warning"
-            />
-            <PriorityStat
-              icon={AlertTriangle}
-              label="Geblokkeerde dossiers"
-              value={systemState.blockedCount}
-              tone="critical"
-            />
-            <PriorityStat
-              icon={Clock}
-              label="Langer dan 7 dagen"
-              value={systemState.delayedCount}
-              tone="info"
-            />
-          </div>
+          <Button onClick={() => applyDecisionTarget(decisionSummary.recommended_action)} className="gap-2 self-start lg:self-center">
+            {decisionSummary.recommended_action.cta_label}
+            <ArrowRight size={15} />
+          </Button>
         </div>
       </section>
 
-      <section className="grid gap-3 md:grid-cols-3">
-        {secondarySignals.map((signal) => (
+      <section className="premium-card p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {flowStages.map((stage, index) => (
+            <Fragment key={stage.id}>
+              <button
+                onClick={stage.onClick}
+                className={`flow-stage-chip flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${
+                  stage.isBottleneck
+                    ? "flow-stage-bottleneck"
+                    : activeKPIFilter === stage.filter
+                      ? "border-primary/45 bg-primary/10"
+                      : "border-border bg-card"
+                }`}
+              >
+                <span className="text-lg font-semibold text-foreground">{stage.count}</span>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{stage.label}</span>
+              </button>
+              {index < flowStages.length - 1 && (
+                <ChevronRight size={15} className="text-muted-foreground/70" />
+              )}
+            </Fragment>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <KPICard
+          label={casesWithoutMatchCard?.title || "Casussen zonder match"}
+          value={casesWithoutMatchCard?.value || 0}
+          context={casesWithoutMatchCard?.subtitle || "Vraagt handmatige opvolging"}
+          status={casesWithoutMatchCard?.severity || "critical"}
+          icon={<Users size={17} />}
+          active={activeKPIFilter === "noMatch"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "noMatch" ? null : "noMatch")}
+        />
+        <KPICard
+          label={openAssessmentsCard?.title || "Open beoordelingen"}
+          value={openAssessmentsCard?.value || 0}
+          context={openAssessmentsCard?.subtitle || "Blokkeren de volgende stap"}
+          status={openAssessmentsCard?.severity || "warning"}
+          icon={<ClipboardList size={17} />}
+          active={activeKPIFilter === "assessment"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "assessment" ? null : "assessment")}
+        />
+        <KPICard
+          label={waitingOverdueCard?.title || "Wachttijd overschreden"}
+          value={waitingOverdueCard?.value || 0}
+          context={waitingOverdueCard?.subtitle || "Overschrijden wachttijdnorm"}
+          status={waitingOverdueCard?.severity || "warning"}
+          icon={<Clock size={17} />}
+          active={activeKPIFilter === "waitingOverdue"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "waitingOverdue" ? null : "waitingOverdue")}
+        />
+        <KPICard
+          label={placementsInProgressCard?.title || "Plaatsingen bezig"}
+          value={placementsInProgressCard?.value || 0}
+          context={placementsInProgressCard?.subtitle || "Wachten op bevestiging"}
+          status={placementsInProgressCard?.severity || "info"}
+          icon={<TrendingUp size={17} />}
+          active={activeKPIFilter === "placement"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "placement" ? null : "placement")}
+        />
+        <KPICard
+          label={avgWaitingTimeCard?.title || "Gem. wachttijd"}
+          value={avgWaitingTimeCard?.value || 0}
+          suffix={avgWaitingTimeCard?.suffix || "d"}
+          context={avgWaitingTimeCard?.subtitle || "Norm is 7 dagen"}
+          status={avgWaitingTimeCard?.severity || "warning"}
+          icon={<Activity size={17} />}
+          active={activeKPIFilter === "delayed"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "delayed" ? null : "delayed")}
+        />
+        <KPICard
+          label={capacityIssuesCard?.title || "Capaciteitstekorten"}
+          value={capacityIssuesCard?.value || 0}
+          context={capacityIssuesCard?.subtitle || "Geen regionale piek gedetecteerd"}
+          status={capacityIssuesCard?.severity || "critical"}
+          icon={<MapPin size={17} />}
+          active={activeKPIFilter === "capacity"}
+          onClick={() => setActiveKPIFilter(activeKPIFilter === "capacity" ? null : "capacity")}
+        />
+      </div>
+
+      <section className="grid gap-3 md:grid-cols-1">
+        {decisionSummary.signal_strips.map((signal) => (
           <button
-            key={signal.id}
-            onClick={signal.onClick}
-            className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-colors hover:bg-card ${
+            key={signal.key}
+            onClick={() => applyDecisionTarget(signal.action)}
+            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
               signal.tone === "critical"
-                ? "border-red-border bg-red-light/70"
+                ? "border-red-border bg-red-light/60"
                 : signal.tone === "warning"
-                  ? "border-yellow-border bg-yellow-light/75"
-                  : "border-blue-border bg-blue-light/75"
+                  ? "border-yellow-border bg-yellow-light/65"
+                  : "border-blue-border bg-blue-light/62"
             }`}
           >
-            <span className={`flex h-9 w-9 items-center justify-center rounded-full ${
-              signal.tone === "critical"
-                ? "bg-red-light text-red-base"
-                : signal.tone === "warning"
-                  ? "bg-yellow-light text-yellow-base"
-                  : "bg-blue-light text-blue-base"
-            }`}>
-              <signal.icon size={16} />
+            <span className="flex items-center gap-3">
+              <span className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                signal.tone === "critical"
+                  ? "bg-red-light text-red-base"
+                  : signal.tone === "warning"
+                    ? "bg-yellow-light text-yellow-base"
+                    : "bg-blue-light text-blue-base"
+              }`}>
+                {signal.tone === "critical" ? <AlertTriangle size={15} /> : signal.tone === "warning" ? <Clock size={15} /> : <MapPin size={15} />}
+              </span>
+              <span className="text-sm font-medium text-foreground">{signal.text}</span>
             </span>
-            <span className="text-sm font-medium text-foreground">{signal.text}</span>
+            <ChevronRight size={16} className="text-muted-foreground" />
           </button>
         ))}
       </section>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-        <KPICard
-          label={kpis.casesWithoutMatch.label}
-          value={kpis.casesWithoutMatch.value}
-          context={kpis.casesWithoutMatch.context}
-          status={kpis.casesWithoutMatch.status}
-          icon={<Users size={17} />}
-          active={activeKPIFilter === kpis.casesWithoutMatch.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.casesWithoutMatch.filter ? null : kpis.casesWithoutMatch.filter)}
-        />
-        <KPICard
-          label={kpis.openAssessments.label}
-          value={kpis.openAssessments.value}
-          context={kpis.openAssessments.context}
-          status={kpis.openAssessments.status}
-          icon={<ClipboardList size={17} />}
-          active={activeKPIFilter === kpis.openAssessments.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.openAssessments.filter ? null : kpis.openAssessments.filter)}
-        />
-        <KPICard
-          label={kpis.placementsInProgress.label}
-          value={kpis.placementsInProgress.value}
-          context={kpis.placementsInProgress.context}
-          status={kpis.placementsInProgress.status}
-          icon={<TrendingUp size={17} />}
-          active={activeKPIFilter === kpis.placementsInProgress.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.placementsInProgress.filter ? null : kpis.placementsInProgress.filter)}
-        />
-        <KPICard
-          label={kpis.avgWaitingTime.label}
-          value={kpis.avgWaitingTime.value}
-          suffix="d"
-          context={kpis.avgWaitingTime.context}
-          status={kpis.avgWaitingTime.status}
-          icon={<Clock size={17} />}
-          active={activeKPIFilter === kpis.avgWaitingTime.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.avgWaitingTime.filter ? null : kpis.avgWaitingTime.filter)}
-        />
-        <KPICard
-          label={kpis.highRiskCases.label}
-          value={kpis.highRiskCases.value}
-          context={kpis.highRiskCases.context}
-          status={kpis.highRiskCases.status}
-          icon={<ShieldAlert size={17} />}
-          active={activeKPIFilter === kpis.highRiskCases.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.highRiskCases.filter ? null : kpis.highRiskCases.filter)}
-        />
-        <KPICard
-          label={kpis.capacityIssues.label}
-          value={kpis.capacityIssues.value}
-          context={kpis.capacityIssues.context}
-          status={kpis.capacityIssues.status}
-          icon={<MapPin size={17} />}
-          active={activeKPIFilter === kpis.capacityIssues.filter}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === kpis.capacityIssues.filter ? null : kpis.capacityIssues.filter)}
-        />
-      </div>
-
       <section className="rounded-2xl border border-border bg-muted/35 p-4">
+        <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <Filter size={14} />
+          Zoek en filters
+        </div>
+
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
             <Input
-              placeholder="Zoek op casus ID, naam of type zorg..."
+              placeholder="Zoek op casus, client of aanbieder..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-card pl-10"
@@ -478,11 +381,12 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
               className="rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground"
             >
               <option value="all">Alle statussen</option>
-              <option value="intake">Intake</option>
-              <option value="assessment">Beoordeling</option>
+              <option value="intake_initial">Intake</option>
+              <option value="intake_provider">Intake aanbieder</option>
+              <option value="beoordeling">Beoordeling</option>
               <option value="matching">Matching</option>
-              <option value="placement">Plaatsing</option>
-              <option value="blocked">Geblokkeerd</option>
+              <option value="plaatsing">Plaatsing</option>
+              <option value="geblokkeerd">Geblokkeerd</option>
             </select>
 
             <select
@@ -503,7 +407,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
           <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4 text-sm">
             <span className="inline-flex items-center gap-2 text-muted-foreground">
               <Filter size={14} />
-              Actieve filters
+              Gefilterd op
             </span>
 
             {searchQuery && <ActiveFilterChip label={`Zoekterm: ${searchQuery}`} />}
@@ -513,11 +417,13 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
             {activeKPIFilter && (
               <ActiveFilterChip
                 label={
+                  activeKPIFilter === "casussen" ? "Fase: Casussen" :
                   activeKPIFilter === "noMatch" ? "Zonder match" :
                   activeKPIFilter === "assessment" ? "Open beoordelingen" :
                   activeKPIFilter === "placement" ? "Plaatsingen bezig" :
                   activeKPIFilter === "highRisk" ? "Hoog risico" :
-                  activeKPIFilter === "capacity" ? `Capaciteit ${systemState.busiestRegion}` :
+                  activeKPIFilter === "waitingOverdue" ? "Wachttijd overschreden" :
+                  activeKPIFilter === "capacity" ? `Capaciteit ${decisionSummary.capacity_region || "onbekend"}` :
                   "Wachttijd > 7 dagen"
                 }
               />
@@ -555,7 +461,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         </div>
 
         <div className="space-y-3">
-          {filteredCases.map((caseItem) => {
+          {filteredCases.map((caseItem: Casus) => {
             const nextAction = getNextAction(caseItem);
 
             return (
@@ -595,33 +501,6 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   );
 }
 
-interface PriorityStatProps {
-  icon: React.ComponentType<{ size?: number; className?: string }>;
-  label: string;
-  value: number;
-  tone: "critical" | "warning" | "info";
-}
-
-function PriorityStat({ icon: Icon, label, value, tone }: PriorityStatProps) {
-  const toneClasses = {
-    critical: "bg-red-light text-red-base border-red-border",
-    warning: "bg-yellow-light text-yellow-base border-yellow-border",
-    info: "bg-blue-light text-blue-base border-blue-border"
-  };
-
-  return (
-    <div className={`flex items-center justify-between rounded-xl border px-3 py-3 ${toneClasses[tone]}`}>
-      <div className="flex items-center gap-3">
-        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-white/70">
-          <Icon size={16} />
-        </span>
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <span className="text-xl font-semibold">{value}</span>
-    </div>
-  );
-}
-
 interface ActiveFilterChipProps {
   label: string;
 }
@@ -638,7 +517,7 @@ interface KPICardProps {
   label: string;
   value: number;
   context: string;
-  status: "good" | "normal" | "warning" | "critical";
+  status: "good" | "info" | "warning" | "critical";
   icon: React.ReactNode;
   active: boolean;
   onClick: () => void;
@@ -647,23 +526,23 @@ interface KPICardProps {
 
 function KPICard({ label, value, context, status, icon, active, onClick, suffix }: KPICardProps) {
   const cardStyles = {
-    good: "border-green-border bg-green-light/45",
-    normal: "border-blue-border bg-blue-light/38",
-    warning: "border-yellow-border bg-yellow-light/45",
-    critical: "border-red-border bg-red-light/42"
+    good: "border-green-border/60",
+    info: "border-blue-border/60",
+    warning: "border-yellow-border/60",
+    critical: "border-red-border/60"
   };
 
   const iconStyles = {
-    good: "text-green-base bg-white/75",
-    normal: "text-blue-base bg-white/75",
-    warning: "text-yellow-base bg-white/75",
-    critical: "text-red-base bg-white/75"
+    good: "text-green-base icon-surface",
+    info: "text-blue-base icon-surface",
+    warning: "text-yellow-base icon-surface",
+    critical: "text-red-base icon-surface"
   };
 
   return (
     <button
       onClick={onClick}
-      className={`rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${cardStyles[status]} ${active ? "ring-2 ring-primary/35" : ""}`}
+      className={`kpi-card rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${cardStyles[status]} ${active ? "ring-2 ring-primary/35" : ""}`}
     >
       <div className="mb-4 flex items-start justify-between gap-3">
         <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconStyles[status]}`}>
@@ -682,13 +561,27 @@ function KPICard({ label, value, context, status, icon, active, onClick, suffix 
         <p className="mt-1 text-xs text-muted-foreground">
           {context}
         </p>
+        <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
+          Bekijk dossiers
+          <ChevronRight size={13} />
+        </p>
       </div>
     </button>
   );
 }
 
+const PHASE_LABELS: Record<CasusPhase, string> = {
+  intake_initial: "Intake",
+  beoordeling: "Beoordeling",
+  matching: "Matching",
+  plaatsing: "Plaatsing",
+  intake_provider: "Intake aanbieder",
+  afgerond: "Afgerond",
+  geblokkeerd: "Geblokkeerd",
+};
+
 interface CaseRowProps {
-  caseItem: Case;
+  caseItem: Casus;
   nextAction: { action: string; type: "urgent" | "normal" | "waiting" };
   onClick: () => void;
 }
@@ -708,18 +601,19 @@ function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
     low: "bg-muted text-muted-foreground border-border"
   };
 
-  const statusBadge = {
-    intake: "careon-badge-blue",
-    assessment: "careon-badge-purple",
+  const phaseBadge: Record<CasusPhase, string> = {
+    intake_initial: "careon-badge-blue",
+    beoordeling: "careon-badge-purple",
     matching: "careon-badge-yellow",
-    placement: "bg-green-light text-green-base border border-green-border",
-    blocked: "careon-badge-red",
-    completed: "bg-muted text-muted-foreground border border-border"
+    plaatsing: "bg-green-light text-green-base border border-green-border",
+    intake_provider: "bg-blue-light text-blue-base border border-blue-border",
+    afgerond: "bg-muted text-muted-foreground border border-border",
+    geblokkeerd: "careon-badge-red",
   };
 
-  const riskIcon =
-    caseItem.risk === "high" ? <AlertCircle size={16} className="text-red-base" /> :
-    caseItem.risk === "medium" ? <AlertTriangle size={16} className="text-yellow-base" /> :
+  const complexityIcon =
+    caseItem.complexity === "high" ? <AlertCircle size={16} className="text-red-base" /> :
+    caseItem.complexity === "medium" ? <AlertTriangle size={16} className="text-yellow-base" /> :
     <CheckCircle2 size={16} className="text-green-base" />;
 
   const actionTone =
@@ -741,21 +635,21 @@ function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
             <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${urgencyBadge[caseItem.urgency]}`}>
               {caseItem.urgency === "critical" ? "Kritiek" : caseItem.urgency === "high" ? "Hoog" : caseItem.urgency === "medium" ? "Gemiddeld" : "Laag"}
             </span>
-            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusBadge[caseItem.status]}`}>
-              {caseItem.status === "intake" ? "Intake" : caseItem.status === "assessment" ? "Beoordeling" : caseItem.status === "matching" ? "Matching" : caseItem.status === "placement" ? "Plaatsing" : caseItem.status === "blocked" ? "Geblokkeerd" : "Afgerond"}
+            <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${phaseBadge[caseItem.phase]}`}>
+              {PHASE_LABELS[caseItem.phase]}
             </span>
           </div>
           <p className="text-sm text-muted-foreground">
-            {caseItem.caseType} · {caseItem.region} · Eigenaar: {caseItem.assignedTo}
+            {caseItem.careType} · {caseItem.region} · Eigenaar: {caseItem.assignedTo}
           </p>
         </div>
 
         <div className="space-y-1">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            Blokkade / issue
+            Complexiteit
           </p>
           <p className="text-sm font-medium text-foreground">
-            {caseItem.signal}
+            {caseItem.complexity === "high" ? "Hoog" : caseItem.complexity === "medium" ? "Gemiddeld" : "Laag"} · {caseItem.careType}
           </p>
         </div>
 
@@ -767,9 +661,9 @@ function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
             </span>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            {riskIcon}
+            {complexityIcon}
             <span>
-              Risico {caseItem.risk === "high" ? "hoog" : caseItem.risk === "medium" ? "gemiddeld" : "laag"}
+              {caseItem.assessment?.assessor ?? "Geen beoordelaar"}
             </span>
           </div>
         </div>
@@ -783,7 +677,7 @@ function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
               {nextAction.action}
             </div>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border bg-white/70 text-muted-foreground transition-colors hover:text-primary">
+          <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors hover:text-primary">
             <ChevronRight size={18} />
           </div>
         </div>

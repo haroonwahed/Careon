@@ -37,7 +37,7 @@ export function ConversationRow({ conversation, isActive, onClick, language }: C
         p-4 cursor-pointer transition-all border-l-2
         hover:dark:bg-[rgba(139,92,246,0.08)] hover:bg-gray-100
         ${isActive 
-          ? "dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 dark:border-[#8B5CF6] border-primary" 
+          ? "bg-primary/15 bg-primary/10 border-primary border-primary" 
           : "dark:bg-transparent bg-background border-transparent"
         }
       `}
@@ -51,10 +51,10 @@ export function ConversationRow({ conversation, isActive, onClick, language }: C
           <img
             src={conversation.buyerAvatar}
             alt={conversation.buyerName}
-            className="w-12 h-12 rounded-full object-cover border-2 dark:border-[rgba(168,85,247,0.30)] border-border"
+            className="w-12 h-12 rounded-full object-cover border-2 border-border"
           />
           {conversation.unreadCount > 0 && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full dark:bg-[#8B5CF6] bg-primary flex items-center justify-center">
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
               <span className="text-[10px] dark:text-white text-primary-foreground">
                 {conversation.unreadCount}
               </span>
@@ -66,24 +66,24 @@ export function ConversationRow({ conversation, isActive, onClick, language }: C
         <div className="flex-1 min-w-0">
           {/* Top row: Name + Time */}
           <div className="flex items-baseline justify-between gap-2 mb-1">
-            <h4 className="dark:text-[#E7E7F0] text-foreground truncate">
+            <h4 className="text-foreground truncate">
               {conversation.buyerName}
             </h4>
-            <span className="text-xs dark:text-[#9CA3AF] text-muted-foreground flex-shrink-0">
+            <span className="text-xs text-muted-foreground flex-shrink-0">
               {formatTime(conversation.lastMessageTime)}
             </span>
           </div>
 
           {/* Item title */}
-          <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground truncate mb-1">
+          <div className="text-xs text-muted-foreground truncate mb-1">
             {conversation.itemTitle}
           </div>
 
           {/* Last message preview */}
           <div className={`text-sm truncate mb-2 ${
             conversation.unreadCount > 0 
-              ? "dark:text-[#E7E7F0] text-foreground" 
-              : "dark:text-[#9CA3AF] text-muted-foreground"
+              ? "text-foreground" 
+              : "text-muted-foreground"
           }`}>
             {conversation.lastMessage}
           </div>
@@ -91,7 +91,7 @@ export function ConversationRow({ conversation, isActive, onClick, language }: C
           {/* Account chip */}
           <Badge 
             variant="outline" 
-            className="text-[10px] px-2 py-0 dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:border-[rgba(168,85,247,0.25)] border-primary/25 dark:text-[#A78BFA] text-primary"
+            className="text-[10px] px-2 py-0 bg-primary/10 border-primary/25 text-primary"
           >
             {conversation.accountName}
           </Badge>

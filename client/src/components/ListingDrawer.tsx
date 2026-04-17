@@ -98,21 +98,21 @@ export function ListingDrawer({
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent 
         side="right" 
-        className="w-full sm:max-w-2xl p-0 dark:bg-[#0A0A0E] bg-background border-l dark:border-[rgba(168,85,247,0.25)] border-border overflow-y-auto"
+        className="w-full sm:max-w-2xl p-0 bg-background border-l border-border overflow-y-auto"
       >
         {/* Header */}
-        <SheetHeader className="p-6 border-b dark:border-[rgba(168,85,247,0.25)] border-border sticky top-0 dark:bg-[#0A0A0E] bg-background z-10">
+        <SheetHeader className="p-6 border-b border-border sticky top-0 bg-background z-10">
           <div className="flex items-start gap-4">
             {/* Thumbnail */}
             <img
               src={listing.photos[0]}
               alt={listing.title}
-              className="w-20 h-20 rounded-xl object-cover border dark:border-[rgba(168,85,247,0.25)] border-border flex-shrink-0"
+              className="w-20 h-20 rounded-xl object-cover border border-border flex-shrink-0"
             />
 
             {/* Info */}
             <div className="flex-1 min-w-0">
-              <SheetTitle className="dark:text-[#E7E7F0] text-foreground mb-2">
+              <SheetTitle className="text-foreground mb-2">
                 {listing.title}
               </SheetTitle>
               
@@ -122,7 +122,7 @@ export function ListingDrawer({
                   <StatusBadge key={index} status={status.type} language={language} size="md" />
                 ))}
                 
-                <Badge variant="outline" className="text-xs dark:border-[rgba(168,85,247,0.25)] border-border dark:text-[#9CA3AF] text-muted-foreground">
+                <Badge variant="outline" className="text-xs border-border text-muted-foreground">
                   {daysAgoText}
                 </Badge>
               </div>
@@ -132,7 +132,7 @@ export function ListingDrawer({
                 <Button
                   onClick={onBoost}
                   size="sm"
-                  className="rounded-lg dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 gap-2"
+                  className="rounded-lg bg-primary hover:bg-primary/90 gap-2"
                 >
                   <TrendingUp className="w-4 h-4" />
                   {t(language, "published.button.boost")}
@@ -161,27 +161,27 @@ export function ListingDrawer({
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1">
-          <div className="border-b dark:border-[rgba(168,85,247,0.25)] border-border px-6 sticky top-[180px] dark:bg-[#0A0A0E] bg-background z-10">
+          <div className="border-b border-border px-6 sticky top-[180px] bg-background z-10">
             <TabsList className="dark:bg-transparent bg-transparent border-0 h-auto p-0 gap-6">
               <TabsTrigger
                 value="details"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:dark:border-[#8B5CF6] data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
               >
                 {t(language, "published.drawer.tab.details")}
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:dark:border-[#8B5CF6] data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
               >
                 {t(language, "published.drawer.tab.analytics")}
               </TabsTrigger>
               <TabsTrigger
                 value="recommendations"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:dark:border-[#8B5CF6] data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
+                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:border-primary dark:bg-transparent bg-transparent px-0 pb-3"
               >
                 {t(language, "published.drawer.tab.recommendations")}
                 {insights.length > 0 && (
-                  <Badge className="ml-2 text-[10px] px-1.5 py-0 dark:bg-[#8B5CF6] bg-primary dark:text-white text-primary-foreground">
+                  <Badge className="ml-2 text-[10px] px-1.5 py-0 bg-primary dark:text-white text-primary-foreground">
                     {insights.length}
                   </Badge>
                 )}
@@ -193,7 +193,7 @@ export function ListingDrawer({
           <TabsContent value="details" className="p-6 space-y-4 mt-0">
             {/* Photo gallery */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Photos" : "Photos"} ({listing.photos.length})
               </label>
               <div className="grid grid-cols-4 gap-2">
@@ -202,7 +202,7 @@ export function ListingDrawer({
                     key={index}
                     src={photo}
                     alt={`${listing.title} ${index + 1}`}
-                    className="w-full aspect-square rounded-lg object-cover border dark:border-[rgba(168,85,247,0.20)] border-border"
+                    className="w-full aspect-square rounded-lg object-cover border border-border"
                   />
                 ))}
               </div>
@@ -210,32 +210,32 @@ export function ListingDrawer({
 
             {/* Title */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Titre" : "Title"}
               </label>
               <Input
                 value={editedListing.title}
                 onChange={(e) => setEditedListing({ ...editedListing, title: e.target.value })}
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                className="rounded-xl bg-primary/5 bg-background border-border"
               />
             </div>
 
             {/* Description */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Description" : "Description"}
               </label>
               <Textarea
                 value={editedListing.description}
                 onChange={(e) => setEditedListing({ ...editedListing, description: e.target.value })}
                 rows={4}
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border resize-none"
+                className="rounded-xl bg-primary/5 bg-background border-border resize-none"
               />
             </div>
 
             {/* Price */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Prix (€)" : "Price (€)"}
               </label>
               <Input
@@ -243,51 +243,51 @@ export function ListingDrawer({
                 step="0.01"
                 value={editedListing.price}
                 onChange={(e) => setEditedListing({ ...editedListing, price: parseFloat(e.target.value) || 0 })}
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                className="rounded-xl bg-primary/5 bg-background border-border"
               />
             </div>
 
             {/* Brand */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Marque" : "Brand"}
               </label>
               <Input
                 value={editedListing.brand}
                 onChange={(e) => setEditedListing({ ...editedListing, brand: e.target.value })}
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                className="rounded-xl bg-primary/5 bg-background border-border"
               />
             </div>
 
             {/* Size */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 {language === "fr" ? "Taille" : "Size"}
               </label>
               <Input
                 value={editedListing.size}
                 onChange={(e) => setEditedListing({ ...editedListing, size: e.target.value })}
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                className="rounded-xl bg-primary/5 bg-background border-border"
               />
             </div>
 
             {/* SKU (read-only) */}
             <div>
-              <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+              <label className="block text-sm text-foreground mb-2">
                 SKU
               </label>
               <Input
                 value={listing.sku}
                 disabled
-                className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border opacity-60"
+                className="rounded-xl bg-primary/5 bg-background border-border opacity-60"
               />
             </div>
 
             {/* Save button */}
-            <div className="sticky bottom-0 pt-4 pb-4 dark:bg-[#0A0A0E] bg-background">
+            <div className="sticky bottom-0 pt-4 pb-4 bg-background">
               <Button
                 onClick={handleSave}
-                className="w-full rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+                className="w-full rounded-xl bg-primary hover:bg-primary/90"
                 style={{
                   boxShadow: "0 0 16px rgba(139,92,246,0.3)"
                 }}
@@ -301,66 +301,66 @@ export function ListingDrawer({
           <TabsContent value="analytics" className="p-6 space-y-6 mt-0">
             {/* KPI Cards */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card">
+              <div className="p-4 rounded-xl border border-border bg-primary/5 bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <Eye className="w-4 h-4 dark:text-[#A78BFA] text-primary" />
-                  <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <Eye className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
                     {t(language, "published.analytics.views")}
                   </span>
                 </div>
-                <div className="text-2xl dark:text-[#E7E7F0] text-foreground mb-1">
+                <div className="text-2xl text-foreground mb-1">
                   {listing.analytics.views}
                 </div>
                 <div className={`text-xs flex items-center gap-1 ${
                   listing.analytics.viewsTrend > 0 
-                    ? "dark:text-[#2AF07A] text-green-600" 
-                    : "dark:text-[#FF5C8A] text-red-600"
+                    ? "text-green-base text-green-600" 
+                    : "text-red-base text-red-600"
                 }`}>
                   <TrendUp className={`w-3 h-3 ${listing.analytics.viewsTrend < 0 ? "rotate-180" : ""}`} />
                   <span>{Math.abs(listing.analytics.viewsTrend)}% {t(language, "published.analytics.trend")}</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card">
+              <div className="p-4 rounded-xl border border-border bg-primary/5 bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <Heart className="w-4 h-4 dark:text-[#A78BFA] text-primary" />
-                  <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <Heart className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
                     {t(language, "published.analytics.favorites")}
                   </span>
                 </div>
-                <div className="text-2xl dark:text-[#E7E7F0] text-foreground mb-1">
+                <div className="text-2xl text-foreground mb-1">
                   {listing.analytics.favorites}
                 </div>
                 <div className={`text-xs flex items-center gap-1 ${
                   listing.analytics.favoritesTrend > 0 
-                    ? "dark:text-[#2AF07A] text-green-600" 
-                    : "dark:text-[#FF5C8A] text-red-600"
+                    ? "text-green-base text-green-600" 
+                    : "text-red-base text-red-600"
                 }`}>
                   <TrendUp className={`w-3 h-3 ${listing.analytics.favoritesTrend < 0 ? "rotate-180" : ""}`} />
                   <span>{Math.abs(listing.analytics.favoritesTrend)}% {t(language, "published.analytics.trend")}</span>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card">
+              <div className="p-4 rounded-xl border border-border bg-primary/5 bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-4 h-4 dark:text-[#A78BFA] text-primary" />
-                  <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
                     {t(language, "published.analytics.offers")}
                   </span>
                 </div>
-                <div className="text-2xl dark:text-[#E7E7F0] text-foreground">
+                <div className="text-2xl text-foreground">
                   {listing.analytics.offers}
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card">
+              <div className="p-4 rounded-xl border border-border bg-primary/5 bg-card">
                 <div className="flex items-center gap-2 mb-2">
-                  <DollarSign className="w-4 h-4 dark:text-[#A78BFA] text-primary" />
-                  <span className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <DollarSign className="w-4 h-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">
                     {t(language, "published.analytics.avgOffer")}
                   </span>
                 </div>
-                <div className="text-2xl dark:text-[#E7E7F0] text-foreground">
+                <div className="text-2xl text-foreground">
                   {formatCurrency(listing.analytics.avgOfferPrice, language)}
                 </div>
               </div>
@@ -396,7 +396,7 @@ export function ListingDrawer({
 
             {/* Views chart */}
             <div>
-              <h4 className="text-sm dark:text-[#E7E7F0] text-foreground mb-3">
+              <h4 className="text-sm text-foreground mb-3">
                 {t(language, "published.analytics.viewsOverTime")}
               </h4>
               <div className="h-48 dark:bg-[rgba(139,92,246,0.03)] bg-gray-50 rounded-xl p-4">
@@ -426,7 +426,7 @@ export function ListingDrawer({
 
             {/* Favorites chart */}
             <div>
-              <h4 className="text-sm dark:text-[#E7E7F0] text-foreground mb-3">
+              <h4 className="text-sm text-foreground mb-3">
                 {t(language, "published.analytics.favoritesOverTime")}
               </h4>
               <div className="h-48 dark:bg-[rgba(139,92,246,0.03)] bg-gray-50 rounded-xl p-4">
@@ -460,12 +460,12 @@ export function ListingDrawer({
             {insights.length === 0 ? (
               <div className="text-center py-12">
                 <div className="w-16 h-16 rounded-full dark:bg-[rgba(42,240,122,0.15)] bg-green-100 mx-auto mb-4 flex items-center justify-center">
-                  <TrendingUp className="w-8 h-8 dark:text-[#2AF07A] text-green-600" />
+                  <TrendingUp className="w-8 h-8 text-green-base text-green-600" />
                 </div>
-                <p className="dark:text-[#E7E7F0] text-foreground mb-2">
+                <p className="text-foreground mb-2">
                   {language === "fr" ? "Aucune recommandation" : "No recommendations"}
                 </p>
-                <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   {language === "fr" 
                     ? "Votre annonce est optimale !" 
                     : "Your listing is looking great!"}

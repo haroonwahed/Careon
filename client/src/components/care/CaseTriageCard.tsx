@@ -2,7 +2,6 @@ import {
   Clock, 
   MapPin, 
   AlertTriangle, 
-  CheckCircle2, 
   ArrowRight,
   Info,
   TrendingUp,
@@ -179,17 +178,17 @@ export function CaseTriageCard({
           </div>
         </div>
 
-        {/* PROBLEMS: Problem Indicators */}
+        {/* PROBLEMS: compact pills */}
         {problems.length > 0 && (
-          <div className="mb-4 space-y-2">
+          <div className="mb-3 flex flex-wrap gap-1.5">
             {problems.map((problem, idx) => {
               const Icon = problemIcons[problem.type];
               return (
-                <div 
+                <div
                   key={idx}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg border careon-alert-error"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border careon-alert-error"
                 >
-                  <Icon size={14} className="text-red-base flex-shrink-0" />
+                  <Icon size={12} className="text-red-base flex-shrink-0" />
                   <span className="text-xs font-medium text-red-base">{problem.label}</span>
                 </div>
               );
@@ -197,29 +196,16 @@ export function CaseTriageCard({
           </div>
         )}
 
-        {/* SYSTEM INSIGHT */}
+        {/* SYSTEM INSIGHT: single muted line */}
         {systemInsight && (
-          <div className="mb-4 p-3 rounded-lg border careon-alert-info">
-            <div className="flex gap-2">
-              <Info size={14} className="text-blue-base flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-blue-base leading-relaxed">{systemInsight}</p>
-            </div>
+          <div className="mb-3 flex items-start gap-1.5">
+            <Info size={12} className="text-muted-foreground flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-muted-foreground leading-snug line-clamp-2">{systemInsight}</p>
           </div>
         )}
 
-        {/* RECOMMENDED ACTION */}
-        <div className="mb-4 p-3 rounded-lg border careon-alert-primary">
-          <div className="flex items-center gap-2 mb-1">
-            <CheckCircle2 size={14} className="text-primary" />
-            <span className="text-xs font-semibold text-primary uppercase tracking-wide">
-              Aanbevolen actie
-            </span>
-          </div>
-          <p className="text-sm font-medium text-primary">{recommendedAction}</p>
-        </div>
-
         {/* CTA BUTTONS */}
-        <div className="flex gap-3">
+        <div className="flex gap-2 mt-4">
           <Button
             onClick={onTakeAction}
             className="flex-1 bg-primary hover:bg-primary/90 text-white font-semibold"

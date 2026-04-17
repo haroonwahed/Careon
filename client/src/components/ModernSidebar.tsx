@@ -156,7 +156,7 @@ export function ModernSidebar({
           className={`w-10 h-10 rounded-xl relative transition-all duration-200 ${
             isActive
               ? "dark:bg-primary/15 bg-primary/10 dark:text-primary text-primary border dark:border-primary/40 border-primary/30"
-              : "dark:text-muted-foreground text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent"
+              : "dark:text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent"
           }`}
           onClick={() => onPageChange(item.id)}
         >
@@ -177,7 +177,7 @@ export function ModernSidebar({
         className={`w-full justify-start h-9 rounded-xl px-3 gap-3 relative ${
           isActive
             ? "dark:bg-primary/15 bg-primary/10 dark:text-primary text-primary border dark:border-primary/40 border-primary/30"
-            : "dark:text-muted-foreground text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50"
+            : "dark:text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50"
         }`}
         onClick={() => onPageChange(item.id)}
       >
@@ -254,7 +254,7 @@ export function ModernSidebar({
             disabled={isRefreshing || cooldownRemaining > 0}
             className={`${
               collapsed ? "w-11 h-11" : "w-full justify-start h-11 gap-3"
-            } rounded-xl dark:text-muted-foreground text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent transition-all duration-200 ${
+            } rounded-xl dark:text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent transition-all duration-200 ${
               (isRefreshing || cooldownRemaining > 0) ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
@@ -270,7 +270,7 @@ export function ModernSidebar({
           onClick={onToggleCollapse}
           className={`${
             collapsed ? "w-11 h-11" : "w-full justify-start h-11 gap-3"
-          } rounded-xl dark:text-muted-foreground text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent transition-all duration-200`}
+          } rounded-xl dark:text-muted-foreground dark:hover:text-foreground hover:text-foreground dark:hover:bg-surface-hover hover:bg-muted/50 dark:hover:border-primary/20 hover:border-primary/10 border border-transparent transition-all duration-200`}
         >
           {collapsed ? (
             <ChevronRight className="h-5 w-5" />

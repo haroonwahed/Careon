@@ -21,11 +21,11 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
 
   const getStatusBadge = () => {
     const statusMap = {
-      sent: { label: t(language, "messages.offer.card.sent"), className: "dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 dark:text-[#A78BFA] text-primary" },
-      accepted: { label: t(language, "messages.offer.card.accepted"), className: "dark:bg-[rgba(42,240,122,0.15)] bg-green-100 dark:text-[#2AF07A] text-green-700" },
-      declined: { label: t(language, "messages.offer.card.declined"), className: "dark:bg-[rgba(255,92,138,0.15)] bg-red-100 dark:text-[#FF5C8A] text-red-700" },
-      countered: { label: t(language, "messages.offer.card.countered"), className: "dark:bg-[rgba(251,191,36,0.15)] bg-yellow-100 dark:text-[#FBBF24] text-yellow-700" },
-      expired: { label: t(language, "messages.offer.card.expired"), className: "dark:bg-[rgba(156,163,175,0.15)] bg-gray-100 dark:text-[#9CA3AF] text-gray-700" },
+      sent: { label: t(language, "messages.offer.card.sent"), className: "bg-primary/15 bg-primary/10 text-primary" },
+      accepted: { label: t(language, "messages.offer.card.accepted"), className: "dark:bg-[rgba(42,240,122,0.15)] bg-green-100 text-green-base text-green-700" },
+      declined: { label: t(language, "messages.offer.card.declined"), className: "dark:bg-[rgba(255,92,138,0.15)] bg-red-100 text-red-base text-red-700" },
+      countered: { label: t(language, "messages.offer.card.countered"), className: "dark:bg-[rgba(251,191,36,0.15)] bg-yellow-100 text-yellow-base text-yellow-700" },
+      expired: { label: t(language, "messages.offer.card.expired"), className: "dark:bg-[rgba(156,163,175,0.15)] bg-gray-100 text-gray-700" },
     };
     
     return statusMap[offer.status];
@@ -42,7 +42,7 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
           <img
             src={offer.senderAvatar}
             alt={offer.senderName}
-            className="w-8 h-8 rounded-full object-cover border dark:border-[rgba(168,85,247,0.25)] border-border"
+            className="w-8 h-8 rounded-full object-cover border border-border"
           />
         </div>
       )}
@@ -54,29 +54,29 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
           className={`
             rounded-2xl overflow-hidden border
             ${offer.isMe
-              ? "dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:border-[rgba(168,85,247,0.30)] border-primary/30"
-              : "dark:bg-[rgba(139,92,246,0.15)] bg-primary/15 dark:border-[rgba(168,85,247,0.35)] border-primary/35"
+              ? "bg-primary/10 border-primary/30"
+              : "bg-primary/15 border-primary/35"
             }
           `}
         >
           {/* Offer header */}
-          <div className="px-4 py-3 border-b dark:border-[rgba(168,85,247,0.25)] border-border/50">
+          <div className="px-4 py-3 border-b border-border/50">
             <div className="flex items-center justify-between gap-3 mb-1">
-              <span className="text-xs dark:text-[#9CA3AF] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 {language === "fr" ? "Offre" : "Offer"}
               </span>
               <Badge className={statusBadge.className}>
                 {statusBadge.label}
               </Badge>
             </div>
-            <div className="text-xl dark:text-[#E7E7F0] text-foreground">
+            <div className="text-xl text-foreground">
               {formatCurrency(offer.amount, language)}
             </div>
           </div>
 
           {/* Optional message */}
           {offer.message && (
-            <div className="px-4 py-3 text-sm dark:text-[#E7E7F0] text-foreground">
+            <div className="px-4 py-3 text-sm text-foreground">
               {offer.message}
             </div>
           )}
@@ -87,7 +87,7 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
               <Button
                 onClick={onAccept}
                 size="sm"
-                className="flex-1 rounded-lg dark:bg-[#2AF07A] bg-green-600 hover:dark:bg-[#24D66D] hover:bg-green-700 dark:text-[#0A0A0E] text-white"
+                className="flex-1 rounded-lg bg-green-base hover:bg-green-600 text-background"
               >
                 {t(language, "messages.offer.action.accept")}
               </Button>
@@ -103,7 +103,7 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
                 onClick={onDecline}
                 size="sm"
                 variant="ghost"
-                className="rounded-lg dark:text-[#FF5C8A] text-red-600 hover:dark:bg-[rgba(255,92,138,0.10)] hover:bg-red-50"
+                className="rounded-lg text-red-base hover:bg-red-light/20"
               >
                 {t(language, "messages.offer.action.decline")}
               </Button>
@@ -112,7 +112,7 @@ export function OfferCard({ offer, language, onAccept, onDecline, onCounter }: O
         </div>
 
         {/* Timestamp */}
-        <span className="text-[11px] dark:text-[#9CA3AF] text-muted-foreground mt-1 px-1">
+        <span className="text-[11px] text-muted-foreground mt-1 px-1">
           {formatTime(offer.timestamp)}
         </span>
       </div>

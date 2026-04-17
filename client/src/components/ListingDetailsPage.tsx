@@ -125,16 +125,16 @@ export function ListingDetailsPage({
   const daysOld = Math.floor((Date.now() - listing.publishedDate.getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="h-screen flex flex-col dark:bg-[#0A0A0E] bg-background">
+    <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="border-b dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card sticky top-0 z-10">
+      <div className="border-b border-border bg-card sticky top-0 z-10">
         <div className="px-6 py-4">
           {/* Back button + Actions row */}
           <div className="flex items-center justify-between mb-4">
             <Button
               onClick={onBack}
               variant="ghost"
-              className="gap-2 dark:text-[#9CA3AF] text-muted-foreground hover:dark:text-[#E7E7F0] hover:text-foreground"
+              className="gap-2 text-muted-foreground hover:hover:text-foreground"
             >
               <ArrowLeft className="w-4 h-4" />
               {language === "fr" ? "Retour aux annonces" : "Back to listings"}
@@ -146,8 +146,8 @@ export function ListingDetailsPage({
                 size="sm"
                 className={`rounded-xl gap-2 ${
                   listing.boostActive
-                    ? "dark:bg-[rgba(139,92,246,0.20)] bg-primary/20 dark:text-[#A78BFA] text-primary dark:border-[rgba(168,85,247,0.40)] border-primary/40 border hover:dark:bg-[rgba(139,92,246,0.30)] hover:bg-primary/30"
-                    : "dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+                    ? "bg-primary/20 text-primary border-primary/40 border hover:bg-primary/30 hover:bg-primary/30"
+                    : "bg-primary hover:bg-primary/90"
                 }`}
                 style={!listing.boostActive ? {
                   boxShadow: "0 0 16px rgba(139,92,246,0.3)"
@@ -173,11 +173,11 @@ export function ListingDetailsPage({
             <img
               src={listing.photos[0]}
               alt={listing.title}
-              className="w-12 h-12 rounded-xl object-cover border dark:border-[rgba(168,85,247,0.25)] border-border flex-shrink-0"
+              className="w-12 h-12 rounded-xl object-cover border border-border flex-shrink-0"
             />
             
             <div className="flex-1 min-w-0">
-              <h1 className="dark:text-[#E7E7F0] text-foreground mb-2">{listing.title}</h1>
+              <h1 className="text-foreground mb-2">{listing.title}</h1>
               
               {/* Status badges + SKU + Published date */}
               <div className="flex flex-wrap items-center gap-2 mb-0">
@@ -185,11 +185,11 @@ export function ListingDetailsPage({
                   <StatusBadge key={index} status={status.type} language={language} size="md" />
                 ))}
                 
-                <span className="text-xs px-3 py-1.5 rounded-lg dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:text-[#A78BFA] text-primary border dark:border-[rgba(168,85,247,0.25)] border-border">
+                <span className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary border border-border">
                   {listing.sku}
                 </span>
 
-                <span className="text-xs dark:text-[#6B7280] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatDateTime(listing.publishedDate, language)}
                 </span>
               </div>
@@ -203,19 +203,19 @@ export function ListingDetailsPage({
             <TabsList className="dark:bg-transparent bg-transparent border-0 h-auto p-0 gap-6">
               <TabsTrigger
                 value="details"
-                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
               >
                 {language === "fr" ? "Détails" : "Details"}
               </TabsTrigger>
               <TabsTrigger
                 value="analytics"
-                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
               >
                 Analytics
               </TabsTrigger>
               <TabsTrigger
                 value="recommendations"
-                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                className="rounded-xl px-4 py-2 data-[state=active]:dark:bg-primary/20 data-[state=active]:bg-primary/10 data-[state=active]:dark:text-primary data-[state=active]:text-primary dark:text-muted-foreground hover:dark:text-foreground hover:text-foreground data-[state=active]:shadow-[0_0_12px_rgba(139,92,246,0.3)]"
               >
                 Recommendations
               </TabsTrigger>
@@ -234,12 +234,12 @@ export function ListingDetailsPage({
               <div className="space-y-6">
                 {/* Photos */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-3 block">
+                  <Label className="text-sm text-muted-foreground mb-3 block">
                     Photos
                   </Label>
                   <div className="grid grid-cols-4 gap-3">
                     {listing.photos.map((photo, index) => (
-                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden border dark:border-[rgba(168,85,247,0.25)] border-border group">
+                      <div key={index} className="relative aspect-square rounded-xl overflow-hidden border border-border group">
                         <img src={photo} alt={`${listing.title} ${index + 1}`} className="w-full h-full object-cover" />
                         {index === 0 && (
                           <div className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-1 rounded">
@@ -251,38 +251,38 @@ export function ListingDetailsPage({
                         </button>
                       </div>
                     ))}
-                    <button className="aspect-square rounded-xl border-2 border-dashed dark:border-[rgba(168,85,247,0.25)] border-border flex items-center justify-center hover:dark:bg-primary/5 hover:bg-muted transition-colors">
-                      <Plus className="w-6 h-6 dark:text-[#9CA3AF] text-muted-foreground" />
+                    <button className="aspect-square rounded-xl border-2 border-dashed border-border flex items-center justify-center hover:dark:bg-primary/5 hover:bg-muted transition-colors">
+                      <Plus className="w-6 h-6 text-muted-foreground" />
                     </button>
                   </div>
-                  <p className="text-xs dark:text-[#6B7280] text-muted-foreground mt-2">
+                  <p className="text-xs text-muted-foreground mt-2">
                     {listing.photoCount} / 20 {language === "fr" ? "photos" : "photos"}
                   </p>
                 </div>
 
                 {/* Title */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                  <Label className="text-sm text-muted-foreground mb-2 block">
                     {language === "fr" ? "Titre" : "Title"}
                   </Label>
                   <Input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-primary/5 bg-background border-border"
                     placeholder={language === "fr" ? "Ex: Sac à main marron chocolat" : "Ex: Brown leather handbag"}
                   />
                 </div>
 
                 {/* Description */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                  <Label className="text-sm text-muted-foreground mb-2 block">
                     {language === "fr" ? "Décris ton article" : "Describe your item"}
                   </Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
                     rows={5}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-primary/5 bg-background border-border"
                     placeholder={language === "fr" ? "Ex: Magnifique sac à main en simili-cuir marron chocolat..." : "Ex: Beautiful brown faux leather handbag..."}
                   />
                 </div>
@@ -291,14 +291,14 @@ export function ListingDetailsPage({
                 <div className="space-y-4">
                   {/* Category */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                    <Label className="text-sm text-muted-foreground mb-2 block">
                       {language === "fr" ? "Catégorie" : "Category"}
                     </Label>
                     <Select value={category} onValueChange={setCategory}>
-                      <SelectTrigger className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectTrigger className="rounded-xl bg-primary/5 bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectContent className="rounded-xl bg-popover border border-border">
                         <SelectItem value="Sacs à main">{language === "fr" ? "Sacs à main" : "Handbags"}</SelectItem>
                         <SelectItem value="Vêtements">{language === "fr" ? "Vêtements" : "Clothing"}</SelectItem>
                         <SelectItem value="Chaussures">{language === "fr" ? "Chaussures" : "Shoes"}</SelectItem>
@@ -308,27 +308,27 @@ export function ListingDetailsPage({
 
                   {/* Brand */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                    <Label className="text-sm text-muted-foreground mb-2 block">
                       {language === "fr" ? "Marque" : "Brand"}
                     </Label>
                     <Input
                       value={brand}
                       onChange={(e) => setBrand(e.target.value)}
                       placeholder={language === "fr" ? "Ex: Zara, H&M..." : "Ex: Zara, H&M..."}
-                      className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                      className="rounded-xl bg-primary/5 bg-background border-border"
                     />
                   </div>
 
                   {/* Taille */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                    <Label className="text-sm text-muted-foreground mb-2 block">
                       {language === "fr" ? "Taille" : "Size"}
                     </Label>
                     <Select value={size} onValueChange={setSize}>
-                      <SelectTrigger className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectTrigger className="rounded-xl bg-primary/5 bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectContent className="rounded-xl bg-popover border border-border">
                         <SelectItem value="S">S</SelectItem>
                         <SelectItem value="M">M</SelectItem>
                         <SelectItem value="L">L</SelectItem>
@@ -340,14 +340,14 @@ export function ListingDetailsPage({
 
                   {/* État */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                    <Label className="text-sm text-muted-foreground mb-2 block">
                       {language === "fr" ? "État" : "Condition"}
                     </Label>
                     <Select value={condition} onValueChange={setCondition}>
-                      <SelectTrigger className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectTrigger className="rounded-xl bg-primary/5 bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectContent className="rounded-xl bg-popover border border-border">
                         <SelectItem value="new">{language === "fr" ? "Neuf avec étiquette" : "New with tags"}</SelectItem>
                         <SelectItem value="veryGood">{language === "fr" ? "Très bon état" : "Very good"}</SelectItem>
                         <SelectItem value="good">{language === "fr" ? "Bon état" : "Good"}</SelectItem>
@@ -358,14 +358,14 @@ export function ListingDetailsPage({
 
                   {/* Couleur */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                    <Label className="text-sm text-muted-foreground mb-2 block">
                       {language === "fr" ? "Couleur" : "Color"}
                     </Label>
                     <Select value={color} onValueChange={setColor}>
-                      <SelectTrigger className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectTrigger className="rounded-xl bg-primary/5 bg-background border-border">
                         <SelectValue />
                       </SelectTrigger>
-                      <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover border dark:border-[rgba(168,85,247,0.25)] border-border">
+                      <SelectContent className="rounded-xl bg-popover border border-border">
                         <SelectItem value="Noir">{language === "fr" ? "Noir" : "Black"}</SelectItem>
                         <SelectItem value="Blanc">{language === "fr" ? "Blanc" : "White"}</SelectItem>
                         <SelectItem value="Marron">{language === "fr" ? "Marron" : "Brown"}</SelectItem>
@@ -377,7 +377,7 @@ export function ListingDetailsPage({
 
                   {/* Matière (recommandé) */}
                   <div>
-                    <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 flex items-center gap-2">
+                    <Label className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
                       {language === "fr" ? "Matière" : "Material"}
                       <span className="text-xs text-muted-foreground/60">({language === "fr" ? "recommandé" : "recommended"})</span>
                     </Label>
@@ -385,14 +385,14 @@ export function ListingDetailsPage({
                       value={material}
                       onChange={(e) => setMaterial(e.target.value)}
                       placeholder={language === "fr" ? "Ex: Cuir, Coton..." : "Ex: Leather, Cotton..."}
-                      className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                      className="rounded-xl bg-primary/5 bg-background border-border"
                     />
                   </div>
                 </div>
 
                 {/* Prix avec info card */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                  <Label className="text-sm text-muted-foreground mb-2 block">
                     {language === "fr" ? "Prix" : "Price"}
                   </Label>
                   <Input
@@ -400,28 +400,28 @@ export function ListingDetailsPage({
                     step="0.01"
                     value={price}
                     onChange={(e) => setPrice(e.target.value)}
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border"
+                    className="rounded-xl bg-primary/5 bg-background border-border"
                     placeholder="0.00"
                   />
                 </div>
 
                 {/* Format du colis */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-3 block">
+                  <Label className="text-sm text-muted-foreground mb-3 block">
                     {language === "fr" ? "Format du colis" : "Package size"}
                   </Label>
                   <RadioGroup value={packageSize} onValueChange={(v) => setPackageSize(v as typeof packageSize)} className="space-y-3">
                     <div className={`relative flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       packageSize === "small"
-                        ? "dark:border-primary border-primary dark:bg-primary/5 bg-primary/5"
-                        : "dark:border-[rgba(168,85,247,0.25)] border-border hover:dark:border-primary/50 hover:border-primary/50"
+                        ? "dark:border-primary border-primary dark:bg-primary/5"
+                        : "border-border hover:dark:border-primary/50 hover:border-primary/50"
                     }`}>
                       <RadioGroupItem value="small" id="small" className="border-primary" />
                       <Label htmlFor="small" className="flex-1 cursor-pointer">
                         <div className="dark:text-foreground text-foreground">
                           {language === "fr" ? "Petit" : "Small"}
                         </div>
-                        <div className="text-xs dark:text-muted-foreground text-muted-foreground">
+                        <div className="text-xs dark:text-muted-foreground">
                           {language === "fr" ? "Jusqu'à 1 kg" : "Up to 1 kg"}
                         </div>
                       </Label>
@@ -434,15 +434,15 @@ export function ListingDetailsPage({
                     
                     <div className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       packageSize === "medium"
-                        ? "dark:border-primary border-primary dark:bg-primary/5 bg-primary/5"
-                        : "dark:border-[rgba(168,85,247,0.25)] border-border hover:dark:border-primary/50 hover:border-primary/50"
+                        ? "dark:border-primary border-primary dark:bg-primary/5"
+                        : "border-border hover:dark:border-primary/50 hover:border-primary/50"
                     }`}>
                       <RadioGroupItem value="medium" id="medium" className="border-primary" />
                       <Label htmlFor="medium" className="flex-1 cursor-pointer">
                         <div className="dark:text-foreground text-foreground">
                           {language === "fr" ? "Moyen" : "Medium"}
                         </div>
-                        <div className="text-xs dark:text-muted-foreground text-muted-foreground">
+                        <div className="text-xs dark:text-muted-foreground">
                           {language === "fr" ? "Jusqu'à 5 kg" : "Up to 5 kg"}
                         </div>
                       </Label>
@@ -450,15 +450,15 @@ export function ListingDetailsPage({
                     
                     <div className={`flex items-center gap-3 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                       packageSize === "large"
-                        ? "dark:border-primary border-primary dark:bg-primary/5 bg-primary/5"
-                        : "dark:border-[rgba(168,85,247,0.25)] border-border hover:dark:border-primary/50 hover:border-primary/50"
+                        ? "dark:border-primary border-primary dark:bg-primary/5"
+                        : "border-border hover:dark:border-primary/50 hover:border-primary/50"
                     }`}>
                       <RadioGroupItem value="large" id="large" className="border-primary" />
                       <Label htmlFor="large" className="flex-1 cursor-pointer">
                         <div className="dark:text-foreground text-foreground">
                           {language === "fr" ? "Grand" : "Large"}
                         </div>
-                        <div className="text-xs dark:text-muted-foreground text-muted-foreground">
+                        <div className="text-xs dark:text-muted-foreground">
                           {language === "fr" ? "Plus de 5 kg" : "Over 5 kg"}
                         </div>
                       </Label>
@@ -468,29 +468,29 @@ export function ListingDetailsPage({
 
                 {/* SKU (read-only) */}
                 <div>
-                  <Label className="text-sm dark:text-[#9CA3AF] text-muted-foreground mb-2 block">
+                  <Label className="text-sm text-muted-foreground mb-2 block">
                     SKU
                   </Label>
                   <Input
                     value={listing.sku}
                     disabled
-                    className="rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-background dark:border-[rgba(168,85,247,0.25)] border-border opacity-60"
+                    className="rounded-xl bg-primary/5 bg-background border-border opacity-60"
                   />
                 </div>
 
                 {/* Actions bar */}
-                <div className="flex gap-3 pt-4 border-t dark:border-[rgba(168,85,247,0.25)] border-border">
+                <div className="flex gap-3 pt-4 border-t border-border">
                   <Button
                     onClick={handleCancel}
                     variant="ghost"
-                    className="rounded-xl dark:text-muted-foreground text-muted-foreground hover:dark:text-foreground hover:text-foreground"
+                    className="rounded-xl dark:text-muted-foreground hover:dark:text-foreground hover:text-foreground"
                   >
                     {language === "fr" ? "Annuler" : "Cancel"}
                   </Button>
                   <Button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="flex-1 rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+                    className="flex-1 rounded-xl bg-primary hover:bg-primary/90"
                     style={{
                       boxShadow: "0 0 16px rgba(139,92,246,0.3)"
                     }}
@@ -513,8 +513,8 @@ export function ListingDetailsPage({
                 onClick={() => setAnalyticsRange("24h")}
                 className={`px-4 py-2 rounded-full text-sm transition-all ${
                   analyticsRange === "24h"
-                    ? "dark:bg-primary bg-primary text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]"
-                    : "dark:border-primary/30 border-primary/40 border dark:bg-transparent bg-transparent dark:text-[#9CA3AF] text-muted-foreground dark:hover:bg-primary/10 hover:bg-primary/5 dark:hover:text-primary hover:text-primary"
+                    ? "dark:bg-primary text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                    : "dark:border-primary/30 border-primary/40 border dark:bg-transparent bg-transparent text-muted-foreground dark:hover:bg-primary/10 hover:bg-primary/5 dark:hover:text-primary hover:text-primary"
                 }`}
               >
                 {language === "fr" ? "Dernières 24 heures" : "Last 24 hours"}
@@ -523,8 +523,8 @@ export function ListingDetailsPage({
                 onClick={() => setAnalyticsRange("7d")}
                 className={`px-4 py-2 rounded-full text-sm transition-all ${
                   analyticsRange === "7d"
-                    ? "dark:bg-primary bg-primary text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]"
-                    : "dark:border-primary/30 border-primary/40 border dark:bg-transparent bg-transparent dark:text-[#9CA3AF] text-muted-foreground dark:hover:bg-primary/10 hover:bg-primary/5 dark:hover:text-primary hover:text-primary"
+                    ? "dark:bg-primary text-white shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                    : "dark:border-primary/30 border-primary/40 border dark:bg-transparent bg-transparent text-muted-foreground dark:hover:bg-primary/10 hover:bg-primary/5 dark:hover:text-primary hover:text-primary"
                 }`}
               >
                 {language === "fr" ? "7 derniers jours" : "Last 7 days"}
@@ -534,56 +534,56 @@ export function ListingDetailsPage({
             {/* KPI Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Views KPI */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 bg-primary/10 flex items-center justify-center">
                     <Eye className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Vues" : "Views"}
                   </p>
                 </div>
-                <p className="dark:text-[#E7E7F0] text-foreground">61</p>
+                <p className="text-foreground">61</p>
               </div>
 
               {/* Favorites KPI */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 bg-primary/10 flex items-center justify-center">
                     <Heart className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Favoris" : "Favorites"}
                   </p>
                 </div>
-                <p className="dark:text-[#E7E7F0] text-foreground">25</p>
+                <p className="text-foreground">25</p>
               </div>
 
               {/* Offers KPI */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 bg-primary/10 flex items-center justify-center">
                     <DollarSign className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Offres" : "Offers"}
                   </p>
                 </div>
-                <p className="dark:text-[#E7E7F0] text-foreground">3</p>
+                <p className="text-foreground">3</p>
               </div>
 
               {/* Average Offer KPI */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 flex items-center justify-center">
+                  <div className="w-10 h-10 rounded-xl bg-primary/15 bg-primary/10 flex items-center justify-center">
                     <DollarSign className="w-5 h-5 text-primary" />
                   </div>
-                  <p className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Offre moyenne" : "Average offer"}
                   </p>
                 </div>
-                <p className="dark:text-[#E7E7F0] text-foreground mb-1">30,00 €</p>
-                <p className="text-xs dark:text-[#6B7280] text-muted-foreground">
+                <p className="text-foreground mb-1">30,00 €</p>
+                <p className="text-xs text-muted-foreground">
                   {language === "fr" ? "Meilleure : 32,00 €" : "Best: €32.00"}
                 </p>
               </div>
@@ -592,12 +592,12 @@ export function ListingDetailsPage({
             {/* Charts - Only Favorites and Offers */}
             <div className="space-y-6">
               {/* Favorites over time */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="mb-6">
-                  <h3 className="dark:text-[#E7E7F0] text-foreground mb-1">
+                  <h3 className="text-foreground mb-1">
                     {language === "fr" ? "Favoris" : "Favorites"}
                   </h3>
-                  <p className="text-sm dark:text-[#6B7280] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Évolution sur la période sélectionnée" : "Evolution over selected period"}
                   </p>
                 </div>
@@ -671,12 +671,12 @@ export function ListingDetailsPage({
               </div>
 
               {/* Offers over time */}
-              <div className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[rgba(139,92,246,0.05)] bg-card p-6">
+              <div className="rounded-2xl border border-border bg-primary/5 bg-card p-6">
                 <div className="mb-6">
-                  <h3 className="dark:text-[#E7E7F0] text-foreground mb-1">
+                  <h3 className="text-foreground mb-1">
                     {language === "fr" ? "Offres" : "Offers"}
                   </h3>
-                  <p className="text-sm dark:text-[#6B7280] text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     {language === "fr" ? "Évolution sur la période sélectionnée" : "Evolution over selected period"}
                   </p>
                 </div>
@@ -754,7 +754,7 @@ export function ListingDetailsPage({
           {/* Recommendations Tab - UNCHANGED */}
           <TabsContent value="recommendations" className="mt-0">
             <div className="p-6 max-w-5xl mx-auto">
-              <h2 className="dark:text-[#E7E7F0] text-foreground mb-6">{t(language, "published.drawer.tab.recommendations")}</h2>
+              <h2 className="text-foreground mb-6">{t(language, "published.drawer.tab.recommendations")}</h2>
               
               <div className="space-y-4">
                 {insights.map((insight) => (
@@ -769,13 +769,13 @@ export function ListingDetailsPage({
 
               {insights.length === 0 && (
                 <div className="text-center py-12">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 mb-4">
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                     <TrendingUp className="w-8 h-8 dark:text-primary text-primary" />
                   </div>
-                  <h3 className="dark:text-[#E7E7F0] text-foreground mb-2">
+                  <h3 className="text-foreground mb-2">
                     {language === "fr" ? "Aucune recommandation" : "No recommendations"}
                   </h3>
-                  <p className="dark:text-[#9CA3AF] text-muted-foreground">
+                  <p className="text-muted-foreground">
                     {language === "fr"
                       ? "Votre annonce est optimale !"
                       : "Your listing is optimal!"}

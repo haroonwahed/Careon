@@ -9,8 +9,18 @@
         <p class="rgk-subtitle">Casussen die aandacht nodig hebben</p>
     </div>
 
-    {% if recommended_action %}
-    <!-- RECOMMENDED ACTION: Priority guidance banner -->
+    {% if command_bar %}
+    <!-- COMMAND BAR: Structured decision prompt (problem → consequence → action) -->
+    <div class="rgk-command-bar rgk-command-bar--{{ command_bar.priority }}">
+        <div class="rgk-command-bar__body">
+            <p class="rgk-command-bar__problem">{{ command_bar.problem }}</p>
+            <p class="rgk-command-bar__consequence">{{ command_bar.consequence }}</p>
+            <p class="rgk-command-bar__reason">{{ command_bar.reason }}</p>
+        </div>
+        <a href="{{ command_bar.cta_url }}" class="rgk-command-bar__cta">{{ command_bar.cta_label }}</a>
+    </div>
+    {% elif recommended_action %}
+    <!-- RECOMMENDED ACTION: Legacy fallback banner -->
     <div class="rgk-recommended-action rgk-recommended-action--{{ recommended_action.priority }}">
         <div class="rgk-recommended-action__content">
             <div class="rgk-recommended-action__main">
@@ -32,6 +42,47 @@
     </div>
     {% endif %}
 
+    {% if signal_strips %}
+    <!-- SIGNAL STRIPS: Secondary signals not dominating the command bar -->
+    <div class="rgk-signal-strips">
+        {% for strip in signal_strips %}
+        <a href="{{ strip.href }}" class="rgk-signal-strip rgk-signal-strip--{{ strip.tone }}">{{ strip.label }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if flow_counts %}
+    <!-- FLOW BAR: Per-phase case counts -->
+    <nav class="rgk-flow-bar" aria-label="Casustroom per fase">
+        <a href="{% url 'careon:case_list' %}?flow=intake" class="rgk-flow-stage {% if bottleneck_stage == 'casussen' %}rgk-flow-stage--bottleneck{% endif %}">
+            <span class="rgk-flow-stage__label">Intake</span>
+            <strong class="rgk-flow-stage__count">{{ flow_counts.casussen }}</strong>
+        </a>
+        <span class="rgk-flow-arrow">→</span>
+        <a href="{% url 'careon:assessment_list' %}" class="rgk-flow-stage {% if bottleneck_stage == 'beoordelingen' %}rgk-flow-stage--bottleneck{% endif %}">
+            <span class="rgk-flow-stage__label">Beoordelingen</span>
+            <strong class="rgk-flow-stage__count">{{ flow_counts.beoordelingen }}</strong>
+        </a>
+        <span class="rgk-flow-arrow">→</span>
+        <a href="{% url 'careon:matching_dashboard' %}" class="rgk-flow-stage {% if bottleneck_stage == 'matching' %}rgk-flow-stage--bottleneck{% endif %}">
+            <span class="rgk-flow-stage__label">Matching</span>
+            <strong class="rgk-flow-stage__count">{{ flow_counts.matching }}</strong>
+        </a>
+        <span class="rgk-flow-arrow">→</span>
+        <a href="{% url 'careon:placement_list' %}" class="rgk-flow-stage {% if bottleneck_stage == 'plaatsingen' %}rgk-flow-stage--bottleneck{% endif %}">
+            <span class="rgk-flow-stage__label">Plaatsingen</span>
+            <strong class="rgk-flow-stage__count">{{ flow_counts.plaatsingen }}</strong>
+        </a>
+        {% if flow_counts.on_hold > 0 %}
+        <span class="rgk-flow-arrow">·</span>
+        <a href="{% url 'careon:case_list' %}?attention=urgent" class="rgk-flow-stage rgk-flow-stage--hold">
+            <span class="rgk-flow-stage__label">Op hold</span>
+            <strong class="rgk-flow-stage__count">{{ flow_counts.on_hold }}</strong>
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
     <!-- KPI STRIP: Compact status indicators -->
     <section class="rgk-kpi-strip-compact" aria-label="Regiekamer status">
         {% for kpi in regiekamer_kpis %}
@@ -41,6 +92,20 @@
         </a>
         {% endfor %}
     </section>
+
+    {% if priority_cards %}
+    <!-- PRIORITY CARDS: Enriched issue cards with contextual CTAs -->
+    <section class="rgk-priority-cards" aria-label="Prioriteitsoverzicht">
+        {% for card in priority_cards %}
+        <article class="rgk-priority-card rgk-priority-card--{{ card.severity }}">
+            <p class="rgk-priority-card__title">{{ card.title }}</p>
+            <strong class="rgk-priority-card__count">{{ card.count }}</strong>
+            <p class="rgk-priority-card__subtitle">{{ card.subtitle }}</p>
+            <a href="{{ card.cta_url }}" class="rgk-priority-card__cta">{{ card.cta_label }}</a>
+        </article>
+        {% endfor %}
+    </section>
+    {% endif %}
 
     <section class="rgk-main-grid">
         <article class="rgk-panel rgk-panel--queue">
@@ -67,7 +132,7 @@
                         <tr class="rgk-row {% if row.is_urgent %}rgk-row--urgent{% elif row.is_waiting_long %}rgk-row--warning{% endif %}">
                             <td>
                                 <a href="{{ row.case_href }}" class="rgk-casus-link">{{ row.title }}</a>
-                                <div class="rgk-casus-meta">{{ row.care_form }}{% if row.signal_count %} • {{ row.signal_count }} open signalen{% endif %}</div>
+                                <div class="rgk-casus-meta">{{ row.care_form }}{% if row.signal_count %} · {{ row.signal_count }} open signalen{% endif %}</div>
                             </td>
                             <td>{{ row.region }}</td>
                             <td>
@@ -76,7 +141,7 @@
                             </td>
                             <td>{{ row.waiting_label }}</td>
                             <td>
-                                <span class="rgk-badge rgk-badge--blocker {% if row.blocker_key == 'no_match' or row.blocker_key == 'risk_signal' %}rgk-badge--critical{% elif row.blocker_key == 'waiting_long' or row.blocker_key == 'missing_assessment' %}rgk-badge--warning{% else %}rgk-badge--neutral{% endif %}">{{ row.blocker }}</span>
+                                <span class="rgk-badge rgk-badge--blocker {% if row.blocker_key == 'no_match' or row.blocker_key == 'risk_signal' or row.blocker_key == 'escalation' or row.blocker_key == 'on_hold' %}rgk-badge--critical{% elif row.blocker_key == 'waiting_long' or row.blocker_key == 'missing_assessment' or row.blocker_key == 'needs_info' %}rgk-badge--warning{% else %}rgk-badge--neutral{% endif %}">{{ row.blocker }}</span>
                             </td>
                             <td>
                                 <div class="rgk-row-actions">
@@ -125,7 +190,7 @@
                     {% for action in next_actions %}
                     <li class="rgk-action-item">
                         <div>
-                            <p class="rgk-action-item__label">{{ action.count }} {{ action.label|lower }}</p>
+                            <p class="rgk-action-item__label">{{ action.count }} {{ action.label }}</p>
                             <a href="{{ action.href }}" class="rgk-action-item__cta">{{ action.cta }}</a>
                         </div>
                     </li>

@@ -1,35 +1,58 @@
-import { Case } from "../../lib/casesData";
+import type { Casus, CasusPhase } from "../../lib/phaseEngine";
 import { UrgencyBadge } from "./UrgencyBadge";
-import { CaseStatusBadge } from "./CaseStatusBadge";
 import { RiskBadge } from "./RiskBadge";
-import { AlertTriangle, Clock, ArrowRight } from "lucide-react";
+import { Clock, ArrowRight } from "lucide-react";
 import { Button } from "../ui/button";
 
 interface CaseTableRowProps {
-  case: Case;
+  case: Casus;
   onClick: () => void;
 }
 
+const PHASE_LABELS: Record<CasusPhase, string> = {
+  intake_initial: "Intake",
+  beoordeling: "Beoordeling",
+  matching: "Matching",
+  plaatsing: "Plaatsing",
+  intake_provider: "Intake aanbieder",
+  afgerond: "Afgerond",
+  geblokkeerd: "Geblokkeerd",
+};
+
+const PHASE_COLORS: Record<CasusPhase, { text: string; bg: string; border: string }> = {
+  intake_initial: { text: "text-[#8B5CF6]", bg: "bg-primary/10", border: "border-primary/30" },
+  beoordeling: { text: "text-[#3B82F6]", bg: "bg-[rgba(59,130,246,0.1)]", border: "border-[rgba(59,130,246,0.3)]" },
+  matching: { text: "text-[#F59E0B]", bg: "bg-[rgba(245,158,11,0.1)]", border: "border-[rgba(245,158,11,0.3)]" },
+  plaatsing: { text: "text-[#22D3EE]", bg: "bg-[rgba(34,211,238,0.1)]", border: "border-[rgba(34,211,238,0.3)]" },
+  intake_provider: { text: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.1)]", border: "border-[rgba(16,185,129,0.3)]" },
+  afgerond: { text: "text-[#6B7280]", bg: "bg-[rgba(107,114,128,0.1)]", border: "border-[rgba(107,114,128,0.3)]" },
+  geblokkeerd: { text: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.1)]", border: "border-[rgba(239,68,68,0.3)]" },
+};
+
 export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
-  // Determine next action based on status
   const getNextAction = () => {
-    switch (caseData.status) {
-      case "intake":
+    switch (caseData.phase) {
+      case "intake_initial":
         return { label: "Start beoordeling", color: "text-primary" };
-      case "assessment":
+      case "beoordeling":
         return { label: "Beoordeel", color: "text-primary" };
       case "matching":
         return { label: "Match", color: "text-primary" };
-      case "blocked":
+      case "geblokkeerd":
         return { label: "Escaleer", color: "text-[#EF4444]" };
-      case "placement":
+      case "plaatsing":
         return { label: "Bevestig", color: "text-green-500" };
+      case "intake_provider":
+        return { label: "Intake plannen", color: "text-[#22D3EE]" };
+      case "afgerond":
+        return { label: "Afgesloten", color: "text-muted-foreground" };
       default:
         return { label: "Open", color: "text-muted-foreground" };
     }
   };
 
   const nextAction = getNextAction();
+  const phaseColors = PHASE_COLORS[caseData.phase];
 
   return (
     <div 
@@ -57,13 +80,15 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
         {/* Type */}
         <div className="col-span-2">
           <div className="text-xs text-muted-foreground mb-0.5">Type</div>
-          <div className="text-sm font-medium">{caseData.caseType}</div>
+          <div className="text-sm font-medium">{caseData.careType}</div>
         </div>
 
-        {/* Status & Urgency */}
+        {/* Phase & Urgency */}
         <div className="col-span-2">
           <div className="flex flex-col gap-1.5">
-            <CaseStatusBadge status={caseData.status} size="sm" />
+            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${phaseColors.text} ${phaseColors.bg} ${phaseColors.border}`}>
+              {PHASE_LABELS[caseData.phase]}
+            </span>
             <UrgencyBadge urgency={caseData.urgency} size="sm" />
           </div>
         </div>
@@ -82,7 +107,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
               {caseData.waitingDays} dagen
             </span>
           </div>
-          <RiskBadge risk={caseData.risk} size="sm" />
+          <RiskBadge risk={caseData.complexity} size="sm" />
         </div>
 
         {/* Next Action (NEW - was "Signal") */}
@@ -91,23 +116,9 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
           <div className={`text-sm font-semibold ${nextAction.color}`}>
             👉 {nextAction.label}
           </div>
-          {caseData.signal && (
-            <div className="flex items-start gap-1 mt-1">
-              <AlertTriangle 
-                size={12} 
-                className={
-                  caseData.urgency === "critical" 
-                    ? "text-[#EF4444] mt-0.5" 
-                    : caseData.urgency === "high"
-                      ? "text-[#F59E0B] mt-0.5"
-                      : "text-muted-foreground mt-0.5"
-                }
-              />
-              <span className="text-xs text-muted-foreground line-clamp-1">
-                {caseData.signal}
-              </span>
-            </div>
-          )}
+          <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
+            {caseData.assignedTo}
+          </div>
         </div>
 
         {/* Action Button */}

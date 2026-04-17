@@ -105,7 +105,7 @@ export function AccountFilter({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className={`inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border dark:border-[rgba(168,85,247,0.30)] border-border dark:bg-card/50 bg-background dark:hover:bg-[rgba(139,92,246,0.15)] hover:bg-primary/10 dark:hover:border-[rgba(168,85,247,0.50)] hover:border-primary/40 dark:text-foreground text-foreground h-10 px-4 py-2 ${variant === "compact" ? "rounded-2xl" : "rounded-xl"}`}
+            className={`inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-border bg-background hover:bg-primary/15 hover:border-primary/50 text-foreground h-10 px-4 py-2 ${variant === "compact" ? "rounded-2xl" : "rounded-xl"}`}
           >
             <Filter className="h-4 w-4" />
             {getButtonLabel()}

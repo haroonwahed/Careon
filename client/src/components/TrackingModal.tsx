@@ -84,14 +84,14 @@ export function TrackingModal({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
-          className="max-w-2xl rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border overflow-hidden"
+          className="max-w-2xl rounded-2xl bg-card border border-border overflow-hidden"
           style={{
             boxShadow:
               "0 0 0 1px rgba(168,85,247,0.25), 0 0 48px rgba(168,85,247,0.15)",
           }}
         >
-          <DialogHeader className="border-b dark:border-[rgba(168,85,247,0.25)] border-border pb-4">
-            <DialogTitle className="text-xl dark:text-[#E7E7F0] text-foreground">
+          <DialogHeader className="border-b border-border pb-4">
+            <DialogTitle className="text-xl text-foreground">
               {language === "fr" ? "Suivi Vinted" : "Vinted Tracking"}
             </DialogTitle>
             <DialogDescription className="sr-only">
@@ -104,15 +104,15 @@ export function TrackingModal({
           <div className="space-y-6 py-6">
             {/* Vinted tracking link */}
             {order.trackingUrl && (
-              <div className="flex items-center gap-3 p-4 rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-gray-50 border dark:border-[rgba(168,85,247,0.15)] border-gray-200">
-                <Package className="w-5 h-5 dark:text-[#8B5CF6] text-primary" />
+              <div className="flex items-center gap-3 p-4 rounded-xl bg-primary/5 bg-gray-50 border border-primary/15 border-gray-200">
+                <Package className="w-5 h-5 text-primary" />
                 <div className="flex-1">
-                  <div className="text-sm dark:text-[#E7E7F0] text-foreground">
+                  <div className="text-sm text-foreground">
                     {language === "fr"
                       ? "Suivi géré par Vinted"
                       : "Tracking managed by Vinted"}
                   </div>
-                  <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     {language === "fr"
                       ? "Suivez votre colis directement sur Vinted"
                       : "Track your package directly on Vinted"}
@@ -122,7 +122,7 @@ export function TrackingModal({
                   variant="outline"
                   size="sm"
                   onClick={() => window.open(order.trackingUrl, "_blank")}
-                  className="rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+                  className="rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
                 >
                   <ExternalLink className="w-4 h-4 mr-2" />
                   {language === "fr" ? "Ouvrir" : "Open"}
@@ -133,27 +133,27 @@ export function TrackingModal({
             {/* Timeline from order.timeline */}
             {order.timeline && order.timeline.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+                <h3 className="text-sm text-muted-foreground">
                   {language === "fr" ? "Historique" : "Timeline"}
                 </h3>
                 <div className="space-y-3">
                   {order.timeline.map((event, idx) => (
                     <div
                       key={idx}
-                      className="flex items-start gap-3 p-3 rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-gray-50 border dark:border-[rgba(168,85,247,0.15)] border-gray-200"
+                      className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 bg-gray-50 border border-primary/15 border-gray-200"
                     >
                       <div className="flex-shrink-0 mt-0.5">
                         {idx === order.timeline.length - 1 ? (
-                          <div className="w-2 h-2 rounded-full dark:bg-primary bg-primary" />
+                          <div className="w-2 h-2 rounded-full dark:bg-primary" />
                         ) : (
-                          <CheckCircle2 className="w-4 h-4 dark:text-[#2AF07A] text-green-600" />
+                          <CheckCircle2 className="w-4 h-4 text-green-base text-green-600" />
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="text-sm dark:text-[#E7E7F0] text-foreground">
+                        <div className="text-sm text-foreground">
                           {event.status}
                         </div>
-                        <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground mt-1">
                           {event.timestamp.toLocaleDateString(
                             language === "fr" ? "fr-FR" : "en-US",
                             {
@@ -173,11 +173,11 @@ export function TrackingModal({
           </div>
 
           {/* Footer */}
-          <div className="border-t dark:border-[rgba(168,85,247,0.25)] border-border pt-4">
+          <div className="border-t border-border pt-4">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="w-full rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+              className="w-full rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
             >
               {language === "fr" ? "Fermer" : "Close"}
             </Button>
@@ -191,14 +191,14 @@ export function TrackingModal({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
-        className="max-w-2xl rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border overflow-hidden"
+        className="max-w-2xl rounded-2xl bg-card border border-border overflow-hidden"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 48px rgba(168,85,247,0.15)",
         }}
       >
-        <DialogHeader className="border-b dark:border-[rgba(168,85,247,0.25)] border-border pb-4">
-          <DialogTitle className="text-xl dark:text-[#E7E7F0] text-foreground">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="text-xl text-foreground">
             {hasManualTracking
               ? language === "fr"
                 ? "Suivi du colis"
@@ -217,8 +217,8 @@ export function TrackingModal({
         <div className="space-y-6 py-6">
           {/* No tracking message */}
           {!hasManualTracking && (
-            <div className="p-4 rounded-xl dark:bg-[rgba(139,92,246,0.05)] bg-gray-50 border dark:border-[rgba(168,85,247,0.15)] border-gray-200">
-              <div className="text-sm dark:text-[#9CA3AF] text-muted-foreground">
+            <div className="p-4 rounded-xl bg-primary/5 bg-gray-50 border border-primary/15 border-gray-200">
+              <div className="text-sm text-muted-foreground">
                 {language === "fr"
                   ? "Aucun suivi renseigné. Ajoutez un numéro de suivi pour suivre votre colis."
                   : "No tracking information. Add a tracking number to track your package."}
@@ -231,14 +231,14 @@ export function TrackingModal({
             <div className="space-y-2">
               <Label
                 htmlFor="carrier"
-                className="dark:text-[#E7E7F0] text-foreground"
+                className="text-foreground"
               >
                 {language === "fr" ? "Transporteur" : "Carrier"}
               </Label>
               <Select value={carrier} onValueChange={setCarrier}>
                 <SelectTrigger
                   id="carrier"
-                  className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+                  className="rounded-xl bg-background/50 bg-background border-border"
                 >
                   <SelectValue
                     placeholder={
@@ -261,7 +261,7 @@ export function TrackingModal({
             <div className="space-y-2">
               <Label
                 htmlFor="trackingNumber"
-                className="dark:text-[#E7E7F0] text-foreground"
+                className="text-foreground"
               >
                 {language === "fr" ? "Numéro de suivi" : "Tracking number"}
               </Label>
@@ -274,25 +274,25 @@ export function TrackingModal({
                     ? "Ex: 6A12345678901"
                     : "Ex: 6A12345678901"
                 }
-                className="rounded-xl dark:bg-[rgba(10,10,15,0.50)] bg-background dark:border-[rgba(168,85,247,0.20)] border-border"
+                className="rounded-xl bg-background/50 bg-background border-border"
               />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="border-t dark:border-[rgba(168,85,247,0.25)] border-border pt-4 flex gap-3">
+        <div className="border-t border-border pt-4 flex gap-3">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="flex-1 rounded-xl dark:border-[rgba(168,85,247,0.30)] border-border dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+            className="flex-1 rounded-xl border-border text-foreground hover:bg-primary/10 hover:bg-gray-100"
           >
             {language === "fr" ? "Annuler" : "Cancel"}
           </Button>
           <Button
             onClick={handleSave}
             disabled={!carrier || !trackingNumber}
-            className="flex-1 rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground"
+            className="flex-1 rounded-xl bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground"
             style={{
               boxShadow: "0 0 20px rgba(139,92,246,0.4)",
             }}

@@ -174,7 +174,7 @@ export function NotificationsPage({ isLoading = false, language }: Notifications
                   <p className="text-sm font-medium dark:text-foreground text-foreground">
                     {language === "fr" ? "Bot d'offres automatiques : ON" : "Automatic Offers Bot: ON"}
                   </p>
-                  <p className="text-xs dark:text-muted-foreground text-muted-foreground">
+                  <p className="text-xs dark:text-muted-foreground">
                     {language === "fr" ? "Mode : -10%" : "Mode: -10%"}
                   </p>
                 </div>

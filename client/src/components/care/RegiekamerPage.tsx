@@ -17,10 +17,9 @@ import { PriorityActionCard } from "./PriorityActionCard";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { 
-  mockCases, 
+  mockCasusList,
   mockSignals, 
   mockPriorityActions,
-  Case 
 } from "../../lib/casesData";
 
 interface RegiekamerPageProps {
@@ -34,53 +33,52 @@ export function RegiekamerPage({ onCaseClick }: RegiekamerPageProps) {
   const [selectedUrgency, setSelectedUrgency] = useState<string>("all");
 
   // Filter cases based on search and filters
-  const filteredCases = mockCases
+  const filteredCases = mockCasusList
     .filter(c => {
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
           c.id.toLowerCase().includes(query) ||
           c.clientName.toLowerCase().includes(query) ||
-          c.caseType.toLowerCase().includes(query)
+          c.careType.toLowerCase().includes(query)
         );
       }
       return true;
     })
     .filter(c => selectedRegion === "all" || c.region === selectedRegion)
-    .filter(c => selectedStatus === "all" || c.status === selectedStatus)
+    .filter(c => selectedStatus === "all" || c.phase === selectedStatus)
     .filter(c => selectedUrgency === "all" || c.urgency === selectedUrgency)
     .sort((a, b) => {
-      // Sort by urgency: critical > high > medium > low
       const urgencyOrder = { critical: 0, high: 1, medium: 2, low: 3 };
       return urgencyOrder[a.urgency] - urgencyOrder[b.urgency];
     });
 
   // Calculate KPIs
-  const casesWithoutMatch = mockCases.filter(c => 
-    c.status === "matching" || c.status === "blocked"
+  const casesWithoutMatch = mockCasusList.filter(c => 
+    c.phase === "matching" || c.phase === "geblokkeerd"
   ).length;
   
-  const openAssessments = mockCases.filter(c => 
-    c.status === "assessment"
+  const openAssessments = mockCasusList.filter(c => 
+    c.phase === "beoordeling"
   ).length;
   
-  const placementsInProgress = mockCases.filter(c => 
-    c.status === "placement"
+  const placementsInProgress = mockCasusList.filter(c => 
+    c.phase === "plaatsing"
   ).length;
   
   const avgWaitingTime = Math.round(
-    mockCases.reduce((sum, c) => sum + c.waitingDays, 0) / mockCases.length
+    mockCasusList.reduce((sum, c) => sum + c.waitingDays, 0) / mockCasusList.length
   );
   
-  const highRiskCases = mockCases.filter(c => 
-    c.risk === "high"
+  const highRiskCases = mockCasusList.filter(c => 
+    c.complexity === "high"
   ).length;
   
   const capacityIssues = mockSignals.filter(s => 
     s.type === "capacity"
   ).length;
 
-  const regions = ["all", ...Array.from(new Set(mockCases.map(c => c.region)))];
+  const regions = ["all", ...Array.from(new Set(mockCasusList.map(c => c.region)))];
 
   return (
     <div className="space-y-6">
@@ -134,11 +132,11 @@ export function RegiekamerPage({ onCaseClick }: RegiekamerPageProps) {
               className="px-3 py-2 rounded-lg border border-border bg-card text-sm"
             >
               <option value="all">Alle statussen</option>
-              <option value="intake">Intake</option>
-              <option value="assessment">Beoordeling</option>
+              <option value="intake_initial">Intake</option>
+              <option value="beoordeling">Beoordeling</option>
               <option value="matching">Matching</option>
-              <option value="placement">Plaatsing</option>
-              <option value="blocked">Geblokkeerd</option>
+              <option value="plaatsing">Plaatsing</option>
+              <option value="geblokkeerd">Geblokkeerd</option>
             </select>
             <select
               value={selectedUrgency}

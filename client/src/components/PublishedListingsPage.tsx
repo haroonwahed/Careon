@@ -121,10 +121,10 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
     if (!selectedAccountId) {
       return (
         <div className="flex flex-col items-center justify-center py-16 px-4">
-          <div className="w-16 h-16 rounded-2xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 dark:border-[rgba(168,85,247,0.25)] border-primary/25 border flex items-center justify-center mb-4">
-            <Search className="w-8 h-8 dark:text-[#8B5CF6] text-primary" />
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-primary" />
           </div>
-          <p className="dark:text-[#E7E7F0] text-foreground text-center max-w-md">
+          <p className="text-foreground text-center max-w-md">
             {t(language, "published.empty.selectAccount")}
           </p>
         </div>
@@ -134,10 +134,10 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
     if (sortedListings.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-16 px-4">
-          <div className="w-16 h-16 rounded-2xl dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 dark:border-[rgba(168,85,247,0.25)] border-primary/25 border flex items-center justify-center mb-4">
-            <Search className="w-8 h-8 dark:text-[#8B5CF6] text-primary" />
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-center mb-4">
+            <Search className="w-8 h-8 text-primary" />
           </div>
-          <p className="dark:text-[#E7E7F0] text-foreground text-center max-w-md">
+          <p className="text-foreground text-center max-w-md">
             {t(language, "published.empty.noListings")}
           </p>
         </div>
@@ -153,7 +153,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
         {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
           <Card
             key={i}
-            className="rounded-2xl dark:border-[rgba(168,85,247,0.25)] border-primary/25 p-4 dark:bg-[#0E0E14] bg-card"
+            className="rounded-2xl border-primary/25 p-4 bg-card"
             style={{
               boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
             }}
@@ -172,13 +172,13 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
     return (
       <Card
         key={listing.id}
-        className="rounded-2xl dark:border-[rgba(168,85,247,0.25)] border-primary/25 p-4 dark:bg-[#0E0E14] bg-card dark:hover:border-[rgba(168,85,247,0.4)] hover:border-primary/40 transition-all group"
+        className="rounded-2xl border border-primary/25 p-4 bg-card hover:border-primary/40 transition-all group"
         style={{
           boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
         }}
       >
         {/* Image */}
-        <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-3 dark:bg-[#12121A] bg-gray-100">
+        <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-3 bg-gray-100">
           <img
             src={listing.imageUrl}
             alt={listing.title}
@@ -188,7 +188,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
 
         {/* Title */}
         <h3
-          className="dark:text-[#E7E7F0] text-foreground truncate mb-2"
+          className="text-foreground truncate mb-2"
           style={{ fontSize: "15px", fontWeight: 600 }}
         >
           {listing.title}
@@ -196,7 +196,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
 
         {/* Stats */}
         <div
-          className="dark:text-[#9CA3AF] text-muted-foreground mb-3 flex items-center gap-1 flex-wrap"
+          className="text-muted-foreground mb-3 flex items-center gap-1 flex-wrap"
           style={{ fontSize: "13px" }}
         >
           <span>
@@ -207,7 +207,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
             {listing.favorites} {t(language, "published.stats.favorites")}
           </span>
           <span>•</span>
-          <span className="dark:text-[#C7B8FF] text-primary" style={{ fontWeight: 600 }}>
+          <span className="text-primary" style={{ fontWeight: 600 }}>
             {formatPrice(listing.price)}
           </span>
         </div>
@@ -227,14 +227,14 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
               <Button
                 variant="outline"
                 size="icon"
-                className="rounded-full w-10 h-10 dark:border-[rgba(168,85,247,0.4)] border-primary/40 dark:bg-[#0E0E14] bg-card dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10"
+                className="rounded-full w-10 h-10 border-primary/40 bg-card hover:bg-primary/10"
               >
-                <MoreVertical className="w-4 h-4 dark:text-[#9CA3AF] text-muted-foreground" />
+                <MoreVertical className="w-4 h-4 text-muted-foreground" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               align="end"
-              className="rounded-xl dark:bg-[#0E0E14] bg-popover dark:border-[rgba(168,85,247,0.25)] border-border"
+              className="rounded-xl bg-popover border-border"
             >
               <DropdownMenuItem
                 className="rounded-lg cursor-pointer"
@@ -262,7 +262,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
       {/* Header */}
       <div className="border-b border-border bg-background pb-6 mb-6">
         <h1
-          className="dark:text-[#E7E7F0] text-foreground mb-6"
+          className="text-foreground mb-6"
           style={{ fontSize: "28px", fontWeight: 700 }}
         >
           {t(language, "published.title")}
@@ -275,7 +275,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
             {/* Account Selector */}
             <div className="w-full sm:w-64">
               <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                <SelectTrigger className="rounded-xl dark:border-[rgba(168,85,247,0.25)] border-primary/25 dark:bg-[#0E0E14] bg-card h-11">
+                <SelectTrigger className="rounded-xl border-primary/25 bg-card h-11">
                   <div className="flex items-center gap-2 w-full">
                     {selectedAccountId ? (
                       <>
@@ -294,19 +294,19 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
                                   {account?.initial}
                                 </AvatarFallback>
                               </Avatar>
-                              <span className="dark:text-[#E7E7F0] text-foreground">{account?.name}</span>
+                              <span className="text-foreground">{account?.name}</span>
                             </>
                           );
                         })()}
                       </>
                     ) : (
-                      <span className="dark:text-[#9CA3AF] text-muted-foreground">
+                      <span className="text-muted-foreground">
                         {t(language, "published.accountSelect.placeholder")}
                       </span>
                     )}
                   </div>
                 </SelectTrigger>
-                <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover dark:border-[rgba(168,85,247,0.25)] border-border">
+                <SelectContent className="rounded-xl bg-popover border-border">
                   {ACCOUNTS.map((account) => (
                     <SelectItem
                       key={account.id}
@@ -332,12 +332,12 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
 
             {/* Active/Sold Tabs */}
             {selectedAccountId && (
-              <div className="flex items-center gap-2 p-1 rounded-full dark:bg-[#12121A] bg-gray-100 dark:border-[rgba(168,85,247,0.25)] border-primary/25 border">
+              <div className="flex items-center gap-2 p-1 rounded-full bg-gray-100 border-primary/25 border">
                 <button
                   className={`px-5 py-2 rounded-full text-sm transition-all ${
                     activeTab === "active"
                       ? "bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] text-white"
-                      : "dark:text-[#9CA3AF] text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground"
+                      : "text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground"
                   }`}
                   style={{ fontWeight: 600 }}
                   onClick={() => setActiveTab("active")}
@@ -348,7 +348,7 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
                   className={`px-5 py-2 rounded-full text-sm transition-all ${
                     activeTab === "sold"
                       ? "bg-gradient-to-r from-[#8B5CF6] to-[#A78BFA] text-white"
-                      : "dark:text-[#9CA3AF] text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground"
+                      : "text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground"
                   }`}
                   style={{ fontWeight: 600 }}
                   onClick={() => setActiveTab("sold")}
@@ -364,22 +364,22 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               {/* Search */}
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 dark:text-[#9CA3AF] text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder={t(language, "published.search.placeholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 rounded-xl dark:border-[rgba(168,85,247,0.25)] border-primary/25 dark:bg-[#0E0E14] bg-card h-11 dark:text-[#E7E7F0] text-foreground"
+                  className="pl-10 rounded-xl border-primary/25 bg-card h-11 text-foreground"
                 />
               </div>
 
               {/* Sort */}
               <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortType)}>
-                <SelectTrigger className="rounded-xl dark:border-[rgba(168,85,247,0.25)] border-primary/25 dark:bg-[#0E0E14] bg-card h-11 w-full sm:w-48">
+                <SelectTrigger className="rounded-xl border-primary/25 bg-card h-11 w-full sm:w-48">
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl dark:bg-[#0E0E14] bg-popover dark:border-[rgba(168,85,247,0.25)] border-border">
+                <SelectContent className="rounded-xl bg-popover border-border">
                   <SelectItem value="newest" className="rounded-lg cursor-pointer">
                     {t(language, "published.sort.newest")}
                   </SelectItem>
@@ -415,17 +415,17 @@ export function PublishedListingsPage({ language }: PublishedListingsPageProps) 
 
       {/* Boost Confirmation Dialog */}
       <AlertDialog open={boostDialogOpen} onOpenChange={setBoostDialogOpen}>
-        <AlertDialogContent className="rounded-2xl dark:bg-[#0E0E14] bg-card dark:border-[rgba(168,85,247,0.25)] border-border">
+        <AlertDialogContent className="rounded-2xl bg-card border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-[#E7E7F0] text-foreground">
+            <AlertDialogTitle className="text-foreground">
               {t(language, "published.dialog.boost.title")}
             </AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-[#9CA3AF] text-muted-foreground">
+            <AlertDialogDescription className="text-muted-foreground">
               {t(language, "published.dialog.boost.description")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-xl dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card dark:text-[#E7E7F0] text-foreground">
+            <AlertDialogCancel className="rounded-xl border-border bg-card text-foreground">
               {t(language, "published.dialog.boost.cancel")}
             </AlertDialogCancel>
             <AlertDialogAction

@@ -43,7 +43,7 @@ interface OrdersListRowProps {
 
 export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
   return (
-    <div className="p-4 hover:dark:bg-[rgba(139,92,246,0.05)] hover:bg-gray-50 transition-colors cursor-pointer group">
+    <div className="p-4 hover:bg-primary/5 hover:bg-gray-50 transition-colors cursor-pointer group">
       <div className="flex items-center justify-between gap-4">
         {/* LEFT: Image + Title + Badges */}
         <div className="flex items-center gap-4 min-w-0 flex-1" onClick={onClick}>
@@ -52,20 +52,20 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
             <ImageWithFallback
               src={row.imageUrl}
               alt={row.title}
-              className="w-16 h-16 rounded-xl object-cover border dark:border-[rgba(168,85,247,0.25)] border-border"
+              className="w-16 h-16 rounded-xl object-cover border border-border"
             />
           </div>
 
           {/* Content */}
           <div className="flex-1 min-w-0">
-            <h3 className="dark:text-[#E7E7F0] text-foreground truncate">
+            <h3 className="text-foreground truncate">
               {row.title}
             </h3>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               {row.sku && (
                 <Badge
                   variant="outline"
-                  className="dark:bg-[rgba(139,92,246,0.10)] bg-primary/10 dark:border-[rgba(168,85,247,0.30)] border-primary/30 dark:text-[#A78BFA] text-primary text-xs"
+                  className="bg-primary/10 border-primary/30 text-primary text-xs"
                 >
                   {row.sku}
                 </Badge>
@@ -83,7 +83,7 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
           <div className="w-[110px] text-center">
             <div className="text-base tabular-nums">{row.price}</div>
             {row.subtitle && (
-              <div className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-0.5">
+              <div className="text-xs text-muted-foreground mt-0.5">
                 {row.subtitle}
               </div>
             )}
@@ -108,11 +108,11 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
                 className={cn(
                   "rounded-xl",
                   action.type === "primary" &&
-                    "dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground px-4 py-2",
+                    "bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground px-4 py-2",
                   action.type === "secondary" &&
-                    "dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100",
+                    "text-foreground hover:bg-primary/10 hover:bg-gray-100",
                   action.type === "ghost" &&
-                    "dark:text-[#E7E7F0] text-foreground hover:dark:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+                    "text-foreground hover:bg-primary/10 hover:bg-gray-100"
                 )}
                 style={
                   action.type === "primary"
@@ -135,14 +135,14 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => e.stopPropagation()}
-                    className="h-8 w-8 rounded-lg dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-gray-100"
+                    className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:bg-gray-100"
                   >
-                    <MoreVertical className="w-4 h-4 dark:text-[#9CA3AF] text-muted-foreground" />
+                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="rounded-xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border"
+                  className="rounded-xl bg-card border border-border"
                 >
                   {row.menuItems.map((item, idx) => (
                     <DropdownMenuItem

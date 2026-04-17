@@ -59,8 +59,8 @@ export function Sidebar({ activePage, onPageChange, language, onGlobalRefresh }:
             size="icon"
             className={`w-12 h-12 rounded-2xl ${
               isActive
-                ? "dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 border dark:border-[rgba(168,85,247,0.5)] border-primary dark:text-[#8B5CF6] text-primary"
-                : "dark:text-[#9CA3AF] text-muted-foreground dark:hover:text-[#E7E7F0] hover:text-foreground dark:hover:bg-[#12121A]"
+                ? "bg-primary/10 border border-primary/50 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
             onClick={() => onPageChange(item.id)}
             style={isActive ? {
@@ -72,12 +72,12 @@ export function Sidebar({ activePage, onPageChange, language, onGlobalRefresh }:
         </TooltipTrigger>
         <TooltipContent 
           side="right" 
-          className="rounded-xl dark:bg-[#0E0E14] dark:border-[rgba(168,85,247,0.25)]"
+          className="rounded-xl border-primary/25"
           style={{
             boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)"
           }}
         >
-          <p className="dark:text-[#E7E7F0]">{item.label}</p>
+          <p className="text-foreground">{item.label}</p>
         </TooltipContent>
       </Tooltip>
     );
@@ -115,7 +115,7 @@ export function Sidebar({ activePage, onPageChange, language, onGlobalRefresh }:
   return (
     <TooltipProvider delayDuration={0}>
       <div 
-        className="fixed left-0 top-0 h-screen w-[72px] border-r dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card z-40 flex flex-col items-center py-6"
+        className="fixed left-0 top-0 h-screen w-[72px] border-r border-border bg-card z-40 flex flex-col items-center py-6"
         style={{
           boxShadow: "1px 0 0 rgba(168,85,247,0.15)"
         }}
@@ -147,10 +147,10 @@ export function Sidebar({ activePage, onPageChange, language, onGlobalRefresh }:
                     size="icon"
                     onClick={handleGlobalRefresh}
                     disabled={isRefreshing || cooldownRemaining > 0}
-                    className={`w-10 h-10 rounded-full dark:bg-[#0E0E14] bg-card border dark:border-[rgba(148,163,184,0.30)] border-gray-300 dark:text-[#E7E7F0] text-foreground transition-all ${
+                    className={`w-10 h-10 rounded-full bg-card border border-border text-foreground transition-all ${
                       isRefreshing || cooldownRemaining > 0
                         ? "opacity-50 cursor-not-allowed"
-                        : "dark:hover:bg-[#1A1A24] hover:bg-gray-100 dark:hover:text-[#E7E7F0] hover:text-foreground opacity-80 hover:opacity-100"
+                        : "hover:bg-muted/50 hover:text-foreground opacity-80 hover:opacity-100"
                     }`}
                     style={
                       isRefreshing || cooldownRemaining > 0
@@ -171,12 +171,12 @@ export function Sidebar({ activePage, onPageChange, language, onGlobalRefresh }:
                 </TooltipTrigger>
                 <TooltipContent
                   side="right"
-                  className="rounded-xl dark:bg-[#0E0E14] bg-popover dark:border-[rgba(168,85,247,0.25)] border-border"
+                  className="rounded-xl bg-popover border-border"
                   style={{
                     boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
                   }}
                 >
-                  <p className="dark:text-[#E7E7F0] text-foreground">
+                  <p className="text-foreground">
                     {t(language, "globalRefresh.tooltip")}
                   </p>
                 </TooltipContent>

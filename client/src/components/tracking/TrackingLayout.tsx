@@ -26,8 +26,8 @@ export function TrackingLayout({ sidebar, children, language }: TrackingLayoutPr
         className={`
           fixed lg:relative inset-y-0 left-0 z-50
           w-[320px] lg:w-[360px]
-          dark:bg-[#0A0A10] bg-background
-          border-r dark:border-[rgba(168,85,247,0.15)] border-border
+          bg-background
+          border-r border-border
           transform transition-transform duration-300 ease-in-out
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
         `}
@@ -35,7 +35,7 @@ export function TrackingLayout({ sidebar, children, language }: TrackingLayoutPr
         {/* Mobile close button */}
         <button
           onClick={() => setIsSidebarOpen(false)}
-          className="absolute top-4 right-4 lg:hidden p-2 rounded-lg dark:text-[#9CA3AF] text-muted-foreground hover:dark:bg-[#1A1A24] hover:bg-muted/50"
+          className="absolute top-4 right-4 lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-muted hover:bg-muted/50"
         >
           <X className="w-5 h-5" />
         </button>
@@ -48,7 +48,7 @@ export function TrackingLayout({ sidebar, children, language }: TrackingLayoutPr
         {/* Mobile hamburger button */}
         <button
           onClick={() => setIsSidebarOpen(true)}
-          className="lg:hidden fixed bottom-6 left-6 z-30 p-3 rounded-full dark:bg-primary bg-primary dark:text-white text-white shadow-lg"
+          className="lg:hidden fixed bottom-6 left-6 z-30 p-3 rounded-full dark:bg-primary text-white shadow-lg"
           style={{
             boxShadow: "0 0 24px rgba(139,92,246,0.4)",
           }}

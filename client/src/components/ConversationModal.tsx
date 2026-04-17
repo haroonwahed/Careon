@@ -151,7 +151,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
               <h2 className="dark:text-foreground text-foreground mb-1.5">
                 {language === "fr" ? "Conversation" : "Conversation"}
               </h2>
-              <p className="text-sm dark:text-muted-foreground text-muted-foreground">
+              <p className="text-sm dark:text-muted-foreground">
                 <span className="font-medium">{favorite.userHandle}</span> {language === "fr" ? "a marqué ton article" : "favorited your item"}{" "}
                 <span className="font-medium">{favorite.itemTitle}</span> {language === "fr" ? "comme favori" : ""}
               </p>
@@ -162,14 +162,14 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
               onClick={onClose}
               className="h-8 w-8 rounded-xl dark:hover:bg-primary/10 hover:bg-primary/5 dark:border-primary/20 border-primary/10 border flex-shrink-0"
             >
-              <X className="w-4 h-4 dark:text-muted-foreground text-muted-foreground" />
+              <X className="w-4 h-4 dark:text-muted-foreground" />
             </Button>
           </div>
 
           {/* Scrollable Content */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
             {/* Product Card - Compact */}
-            <div className="rounded-xl border dark:border-border/50 border-border/30 p-3 dark:bg-[#16161E]/50 bg-card/30">
+            <div className="rounded-xl border dark:border-border/50 border-border/30 p-3 bg-card/50 bg-card/30">
               <div className="flex items-center gap-3">
                 <div className="w-14 h-14 rounded-lg overflow-hidden bg-muted flex-shrink-0">
                   <ImageWithFallback
@@ -182,7 +182,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                   <p className="font-semibold text-sm dark:text-foreground text-foreground mb-0.5 truncate">
                     {favorite.itemTitle}
                   </p>
-                  <p className="text-xs dark:text-muted-foreground text-muted-foreground">
+                  <p className="text-xs dark:text-muted-foreground">
                     {language === "fr" ? "Acheteur" : "Buyer"}: <span className="font-medium">{favorite.userHandle}</span>
                   </p>
                 </div>
@@ -191,7 +191,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
               {/* Price Info - Compact */}
               <div className="mt-3 pt-3 border-t dark:border-border/30 border-border/20 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs dark:text-muted-foreground text-muted-foreground">
+                  <span className="text-xs dark:text-muted-foreground">
                     {language === "fr" ? "Prix de l'article" : "Item price"}
                   </span>
                   <span className="font-semibold text-sm dark:text-foreground text-foreground">
@@ -199,7 +199,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs dark:text-muted-foreground text-muted-foreground">
+                  <span className="text-xs dark:text-muted-foreground">
                     {language === "fr" ? "Total HT" : "Total excl. tax"}
                   </span>
                   <span className="font-semibold text-sm dark:text-primary text-primary">
@@ -217,8 +217,8 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
             {/* Messages Area */}
             <div className="space-y-3">
               {messages.length === 0 ? (
-                <div className="rounded-xl border dark:border-border/50 border-border/30 p-6 text-center dark:bg-[#16161E]/30 bg-card/20">
-                  <p className="text-sm dark:text-muted-foreground text-muted-foreground mb-3">
+                <div className="rounded-xl border dark:border-border/50 border-border/30 p-6 text-center bg-card/30 bg-card/20">
+                  <p className="text-sm dark:text-muted-foreground mb-3">
                     {language === "fr" ? "Aucun message pour le moment" : "No messages yet"}
                   </p>
                   {showDemoHint && favorite.userHandle === "@marie-annelabest" && (
@@ -243,7 +243,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                         className={`max-w-[75%] rounded-xl px-4 py-2.5 ${
                           msg.type === "seller"
                             ? "dark:bg-primary/15 bg-primary/10 border dark:border-primary/30 border-primary/20"
-                            : "dark:bg-[#1A1A24] bg-card/50 border dark:border-border/50 border-border/30"
+                            : "bg-muted bg-card/50 border dark:border-border/50 border-border/30"
                         }`}
                       >
                         {msg.type === "seller" && (
@@ -276,13 +276,13 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                 placeholder={language === "fr" ? "Répondre…" : "Reply…"}
                 value={messageInput}
                 onChange={(e) => setMessageInput(e.target.value)}
-                className="min-h-[80px] rounded-xl dark:bg-[#1A1A24] bg-card/50 border dark:border-border/50 border-border/30 dark:focus:border-primary focus:border-primary/50 dark:text-foreground text-foreground resize-none"
+                className="min-h-[80px] rounded-xl bg-muted bg-card/50 border dark:border-border/50 border-border/30 dark:focus:border-primary focus:border-primary/50 dark:text-foreground text-foreground resize-none"
               />
             </div>
           </div>
 
           {/* Footer Actions */}
-          <div className="p-4 border-t dark:border-border/50 border-border/30 dark:bg-[#0B0B10]/50 bg-card/20">
+          <div className="p-4 border-t dark:border-border/50 border-border/30 bg-card/50 bg-card/20">
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 variant="outline"
@@ -301,7 +301,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                   placeholder={language === "fr" ? "Montant de l'offre" : "Offer amount"}
                   value={offerAmount}
                   onChange={(e) => setOfferAmount(e.target.value)}
-                  className="rounded-xl dark:bg-[#1A1A24] bg-card/50 border dark:border-border/50 border-border/30 dark:focus:border-primary focus:border-primary/50 h-9"
+                  className="rounded-xl bg-muted bg-card/50 border dark:border-border/50 border-border/30 dark:focus:border-primary focus:border-primary/50 h-9"
                 />
               </div>
 
@@ -319,7 +319,7 @@ export function ConversationModal({ favorite, onClose, language = "en" }: Conver
                 onClick={handleSendAll}
                 disabled={!messageInput.trim() && !offerAmount}
                 size="sm"
-                className="rounded-xl gap-2 dark:bg-primary bg-primary dark:text-white text-white dark:hover:bg-primary/90 hover:bg-primary/90"
+                className="rounded-xl gap-2 dark:bg-primary text-white dark:hover:bg-primary/90"
               >
                 <Send className="w-4 h-4" />
                 {language === "fr" ? "Envoyer" : "Send"}

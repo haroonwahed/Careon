@@ -69,7 +69,7 @@ export function ModernTopbar({
                   size="icon" 
                   className="h-10 w-10 rounded-xl dark:hover:bg-surface-hover hover:bg-muted/50"
                 >
-                  <Globe className="h-5 w-5 dark:text-muted-foreground text-muted-foreground" />
+                  <Globe className="h-5 w-5 dark:text-muted-foreground" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
@@ -103,9 +103,9 @@ export function ModernTopbar({
               className="h-10 w-10 rounded-xl dark:hover:bg-surface-hover hover:bg-muted/50"
             >
               {theme === "dark" ? (
-                <Sun className="h-5 w-5 dark:text-muted-foreground text-muted-foreground" />
+                <Sun className="h-5 w-5 dark:text-muted-foreground" />
               ) : (
-                <Moon className="h-5 w-5 dark:text-muted-foreground text-muted-foreground" />
+                <Moon className="h-5 w-5 dark:text-muted-foreground" />
               )}
             </Button>
 
@@ -116,7 +116,7 @@ export function ModernTopbar({
               onClick={() => setShowProfileModal(true)}
             >
               <Avatar className="h-7 w-7">
-                <AvatarFallback className="dark:bg-primary bg-primary dark:text-white text-white text-xs font-semibold">
+                <AvatarFallback className="dark:bg-primary text-white text-xs font-semibold">
                   VU
                 </AvatarFallback>
               </Avatar>

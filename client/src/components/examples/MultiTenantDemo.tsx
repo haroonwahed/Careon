@@ -381,6 +381,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
             <div className="p-6 max-w-[1400px] mx-auto">
               <CasusControlCenter
                 caseId={selectedCase}
+                role={currentContext.type as "gemeente" | "zorgaanbieder" | "admin"}
                 onBack={handleCloseCaseDetail}
                 onStartMatching={handleStartMatching}
               />

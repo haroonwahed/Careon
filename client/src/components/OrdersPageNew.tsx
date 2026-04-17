@@ -245,7 +245,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
         badges.push(
           <Badge 
             key="processed"
-            className="dark:bg-[rgba(42,240,122,0.15)] bg-green-100 dark:border-[rgba(42,240,122,0.40)] border-green-300 dark:text-[#2AF07A] text-green-700 text-xs"
+            className="dark:bg-[rgba(42,240,122,0.15)] bg-green-100 dark:border-[rgba(42,240,122,0.40)] border-green-300 text-green-base text-green-700 text-xs"
           >
             {t(language, "orders.badge.processed")}
           </Badge>
@@ -258,7 +258,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
           <Badge 
             key="waiting-label"
             variant="outline"
-            className="dark:text-[#9CA3AF] text-muted-foreground text-xs"
+            className="text-muted-foreground text-xs"
           >
             {t(language, "orders.badge.waitingLabel")}
           </Badge>
@@ -325,7 +325,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
         sku: order.sku,
         badges,
         price: (
-          <div className="dark:text-[#E7E7F0] text-foreground">
+          <div className="text-foreground">
             {formatCurrency(order.price, language)}
           </div>
         ),
@@ -445,7 +445,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
             <Button
               onClick={() => setShowBulkLabelDialog(true)}
               disabled={eligibleLabelsOrders.length === 0 || isBulkDownloading}
-              className="rounded-full gap-2 dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground px-5 py-2.5 transition-all duration-200"
+              className="rounded-full gap-2 bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground px-5 py-2.5 transition-all duration-200"
               style={{
                 boxShadow: eligibleLabelsOrders.length > 0 ? "0 0 20px rgba(139,92,246,0.3)" : "none"
               }}
@@ -455,7 +455,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
               {eligibleLabelsOrders.length > 0 && (
                 <Badge 
                   variant="secondary" 
-                  className="ml-1 px-2 py-0.5 rounded-full dark:bg-[rgba(139,92,246,0.30)] bg-primary/20 dark:text-[#E7E7F0] text-primary-foreground border-0"
+                  className="ml-1 px-2 py-0.5 rounded-full bg-primary/30 bg-primary/20 text-primary-foreground border-0"
                 >
                   {eligibleLabelsOrders.length}
                 </Badge>
@@ -494,12 +494,12 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
 
       {/* Bulk Label Download Confirmation Dialog */}
       <AlertDialog open={showBulkLabelDialog} onOpenChange={setShowBulkLabelDialog}>
-        <AlertDialogContent className="rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border">
+        <AlertDialogContent className="rounded-2xl bg-card border border-border">
           <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-[#E7E7F0] text-foreground">
+            <AlertDialogTitle className="text-foreground">
               {t(language, "orders.bulkLabels.confirm.title")}
             </AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-[#9CA3AF] text-muted-foreground">
+            <AlertDialogDescription className="text-muted-foreground">
               {t(language, "orders.bulkLabels.confirm.body").replace("{count}", eligibleLabelsOrders.length.toString())}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -509,7 +509,7 @@ export function OrdersPageNew({ language }: OrdersPageNewProps) {
             </AlertDialogCancel>
             <AlertDialogAction 
               onClick={handleBulkDownloadLabels}
-              className="rounded-xl dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90"
+              className="rounded-xl bg-primary hover:bg-primary/90"
             >
               {t(language, "orders.bulkLabels.confirm.confirm")}
             </AlertDialogAction>

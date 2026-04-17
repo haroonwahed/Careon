@@ -202,7 +202,7 @@ export function MyPurchasesPage({ language }: MyPurchasesPageProps) {
       // Seller info
       if (order.seller) {
         badges.push(
-          <span key="seller" className="text-[11px] dark:text-[#9CA3AF] text-muted-foreground">
+          <span key="seller" className="text-[11px] text-muted-foreground">
             {language === "fr" ? "Vendeur :" : "Seller:"} {order.seller.name}
           </span>
         );
@@ -214,7 +214,7 @@ export function MyPurchasesPage({ language }: MyPurchasesPageProps) {
           <Badge 
             key="account" 
             variant="outline"
-            className="text-[11px] px-2 py-0.5 h-5 dark:bg-[rgba(139,92,246,0.05)] bg-primary/5 dark:border-[rgba(168,85,247,0.20)] border-primary/20 dark:text-[#A78BFA] text-primary"
+            className="text-[11px] px-2 py-0.5 h-5 bg-primary/5 border-primary/20 border-primary/20 text-primary"
           >
             {order.accountName}
           </Badge>
@@ -239,7 +239,7 @@ export function MyPurchasesPage({ language }: MyPurchasesPageProps) {
       };
 
       badges.push(
-        <span key="date" className="text-[10px] dark:text-[#9CA3AF] text-muted-foreground">
+        <span key="date" className="text-[10px] text-muted-foreground">
           {getDateLabel()}
         </span>
       );
@@ -327,7 +327,7 @@ export function MyPurchasesPage({ language }: MyPurchasesPageProps) {
         sku: order.sku,
         badges,
         price: (
-          <div className="dark:text-[#E7E7F0] text-foreground">
+          <div className="text-foreground">
             {formatCurrency(order.price, language)}
           </div>
         ),
@@ -430,7 +430,7 @@ export function MyPurchasesPage({ language }: MyPurchasesPageProps) {
           {/* Add Purchase Button */}
           <Button
             onClick={() => setAddPurchaseModalOpen(true)}
-            className="rounded-full gap-2 dark:bg-[#8B5CF6] bg-primary hover:dark:bg-[#7C3AED] hover:bg-primary/90 dark:text-white text-primary-foreground px-5 py-2.5 transition-all duration-200"
+            className="rounded-full gap-2 bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground px-5 py-2.5 transition-all duration-200"
             style={{
               boxShadow: "0 0 20px rgba(139,92,246,0.3)"
             }}

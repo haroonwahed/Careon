@@ -64,20 +64,20 @@ export function AddAnalysisModal({
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-md rounded-2xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border shadow-2xl"
+        className="relative w-full max-w-md rounded-2xl bg-card border border-border shadow-2xl"
         style={{
           boxShadow:
             "0 0 0 1px rgba(139,92,246,0.25), 0 20px 60px rgba(0,0,0,0.6)",
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b dark:border-[rgba(168,85,247,0.15)] border-border">
-          <h2 className="text-lg dark:text-[#E7E7F0] text-foreground">
+        <div className="flex items-center justify-between p-6 border-b border-border">
+          <h2 className="text-lg text-foreground">
             {getTitle()}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg dark:text-[#9CA3AF] text-muted-foreground hover:dark:bg-[#1A1A24] hover:bg-muted/50 transition-colors"
+            className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:bg-muted/50 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -87,7 +87,7 @@ export function AddAnalysisModal({
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           {/* Name input */}
           <div>
-            <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+            <label className="block text-sm text-foreground mb-2">
               {language === "fr" ? "Nom de l'analyse" : "Analysis name"}
             </label>
             <input
@@ -99,14 +99,14 @@ export function AddAnalysisModal({
                   ? "Ex: Pull d'hiver Boutique Italiana"
                   : "Ex: Winter sweater Italian Shop"
               }
-              className="w-full px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground placeholder:dark:text-[#9CA3AF] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground placeholder:placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               required
             />
           </div>
 
           {/* URL input */}
           <div>
-            <label className="block text-sm dark:text-[#E7E7F0] text-foreground mb-2">
+            <label className="block text-sm text-foreground mb-2">
               {language === "fr" ? "URL Vinted" : "Vinted URL"}
             </label>
             <input
@@ -114,7 +114,7 @@ export function AddAnalysisModal({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder={getUrlPlaceholder()}
-              className="w-full px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground placeholder:dark:text-[#9CA3AF] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground placeholder:placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               required
             />
             <button
@@ -131,13 +131,13 @@ export function AddAnalysisModal({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl dark:bg-[#1A1A24] bg-muted border dark:border-[rgba(168,85,247,0.20)] border-border dark:text-[#E7E7F0] text-foreground transition-all duration-200 hover:dark:bg-[#242430] hover:bg-muted/70"
+              className="px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground transition-all duration-200 hover:bg-muted/70"
             >
               {language === "fr" ? "Annuler" : "Cancel"}
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl dark:bg-primary bg-primary dark:text-white text-white font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+              className="px-6 py-2.5 rounded-xl dark:bg-primary text-white font-medium transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
               style={{
                 boxShadow: "0 0 20px rgba(139,92,246,0.3)",
               }}

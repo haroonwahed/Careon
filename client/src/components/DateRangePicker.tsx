@@ -267,10 +267,10 @@ export function DateRangePicker({
             relative 
             ${
               isStart || isEnd
-                ? "dark:bg-[#8B5CF6] bg-primary dark:text-white text-primary-foreground rounded-full z-10 font-medium"
+                ? "bg-primary dark:text-white text-primary-foreground rounded-full z-10 font-medium"
                 : inRange
-                ? "dark:bg-[rgba(139,92,246,0.18)] bg-primary/10 dark:text-[#E5E7EB] text-foreground rounded-lg"
-                : "dark:text-[#E5E7EB] text-foreground dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10 rounded-lg"
+                ? "bg-primary/20 bg-primary/10 text-foreground text-foreground rounded-lg"
+                : "text-foreground text-foreground hover:bg-primary/10 hover:bg-primary/10 rounded-lg"
             } 
             ${isToday && !isStart && !isEnd ? "ring-1 ring-inset dark:ring-[#8B5CF6] ring-primary" : ""}
           `}
@@ -294,18 +294,18 @@ export function DateRangePicker({
             variant="ghost"
             size="icon"
             onClick={() => onNavigate("prev")}
-            className="h-8 w-8 dark:text-[#9CA3AF] text-muted-foreground rounded-lg dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10"
+            className="h-8 w-8 text-muted-foreground rounded-lg hover:bg-primary/10 hover:bg-primary/10"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <h4 className="dark:text-[#E5E7EB] text-foreground capitalize" style={{ fontSize: "13px", fontWeight: 600 }}>
+          <h4 className="text-foreground text-foreground capitalize" style={{ fontSize: "13px", fontWeight: 600 }}>
             {monthName}
           </h4>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => onNavigate("next")}
-            className="h-8 w-8 dark:text-[#9CA3AF] text-muted-foreground rounded-lg dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10"
+            className="h-8 w-8 text-muted-foreground rounded-lg hover:bg-primary/10 hover:bg-primary/10"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -316,7 +316,7 @@ export function DateRangePicker({
           {weekdays.map((day, i) => (
             <div
               key={i}
-              className="h-9 w-9 flex items-center justify-center dark:text-[#9CA3AF] text-muted-foreground uppercase"
+              className="h-9 w-9 flex items-center justify-center text-muted-foreground uppercase"
               style={{ fontSize: "11px", fontWeight: 500, lineHeight: "1" }}
             >
               {day}
@@ -337,19 +337,19 @@ export function DateRangePicker({
       <PopoverTrigger asChild>
         <Button
           variant="outline"
-          className="w-full sm:w-[300px] justify-start gap-2 rounded-2xl dark:border-[rgba(168,85,247,0.25)] dark:bg-[#0E0E14] dark:hover:bg-[#12121A]"
+          className="w-full sm:w-[300px] justify-start gap-2 rounded-2xl dark:hover:bg-[#12121A]"
           style={{
             boxShadow: "0 0 0 1px rgba(168,85,247,0.15)",
           }}
         >
-          <CalendarIcon className="h-4 w-4 dark:text-[#8B5CF6] text-primary" />
-          <span className="dark:text-[#E7E7F0] text-foreground">
+          <CalendarIcon className="h-4 w-4 text-primary" />
+          <span className="text-foreground">
             {getDisplayLabel()}
           </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-auto p-0 rounded-2xl dark:border-[rgba(168,85,247,0.25)] dark:bg-[#0E0E14] border-border"
+        className="w-auto p-0 rounded-2xl border-border"
         align="start"
         style={{
           boxShadow: "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
@@ -357,7 +357,7 @@ export function DateRangePicker({
       >
         <div className="flex">
           {/* Left sidebar - Presets */}
-          <div className="w-[200px] border-r dark:border-[rgba(168,85,247,0.25)] border-border p-4">
+          <div className="w-[200px] border-r border-border p-4">
             <div className="space-y-1">
               {presets.map((preset) => (
                 <button
@@ -365,14 +365,14 @@ export function DateRangePicker({
                   onClick={() => handlePresetClick(preset.id)}
                   className={`w-full text-left px-3 py-2 rounded-xl text-sm transition-colors ${
                     tempPreset === preset.id
-                      ? "dark:bg-[rgba(139,92,246,0.15)] bg-primary/10 dark:text-[#C7B8FF] text-primary"
-                      : "dark:text-[#9CA3AF] text-muted-foreground dark:hover:bg-[rgba(139,92,246,0.10)] hover:bg-primary/10"
+                      ? "bg-primary/15 bg-primary/10 text-primary text-primary"
+                      : "text-muted-foreground hover:bg-primary/10 hover:bg-primary/10"
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <span>{preset.label}</span>
                     {tempPreset === preset.id && (
-                      <Check className="h-4 w-4 dark:text-[#8B5CF6]" />
+                      <Check className="h-4 w-4 text-primary" />
                     )}
                   </div>
                 </button>
@@ -383,10 +383,10 @@ export function DateRangePicker({
           {/* Right content - Calendars and controls */}
           <div className="p-6 space-y-4 w-[660px]">
             {/* Period type toggle */}
-            <div className="flex items-center justify-between pb-4 border-b dark:border-[rgba(168,85,247,0.25)] border-border">
+            <div className="flex items-center justify-between pb-4 border-b border-border">
               <Label
                 htmlFor="mode-toggle"
-                className="dark:text-[#9CA3AF] text-muted-foreground text-sm"
+                className="text-muted-foreground text-sm"
               >
                 {language === "fr" ? "Type de période" : "Period type"}
               </Label>
@@ -394,8 +394,8 @@ export function DateRangePicker({
                 <span
                   className={`text-sm ${
                     tempMode === "fixed"
-                      ? "dark:text-[#E7E7F0] text-foreground"
-                      : "dark:text-[#9CA3AF] text-muted-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {t(language, "range.fixed")}
@@ -410,8 +410,8 @@ export function DateRangePicker({
                 <span
                   className={`text-sm ${
                     tempMode === "rolling"
-                      ? "dark:text-[#E7E7F0] text-foreground"
-                      : "dark:text-[#9CA3AF] text-muted-foreground"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
                   }`}
                 >
                   {t(language, "range.rolling")}
@@ -428,35 +428,35 @@ export function DateRangePicker({
             {/* Custom dates display (read-only pills) */}
             <div className="flex items-center gap-3 pt-2">
               <div className="flex items-center gap-2 flex-1">
-                <Label className="dark:text-[#9CA3AF] text-muted-foreground text-xs">
+                <Label className="text-muted-foreground text-xs">
                   {t(language, "range.from")}
                 </Label>
-                <div className="flex-1 px-3 py-2 rounded-xl dark:bg-[rgba(139,92,246,0.1)] bg-primary/5 dark:text-[#C7B8FF] text-primary text-sm">
+                <div className="flex-1 px-3 py-2 rounded-xl dark:bg-[rgba(139,92,246,0.1)] bg-primary/5 text-primary text-primary text-sm">
                   {tempFrom ? formatDate(tempFrom, language, { day: "numeric", month: "short", year: "numeric" }) : "—"}
                 </div>
               </div>
               <div className="flex items-center gap-2 flex-1">
-                <Label className="dark:text-[#9CA3AF] text-muted-foreground text-xs">
+                <Label className="text-muted-foreground text-xs">
                   {t(language, "range.to")}
                 </Label>
-                <div className="flex-1 px-3 py-2 rounded-xl dark:bg-[rgba(139,92,246,0.1)] bg-primary/5 dark:text-[#C7B8FF] text-primary text-sm">
+                <div className="flex-1 px-3 py-2 rounded-xl dark:bg-[rgba(139,92,246,0.1)] bg-primary/5 text-primary text-primary text-sm">
                   {tempTo ? formatDate(tempTo, language, { day: "numeric", month: "short", year: "numeric" }) : "—"}
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-between pt-3 border-t dark:border-[rgba(168,85,247,0.25)] border-border">
+            <div className="flex items-center justify-between pt-3 border-t border-border">
               <Button
                 variant="ghost"
                 onClick={handleCancel}
-                className="rounded-xl dark:text-[#9CA3AF]"
+                className="rounded-xl text-muted-foreground"
               >
                 {t(language, "range.cancel")}
               </Button>
               <Button
                 onClick={handleApply}
-                className="rounded-xl dark:bg-[#8B5CF6] dark:hover:bg-[#7C3AED] dark:text-white"
+                className="rounded-xl bg-primary dark:hover:bg-[#7C3AED] dark:text-white"
               >
                 {t(language, "range.apply")}
               </Button>

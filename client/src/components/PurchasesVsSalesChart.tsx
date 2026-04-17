@@ -82,13 +82,13 @@ export function PurchasesVsSalesChart({
 
     return (
       <div
-        className="rounded-xl dark:bg-[#0E0E14] bg-card border dark:border-[rgba(168,85,247,0.25)] border-border p-3 shadow-lg"
+        className="rounded-xl bg-card border border-border p-3 shadow-lg"
         style={{
           boxShadow:
             "0 0 0 1px rgba(168,85,247,0.25), 0 0 24px rgba(168,85,247,0.15)",
         }}
       >
-        <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mb-2">
+        <p className="text-xs text-muted-foreground mb-2">
           {formattedDate}
         </p>
         {payload.map((entry: any, index: number) => (
@@ -97,7 +97,7 @@ export function PurchasesVsSalesChart({
               className="w-2 h-2 rounded-full"
               style={{ backgroundColor: entry.color }}
             />
-            <span className="text-xs dark:text-[#E7E7F0] text-foreground">
+            <span className="text-xs text-foreground">
               {entry.name === "sales"
                 ? language === "fr"
                   ? "Ventes"
@@ -107,7 +107,7 @@ export function PurchasesVsSalesChart({
                 : "Purchases"}
               :
             </span>
-            <span className="text-xs dark:text-[#E7E7F0] text-foreground tabular-nums">
+            <span className="text-xs text-foreground tabular-nums">
               {formatCurrency(entry.value, language)}
             </span>
           </div>
@@ -118,17 +118,17 @@ export function PurchasesVsSalesChart({
 
   return (
     <Card
-      className="rounded-2xl border dark:border-[rgba(168,85,247,0.25)] border-border dark:bg-[#0E0E14] bg-card p-6"
+      className="rounded-2xl border border-border bg-card p-6"
       style={{
         boxShadow:
           "0 0 0 1px rgba(168,85,247,0.25), 0 0 28px rgba(168,85,247,0.10)",
       }}
     >
       <div className="mb-4">
-        <h3 className="dark:text-[#E7E7F0] text-foreground">
+        <h3 className="text-foreground">
           {language === "fr" ? "Ventes vs Achats" : "Sales vs Purchases"}
         </h3>
-        <p className="text-xs dark:text-[#9CA3AF] text-muted-foreground mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {language === "fr"
             ? "Évolution sur la période sélectionnée"
             : "Trend over selected period"}
@@ -174,7 +174,7 @@ export function PurchasesVsSalesChart({
           <XAxis
             dataKey="date"
             tickFormatter={formatXAxis}
-            className="dark:text-[#9CA3AF] text-muted-foreground"
+            className="text-muted-foreground"
             style={{ fontSize: "11px" }}
             axisLine={false}
             tickLine={false}
@@ -186,7 +186,7 @@ export function PurchasesVsSalesChart({
               }
               return value.toString();
             }}
-            className="dark:text-[#9CA3AF] text-muted-foreground"
+            className="text-muted-foreground"
             style={{ fontSize: "11px" }}
             axisLine={false}
             tickLine={false}

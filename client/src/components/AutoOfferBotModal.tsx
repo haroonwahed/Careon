@@ -67,7 +67,7 @@ export function AutoOfferBotModal({
               <DialogTitle className="dark:text-foreground text-foreground">
                 {language === "fr" ? "Bot d'offres automatiques" : "Automatic Offers Bot"}
               </DialogTitle>
-              <DialogDescription className="dark:text-muted-foreground text-muted-foreground">
+              <DialogDescription className="dark:text-muted-foreground">
                 {language === "fr"
                   ? "Envoyez automatiquement une offre aux utilisateurs qui mettent vos articles en favori."
                   : "Automatically send offers to users who favorite your items."}
@@ -83,7 +83,7 @@ export function AutoOfferBotModal({
               <Label className="dark:text-foreground text-foreground font-semibold">
                 {language === "fr" ? "État du bot" : "Bot Status"}
               </Label>
-              <p className="text-sm dark:text-muted-foreground text-muted-foreground mt-1">
+              <p className="text-sm dark:text-muted-foreground mt-1">
                 {botEnabled
                   ? language === "fr"
                     ? "Le bot est actuellement activé"
@@ -131,7 +131,7 @@ export function AutoOfferBotModal({
                     variant={discountRate === rate ? "default" : "outline"}
                     className={`rounded-xl ${
                       discountRate === rate
-                        ? "dark:bg-primary bg-primary dark:text-white text-white"
+                        ? "dark:bg-primary text-white"
                         : "dark:hover:bg-muted/50 hover:bg-muted/30"
                     }`}
                     onClick={() => setDiscountRate(rate as DiscountRate)}
@@ -149,7 +149,7 @@ export function AutoOfferBotModal({
                     <p className="text-sm font-medium dark:text-foreground text-foreground">
                       {language === "fr" ? "Aperçu" : "Preview"}
                     </p>
-                    <p className="text-xs dark:text-muted-foreground text-muted-foreground mt-1">
+                    <p className="text-xs dark:text-muted-foreground mt-1">
                       {language === "fr"
                         ? "L'offre est envoyée sur le prix affiché au moment du favori."
                         : "The offer is sent based on the displayed price at the time of favoriting."}
@@ -159,7 +159,7 @@ export function AutoOfferBotModal({
                 
                 <div className="space-y-3">
                   <div>
-                    <Label className="text-xs dark:text-muted-foreground text-muted-foreground mb-2 block">
+                    <Label className="text-xs dark:text-muted-foreground mb-2 block">
                       {language === "fr" ? "Prix d'exemple" : "Example Price"}
                     </Label>
                     <Slider
@@ -170,7 +170,7 @@ export function AutoOfferBotModal({
                       step={5}
                       className="mb-2"
                     />
-                    <div className="flex justify-between text-xs dark:text-muted-foreground text-muted-foreground">
+                    <div className="flex justify-between text-xs dark:text-muted-foreground">
                       <span>10€</span>
                       <span className="dark:text-foreground text-foreground font-medium">{examplePrice[0]}€</span>
                       <span>200€</span>
@@ -204,7 +204,7 @@ export function AutoOfferBotModal({
               </div>
               
               <div className="p-3 dark:bg-card bg-white rounded-lg border dark:border-border border-border mt-3">
-                <p className="text-sm dark:text-muted-foreground text-muted-foreground mb-2">
+                <p className="text-sm dark:text-muted-foreground mb-2">
                   {language === "fr" ? "Exemple d'aperçu :" : "Preview example:"}
                 </p>
                 <p className="text-sm dark:text-foreground text-foreground">
@@ -266,7 +266,7 @@ export function AutoOfferBotModal({
           <Button variant="outline" onClick={() => onOpenChange(false)} className="rounded-xl">
             {language === "fr" ? "Annuler" : "Cancel"}
           </Button>
-          <Button onClick={handleSave} className="rounded-xl dark:bg-primary bg-primary dark:text-white text-white">
+          <Button onClick={handleSave} className="rounded-xl dark:bg-primary text-white">
             {language === "fr" ? "Enregistrer la configuration" : "Save Configuration"}
           </Button>
         </DialogFooter>
