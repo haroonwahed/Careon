@@ -12,9 +12,60 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+def _bool_env(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _csv_env(name: str, default: list[str] | None = None) -> list[str]:
+    raw = os.getenv(name)
+    if raw is None:
+        return list(default or [])
+    return [item.strip() for item in raw.split(',') if item.strip()]
+
+
+def _database_config() -> dict[str, object]:
+    database_url = os.getenv('DATABASE_URL', '').strip()
+    if not database_url:
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+
+    parsed = urlparse(database_url)
+    scheme = parsed.scheme.lower()
+
+    if scheme in {'postgres', 'postgresql'}:
+        query = parse_qs(parsed.query)
+        return {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': parsed.username or '',
+            'PASSWORD': parsed.password or '',
+            'HOST': parsed.hostname or '',
+            'PORT': str(parsed.port or '5432'),
+            'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '600')),
+            'OPTIONS': {
+                'sslmode': query.get('sslmode', ['require'])[0],
+            },
+        }
+
+    if scheme == 'sqlite':
+        sqlite_path = parsed.path or '/db.sqlite3'
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': Path(sqlite_path),
+        }
+
+    raise ValueError(f'Unsupported DATABASE_URL scheme: {parsed.scheme}')
 
 
 def _load_dotenv(dotenv_path: Path) -> None:
@@ -37,20 +88,25 @@ _load_dotenv(BASE_DIR / '.env')
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-h4dao*+381s=dgr2v6+1!#%ui6bz4#f95*hfcq!m73vn!^#)u&'
+SECRET_KEY = os.getenv(
+    'DJANGO_SECRET_KEY',
+    os.getenv('SECRET_KEY', 'django-insecure-h4dao*+381s=dgr2v6+1!#%ui6bz4#f95*hfcq!m73vn!^#)u&'),
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = _bool_env('DJANGO_DEBUG', default=_bool_env('DEBUG', default=True))
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', default=['*'])
 
-# CSRF trusted origins for Replit
-CSRF_TRUSTED_ORIGINS = [
-    'https://*.replit.dev',
-    'https://*.repl.co',
-    'https://*.riker.replit.dev',
-    'https://*.riker.replit.dev:8000',
-]
+CSRF_TRUSTED_ORIGINS = _csv_env(
+    'CSRF_TRUSTED_ORIGINS',
+    default=[
+        'https://*.replit.dev',
+        'https://*.repl.co',
+        'https://*.riker.replit.dev',
+        'https://*.riker.replit.dev:8000',
+    ],
+)
 
 
 # Application definition
@@ -62,19 +118,15 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-
-    'django_browser_reload',
-    'debug_toolbar',
     'theme',
     'contracts',
 ]
 
-
-def _bool_env(name: str, default: bool = False) -> bool:
-    raw = os.getenv(name)
-    if raw is None:
-        return default
-    return raw.strip().lower() in {'1', 'true', 'yes', 'on'}
+if DEBUG:
+    INSTALLED_APPS.extend([
+        'django_browser_reload',
+        'debug_toolbar',
+    ])
 
 
 SSO_ENABLED = _bool_env('SSO_ENABLED', default=False)
@@ -97,7 +149,6 @@ if SSO_ENABLED and not OIDC_PACKAGE_AVAILABLE:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -105,8 +156,11 @@ MIDDLEWARE = [
     'contracts.middleware.OrganizationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_browser_reload.middleware.BrowserReloadMiddleware',
 ]
+
+if DEBUG:
+    MIDDLEWARE.insert(2, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+    MIDDLEWARE.append('django_browser_reload.middleware.BrowserReloadMiddleware')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -133,10 +187,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': _database_config(),
 }
 
 
@@ -189,6 +240,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@careon.local')
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = os.getenv('EMAIL_HOST', '')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USE_TLS = _bool_env('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD', '')
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',
@@ -240,6 +298,7 @@ if SSO_ENABLED:
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Logging — pilot warning events go to logs/pilot.log so scripts/pilot_log_summary.py
 # can parse them. All loggers also emit to the console (default Django behaviour).
