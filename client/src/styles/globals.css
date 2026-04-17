@@ -1,0 +1,604 @@
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+
+  /* Careon design system tokens */
+  --bg-base: #F7F8FA;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F1F3F6;
+  --border-default: #E5E7EB;
+  --border-strong: #D1D5DB;
+  --primary-hover: #6D4BFF;
+  --primary-light: #EEE9FF;
+  --red-base: #EF4444;
+  --red-light: #FEF2F2;
+  --red-border: #FCA5A5;
+  --yellow-base: #F59E0B;
+  --yellow-light: #FFFBEB;
+  --yellow-border: #FCD34D;
+  --blue-base: #3B82F6;
+  --blue-light: #EFF6FF;
+  --blue-border: #93C5FD;
+  --green-base: #10B981;
+  --green-light: #ECFDF5;
+  --green-border: #6EE7B7;
+  --badge-red-bg: #FEE2E2;
+  --badge-red-text: #B91C1C;
+  --badge-yellow-bg: #FEF3C7;
+  --badge-yellow-text: #92400E;
+  --badge-blue-bg: #DBEAFE;
+  --badge-blue-text: #1E40AF;
+  --badge-purple-bg: #EDE9FE;
+  --badge-purple-text: #5B21B6;
+  
+  /* Modern Light Theme */
+  --background: var(--bg-base);
+  --foreground: #111827;
+  --card: var(--bg-surface);
+  --card-foreground: #111827;
+  --popover: var(--bg-surface);
+  --popover-foreground: #111827;
+  --primary: #7C5CFF;
+  --primary-foreground: #ffffff;
+  --secondary: var(--bg-surface);
+  --secondary-foreground: #111827;
+  --muted: var(--bg-subtle);
+  --muted-foreground: #6B7280;
+  --accent: var(--primary-light);
+  --accent-foreground: var(--primary);
+  --destructive: var(--red-base);
+  --destructive-foreground: #ffffff;
+  --border: var(--border-default);
+  --input: var(--border-default);
+  --input-background: var(--bg-surface);
+  --switch-background: var(--border-strong);
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  --ring: var(--primary);
+  --chart-1: var(--primary);
+  --chart-2: var(--blue-base);
+  --chart-3: var(--green-base);
+  --chart-4: var(--yellow-base);
+  --chart-5: var(--red-base);
+  --chart-1-soft: rgba(124, 92, 255, 0.24);
+  --chart-2-soft: rgba(59, 130, 246, 0.22);
+  --chart-4-soft: rgba(245, 158, 11, 0.24);
+  --radius: 0.75rem;
+  
+  /* Sidebar */
+  --sidebar: var(--bg-surface);
+  --sidebar-foreground: #111827;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--bg-subtle);
+  --sidebar-accent-foreground: #111827;
+  --sidebar-border: var(--border-default);
+  --sidebar-ring: var(--primary);
+
+  --surface-elevated: var(--bg-surface);
+  --surface-hover: var(--bg-subtle);
+  --glow-primary: rgba(124, 92, 255, 0.12);
+  --glow-primary-soft: rgba(124, 92, 255, 0.08);
+
+  --kpi-value: #111827;
+  --delta-positive: var(--green-base);
+  --delta-negative: var(--red-base);
+  --grid-line: #E5E7EB;
+  
+  /* Theme transition duration */
+  --theme-transition-duration: 250ms;
+}
+
+.dark {
+  /* Dark mode keeps the same Careon brand and status palette */
+  --background: #111827;
+  --foreground: #F9FAFB;
+  --card: #1F2937;
+  --card-foreground: #F9FAFB;
+  --popover: #1F2937;
+  --popover-foreground: #F9FAFB;
+  --primary: #7C5CFF;
+  --primary-foreground: #ffffff;
+  --secondary: #1F2937;
+  --secondary-foreground: #F9FAFB;
+  --muted: #374151;
+  --muted-foreground: #D1D5DB;
+  --accent: rgba(124, 92, 255, 0.18);
+  --accent-foreground: #F9FAFB;
+  --destructive: var(--red-base);
+  --destructive-foreground: #ffffff;
+  --border: rgba(209, 213, 219, 0.18);
+  --input: rgba(209, 213, 219, 0.22);
+  --input-background: #111827;
+  --switch-background: #4B5563;
+  --ring: rgba(124, 92, 255, 0.45);
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-normal: 400;
+  --chart-1: var(--primary);
+  --chart-2: var(--blue-base);
+  --chart-3: var(--green-base);
+  --chart-4: var(--yellow-base);
+  --chart-5: var(--red-base);
+  --chart-1-soft: rgba(124, 92, 255, 0.34);
+  --chart-2-soft: rgba(59, 130, 246, 0.3);
+  --chart-4-soft: rgba(245, 158, 11, 0.32);
+  
+  /* KPIs & Charts */
+  --kpi-value: #F9FAFB;
+  --delta-positive: var(--green-border);
+  --delta-negative: var(--red-border);
+  --grid-line: rgba(209, 213, 219, 0.16);
+  
+  /* Sidebar */
+  --sidebar: #1F2937;
+  --sidebar-foreground: #F9FAFB;
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #374151;
+  --sidebar-accent-foreground: #F9FAFB;
+  --sidebar-border: rgba(209, 213, 219, 0.18);
+  --sidebar-ring: var(--primary);
+  
+  --surface-elevated: #1F2937;
+  --surface-hover: #374151;
+  --glow-primary: rgba(124, 92, 255, 0.2);
+  --glow-primary-soft: rgba(124, 92, 255, 0.12);
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-border-default: var(--border-default);
+  --color-border-strong: var(--border-strong);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --color-red-base: var(--red-base);
+  --color-red-light: var(--red-light);
+  --color-red-border: var(--red-border);
+  --color-yellow-base: var(--yellow-base);
+  --color-yellow-light: var(--yellow-light);
+  --color-yellow-border: var(--yellow-border);
+  --color-blue-base: var(--blue-base);
+  --color-blue-light: var(--blue-light);
+  --color-blue-border: var(--blue-border);
+  --color-green-base: var(--green-base);
+  --color-green-light: var(--green-light);
+  --color-green-border: var(--green-border);
+  --color-badge-red-bg: var(--badge-red-bg);
+  --color-badge-red-text: var(--badge-red-text);
+  --color-badge-yellow-bg: var(--badge-yellow-bg);
+  --color-badge-yellow-text: var(--badge-yellow-text);
+  --color-badge-blue-bg: var(--badge-blue-bg);
+  --color-badge-blue-text: var(--badge-blue-text);
+  --color-badge-purple-bg: var(--badge-purple-bg);
+  --color-badge-purple-text: var(--badge-purple-text);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-kpi-value: var(--kpi-value);
+  --color-delta-positive: var(--delta-positive);
+  --color-delta-negative: var(--delta-negative);
+  --color-grid-line: var(--grid-line);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-hover: var(--surface-hover);
+  --color-glow-primary: var(--glow-primary);
+  --color-glow-primary-soft: var(--glow-primary-soft);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Modern Typography System
+ */
+@layer base {
+  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
+    h1 {
+      font-size: 2rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.4;
+      letter-spacing: -0.01em;
+    }
+
+    h3 {
+      font-size: 1.25rem;
+      font-weight: var(--font-weight-semibold);
+      line-height: 1.4;
+    }
+
+    h4 {
+      font-size: 1rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    p {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-normal);
+      line-height: 1.6;
+    }
+
+    label {
+      font-size: 0.875rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    button {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-medium);
+      line-height: 1.5;
+    }
+
+    input {
+      font-size: 0.9375rem;
+      font-weight: var(--font-weight-normal);
+      line-height: 1.5;
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
+
+@layer utilities {
+  .careon-alert-error {
+    @apply bg-red-light border-red-border text-red-base;
+  }
+
+  .careon-alert-warning {
+    @apply bg-yellow-light border-yellow-border text-yellow-base;
+  }
+
+  .careon-alert-info {
+    @apply bg-blue-light border-blue-border text-blue-base;
+  }
+
+  .careon-alert-success {
+    @apply bg-green-light border-green-border text-green-base;
+  }
+
+  .careon-alert-primary {
+    @apply bg-primary-light border-primary/25 text-primary;
+  }
+
+  .careon-badge-red {
+    background-color: var(--badge-red-bg);
+    color: var(--badge-red-text);
+    border-color: transparent;
+  }
+
+  .careon-badge-yellow {
+    background-color: var(--badge-yellow-bg);
+    color: var(--badge-yellow-text);
+    border-color: transparent;
+  }
+
+  .careon-badge-blue {
+    background-color: var(--badge-blue-bg);
+    color: var(--badge-blue-text);
+    border-color: transparent;
+  }
+
+  .careon-badge-purple {
+    background-color: var(--badge-purple-bg);
+    color: var(--badge-purple-text);
+    border-color: transparent;
+  }
+
+  /* Legacy utility compatibility sweep */
+  .text-red-300,
+  .text-red-400,
+  .text-red-500,
+  .text-red-600 {
+    color: var(--red-base) !important;
+  }
+
+  .text-amber-300,
+  .text-amber-400,
+  .text-amber-500,
+  .text-amber-600,
+  .text-orange-300,
+  .text-orange-400,
+  .text-orange-500,
+  .text-orange-600 {
+    color: var(--yellow-base) !important;
+  }
+
+  .text-blue-300,
+  .text-blue-400,
+  .text-blue-500,
+  .text-blue-600 {
+    color: var(--blue-base) !important;
+  }
+
+  .text-green-300,
+  .text-green-400,
+  .text-green-500,
+  .text-green-600 {
+    color: var(--green-base) !important;
+  }
+
+  .text-purple-300,
+  .text-purple-400,
+  .text-purple-500,
+  .text-purple-600 {
+    color: var(--primary) !important;
+  }
+
+  .bg-red-500\/5,
+  .bg-red-500\/10,
+  .bg-red-500\/15,
+  .bg-red-500\/20 {
+    background-color: var(--red-light) !important;
+  }
+
+  .bg-amber-500\/5,
+  .bg-amber-500\/10,
+  .bg-amber-500\/15,
+  .bg-amber-500\/20,
+  .bg-orange-500\/20 {
+    background-color: var(--yellow-light) !important;
+  }
+
+  .bg-blue-500\/5,
+  .bg-blue-500\/10,
+  .bg-blue-500\/15,
+  .bg-blue-500\/20 {
+    background-color: var(--blue-light) !important;
+  }
+
+  .bg-green-500\/5,
+  .bg-green-500\/10,
+  .bg-green-500\/15,
+  .bg-green-500\/20 {
+    background-color: var(--green-light) !important;
+  }
+
+  .bg-purple-500\/10,
+  .bg-purple-500\/20,
+  .bg-purple-500\/15 {
+    background-color: var(--primary-light) !important;
+  }
+
+  .border-red-500\/20,
+  .border-red-500\/30,
+  .border-red-500\/40,
+  .border-red-500 {
+    border-color: var(--red-border) !important;
+  }
+
+  .border-amber-500\/20,
+  .border-amber-500\/30,
+  .border-amber-500\/40,
+  .border-amber-500,
+  .border-orange-500\/30 {
+    border-color: var(--yellow-border) !important;
+  }
+
+  .border-blue-500\/20,
+  .border-blue-500\/30,
+  .border-blue-500\/40,
+  .border-blue-500 {
+    border-color: var(--blue-border) !important;
+  }
+
+  .border-green-500\/20,
+  .border-green-500\/30,
+  .border-green-500\/40,
+  .border-green-500 {
+    border-color: var(--green-border) !important;
+  }
+
+  .border-purple-500\/20,
+  .border-purple-500\/30,
+  .border-purple-500\/40 {
+    border-color: color-mix(in srgb, var(--primary) 32%, transparent) !important;
+  }
+}
+
+/* Premium card effects */
+.premium-card {
+  @apply bg-card border border-border rounded-2xl;
+  box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04), 0 8px 24px rgba(17, 24, 39, 0.04);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .premium-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+
+.premium-card:hover {
+  box-shadow: 0 2px 6px rgba(17, 24, 39, 0.06), 0 12px 28px rgba(17, 24, 39, 0.08);
+}
+
+.dark .premium-card:hover {
+  border-color: rgba(124, 92, 255, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  transform: translateY(-1px);
+}
+
+/* KPI Card hover effects */
+.kpi-card {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.kpi-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(139, 92, 246, 0.2) !important;
+  transform: translateY(-2px);
+}
+
+.dark .kpi-card:hover {
+  border-color: rgba(139, 92, 246, 0.35) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(139, 92, 246, 0.3), 0 0 20px rgba(139, 92, 246, 0.12) !important;
+  transform: translateY(-2px);
+}
+
+/* Subtle glow for primary elements */
+.glow-primary {
+  box-shadow: 0 0 20px var(--color-glow-primary-soft);
+}
+
+.glow-primary:hover {
+  box-shadow: 0 0 28px var(--color-glow-primary);
+}
+
+/* Remove default tap highlight colors (blue/green) */
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Modern violet-based active states - NO TEAL/BLUE-GREEN */
+button:active:not(:disabled),
+[role="button"]:active:not(:disabled),
+[role="tab"]:active:not([data-state="active"]),
+[role="menuitem"]:active {
+  @apply dark:bg-primary/10 bg-primary/8;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Custom scrollbar for sidebar (premium dark mode) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.3) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.3);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Thin scrollbar for messages/conversations lists */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(139, 92, 246, 0.25) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(139, 92, 246, 0.25);
+  border-radius: 20px;
+  transition: background-color 0.2s;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(139, 92, 246, 0.4);
+}
+
+/* Premium subtle animations for modals, dropdowns, popovers - NO SCALE/ZOOM */
+@keyframes subtle-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes subtle-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-subtle-in {
+  animation: subtle-fade-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-subtle-out {
+  animation: subtle-fade-out 100ms cubic-bezier(0.4, 0, 1, 1);
+}

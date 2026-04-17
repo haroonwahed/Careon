@@ -3403,6 +3403,10 @@ def case_placement_action(request, pk):
 # ==================== DASHBOARD VIEW ====================
 
 def dashboard(request):
+    spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
+    if spa_index_path.exists():
+        return HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
+
     today = date.today()
     now = timezone.now()
     org = get_user_organization(request.user)
@@ -3419,10 +3423,77 @@ def dashboard(request):
         org,
     )
 
-    active_intakes = list(
-        intakes_qs.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED)
-        .order_by('-updated_at')
-    )
+    base_active_qs = intakes_qs.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED)
+
+    selected_region = (request.GET.get('regio') or '').strip()
+    selected_status = (request.GET.get('status') or '').strip()
+    selected_urgency = (request.GET.get('urgentie') or '').strip()
+    selected_period = (request.GET.get('periode') or '14').strip()
+    search_query = (request.GET.get('q') or '').strip()
+
+    valid_status_values = {choice[0] for choice in CaseIntakeProcess.ProcessStatus.choices}
+    valid_urgency_values = {choice[0] for choice in CaseIntakeProcess.Urgency.choices}
+    valid_period_values = {'7', '14', '30', '90', 'all'}
+
+    if selected_status and selected_status not in valid_status_values:
+        selected_status = ''
+    if selected_urgency and selected_urgency not in valid_urgency_values:
+        selected_urgency = ''
+    if selected_period not in valid_period_values:
+        selected_period = '14'
+
+    filtered_qs = base_active_qs
+    if selected_region.isdigit():
+        filtered_qs = filtered_qs.filter(preferred_region_id=int(selected_region))
+    else:
+        selected_region = ''
+
+    if selected_status:
+        filtered_qs = filtered_qs.filter(status=selected_status)
+
+    if selected_urgency:
+        filtered_qs = filtered_qs.filter(urgency=selected_urgency)
+
+    if selected_period != 'all':
+        period_days = int(selected_period)
+        period_start = now - timedelta(days=period_days)
+        filtered_qs = filtered_qs.filter(updated_at__gte=period_start)
+
+    if search_query:
+        filtered_qs = filtered_qs.filter(
+            Q(title__icontains=search_query)
+            | Q(assessment_summary__icontains=search_query)
+            | Q(preferred_region__region_name__icontains=search_query)
+        )
+
+    active_intakes = list(filtered_qs.order_by('-updated_at'))
+
+    region_counts = {}
+    for intake in base_active_qs.select_related('preferred_region'):
+        if intake.preferred_region_id:
+            region_counts[intake.preferred_region_id] = {
+                'id': intake.preferred_region_id,
+                'label': intake.preferred_region.region_name,
+                'count': region_counts.get(intake.preferred_region_id, {}).get('count', 0) + 1,
+            }
+
+    filter_regions = sorted(region_counts.values(), key=lambda item: item['label'])
+    filter_statuses = [
+        {'value': code, 'label': label}
+        for code, label in CaseIntakeProcess.ProcessStatus.choices
+        if code != CaseIntakeProcess.ProcessStatus.COMPLETED
+    ]
+    filter_urgencies = [
+        {'value': code, 'label': label}
+        for code, label in CaseIntakeProcess.Urgency.choices
+    ]
+    filter_periods = [
+        {'value': '7', 'label': 'Afgelopen 7 dagen'},
+        {'value': '14', 'label': 'Afgelopen 14 dagen'},
+        {'value': '30', 'label': 'Afgelopen 30 dagen'},
+        {'value': '90', 'label': 'Afgelopen 90 dagen'},
+        {'value': 'all', 'label': 'Alle updates'},
+    ]
 
     placements = PlacementRequest.objects.filter(
         due_diligence_process__organization=org
@@ -3503,6 +3574,8 @@ def dashboard(request):
     waiting_long_count = 0
     missing_assessment_count = 0
     urgent_count = 0
+    placements_in_progress_count = 0
+    weak_matching_count = 0
 
     for intake in active_intakes:
         assessment = getattr(intake, 'case_assessment', None)
@@ -3525,6 +3598,15 @@ def dashboard(request):
         ] and placement is None
         waiting_long = waiting_days >= waiting_threshold_days
         is_urgent = intake.urgency in [CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS]
+        placement_in_progress = placement and placement.status in [
+            PlacementRequest.Status.DRAFT,
+            PlacementRequest.Status.IN_REVIEW,
+            PlacementRequest.Status.NEEDS_INFO,
+        ]
+        weak_matching = placement and placement.placement_quality_status in [
+            PlacementRequest.PlacementQualityStatus.AT_RISK,
+            PlacementRequest.PlacementQualityStatus.BROKEN_DOWN,
+        ]
 
         blockers = []
         if no_match:
@@ -3540,6 +3622,10 @@ def dashboard(request):
             blockers.append({'key': 'risk_signal', 'label': high_signal.get_signal_type_display(), 'score': 95})
         if is_urgent:
             urgent_count += 1
+        if placement_in_progress:
+            placements_in_progress_count += 1
+        if weak_matching:
+            weak_matching_count += 1
 
         blocker = max(blockers, key=lambda item: item['score']) if blockers else None
         next_action = _next_best_action(intake, assessment, placement)
@@ -3554,13 +3640,17 @@ def dashboard(request):
             'id': intake.pk,
             'title': intake.title,
             'phase': intake.get_status_display(),
+            'phase_code': intake.status,
             'phase_rank': _phase_rank(intake.status),
             'urgency': intake.get_urgency_display(),
             'urgency_code': intake.urgency,
+            'care_form': intake.get_preferred_care_form_display(),
+            'region': intake.preferred_region.region_name if intake.preferred_region else 'Onbekend',
             'waiting_days': waiting_days,
             'waiting_label': f'{waiting_days} dagen',
             'blocker': blocker['label'] if blocker else 'Geen directe blokkade',
             'blocker_key': blocker['key'] if blocker else None,
+            'signal_count': len(open_signals),
             'next_action': next_action,
             'case_href': reverse('careon:case_detail', args=[intake.pk]),
             'quick_assign_href': reverse('careon:matching_dashboard') + f'?intake={intake.pk}',
@@ -3571,6 +3661,10 @@ def dashboard(request):
             ),
             'assessment_status': assessment.get_assessment_status_display() if assessment else 'Niet gestart',
             'placement_status': placement.get_status_display() if placement else 'Niet gestart',
+            'placement_status_code': placement.status if placement else '',
+            'has_match_issue': no_match or bool(weak_matching),
+            'is_waiting_long': waiting_long,
+            'is_urgent': is_urgent,
             'priority_score': priority_score,
         }
         priority_queue.append(queue_item)
@@ -3637,28 +3731,28 @@ def dashboard(request):
 
     alert_strip = [
         {
-            'icon': '🚨',
+            'icon': '!',
             'label': 'Casussen zonder match',
             'count': no_match_count,
             'tone': 'critical',
             'href': reverse('careon:case_list') + '?attention=no_match',
         },
         {
-            'icon': '⏳',
+            'icon': 'W',
             'label': 'Wachttijd overschreden',
             'count': waiting_long_count,
             'tone': 'warning',
             'href': reverse('careon:case_list') + '?attention=waiting_long',
         },
         {
-            'icon': '⚠️',
+            'icon': 'B',
             'label': 'Beoordeling ontbreekt',
             'count': missing_assessment_count,
             'tone': 'warning',
             'href': reverse('careon:case_list') + '?attention=missing_assessment',
         },
         {
-            'icon': '🔴',
+            'icon': 'U',
             'label': 'Urgente casussen',
             'count': urgent_count,
             'tone': 'critical',
@@ -3724,6 +3818,182 @@ def dashboard(request):
             'href': reverse('careon:case_list') + f'?region={region_id}',
         })
 
+    signal_items = []
+    for signal in signals_qs.select_related('due_diligence_process').order_by('-updated_at')[:5]:
+        signal_items.append({
+            'label': signal.get_signal_type_display(),
+            'detail': signal.description[:120],
+            'risk': signal.risk_level,
+            'status': signal.get_status_display(),
+            'href': reverse('careon:signal_detail', args=[signal.pk]),
+        })
+
+    waiting_review_count = sum(
+        1 for row in priority_queue
+        if row['phase_code'] == CaseIntakeProcess.ProcessStatus.ASSESSMENT
+        or row['blocker_key'] == 'missing_assessment'
+    )
+    manual_matching_count = sum(1 for row in priority_queue if row['has_match_issue'])
+    placement_confirmation_count = sum(
+        1 for row in priority_queue
+        if row['placement_status_code'] in [
+            PlacementRequest.Status.DRAFT,
+            PlacementRequest.Status.IN_REVIEW,
+            PlacementRequest.Status.NEEDS_INFO,
+        ]
+    )
+    escalation_count = sum(
+        1 for row in priority_queue
+        if row['urgency_code'] == CaseIntakeProcess.Urgency.CRISIS
+        or row['blocker_key'] == 'risk_signal'
+    )
+
+    next_actions = [
+        {
+            'label': 'Casussen wachten op beoordeling',
+            'count': waiting_review_count,
+            'href': reverse('careon:assessment_list'),
+            'cta': 'Open beoordelingen',
+        },
+        {
+            'label': 'Matchings handmatig controleren',
+            'count': manual_matching_count,
+            'href': reverse('careon:matching_dashboard'),
+            'cta': 'Open matching',
+        },
+        {
+            'label': 'Plaatsingen vereisen bevestiging',
+            'count': placement_confirmation_count,
+            'href': reverse('careon:placement_list'),
+            'cta': 'Open plaatsingen',
+        },
+        {
+            'label': 'Escalaties naar gemeente',
+            'count': escalation_count,
+            'href': reverse('careon:signal_list'),
+            'cta': 'Open signalen',
+        },
+    ]
+
+    # Determine most critical recommended action
+    recommended_action = None
+    if waiting_review_count > 0:
+        recommended_action = {
+            'title': 'Aanbevolen actie',
+            'action': f'Werk eerst open beoordelingen af ({waiting_review_count} casussen)',
+            'reasons': [
+                'Blokkeert matching',
+                'Verhoogt wachttijd',
+            ],
+            'cta': 'Ga naar beoordelingen',
+            'href': reverse('careon:assessment_list'),
+            'priority': 'critical',
+        }
+    elif manual_matching_count > 0:
+        recommended_action = {
+            'title': 'Aanbevolen actie',
+            'action': f'Controleer matchings ({manual_matching_count} casussen)',
+            'reasons': [
+                'Geen passende aanbieder',
+                'Vereist handmatige review',
+            ],
+            'cta': 'Ga naar matching',
+            'href': reverse('careon:matching_dashboard'),
+            'priority': 'high',
+        }
+    elif escalation_count > 0:
+        recommended_action = {
+            'title': 'Aanbevolen actie',
+            'action': f'Review escalaties ({escalation_count} casussen)',
+            'reasons': [
+                'Crisissignalen gedetecteerd',
+                'Gemeente-melding vereist',
+            ],
+            'cta': 'Ga naar signalen',
+            'href': reverse('careon:signal_list'),
+            'priority': 'critical',
+        }
+
+    phase_distribution_map = {}
+    for row in priority_queue:
+        phase_distribution_map[row['phase']] = phase_distribution_map.get(row['phase'], 0) + 1
+    phase_distribution = [
+        {'label': label, 'count': count}
+        for label, count in sorted(phase_distribution_map.items(), key=lambda item: item[1], reverse=True)
+    ]
+
+    wait_bands = {
+        '0-3 dagen': 0,
+        '4-7 dagen': 0,
+        '8+ dagen': 0,
+    }
+    for row in priority_queue:
+        if row['waiting_days'] <= 3:
+            wait_bands['0-3 dagen'] += 1
+        elif row['waiting_days'] <= 7:
+            wait_bands['4-7 dagen'] += 1
+        else:
+            wait_bands['8+ dagen'] += 1
+
+    operational_insights = [
+        {
+            'title': 'Wachttijdverdeling',
+            'items': [
+                {'label': label, 'count': count}
+                for label, count in wait_bands.items()
+            ],
+        },
+        {
+            'title': 'Casussen per fase',
+            'items': phase_distribution[:5],
+        },
+    ]
+
+    regiekamer_kpis = [
+        {
+            'label': 'Casussen zonder match',
+            'value': no_match_count,
+            'delta': f"{manual_matching_count} vragen handmatige opvolging",
+            'tone': 'critical',
+            'href': reverse('careon:matching_dashboard'),
+        },
+        {
+            'label': 'Open beoordelingen',
+            'value': waiting_review_count,
+            'delta': f"{missing_assessment_count} zonder afgeronde beoordeling",
+            'tone': 'warning',
+            'href': reverse('careon:assessment_list'),
+        },
+        {
+            'label': 'Plaatsingen in behandeling',
+            'value': placements_in_progress_count,
+            'delta': f"{placement_confirmation_count} wachten op besluit",
+            'tone': 'brand',
+            'href': reverse('careon:placement_list'),
+        },
+        {
+            'label': 'Gemiddelde wachttijd',
+            'value': f"{round(sum(row['waiting_days'] for row in priority_queue) / len(priority_queue), 1) if priority_queue else 0} dagen",
+            'delta': f"Norm: {waiting_threshold_days} dagen",
+            'tone': 'warning' if waiting_long_count else 'healthy',
+            'href': reverse('careon:case_list') + '?sort=waiting',
+        },
+        {
+            'label': 'Casussen met hoog risico',
+            'value': urgent_count,
+            'delta': f"{escalation_count} escalaties aanbevolen",
+            'tone': 'critical',
+            'href': reverse('careon:signal_list'),
+        },
+        {
+            'label': 'Capaciteitstekorten',
+            'value': len(capacity_signals),
+            'delta': 'Signalen uit aanbieders en regio-overbelasting',
+            'tone': 'warning',
+            'href': reverse('careon:case_list') + '?attention=capacity_none',
+        },
+    ]
+
     context = {
         'dashboard_updated_at': now,
         'alert_strip': alert_strip,
@@ -3738,6 +4008,20 @@ def dashboard(request):
         'missing_assessment_count': missing_assessment_count,
         'urgent_count': urgent_count,
         'avg_wait_days': round(sum(row['waiting_days'] for row in priority_queue) / len(priority_queue), 1) if priority_queue else 0,
+        'recommended_action': recommended_action,
+        'regiekamer_kpis': regiekamer_kpis,
+        'next_actions': next_actions,
+        'signal_items': signal_items,
+        'operational_insights': operational_insights,
+        'filter_regions': filter_regions,
+        'filter_statuses': filter_statuses,
+        'filter_urgencies': filter_urgencies,
+        'filter_periods': filter_periods,
+        'selected_region': selected_region,
+        'selected_status': selected_status,
+        'selected_urgency': selected_urgency,
+        'selected_period': selected_period,
+        'search_query': search_query,
         'FEATURE_REDESIGN': is_feature_redesign_enabled(),
     }
     return render(request, 'dashboard.html', context)
@@ -4322,6 +4606,28 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         if can_create_case_document:
             case_document_context_href = f'{case_document_href}?phase={active_flow_stage}&event={upload_event}'
 
+        # Decision-driven header recommendation for intake detail.
+        recommended_action_block = None
+        if can_edit_case:
+            priority = 'medium'
+            icon = 'i'
+            if intake.urgency == CaseIntakeProcess.Urgency.CRISIS:
+                priority = 'critical'
+                icon = '!'
+            elif intake.urgency == CaseIntakeProcess.Urgency.HIGH:
+                priority = 'high'
+                icon = 'H'
+
+            recommended_action_block = {
+                'title': 'AANBEVOLEN ACTIE',
+                'icon': icon,
+                'priority': priority,
+                'action': next_action['label'],
+                'reasons': [next_action['help']],
+                'href': next_action['href'],
+                'cta': next_action['label'],
+            }
+
         flow_label_map = {
             'aanvraag': 'Aanvraag',
             'beoordeling': 'Beoordeling',
@@ -4418,6 +4724,14 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'anonymized_title': anonymized_title,
             'region_municipality_label': region_municipality_label,
             'assessment_interpretation': assessment_interpretation,
+            'recommended_action_block': recommended_action_block,
+            'decision_header': {
+                'title': intake.title,
+                'status': intake.get_status_display(),
+                'urgency': intake.get_urgency_display(),
+                'urgency_code': intake.urgency,
+            },
+            'phase_stepper': flow_rail,
         })
 
         return ctx

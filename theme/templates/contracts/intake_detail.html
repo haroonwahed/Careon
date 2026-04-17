@@ -14,50 +14,32 @@
 
         <section class="ds-card ds-detail-head intake-identity-card" data-shell-slot="case-header-card">
         <div class="ds-detail-card-body">
-            <div class="min-w-0 space-y-2">
-                <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide ds-text-muted">
-                    <span class="ds-badge badge-gray">Casus {{ intake.pk }}</span>
-                    <span class="ds-badge {% if intake.urgency == 'CRISIS' %}badge-critical{% elif intake.urgency == 'HIGH' %}badge-high{% else %}badge-low{% endif %}">{{ intake.get_urgency_display }}</span>
-                    <span class="ds-badge ds-stage-intake">{{ intake.get_status_display }}</span>
-                </div>
-                <h1 class="ds-page-title truncate text-2xl font-semibold leading-tight ds-text-strong">Casus #{{ intake.pk }} - {{ anonymized_title }}</h1>
-                <dl class="ds-meta-grid text-xs sm:grid-cols-3">
-                    <div>
-                        <dt class="ds-meta-label">Regio/Gemeente</dt>
-                        <dd class="ds-meta-value">{{ region_municipality_label }}</dd>
+            <!-- DECISION HEADER -->
+            <div class="casus-decision-header">
+                <div class="casus-decision-header__main">
+                    <div class="casus-decision-header__title-row">
+                        <h1 class="casus-decision-header__title">{{ anonymized_title }}</h1>
+                        <span class="casus-badge casus-badge--{% if intake.urgency == 'CRISIS' %}critical{% elif intake.urgency == 'HIGH' %}high{% else %}low{% endif %}">{{ intake.get_urgency_display }}</span>
+                        <span class="casus-badge casus-badge--status">{{ intake.get_status_display }}</span>
                     </div>
-                    <div>
-                        <dt class="ds-meta-label">Type zorg</dt>
-                        <dd class="ds-meta-value">{{ intake.care_category_main.name|default:"Niet gespecificeerd" }}</dd>
+                    {% if recommended_action_block %}
+                    <div class="casus-recommended-action casus-recommended-action--{{ recommended_action_block.priority }}">
+                        <div class="casus-recommended-action__icon">{{ recommended_action_block.icon }}</div>
+                        <div class="casus-recommended-action__content">
+                            <p class="casus-recommended-action__label">{{ recommended_action_block.title }}</p>
+                            <h3 class="casus-recommended-action__action">{{ recommended_action_block.action }}</h3>
+                            <div class="casus-recommended-action__reasons">
+                                <span class="casus-recommended-action__reason-label">Waarom:</span>
+                                <ul class="casus-recommended-action__reasons-list">
+                                    {% for reason in recommended_action_block.reasons %}
+                                    <li>{{ reason }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        <a href="{{ recommended_action_block.href }}" class="btn btn-primary">{{ recommended_action_block.cta }}</a>
                     </div>
-                    <div>
-                        <dt class="ds-meta-label">Aangemaakt</dt>
-                        <dd class="ds-meta-value">{{ intake.created_at|date:"d-m-Y" }}</dd>
-                    </div>
-                </dl>
-            </div>
-
-            <div class="flex flex-col items-stretch gap-2 sm:items-end">
-                {% if provider_response_summary and provider_response_summary.sla_state in 'OVERDUE|ESCALATED|FORCED_ACTION' %}
-                <span class="ds-badge badge-critical">{{ provider_response_summary.sla_state }}</span>
-                {% elif provider_response_summary and provider_response_summary.sla_state == 'AT_RISK' %}
-                <span class="ds-badge badge-high">AT_RISK</span>
-                {% else %}
-                <span class="ds-badge badge-low">STABLE</span>
-                {% endif %}
-                <p class="text-xs font-semibold ds-text-secondary">Eigenaar: {{ intake.case_coordinator.get_full_name|default:"Niet toegewezen" }}</p>
-                <a href="{{ next_action.href }}" class="btn btn-secondary">{{ next_action.label }}</a>
-                {% if can_edit_case %}
-                <a href="{% url 'careon:case_update' intake.pk %}" class="btn btn-ghost">Bewerken</a>
-                <div class="flex flex-wrap items-center justify-end gap-2">
-                    <a href="{% url 'careon:case_task_create' intake.pk %}" class="btn btn-ghost">Toewijzen</a>
-                    <a href="{% url 'careon:case_signal_create' intake.pk %}" class="btn btn-ghost">Escaleren</a>
-                </div>
-                {% endif %}
-                <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium ds-text-secondary">
-                    <a href="{{ assessment_href }}" class="ds-link">{{ assessment_action_label }}</a>
-                    <a href="{{ matching_href }}" class="ds-link">Matching</a>
-                    <a href="{{ placement_href }}" class="ds-link">{{ placement_action_label }}</a>
+                    {% endif %}
                 </div>
             </div>
         </div>
