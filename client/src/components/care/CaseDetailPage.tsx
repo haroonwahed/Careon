@@ -16,15 +16,19 @@ import {
   Shield,
   Building2,
   Users,
-  Star
+  Star,
+  Loader2
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CaseStatusBadge } from "./CaseStatusBadge";
 import { UrgencyBadge } from "./UrgencyBadge";
 import { RiskBadge } from "./RiskBadge";
-import { Case, mockCases, mockProviders, Provider } from "../../lib/casesData";
+import { Case, Provider } from "../../lib/casesData";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 interface CaseDetailPageProps {
   caseId: string;
@@ -33,7 +37,29 @@ interface CaseDetailPageProps {
 }
 
 export function CaseDetailPage({ caseId, onBack, onStartMatching }: CaseDetailPageProps) {
-  const caseData = mockCases.find(c => c.id === caseId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyCases = cases.map(toLegacyCase);
+  const legacyProviders = providers.map(toLegacyProvider);
+
+  const caseData = legacyCases.find(c => c.id === caseId);
+
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Casus laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon casusgegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
   
   // Determine active phase from case status
   const getActivePhase = (status: string) => {
@@ -342,7 +368,7 @@ export function CaseDetailPage({ caseId, onBack, onStartMatching }: CaseDetailPa
             )}
 
             {caseData.status === "placement" && (
-              <PlacementWorkArea caseData={caseData} />
+              <PlacementWorkArea caseData={caseData} providers={legacyProviders} />
             )}
           </div>
         </div>
@@ -658,13 +684,20 @@ function BlockedWorkArea({ caseData }: { caseData: Case }) {
   );
 }
 
-function PlacementWorkArea({ caseData }: { caseData: Case }) {
+function PlacementWorkArea({ caseData, providers }: { caseData: Case; providers: Provider[] }) {
   const [placementConfirmed, setPlacementConfirmed] = useState(false);
   const [intakeScheduled, setIntakeScheduled] = useState(false);
   
-  // Get matched provider (in real app, this would come from the case data)
-  const matchedProvider = mockProviders[0]; // Best match
+  const matchedProvider = providers.find((provider) => provider.region === caseData.region) ?? providers[0];
   const matchScore = 94;
+
+  if (!matchedProvider) {
+    return (
+      <div className="premium-card p-6 text-center text-muted-foreground">
+        Geen aanbiedergegevens beschikbaar voor deze casus.
+      </div>
+    );
+  }
 
   if (placementConfirmed && intakeScheduled) {
     // STATE: Intake completed, waiting for care start

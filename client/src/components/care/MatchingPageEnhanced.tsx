@@ -17,10 +17,14 @@ import {
   SlidersHorizontal,
   AlertOctagon,
   Target,
-  Zap
+  Zap,
+  Loader2
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { mockCases, mockProviders, Provider } from "../../lib/casesData";
+import { Provider } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 interface MatchingPageEnhancedProps {
   caseId: string;
@@ -29,15 +33,37 @@ interface MatchingPageEnhancedProps {
 }
 
 export function MatchingPageEnhanced({ caseId, onBack, onConfirmMatch }: MatchingPageEnhancedProps) {
-  const caseData = mockCases.find(c => c.id === caseId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyCases = cases.map(toLegacyCase);
+  const legacyProviders = providers.map(toLegacyProvider);
+
+  const caseData = legacyCases.find(c => c.id === caseId);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
+
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Matching laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon matchinggegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
 
   if (!caseData) {
     return null;
   }
 
   // Get top 3 provider matches
-  const topMatches = mockProviders
+  const topMatches = legacyProviders
     .filter(p => p.region === caseData.region || p.region === "Amsterdam")
     .slice(0, 3);
 

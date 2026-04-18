@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ArrowLeft, CheckCircle2, X, AlertTriangle, PartyPopper, ArrowRight } from "lucide-react";
+import { ArrowLeft, CheckCircle2, X, AlertTriangle, PartyPopper, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { PlacementValidationChecklist } from "./PlacementValidationChecklist";
 import { SelectedProviderCard } from "./SelectedProviderCard";
 import { HandoverInfoPanel } from "./HandoverInfoPanel";
-import { mockCases, mockProviders } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 interface PlacementPageProps {
   caseId: string;
@@ -25,11 +27,37 @@ export function PlacementPage({
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
 
-  const caseData = mockCases.find(c => c.id === caseId);
-  const provider = mockProviders.find(p => p.id === providerId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyCases = cases.map(toLegacyCase);
+  const legacyProviders = providers.map(toLegacyProvider);
+
+  const caseData = legacyCases.find(c => c.id === caseId);
+  const provider = legacyProviders.find(p => p.id === providerId) ?? legacyProviders[0];
+
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Plaatsing laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon plaatsingsgegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
 
   if (!caseData || !provider) {
-    return null;
+    return (
+      <div className="premium-card p-6 text-center text-muted-foreground">
+        Casus of aanbieder niet gevonden.
+      </div>
+    );
   }
 
   // Validation items

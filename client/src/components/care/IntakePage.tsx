@@ -1,11 +1,13 @@
 import { useState } from "react";
-import { ArrowLeft, AlertCircle, Calendar, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, AlertCircle, Calendar, CheckCircle2, Loader2 } from "lucide-react";
 import { IntakeBriefing } from "./IntakeBriefing";
 import { IntakeStatusTracker } from "./IntakeStatusTracker";
 import { CaseTimeline } from "./CaseTimeline";
 import { DocumentSection } from "./DocumentSection";
 import { ActionPanel } from "./ActionPanel";
-import { mockCases, mockProviders } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 interface IntakePageProps {
   caseId: string;
@@ -20,11 +22,37 @@ export function IntakePage({ caseId, providerId, onBack }: IntakePageProps) {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
 
-  const caseData = mockCases.find(c => c.id === caseId);
-  const provider = mockProviders.find(p => p.id === providerId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyCases = cases.map(toLegacyCase);
+  const legacyProviders = providers.map(toLegacyProvider);
+
+  const caseData = legacyCases.find(c => c.id === caseId);
+  const provider = legacyProviders.find(p => p.id === providerId) ?? legacyProviders[0];
+
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Intake laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon intakegegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
 
   if (!caseData || !provider) {
-    return null;
+    return (
+      <div className="premium-card p-6 text-center text-muted-foreground">
+        Casus of aanbieder niet gevonden.
+      </div>
+    );
   }
 
   // Mock intake briefing data

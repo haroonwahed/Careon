@@ -6,10 +6,11 @@
 import { useState } from "react";
 import { PlacementPage } from "./PlacementPage";
 import { PlacementListPage } from "./PlacementListPage";
-import { mockCases } from "../../lib/casesData";
+import { useProviders } from "../../hooks/useProviders";
 
 export function PlacementPageWrapper() {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const { providers } = useProviders({ q: "" });
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
@@ -32,8 +33,7 @@ export function PlacementPageWrapper() {
 
   // If case is selected, show the full placement workflow
   if (selectedCase) {
-    // Find a provider for this case (mock - in real app would come from matching)
-    const providerId = "P-001"; // Mock provider ID
+    const providerId = providers[0]?.id ?? "";
     
     return (
       <PlacementPage

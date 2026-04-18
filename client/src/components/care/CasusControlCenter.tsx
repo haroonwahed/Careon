@@ -47,11 +47,15 @@ import {
   Flag,
   RotateCcw,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
-import { mockCasusList, mockProviders } from "../../lib/casesData";
+import type { Provider } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyProvider, toPhaseCasus } from "../../lib/careLegacyAdapters";
 import {
   computeCaseState,
   ALL_PHASES,
@@ -422,6 +426,7 @@ function renderCasePhase(
   casus: Casus,
   state: ComputedCaseState,
   role: UserRole,
+  providers: Provider[],
   onAction: (type: ActionType) => void
 ) {
   switch (casus.phase) {
@@ -432,7 +437,7 @@ function renderCasePhase(
     case "matching":
       return <MatchingPanel casus={casus} state={state} role={role} onAction={onAction} />;
     case "plaatsing":
-      return <PlaatsingPanel casus={casus} state={state} onAction={onAction} />;
+      return <PlaatsingPanel casus={casus} state={state} providers={providers} onAction={onAction} />;
     case "intake_provider":
       return <IntakeProviderPanel casus={casus} state={state} role={role} onAction={onAction} />;
     case "afgerond":
@@ -772,17 +777,19 @@ function ProviderCard({
 function PlaatsingPanel({
   casus,
   state,
+  providers,
   onAction,
 }: {
   casus: Casus;
   state: ComputedCaseState;
+  providers: Provider[];
   onAction: (t: ActionType) => void;
 }) {
   const { placement } = casus;
   const [checklist, setChecklist] = useState({ ...placement.validations });
   const allPassed = Object.values(checklist).every(Boolean);
 
-  const provider = mockProviders.find(p => p.id === placement.providerId);
+  const provider = providers.find(p => p.id === placement.providerId);
   const matchResult = casus.matchResults.find(r => r.providerId === placement.providerId);
   const score = matchResult?.score ?? 0;
 
@@ -1216,7 +1223,28 @@ export function CasusControlCenter({
   onBack,
   onStartMatching,
 }: CasusControlCenterProps) {
-  const casus = mockCasusList.find(c => c.id === caseId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyProviders = providers.map(toLegacyProvider);
+  const casusList = cases.map((spaCase) => toPhaseCasus(spaCase, legacyProviders));
+  const casus = casusList.find(c => c.id === caseId);
+
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Casus laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon casusgegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
 
   if (!casus) {
     return (
@@ -1276,7 +1304,7 @@ export function CasusControlCenter({
 
         {/* Center: Phase execution */}
         <div>
-          {renderCasePhase(casus, state, role, handleAction)}
+          {renderCasePhase(casus, state, role, legacyProviders, handleAction)}
         </div>
 
         {/* Right: Intelligence */}

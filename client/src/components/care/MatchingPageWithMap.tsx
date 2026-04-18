@@ -23,10 +23,13 @@ import {
   Clock,
   Filter,
   Maximize2,
-  Navigation
+  Navigation,
+  Loader2
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { mockCases, mockProviders } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { useProviders } from "../../hooks/useProviders";
+import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 // AI Components
 import { 
@@ -47,16 +50,38 @@ export function MatchingPageWithMap({
   onBack, 
   onConfirmMatch 
 }: MatchingPageWithMapProps) {
-  const caseData = mockCases.find(c => c.id === caseId);
+  const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
+  const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
+  const legacyCases = cases.map(toLegacyCase);
+  const legacyProviders = providers.map(toLegacyProvider);
+
+  const caseData = legacyCases.find(c => c.id === caseId);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [hoveredProvider, setHoveredProvider] = useState<string | null>(null);
   const [radius, setRadius] = useState<number>(20);
   const [mapView, setMapView] = useState<"split" | "full">("split");
 
+  if (casesLoading || providersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
+        <Loader2 size={18} className="animate-spin" />
+        <span>Matching laden...</span>
+      </div>
+    );
+  }
+
+  if (casesError || providersError) {
+    return (
+      <div className="premium-card p-6 text-center text-destructive">
+        Kon matchinggegevens niet laden: {casesError ?? providersError}
+      </div>
+    );
+  }
+
   if (!caseData) return null;
 
   // Get top 3 provider matches
-  const topMatches = mockProviders
+  const topMatches = legacyProviders
     .filter(p => p.region === caseData.region || p.region === "Amsterdam")
     .slice(0, 3);
 
