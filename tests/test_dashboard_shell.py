@@ -1,12 +1,10 @@
 import os
-from datetime import date
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from contracts.models import CareConfiguration, CareSignal, Client as CareProvider, Organization, OrganizationMembership
-from contracts.regiekamer_service import build_regiekamer_summary
+from contracts.models import CareConfiguration, Client as CareProvider, Organization, OrganizationMembership
 
 
 class DashboardShellTestCase(TestCase):
@@ -74,19 +72,6 @@ class DashboardShellTestCase(TestCase):
         self.assertContains(response, 'Casussen')
         self.assertContains(response, 'Zoek op titel of casus-ID...')
         self.assertContains(response, 'Nieuwe casus')
-
-    def test_regiekamer_service_remains_available_independently(self):
-        summary = build_regiekamer_summary(
-            org=self.organization,
-            active_intakes=[],
-            signals_qs=CareSignal.objects.none(),
-            selected_case_id=None,
-            today=date.today(),
-        )
-        self.assertIn('regiekamer_kpis', summary)
-        self.assertIn('recommended_action', summary)
-        self.assertIn('priority_queue', summary)
-        self.assertIn('command_bar', summary)
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:

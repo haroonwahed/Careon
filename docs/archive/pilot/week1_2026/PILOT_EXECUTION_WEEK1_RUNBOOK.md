@@ -33,7 +33,7 @@ Use this document to run the pilot in real time.
 - Confirm no case is ownerless after triage.
 
 Output required:
-- Updated daily log entry in docs/templates/PILOT_DAILY_STANDUP_LOG.md copy.
+- Updated daily log entry in docs/archive/pilot/templates/PILOT_DAILY_STANDUP_LOG.md copy.
 
 ### Midday Execution
 - Process provider responses.

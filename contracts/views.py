@@ -4604,8 +4604,8 @@ def case_placement_action(request, pk):
 # ==================== DASHBOARD VIEW ====================
 
 def dashboard(request):
-    # Regiekamer is SPA-first: always serve the frontend shell.
-    # Backend Regiekamer services remain available for API/future integration.
+    # Dashboard is SPA-first: always serve the React frontend shell.
+    # Legacy Regiekamer backend services have been removed; functionality lives in the SPA.
     spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
     if spa_index_path.exists():
         return HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
