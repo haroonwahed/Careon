@@ -23,6 +23,10 @@ The build step installs Python and Node dependencies, builds the React client, c
 
 This setup expects an external PostgreSQL database. Add its connection string manually as `DATABASE_URL` in Render.
 
+Do not paste placeholder values like `:port` into `DATABASE_URL`. Use a real connection string, for example:
+
+- `postgresql://careon_user:super-secret-password@db.example.com:5432/careon?sslmode=require`
+
 Before first production traffic, set these host-specific values in Render:
 
 - `DATABASE_URL`

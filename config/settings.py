@@ -14,6 +14,8 @@ import os
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+from django.core.exceptions import ImproperlyConfigured
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -32,6 +34,13 @@ def _csv_env(name: str, default: list[str] | None = None) -> list[str]:
     return [item.strip() for item in raw.split(',') if item.strip()]
 
 
+def _invalid_database_url(message: str) -> ImproperlyConfigured:
+    return ImproperlyConfigured(
+        f"{message} Expected format: "
+        "postgresql://USER:PASSWORD@HOST:5432/DBNAME?sslmode=require"
+    )
+
+
 def _database_config() -> dict[str, object]:
     database_url = os.getenv('DATABASE_URL', '').strip()
     if not database_url:
@@ -45,13 +54,26 @@ def _database_config() -> dict[str, object]:
 
     if scheme in {'postgres', 'postgresql'}:
         query = parse_qs(parsed.query)
+        try:
+            port = parsed.port
+        except ValueError as exc:
+            raise _invalid_database_url(
+                'DATABASE_URL has an invalid port value. Do not use placeholder text like "port".'
+            ) from exc
+
+        database_name = parsed.path.lstrip('/')
+        if not parsed.hostname or not database_name:
+            raise _invalid_database_url(
+                'DATABASE_URL is missing a hostname or database name.'
+            )
+
         return {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': parsed.path.lstrip('/'),
+            'NAME': database_name,
             'USER': parsed.username or '',
             'PASSWORD': parsed.password or '',
             'HOST': parsed.hostname or '',
-            'PORT': str(parsed.port or '5432'),
+            'PORT': str(port or '5432'),
             'CONN_MAX_AGE': int(os.getenv('DB_CONN_MAX_AGE', '600')),
             'OPTIONS': {
                 'sslmode': query.get('sslmode', ['require'])[0],
@@ -65,7 +87,9 @@ def _database_config() -> dict[str, object]:
             'NAME': Path(sqlite_path),
         }
 
-    raise ValueError(f'Unsupported DATABASE_URL scheme: {parsed.scheme}')
+    raise _invalid_database_url(
+        f'DATABASE_URL uses unsupported scheme {parsed.scheme!r}. Use postgresql:// or postgres://.'
+    )
 
 
 def _load_dotenv(dotenv_path: Path) -> None:
