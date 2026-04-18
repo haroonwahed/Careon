@@ -79,7 +79,6 @@ from .governance import (
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
-from .regiekamer_service import build_regiekamer_summary
 from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
