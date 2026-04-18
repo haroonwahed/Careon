@@ -16,7 +16,7 @@ from contracts.tenancy import get_user_organization, scope_queryset_for_organiza
 
 
 def _build_case_data(case):
-    return CareCaseData(
+    data = CareCaseData(
         id=str(case.id),
         title=case.title,
         status=case.status,
@@ -29,6 +29,13 @@ def _build_case_data(case):
         created_at=case.created_at.isoformat() if case.created_at else None,
         content=case.content or "",
     )
+    # Extend with SPA-required fields not in CareCaseData dataclass
+    result = data.to_dict()
+    result['case_phase'] = getattr(case, 'case_phase', 'intake') or 'intake'
+    result['risk_level'] = getattr(case, 'risk_level', 'LOW') or 'LOW'
+    result['service_region'] = getattr(case, 'service_region', '') or ''
+    result['contract_type'] = getattr(case, 'contract_type', '') or ''
+    return result
 
 @login_required
 @require_http_methods(["GET"])
@@ -73,15 +80,14 @@ def contracts_api(request):
         paginator = Paginator(queryset, params.page_size)
         page_obj = paginator.get_page(params.page)
 
-        result = ListResult(
-            contracts=[_build_case_data(case) for case in page_obj],
-            total_count=paginator.count,
-            page=params.page,
-            page_size=params.page_size,
-            total_pages=paginator.num_pages,
-        )
-
-        return JsonResponse(result.to_dict())
+        cases = [_build_case_data(case) for case in page_obj]
+        return JsonResponse({
+            'contracts': cases,
+            'total_count': paginator.count,
+            'page': params.page,
+            'page_size': params.page_size,
+            'total_pages': paginator.num_pages,
+        })
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
@@ -103,7 +109,7 @@ def case_detail_api(request, contract_id=None, case_id=None):
         if not case:
             return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
 
-        return JsonResponse(_build_case_data(case).to_dict())
+        return JsonResponse(_build_case_data(case))
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useCases } from "../../hooks/useCases";
 import { 
   Search, 
   SlidersHorizontal, 
@@ -9,7 +10,8 @@ import {
   UserPlus,
   AlertTriangle,
   ChevronDown,
-  X
+  X,
+  Loader2
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CaseTriageCard } from "./CaseTriageCard";
@@ -23,90 +25,6 @@ interface FilterState {
   urgentie: string[];
   zorgtype: string[];
 }
-
-// Mock data for demonstration
-const mockCases = [
-  {
-    id: "C-001",
-    title: "Jeugd 14 – Complex gedrag",
-    regio: "Amsterdam",
-    zorgtype: "Intensieve begeleiding",
-    wachttijd: 8,
-    status: "matching" as const,
-    urgency: "critical" as const,
-    problems: [
-      { type: "no-match" as const, label: "Geen passende match gevonden" },
-      { type: "capacity" as const, label: "Capaciteitstekort in regio" }
-    ],
-    systemInsight: "Matching faalt door gebrek aan aanbieders met expertise in complexe gedragsproblematiek in Amsterdam.",
-    recommendedAction: "Escaleren naar regio coördinator"
-  },
-  {
-    id: "C-002",
-    title: "Jeugd 11 – Licht verstandelijke beperking",
-    regio: "Utrecht",
-    zorgtype: "Dagbesteding",
-    wachttijd: 5,
-    status: "beoordeling" as const,
-    urgency: "warning" as const,
-    problems: [
-      { type: "delayed" as const, label: "Beoordeling vertraagd" }
-    ],
-    systemInsight: "Beoordeling loopt langer dan gepland. Cliënt wacht op beslissing.",
-    recommendedAction: "Start matching"
-  },
-  {
-    id: "C-003",
-    title: "Jeugd 16 – Autisme spectrum",
-    regio: "Rotterdam",
-    zorgtype: "Ambulante begeleiding",
-    wachttijd: 2,
-    status: "plaatsing" as const,
-    urgency: "normal" as const,
-    systemInsight: "Match geaccepteerd door aanbieder. Wacht op intake afspraak.",
-    recommendedAction: "Plan intake gesprek"
-  },
-  {
-    id: "C-004",
-    title: "Jeugd 9 – ADHD + emotionele problematiek",
-    regio: "Den Haag",
-    zorgtype: "Gezinsondersteuning",
-    wachttijd: 12,
-    status: "matching" as const,
-    urgency: "critical" as const,
-    problems: [
-      { type: "no-match" as const, label: "3x afgewezen door aanbieders" },
-      { type: "delayed" as const, label: "Wachttijd > 10 dagen" }
-    ],
-    systemInsight: "Meerdere aanbieders hebben match afgewezen. Mogelijk zijn verwachtingen niet realistisch.",
-    recommendedAction: "Heroverweeg zorgvraag"
-  },
-  {
-    id: "C-005",
-    title: "Jeugd 13 – Trauma & angststoornis",
-    regio: "Eindhoven",
-    zorgtype: "Klinische behandeling",
-    wachttijd: 3,
-    status: "beoordeling" as const,
-    urgency: "warning" as const,
-    problems: [
-      { type: "missing-assessment" as const, label: "Psychiatrische beoordeling ontbreekt" }
-    ],
-    systemInsight: "Voor klinische behandeling is psychiatrische diagnose vereist.",
-    recommendedAction: "Psychiatrische assessment aanvragen"
-  },
-  {
-    id: "C-006",
-    title: "Jeugd 15 – Verslavingsproblematiek",
-    regio: "Amsterdam",
-    zorgtype: "Klinische zorg",
-    wachttijd: 1,
-    status: "plaatsing" as const,
-    urgency: "stable" as const,
-    systemInsight: "Plaatsing bevestigd. Intake gepland voor volgende week.",
-    recommendedAction: "Intake voorbereiden"
-  }
-];
 
 interface CasussenPageProps {
   onCaseClick: (caseId: string) => void;
@@ -125,27 +43,14 @@ export function CasussenPage({ onCaseClick }: CasussenPageProps) {
     zorgtype: []
   });
 
-  // Filter cases based on quick filter and search
-  const filteredCases = mockCases.filter(caseItem => {
-    // Quick filter logic
-    if (quickFilter === "no-match" && !caseItem.problems?.some(p => p.type === "no-match")) {
-      return false;
-    }
-    if (quickFilter === "delayed" && caseItem.wachttijd <= 3) {
-      return false;
-    }
-    if (quickFilter === "high-risk" && caseItem.urgency !== "critical") {
-      return false;
-    }
-    if (quickFilter === "ready-placement" && caseItem.status !== "plaatsing") {
-      return false;
-    }
+  const { cases: allCases, loading, error, refetch } = useCases({ q: searchQuery });
 
-    // Search filter
-    if (searchQuery && !caseItem.title.toLowerCase().includes(searchQuery.toLowerCase())) {
-      return false;
-    }
-
+  // Client-side filter on top of server-side search
+  const filteredCases = allCases.filter(caseItem => {
+    if (quickFilter === "no-match" && !caseItem.problems?.some(p => p.type === "no-match")) return false;
+    if (quickFilter === "delayed" && caseItem.wachttijd <= 3) return false;
+    if (quickFilter === "high-risk" && caseItem.urgency !== "critical") return false;
+    if (quickFilter === "ready-placement" && caseItem.status !== "plaatsing") return false;
     return true;
   });
 
@@ -363,6 +268,31 @@ export function CasussenPage({ onCaseClick }: CasussenPageProps) {
       {/* LIST VIEW */}
       {viewMode === "list" && (
         <div className="space-y-6">
+          {/* Loading state */}
+          {loading && (
+            <div className="premium-card p-12 text-center">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 size={36} className="animate-spin text-primary" />
+                <p className="text-muted-foreground">Casussen laden…</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {!loading && error && (
+            <div className="premium-card p-8 text-center border-red-500/30">
+              <div className="flex flex-col items-center gap-3">
+                <AlertTriangle size={32} className="text-red-400" />
+                <p className="text-foreground font-medium">Laden mislukt</p>
+                <p className="text-muted-foreground text-sm">{error}</p>
+                <Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Case sections — only render when loaded */}
+          {!loading && !error && (
+            <>
           {/* Section: Cases that need attention */}
           {urgentCases.length > 0 && (
             <div>
@@ -440,6 +370,8 @@ export function CasussenPage({ onCaseClick }: CasussenPageProps) {
                 </div>
               </div>
             </div>
+          )}
+            </>
           )}
         </div>
       )}
