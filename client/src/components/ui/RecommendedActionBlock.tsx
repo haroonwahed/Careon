@@ -1,66 +1,84 @@
 /**
  * RecommendedActionBlock
  * 
- * Standardized component for displaying recommended actions across operational pages.
- * Structure: Action → Why Now → Impact
+ * Operational Contract Field: recommended_action
  * 
- * Used on: Regiekamer, Casussen, Beoordelingen, Matching, Plaatsingen
+ * Mandatory structure (from governance):
+ * 1. Action (verb + target) — "Rond beoordeling af"
+ * 2. Why Now (blocker/reason) — "Zonder dit kan matching niet starten"
+ * 3. Impact (outcome) — comes from impact_summary component
+ * 
+ * Rule: Every action must have impact (enforced by ImpactSummary requirement)
+ * Rule: No business logic inside component (data comes from backend)
+ * Rule: Maps only to recommended_action field
+ * 
+ * Used on: All operational pages where action is available
  */
 
 import { ReactNode } from "react";
 import { ArrowRight } from "lucide-react";
 
 interface RecommendedActionBlockProps {
-  action: string;           // Verb + target: "Rond beoordeling af"
-  whyNow: string;          // The blocker: "Zonder dit kan matching niet starten"
-  impact: string;          // Outcome: "Ontgrendelt vervolgstap"
-  icon?: ReactNode;        // Optional icon
-  onClick?: () => void;    // Optional action handler
-  variant?: "primary" | "secondary" | "warning" | "critical";
+  /** Verb + target. From: recommended_action.label */
+  label: string;
+  
+  /** The blocker or reason now. From: recommended_action.reason */
+  reason: string;
+  
+  /** Optional icon (component decides, not business logic) */
+  icon?: ReactNode;
+  
+  /** Handler for the action. No logic inside. */
+  onAction?: () => void;
+  
+  /** Severity determines visual treatment. From: attention_band */
+  severity?: "critical" | "warning" | "info" | "neutral";
 }
 
 export function RecommendedActionBlock({
-  action,
-  whyNow,
-  impact,
+  label,
+  reason,
   icon,
-  onClick,
-  variant = "primary"
+  onAction,
+  severity = "info"
 }: RecommendedActionBlockProps) {
-  const variantStyles = {
-    primary: "border-blue-border/60 bg-blue-light/40",
-    secondary: "border-border/60 bg-card/60",
+  const severityStyles = {
+    critical: "border-red-border/60 bg-red-light/40",
     warning: "border-yellow-border/60 bg-yellow-light/40",
-    critical: "border-red-border/60 bg-red-light/40"
+    info: "border-blue-border/60 bg-blue-light/40",
+    neutral: "border-border/60 bg-card/60"
   };
 
   return (
-    <div className={`premium-card rounded-lg border p-4 space-y-2 ${variantStyles[variant]}`}>
-      <button
-        onClick={onClick}
-        className="w-full text-left group"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2">
-              {icon && <span className="text-lg">{icon}</span>}
-              <p className="font-semibold text-foreground text-sm">
-                {action}
-              </p>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {whyNow}
-            </p>
-          </div>
-          <ArrowRight size={16} className="text-muted-foreground/50 group-hover:text-primary/70 transition-colors flex-shrink-0 mt-0.5" />
+    <button
+      onClick={onAction}
+      disabled={!onAction}
+      className={`premium-card rounded-lg border p-4 space-y-2 text-left transition-all ${
+        onAction
+          ? "hover:shadow-sm hover:-translate-y-0.5 cursor-pointer"
+          : "cursor-default"
+      } ${severityStyles[severity]}`}
+    >
+      {/* Header: Action + Icon */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 flex-1">
+          {icon && <span className="flex-shrink-0 text-lg">{icon}</span>}
+          <p className="font-semibold text-foreground text-sm leading-tight">
+            {label}
+          </p>
         </div>
-      </button>
-      
-      <div className="pt-2 border-t border-border/30">
-        <p className="text-xs font-medium text-foreground italic">
-          → {impact}
-        </p>
+        {onAction && (
+          <ArrowRight
+            size={16}
+            className="text-muted-foreground/50 flex-shrink-0 mt-0.5"
+          />
+        )}
       </div>
-    </div>
+
+      {/* Reason */}
+      <p className="text-xs text-muted-foreground leading-tight">
+        {reason}
+      </p>
+    </button>
   );
 }

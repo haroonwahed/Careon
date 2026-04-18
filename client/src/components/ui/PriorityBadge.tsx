@@ -1,14 +1,24 @@
 /**
  * PriorityBadge
  * 
- * Standardized priority/urgency badge across operational pages.
- * Creates consistent urgency vocabulary app-wide.
+ * Operational Contract Field: priority_rank (and indirectly escalation_recommended)
  * 
- * Used on: Every casus card and actionable item
+ * Governance Rule: PriorityBadge only allowed when:
+ * - Items are ranked or triaged
+ * - Not allowed for flat lists or non-priority views
+ * 
+ * Rule: 5 fixed variants only. NO custom variants allowed.
+ * Rule: Component has NO business logic for ranking (data from backend)
+ * Rule: Maps ONLY to priority_rank field
+ * 
+ * Used on: Casussen, Regiekamer (max 1 badge per item)
  */
 
 interface PriorityBadgeProps {
+  /** One of 5 fixed variants. From: priority_rank or escalation_recommended */
   variant: "first" | "soon" | "monitor" | "waiting" | "escalate";
+  
+  /** If true, shows compact version (for tight layouts) */
   compact?: boolean;
 }
 
