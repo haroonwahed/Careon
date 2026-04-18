@@ -612,18 +612,20 @@ function KPICard({ label, value, context, status, icon, active, onClick, suffix 
       onClick={onClick}
       className={`kpi-card rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${cardStyles[status]} ${active ? "ring-2 ring-primary/35" : ""}`}
     >
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${iconStyles[status]}`}>
-          {icon}
-        </span>
-        {active && <span className="h-2.5 w-2.5 rounded-full bg-primary" />}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground flex-1">
+          {label}
+        </p>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconStyles[status]}`}>
+            {icon}
+          </span>
+          {active && <span className="h-2 w-2 rounded-full bg-primary" />}
+        </div>
       </div>
 
       <div>
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-          {label}
-        </p>
-        <p className="mt-2 text-2xl font-semibold text-foreground">
+        <p className="text-2xl font-semibold text-foreground">
           {value}{suffix || ""}
         </p>
         <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
