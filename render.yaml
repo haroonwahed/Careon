@@ -10,9 +10,21 @@ services:
       rm -rf theme/static/spa
       mkdir -p theme/static/spa
       cp -R client/build/. theme/static/spa/
-      python manage.py collectstatic --noinput
-      python manage.py migrate --noinput
-    startCommand: gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+      python manage.py collectstatic --noinput --settings=config.settings
+      if [ -z "$DATABASE_URL" ]; then
+        echo "DATABASE_URL not set. Using SQLite for build."
+        DATABASE_URL='sqlite:///db.sqlite3' python manage.py migrate --noinput --settings=config.settings
+      else
+        python manage.py migrate --noinput --settings=config.settings
+      fi
+    startCommand: |
+      if [ -z "$DATABASE_URL" ]; then
+        echo "WARNING: DATABASE_URL not set. Skipping migrations at startup."
+        gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+      else
+        python manage.py migrate --noinput --settings=config.settings &&
+        gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+      fi
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
@@ -25,7 +37,7 @@ services:
       - key: DJANGO_SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        sync: false
+        value: ""
       - key: ALLOWED_HOSTS
         sync: false
       - key: CSRF_TRUSTED_ORIGINS
