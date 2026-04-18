@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Search, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { UrgencyBadge } from "./UrgencyBadge";
-import { mockCases, mockProviders } from "../../lib/casesData";
+import { mockCases } from "../../lib/casesData";
 
 interface IntakeListPageProps {
   onCaseClick: (caseId: string) => void;
@@ -15,19 +15,30 @@ interface IntakeListPageProps {
 export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "new" | "accepted" | "declined">("all");
+  const [declinedRequestIds, setDeclinedRequestIds] = useState<string[]>([]);
 
   // Mock intake requests for this provider
-  const intakeCases = mockCases.filter(c => c.status === "intake" || c.status === "plaatsing");
+  const intakeCases = mockCases.filter(c => c.status === "intake" || c.status === "placement");
+  const newRequestCases = mockCases
+    .filter(c => (c.status === "assessment" || c.status === "matching") && !declinedRequestIds.includes(c.id))
+    .slice(0, 3);
   
-  const newRequests = 3; // Mock
+  const newRequests = newRequestCases.length;
   const acceptedRequests = intakeCases.length;
-  const declinedRequests = 2; // Mock
+  const declinedRequests = declinedRequestIds.length;
 
-  const filteredCases = intakeCases.filter(c =>
-    searchQuery === "" ||
-    c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.id.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCases = intakeCases.filter(c => {
+    const matchesSearch =
+      searchQuery === "" ||
+      c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+    if (statusFilter === "new") return false;
+    if (statusFilter === "declined") return false;
+
+    return true;
+  });
 
   return (
     <div className="space-y-6">
@@ -92,7 +103,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
       </div>
 
       {/* NEW REQUESTS (Priority) */}
-      {newRequests > 0 && (
+      {(statusFilter === "all" || statusFilter === "new") && newRequests > 0 && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-bold text-foreground">Nieuwe verzoeken</h2>
@@ -102,34 +113,33 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
           </div>
 
           <div className="space-y-3">
-            {/* Mock new request cards */}
-            {[1, 2, 3].map((i) => (
+            {newRequestCases.map((caseItem, index) => (
               <div
-                key={i}
+                key={caseItem.id}
                 className="premium-card p-6 hover:bg-card/80 transition-all cursor-pointer border-l-4 border-l-red-500"
-                onClick={() => console.log(`Open intake ${i}`)}
+                onClick={() => onCaseClick(caseItem.id)}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-foreground">Casus C-00{i}</h3>
-                      <UrgencyBadge urgency={i === 1 ? "urgent" : "high"} />
+                      <h3 className="font-bold text-foreground">{caseItem.id}</h3>
+                      <UrgencyBadge urgency={caseItem.urgency} />
                       <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-semibold">
                         NIEUW
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Gemeente Utrecht · {i === 1 ? "Residentieel" : "Ambulant"} · {12 + i} jaar
+                      Gemeente {caseItem.region} · {caseItem.caseType} · {caseItem.clientAge} jaar
                     </p>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Ontvangen: vandaag, 14:{10 + i * 5}
+                    Ontvangen: {caseItem.lastActivity}
                   </p>
                 </div>
 
                 <div className="mb-4">
                   <p className="text-sm text-foreground mb-2">
-                    <span className="font-semibold">Match score:</span> <span className="text-green-500 font-bold">{94 - i}%</span>
+                    <span className="font-semibold">Match score:</span> <span className="text-green-500 font-bold">{92 - index * 7}%</span>
                   </p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <CheckCircle2 size={14} className="text-green-500" />
@@ -145,7 +155,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
                   <Button
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log("Accept intake", i);
+                      onCaseClick(caseItem.id);
                     }}
                   >
                     <CheckCircle2 size={18} className="mr-2" />
@@ -155,7 +165,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log("View details", i);
+                      onCaseClick(caseItem.id);
                     }}
                   >
                     Bekijk details
@@ -164,7 +174,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
                     variant="outline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      console.log("Decline", i);
+                      setDeclinedRequestIds((previous) => [...previous, caseItem.id]);
                     }}
                   >
                     <XCircle size={18} className="mr-2" />
@@ -173,6 +183,12 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
                 </div>
               </div>
             ))}
+
+            {newRequestCases.length === 0 && (
+              <div className="premium-card p-6 text-center text-sm text-muted-foreground">
+                Geen nieuwe intakeverzoeken.
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -193,6 +209,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
       </div>
 
       {/* ACCEPTED CASES LIST */}
+      {(statusFilter === "all" || statusFilter === "accepted") && (
       <div className="space-y-3">
         {filteredCases.map((caseData) => (
           <div
@@ -214,7 +231,7 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {caseData.municipality} · {caseData.age} jaar · Geaccepteerd op {new Date().toLocaleDateString('nl-NL')}
+                  {caseData.region} · {caseData.clientAge} jaar · Geaccepteerd op {new Date().toLocaleDateString('nl-NL')}
                 </p>
               </div>
             </div>
@@ -230,6 +247,15 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
           </div>
         ))}
       </div>
+      )}
+
+      {statusFilter === "declined" && (
+        <div className="premium-card p-6 text-sm text-muted-foreground">
+          {declinedRequestIds.length > 0
+            ? `${declinedRequestIds.length} verzoek(en) afgewezen in deze sessie.`
+            : "Nog geen afgewezen verzoeken in deze sessie."}
+        </div>
+      )}
 
       {/* INFO BOX */}
       <div className="premium-card p-6 bg-blue-500/5 border-blue-500/20">

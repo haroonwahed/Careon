@@ -18,7 +18,7 @@ export function MatchingListPage({ onCaseClick }: MatchingListPageProps) {
 
   // Filter cases that are ready for matching
   const matchingCases = mockCases.filter(c => 
-    c.status === "matching" || c.status === "beoordeling"
+    c.status === "matching" || c.status === "assessment"
   );
 
   const filteredCases = matchingCases.filter(c =>
@@ -48,13 +48,15 @@ export function MatchingListPage({ onCaseClick }: MatchingListPageProps) {
         <div className="premium-card p-6">
           <p className="text-sm text-muted-foreground mb-2">Urgent</p>
           <p className="text-3xl font-bold text-red-500">
-            {matchingCases.filter(c => c.urgency === "urgent").length}
+            {matchingCases.filter(c => c.urgency === "critical" || c.urgency === "high").length}
           </p>
         </div>
         <div className="premium-card p-6">
           <p className="text-sm text-muted-foreground mb-2">Gem. wachttijd</p>
           <p className="text-3xl font-bold text-amber-500">
-            {Math.round(matchingCases.reduce((acc, c) => acc + c.waitingDays, 0) / matchingCases.length)} dagen
+            {matchingCases.length > 0
+              ? `${Math.round(matchingCases.reduce((acc, c) => acc + c.waitingDays, 0) / matchingCases.length)} dagen`
+              : "0 dagen"}
           </p>
         </div>
         <div className="premium-card p-6">
@@ -92,7 +94,7 @@ export function MatchingListPage({ onCaseClick }: MatchingListPageProps) {
               <label className="text-sm text-muted-foreground mb-2 block">Urgentie</label>
               <select className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm">
                 <option>Alle</option>
-                <option>Urgent</option>
+                <option>Kritiek</option>
                 <option>Hoog</option>
                 <option>Medium</option>
               </select>

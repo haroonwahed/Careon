@@ -1,4 +1,3 @@
-import { CaseData, CaseStatus } from "./CasussenPage";
 import { 
   Inbox, 
   ClipboardList, 
@@ -9,11 +8,25 @@ import {
   Clock
 } from "lucide-react";
 
-interface BoardViewProps {
-  cases: CaseData[];
+type CaseStatus = "intake" | "beoordeling" | "matching" | "plaatsing" | "afgerond";
+type CaseUrgency = "critical" | "high" | "medium" | "low";
+
+interface CaseData {
+  id: string;
+  title: string;
+  regio: string;
+  status: CaseStatus;
+  urgency: CaseUrgency;
+  wachttijd: number;
+  issues: string[];
 }
 
-export function BoardView({ cases }: BoardViewProps) {
+interface BoardViewProps {
+  cases: CaseData[];
+  onCaseClick?: (caseId: string) => void;
+}
+
+export function BoardView({ cases, onCaseClick }: BoardViewProps) {
   const columns: { status: CaseStatus; label: string; icon: any; color: string }[] = [
     { status: "intake", label: "Intake", icon: Inbox, color: "blue" },
     { status: "beoordeling", label: "Beoordeling", icon: ClipboardList, color: "purple" },
@@ -65,8 +78,8 @@ export function BoardView({ cases }: BoardViewProps) {
         {columns.map(column => {
           const columnCases = getCasesByStatus(column.status);
           const Icon = column.icon;
-          const urgentCount = columnCases.filter(c => c.urgency === "urgent").length;
-          const warningCount = columnCases.filter(c => c.urgency === "warning").length;
+          const urgentCount = columnCases.filter(c => c.urgency === "critical").length;
+          const warningCount = columnCases.filter(c => c.urgency === "high").length;
 
           return (
             <div key={column.status} className="min-w-[280px]">
@@ -113,7 +126,7 @@ export function BoardView({ cases }: BoardViewProps) {
                   </div>
                 ) : (
                   columnCases.map(caseData => (
-                    <BoardCard key={caseData.id} caseData={caseData} />
+                    <BoardCard key={caseData.id} caseData={caseData} onCaseClick={onCaseClick} />
                   ))
                 )}
               </div>
@@ -127,18 +140,19 @@ export function BoardView({ cases }: BoardViewProps) {
 
 interface BoardCardProps {
   caseData: CaseData;
+  onCaseClick?: (caseId: string) => void;
 }
 
-function BoardCard({ caseData }: BoardCardProps) {
+function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
   const { title, regio, wachttijd, urgency, issues } = caseData;
 
   const getUrgencyIndicator = () => {
     switch (urgency) {
-      case "urgent":
+      case "critical":
         return "border-l-4 border-l-red-base bg-red-light/60";
-      case "warning":
+      case "high":
         return "border-l-4 border-l-yellow-base bg-yellow-light/60";
-      case "positive":
+      case "medium":
         return "border-l-4 border-l-green-base bg-green-light/60";
       default:
         return "border-l-4 border-l-border";
@@ -152,7 +166,7 @@ function BoardCard({ caseData }: BoardCardProps) {
         transition-all duration-200 hover:shadow-md
         ${getUrgencyIndicator()}
       `}
-      onClick={() => console.log("Open case:", caseData.id)}
+      onClick={() => onCaseClick?.(caseData.id)}
     >
       {/* Title */}
       <h4 className="font-medium text-sm text-foreground mb-2 line-clamp-2">
@@ -189,7 +203,7 @@ function BoardCard({ caseData }: BoardCardProps) {
       )}
 
       {/* Urgency Badge */}
-      {urgency === "urgent" && (
+      {urgency === "critical" && (
         <div className="mt-2 pt-2 border-t border-border">
           <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-base">
             <AlertTriangle className="w-3 h-3" />

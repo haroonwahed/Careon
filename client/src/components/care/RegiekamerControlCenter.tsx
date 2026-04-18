@@ -25,7 +25,8 @@ import {
   MapPin,
   ClipboardList,
   Siren,
-  Activity
+  Activity,
+  BrainCircuit
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
@@ -36,6 +37,11 @@ import {
   type RegiekamerFilterTarget,
   type RegiekamerPriorityCard,
 } from "../../lib/regiekamerDecisionEngine";
+import {
+  buildRegiekamerPredictiveSummary,
+  type RegiekamerCaseForecast,
+  type RegiekamerForecastSignal,
+} from "../../lib/regiekamerPredictiveEngine";
 
 interface RegiekamerControlCenterProps {
   onCaseClick: (caseId: string) => void;
@@ -49,6 +55,10 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   const [activeKPIFilter, setActiveKPIFilter] = useState<string | null>(null);
 
   const decisionSummary = useMemo(() => buildRegiekamerDecisionSummary(mockCasusList), []);
+  const predictiveSummary = useMemo(
+    () => buildRegiekamerPredictiveSummary(mockCasusList, decisionSummary),
+    [decisionSummary]
+  );
 
   const applyDecisionTarget = (target: {
     target_view: string;
@@ -78,6 +88,26 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
 
   const getPriorityCard = (key: RegiekamerPriorityCard["key"]) => {
     return decisionSummary.priority_cards.find((card) => card.key === key);
+  };
+
+  const applyForecastSignal = (signal: RegiekamerForecastSignal) => {
+    if (signal.target_stage === "beoordelingen") {
+      setSelectedStatus("beoordeling");
+      setActiveKPIFilter("assessment");
+      return;
+    }
+    if (signal.target_stage === "matching") {
+      setSelectedStatus("matching");
+      setActiveKPIFilter("noMatch");
+      return;
+    }
+    if (signal.target_stage === "plaatsingen") {
+      setSelectedStatus("plaatsing");
+      setActiveKPIFilter("placement");
+      return;
+    }
+    setSelectedStatus("all");
+    setActiveKPIFilter("waitingOverdue");
   };
 
   const flowStages = [
@@ -191,6 +221,8 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
     good: "command-bar-gradient-info"
   };
 
+  const predictiveImpactLabel = predictiveSummary.action_impact_summary.split(". ")[0];
+
   return (
     <div className="space-y-6 pb-24">
 
@@ -200,7 +232,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
             Regiekamer
           </h1>
           <p className="text-sm text-muted-foreground">
-            Stuur op doorstroom, los blokkades op en bepaal direct de volgende actie
+            Operationeel overzicht en directe acties
           </p>
         </div>
       </div>
@@ -215,15 +247,15 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
             <h2 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
               {decisionSummary.command_bar_summary.primary_message}
             </h2>
-            <p className="text-sm text-muted-foreground">
-              {decisionSummary.command_bar_summary.why_it_matters}
-            </p>
             <p className="text-sm font-medium text-foreground">
-              Aanbevolen actie: {decisionSummary.recommended_action.label}
+              Actie: {decisionSummary.recommended_action.label}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {decisionSummary.recommended_action_reason}
-            </p>
+            <div className="mt-2 flex items-start gap-2 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
+              <BrainCircuit size={15} className="mt-0.5 text-primary" />
+              <p className="text-xs text-muted-foreground">
+                Voorspelling: {predictiveImpactLabel}
+              </p>
+            </div>
           </div>
 
           <Button onClick={() => applyDecisionTarget(decisionSummary.recommended_action)} className="gap-2 self-start lg:self-center">
@@ -346,6 +378,34 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         ))}
       </section>
 
+      <section className="rounded-2xl border border-border bg-card p-4">
+        <div className="mb-3 flex items-center gap-2">
+          <BrainCircuit size={16} className="text-primary" />
+          <h3 className="text-sm font-semibold text-foreground">Predictieve signalen</h3>
+        </div>
+        <div className="grid gap-2 lg:grid-cols-2">
+          {predictiveSummary.forecast_signals.length > 0 ? (
+            predictiveSummary.forecast_signals.map((signal) => (
+              <button
+                key={signal.key}
+                onClick={() => applyForecastSignal(signal)}
+                className={`rounded-xl border px-3 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${
+                  signal.severity === "critical"
+                    ? "border-red-border bg-red-light/55"
+                    : signal.severity === "warning"
+                      ? "border-yellow-border bg-yellow-light/60"
+                      : "border-blue-border bg-blue-light/55"
+                }`}
+              >
+                <p className="text-sm font-medium text-foreground">{signal.text}</p>
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">Geen voorspellende risicosignalen gevonden.</p>
+          )}
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-border bg-muted/35 p-4">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
           <Filter size={14} />
@@ -451,9 +511,6 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
             <h2 className="text-lg font-semibold text-foreground">
               Actieve casussen
             </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Gesorteerd op urgentie, wachttijd en blokkade
-            </p>
           </div>
           <span className="text-sm text-muted-foreground">
             {filteredCases.length} {filteredCases.length === 1 ? 'casus' : 'casussen'}
@@ -462,13 +519,24 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
 
         <div className="space-y-3">
           {filteredCases.map((caseItem: Casus) => {
-            const nextAction = getNextAction(caseItem);
+            const forecast = predictiveSummary.per_case_forecast[caseItem.id];
+            const nextAction = forecast
+              ? {
+                  action: forecast.next_best_action,
+                  type: forecast.risk_band === "critical" || forecast.risk_band === "high"
+                    ? "urgent"
+                    : forecast.risk_band === "medium"
+                      ? "normal"
+                      : "waiting",
+                }
+              : getNextAction(caseItem);
 
             return (
               <CaseRow
                 key={caseItem.id}
                 caseItem={caseItem}
                 nextAction={nextAction}
+                forecast={forecast}
                 onClick={() => onCaseClick(caseItem.id)}
               />
             );
@@ -558,12 +626,8 @@ function KPICard({ label, value, context, status, icon, active, onClick, suffix 
         <p className="mt-2 text-2xl font-semibold text-foreground">
           {value}{suffix || ""}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground">
+        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
           {context}
-        </p>
-        <p className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-primary">
-          Bekijk dossiers
-          <ChevronRight size={13} />
         </p>
       </div>
     </button>
@@ -583,10 +647,11 @@ const PHASE_LABELS: Record<CasusPhase, string> = {
 interface CaseRowProps {
   caseItem: Casus;
   nextAction: { action: string; type: "urgent" | "normal" | "waiting" };
+  forecast?: RegiekamerCaseForecast;
   onClick: () => void;
 }
 
-function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
+function CaseRow({ caseItem, nextAction, forecast, onClick }: CaseRowProps) {
   const urgencyStyles = {
     critical: "border-red-border bg-red-light/38",
     high: "border-yellow-border bg-yellow-light/42",
@@ -638,10 +703,30 @@ function CaseRow({ caseItem, nextAction, onClick }: CaseRowProps) {
             <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${phaseBadge[caseItem.phase]}`}>
               {PHASE_LABELS[caseItem.phase]}
             </span>
+            {forecast && (
+              <span
+                className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
+                  forecast.risk_band === "critical"
+                    ? "border-red-border bg-red-light text-red-base"
+                    : forecast.risk_band === "high"
+                      ? "border-yellow-border bg-yellow-light text-yellow-base"
+                      : forecast.risk_band === "medium"
+                        ? "border-blue-border bg-blue-light text-blue-base"
+                        : "border-green-border bg-green-light text-green-base"
+                }`}
+              >
+                Risico {forecast.risk_score}
+              </span>
+            )}
           </div>
           <p className="text-sm text-muted-foreground">
-            {caseItem.careType} · {caseItem.region} · Eigenaar: {caseItem.assignedTo}
+            {caseItem.region} · {caseItem.assignedTo}
           </p>
+          {forecast && forecast.top_reasons.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              {forecast.top_reasons[0]}
+            </p>
+          )}
         </div>
 
         <div className="space-y-1">

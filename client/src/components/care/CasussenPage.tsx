@@ -108,7 +108,11 @@ const mockCases = [
   }
 ];
 
-export function CasussenPage() {
+interface CasussenPageProps {
+  onCaseClick: (caseId: string) => void;
+}
+
+export function CasussenPage({ onCaseClick }: CasussenPageProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [quickFilter, setQuickFilter] = useState<QuickFilter>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -318,6 +322,11 @@ export function CasussenPage() {
               <Button
                 variant="outline"
                 className="border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  if (selectedCases[0]) {
+                    onCaseClick(selectedCases[0]);
+                  }
+                }}
               >
                 <GitMerge size={16} className="mr-2" />
                 Start matching
@@ -325,6 +334,11 @@ export function CasussenPage() {
               <Button
                 variant="outline"
                 className="border-primary/30 text-primary hover:bg-primary/10"
+                onClick={() => {
+                  if (selectedCases[0]) {
+                    onCaseClick(selectedCases[0]);
+                  }
+                }}
               >
                 <UserPlus size={16} className="mr-2" />
                 Assign beoordelaar
@@ -332,6 +346,11 @@ export function CasussenPage() {
               <Button
                 variant="outline"
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10"
+                onClick={() => {
+                  if (selectedCases[0]) {
+                    onCaseClick(selectedCases[0]);
+                  }
+                }}
               >
                 <AlertTriangle size={16} className="mr-2" />
                 Escaleren
@@ -362,8 +381,8 @@ export function CasussenPage() {
                     {...caseItem}
                     isSelected={selectedCases.includes(caseItem.id)}
                     onSelect={(selected) => handleToggleSelect(caseItem.id, selected)}
-                    onViewDetails={() => console.log("View details:", caseItem.id)}
-                    onTakeAction={() => console.log("Take action:", caseItem.id)}
+                    onViewDetails={() => onCaseClick(caseItem.id)}
+                    onTakeAction={() => onCaseClick(caseItem.id)}
                   />
                 ))}
               </div>
@@ -390,8 +409,8 @@ export function CasussenPage() {
                       {...caseItem}
                       isSelected={selectedCases.includes(caseItem.id)}
                       onSelect={(selected) => handleToggleSelect(caseItem.id, selected)}
-                      onViewDetails={() => console.log("View details:", caseItem.id)}
-                      onTakeAction={() => console.log("Take action:", caseItem.id)}
+                      onViewDetails={() => onCaseClick(caseItem.id)}
+                      onTakeAction={() => onCaseClick(caseItem.id)}
                     />
                   ))}
               </div>
@@ -456,8 +475,8 @@ export function CasussenPage() {
                         {...caseItem}
                         isSelected={selectedCases.includes(caseItem.id)}
                         onSelect={(selected) => handleToggleSelect(caseItem.id, selected)}
-                        onViewDetails={() => console.log("View details:", caseItem.id)}
-                        onTakeAction={() => console.log("Take action:", caseItem.id)}
+                        onViewDetails={() => onCaseClick(caseItem.id)}
+                        onTakeAction={() => onCaseClick(caseItem.id)}
                       />
                     ))}
                     {statusCases.length === 0 && (

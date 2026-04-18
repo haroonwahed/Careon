@@ -21,7 +21,6 @@ export function MatchingPageWrapper() {
   };
 
   const handleConfirmMatch = (providerId: string) => {
-    console.log("Match confirmed:", selectedCase, "with provider", providerId);
     setMatchConfirmed(true);
     // Could show success message, then go back to list
     setTimeout(() => {

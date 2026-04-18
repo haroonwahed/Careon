@@ -1237,7 +1237,6 @@ export function CasusControlCenter({
     if (type === "select_provider" || type === "rerun_matching") {
       onStartMatching?.(caseId);
     }
-    console.log("[CasusControlCenter] action:", type, "on", caseId);
   };
 
   return (

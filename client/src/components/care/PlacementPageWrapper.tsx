@@ -20,12 +20,10 @@ export function PlacementPageWrapper() {
   };
 
   const handleCancel = () => {
-    console.log("Placement cancelled");
     handleBack();
   };
 
   const handleConfirm = () => {
-    console.log("Placement confirmed for case:", selectedCase);
     // Show success, then go back
     setTimeout(() => {
       handleBack();

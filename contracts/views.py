@@ -42,7 +42,7 @@ from .models import (
     CaseIntakeProcess, Budget, BudgetExpense,
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
-    MunicipalityConfiguration, RegionalConfiguration,
+    MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
 )
 from .middleware import log_action
 from .permissions import (
@@ -58,7 +58,12 @@ from .provider_metrics import (
     derive_behavior_signals,
     label_behavior_signals,
 )
-from .case_intelligence import evaluate_case_intelligence
+from .case_intelligence import calculate_provider_response_sla, evaluate_case_intelligence
+from .governance import (
+    build_matching_recommendation_payload,
+    detect_and_log_sla_transition,
+    log_case_decision_event,
+)
 from .regiekamer_service import build_regiekamer_summary
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from config.feature_flags import is_feature_redesign_enabled
@@ -3193,6 +3198,53 @@ def case_flow_update_redirect(request, pk):
     return redirect('careon:case_update', pk=pk)
 
 
+def _normalize_provider_response_status_code(status):
+    normalized = str(status or '').strip().upper()
+    if normalized == 'DECLINED':
+        return PlacementRequest.ProviderResponseStatus.REJECTED
+    if normalized == 'NO_RESPONSE':
+        return PlacementRequest.ProviderResponseStatus.PENDING
+    return normalized or PlacementRequest.ProviderResponseStatus.PENDING
+
+
+def _build_provider_response_governance_context(placement):
+    sla = calculate_provider_response_sla(placement, now=timezone.now())
+    normalized_status = _normalize_provider_response_status_code(
+        placement.provider_response_status
+    )
+    recommended_actions = []
+    if normalized_status in {
+        PlacementRequest.ProviderResponseStatus.PENDING,
+        PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+    }:
+        recommended_actions.append({'action': 'resend_request'})
+    if normalized_status == PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+        recommended_actions.append({'action': 'provide_missing_info'})
+    if normalized_status in {
+        PlacementRequest.ProviderResponseStatus.REJECTED,
+        PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+        PlacementRequest.ProviderResponseStatus.WAITLIST,
+    } or sla['sla_state'] == 'FORCED_ACTION':
+        recommended_actions.append({'action': 'trigger_rematch'})
+    if sla['sla_state'] == 'FORCED_ACTION' and normalized_status in {
+        PlacementRequest.ProviderResponseStatus.PENDING,
+        PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+        PlacementRequest.ProviderResponseStatus.WAITLIST,
+    }:
+        recommended_actions.append({'action': 'continue_waiting'})
+
+    recommendation_context = {
+        'recommended_actions': recommended_actions,
+        'hours_waiting': sla['hours_waiting'],
+        'next_threshold_hours': sla['next_threshold_hours'],
+        'sla_state': sla['sla_state'],
+    }
+    adaptive_flags = {
+        'sla_adjustment': sla.get('sla_adjustment', {}),
+    }
+    return normalized_status, sla, recommendation_context, adaptive_flags
+
+
 @login_required
 def matching_dashboard(request):
     """Show actionable assessment-to-provider matching suggestions and assignments."""
@@ -3261,6 +3313,22 @@ def matching_dashboard(request):
         suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
         _assignment = assigned_by_intake.get(intake.id)
         selected_provider_id = _assignment.selected_provider_id if _assignment else (suggestions[0]['provider_id'] if suggestions else None)
+        if suggestions:
+            recommendation, recommendation_context, adaptive_flags = build_matching_recommendation_payload(
+                suggestions,
+                limit=3,
+            )
+            recommendation_context['source_view'] = 'matching_dashboard'
+            log_case_decision_event(
+                case_id=intake.pk,
+                placement_id=_assignment.pk if _assignment else None,
+                event_type=CaseDecisionLog.EventType.MATCH_RECOMMENDED,
+                system_recommendation=recommendation,
+                recommendation_context=recommendation_context,
+                action_source='system',
+                provider_id=recommendation.get('provider_id') if recommendation else None,
+                adaptive_flags=adaptive_flags,
+            )
         rows.append(
             {
                 'assessment': assessment,
@@ -3305,7 +3373,34 @@ def case_matching_action(request, pk):
             Client.objects.filter(organization=org, status='ACTIVE'),
             pk=request.POST.get('provider_id'),
         )
-        _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='case_detail')
+        provider_profiles = (
+            ProviderProfile.objects.filter(client__organization=org, client__status='ACTIVE')
+            .select_related('client')
+            .prefetch_related('target_care_categories', 'served_regions')
+        )
+        suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
+        recommended_value, recommendation_context, adaptive_flags = build_matching_recommendation_payload(
+            suggestions,
+            limit=3,
+        )
+        placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='case_detail')
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=CaseDecisionLog.EventType.PROVIDER_SELECTED,
+            recommendation_context=recommendation_context,
+            user_action='assign_provider',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider.id,
+            adaptive_flags=adaptive_flags,
+            override_type='provider_selection' if recommended_value and recommended_value.get('provider_id') != provider.id else None,
+            recommended_value=recommended_value,
+            actual_value={
+                'provider_id': provider.id,
+                'provider_name': provider.name,
+            },
+        )
         messages.success(request, f'Aanbieder {provider.name} gekoppeld aan casus "{intake.title}".')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
@@ -3335,6 +3430,255 @@ def case_matching_action(request, pk):
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
     messages.error(request, 'Onbekende matching-actie.')
+    return _redirect_to_safe_next_or_default(request, next_fallback)
+
+
+@login_required
+@require_POST
+def case_provider_response_action(request, pk):
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden('Je hebt geen rechten om providerreacties voor deze casus te wijzigen.')
+
+    placement = PlacementRequest.objects.filter(
+        due_diligence_process=intake,
+    ).select_related('selected_provider', 'proposed_provider').order_by('-updated_at').first()
+
+    next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing"
+
+    if not placement:
+        messages.error(request, 'Nog geen plaatsing beschikbaar. Start eerst via matching.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    normalized_action = (request.POST.get('action') or '').strip()
+    normalized_action = {
+        'resend': 'resend_request',
+        'provide_info': 'provide_missing_info',
+        'rematch': 'trigger_rematch',
+    }.get(normalized_action, normalized_action)
+
+    normalized_status, sla, recommendation_context, adaptive_flags = _build_provider_response_governance_context(placement)
+    if normalized_status != placement.provider_response_status:
+        placement.provider_response_status = normalized_status
+        placement.save(update_fields=['provider_response_status', 'updated_at'])
+
+    provider_id = placement.selected_provider_id or placement.proposed_provider_id
+    detect_and_log_sla_transition(
+        case_id=intake.pk,
+        placement_id=placement.pk,
+        provider_id=provider_id,
+        current_sla_state=str(sla['sla_state']),
+        action_source='case_detail',
+        sla_context={
+            'hours_waiting': sla['hours_waiting'],
+            'next_threshold_hours': sla['next_threshold_hours'],
+        },
+    )
+
+    now = timezone.now()
+
+    if normalized_action == 'resend_request':
+        if normalized_status not in {
+            PlacementRequest.ProviderResponseStatus.PENDING,
+            PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+        }:
+            messages.error(request, 'Herinnering is alleen toegestaan voor open providerreacties.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
+        placement.provider_response_requested_at = now
+        placement.provider_response_last_reminder_at = now
+        placement.provider_response_deadline_at = now + timedelta(days=3)
+        placement.save(update_fields=[
+            'provider_response_status',
+            'provider_response_requested_at',
+            'provider_response_last_reminder_at',
+            'provider_response_deadline_at',
+            'updated_at',
+        ])
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'PlacementRequest',
+            object_id=placement.id,
+            object_repr=f'{intake.title} -> provider response resend',
+            changes={
+                'provider_response_action': 'resend_request',
+                'provider_response_due_days': 3,
+                'intake_id': intake.id,
+                'placement_id': placement.id,
+                'source': 'case_detail',
+                'sla_state': sla['sla_state'],
+            },
+            request=request,
+        )
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=CaseDecisionLog.EventType.RESEND_TRIGGERED,
+            recommendation_context=recommendation_context,
+            user_action='resend_request',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider_id,
+            adaptive_flags=adaptive_flags,
+            sla_state=str(sla['sla_state']),
+        )
+        messages.success(request, 'Verzoek opnieuw verstuurd naar aanbieder')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if normalized_action == 'provide_missing_info':
+        if normalized_status != PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+            messages.error(request, 'Aanvullende informatie kan alleen worden geregistreerd voor providerreacties die nog extra informatie nodig hebben.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        stamped_note = f"[{now.strftime('%d-%m-%Y %H:%M')}] Aanvullende informatie aangeleverd"
+        existing_notes = placement.provider_response_notes or ''
+        placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
+        placement.provider_response_requested_at = now
+        placement.provider_response_deadline_at = now + timedelta(days=3)
+        placement.provider_response_notes = f"{existing_notes}\n{stamped_note}".strip()
+        placement.save(update_fields=[
+            'provider_response_status',
+            'provider_response_requested_at',
+            'provider_response_deadline_at',
+            'provider_response_notes',
+            'updated_at',
+        ])
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'PlacementRequest',
+            object_id=placement.id,
+            object_repr=f'{intake.title} -> missing info provided',
+            changes={
+                'provider_response_action': 'provide_missing_info',
+                'intake_id': intake.id,
+                'placement_id': placement.id,
+                'source': 'case_detail',
+                'sla_state': sla['sla_state'],
+            },
+            request=request,
+        )
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=CaseDecisionLog.EventType.PROVIDE_MISSING_INFO,
+            recommendation_context=recommendation_context,
+            user_action='provide_missing_info',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider_id,
+            adaptive_flags=adaptive_flags,
+            sla_state=str(sla['sla_state']),
+        )
+        messages.success(request, 'Aanvullende informatie geregistreerd en providerreactie opnieuw opengezet.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if normalized_action == 'continue_waiting':
+        if normalized_status not in {
+            PlacementRequest.ProviderResponseStatus.PENDING,
+            PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+        } or sla['sla_state'] != 'FORCED_ACTION':
+            messages.error(request, 'Doorgaan met wachten is alleen beschikbaar bij open providerreacties met SLA FORCED_ACTION.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        if request.POST.get('confirm_forced_wait') != '1':
+            messages.error(request, 'Bevestig expliciet dat je blijft wachten ondanks SLA FORCED_ACTION.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        forced_wait_reason = (request.POST.get('forced_wait_reason') or '').strip()
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'PlacementRequest',
+            object_id=placement.id,
+            object_repr=f'{intake.title} -> continue waiting',
+            changes={
+                'provider_response_action': 'continue_waiting_forced_action',
+                'intake_id': intake.id,
+                'placement_id': placement.id,
+                'source': 'case_detail',
+                'sla_state': 'FORCED_ACTION',
+                'forced_wait_reason': forced_wait_reason,
+            },
+            request=request,
+        )
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=CaseDecisionLog.EventType.CONTINUE_WAITING,
+            recommendation_context=recommendation_context,
+            user_action='continue_waiting',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider_id,
+            adaptive_flags=adaptive_flags,
+            sla_state='FORCED_ACTION',
+            override_type='action_override',
+            recommended_value={'action': 'trigger_rematch'},
+            actual_value={'action': 'continue_waiting'},
+            optional_reason=forced_wait_reason,
+        )
+        messages.success(request, 'Je hebt expliciet gekozen om te blijven wachten ondanks SLA FORCED_ACTION. Deze keuze is gelogd.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if normalized_action == 'trigger_rematch':
+        if normalized_status not in {
+            PlacementRequest.ProviderResponseStatus.REJECTED,
+            PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+        } and sla['sla_state'] != 'FORCED_ACTION':
+            messages.error(request, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        existing = placement.decision_notes or ''
+        stamped_note = f"[{now.strftime('%d-%m-%Y %H:%M')}] Her-match gestart vanuit providerreactie-orchestratie."
+        placement.status = PlacementRequest.Status.REJECTED
+        placement.provider_response_status = normalized_status
+        placement.decision_notes = f"{existing}\n{stamped_note}".strip()
+        placement.save(update_fields=['status', 'provider_response_status', 'decision_notes', 'updated_at'])
+        if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
+            intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
+            intake.save(update_fields=['status', 'updated_at'])
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'PlacementRequest',
+            object_id=placement.id,
+            object_repr=f'{intake.title} -> rematch',
+            changes={
+                'provider_response_action': 'trigger_rematch',
+                'intake_id': intake.id,
+                'placement_id': placement.id,
+                'intake_status': CaseIntakeProcess.ProcessStatus.MATCHING,
+                'source': 'case_detail',
+                'sla_state': sla['sla_state'],
+            },
+            request=request,
+        )
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=CaseDecisionLog.EventType.REMATCH_TRIGGERED,
+            recommendation_context=recommendation_context,
+            user_action='trigger_rematch',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider_id,
+            adaptive_flags=adaptive_flags,
+            sla_state=str(sla['sla_state']),
+        )
+        messages.success(request, 'Her-match geactiveerd. Casus staat weer in matchingfase.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    messages.error(request, 'Onbekende providerreactie-actie.')
     return _redirect_to_safe_next_or_default(request, next_fallback)
 
 

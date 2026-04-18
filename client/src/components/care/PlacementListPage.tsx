@@ -18,7 +18,7 @@ export function PlacementListPage({ onCaseClick }: PlacementListPageProps) {
 
   // Filter cases that are in placement phase
   const placementCases = mockCases.filter(c => 
-    c.status === "plaatsing" || c.status === "intake" || c.status === "afgerond"
+    c.status === "placement" || c.status === "active" || c.status === "completed"
   );
 
   const filteredCases = placementCases.filter(c => {
@@ -27,16 +27,16 @@ export function PlacementListPage({ onCaseClick }: PlacementListPageProps) {
       c.id.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === "all" ||
-      (statusFilter === "pending" && c.status === "plaatsing") ||
-      (statusFilter === "confirmed" && c.status === "intake") ||
-      (statusFilter === "completed" && c.status === "afgerond");
+      (statusFilter === "pending" && c.status === "placement") ||
+      (statusFilter === "confirmed" && c.status === "active") ||
+      (statusFilter === "completed" && c.status === "completed");
     
     return matchesSearch && matchesStatus;
   });
 
-  const pendingCount = placementCases.filter(c => c.status === "plaatsing").length;
-  const confirmedCount = placementCases.filter(c => c.status === "intake").length;
-  const completedCount = placementCases.filter(c => c.status === "afgerond").length;
+  const pendingCount = placementCases.filter(c => c.status === "placement").length;
+  const confirmedCount = placementCases.filter(c => c.status === "active").length;
+  const completedCount = placementCases.filter(c => c.status === "completed").length;
 
   return (
     <div className="space-y-6">

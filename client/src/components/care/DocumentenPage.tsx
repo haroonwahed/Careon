@@ -135,9 +135,11 @@ const linkedEntityConfig: Record<LinkedEntity, { label: string; color: string }>
 };
 
 export function DocumentenPage() {
+  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [lastActionMessage, setLastActionMessage] = useState<string>("");
   
   // Filters
   const [typeFilter, setTypeFilter] = useState<DocumentType | "all">("all");
@@ -145,7 +147,7 @@ export function DocumentenPage() {
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | "all">("all");
 
   // Filter documents
-  const filteredDocuments = mockDocuments.filter(doc => {
+  const filteredDocuments = documents.filter(doc => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -161,7 +163,49 @@ export function DocumentenPage() {
     return true;
   });
 
-  const activeCount = filteredDocuments.filter(d => d.status === "actief").length;
+  const activeCount = documents.filter(d => d.status === "actief").length;
+
+  const handleView = (document: Document) => {
+    setSelectedDocument(document);
+    setLastActionMessage(`Preview geopend voor ${document.id}`);
+  };
+
+  const handleDownload = (document: Document) => {
+    setLastActionMessage(`Download gestart voor ${document.id}`);
+  };
+
+  const handleLink = (document: Document) => {
+    if (document.linkedTo.type !== "geen") {
+      setLastActionMessage(`${document.id} is al gekoppeld`);
+      return;
+    }
+
+    const updatedDocument = {
+      ...document,
+      linkedTo: {
+        type: "casus" as const,
+        id: "C-2026-0956",
+        name: "Casus C-2026-0956"
+      }
+    };
+
+    setDocuments((currentDocuments) =>
+      currentDocuments.map((item) => (item.id === document.id ? updatedDocument : item))
+    );
+    setSelectedDocument(updatedDocument);
+    setLastActionMessage(`${document.id} gekoppeld aan casus`);
+  };
+
+  const handleArchive = (document: Document) => {
+    const updatedDocument = { ...document, status: "gearchiveerd" as const };
+    setDocuments((currentDocuments) =>
+      currentDocuments.map((item) => (item.id === document.id ? updatedDocument : item))
+    );
+    if (selectedDocument?.id === document.id) {
+      setSelectedDocument(updatedDocument);
+    }
+    setLastActionMessage(`${document.id} gearchiveerd`);
+  };
 
   return (
     <div className="space-y-6">
@@ -175,11 +219,20 @@ export function DocumentenPage() {
             Beheer en bekijk documenten · {activeCount} actief · {filteredDocuments.length} resultaten
           </p>
         </div>
-        <Button className="bg-primary hover:bg-primary/90 gap-2">
+        <Button
+          className="bg-primary hover:bg-primary/90 gap-2"
+          onClick={() => setLastActionMessage("Uploaddialoog volgt in volgende integratiestap")}
+        >
           <Upload size={16} />
           Upload document
         </Button>
       </div>
+
+      {lastActionMessage && (
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+          {lastActionMessage}
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="premium-card p-4">
@@ -301,6 +354,10 @@ export function DocumentenPage() {
                   document={doc}
                   isSelected={selectedDocument?.id === doc.id}
                   onSelect={() => setSelectedDocument(doc)}
+                  onView={() => handleView(doc)}
+                  onDownload={() => handleDownload(doc)}
+                  onLink={() => handleLink(doc)}
+                  onArchive={() => handleArchive(doc)}
                 />
               ))}
             </div>
@@ -323,6 +380,9 @@ export function DocumentenPage() {
           <div className="xl:col-span-1">
             <DocumentPreview
               document={selectedDocument}
+              onDownload={() => handleDownload(selectedDocument)}
+              onLink={() => handleLink(selectedDocument)}
+              onArchive={() => handleArchive(selectedDocument)}
               onClose={() => setSelectedDocument(null)}
             />
           </div>
@@ -336,11 +396,19 @@ export function DocumentenPage() {
 function DocumentRow({ 
   document, 
   isSelected,
-  onSelect 
+  onSelect,
+  onView,
+  onDownload,
+  onLink,
+  onArchive
 }: { 
   document: Document;
   isSelected: boolean;
   onSelect: () => void;
+  onView: () => void;
+  onDownload: () => void;
+  onLink: () => void;
+  onArchive: () => void;
 }) {
   const typeConfig = documentTypeConfig[document.type];
   const linkedConfig = linkedEntityConfig[document.linkedTo.type];
@@ -418,7 +486,7 @@ function DocumentRow({
             className="h-8 w-8 p-0"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("View:", document.id);
+              onView();
             }}
           >
             <Eye size={14} />
@@ -429,7 +497,7 @@ function DocumentRow({
             className="h-8 w-8 p-0"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Download:", document.id);
+              onDownload();
             }}
           >
             <Download size={14} />
@@ -440,7 +508,7 @@ function DocumentRow({
             className="h-8 w-8 p-0"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Link:", document.id);
+              onLink();
             }}
           >
             <Link2 size={14} />
@@ -451,7 +519,7 @@ function DocumentRow({
             className="h-8 w-8 p-0 text-muted-foreground hover:text-red-500"
             onClick={(e) => {
               e.stopPropagation();
-              console.log("Archive:", document.id);
+              onArchive();
             }}
           >
             <Archive size={14} />
@@ -465,9 +533,15 @@ function DocumentRow({
 // Preview Panel Component
 function DocumentPreview({ 
   document, 
+  onDownload,
+  onLink,
+  onArchive,
   onClose 
 }: { 
   document: Document;
+  onDownload: () => void;
+  onLink: () => void;
+  onArchive: () => void;
   onClose: () => void;
 }) {
   const typeConfig = documentTypeConfig[document.type];
@@ -561,21 +635,21 @@ function DocumentPreview({
 
       {/* Actions */}
       <div className="flex flex-col gap-2 pt-4 border-t border-border">
-        <Button className="w-full bg-primary hover:bg-primary/90 gap-2">
+        <Button className="w-full bg-primary hover:bg-primary/90 gap-2" onClick={onDownload}>
           <Download size={16} />
           Download
         </Button>
-        <Button variant="outline" className="w-full gap-2">
+        <Button variant="outline" className="w-full gap-2" onClick={onDownload}>
           <ExternalLink size={16} />
           Open in nieuw tabblad
         </Button>
         {document.linkedTo.type === "geen" && (
-          <Button variant="outline" className="w-full gap-2">
+          <Button variant="outline" className="w-full gap-2" onClick={onLink}>
             <Link2 size={16} />
             Koppel aan casus
           </Button>
         )}
-        <Button variant="outline" className="w-full gap-2 text-red-500 hover:text-red-600">
+        <Button variant="outline" className="w-full gap-2 text-red-500 hover:text-red-600" onClick={onArchive}>
           <Archive size={16} />
           Archiveer
         </Button>

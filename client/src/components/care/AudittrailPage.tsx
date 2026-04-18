@@ -220,7 +220,11 @@ const actionTypeConfig: Record<ActionType, { label: string; color: string }> = {
   bekeken: { label: "Bekeken", color: "text-slate-500" }
 };
 
-export function AudittrailPage() {
+interface AudittrailPageProps {
+  onOpenEntity?: (entry: AuditEntry) => void;
+}
+
+export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<AuditEntry | null>(null);
@@ -437,6 +441,7 @@ export function AudittrailPage() {
           <div className="xl:col-span-1">
             <AuditDetailPanel
               entry={selectedEntry}
+              onOpenEntity={onOpenEntity}
               onClose={() => setSelectedEntry(null)}
             />
           </div>
@@ -534,9 +539,11 @@ function AuditEntryRow({
 // Audit Detail Panel Component
 function AuditDetailPanel({ 
   entry, 
+  onOpenEntity,
   onClose 
 }: { 
   entry: AuditEntry;
+  onOpenEntity?: (entry: AuditEntry) => void;
   onClose: () => void;
 }) {
   const typeConfig = entityTypeConfig[entry.entityType];
@@ -692,7 +699,7 @@ function AuditDetailPanel({
         <Button 
           variant="outline" 
           className="w-full gap-2"
-          onClick={() => console.log("View entity:", entry.entityId)}
+          onClick={() => onOpenEntity?.(entry)}
         >
           <Eye size={16} />
           Bekijk {typeConfig.label.toLowerCase()}

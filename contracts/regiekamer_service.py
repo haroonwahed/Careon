@@ -56,6 +56,8 @@ from .models import (
     TrustAccount,
 )
 
+from .regiekamer_forecasting import build_predictive_summary
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -1350,11 +1352,35 @@ def build_regiekamer_summary(
     # --- flow counts ---
     flow_counts = _compute_flow_counts(active_intakes)
 
-    # --- bottleneck stage ---
+    # --- bottleneck stage (current) ---
     bottleneck_stage = _compute_bottleneck_stage(buckets)
 
-    # --- command bar ---
+    # --- predictive intelligence layer ---
+    predictive = build_predictive_summary(
+        org=org,
+        active_intakes=active_intakes,
+        placement_by_intake=placement_by_intake,
+        signals_by_intake=signals_by_intake,
+        today=today,
+        capacity_shortage=capacity_shortage,
+    )
+
+    # Enrich each priority_queue row with per-case risk forecast
+    per_case_forecast = predictive["per_case_forecast"]
+    for row in priority_queue:
+        forecast = per_case_forecast.get(row["id"], {})
+        row["risk_score"] = forecast.get("risk_score", 0)
+        row["risk_band"] = forecast.get("risk_band", "low")
+        row["top_reasons"] = forecast.get("top_reasons", [])
+        row["forecast_action"] = {
+            "label": forecast.get("next_best_action", row["next_action"]["label"]),
+            "href": forecast.get("next_best_action_href", row["next_action"]["href"]),
+            "impact": forecast.get("projected_impact", ""),
+        }
+
+    # --- command bar (augmented with action impact summary) ---
     command_bar = _build_command_bar(buckets, bottleneck_stage)
+    command_bar["impact_summary"] = predictive["action_impact_summary"]
 
     # --- priority cards ---
     priority_cards = _build_priority_cards(buckets, priority_queue, capacity_shortage)
@@ -1395,10 +1421,16 @@ def build_regiekamer_summary(
         "next_actions": next_actions,
         "signal_items": signal_items,
         "operational_insights": operational_insights,
-        # --- new keys ---
+        # --- Phase 2 keys ---
         "flow_counts": flow_counts,
         "command_bar": command_bar,
         "bottleneck_stage": bottleneck_stage,
         "priority_cards": priority_cards,
         "signal_strips": signal_strips,
+        # --- Phase 3: predictive intelligence ---
+        "forecast_signals": predictive["forecast_signals"],
+        "sla_risk_cases": predictive["sla_risk_cases"],
+        "projected_bottleneck_stage": predictive["projected_bottleneck_stage"],
+        "action_impact_summary": predictive["action_impact_summary"],
+        "predictive_strips": predictive["predictive_strips"],
     }

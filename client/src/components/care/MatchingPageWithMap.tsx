@@ -26,7 +26,7 @@ import {
   Navigation
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { mockCases, mockProviders, Provider } from "../../lib/casesData";
+import { mockCases, mockProviders } from "../../lib/casesData";
 
 // AI Components
 import { 
@@ -87,7 +87,10 @@ export function MatchingPageWithMap({
     explanation: "Beste match op basis van beschikbaarheid binnen 3 dagen, sterke match met zorgtype, en hoge acceptatiegraad in vergelijkbare casussen.",
     actionLabel: "Plaats direct",
     confidence: "high" as const,
-    onAction: () => onConfirmMatch(bestMatch.id)
+    onAction: () => {
+      if (!bestMatch) return;
+      onConfirmMatch(bestMatch.id);
+    }
   };
 
   const riskSignals = [];
@@ -115,11 +118,21 @@ export function MatchingPageWithMap({
     setHoveredProvider(providerId);
   };
 
+  const focusedProviderId = hoveredProvider ?? selectedProvider;
+  const focusedProvider = focusedProviderId
+    ? topMatches.find((provider) => provider.id === focusedProviderId)
+    : null;
+  const mapZoom = radius <= 10 ? 12 : radius <= 20 ? 11 : 10;
+  const mapQuery = focusedProvider
+    ? `${focusedProvider.name}, ${focusedProvider.region}, Nederland`
+    : `${caseData.region}, Nederland`;
+  const googleMapsEmbedSrc = `https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&z=${mapZoom}&output=embed`;
+
   return (
-    <div className="h-screen flex flex-col">
+    <div className="flex min-h-screen flex-col bg-background">
       {/* Top Bar */}
-      <div className="border-b border-border bg-card p-4">
-        <div className="flex items-center justify-between max-w-[1920px] mx-auto">
+      <div className="border-b border-border bg-card/90 px-4 py-4 backdrop-blur">
+        <div className="mx-auto flex max-w-[1920px] items-center justify-between">
           <Button 
             variant="ghost" 
             onClick={onBack}
@@ -141,7 +154,7 @@ export function MatchingPageWithMap({
       </div>
 
       {/* Main Content: Split Screen */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         
         {/* LEFT SIDE: Decision Area (60%) */}
         <div 
@@ -149,7 +162,7 @@ export function MatchingPageWithMap({
             mapView === "full" ? "hidden" : "w-[60%]"
           } overflow-y-auto border-r border-border bg-background`}
         >
-          <div className="max-w-5xl mx-auto p-6 space-y-6">
+          <div className="mx-auto max-w-5xl space-y-6 p-6 pb-24">
             
             {/* AI LAYER: Recommended Action */}
             <AanbevolenActie
@@ -216,18 +229,18 @@ export function MatchingPageWithMap({
                           
                           {/* Match Type Badge */}
                           {matchType === "best" && (
-                            <span className="px-2 py-1 bg-green-500/10 text-green-400 rounded text-xs font-semibold flex items-center gap-1">
+                            <span className="flex items-center gap-1 rounded border border-green-border bg-green-light px-2 py-1 text-xs font-semibold text-green-base">
                               <CheckCircle2 size={12} />
                               Beste match
                             </span>
                           )}
                           {matchType === "alternative" && (
-                            <span className="px-2 py-1 bg-amber-500/10 text-amber-400 rounded text-xs font-semibold">
+                            <span className="rounded border border-yellow-border bg-yellow-light px-2 py-1 text-xs font-semibold text-yellow-base">
                               Alternatief
                             </span>
                           )}
                           {matchType === "risky" && (
-                            <span className="px-2 py-1 bg-red-500/10 text-red-400 rounded text-xs font-semibold flex items-center gap-1">
+                            <span className="flex items-center gap-1 rounded border border-red-border bg-red-light px-2 py-1 text-xs font-semibold text-red-base">
                               <AlertTriangle size={12} />
                               Risicovol
                             </span>
@@ -244,19 +257,19 @@ export function MatchingPageWithMap({
                         <div 
                           className={`px-3 py-1 rounded-lg border-2 ${
                             matchScore >= 90 
-                              ? "bg-green-500/10 border-green-500/30" 
+                              ? "border-green-border bg-green-light" 
                               : matchScore >= 75
-                              ? "bg-amber-500/10 border-amber-500/30"
-                              : "bg-red-500/10 border-red-500/30"
+                              ? "border-yellow-border bg-yellow-light"
+                              : "border-red-border bg-red-light"
                           }`}
                         >
                           <span 
                             className={`text-xl font-bold ${
                               matchScore >= 90 
-                                ? "text-green-400" 
+                                ? "text-green-base" 
                                 : matchScore >= 75
-                                ? "text-amber-400"
-                                : "text-red-400"
+                                ? "text-yellow-base"
+                                : "text-red-base"
                             }`}
                           >
                             {matchScore}%
@@ -274,7 +287,7 @@ export function MatchingPageWithMap({
                           <span className="text-xs text-muted-foreground">Afstand</span>
                         </div>
                         <p className={`text-sm font-semibold ${
-                          distance <= 10 ? "text-green-400" : distance <= 20 ? "text-amber-400" : "text-red-400"
+                          distance <= 10 ? "text-green-base" : distance <= 20 ? "text-yellow-base" : "text-red-base"
                         }`}>
                           {distance}km
                         </p>
@@ -282,11 +295,11 @@ export function MatchingPageWithMap({
 
                       <div>
                         <div className="flex items-center gap-1 mb-1">
-                          <Users size={12} className={provider.availableSpots > 0 ? "text-green-400" : "text-red-400"} />
+                          <Users size={12} className={provider.availableSpots > 0 ? "text-green-base" : "text-red-base"} />
                           <span className="text-xs text-muted-foreground">Capaciteit</span>
                         </div>
                         <p className={`text-sm font-semibold ${
-                          provider.availableSpots > 0 ? "text-green-400" : "text-red-400"
+                          provider.availableSpots > 0 ? "text-green-base" : "text-red-base"
                         }`}>
                           {provider.availableSpots}/{provider.capacity}
                         </p>
@@ -294,21 +307,21 @@ export function MatchingPageWithMap({
 
                       <div>
                         <div className="flex items-center gap-1 mb-1">
-                          <Star size={12} className="text-green-400" />
+                          <Star size={12} className="text-green-base" />
                           <span className="text-xs text-muted-foreground">Rating</span>
                         </div>
-                        <p className="text-sm font-semibold text-green-400">
+                        <p className="text-sm font-semibold text-green-base">
                           {provider.rating.toFixed(1)}
                         </p>
                       </div>
 
                       <div>
                         <div className="flex items-center gap-1 mb-1">
-                          <Clock size={12} className={provider.responseTime <= 6 ? "text-green-400" : "text-amber-400"} />
+                          <Clock size={12} className={provider.responseTime <= 6 ? "text-green-base" : "text-yellow-base"} />
                           <span className="text-xs text-muted-foreground">Reactie</span>
                         </div>
                         <p className={`text-sm font-semibold ${
-                          provider.responseTime <= 6 ? "text-green-400" : "text-amber-400"
+                          provider.responseTime <= 6 ? "text-green-base" : "text-yellow-base"
                         }`}>
                           {provider.responseTime}u
                         </p>
@@ -371,7 +384,7 @@ export function MatchingPageWithMap({
                         variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
-                          console.log("View details:", provider.id);
+                          setSelectedProvider(provider.id);
                         }}
                       >
                         Bekijk details
@@ -385,7 +398,7 @@ export function MatchingPageWithMap({
             {/* Empty State Alternative */}
             {topMatches.length === 0 && (
               <div className="premium-card p-8 text-center">
-                <AlertTriangle size={48} className="mx-auto mb-4 text-amber-400" />
+                <AlertTriangle size={48} className="mx-auto mb-4 text-yellow-base" />
                 <h3 className="text-lg font-bold text-foreground mb-2">
                   Geen aanbieders gevonden
                 </h3>
@@ -413,7 +426,7 @@ export function MatchingPageWithMap({
         <div 
           className={`${
             mapView === "full" ? "w-full" : "w-[40%]"
-          } bg-muted/20 relative`}
+          } relative border-l border-border bg-card/40`}
         >
           {/* Map Controls */}
           <div className="absolute top-4 right-4 z-10 space-y-3">
@@ -456,43 +469,25 @@ export function MatchingPageWithMap({
             </button>
           </div>
 
-          {/* Map Placeholder */}
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted/10 to-muted/30">
-            <div className="text-center space-y-4">
-              <MapPin size={64} className="mx-auto text-muted-foreground/40" />
-              <div>
-                <p className="text-lg font-semibold text-foreground mb-2">
-                  Interactieve Kaart
-                </p>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Visualisatie van aanbieder locaties met {radius}km radius rond cliënt
-                </p>
-              </div>
+          <div className="h-full w-full overflow-hidden">
+            <iframe
+              key={googleMapsEmbedSrc}
+              title="Aanbieders kaart"
+              src={googleMapsEmbedSrc}
+              className="h-full w-full border-0"
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              allowFullScreen
+            />
+          </div>
 
-              {/* Map Legend */}
-              <div className="inline-flex flex-col gap-2 p-4 rounded-lg bg-card/80 backdrop-blur text-left">
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-muted-foreground">Beste match</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full bg-amber-500" />
-                  <span className="text-muted-foreground">Alternatief</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-muted-foreground">Risicovol</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <div className="w-3 h-3 rounded-full border-2 border-purple-500" />
-                  <span className="text-muted-foreground">Geselecteerd</span>
-                </div>
-              </div>
-
-              <p className="text-xs text-muted-foreground">
-                Klik op kaart pin of provider card voor synchronisatie
-              </p>
-            </div>
+          <div className="absolute left-4 top-4 z-10 rounded-xl border border-border bg-card/95 px-3 py-2 backdrop-blur">
+            <p className="text-xs font-semibold text-foreground">
+              Google Maps
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Focus: {focusedProvider ? focusedProvider.name : caseData.region}
+            </p>
           </div>
 
           {/* Selected Provider Mini Preview (when hovering map pin) */}

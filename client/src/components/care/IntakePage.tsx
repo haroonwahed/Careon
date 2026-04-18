@@ -18,6 +18,7 @@ type IntakeStatus = "not-started" | "planned" | "in-progress" | "completed";
 export function IntakePage({ caseId, providerId, onBack }: IntakePageProps) {
   const [intakeStatus, setIntakeStatus] = useState<IntakeStatus>("not-started");
   const [showPlanModal, setShowPlanModal] = useState(false);
+  const [actionMessage, setActionMessage] = useState("");
 
   const caseData = mockCases.find(c => c.id === caseId);
   const provider = mockProviders.find(p => p.id === providerId);
@@ -218,6 +219,12 @@ export function IntakePage({ caseId, providerId, onBack }: IntakePageProps) {
         </div>
       </div>
 
+      {actionMessage && (
+        <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+          {actionMessage}
+        </div>
+      )}
+
       {/* Main Layout: 3 Panels */}
       <div className="grid grid-cols-12 gap-6">
         {/* LEFT PANEL: Case Overview */}
@@ -291,8 +298,8 @@ export function IntakePage({ caseId, providerId, onBack }: IntakePageProps) {
           {/* Documents */}
           <DocumentSection
             documents={documents}
-            onPreview={(id) => console.log("Preview", id)}
-            onDownload={(id) => console.log("Download", id)}
+            onPreview={(id) => setActionMessage(`Preview geopend voor document ${id}`)}
+            onDownload={(id) => setActionMessage(`Download gestart voor document ${id}`)}
           />
 
           {/* Timeline */}
@@ -315,7 +322,7 @@ export function IntakePage({ caseId, providerId, onBack }: IntakePageProps) {
               contactInfo={contactInfo}
               onPlanIntake={intakeStatus === "not-started" ? handlePlanIntake : undefined}
               onStartIntake={intakeStatus === "planned" ? () => setIntakeStatus("in-progress") : undefined}
-              onContactClient={() => console.log("Contact client")}
+              onContactClient={() => setActionMessage("Contactgegevens geopend")}
               onMarkStarted={intakeStatus === "not-started" ? () => setIntakeStatus("in-progress") : undefined}
             />
           </div>

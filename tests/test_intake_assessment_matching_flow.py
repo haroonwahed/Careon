@@ -90,7 +90,8 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             follow=True,
         )
         self.assertEqual(assign_response.status_code, 200)
-        self.assertContains(assign_response, 'Toewijzen verloopt vanuit de casuswerkruimte.')
+        self.assertContains(assign_response, 'Matching in deze casus')
+        self.assertContains(assign_response, 'Open matchingbesluit')
         self.assertFalse(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
 
         intake.refresh_from_db()
@@ -116,7 +117,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Geen beoordelingen met status "Goedgekeurd voor matching".')
+        self.assertContains(response, 'Er zijn momenteel geen beoordelingen met status "Goedgekeurd voor matching".')
         self.assertNotContains(response, 'Draft Intake')
 
     def test_matching_dashboard_shows_no_provider_profile_fallback(self):
@@ -140,7 +141,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Approved Intake Zonder Profiel')
-        self.assertContains(response, 'Geen zorgaanbieders met profielgegevens beschikbaar voor deze beoordeling.')
+        self.assertContains(response, 'Geen zorgaanbieders beschikbaar voor deze beoordeling.')
 
     def test_intake_detail_uses_semantic_detail_page_primitives(self):
         intake = CaseIntakeProcess.objects.create(

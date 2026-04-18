@@ -79,7 +79,9 @@ class MatchingRecommendationsTests(TestCase):
         self.assertContains(response, 'Wachttijd')
         self.assertContains(response, 'Capaciteit')
         self.assertContains(response, 'Matching')
-        self.assertContains(response, 'Open casus voor toewijzing')
+        self.assertContains(response, 'Aanbevolen actie')
+        self.assertContains(response, 'Bevestig plaatsing')
+        self.assertContains(response, 'Plaats direct')
         self.assertContains(response, 'Gedragsinvloed')
         self.assertContains(response, 'Limited provider history, behavioral influence kept neutral')
 
@@ -168,13 +170,14 @@ class MatchingRecommendationsTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kaartcontext voor matching')
+        self.assertContains(response, 'Geografische context')
         self.assertContains(response, 'Kaart kan nog niet renderen')
         matching_map = response.context['rows'][0]['matching_map']
         self.assertIn('case_location', matching_map)
         self.assertIn('provider_markers', matching_map)
         self.assertIn('selected_provider_id', matching_map)
         self.assertFalse(matching_map['summary']['can_render_map'])
+        self.assertFalse(matching_map['summary']['has_case_coordinates'])
         self.assertEqual(len(matching_map['provider_markers']), 1)
         self.assertEqual(matching_map['provider_markers'][0]['provider_name'], 'Aanbieder Zonder Coordinaten')
 

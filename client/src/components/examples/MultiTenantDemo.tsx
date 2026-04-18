@@ -25,6 +25,8 @@ import { SignalenPage } from "../care/SignalenPage";
 import { ActiesPage } from "../care/ActiesPage";
 import { DocumentenPage } from "../care/DocumentenPage";
 import { AudittrailPage } from "../care/AudittrailPage";
+import { RapportagesPage } from "../care/RapportagesPage";
+import { InstellingenPage } from "../care/InstellingenPage";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 
@@ -89,7 +91,6 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
   const [currentPage, setCurrentPage] = useState<Page>("regiekamer");
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
 
   const handleContextSwitch = (contextId: string) => {
     const newContext = availableContexts.find(c => c.id === contextId);
@@ -102,21 +103,18 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       } else {
         setCurrentPage("regiekamer");
       }
-      
-      console.log("Switched context to:", newContext.name, `(${newContext.type})`);
+
+      setSelectedCase(null);
     }
   };
 
-  const handleNavigate = (itemId: string, href: string) => {
-    console.log("Navigate to:", itemId, href);
+  const handleNavigate = (itemId: string, _href: string) => {
     setCurrentPage(itemId as Page);
     // Reset case/provider selection when navigating
     setSelectedCase(null);
-    setSelectedProvider(null);
   };
 
   const handleCaseClick = (caseId: string) => {
-    console.log("Open case:", caseId);
     setSelectedCase(caseId);
     // Don't change the page, just show the case detail overlay
   };
@@ -126,27 +124,33 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   };
 
   const handleStartMatching = (caseId: string) => {
-    console.log("Start matching for case:", caseId);
-    // In a real app, this would navigate to matching page with context
+    void caseId;
     setSelectedCase(null);
     setCurrentPage("matching");
   };
 
   const handleProviderSelect = (providerId: string) => {
-    console.log("Provider selected:", providerId);
-    setSelectedProvider(providerId);
+    void providerId;
   };
 
-  const handleRegionClick = (regionId: string) => {
-    console.log("Open region:", regionId);
-  };
+  const handleRegionClick = (_regionId: string) => setCurrentPage("regios");
 
-  const handleViewGemeenten = (regionId: string) => {
-    console.log("View gemeenten in region:", regionId);
-  };
+  const handleViewGemeenten = (_regionId: string) => setCurrentPage("gemeenten");
 
-  const handleViewProviders = (regionId: string) => {
-    console.log("View providers in region:", regionId);
+  const handleViewProviders = (_regionId: string) => setCurrentPage("zorgaanbieders");
+
+  const handleOpenEntityFromAudit = (entry: any) => {
+    if (entry.entityType === "casus" && entry.entityId) {
+      handleCaseClick(entry.entityId);
+      return;
+    }
+    if (entry.entityType === "document") {
+      setCurrentPage("documenten");
+      return;
+    }
+    if (entry.entityType === "instellingen") {
+      setCurrentPage("instellingen");
+    }
   };
 
   return (
@@ -168,13 +172,17 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           availableContexts={availableContexts}
           onContextSwitch={handleContextSwitch}
           notificationCount={7}
-          onNotificationClick={() => console.log("Open notifications")}
-          onSearch={(query) => console.log("Search:", query)}
+          onNotificationClick={() => setCurrentPage("acties")}
+          onSearch={() => undefined}
           userName="Jane Doe"
           userRole="Regisseur"
-          onProfileClick={() => console.log("Open profile")}
-          onSettingsClick={() => console.log("Open settings")}
-          onLogout={() => console.log("Logout")}
+          onProfileClick={() => setCurrentPage("instellingen")}
+          onSettingsClick={() => setCurrentPage("instellingen")}
+          onLogout={() => {
+            setCurrentContext(availableContexts[0]);
+            setCurrentPage("regiekamer");
+            setSelectedCase(null);
+          }}
         />
 
         {/* CONTENT */}
@@ -205,7 +213,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "acties" && (
-                  <ActiesPage />
+                  <ActiesPage onCaseClick={handleCaseClick} />
                 )}
 
                 {currentPage === "zorgaanbieders" && (
@@ -229,22 +237,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "rapportages" && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Rapportages
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Genereer en bekijk rapporten
-                      </p>
-                    </div>
-                    
-                    <div className="premium-card p-12 text-center">
-                      <p className="text-muted-foreground">
-                        Rapportages page
-                      </p>
-                    </div>
-                  </div>
+                  <RapportagesPage />
                 )}
 
                 {currentPage === "documenten" && (
@@ -252,26 +245,11 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "audittrail" && (
-                  <AudittrailPage />
+                  <AudittrailPage onOpenEntity={handleOpenEntityFromAudit} />
                 )}
 
                 {currentPage === "instellingen" && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Instellingen
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Systeem en gebruikersinstellingen
-                      </p>
-                    </div>
-                    
-                    <div className="premium-card p-12 text-center">
-                      <p className="text-muted-foreground">
-                        Instellingen page
-                      </p>
-                    </div>
-                  </div>
+                  <InstellingenPage />
                 )}
               </>
             )}
@@ -366,6 +344,14 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                       </p>
                     </div>
                   </div>
+                )}
+
+                {currentPage === "rapportages" && (
+                  <RapportagesPage />
+                )}
+
+                {currentPage === "instellingen" && (
+                  <InstellingenPage />
                 )}
               </>
             )}
