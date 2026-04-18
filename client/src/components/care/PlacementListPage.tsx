@@ -6,7 +6,8 @@ import { useState } from "react";
 import { Search, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { SimpleCaseCard } from "./SimpleCaseCard";
-import { mockCases } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { Loader2 } from "lucide-react";
 
 interface PlacementListPageProps {
   onCaseClick: (caseId: string) => void;
@@ -16,8 +17,10 @@ export function PlacementListPage({ onCaseClick }: PlacementListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "confirmed" | "completed">("all");
 
+  const { cases, loading, error } = useCases({ q: searchQuery });
+
   // Filter cases that are in placement phase
-  const placementCases = mockCases.filter(c => 
+  const placementCases = cases.filter(c =>
     c.status === "placement" || c.status === "active" || c.status === "completed"
   );
 
@@ -116,6 +119,8 @@ export function PlacementListPage({ onCaseClick }: PlacementListPageProps) {
         />
       </div>
 
+      {loading && <div className="flex items-center justify-center py-12 text-muted-foreground gap-2"><Loader2 size={18} className="animate-spin" /><span>Laden…</span></div>}
+      {error && <div className="p-4 text-destructive">Fout bij laden: {error}</div>}
       {/* CASES LIST */}
       <div className="space-y-3">
         {filteredCases.length === 0 ? (

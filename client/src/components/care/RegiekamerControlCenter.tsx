@@ -30,7 +30,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
-import { mockCasusList } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
 import type { Casus, CasusPhase } from "../../lib/phaseEngine";
 import {
   buildRegiekamerDecisionSummary,
@@ -54,9 +54,12 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   const [selectedUrgency, setSelectedUrgency] = useState<string>("all");
   const [activeKPIFilter, setActiveKPIFilter] = useState<string | null>(null);
 
-  const decisionSummary = useMemo(() => buildRegiekamerDecisionSummary(mockCasusList), []);
+  const { cases } = useCases({ q: "" });
+  const casusList = cases as unknown as typeof import("../../lib/casesData").mockCasusList;
+
+  const decisionSummary = useMemo(() => buildRegiekamerDecisionSummary(casusList), [casusList]);
   const predictiveSummary = useMemo(
-    () => buildRegiekamerPredictiveSummary(mockCasusList, decisionSummary),
+    () => buildRegiekamerPredictiveSummary(casusList, decisionSummary),
     [decisionSummary]
   );
 
@@ -161,7 +164,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   const capacityIssuesCard = getPriorityCard("capaciteitstekorten");
 
   const filteredCases = useMemo(() => {
-    return mockCasusList
+    return casusList
       .filter(c => {
         if (searchQuery) {
           const query = searchQuery.toLowerCase();
@@ -199,7 +202,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
       });
   }, [activeKPIFilter, decisionSummary.capacity_region, searchQuery, selectedRegion, selectedStatus, selectedUrgency]);
 
-  const regions = ["all", ...Array.from(new Set(mockCasusList.map(c => c.region)))];
+  const regions = ["all", ...Array.from(new Set(casusList.map(c => (c as any).region ?? "")))];
 
   const getNextAction = (caseItem: Casus): { action: string; type: "urgent" | "normal" | "waiting" } => {
     switch (caseItem.phase) {

@@ -1,141 +1,45 @@
 import { useState } from "react";
-import { 
-  Search, 
-  SlidersHorizontal, 
+import {
+  Search,
+  SlidersHorizontal,
   AlertTriangle,
-  AlertCircle,
   Info,
   XCircle,
   ChevronRight,
-  Clock,
   Users,
-  TrendingDown
+  Loader2
 } from "lucide-react";
 import { Button } from "../ui/button";
-
-type SignalSeverity = "critical" | "warning" | "info";
-type SignalCategory = "capacity" | "delay" | "quality" | "system";
-
-interface Signal {
-  id: string;
-  severity: SignalSeverity;
-  category: SignalCategory;
-  title: string;
-  description: string;
-  affectedCases: number;
-  region?: string;
-  detectedAt: string;
-  linkedCaseId?: string;
-}
-
-const mockSignals: Signal[] = [
-  {
-    id: "S-001",
-    severity: "critical",
-    category: "capacity",
-    title: "Capaciteitstekort in regio Utrecht",
-    description: "3 aanbieders voor intensive begeleiding hebben afgemeld voor Q2. 7 casussen wachten op match.",
-    affectedCases: 7,
-    region: "Utrecht",
-    detectedAt: "15 apr 2026, 09:23"
-  },
-  {
-    id: "S-002",
-    severity: "critical",
-    category: "delay",
-    title: "5 casussen wachten langer dan norm (14 dagen)",
-    description: "Wachttijd overschrijdt de 14-dagen norm. Urgente actie vereist om escalatie te voorkomen.",
-    affectedCases: 5,
-    detectedAt: "16 apr 2026, 11:15"
-  },
-  {
-    id: "S-003",
-    severity: "warning",
-    category: "quality",
-    title: "Hoge afwijzingsratio bij aanbieder Horizon Jeugdzorg",
-    description: "4 van de laatste 6 matches zijn afgewezen. Mogelijk onrealistische verwachtingen of capaciteitsprobleem.",
-    affectedCases: 4,
-    region: "Amsterdam",
-    detectedAt: "16 apr 2026, 08:42",
-    linkedCaseId: "C-001"
-  },
-  {
-    id: "S-004",
-    severity: "warning",
-    category: "delay",
-    title: "Beoordelingen lopen vertraging op",
-    description: "3 beoordelingen zijn meer dan 5 dagen over deadline. Neem contact op met beoordelaars.",
-    affectedCases: 3,
-    detectedAt: "15 apr 2026, 14:30"
-  },
-  {
-    id: "S-005",
-    severity: "info",
-    category: "capacity",
-    title: "Nieuwe aanbieder beschikbaar in Den Haag",
-    description: "Zorggroep De Haven heeft 8 nieuwe plekken vrijgemaakt voor residentiële zorg.",
-    affectedCases: 8,
-    region: "Den Haag",
-    detectedAt: "17 apr 2026, 07:00"
-  },
-  {
-    id: "S-006",
-    severity: "info",
-    category: "system",
-    title: "Matching algoritme verbeterd",
-    description: "Update v2.3: Betere weging van reistijd en specialisatie. Verwachte verbetering: 12% snellere matching.",
-    affectedCases: 0,
-    detectedAt: "14 apr 2026, 22:15"
-  }
-];
+import { useSignals, SignalSeverity } from "../../hooks/useSignals";
 
 export function SignalenPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState<SignalSeverity | "all">("all");
-  const [selectedCategory, setSelectedCategory] = useState<SignalCategory | "all">("all");
 
-  const filteredSignals = mockSignals.filter(signal => {
+  const { signals, loading, error, refetch } = useSignals({ q: searchQuery });
+
+  const filteredSignals = signals.filter(signal => {
     if (selectedSeverity !== "all" && signal.severity !== selectedSeverity) return false;
-    if (selectedCategory !== "all" && signal.category !== selectedCategory) return false;
-    if (searchQuery && !signal.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const criticalCount = mockSignals.filter(s => s.severity === "critical").length;
-  const warningCount = mockSignals.filter(s => s.severity === "warning").length;
+  const criticalCount = signals.filter(s => s.severity === "critical").length;
+  const warningCount = signals.filter(s => s.severity === "warning").length;
+  const infoCount = signals.filter(s => s.severity === "info").length;
 
   const getSeverityIcon = (severity: SignalSeverity) => {
     switch (severity) {
-      case "critical":
-        return <XCircle size={20} className="text-red-400" />;
-      case "warning":
-        return <AlertTriangle size={20} className="text-amber-400" />;
-      case "info":
-        return <Info size={20} className="text-blue-400" />;
+      case "critical": return <XCircle size={20} className="text-red-400" />;
+      case "warning":  return <AlertTriangle size={20} className="text-amber-400" />;
+      case "info":     return <Info size={20} className="text-blue-400" />;
     }
   };
 
   const getSeverityColor = (severity: SignalSeverity) => {
     switch (severity) {
-      case "critical":
-        return "border-l-red-500 bg-red-500/5";
-      case "warning":
-        return "border-l-amber-500 bg-amber-500/5";
-      case "info":
-        return "border-l-blue-500 bg-blue-500/5";
-    }
-  };
-
-  const getCategoryIcon = (category: SignalCategory) => {
-    switch (category) {
-      case "capacity":
-        return <Users size={16} />;
-      case "delay":
-        return <Clock size={16} />;
-      case "quality":
-        return <TrendingDown size={16} />;
-      case "system":
-        return <AlertCircle size={16} />;
+      case "critical": return "border-l-red-500 bg-red-500/5";
+      case "warning":  return "border-l-amber-500 bg-amber-500/5";
+      case "info":     return "border-l-blue-500 bg-blue-500/5";
     }
   };
 
@@ -147,7 +51,7 @@ export function SignalenPage() {
           Signalen
         </h1>
         <p className="text-muted-foreground">
-          Automatische detectie van problemen en afwijkingen · {criticalCount} kritiek · {warningCount} waarschuwing
+          Automatische detectie van problemen en afwijkingen · {loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}
         </p>
       </div>
 
@@ -164,7 +68,7 @@ export function SignalenPage() {
               <XCircle size={18} className="text-red-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-foreground mb-1">{criticalCount}</p>
+          <p className="text-2xl font-bold text-foreground mb-1">{loading ? "—" : criticalCount}</p>
           <p className="text-sm text-muted-foreground">Kritieke signalen</p>
         </button>
 
@@ -179,7 +83,7 @@ export function SignalenPage() {
               <AlertTriangle size={18} className="text-amber-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-foreground mb-1">{warningCount}</p>
+          <p className="text-2xl font-bold text-foreground mb-1">{loading ? "—" : warningCount}</p>
           <p className="text-sm text-muted-foreground">Waarschuwingen</p>
         </button>
 
@@ -194,9 +98,7 @@ export function SignalenPage() {
               <Info size={18} className="text-blue-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-foreground mb-1">
-            {mockSignals.filter(s => s.severity === "info").length}
-          </p>
+          <p className="text-2xl font-bold text-foreground mb-1">{loading ? "—" : infoCount}</p>
           <p className="text-sm text-muted-foreground">Informatie</p>
         </button>
       </div>
@@ -215,19 +117,6 @@ export function SignalenPage() {
                      focus:outline-none focus:border-primary/50 transition-colors"
           />
         </div>
-
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value as SignalCategory | "all")}
-          className="px-4 py-2 rounded-lg bg-card border border-border text-foreground text-sm"
-        >
-          <option value="all">Alle categorieën</option>
-          <option value="capacity">Capaciteit</option>
-          <option value="delay">Vertraging</option>
-          <option value="quality">Kwaliteit</option>
-          <option value="system">Systeem</option>
-        </select>
-
         <Button variant="outline" className="border-2 border-muted-foreground/20">
           <SlidersHorizontal size={18} />
           Meer filters
@@ -236,18 +125,27 @@ export function SignalenPage() {
 
       {/* Signals List */}
       <div className="space-y-3">
-        {filteredSignals.map((signal) => (
+        {loading && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+            <Loader2 size={18} className="animate-spin" />
+            <span>Signalen laden…</span>
+          </div>
+        )}
+        {error && (
+          <div className="premium-card p-6 text-center text-destructive space-y-2">
+            <p>Kon signalen niet laden: {error}</p>
+            <Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>
+          </div>
+        )}
+        {!loading && !error && filteredSignals.map((signal) => (
           <div
             key={signal.id}
             className={`premium-card p-5 border-l-4 ${getSeverityColor(signal.severity)} hover:bg-muted/20 transition-all cursor-pointer group`}
           >
             <div className="flex items-start gap-4">
-              {/* Icon */}
               <div className="flex-shrink-0 mt-0.5">
                 {getSeverityIcon(signal.severity)}
               </div>
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-4 mb-2">
                   <div className="flex-1">
@@ -255,47 +153,35 @@ export function SignalenPage() {
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                         {signal.title}
                       </h3>
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-muted/50 text-muted-foreground">
-                        {getCategoryIcon(signal.category)}
-                        <span className="text-xs capitalize">{signal.category}</span>
-                      </div>
+                      {signal.signalType && (
+                        <span className="text-xs px-2 py-0.5 rounded bg-muted/50 text-muted-foreground capitalize">
+                          {signal.signalType}
+                        </span>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {signal.description}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{signal.description}</p>
                   </div>
                 </div>
-
-                {/* Meta Info */}
                 <div className="flex items-center gap-4 text-xs text-muted-foreground mt-3">
-                  <span>{signal.detectedAt}</span>
-                  {signal.affectedCases > 0 && (
+                  <span>{new Date(signal.createdAt).toLocaleDateString("nl-NL")}</span>
+                  {signal.linkedCaseTitle && (
                     <span className="flex items-center gap-1">
                       <Users size={12} />
-                      {signal.affectedCases} {signal.affectedCases === 1 ? "casus" : "casussen"}
+                      {signal.linkedCaseTitle}
                     </span>
                   )}
-                  {signal.region && (
-                    <span>{signal.region}</span>
-                  )}
-                  {signal.linkedCaseId && (
-                    <button className="text-primary hover:underline">
-                      {signal.linkedCaseId}
-                    </button>
-                  )}
+                  {signal.assignedTo && <span>{signal.assignedTo}</span>}
                 </div>
               </div>
-
-              {/* Action Arrow */}
-              <ChevronRight 
-                size={18} 
-                className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" 
+              <ChevronRight
+                size={18}
+                className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1"
               />
             </div>
           </div>
         ))}
 
-        {filteredSignals.length === 0 && (
+        {!loading && !error && filteredSignals.length === 0 && (
           <div className="premium-card p-12 text-center">
             <p className="text-muted-foreground">
               Geen signalen gevonden met de huidige filters

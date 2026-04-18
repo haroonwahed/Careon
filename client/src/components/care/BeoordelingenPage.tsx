@@ -1,43 +1,8 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, CheckCircle2 } from "lucide-react";
+import { Search, SlidersHorizontal, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { AssessmentQueueCard } from "./AssessmentQueueCard";
-
-// Mock data
-const mockAssessments = [
-  {
-    id: "A-001",
-    caseId: "C-001",
-    caseTitle: "Jeugd 14 – Complex gedrag",
-    regio: "Amsterdam",
-    wachttijd: 8,
-    status: "in_progress" as const,
-    missingInfo: [
-      { field: "Urgentie niet ingevuld", severity: "error" as const },
-      { field: "Risicofactoren ontbreken", severity: "warning" as const }
-    ]
-  },
-  {
-    id: "A-002",
-    caseId: "C-005",
-    caseTitle: "Jeugd 13 – Trauma & angststoornis",
-    regio: "Eindhoven",
-    wachttijd: 5,
-    status: "open" as const,
-    missingInfo: [
-      { field: "Psychiatrische beoordeling ontbreekt", severity: "error" as const }
-    ]
-  },
-  {
-    id: "A-003",
-    caseId: "C-007",
-    caseTitle: "Jeugd 10 – ADHD",
-    regio: "Utrecht",
-    wachttijd: 2,
-    status: "open" as const,
-    missingInfo: []
-  }
-];
+import { useAssessments } from "../../hooks/useAssessments";
 
 interface BeoordelingenPageProps {
   onCaseClick?: (caseId: string) => void;
@@ -45,6 +10,8 @@ interface BeoordelingenPageProps {
 
 export function BeoordelingenPage({ onCaseClick }: BeoordelingenPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
+  const { assessments, loading, error, refetch } = useAssessments({ q: searchQuery });
+  const openAssessments = assessments.filter(a => a.status !== "completed");
 
   const handleStartAssessment = (caseId: string) => {
     // This should navigate to the Casus Control Center with assessment phase active
@@ -61,7 +28,7 @@ export function BeoordelingenPage({ onCaseClick }: BeoordelingenPageProps = {}) 
           Beoordelingen
         </h1>
         <p className="text-muted-foreground">
-          Beoordeel casussen en bepaal zorgbehoefte · {mockAssessments.filter(a => a.status !== "completed").length} open
+          Beoordeel casussen en bepaal zorgbehoefte · {loading ? '...' : `${openAssessments.length} open`}
         </p>
       </div>
 
@@ -95,25 +62,35 @@ export function BeoordelingenPage({ onCaseClick }: BeoordelingenPageProps = {}) 
             Open beoordelingen
           </h2>
           <span className="text-sm text-muted-foreground">
-            {mockAssessments.filter(a => a.status !== "completed").length} te doen
+            {loading ? '...' : `${openAssessments.length} te doen`}
           </span>
         </div>
 
         <div className="space-y-4">
-          {mockAssessments
-            .filter(a => a.status !== "completed")
-            .map((assessment) => (
-              <AssessmentQueueCard
-                key={assessment.id}
-                {...assessment}
-                onStart={() => handleStartAssessment(assessment.caseId)}
-              />
-            ))}
+          {loading && (
+            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+              <Loader2 size={18} className="animate-spin" />
+              <span>Beoordelingen laden…</span>
+            </div>
+          )}
+          {error && (
+            <div className="premium-card p-6 text-center text-destructive space-y-2">
+              <p>Kon beoordelingen niet laden: {error}</p>
+              <Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>
+            </div>
+          )}
+          {!loading && !error && openAssessments.map((assessment) => (
+            <AssessmentQueueCard
+              key={assessment.id}
+              {...assessment}
+              onStart={() => handleStartAssessment(assessment.caseId)}
+            />
+          ))}
         </div>
       </div>
 
       {/* Empty State */}
-      {mockAssessments.filter(a => a.status !== "completed").length === 0 && (
+      {!loading && !error && openAssessments.length === 0 && (
         <div className="premium-card p-12 text-center">
           <div className="max-w-md mx-auto space-y-4">
             <div 

@@ -9,7 +9,7 @@
  * This is NOT a workflow page - just clean document management.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { 
   Search,
   Filter,
@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { useDocuments } from "../../hooks/useDocuments";
+import { Loader2 } from "lucide-react";
 
 type DocumentType = "intake" | "contract" | "rapport" | "beoordeling" | "overig";
 type LinkedEntity = "casus" | "aanbieder" | "gemeente" | "geen";
@@ -50,74 +52,6 @@ interface Document {
   fileType: string;
 }
 
-const mockDocuments: Document[] = [
-  {
-    id: "DOC-001",
-    name: "Intake formulier - R.W. 14 jaar",
-    type: "intake",
-    linkedTo: { type: "casus", id: "C-001", name: "Jeugd 14 – Complex gedrag" },
-    uploadDate: "16 apr 2026, 14:23",
-    uploadedBy: "Jane Doe",
-    status: "actief",
-    fileSize: "2.3 MB",
-    fileType: "PDF"
-  },
-  {
-    id: "DOC-002",
-    name: "Plaatsingscontract Jeugdzorg Amsterdam Noord",
-    type: "contract",
-    linkedTo: { type: "aanbieder", id: "P-12", name: "Jeugdzorg Amsterdam Noord" },
-    uploadDate: "15 apr 2026, 09:45",
-    uploadedBy: "Mark van den Berg",
-    status: "actief",
-    fileSize: "1.8 MB",
-    fileType: "PDF"
-  },
-  {
-    id: "DOC-003",
-    name: "Psychologisch rapport - M.K.",
-    type: "beoordeling",
-    linkedTo: { type: "casus", id: "C-005", name: "Jeugd 13 – Trauma & angststoornis" },
-    uploadDate: "14 apr 2026, 11:12",
-    uploadedBy: "Dr. P. Bakker",
-    status: "actief",
-    fileSize: "4.1 MB",
-    fileType: "PDF"
-  },
-  {
-    id: "DOC-004",
-    name: "Capaciteitsrapport Q1 2026",
-    type: "rapport",
-    linkedTo: { type: "gemeente", id: "G-01", name: "Utrecht" },
-    uploadDate: "10 apr 2026, 16:30",
-    uploadedBy: "Lisa de Vries",
-    status: "actief",
-    fileSize: "890 KB",
-    fileType: "PDF"
-  },
-  {
-    id: "DOC-005",
-    name: "Intake formulier - L.B. 11 jaar",
-    type: "intake",
-    linkedTo: { type: "casus", id: "C-002", name: "Jeugd 11 – Licht verstandelijke beperking" },
-    uploadDate: "8 apr 2026, 13:45",
-    uploadedBy: "Jane Doe",
-    status: "actief",
-    fileSize: "1.9 MB",
-    fileType: "PDF"
-  },
-  {
-    id: "DOC-006",
-    name: "Oude beoordeling - Gearchiveerd",
-    type: "beoordeling",
-    linkedTo: { type: "geen" },
-    uploadDate: "2 mrt 2026, 10:15",
-    uploadedBy: "John Smith",
-    status: "gearchiveerd",
-    fileSize: "3.2 MB",
-    fileType: "PDF"
-  }
-];
 
 const documentTypeConfig: Record<DocumentType, { label: string; color: string; icon: any }> = {
   intake: { label: "Intake", color: "text-purple-500", icon: FileText },
@@ -135,7 +69,32 @@ const linkedEntityConfig: Record<LinkedEntity, { label: string; color: string }>
 };
 
 export function DocumentenPage() {
-  const [documents, setDocuments] = useState<Document[]>(mockDocuments);
+  const { documents: apiDocuments, loading, error, refetch } = useDocuments({ q: "" });
+
+  // Map SpaDocument → internal Document shape
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const prevKeyRef = useRef<string>("");
+  useEffect(() => {
+    const key = apiDocuments.map(d => d.id).join(",");
+    if (key !== prevKeyRef.current) {
+      prevKeyRef.current = key;
+      setDocuments(apiDocuments.map(d => ({
+        id: d.id,
+        name: d.name,
+        type: (d.type as DocumentType) || ("overig" as DocumentType),
+        linkedTo: {
+          type: (d.linkedCaseId ? "casus" : "geen") as LinkedEntity,
+          id: d.linkedCaseId ?? undefined,
+          name: d.linkedCaseName ?? undefined,
+        },
+        uploadDate: new Date(d.uploadDate).toLocaleDateString("nl-NL"),
+        uploadedBy: d.uploadedBy,
+        status: (d.status === "archived" ? "gearchiveerd" : "actief") as DocumentStatus,
+        fileSize: d.fileSize,
+        fileType: d.mimeType.split("/")[1]?.toUpperCase() ?? d.mimeType,
+      })));
+    }
+  }, [apiDocuments]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
@@ -363,7 +322,19 @@ export function DocumentenPage() {
             </div>
 
             {/* Empty State */}
-            {filteredDocuments.length === 0 && (
+            {loading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+                <Loader2 size={18} className="animate-spin" />
+                <span>Documenten laden…</span>
+              </div>
+            )}
+            {error && (
+              <div className="p-6 text-center text-destructive space-y-2">
+                <p>Kon documenten niet laden: {error}</p>
+                <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
+              </div>
+            )}
+            {!loading && !error && filteredDocuments.length === 0 && (
               <div className="p-12 text-center">
                 <FileText size={48} className="mx-auto text-muted-foreground/30 mb-4" />
                 <h3 className="font-semibold mb-2">Geen documenten gevonden</h3>

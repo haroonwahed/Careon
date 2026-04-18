@@ -17,10 +17,10 @@ import { PriorityActionCard } from "./PriorityActionCard";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { 
-  mockCasusList,
-  mockSignals, 
+  mockSignals,
   mockPriorityActions,
 } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
 
 interface RegiekamerPageProps {
   onCaseClick: (caseId: string) => void;
@@ -31,6 +31,9 @@ export function RegiekamerPage({ onCaseClick }: RegiekamerPageProps) {
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedUrgency, setSelectedUrgency] = useState<string>("all");
+
+  const { cases } = useCases({ q: searchQuery });
+  const mockCasusList = cases as unknown as typeof import("../../lib/casesData").mockCasusList;
 
   // Filter cases based on search and filters
   const filteredCases = mockCasusList

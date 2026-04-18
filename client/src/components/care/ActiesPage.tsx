@@ -1,69 +1,45 @@
 import { useState } from "react";
-import { Search, SlidersHorizontal, ChevronRight, Clock, AlertTriangle, CheckCircle2, Phone, Mail, FileText, UserPlus, GitMerge } from "lucide-react";
+import { Search, SlidersHorizontal, ChevronRight, Clock, AlertTriangle, CheckCircle2, Phone, Mail, FileText, UserPlus, GitMerge, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { useTasks, ActionStatus, SpaTask } from "../../hooks/useTasks";
 
-type ActionStatus = "overdue" | "today" | "upcoming" | "completed";
 type ActionType = "call" | "email" | "assessment" | "matching" | "placement" | "escalation";
-
-interface Action {
-  id: string;
-  type: ActionType;
-  status: ActionStatus;
-  title: string;
-  description: string;
-  linkedCaseId: string;
-  caseTitle: string;
-  dueDate: string;
-  assignedTo?: string;
-  priority: "high" | "medium" | "low";
-}
 
 interface ActiesPageProps {
   onCaseClick: (caseId: string) => void;
 }
 
-const mockActions: Action[] = [
-  { id: "A-001", type: "call", status: "overdue", title: "Bel beoordelaar", description: "Beoordeling loopt 5 dagen vertraging. Neem contact op met Dr. P. Bakker.", linkedCaseId: "C-001", caseTitle: "Jeugd 14 - Complex gedrag", dueDate: "12 apr 2026", assignedTo: "Jane Doe", priority: "high" },
-  { id: "A-002", type: "escalation", status: "overdue", title: "Escaleer capaciteitstekort", description: "Geen beschikbare aanbieders in regio. Escaleer naar capaciteitsmanager.", linkedCaseId: "C-004", caseTitle: "Jeugd 9 - ADHD + emotionele problematiek", dueDate: "13 apr 2026", assignedTo: "Jane Doe", priority: "high" },
-  { id: "A-003", type: "matching", status: "today", title: "Start matching", description: "Beoordeling is afgerond. Klaar om matching te starten.", linkedCaseId: "C-002", caseTitle: "Jeugd 11 - Licht verstandelijke beperking", dueDate: "17 apr 2026", assignedTo: "Jane Doe", priority: "high" },
-  { id: "A-004", type: "placement", status: "today", title: "Bevestig plaatsing", description: "Aanbieder heeft match geaccepteerd. Plan intake gesprek.", linkedCaseId: "C-003", caseTitle: "Jeugd 16 - Autisme spectrum", dueDate: "17 apr 2026", assignedTo: "Jane Doe", priority: "medium" },
-  { id: "A-005", type: "email", status: "today", title: "Verstuur update naar ouders", description: "Informeer ouders over voortgang matching proces.", linkedCaseId: "C-002", caseTitle: "Jeugd 11 - Licht verstandelijke beperking", dueDate: "17 apr 2026", assignedTo: "Jane Doe", priority: "medium" },
-  { id: "A-006", type: "assessment", status: "upcoming", title: "Voltooi psychiatrische beoordeling", description: "Psychiatrische diagnose vereist voor klinische behandeling.", linkedCaseId: "C-005", caseTitle: "Jeugd 13 - Trauma & angststoornis", dueDate: "19 apr 2026", assignedTo: "Dr. M. van der Berg", priority: "high" },
-  { id: "A-007", type: "matching", status: "upcoming", title: "Heroverweeg zorgvraag", description: "Meerdere aanbieders hebben match afgewezen. Mogelijk onrealistische verwachtingen.", linkedCaseId: "C-004", caseTitle: "Jeugd 9 - ADHD + emotionele problematiek", dueDate: "20 apr 2026", assignedTo: "Jane Doe", priority: "medium" }
-];
-
 export function ActiesPage({ onCaseClick }: ActiesPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<ActionStatus | "all">("all");
-  const [selectedType, setSelectedType] = useState<ActionType | "all">("all");
 
-  const filteredActions = mockActions
+  const { tasks, loading, error, refetch } = useTasks({ q: searchQuery });
+
+  const filteredActions = tasks
     .filter((action) => {
-      if (selectedStatus !== "all" && action.status !== selectedStatus) return false;
-      if (selectedType !== "all" && action.type !== selectedType) return false;
+      if (selectedStatus !== "all" && action.actionStatus !== selectedStatus) return false;
       if (searchQuery && !action.title.toLowerCase().includes(searchQuery.toLowerCase()) && !action.linkedCaseId.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     })
-    .filter((action) => action.status !== "completed");
+    .filter((action) => action.actionStatus !== "completed");
 
   const groupedActions = {
-    overdue: filteredActions.filter((action) => action.status === "overdue"),
-    today: filteredActions.filter((action) => action.status === "today"),
-    upcoming: filteredActions.filter((action) => action.status === "upcoming")
+    overdue: filteredActions.filter((action) => action.actionStatus === "overdue"),
+    today: filteredActions.filter((action) => action.actionStatus === "today"),
+    upcoming: filteredActions.filter((action) => action.actionStatus === "upcoming")
   };
 
-  const getActionIcon = (type: ActionType) => {
-    switch (type) {
-      case "call": return <Phone size={18} className="text-blue-400" />;
-      case "email": return <Mail size={18} className="text-green-400" />;
-      case "assessment": return <FileText size={18} className="text-purple-400" />;
-      case "matching": return <GitMerge size={18} className="text-amber-400" />;
-      case "placement": return <UserPlus size={18} className="text-green-400" />;
-      case "escalation": return <AlertTriangle size={18} className="text-red-400" />;
-    }
+  const getActionIcon = (title: string) => {
+    const normalized = title.toLowerCase();
+    if (normalized.includes("bel") || normalized.includes("call")) return <Phone size={18} className="text-blue-400" />;
+    if (normalized.includes("mail") || normalized.includes("e-mail")) return <Mail size={18} className="text-green-400" />;
+    if (normalized.includes("beoord")) return <FileText size={18} className="text-purple-400" />;
+    if (normalized.includes("match")) return <GitMerge size={18} className="text-amber-400" />;
+    if (normalized.includes("plaats")) return <UserPlus size={18} className="text-green-400" />;
+    return <AlertTriangle size={18} className="text-red-400" />;
   };
 
-  const renderActionGroup = (title: string, actions: Action[], color: string) => {
+  const renderActionGroup = (title: string, actions: SpaTask[], color: string) => {
     if (actions.length === 0) return null;
     return (
       <div className="space-y-3">
@@ -74,7 +50,7 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
         {actions.map((action) => (
           <button key={action.id} onClick={() => onCaseClick(action.linkedCaseId)} className="w-full premium-card p-4 hover:bg-muted/20 transition-all text-left group border-l-4 border-l-primary">
             <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 mt-1">{getActionIcon(action.type)}</div>
+              <div className="flex-shrink-0 mt-1">{getActionIcon(action.title)}</div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{action.title}</h3>
                 <p className="text-sm text-muted-foreground">{action.description}</p>
@@ -121,15 +97,6 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
           <input type="text" placeholder="Zoek acties of casus ID..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="w-full h-11 pl-11 pr-4 rounded-xl border-2 border-muted-foreground/20 bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors" />
         </div>
 
-        <select value={selectedType} onChange={(event) => setSelectedType(event.target.value as ActionType | "all")} className="px-4 py-2 rounded-lg bg-card border border-border text-foreground text-sm">
-          <option value="all">Alle types</option>
-          <option value="call">Bellen</option>
-          <option value="email">E-mail</option>
-          <option value="assessment">Beoordeling</option>
-          <option value="matching">Matching</option>
-          <option value="placement">Plaatsing</option>
-          <option value="escalation">Escalatie</option>
-        </select>
 
         <Button variant="outline" className="border-2 border-muted-foreground/20">
           <SlidersHorizontal size={18} />
@@ -138,10 +105,22 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
       </div>
 
       <div className="space-y-8">
-        {renderActionGroup("Te laat", groupedActions.overdue, "bg-red-500/10 text-red-400")}
-        {renderActionGroup("Vandaag", groupedActions.today, "bg-amber-500/10 text-amber-400")}
-        {renderActionGroup("Binnenkort", groupedActions.upcoming, "bg-blue-500/10 text-blue-400")}
-        {filteredActions.length === 0 && (
+        {loading && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+            <Loader2 size={18} className="animate-spin" />
+            <span>Acties laden…</span>
+          </div>
+        )}
+        {error && (
+          <div className="premium-card p-6 text-center text-destructive space-y-2">
+            <p>Kon acties niet laden: {error}</p>
+            <Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>
+          </div>
+        )}
+        {!loading && !error && renderActionGroup("Te laat", groupedActions.overdue, "bg-red-500/10 text-red-400")}
+        {!loading && !error && renderActionGroup("Vandaag", groupedActions.today, "bg-amber-500/10 text-amber-400")}
+        {!loading && !error && renderActionGroup("Binnenkort", groupedActions.upcoming, "bg-blue-500/10 text-blue-400")}
+        {!loading && !error && filteredActions.length === 0 && (
           <div className="premium-card p-12 text-center">
             <div className="max-w-md mx-auto space-y-2">
               <h3 className="text-xl font-semibold text-foreground">Geen openstaande acties</h3>

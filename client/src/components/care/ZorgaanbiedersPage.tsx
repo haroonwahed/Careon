@@ -28,7 +28,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { mockProviders } from "../../lib/casesData";
+import { useProviders } from "../../hooks/useProviders";
+import { Loader2 } from "lucide-react";
 
 // AI Components
 import { SystemInsight } from "../ai";
@@ -45,9 +46,11 @@ export function ZorgaanbiedersPage() {
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedCapacity, setSelectedCapacity] = useState<string>("all");
 
+  const { providers, loading, error, refetch } = useProviders({ q: searchQuery });
+
   // Filter providers
   const filteredProviders = useMemo(() => {
-    return mockProviders.filter(p => {
+    return providers.filter(p => {
       const matchesSearch = searchQuery === "" ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (p.specializations && p.specializations.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())));
@@ -66,12 +69,12 @@ export function ZorgaanbiedersPage() {
   // Calculate stats
   const stats = useMemo(() => {
     return {
-      total: mockProviders.length,
-      availableCapacity: mockProviders.reduce((acc, p) => acc + p.availableSpots, 0),
-      avgRating: (mockProviders.reduce((acc, p) => acc + p.rating, 0) / mockProviders.length).toFixed(1),
-      avgResponseTime: Math.round(mockProviders.reduce((acc, p) => acc + p.responseTime, 0) / mockProviders.length)
+      total: providers.length,
+      availableCapacity: providers.reduce((acc, p) => acc + p.availableSpots, 0),
+      avgRating: providers.length ? (providers.reduce((acc, p) => acc + (p.averageWaitDays ?? 0), 0) / providers.length).toFixed(0) : "—",
+      avgResponseTime: providers.length ? Math.round(providers.reduce((acc, p) => acc + (p.averageWaitDays ?? 0), 0) / providers.length) : 0
     };
-  }, []);
+  }, [providers]);
 
   const getCapacityColor = (spots: number) => {
     if (spots > 2) return "text-green-500 bg-green-500/10 border-green-500/30";
@@ -100,7 +103,7 @@ export function ZorgaanbiedersPage() {
             Zorgaanbieders
           </h1>
           <p className="text-sm text-muted-foreground">
-            {mockProviders.length} zorgaanbieders in het netwerk
+            {providers.length} zorgaanbieders in het netwerk
           </p>
         </div>
 
@@ -294,14 +297,14 @@ export function ZorgaanbiedersPage() {
                     <Clock className="text-muted-foreground" size={16} />
                     <div>
                       <p className="text-xs text-muted-foreground">Reactietijd</p>
-                      <p className="text-sm font-medium text-foreground">{provider.responseTime}u</p>
+                      <p className="text-sm font-medium text-foreground">{provider.averageWaitDays ?? "—"} dgn</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Star className="text-amber-500 fill-amber-500" size={16} />
                     <div>
                       <p className="text-xs text-muted-foreground">Beoordeling</p>
-                      <p className="text-sm font-medium text-foreground">{provider.rating}</p>
+                      <p className="text-sm font-medium text-foreground">{provider.waitingListLength ?? "—"}</p>
                     </div>
                   </div>
                 </div>
@@ -310,7 +313,19 @@ export function ZorgaanbiedersPage() {
           })}
 
           {/* Empty state */}
-          {filteredProviders.length === 0 && (
+          {loading && (
+            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+              <Loader2 size={18} className="animate-spin" />
+              <span>Aanbieders laden…</span>
+            </div>
+          )}
+          {error && (
+            <div className="premium-card p-6 text-center text-destructive space-y-2">
+              <p>Kon aanbieders niet laden: {error}</p>
+              <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
+            </div>
+          )}
+          {!loading && !error && filteredProviders.length === 0 && (
             <div className="premium-card p-12 text-center">
               <Building2 className="mx-auto mb-4 text-muted-foreground" size={48} />
               <p className="text-lg font-semibold text-foreground mb-2">Geen aanbieders gevonden</p>

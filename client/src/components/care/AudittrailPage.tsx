@@ -31,6 +31,8 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { useAuditLog } from "../../hooks/useAuditLog";
+import { Loader2 } from "lucide-react";
 
 type EntityType = "casus" | "beoordeling" | "matching" | "plaatsing" | "intake" | "document" | "gebruiker" | "instellingen";
 type ActionType = "aangemaakt" | "gewijzigd" | "verwijderd" | "bevestigd" | "toegewezen" | "geupload" | "bekeken";
@@ -55,149 +57,6 @@ interface AuditEntry {
   metadata?: Record<string, any>;
 }
 
-const mockAuditData: AuditEntry[] = [
-  {
-    id: "AUD-001",
-    timestamp: "2026-04-17T14:23:15",
-    action: "Plaatsing bevestigd",
-    actionType: "bevestigd",
-    entityType: "plaatsing",
-    entityId: "C-2026-0956",
-    entityName: "Casus C-2026-0956 · Jeugd 14 – Complex gedrag",
-    userId: "U-001",
-    userName: "Jane Doe",
-    userRole: "Regisseur",
-    description: "Match bevestigd met Jeugdzorg Amsterdam Noord (score 94%)",
-    changes: [
-      { field: "Status", before: "Matching", after: "Plaatsing bevestigd" },
-      { field: "Aanbieder", before: "—", after: "Jeugdzorg Amsterdam Noord" }
-    ],
-    metadata: {
-      providerId: "P-12",
-      providerName: "Jeugdzorg Amsterdam Noord",
-      matchScore: 94
-    }
-  },
-  {
-    id: "AUD-002",
-    timestamp: "2026-04-17T13:45:22",
-    action: "Document geüpload",
-    actionType: "geupload",
-    entityType: "document",
-    entityId: "DOC-005",
-    entityName: "Intake formulier - L.B. 11 jaar",
-    userId: "U-001",
-    userName: "Jane Doe",
-    userRole: "Regisseur",
-    description: "PDF document toegevoegd aan casus C-2026-0002",
-    metadata: {
-      fileSize: "1.9 MB",
-      fileType: "PDF",
-      linkedTo: "C-2026-0002"
-    }
-  },
-  {
-    id: "AUD-003",
-    timestamp: "2026-04-17T11:12:08",
-    action: "Beoordeling gestart",
-    actionType: "aangemaakt",
-    entityType: "beoordeling",
-    entityId: "C-2026-0005",
-    entityName: "Casus C-2026-0005 · Jeugd 13 – Trauma & angststoornis",
-    userId: "U-003",
-    userName: "Dr. P. Bakker",
-    userRole: "Beoordelaar",
-    description: "Psychologische beoordeling toegewezen",
-    changes: [
-      { field: "Status", before: "Intake", after: "Beoordeling" },
-      { field: "Beoordelaar", before: "—", after: "Dr. P. Bakker" }
-    ]
-  },
-  {
-    id: "AUD-004",
-    timestamp: "2026-04-17T09:45:33",
-    action: "Casus toegewezen",
-    actionType: "toegewezen",
-    entityType: "casus",
-    entityId: "C-2026-0956",
-    entityName: "Casus C-2026-0956 · Jeugd 14 – Complex gedrag",
-    userId: "U-002",
-    userName: "Mark van den Berg",
-    userRole: "Manager",
-    description: "Casus toegewezen aan Jane Doe voor matching",
-    changes: [
-      { field: "Toegewezen aan", before: "—", after: "Jane Doe" }
-    ]
-  },
-  {
-    id: "AUD-005",
-    timestamp: "2026-04-16T16:30:12",
-    action: "Instellingen gewijzigd",
-    actionType: "gewijzigd",
-    entityType: "instellingen",
-    entityName: "Systeem configuratie",
-    userId: "U-004",
-    userName: "Lisa de Vries",
-    userRole: "Administrator",
-    description: "Matching algoritme parameters aangepast",
-    changes: [
-      { field: "Match threshold", before: "85%", after: "90%" },
-      { field: "Max distance", before: "25 km", after: "30 km" }
-    ]
-  },
-  {
-    id: "AUD-006",
-    timestamp: "2026-04-16T14:23:45",
-    action: "Matching uitgevoerd",
-    actionType: "aangemaakt",
-    entityType: "matching",
-    entityId: "C-2026-0923",
-    entityName: "Casus C-2026-0923 · Jeugd 15 – ADHD",
-    userId: "U-001",
-    userName: "Jane Doe",
-    userRole: "Regisseur",
-    description: "3 potentiële matches geïdentificeerd",
-    metadata: {
-      matchCount: 3,
-      bestScore: 92
-    }
-  },
-  {
-    id: "AUD-007",
-    timestamp: "2026-04-16T10:15:20",
-    action: "Gebruiker aangemaakt",
-    actionType: "aangemaakt",
-    entityType: "gebruiker",
-    entityId: "U-005",
-    entityName: "John Smith",
-    userId: "U-004",
-    userName: "Lisa de Vries",
-    userRole: "Administrator",
-    description: "Nieuwe gebruiker toegevoegd met rol: Beoordelaar",
-    changes: [
-      { field: "Rol", before: "—", after: "Beoordelaar" },
-      { field: "Gemeente", before: "—", after: "Utrecht" }
-    ]
-  },
-  {
-    id: "AUD-008",
-    timestamp: "2026-04-15T09:45:10",
-    action: "Casus aangemaakt",
-    actionType: "aangemaakt",
-    entityType: "casus",
-    entityId: "C-2026-0956",
-    entityName: "Casus C-2026-0956 · Jeugd 14 – Complex gedrag",
-    userId: "U-001",
-    userName: "Jane Doe",
-    userRole: "Regisseur",
-    description: "Nieuwe casus geregistreerd na intake gesprek",
-    changes: [
-      { field: "Status", before: "—", after: "Intake" },
-      { field: "Urgentie", before: "—", after: "Hoog" },
-      { field: "Regio", before: "—", after: "Utrecht" }
-    ]
-  }
-];
 
 const entityTypeConfig: Record<EntityType, { label: string; icon: any; color: string }> = {
   casus: { label: "Casus", icon: FileText, color: "text-purple-500" },
@@ -234,6 +93,32 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
   const [actionFilter, setActionFilter] = useState<ActionType | "all">("all");
   const [userFilter, setUserFilter] = useState<string>("all");
 
+  const { entries: apiEntries, loading, error, refetch } = useAuditLog({ q: searchQuery });
+
+  // Map SpaAuditEntry → internal AuditEntry shape
+  const mappedEntries: AuditEntry[] = apiEntries.map(e => ({
+    id: e.id,
+    timestamp: e.timestamp,
+    action: e.action,
+    actionType: (["aangemaakt","gewijzigd","verwijderd","bevestigd","toegewezen","geupload","bekeken"]
+      .includes(e.action) ? e.action : "gewijzigd") as ActionType,
+    entityType: (["casus","beoordeling","matching","plaatsing","intake","document","gebruiker","instellingen"]
+      .includes(e.modelName?.toLowerCase() ?? "") ? e.modelName!.toLowerCase() : "casus") as EntityType,
+    entityId: e.objectId ?? undefined,
+    entityName: e.objectRepr ?? "",
+    userId: e.userEmail ?? e.userName ?? "",
+    userName: e.userName ?? "",
+    userRole: "",
+    description: e.action,
+    changes: e.changes
+      ? Object.entries(e.changes).map(([field, val]) => ({
+          field,
+          before: String((val as any).old ?? ""),
+          after: String((val as any).new ?? ""),
+        }))
+      : undefined,
+  }));
+
   // Group by date
   const groupByDate = (entries: AuditEntry[]) => {
     const groups: { [key: string]: AuditEntry[] } = {
@@ -264,7 +149,7 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
   };
 
   // Filter entries
-  const filteredEntries = mockAuditData.filter(entry => {
+  const filteredEntries = mappedEntries.filter(entry => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       const matchesSearch = 
@@ -396,6 +281,19 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
         {/* Main List */}
         <div className={selectedEntry ? "xl:col-span-2" : "xl:col-span-3"}>
           <div className="premium-card overflow-hidden">
+            {loading && (
+              <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+                <Loader2 size={18} className="animate-spin" />
+                <span>Auditlog laden…</span>
+              </div>
+            )}
+            {error && (
+              <div className="p-6 text-center text-destructive space-y-2">
+                <p>Kon auditlog niet laden: {error}</p>
+                <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
+              </div>
+            )}
+            {!loading && !error && (<>
             {Object.entries(groupedEntries).map(([group, entries]) => {
               if (entries.length === 0) return null;
               
@@ -433,6 +331,7 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
                 </p>
               </div>
             )}
+          </>)}
           </div>
         </div>
 

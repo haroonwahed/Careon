@@ -26,137 +26,9 @@ import { Button } from "../ui/button";
 
 // AI Components
 import { SystemInsight } from "../ai";
+import { useMunicipalities } from "../../hooks/useMunicipalities";
+import { Loader2 } from "lucide-react";
 
-interface Gemeente {
-  id: string;
-  name: string;
-  region: string;
-  casesCount: number;
-  activeCases: number;
-  avgWaitingTime: number;
-  capacityStatus: "normal" | "busy" | "shortage";
-  urgentCases: number;
-  blockedCases: number;
-  population: number;
-  providersCount: number;
-  trend: "up" | "down" | "stable";
-}
-
-// Mock municipal data
-const mockGemeenten: Gemeente[] = [
-  {
-    id: "utrecht-stad",
-    name: "Utrecht",
-    region: "Utrecht",
-    casesCount: 45,
-    activeCases: 38,
-    avgWaitingTime: 9,
-    capacityStatus: "shortage",
-    urgentCases: 8,
-    blockedCases: 3,
-    population: 361924,
-    providersCount: 12,
-    trend: "up"
-  },
-  {
-    id: "amsterdam",
-    name: "Amsterdam",
-    region: "Amsterdam",
-    casesCount: 132,
-    activeCases: 115,
-    avgWaitingTime: 5,
-    capacityStatus: "busy",
-    urgentCases: 15,
-    blockedCases: 5,
-    population: 872680,
-    providersCount: 28,
-    trend: "up"
-  },
-  {
-    id: "rotterdam",
-    name: "Rotterdam",
-    region: "Rotterdam",
-    casesCount: 95,
-    activeCases: 82,
-    avgWaitingTime: 6,
-    capacityStatus: "normal",
-    urgentCases: 9,
-    blockedCases: 2,
-    population: 651446,
-    providersCount: 22,
-    trend: "stable"
-  },
-  {
-    id: "den-haag",
-    name: "Den Haag",
-    region: "Den Haag",
-    casesCount: 78,
-    activeCases: 68,
-    avgWaitingTime: 7,
-    capacityStatus: "normal",
-    urgentCases: 6,
-    blockedCases: 1,
-    population: 544766,
-    providersCount: 18,
-    trend: "down"
-  },
-  {
-    id: "eindhoven",
-    name: "Eindhoven",
-    region: "Eindhoven",
-    casesCount: 64,
-    activeCases: 55,
-    avgWaitingTime: 8,
-    capacityStatus: "busy",
-    urgentCases: 7,
-    blockedCases: 2,
-    population: 234456,
-    providersCount: 15,
-    trend: "up"
-  },
-  {
-    id: "amersfoort",
-    name: "Amersfoort",
-    region: "Utrecht",
-    casesCount: 23,
-    activeCases: 20,
-    avgWaitingTime: 6,
-    capacityStatus: "normal",
-    urgentCases: 2,
-    blockedCases: 0,
-    population: 158896,
-    providersCount: 8,
-    trend: "stable"
-  },
-  {
-    id: "nijmegen",
-    name: "Nijmegen",
-    region: "Gelderland",
-    casesCount: 34,
-    activeCases: 29,
-    avgWaitingTime: 7,
-    capacityStatus: "normal",
-    urgentCases: 3,
-    blockedCases: 1,
-    population: 177659,
-    providersCount: 10,
-    trend: "down"
-  },
-  {
-    id: "groningen",
-    name: "Groningen",
-    region: "Groningen",
-    casesCount: 42,
-    activeCases: 36,
-    avgWaitingTime: 5,
-    capacityStatus: "normal",
-    urgentCases: 4,
-    blockedCases: 1,
-    population: 233218,
-    providersCount: 11,
-    trend: "stable"
-  }
-];
 
 interface GemeentenPageProps {
   onGemeenteClick?: (gemeenteId: string) => void;
@@ -166,9 +38,11 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
+  const { municipalities, loading, error, refetch } = useMunicipalities({ q: searchQuery });
+
   // Filter gemeenten
   const filteredGemeenten = useMemo(() => {
-    return mockGemeenten.filter(g => {
+    return municipalities.filter(g => {
       const matchesSearch = searchQuery === "" || 
         g.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         g.region.toLowerCase().includes(searchQuery.toLowerCase());
@@ -181,19 +55,19 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
       
       return matchesSearch && matchesStatus;
     });
-  }, [searchQuery, selectedStatus]);
+  }, [municipalities, searchQuery, selectedStatus]);
 
   // Calculate totals
   const totals = useMemo(() => {
     return {
-      totalCases: mockGemeenten.reduce((acc, g) => acc + g.casesCount, 0),
-      totalUrgent: mockGemeenten.reduce((acc, g) => acc + g.urgentCases, 0),
-      totalBlocked: mockGemeenten.reduce((acc, g) => acc + g.blockedCases, 0),
-      avgWaitTime: Math.round(
-        mockGemeenten.reduce((acc, g) => acc + g.avgWaitingTime, 0) / mockGemeenten.length
-      )
+      totalCases: municipalities.reduce((acc, g) => acc + g.casesCount, 0),
+      totalUrgent: municipalities.reduce((acc, g) => acc + g.urgentCases, 0),
+      totalBlocked: municipalities.reduce((acc, g) => acc + g.blockedCases, 0),
+      avgWaitTime: municipalities.length
+        ? Math.round(municipalities.reduce((acc, g) => acc + g.avgWaitingTime, 0) / municipalities.length)
+        : 0
     };
-  }, []);
+  }, [municipalities]);
 
   const getStatusColor = (status: Gemeente["capacityStatus"]) => {
     switch (status) {
@@ -231,7 +105,7 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
           Gemeenten
         </h1>
         <p className="text-sm text-muted-foreground">
-          {mockGemeenten.length} gemeenten in het netwerk
+          {municipalities.length} gemeenten in het netwerk
         </p>
       </div>
 
@@ -412,7 +286,19 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
       </div>
 
       {/* Empty state */}
-      {filteredGemeenten.length === 0 && (
+      {loading && (
+        <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+          <Loader2 size={18} className="animate-spin" />
+          <span>Gemeenten laden…</span>
+        </div>
+      )}
+      {error && (
+        <div className="premium-card p-6 text-center text-destructive space-y-2">
+          <p>Kon gemeenten niet laden: {error}</p>
+          <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
+        </div>
+      )}
+      {!loading && !error && filteredGemeenten.length === 0 && (
         <div className="premium-card p-12 text-center">
           <MapPin className="mx-auto mb-4 text-muted-foreground" size={48} />
           <p className="text-lg font-semibold text-foreground mb-2">Geen gemeenten gevonden</p>

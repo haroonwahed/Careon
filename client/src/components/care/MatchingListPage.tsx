@@ -6,7 +6,8 @@ import { useState } from "react";
 import { Search, SlidersHorizontal, MapPin } from "lucide-react";
 import { Button } from "../ui/button";
 import { SimpleCaseCard } from "./SimpleCaseCard";
-import { mockCases } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { Loader2 } from "lucide-react";
 
 interface MatchingListPageProps {
   onCaseClick: (caseId: string) => void;
@@ -16,8 +17,10 @@ export function MatchingListPage({ onCaseClick }: MatchingListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
+  const { cases, loading, error } = useCases({ q: searchQuery });
+
   // Filter cases that are ready for matching
-  const matchingCases = mockCases.filter(c => 
+  const matchingCases = cases.filter(c =>
     c.status === "matching" || c.status === "assessment"
   );
 
@@ -130,6 +133,8 @@ export function MatchingListPage({ onCaseClick }: MatchingListPageProps) {
         </div>
       )}
 
+      {loading && <div className="flex items-center justify-center py-12 text-muted-foreground gap-2"><Loader2 size={18} className="animate-spin" /><span>Laden…</span></div>}
+      {error && <div className="p-4 text-destructive">Fout bij laden: {error}</div>}
       {/* CASES LIST */}
       <div className="space-y-3">
         {filteredCases.length === 0 ? (

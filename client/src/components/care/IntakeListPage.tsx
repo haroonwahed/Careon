@@ -6,7 +6,8 @@ import { useState } from "react";
 import { Search, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { UrgencyBadge } from "./UrgencyBadge";
-import { mockCases } from "../../lib/casesData";
+import { useCases } from "../../hooks/useCases";
+import { Loader2 } from "lucide-react";
 
 interface IntakeListPageProps {
   onCaseClick: (caseId: string) => void;
@@ -16,6 +17,9 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "new" | "accepted" | "declined">("all");
   const [declinedRequestIds, setDeclinedRequestIds] = useState<string[]>([]);
+
+  const { cases, loading, error } = useCases({ q: searchQuery });
+  const mockCases = cases;
 
   // Mock intake requests for this provider
   const intakeCases = mockCases.filter(c => c.status === "intake" || c.status === "placement");
@@ -208,6 +212,8 @@ export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
         </div>
       </div>
 
+      {loading && <div className="flex items-center justify-center py-12 text-muted-foreground gap-2"><Loader2 size={18} className="animate-spin" /><span>Laden…</span></div>}
+      {error && <div className="p-4 text-destructive">Fout bij laden: {error}</div>}
       {/* ACCEPTED CASES LIST */}
       {(statusFilter === "all" || statusFilter === "accepted") && (
       <div className="space-y-3">

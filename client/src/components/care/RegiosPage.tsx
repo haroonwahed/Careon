@@ -28,95 +28,8 @@ import { Button } from "../ui/button";
 
 // AI Components
 import { SystemInsight } from "../ai";
-
-interface Region {
-  id: string;
-  name: string;
-  casesCount: number;
-  gemeentenCount: number;
-  providersCount: number;
-  avgWaitingTime: number;
-  capacityStatus: "normal" | "busy" | "shortage";
-  totalCapacity: number;
-  usedCapacity: number;
-  trend: "up" | "down" | "stable";
-}
-
-// Mock regional data
-const mockRegions: Region[] = [
-  {
-    id: "utrecht",
-    name: "Utrecht",
-    casesCount: 87,
-    gemeentenCount: 26,
-    providersCount: 34,
-    avgWaitingTime: 8,
-    capacityStatus: "shortage",
-    totalCapacity: 120,
-    usedCapacity: 105,
-    trend: "up"
-  },
-  {
-    id: "amsterdam",
-    name: "Amsterdam",
-    casesCount: 132,
-    gemeentenCount: 15,
-    providersCount: 52,
-    avgWaitingTime: 5,
-    capacityStatus: "busy",
-    totalCapacity: 180,
-    usedCapacity: 142,
-    trend: "up"
-  },
-  {
-    id: "rotterdam",
-    name: "Rotterdam",
-    casesCount: 95,
-    gemeentenCount: 18,
-    providersCount: 41,
-    avgWaitingTime: 6,
-    capacityStatus: "normal",
-    totalCapacity: 150,
-    usedCapacity: 98,
-    trend: "stable"
-  },
-  {
-    id: "den-haag",
-    name: "Den Haag",
-    casesCount: 78,
-    gemeentenCount: 12,
-    providersCount: 29,
-    avgWaitingTime: 7,
-    capacityStatus: "normal",
-    totalCapacity: 110,
-    usedCapacity: 81,
-    trend: "down"
-  },
-  {
-    id: "eindhoven",
-    name: "Eindhoven",
-    casesCount: 64,
-    gemeentenCount: 21,
-    providersCount: 28,
-    avgWaitingTime: 9,
-    capacityStatus: "shortage",
-    totalCapacity: 90,
-    usedCapacity: 78,
-    trend: "up"
-  },
-  {
-    id: "groningen",
-    name: "Groningen",
-    casesCount: 52,
-    gemeentenCount: 19,
-    providersCount: 22,
-    avgWaitingTime: 5,
-    capacityStatus: "normal",
-    totalCapacity: 85,
-    usedCapacity: 55,
-    trend: "stable"
-  }
-];
+import { useRegions } from "../../hooks/useRegions";
+import { Loader2 } from "lucide-react";
 
 interface RegiosPageProps {
   onRegionClick: (regionId: string) => void;
@@ -133,15 +46,17 @@ export function RegiosPage({
   const [capacityFilter, setCapacityFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"cases" | "capacity" | "waittime">("cases");
 
+  const { regions, loading, error, refetch } = useRegions({ q: searchQuery });
+
   // System-level intelligence
   const systemState = useMemo(() => {
-    const shortageRegions = mockRegions.filter(r => r.capacityStatus === "shortage");
-    const busyRegions = mockRegions.filter(r => r.capacityStatus === "busy");
-    const highWaitRegions = mockRegions.filter(r => r.avgWaitingTime > 7);
+    const shortageRegions = regions.filter(r => r.capacityStatus === "shortage");
+    const busyRegions = regions.filter(r => r.capacityStatus === "busy");
+    const highWaitRegions = regions.filter(r => r.avgWaitingTime > 7);
     
-    const totalCases = mockRegions.reduce((sum, r) => sum + r.casesCount, 0);
-    const totalCapacity = mockRegions.reduce((sum, r) => sum + r.totalCapacity, 0);
-    const totalUsed = mockRegions.reduce((sum, r) => sum + r.usedCapacity, 0);
+    const totalCases = regions.reduce((sum, r) => sum + r.casesCount, 0);
+    const totalCapacity = regions.reduce((sum, r) => sum + r.totalCapacity, 0);
+    const totalUsed = regions.reduce((sum, r) => sum + r.usedCapacity, 0);
     const systemUtilization = Math.round((totalUsed / totalCapacity) * 100);
     
     return {
@@ -153,11 +68,11 @@ export function RegiosPage({
       totalUsed,
       systemUtilization
     };
-  }, []);
+  }, [regions]);
 
   // Filter and sort regions
   const filteredRegions = useMemo(() => {
-    return mockRegions
+    return regions
       .filter(r => {
         // Search filter
         if (searchQuery && !r.name.toLowerCase().includes(searchQuery.toLowerCase())) {
@@ -181,7 +96,7 @@ export function RegiosPage({
         if (sortBy === "waittime") return b.avgWaitingTime - a.avgWaitingTime;
         return 0;
       });
-  }, [searchQuery, capacityFilter, sortBy]);
+  }, [regions, searchQuery, capacityFilter, sortBy]);
 
   return (
     <div className="space-y-6 pb-24">
@@ -202,7 +117,7 @@ export function RegiosPage({
           <p className="text-xs text-muted-foreground mb-1">Totaal casussen</p>
           <p className="text-2xl font-bold text-foreground">{systemState.totalCases}</p>
           <p className="text-xs text-muted-foreground mt-1">
-            {mockRegions.length} regio's
+            {regions.length} regio's
           </p>
         </div>
         
@@ -342,7 +257,19 @@ export function RegiosPage({
           ))}
         </div>
 
-        {filteredRegions.length === 0 && (
+        {loading && (
+          <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+            <Loader2 size={18} className="animate-spin" />
+            <span>Regio's laden…</span>
+          </div>
+        )}
+        {error && (
+          <div className="premium-card p-6 text-center text-destructive space-y-2">
+            <p>Kon regio's niet laden: {error}</p>
+            <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
+          </div>
+        )}
+        {!loading && !error && filteredRegions.length === 0 && (
           <div className="premium-card p-12 text-center">
             <p className="text-muted-foreground">
               Geen regio's gevonden met de huidige filters

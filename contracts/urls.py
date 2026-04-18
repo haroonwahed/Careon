@@ -10,6 +10,16 @@ urlpatterns = [
     path('api/cases/', api_views.contracts_api, name='cases_api'),
     path('api/cases/bulk-update/', api_views.cases_bulk_update_api, name='cases_bulk_update_api'),
     path('api/cases/<str:case_id>/', api_views.case_detail_api, name='case_detail_api'),
+    path('api/assessments/', api_views.assessments_api, name='assessments_api'),
+    path('api/placements/', api_views.placements_api, name='placements_api'),
+    path('api/signals/', api_views.signals_api, name='signals_api'),
+    path('api/tasks/', api_views.tasks_api, name='tasks_api'),
+    path('api/documents/', api_views.documents_api, name='documents_api'),
+    path('api/audit-log/', api_views.audit_log_api, name='audit_log_api'),
+    path('api/providers/', api_views.providers_api, name='providers_api'),
+    path('api/municipalities/', api_views.municipalities_api, name='municipalities_api'),
+    path('api/regions/', api_views.regions_api, name='regions_api'),
+    path('api/dashboard/', api_views.dashboard_summary_api, name='dashboard_summary_api'),
 
     # Care core
     path('clients/', views.ClientListView.as_view(), name='client_list'),
