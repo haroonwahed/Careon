@@ -5,6 +5,7 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements/runtime.txt
+      DATABASE_URL='sqlite:///db.sqlite3' python manage.py test tests --verbosity=1 --settings=config.settings
       npm ci --prefix client
       npm run build --prefix client
       rm -rf theme/static/spa
