@@ -1,7 +1,152 @@
 {% extends "base.html" %}
 {% block title %}Zorgregio's - Zorgregie{% endblock %}
 {% block content %}
-<div class="ds-list-shell">
+<div class="oversight-workspace">
+
+    <div class="ds-list-header">
+        <div>
+            <h1 class="page-title">Zorgregio's</h1>
+            <p class="provider-workspace__subtitle">Regionaal capaciteitsoverzicht — druk, spreiding en aanbiedersbelasting per regio.</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'careon:regional_create' %}" class="btn btn-primary">Nieuwe zorgregio</a>
+        </div>
+    </div>
+
+    {% if regional_list_summary.pressure_signal %}
+    <div class="oversight-workspace__context-strip oversight-workspace__context-strip--{{ regional_list_summary.pressure_signal.tone }}">
+        <span class="oversight-workspace__strip-marker">Signaal</span>
+        <span class="oversight-workspace__strip-message--{{ regional_list_summary.pressure_signal.tone }}">{{ regional_list_summary.pressure_signal.message }}</span>
+    </div>
+    {% endif %}
+
+    <div class="oversight-workspace__summary-grid">
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Totaal regio's</div>
+            <div class="oversight-workspace__summary-value">{{ total_regions }}</div>
+            <div class="oversight-workspace__summary-meta">zorgregio's in netwerk</div>
+        </div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Actief</div>
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--good">{{ active_regions }}</div>
+            <div class="oversight-workspace__summary-meta">actieve regio's</div>
+        </div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Zonder gemeenten</div>
+            <div class="oversight-workspace__summary-value {% if regional_list_summary.empty_region_count >= 2 %}oversight-workspace__summary-value--warning{% endif %}">
+                {{ regional_list_summary.empty_region_count }}
+            </div>
+            <div class="oversight-workspace__summary-meta">
+                {% if regional_list_summary.empty_region_count > 0 %}regio's zonder bediende gemeenten{% else %}alle regio's hebben gemeenten{% endif %}
+            </div>
+        </div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Regionale spreiding</div>
+            <div class="oversight-workspace__summary-value">{{ total_regions }}</div>
+            <div class="oversight-workspace__summary-meta">actieve regiotypen</div>
+        </div>
+    </div>
+
+    <form method="get" class="ds-list-filters">
+        <div>
+            <label for="regional-q" class="ds-list-filter-label">Zoeken</label>
+            <input id="regional-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek zorgregio's...">
+        </div>
+        <div>
+            <label for="regional-status" class="ds-list-filter-label">Status</label>
+            <select id="regional-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle statussen</option>
+                <option value="ACTIVE" {% if request.GET.status == 'ACTIVE' %}selected{% endif %}>Actief</option>
+                <option value="INACTIVE" {% if request.GET.status == 'INACTIVE' %}selected{% endif %}>Inactief</option>
+                <option value="DRAFT" {% if request.GET.status == 'DRAFT' %}selected{% endif %}>Concept</option>
+            </select>
+        </div>
+        <div>
+            <label for="regional-type" class="ds-list-filter-label">Regiotype</label>
+            <select id="regional-type" name="region_type" onchange="this.form.submit()">
+                <option value="">Alle typen</option>
+                {% for value, label in region_type_choices %}
+                <option value="{{ value }}" {% if selected_region_type == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-secondary">Zoeken</button>
+    </form>
+
+    <div class="ds-list-table">
+        <div class="ds-table-wrap">
+            <table class="ds-table">
+                <thead>
+                    <tr>
+                        <th>Zorgregio</th>
+                        <th>Type</th>
+                        <th>Code</th>
+                        <th>Gemeenten</th>
+                        <th>Aanbieders</th>
+                        <th>Zorgdomeinen</th>
+                        <th>Status</th>
+                        <th>Signaal</th>
+                        <th class="th-right">Acties</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for region in regions %}
+                    <tr>
+                        <td><a href="{% url 'careon:regional_detail' region.pk %}">{{ region.region_name }}</a></td>
+                        <td>{{ region.get_region_type_display }}</td>
+                        <td>{{ region.region_code|default:"—" }}</td>
+                        <td>
+                            <span class="ds-badge {% if region.municipality_count == 0 %}badge-low{% else %}badge-medium{% endif %}">
+                                {{ region.municipality_count }}
+                            </span>
+                        </td>
+                        <td><span class="ds-badge badge-blue">{{ region.provider_count }}</span></td>
+                        <td>{{ region.care_domains_display|truncatechars:35 }}</td>
+                        <td>
+                            <span class="ds-badge {% if region.status == 'ACTIVE' %}badge-capacity-open{% elif region.status == 'INACTIVE' %}badge-low{% else %}badge-medium{% endif %}">
+                                {{ region.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if region.municipality_count == 0 %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--warning">Geen gemeenten</span>
+                            {% elif region.provider_count == 0 %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--neutral">Geen aanbieders</span>
+                            {% else %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--neutral">Ingericht</span>
+                            {% endif %}
+                        </td>
+                        <td class="td-right"><a href="{% url 'careon:regional_update' region.pk %}" class="btn btn-ghost">Wijzigen</a></td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="td-empty">
+                            U hebt nog geen zorgregio's ingesteld.
+                            <div class=""><a href="{% url 'careon:regional_create' %}" class="btn btn-primary">Voeg eerste zorgregio toe</a></div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if is_paginated %}
+    <div class="ds-list-pagination">
+        <span class="c-secondary">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+        <div class="feed-actions">
+            {% if page_obj.has_previous %}
+            <a href="?page=1" class="btn btn-secondary">Eerste</a>
+            <a href="?page={{ page_obj.previous_page_number }}" class="btn btn-secondary">Vorige</a>
+            {% endif %}
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}" class="btn btn-secondary">Volgende</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}" class="btn btn-secondary">Laatste</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
     <div class="ds-list-header">
         <div>
             <h1 class="page-title">Zorgregio's</h1>

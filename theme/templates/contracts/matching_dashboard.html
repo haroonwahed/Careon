@@ -11,367 +11,219 @@
     </div>
     <h2 class="mrd-empty__title">Geen casussen gereed voor matching</h2>
     <p class="mrd-empty__body">Er zijn momenteel geen beoordelingen met status "Goedgekeurd voor matching".</p>
+    <p class="casus-impact-summary">Werk beoordelingen af om matching weer mogelijk te maken.</p>
     <a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordelingen</a>
   </div>
   {% else %}
 
   {% with focus_row=rows.0 %}
-  {% with urgency=focus_row.intake.urgency %}
-
-  <header class="mrd-decision-header {% if urgency == 'CRISIS' %}mrd-decision-header--critical{% elif urgency == 'HIGH' %}mrd-decision-header--warning{% else %}mrd-decision-header--healthy{% endif %}">
-    <div class="mrd-decision-header__left">
-      <div class="mrd-decision-header__badges">
-        <span class="mrd-urgency-badge {% if urgency == 'CRISIS' %}mrd-urgency-badge--critical{% elif urgency == 'HIGH' %}mrd-urgency-badge--warning{% else %}mrd-urgency-badge--normal{% endif %}">
-          <svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 3.5a.75.75 0 0 1 .75.75v3a.75.75 0 0 1-1.5 0v-3A.75.75 0 0 1 8 4.5zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
-          {% if urgency == 'CRISIS' %}CRISIS{% elif urgency == 'HIGH' %}HOOG{% else %}NORMAAL{% endif %}
-        </span>
-        <span class="mrd-stage-badge">Matching</span>
-        <span class="mrd-case-id-badge">Casus #{{ focus_row.intake.pk }}</span>
-      </div>
-      <h1 class="mrd-decision-header__title">{{ focus_row.intake.title|truncatechars:72 }}</h1>
-      <div class="mrd-decision-header__meta">
-        <span>{% firstof focus_row.intake.region focus_row.intake.region_name "Regio onbekend" %}</span>
-        <span>{{ focus_row.intake.get_preferred_care_form_display }}</span>
-        <span>Status: {{ focus_row.intake.get_status_display }}</span>
-      </div>
+  <header class="mrd-page-header ds-card">
+    <div>
+      <h1 class="mrd-page-header__title">Matching</h1>
+      <p class="mrd-page-header__subtitle">Los matchproblemen op door capaciteit, fit en ontbrekende randvoorwaarden zichtbaar te maken.</p>
     </div>
-    <div class="mrd-decision-header__right">
-      {% if focus_row.assigned_provider %}
-      <div class="mrd-header-action-box mrd-header-action-box--assigned">
-        <p class="mrd-header-action-box__label">Toegewezen aan</p>
-        <p class="mrd-header-action-box__value">{{ focus_row.assigned_provider.name }}</p>
-        {% if focus_row.placement_pk %}<a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-secondary btn-sm">Bekijk plaatsing</a>{% endif %}
-      </div>
-      {% elif focus_row.suggestions %}
-      <div class="mrd-header-action-box {% if urgency == 'CRISIS' %}mrd-header-action-box--urgent{% elif urgency == 'HIGH' %}mrd-header-action-box--warning{% else %}mrd-header-action-box--default{% endif %}">
-        <p class="mrd-header-action-box__label">Aanbevolen actie</p>
-        <p class="mrd-header-action-box__value">{% if urgency == 'CRISIS' %}Kies aanbieder nu – crisis vereist directe actie{% elif urgency == 'HIGH' %}Bevestig plaatsing binnen 24u{% else %}Selecteer beste match en bevestig plaatsing{% endif %}</p>
-        {% if focus_row.can_assign %}<a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching" class="btn btn-primary btn-sm">Bevestig plaatsing &rarr;</a>{% endif %}
-      </div>
+    <div class="mrd-page-header__controls">
+      <span class="ds-note-text">{{ total_ready }} casussen gereed voor matching</span>
+      {% if selected_intake %}
+      <a href="{% url 'careon:matching_dashboard' %}?intake={{ selected_intake.pk }}" class="btn btn-ghost btn-sm">Ververs</a>
+      <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost btn-sm">Filter wissen</a>
       {% else %}
-      <div class="mrd-header-action-box mrd-header-action-box--blocked">
-        <p class="mrd-header-action-box__label">Actie vereist</p>
-        <p class="mrd-header-action-box__value">Vul profielgegevens aan voor betere matching</p>
-      </div>
+      <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost btn-sm">Ververs matching</a>
       {% endif %}
     </div>
   </header>
 
-  {% if not focus_row.assigned_provider and urgency == 'CRISIS' %}
-  <div class="mrd-alert-bar mrd-alert-bar--critical" role="alert">
+  {% if matching_operational_strip %}
+  <div class="mrd-alert-bar {% if matching_operational_strip.severity == 'critical' %}mrd-alert-bar--critical{% else %}mrd-alert-bar--warning{% endif %}" role="alert">
     <svg class="mrd-alert-bar__icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" clip-rule="evenodd"/></svg>
-    <span class="mrd-alert-bar__text">Crisis casus – directe actie vereist. Geen verdere vertraging toegestaan.</span>
+    <span class="mrd-alert-bar__text">{{ matching_operational_strip.message }}</span>
     <div class="mrd-alert-bar__actions">
-      <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching" class="btn btn-sm mrd-alert-btn-primary">Plaats nu</a>
-      <a href="{% url 'careon:signal_create' %}" class="btn btn-sm mrd-alert-btn-secondary">Escaleer</a>
-    </div>
-  </div>
-  {% elif not focus_row.assigned_provider and urgency == 'HIGH' %}
-  <div class="mrd-alert-bar mrd-alert-bar--warning" role="alert">
-    <svg class="mrd-alert-bar__icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" clip-rule="evenodd"/></svg>
-    <span class="mrd-alert-bar__text">Hoge urgentie – bevestig plaatsing binnen 24 uur.</span>
-    <div class="mrd-alert-bar__actions">
-      {% if focus_row.can_assign %}<a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching" class="btn btn-sm mrd-alert-btn-primary">Doorgaan</a>{% endif %}
-      <a href="{% url 'careon:signal_create' %}" class="btn btn-sm mrd-alert-btn-secondary">Escaleer</a>
+      <a href="{{ focus_row.recommended_action.url }}" class="btn btn-sm mrd-alert-btn-primary">Bekijk matchingproblemen</a>
     </div>
   </div>
   {% endif %}
 
-  <div class="mrd-three-col">
+  <div class="mrd-workspace">
 
-    <aside class="mrd-intel-panel">
-
-      <section class="mrd-panel-card">
-        <h3 class="mrd-panel-card__title">Casusoverzicht</h3>
-        <dl class="mrd-field-list">
-          <div class="mrd-field-row"><dt>Categorie</dt><dd>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</dd></div>
-          <div class="mrd-field-row"><dt>Urgentie</dt><dd><span class="mrd-inline-badge {% if urgency == 'CRISIS' %}mrd-inline-badge--red{% elif urgency == 'HIGH' %}mrd-inline-badge--amber{% else %}mrd-inline-badge--green{% endif %}">{{ focus_row.intake.get_urgency_display }}</span></dd></div>
-          <div class="mrd-field-row"><dt>Zorgvorm</dt><dd>{{ focus_row.intake.get_preferred_care_form_display }}</dd></div>
-          <div class="mrd-field-row"><dt>Regio</dt><dd>{% firstof focus_row.intake.preferred_region.region_name focus_row.intake.region focus_row.intake.region_name "Niet opgegeven" %}</dd></div>
-          <div class="mrd-field-row"><dt>Regiotype</dt><dd>{{ focus_row.intake.get_preferred_region_type_display|default:"–" }}</dd></div>
-          <div class="mrd-field-row"><dt>Beoordeling</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
-          <div class="mrd-field-row"><dt>Beoordelaar</dt><dd>{{ focus_row.assessment.assessed_by.get_full_name|default:"–" }}</dd></div>
-        </dl>
-        <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="mrd-panel-link">&larr; Terug naar casus</a>
-      </section>
-
-      <section class="mrd-panel-card mrd-panel-card--risk">
-        <h3 class="mrd-panel-card__title">Risicosignalen</h3>
-        <ul class="mrd-risk-list">
-          {% if not focus_row.suggestions %}
-          <li class="mrd-risk-item mrd-risk-item--red"><span class="mrd-risk-dot mrd-risk-dot--red"></span>Geen zorgaanbieders beschikbaar</li>
-          {% else %}
-            {% if focus_row.suggestions.0.free_slots|default:0 == 0 %}<li class="mrd-risk-item mrd-risk-item--red"><span class="mrd-risk-dot mrd-risk-dot--red"></span>Topmatch heeft geen vrije plekken</li>{% endif %}
-            {% if focus_row.suggestions.0.avg_wait_days > 28 %}<li class="mrd-risk-item mrd-risk-item--amber"><span class="mrd-risk-dot mrd-risk-dot--amber"></span>Wachttijd topmatch: {{ focus_row.suggestions.0.avg_wait_days }} dagen</li>{% endif %}
-            {% if focus_row.suggestions.0.match_score < 70 %}<li class="mrd-risk-item mrd-risk-item--amber"><span class="mrd-risk-dot mrd-risk-dot--amber"></span>Lage matchscore – beperkte beschikbaarheid</li>{% endif %}
-            {% if urgency == 'CRISIS' and not focus_row.assigned_provider %}<li class="mrd-risk-item mrd-risk-item--red"><span class="mrd-risk-dot mrd-risk-dot--red"></span>Crisis zonder actieve toewijzing</li>{% endif %}
-            {% if focus_row.suggestions|length < 2 %}<li class="mrd-risk-item mrd-risk-item--amber"><span class="mrd-risk-dot mrd-risk-dot--amber"></span>Slechts {{ focus_row.suggestions|length }} optie beschikbaar</li>{% endif %}
-          {% endif %}
-        </ul>
-      </section>
-
-      <section class="mrd-panel-card mrd-panel-card--intel">
-        <h3 class="mrd-panel-card__title">Systeemaanbeveling</h3>
-        {% if focus_row.suggestions %}
-        <p class="mrd-intel-action">
-          {% if focus_row.assigned_provider %}Casus is toegewezen aan {{ focus_row.assigned_provider.name }}.
-          {% elif urgency == 'CRISIS' %}Wijs direct toe aan <strong>{{ focus_row.suggestions.0.provider_name }}</strong> – elke vertraging is risicoverhogend.
-          {% elif focus_row.suggestions.0.free_slots|default:0 > 0 %}Wijs toe aan <strong>{{ focus_row.suggestions.0.provider_name }}</strong> – beste balans van score en beschikbaarheid.
-          {% else %}Overweeg optie 2 – topmatch heeft geen vrije plekken op dit moment.{% endif %}
-        </p>
-        <ul class="mrd-intel-reasons">
-          <li>Matchscore: <strong>{{ focus_row.suggestions.0.match_score }}%</strong></li>
-          <li>Beschikbaarheid: <strong>{{ focus_row.suggestions.0.free_slots|default:0 }} plekken</strong></li>
-          <li>Wachttijd: <strong>{{ focus_row.suggestions.0.avg_wait_days }} dagen</strong></li>
-          {% if focus_row.suggestions.0.region_match %}<li>Regio: <strong>match</strong></li>{% endif %}
-        </ul>
-        <div class="mrd-intel-confidence">
-          <span class="mrd-intel-confidence__label">Zekerheidsscore</span>
-          <div class="mrd-intel-confidence__bar"><div class="mrd-intel-confidence__fill" style="width: {{ focus_row.suggestions.0.match_score }}%"></div></div>
-          <span class="mrd-intel-confidence__value">{{ focus_row.suggestions.0.match_score }}%</span>
+    <main class="mrd-main-column">
+      <section class="mrd-focus-summary ds-card">
+        <div class="mrd-focus-summary__title-wrap">
+          <h2 class="mrd-focus-summary__title">{{ focus_row.intake.title|truncatechars:90 }}</h2>
+          <span class="ds-badge badge-gray">Casus #{{ focus_row.intake.pk }}</span>
         </div>
-        {% else %}
-        <p class="mrd-intel-action">Onvoldoende data – vul profielgegevens aan voor systeemaanbeveling.</p>
-        {% endif %}
+        <div class="mrd-focus-summary__meta">
+          <span>Status: {{ focus_row.matching_status }}</span>
+          <span>{% firstof focus_row.intake.preferred_region.region_name focus_row.intake.region focus_row.intake.region_name "Regio onbekend" %}</span>
+          <span>{{ focus_row.intake.get_preferred_care_form_display }}</span>
+        </div>
       </section>
 
-      <section class="mrd-panel-card">
-        <h3 class="mrd-panel-card__title">Capaciteitsoverzicht</h3>
-        <dl class="mrd-field-list">
-          <div class="mrd-field-row"><dt>Fitscore top</dt><dd>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.match_score }}%{% else %}–{% endif %}</dd></div>
-          <div class="mrd-field-row"><dt>Vrije plekken</dt><dd>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.free_slots|default:0 }}{% else %}–{% endif %}</dd></div>
-          <div class="mrd-field-row"><dt>Wachttijd</dt><dd>{% if focus_row.suggestions %}{{ focus_row.suggestions.0.avg_wait_days }} d{% else %}–{% endif %}</dd></div>
-          <div class="mrd-field-row"><dt>Matches</dt><dd>{{ focus_row.suggestions|length }}</dd></div>
-        </dl>
-      </section>
-    </aside>
-
-    <main class="mrd-center">
       {% if focus_row.suggestions %}
       <div class="mrd-center__header">
-        <h2 class="mrd-center__title">Top aanbevelingen</h2>
-        <span class="mrd-center__sub">Gerangschikt op matchscore &middot; Systeem adviseert, regie beslist</span>
+        <h2 class="mrd-center__title">Aanbieders voor deze casus</h2>
+        <span class="mrd-center__sub">Elke kaart toont probleem, actie en impact.</span>
       </div>
       <div class="mrd-cards">
         {% for suggestion in focus_row.suggestions|slice:":3" %}
         <article id="matching-provider-card-{{ suggestion.provider_id }}"
-          class="mrd-match-card {% if forloop.counter == 1 %}mrd-match-card--best{% elif forloop.counter == 2 %}mrd-match-card--alt{% else %}mrd-match-card--risky{% endif %}{% if suggestion.free_slots|default:0 == 0 %} mrd-match-card--no-slots{% endif %}"
+          class="mrd-match-card{% if suggestion.free_slots|default:0 == 0 %} mrd-match-card--no-slots{% endif %}"
           data-provider-card="{{ suggestion.provider_id }}" tabindex="-1">
-          <div class="mrd-match-card__tier">
-            {% if forloop.counter == 1 %}<span class="mrd-tier-badge mrd-tier-badge--best">Beste match</span>
-            {% elif forloop.counter == 2 %}<span class="mrd-tier-badge mrd-tier-badge--alt">Alternatief</span>
-            {% else %}<span class="mrd-tier-badge mrd-tier-badge--risky">Risicovol</span>{% endif %}
-            <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}%</span>
+          <div class="mrd-match-card__header">
+            <h3 class="mrd-match-card__name">{{ suggestion.provider_name }}</h3>
+            <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}% Matchscore</span>
           </div>
-          <h3 class="mrd-match-card__name">{{ suggestion.provider_name }}</h3>
+          <p class="mrd-card-status">Matching status: {{ suggestion.matching_status }}</p>
+          <div class="mrd-card-reason">
+            <p class="mrd-card-reason__label">Waarom matching faalt</p>
+            <p class="mrd-card-reason__text">{% firstof focus_row.primary_signal.label suggestion.failure_reason focus_row.failure_reason %}</p>
+          </div>
           <div class="mrd-match-card__chips">
-            {% if suggestion.free_slots|default:0 > 3 %}<span class="mrd-chip mrd-chip--green"><span class="mrd-chip__dot"></span>Capaciteit beschikbaar</span>
-            {% elif suggestion.free_slots|default:0 > 0 %}<span class="mrd-chip mrd-chip--amber"><span class="mrd-chip__dot"></span>Capaciteit beperkt ({{ suggestion.free_slots }})</span>
-            {% else %}<span class="mrd-chip mrd-chip--red"><span class="mrd-chip__dot"></span>Capaciteit vol</span>{% endif %}
-            {% if suggestion.region_match %}<span class="mrd-chip mrd-chip--green">Regio: match</span>{% else %}<span class="mrd-chip mrd-chip--amber">Regio: afwijking</span>{% endif %}
-            {% if suggestion.avg_wait_days <= 14 %}<span class="mrd-chip mrd-chip--green">{{ suggestion.avg_wait_days }}d wachttijd</span>
-            {% elif suggestion.avg_wait_days <= 28 %}<span class="mrd-chip mrd-chip--amber">{{ suggestion.avg_wait_days }}d wachttijd</span>
-            {% else %}<span class="mrd-chip mrd-chip--red">{{ suggestion.avg_wait_days }}d wachttijd</span>{% endif %}
+            {% if suggestion.operational_signals %}
+            <span class="mrd-chip tone-{{ suggestion.operational_signals.0.chip_tone }}">{{ suggestion.operational_signals.0.label }}</span>
+            {% elif focus_row.secondary_signal %}
+            <span class="mrd-chip">{{ focus_row.secondary_signal.label }}</span>
+            {% endif %}
           </div>
-          <div class="mrd-match-card__explain">
-            <div class="mrd-explain-row">
-              <span class="mrd-explain-label">Waarom dit past</span>
-              <span class="mrd-explain-text">{{ suggestion.reason }}</span>
-            </div>
-            <div class="mrd-explain-row mrd-explain-row--caution">
-              <span class="mrd-explain-label">Aandachtspunt</span>
-              <span class="mrd-explain-text">
-                {% if suggestion.free_slots|default:0 == 0 %}Geen vrije plekken – overweeg optie 2
-                {% elif suggestion.avg_wait_days > 28 %}Lange wachttijd – vertraagt plaatsing
-                {% elif suggestion.match_score < 70 %}Lagere zekerheid dan gewenst
-                {% else %}Bevestig fit handmatig via casusdossier{% endif %}
-              </span>
-            </div>
-          </div>
+          {% if focus_row.bottleneck_badge %}<span class="ds-badge {{ focus_row.bottleneck_badge.badge_class }}">{{ focus_row.bottleneck_badge.label }}</span>
+          {% elif focus_row.attention_band %}<span class="ds-badge {{ focus_row.attention_band.badge_class }}">{{ focus_row.attention_band.label }}</span>{% endif %}
           {% if suggestion.behavior_labels %}{% include "contracts/_behavior_signals.html" with labels=suggestion.behavior_labels %}{% endif %}
           {% include "contracts/_behavior_influence.html" with influence=suggestion.explanation.behavior_influence consideration=suggestion.explanation.behavior_consideration %}
-          <div class="mrd-match-card__actions">
+          <div class="mrd-card-action-block">
+            <p class="mrd-card-action-block__label">Aanbevolen actie</p>
+            <p class="mrd-card-action-block__title">{{ focus_row.recommended_action.label }}</p>
+            <p class="mrd-card-action-block__reason">{% firstof focus_row.recommended_action.reason "Voer aanbevolen actie uit" %}</p>
+            <p class="mrd-card-action-block__reason">Voer aanbevolen actie uit om matching te verbeteren.</p>
+            <p class="mrd-card-action-block__impact">{{ focus_row.impact_summary.text }}</p>
             {% if focus_row.can_assign %}
             <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching"
-               class="btn {% if forloop.counter == 1 %}btn-primary{% elif forloop.counter == 2 %}btn-secondary{% else %}mrd-btn-risky{% endif %}">
-              {% if forloop.counter == 1 %}Plaats direct{% elif forloop.counter == 2 %}Plaats{% else %}Plaats met risico{% endif %}
+               class="btn btn-primary">
+              Plaats direct
             </a>
-            {% else %}<span class="mrd-no-permission">Geen bewerkrechten</span>{% endif %}
-            <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="btn btn-ghost">Bekijk profiel</a>
+            {% else %}
+            <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">Voer aanbevolen actie uit</a>
+            {% endif %}
+            {% if suggestion.provider_id %}
+            <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="mrd-inline-link">Bekijk profiel</a>
+            {% endif %}
           </div>
         </article>
         {% endfor %}
       </div>
 
-      <section class="mrd-comparison">
-        <h3 class="mrd-comparison__title">Vergelijking – alle kandidaten</h3>
-        <div class="ds-table-wrap">
-          <table class="ds-table">
-            <thead><tr><th>#</th><th>Aanbieder</th><th>Matchscore</th><th>Capaciteit</th><th>Wachttijd</th><th>Waarom</th></tr></thead>
-            <tbody>
-              {% for suggestion in focus_row.suggestions %}
-              <tr>
-                <td>{{ forloop.counter }}</td>
-                <td class="font-medium">{{ suggestion.provider_name }}</td>
-                <td><span class="ds-badge {% if suggestion.match_score >= 80 %}badge-blue{% elif suggestion.match_score >= 60 %}badge-gray{% else %}badge-high{% endif %}">{{ suggestion.match_score }}%</span></td>
-                <td>{% if suggestion.free_slots|default:0 > 3 %}Beschikbaar ({{ suggestion.free_slots }}){% elif suggestion.free_slots|default:0 > 0 %}Beperkt ({{ suggestion.free_slots }}){% else %}Vol{% endif %}</td>
-                <td>{{ suggestion.avg_wait_days }} d</td>
-                <td class="ds-text-secondary">{{ suggestion.reason }}</td>
-              </tr>
+      {% else %}
+      <div class="mrd-suggestions-empty">
+        <p class="mrd-card-reason__label">Waarom matching faalt</p>
+        <p>{{ focus_row.failure_reason }}</p>
+        <p class="ds-note-text">Aanbevolen actie: {{ focus_row.recommended_action.label }}</p>
+        <p class="ds-note-text">{{ focus_row.recommended_action.reason }}</p>
+        <p class="casus-impact-summary">{{ focus_row.impact_summary.text }}</p>
+        <div class="mrd-suggestions-empty__actions">
+          <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">{{ focus_row.recommended_action.label }}</a>
+        </div>
+      </div>
+      {% endif %}
+    </main>
+
+    <aside class="mrd-side-rail">
+      <section class="mrd-panel-card ds-card">
+        <h3 class="mrd-panel-card__title">Casuscontext</h3>
+        <dl class="mrd-field-list">
+          <div class="mrd-field-row"><dt>Urgentie</dt><dd>{{ focus_row.intake.get_urgency_display }}</dd></div>
+          <div class="mrd-field-row"><dt>Beoordeling</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
+          <div class="mrd-field-row"><dt>Categorie</dt><dd>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</dd></div>
+          <div class="mrd-field-row"><dt>Regio</dt><dd>{% firstof focus_row.intake.preferred_region.region_name focus_row.intake.region focus_row.intake.region_name "Niet opgegeven" %}</dd></div>
+          <div class="mrd-field-row"><dt>Wachttijd</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.avg_wait_days != None %}{{ focus_row.suggestions.0.avg_wait_days }} d{% else %}Onbekend{% endif %}</dd></div>
+          <div class="mrd-field-row"><dt>Capaciteit</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.free_slots != None %}{{ focus_row.suggestions.0.free_slots }} vrije plekken{% else %}Onbekend{% endif %}</dd></div>
+        </dl>
+        <div class="mrd-side-rail__actions">
+          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-ghost btn-sm">Open beoordeling</a>
+          <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost btn-sm">Open casus</a>
+        </div>
+      </section>
+
+      <section class="mrd-panel-card mrd-map-card ds-card ds-sidebar-card matching-map-panel js-matching-map">
+        {{ focus_row.matching_map|json_script:"matching-map-data" }}
+        <div class="matching-map-panel__head">
+          <div>
+            <h3 class="mrd-panel-card__title">Geografische context</h3>
+            <p class="mrd-map-note">Kaartcontext ondersteunt de aanbeveling, maar vervangt die niet.</p>
+          </div>
+          <span class="ds-badge badge-gray">{{ focus_row.matching_map.summary.candidate_count }} kandidaten</span>
+        </div>
+        <div class="matching-map-shell{% if not focus_row.matching_map.summary.can_render_map %} matching-map-shell--empty{% endif %}" data-map-shell>
+          <div class="matching-map-shell__meta">
+            <div>
+              <span class="matching-map-shell__label">Casuslocatie</span>
+              <strong>{{ focus_row.matching_map.case_location.label }}</strong>
+              <span>{% if focus_row.matching_map.case_location.has_coordinates %}Coordinaten beschikbaar{% else %}{% firstof focus_row.matching_map.case_location.municipality_label focus_row.matching_map.case_location.region_label "Coordinaten ontbreken" %}{% endif %}</span>
+            </div>
+            <div>
+              <span class="matching-map-shell__label">Aanbieders met coordinaten</span>
+              <strong>{{ focus_row.matching_map.summary.providers_with_coordinates }} / {{ focus_row.matching_map.summary.candidate_count }}</strong>
+              <span>{% if focus_row.matching_map.summary.can_render_map %}Kaartplot gereed{% elif focus_row.matching_map.summary.has_partial_geo %}Gedeeltelijke geo-context{% else %}Alleen shell beschikbaar{% endif %}</span>
+            </div>
+          </div>
+          {% if focus_row.matching_map.summary.can_render_map %}
+          <div class="matching-map-shell__canvas" data-map-canvas role="img" aria-label="Kaart met casuslocatie en topaanbieders"></div>
+          {% else %}
+          <div class="matching-map-empty"><strong>{{ focus_row.matching_map.empty_state.title }}</strong><p>{{ focus_row.matching_map.empty_state.message }}</p></div>
+          {% endif %}
+        </div>
+        {% if focus_row.matching_map.provider_markers %}
+        <div class="matching-map-legend">
+          <div class="matching-map-legend__section">
+            <span class="matching-map-legend__label">Top kandidaten</span>
+            <div class="matching-map-legend__list">
+              {% for marker in focus_row.matching_map.provider_markers|slice:":3" %}
+              <button type="button"
+                class="matching-map-legend-item{% if marker.provider_id == focus_row.matching_map.selected_provider_id %} matching-map-legend-item--active{% endif %}"
+                data-provider-marker="{{ marker.provider_id }}"
+                aria-pressed="{% if marker.provider_id == focus_row.matching_map.selected_provider_id %}true{% else %}false{% endif %}">
+                <span class="matching-map-legend-item__rank">{{ marker.rank }}</span>
+                <span class="matching-map-legend-item__copy">
+                  <strong>{{ marker.provider_name }}</strong>
+                  <span>{{ marker.specialization_summary }}</span>
+                  <span>{% if marker.distance_label %}{{ marker.distance_label }}{% else %}{{ marker.location_label }}{% endif %} &middot; {{ marker.capacity_status_label }}</span>
+                </span>
+              </button>
               {% endfor %}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
-        {% if focus_row.assigned_provider %}
-        <div class="mrd-history-strip">Toegewezen aan <strong>{{ focus_row.assigned_provider.name }}</strong>{% if focus_row.placement_pk %} &middot; <a href="{% url 'careon:placement_detail' focus_row.placement_pk %}">Bekijk plaatsing</a>{% endif %}</div>
         {% endif %}
-        {% if focus_row.suggestions|slice:"3:" %}
-        <div class="mrd-dropped">
-          <span class="mrd-dropped__label">Afgevallen aanbieders</span>
-          {% for suggestion in focus_row.suggestions|slice:"3:" %}<span class="mrd-dropped__item">{{ suggestion.provider_name }} &middot; {{ suggestion.match_score }}%</span>{% endfor %}
-        </div>
+        {% if focus_row.matching_map.limitations %}
+        <ul class="matching-map-limitations">{% for l in focus_row.matching_map.limitations %}<li>{{ l }}</li>{% endfor %}</ul>
         {% endif %}
       </section>
 
+      {% if focus_row.capacity_failure_signals %}
+      <section class="mrd-panel-card ds-card">
+        <h3 class="mrd-panel-card__title">Capaciteitssignalen</h3>
+        <ul class="mrd-risk-list">
+          {% for failure_signal in focus_row.capacity_failure_signals|slice:":2" %}
+          <li class="mrd-risk-item mrd-risk-item--amber"><span class="mrd-risk-dot mrd-risk-dot--amber"></span>{{ failure_signal }}</li>
+          {% endfor %}
+        </ul>
+      </section>
+      {% endif %}
+
       {% if not selected_intake and rows|length > 1 %}
-      <section class="mrd-other-cases">
-        <h3 class="mrd-other-cases__title">Andere casussen gereed voor matching</h3>
+      <section class="mrd-panel-card ds-card">
+        <h3 class="mrd-panel-card__title">Andere casussen gereed voor matching</h3>
         <div class="mrd-other-cases__list">
           {% for row in rows|slice:"1:6" %}
           <a href="{% url 'careon:matching_dashboard' %}?intake={{ row.intake.pk }}" class="mrd-other-case-item">
-            <span class="mrd-other-case-item__name">{{ row.intake.title|truncatechars:40 }}</span>
-            <span class="mrd-other-case-item__meta">
-              <span class="mrd-inline-badge {% if row.intake.urgency == 'CRISIS' %}mrd-inline-badge--red{% elif row.intake.urgency == 'HIGH' %}mrd-inline-badge--amber{% else %}mrd-inline-badge--gray{% endif %}">{{ row.intake.get_urgency_display }}</span>
-              {{ row.suggestions|length }} matches
-            </span>
+            <span class="mrd-other-case-item__name">{{ row.intake.title|truncatechars:42 }}</span>
+            <span class="mrd-other-case-item__meta">{{ row.suggestions|length }} kandidaten</span>
           </a>
           {% endfor %}
         </div>
       </section>
       {% endif %}
 
-      {% else %}
-      <div class="mrd-suggestions-empty">
-        <p>Geen zorgaanbieders beschikbaar voor deze beoordeling.</p>
-        <div class="mrd-suggestions-empty__actions">
-          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-secondary">Open beoordeling</a>
-          <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost">Terug naar casus</a>
-        </div>
-      </div>
-      {% endif %}
-    </main>
-
-    <aside class="mrd-action-panel">
-      <div class="mrd-action-panel__inner">
-
-        <section class="mrd-panel-card mrd-map-card ds-card ds-sidebar-card matching-map-panel js-matching-map">
-          {{ focus_row.matching_map|json_script:"matching-map-data" }}
-          <div class="matching-map-panel__head">
-            <div>
-              <h3 class="mrd-panel-card__title">Geografische context</h3>
-              <p class="mrd-map-note">Aanbevelingen blijven leidend. Kaartlaag valideert geografische fit.</p>
-            </div>
-            <span class="ds-badge badge-gray">{{ focus_row.matching_map.summary.candidate_count }} kandidaten</span>
-          </div>
-          <div class="matching-map-shell{% if not focus_row.matching_map.summary.can_render_map %} matching-map-shell--empty{% endif %}" data-map-shell>
-            <div class="matching-map-shell__meta">
-              <div>
-                <span class="matching-map-shell__label">Casuslocatie</span>
-                <strong>{{ focus_row.matching_map.case_location.label }}</strong>
-                <span>{% if focus_row.matching_map.case_location.has_coordinates %}Coordinaten beschikbaar{% else %}{% firstof focus_row.matching_map.case_location.municipality_label focus_row.matching_map.case_location.region_label "Coordinaten ontbreken" %}{% endif %}</span>
-              </div>
-              <div>
-                <span class="matching-map-shell__label">Aanbieders met coordinaten</span>
-                <strong>{{ focus_row.matching_map.summary.providers_with_coordinates }} / {{ focus_row.matching_map.summary.candidate_count }}</strong>
-                <span>{% if focus_row.matching_map.summary.can_render_map %}Kaartplot gereed{% elif focus_row.matching_map.summary.has_partial_geo %}Gedeeltelijke geo-context{% else %}Alleen shell beschikbaar{% endif %}</span>
-              </div>
-            </div>
-            {% if focus_row.matching_map.summary.can_render_map %}
-            <div class="matching-map-shell__canvas" data-map-canvas role="img" aria-label="Kaart met casuslocatie en topaanbieders"></div>
-            {% else %}
-            <div class="matching-map-empty"><strong>{{ focus_row.matching_map.empty_state.title }}</strong><p>{{ focus_row.matching_map.empty_state.message }}</p></div>
-            {% endif %}
-          </div>
-          {% if focus_row.matching_map.provider_markers %}
-          <div class="matching-map-legend">
-            <div class="matching-map-legend__section">
-              <span class="matching-map-legend__label">Top kandidaten</span>
-              <div class="matching-map-legend__list">
-                {% for marker in focus_row.matching_map.provider_markers|slice:":3" %}
-                <button type="button"
-                  class="matching-map-legend-item{% if marker.provider_id == focus_row.matching_map.selected_provider_id %} matching-map-legend-item--active{% endif %}"
-                  data-provider-marker="{{ marker.provider_id }}"
-                  aria-pressed="{% if marker.provider_id == focus_row.matching_map.selected_provider_id %}true{% else %}false{% endif %}">
-                  <span class="matching-map-legend-item__rank">{{ marker.rank }}</span>
-                  <span class="matching-map-legend-item__copy">
-                    <strong>{{ marker.provider_name }}</strong>
-                    <span>{{ marker.specialization_summary }}</span>
-                    <span>{% if marker.distance_label %}{{ marker.distance_label }}{% else %}{{ marker.location_label }}{% endif %} &middot; {{ marker.capacity_status_label }}</span>
-                  </span>
-                </button>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          {% endif %}
-          {% if focus_row.matching_map.limitations %}
-          <ul class="matching-map-limitations">{% for l in focus_row.matching_map.limitations %}<li>{{ l }}</li>{% endfor %}</ul>
-          {% endif %}
-        </section>
-
-        <section class="mrd-next-step-card">
-          <h3 class="mrd-next-step-card__title">Volgende stap</h3>
-          {% if focus_row.assigned_provider %}
-          <div class="mrd-next-step-state mrd-next-step-state--done">
-            Toegewezen aan <strong>{{ focus_row.assigned_provider.name }}</strong>
-          </div>
-          {% if focus_row.placement_pk %}<a href="{% url 'careon:placement_detail' focus_row.placement_pk %}" class="btn btn-secondary mrd-next-step-cta">Bekijk plaatsing</a>{% endif %}
-          {% elif focus_row.suggestions and focus_row.can_assign %}
-          <p class="mrd-next-step-card__desc">Bevestig toewijzing aan <strong>{{ focus_row.suggestions.0.provider_name }}</strong> ({{ focus_row.suggestions.0.match_score }}%).</p>
-          <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching" class="btn btn-primary mrd-next-step-cta">Bevestig plaatsing</a>
-          <div class="mrd-next-step-alts">
-            <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="mrd-alt-action">Meer informatie opvragen</a>
-            <a href="{% url 'careon:signal_create' %}" class="mrd-alt-action mrd-alt-action--danger">Casus escaleren</a>
-          </div>
-          {% elif focus_row.suggestions %}
-          <p class="mrd-next-step-card__desc mrd-next-step-card__desc--muted">Je hebt geen bewerkrechten voor deze casus.</p>
-          <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-secondary mrd-next-step-cta">Bekijk casus</a>
-          {% else %}
-          <p class="mrd-next-step-card__desc mrd-next-step-card__desc--muted">Geen aanbieders beschikbaar. Pas criteria aan.</p>
-          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-secondary mrd-next-step-cta">Open beoordeling</a>
-          {% endif %}
-          <div class="mrd-criteria-summary">
-            <p class="mrd-criteria-summary__label">Matchcriteria</p>
-            <dl class="mrd-field-list mrd-field-list--compact">
-              <div class="mrd-field-row"><dt>Categorie</dt><dd>{{ focus_row.intake.care_category_main.name|default:"–" }}</dd></div>
-              <div class="mrd-field-row"><dt>Urgentie</dt><dd>{{ focus_row.intake.get_urgency_display }}</dd></div>
-              <div class="mrd-field-row"><dt>Zorgvorm</dt><dd>{{ focus_row.intake.get_preferred_care_form_display }}</dd></div>
-              <div class="mrd-field-row"><dt>Regio</dt><dd>{{ focus_row.intake.preferred_region.region_name|default:"Niet gekozen" }}</dd></div>
-            </dl>
-          </div>
-          <div class="mrd-criteria-summary">
-            <p class="mrd-criteria-summary__label">Beoordeling</p>
-            <dl class="mrd-field-list mrd-field-list--compact">
-              <div class="mrd-field-row"><dt>Status</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
-              <div class="mrd-field-row"><dt>Bijgewerkt</dt><dd>{{ focus_row.assessment.updated_at|date:"d-m H:i" }}</dd></div>
-              <div class="mrd-field-row"><dt>Beoordelaar</dt><dd>{{ focus_row.assessment.assessed_by.get_full_name|default:"–" }}</dd></div>
-            </dl>
-          </div>
-          <div class="mrd-nav-actions">
-            {% if selected_intake %}
-            <a href="{% url 'careon:matching_dashboard' %}?intake={{ selected_intake.pk }}" class="btn btn-ghost btn-sm">Ververs</a>
-            <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost btn-sm">Filter wissen</a>
-            {% else %}
-            <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-ghost btn-sm">Ververs matching</a>
-            {% endif %}
-          </div>
-        </section>
-
-      </div>
     </aside>
   </div>
 
-  {% endwith %}
   {% endwith %}
   {% endif %}
 </div>

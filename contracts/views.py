@@ -20,6 +20,7 @@ from django.utils.dateparse import parse_date
 from django.utils.cache import patch_cache_control
 from django.utils.http import url_has_allowed_host_and_scheme
 from datetime import timedelta, date
+from collections import defaultdict
 from decimal import Decimal
 from math import asin, cos, radians, sin, sqrt
 import csv
@@ -43,6 +44,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
+    OutcomeReasonCode,
 )
 from .middleware import log_action
 from .permissions import (
@@ -58,13 +60,28 @@ from .provider_metrics import (
     derive_behavior_signals,
     label_behavior_signals,
 )
-from .case_intelligence import calculate_provider_response_sla, evaluate_case_intelligence
+from .provider_workspace import build_provider_workspace_rows, build_provider_workspace_summary
+from .oversight_workspace import (
+    build_municipality_list_summary,
+    build_municipality_detail_summary,
+    build_municipality_oversight_row,
+    build_regional_list_summary,
+    build_regional_detail_summary,
+    build_regional_oversight_row,
+)
+from .case_intelligence import (
+    calculate_provider_response_sla,
+    derive_provider_response_ownership,
+    evaluate_case_intelligence,
+)
 from .governance import (
     build_matching_recommendation_payload,
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
 from .regiekamer_service import build_regiekamer_summary
+from .operational_decision_contract import build_operational_decision_for_intake
+from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from config.feature_flags import is_feature_redesign_enabled
 
@@ -1259,7 +1276,12 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         org = get_user_organization(self.request.user)
-        qs = scope_queryset_for_organization(Client.objects.all(), org)
+        qs = scope_queryset_for_organization(Client.objects.all(), org).select_related(
+            'provider_profile'
+        ).prefetch_related(
+            'provider_profile__served_regions',
+            'wait_time_entries',
+        )
         q = self.request.GET.get('q')
         status = self.request.GET.get('status')
         client_type = self.request.GET.get('type')
@@ -1284,13 +1306,18 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx = super().get_context_data(**kwargs)
         org = get_user_organization(self.request.user)
         tenant_clients = scope_queryset_for_organization(Client.objects.all(), org)
-        client_stats = tenant_clients.aggregate(
-            total=Count('id'),
-            active=Count('id', filter=Q(status='ACTIVE')),
-        )
+        filtered_clients = list(self.object_list)
+        paginated_clients = list(ctx['clients'])
+        workspace_summary = build_provider_workspace_summary(filtered_clients)
+
+        client_stats = tenant_clients.aggregate(total=Count('id'))
         ctx['total_clients'] = client_stats['total']
-        ctx['active_clients'] = client_stats['active']
+        ctx['active_clients'] = workspace_summary['direct_capacity_count']
+        ctx['provider_workspace_summary'] = workspace_summary
+        ctx['provider_rows'] = build_provider_workspace_rows(paginated_clients)
         ctx['search_query'] = self.request.GET.get('q', '')
+        ctx['selected_status'] = self.request.GET.get('status', '')
+        ctx['selected_client_type'] = self.request.GET.get('type', '')
         selected_region_type = self.request.GET.get('region_type', '')
         region_qs = RegionalConfiguration.objects.filter(organization=org)
         if selected_region_type:
@@ -1299,6 +1326,13 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx['selected_region_type'] = selected_region_type
         ctx['selected_region'] = self.request.GET.get('region', '')
         ctx['region_choices'] = region_qs.order_by('region_name')
+        query_params = self.request.GET.copy()
+        query_params.pop('page', None)
+        ctx['pagination_query'] = query_params.urlencode()
+        ctx['has_active_filters'] = any(
+            self.request.GET.get(key)
+            for key in ('q', 'status', 'type', 'region_type', 'region')
+        )
         return ctx
 
 
@@ -3245,6 +3279,524 @@ def _build_provider_response_governance_context(placement):
     return normalized_status, sla, recommendation_context, adaptive_flags
 
 
+def _provider_response_status_label(status_code):
+    normalized = _normalize_provider_response_status_code(status_code)
+    labels = {
+        PlacementRequest.ProviderResponseStatus.PENDING: 'Nog niet vastgelegd',
+        PlacementRequest.ProviderResponseStatus.ACCEPTED: 'Geaccepteerd',
+        PlacementRequest.ProviderResponseStatus.REJECTED: 'Afgewezen',
+        PlacementRequest.ProviderResponseStatus.NEEDS_INFO: 'Aanvullende info nodig',
+        PlacementRequest.ProviderResponseStatus.WAITLIST: 'Wachtlijst',
+        PlacementRequest.ProviderResponseStatus.NO_CAPACITY: 'Geen capaciteit',
+    }
+    return labels.get(normalized, normalized.title())
+
+
+def _provider_recommended_action_presentation(next_action):
+    mapping = {
+        'monitor': ('Monitor voortgang', 'medium'),
+        'resend': ('Stuur herinnering', 'high'),
+        'resend_or_rematch': ('Beslis: herinnering of her-match', 'high'),
+        'immediate_decision': ('Neem direct een besluit', 'critical'),
+        'rematch_or_override_decision': ('Her-match of expliciete override', 'critical'),
+        'rematch': ('Start her-match', 'critical'),
+    }
+    return mapping.get(next_action, ('Monitor voortgang', 'medium'))
+
+
+def _provider_response_age_days(placement, hours_waiting):
+    requested_at = (
+        placement.provider_response_requested_at
+        or placement.provider_response_last_reminder_at
+        or placement.updated_at
+    )
+    if requested_at:
+        return max((timezone.now().date() - requested_at.date()).days, 0)
+    return max(int(hours_waiting // 24), 0)
+
+
+def _provider_response_actions_for_case_detail(*, normalized_status, sla_state):
+    if normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+        return []
+
+    if sla_state == 'FORCED_ACTION':
+        return [
+            {
+                'action': 'trigger_rematch',
+                'label': 'Her-match starten',
+                'note': 'SLA FORCED_ACTION bereikt: her-match is de primaire route.',
+                'visual_tone': 'primary',
+                'requires_confirmation': False,
+            },
+            {
+                'action': 'provide_missing_info',
+                'label': 'Aanvullende informatie aanleveren',
+                'note': 'Gebruik dit alleen wanneer ontbrekende info direct de providerreactie kan herstellen.',
+                'visual_tone': 'secondary',
+                'requires_confirmation': False,
+            },
+            {
+                'action': 'continue_waiting',
+                'label': 'Blijf wachten (expliciete override)',
+                'note': 'Alleen bij expliciete operationele onderbouwing; keuze wordt geaudit.',
+                'visual_tone': 'ghost',
+                'requires_confirmation': True,
+                'confirm_text': 'Bevestig dat je expliciet blijft wachten ondanks SLA FORCED_ACTION.',
+                'confirm_field': 'confirm_forced_wait',
+                'confirm_value': '1',
+            },
+        ]
+
+    if normalized_status in {
+        PlacementRequest.ProviderResponseStatus.REJECTED,
+        PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+    }:
+        return [
+            {
+                'action': 'trigger_rematch',
+                'label': 'Her-match starten',
+                'note': 'Aanbieder blokkeert voortgang; stuur direct terug naar matching.',
+                'visual_tone': 'primary',
+                'requires_confirmation': False,
+            }
+        ]
+
+    if normalized_status == PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+        return [
+            {
+                'action': 'provide_missing_info',
+                'label': 'Aanvullende informatie registreren',
+                'note': 'Na registreren wordt de providerreactie opnieuw opengezet.',
+                'visual_tone': 'primary',
+                'requires_confirmation': False,
+            },
+            {
+                'action': 'resend_request',
+                'label': 'Herinnering sturen',
+                'note': 'Stuur een extra reminder wanneer aanvullende informatie al gedeeld is.',
+                'visual_tone': 'secondary',
+                'requires_confirmation': False,
+            },
+        ]
+
+    if normalized_status == PlacementRequest.ProviderResponseStatus.WAITLIST:
+        return [
+            {
+                'action': 'resend_request',
+                'label': 'Herinnering sturen',
+                'note': 'Vraag een update op de wachtlijstverwachting en alternatieven.',
+                'visual_tone': 'secondary',
+                'requires_confirmation': False,
+            },
+            {
+                'action': 'trigger_rematch',
+                'label': 'Her-match starten',
+                'note': 'Kies her-match wanneer wachttijd niet acceptabel is.',
+                'visual_tone': 'primary',
+                'requires_confirmation': False,
+            },
+        ]
+
+    return [
+        {
+            'action': 'resend_request',
+            'label': 'Herinnering sturen',
+            'note': 'Stuur een reminder om providerreactie binnen SLA te houden.',
+            'visual_tone': 'secondary',
+            'requires_confirmation': False,
+        }
+    ]
+
+
+def _build_case_provider_response_context(*, intake, placement):
+    if not placement:
+        return None, [], None
+
+    normalized_status, sla, _, _ = _build_provider_response_governance_context(placement)
+    ownership = derive_provider_response_ownership(
+        provider_response_status=normalized_status,
+        sla_state=sla['sla_state'],
+        hours_waiting=sla['hours_waiting'],
+        next_threshold_hours=sla['next_threshold_hours'],
+        now=timezone.now(),
+        case_phase=intake.status,
+    )
+
+    requested_at = (
+        placement.provider_response_requested_at
+        or placement.provider_response_last_reminder_at
+    )
+    summary = {
+        'status': normalized_status,
+        'status_label': _provider_response_status_label(normalized_status),
+        'sla_state': sla['sla_state'],
+        'sla_hours_waiting': sla['hours_waiting'],
+        'sla_escalates_in_hours': max(sla['next_threshold_hours'] - sla['hours_waiting'], 0) if sla['next_threshold_hours'] else 0,
+        'age_days': _provider_response_age_days(placement, sla['hours_waiting']),
+        'requested_at': requested_at,
+        'deadline_at': placement.provider_response_deadline_at,
+        'is_overdue': sla['sla_state'] in {'OVERDUE', 'ESCALATED', 'FORCED_ACTION'},
+        'sla_forced_action_required': sla['sla_state'] == 'FORCED_ACTION',
+        'next_owner': ownership['next_owner'],
+        'next_owner_label': ownership['next_owner_label'],
+        'next_action': ownership['next_action'],
+        'next_action_label': ownership['next_action_label'],
+        'action_deadline': ownership['action_deadline'],
+        'action_deadline_label': ownership['action_deadline_label'],
+        'escalation_level_label': ownership['escalation_level_label'],
+        'ownership_reason': ownership['ownership_reason'],
+    }
+
+    actions = _provider_response_actions_for_case_detail(
+        normalized_status=normalized_status,
+        sla_state=sla['sla_state'],
+    )
+
+    action_href = reverse('careon:case_provider_response_action', kwargs={'pk': intake.pk})
+    return summary, actions, action_href
+
+
+def _to_bool_filter(value):
+    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
+
+
+def _urgency_rank(urgency_code):
+    ranks = {
+        CaseIntakeProcess.Urgency.CRISIS: 4,
+        CaseIntakeProcess.Urgency.HIGH: 3,
+        CaseIntakeProcess.Urgency.MEDIUM: 2,
+        CaseIntakeProcess.Urgency.LOW: 1,
+    }
+    return ranks.get(str(urgency_code or '').strip().upper(), 0)
+
+
+def build_provider_response_monitor(org, *, user=None, filters=None, next_url=None):
+    filters = filters or {}
+    priority_mode = _to_bool_filter(filters.get('priority_mode'))
+    search_query = str(filters.get('q') or '').strip()
+    urgency_filter = str(filters.get('urgency') or '').strip().upper()
+    status_filter = _normalize_provider_response_status_code(filters.get('provider_response_status')) if filters.get('provider_response_status') else ''
+    region_filter = str(filters.get('region') or '').strip()
+    overdue_only = _to_bool_filter(filters.get('overdue_only'))
+    rematch_recommended_only = _to_bool_filter(filters.get('rematch_recommended_only'))
+
+    default_sort = 'urgency' if priority_mode else 'default'
+    requested_sort = str(filters.get('sort') or default_sort).strip().lower()
+    sort_mode = requested_sort if requested_sort in {'default', 'oldest_waiting', 'urgency'} else default_sort
+
+    placement_qs = (
+        PlacementRequest.objects.filter(
+            due_diligence_process__organization=org,
+            due_diligence_process__isnull=False,
+        )
+        .select_related(
+            'due_diligence_process',
+            'due_diligence_process__preferred_region',
+            'due_diligence_process__contract',
+            'due_diligence_process__contract__client',
+            'selected_provider',
+            'proposed_provider',
+        )
+        .order_by('due_diligence_process_id', '-updated_at', '-id')
+    )
+
+    latest_by_case = {}
+    for placement in placement_qs:
+        intake_id = placement.due_diligence_process_id
+        if intake_id not in latest_by_case:
+            latest_by_case[intake_id] = placement
+
+    can_edit = bool(user) and can_manage_organization(user, org)
+    queue_rows = []
+    for placement in latest_by_case.values():
+        intake = placement.due_diligence_process
+        if not intake:
+            continue
+
+        normalized_status = _normalize_provider_response_status_code(placement.provider_response_status)
+        if normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+            continue
+        if intake.status == CaseIntakeProcess.ProcessStatus.COMPLETED:
+            continue
+
+        sla = calculate_provider_response_sla(placement, now=timezone.now())
+        ownership = derive_provider_response_ownership(
+            provider_response_status=normalized_status,
+            sla_state=sla['sla_state'],
+            hours_waiting=sla['hours_waiting'],
+            next_threshold_hours=sla['next_threshold_hours'],
+            now=timezone.now(),
+            case_phase=intake.status,
+        )
+
+        provider = placement.selected_provider or placement.proposed_provider
+        provider_name = provider.name if provider else 'Onbekende aanbieder'
+        provider_id = provider.id if provider else None
+        region = intake.preferred_region
+        region_label = region.region_name if region else 'Niet toegewezen'
+        client_name = ''
+        if intake.contract and intake.contract.client:
+            client_name = intake.contract.client.name or ''
+
+        is_overdue = sla['sla_state'] in {'OVERDUE', 'ESCALATED', 'FORCED_ACTION'}
+        is_rematch_recommended = normalized_status in {
+            PlacementRequest.ProviderResponseStatus.REJECTED,
+            PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+        } or sla['sla_state'] == 'FORCED_ACTION'
+
+        recommended_action_label, recommended_action_tone = _provider_recommended_action_presentation(
+            ownership['next_action']
+        )
+
+        age_days = _provider_response_age_days(placement, sla['hours_waiting'])
+        case_href = _case_detail_tab_href(intake.pk, 'plaatsing')
+
+        resend_action = None
+        if can_edit and normalized_status in {
+            PlacementRequest.ProviderResponseStatus.PENDING,
+            PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+        }:
+            resend_action = {
+                'href': reverse('careon:case_provider_response_action', kwargs={'pk': intake.pk}),
+                'action': 'resend_request',
+                'next': next_url or case_href,
+                'confirm_text': 'Weet je zeker dat je een herinnering wilt versturen naar deze aanbieder?',
+            }
+
+        queue_rows.append(
+            {
+                'case_id': intake.pk,
+                'case_title': intake.title,
+                'case_href': case_href,
+                'client_name': client_name,
+                'provider_id': provider_id,
+                'provider_name': provider_name,
+                'status': normalized_status,
+                'status_label': _provider_response_status_label(normalized_status),
+                'sla_state': sla['sla_state'],
+                'sla_hours_waiting': sla['hours_waiting'],
+                'sla_escalates_in_hours': max(sla['next_threshold_hours'] - sla['hours_waiting'], 0) if sla['next_threshold_hours'] else 0,
+                'next_owner': ownership['next_owner'],
+                'next_owner_label': ownership['next_owner_label'],
+                'escalation_level_label': ownership['escalation_level_label'],
+                'region_id': str(region.pk) if region else '',
+                'region_label': region_label,
+                'phase_label': intake.get_status_display(),
+                'urgency_label': intake.get_urgency_display(),
+                'urgency_rank': _urgency_rank(intake.urgency),
+                'age_days': age_days,
+                'requested_at': placement.provider_response_requested_at,
+                'deadline_at': placement.provider_response_deadline_at,
+                'recommended_action_label': recommended_action_label,
+                'recommended_action_detail': ownership['ownership_reason'],
+                'recommended_action_tone': recommended_action_tone,
+                'action_deadline_label': ownership['action_deadline_label'],
+                'flags': {
+                    'is_waiting': normalized_status in {
+                        PlacementRequest.ProviderResponseStatus.PENDING,
+                        PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+                    },
+                    'is_overdue': is_overdue,
+                    'is_rematch_recommended': is_rematch_recommended,
+                },
+                'resend_action': resend_action,
+            }
+        )
+
+    summary = {
+        'total_cases': len(queue_rows),
+        'waiting_count': sum(1 for row in queue_rows if row['flags']['is_waiting']),
+        'overdue_count': sum(1 for row in queue_rows if row['flags']['is_overdue']),
+        'rematch_recommended_count': sum(1 for row in queue_rows if row['flags']['is_rematch_recommended']),
+        'waitlist_no_capacity_count': sum(
+            1
+            for row in queue_rows
+            if row['status'] in {
+                PlacementRequest.ProviderResponseStatus.WAITLIST,
+                PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            }
+        ),
+        'avg_age_days': round(
+            sum(row['age_days'] for row in queue_rows) / len(queue_rows),
+            1,
+        ) if queue_rows else 0.0,
+        'sla_breach_count': sum(1 for row in queue_rows if row['flags']['is_overdue']),
+        'escalation_required_count': sum(
+            1 for row in queue_rows if row['sla_state'] in {'ESCALATED', 'FORCED_ACTION'}
+        ),
+        'forced_action_count': sum(1 for row in queue_rows if row['sla_state'] == 'FORCED_ACTION'),
+    }
+
+    filtered_rows = list(queue_rows)
+    if search_query:
+        needle = search_query.lower()
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if (
+                needle in row['case_title'].lower()
+                or needle in str(row['case_id'])
+                or needle in row['provider_name'].lower()
+                or needle in row['client_name'].lower()
+            )
+        ]
+
+    if urgency_filter:
+        filtered_rows = [
+            row for row in filtered_rows if str(row['urgency_label']).strip().upper() == urgency_filter
+            or str(latest_by_case[row['case_id']].due_diligence_process.urgency).strip().upper() == urgency_filter
+        ]
+
+    if status_filter:
+        filtered_rows = [row for row in filtered_rows if row['status'] == status_filter]
+
+    if region_filter:
+        filtered_rows = [row for row in filtered_rows if row['region_id'] == region_filter]
+
+    if overdue_only:
+        filtered_rows = [row for row in filtered_rows if row['flags']['is_overdue']]
+
+    if rematch_recommended_only:
+        filtered_rows = [row for row in filtered_rows if row['flags']['is_rematch_recommended']]
+
+    if priority_mode:
+        filtered_rows = [
+            row
+            for row in filtered_rows
+            if row['sla_state'] in {'FORCED_ACTION', 'ESCALATED', 'OVERDUE'}
+            or row['status'] in {
+                PlacementRequest.ProviderResponseStatus.REJECTED,
+                PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            }
+        ]
+
+    def _default_sort_key(row):
+        severity_order = {
+            'FORCED_ACTION': 0,
+            'ESCALATED': 1,
+            'OVERDUE': 2,
+            'AT_RISK': 3,
+            'ON_TRACK': 4,
+        }
+        rematch_group = 4 if row['flags']['is_rematch_recommended'] else 0
+        if row['flags']['is_rematch_recommended'] and row['sla_state'] not in {'FORCED_ACTION', 'ESCALATED', 'OVERDUE'}:
+            rematch_group = 5
+        return (
+            severity_order.get(row['sla_state'], 6),
+            rematch_group,
+            -row['urgency_rank'],
+            -row['age_days'],
+            -row['case_id'],
+        )
+
+    if sort_mode == 'oldest_waiting':
+        filtered_rows.sort(key=lambda row: (-row['age_days'], -row['urgency_rank'], _default_sort_key(row)))
+    elif sort_mode == 'urgency':
+        filtered_rows.sort(key=lambda row: (-row['urgency_rank'], -row['age_days'], _default_sort_key(row)))
+    else:
+        filtered_rows.sort(key=_default_sort_key)
+
+    immediate_action_rows = [
+        row for row in filtered_rows if row['sla_state'] in {'OVERDUE', 'ESCALATED', 'FORCED_ACTION'}
+    ]
+
+    region_choices = []
+    for region in RegionalConfiguration.objects.filter(organization=org).order_by('region_name'):
+        region_choices.append({'id': region.pk, 'label': region.region_name})
+
+    return {
+        'summary': summary,
+        'queue_rows': filtered_rows,
+        'immediate_action_rows': immediate_action_rows,
+        'filters': {
+            'priority_mode': priority_mode,
+            'search_query': search_query,
+            'urgency': urgency_filter,
+            'provider_response_status': status_filter,
+            'region': region_filter,
+            'overdue_only': overdue_only,
+            'rematch_recommended_only': rematch_recommended_only,
+            'sort': sort_mode,
+        },
+        'region_choices': region_choices,
+        'status_choices': [
+            (PlacementRequest.ProviderResponseStatus.PENDING, 'Nog niet vastgelegd'),
+            (PlacementRequest.ProviderResponseStatus.NEEDS_INFO, 'Aanvullende info nodig'),
+            (PlacementRequest.ProviderResponseStatus.WAITLIST, 'Wachtlijst'),
+            (PlacementRequest.ProviderResponseStatus.REJECTED, 'Afgewezen'),
+            (PlacementRequest.ProviderResponseStatus.NO_CAPACITY, 'Geen capaciteit'),
+        ],
+        'sort_choices': [
+            ('default', 'Standaard triage'),
+            ('urgency', 'Urgentie eerst'),
+            ('oldest_waiting', 'Langst wachtend eerst'),
+        ],
+    }
+
+
+def build_provider_response_overview(queue_rows, limit=8):
+    grouped_rows = defaultdict(lambda: {
+        'provider_id': None,
+        'provider_name': 'Onbekende aanbieder',
+        'open_response_count': 0,
+        'overdue_response_count': 0,
+        'avg_response_age_days': 0.0,
+        'recent_no_capacity_count': 0,
+        'recent_rejection_count': 0,
+        '_age_sum': 0,
+        'patterns': [],
+    })
+
+    for row in queue_rows:
+        provider_key = row.get('provider_id') or f"name::{row.get('provider_name', 'onbekend')}"
+        bucket = grouped_rows[provider_key]
+        bucket['provider_id'] = row.get('provider_id')
+        bucket['provider_name'] = row.get('provider_name') or 'Onbekende aanbieder'
+        bucket['open_response_count'] += 1
+        bucket['_age_sum'] += int(row.get('age_days') or 0)
+        if row.get('flags', {}).get('is_overdue'):
+            bucket['overdue_response_count'] += 1
+        if row.get('status') == PlacementRequest.ProviderResponseStatus.NO_CAPACITY:
+            bucket['recent_no_capacity_count'] += 1
+        if row.get('status') == PlacementRequest.ProviderResponseStatus.REJECTED:
+            bucket['recent_rejection_count'] += 1
+
+    overview_rows = []
+    for bucket in grouped_rows.values():
+        if bucket['open_response_count']:
+            bucket['avg_response_age_days'] = round(
+                bucket['_age_sum'] / bucket['open_response_count'],
+                1,
+            )
+        patterns = []
+        if bucket['overdue_response_count'] >= 2:
+            patterns.append('frequent delays')
+        if bucket['recent_no_capacity_count'] >= 2:
+            patterns.append('often no capacity')
+        if bucket['recent_rejection_count'] >= 2:
+            patterns.append('repeated rejections')
+        bucket['patterns'] = patterns
+        bucket.pop('_age_sum', None)
+        overview_rows.append(bucket)
+
+    overview_rows.sort(
+        key=lambda row: (
+            -row['open_response_count'],
+            -row['overdue_response_count'],
+            -row['avg_response_age_days'],
+            row['provider_name'].lower(),
+        )
+    )
+
+    return {
+        'total_provider_count': len(overview_rows),
+        'is_truncated': len(overview_rows) > limit,
+        'rows': overview_rows[:limit],
+    }
+
+
 @login_required
 def matching_dashboard(request):
     """Show actionable assessment-to-provider matching suggestions and assignments."""
@@ -3306,16 +3858,117 @@ def matching_dashboard(request):
         ).select_related('selected_provider')
     }
 
+    capacity_failure_labels = {
+        'no_capacity': 'Geen capaciteit',
+        'waitlist': 'Wachtlijst',
+        'rejection': 'Afwijzing',
+    }
+
     rows = []
+    no_match_count = 0
+    capacity_pressure_count = 0
     for assessment in assessments:
         intake = assessment.intake
         can_assign = _can_edit_intake(request.user, intake)
         suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
+        decision = build_operational_decision_for_intake(intake.pk)
+        decision_payload = decision.to_dict() if decision else {}
+
+        blocker_label = decision_payload.get('blocker_label') or ''
+        failure_reason = blocker_label or (decision_payload.get('recommended_action') or {}).get('reason') or 'Geen passende aanbieder'
+        presented_decision = present_operational_decision(
+            decision_payload,
+            action_defaults={
+                'label': 'Vraag aanvullende regio-opties op',
+                'reason': failure_reason,
+                'url': reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}),
+            },
+            impact_defaults={
+                'text': 'Vergroot kans op match',
+                'type': 'positive',
+            },
+            fallback_reason=failure_reason,
+        )
+
+        if not suggestions:
+            no_match_count += 1
+
+        normalized_suggestions = []
+        for suggestion in suggestions[:5]:
+            provider_name = suggestion.get('provider_name') or 'Onbekende aanbieder'
+            free_slots_raw = suggestion.get('free_slots')
+            wait_days_raw = suggestion.get('avg_wait_days')
+            free_slots = free_slots_raw if isinstance(free_slots_raw, (int, float)) else None
+            wait_days = wait_days_raw if isinstance(wait_days_raw, (int, float)) else None
+            region_match = suggestion.get('region_match')
+
+            if free_slots is not None and free_slots <= 0:
+                matching_status = 'Geen directe capaciteit'
+                local_failure_reason = 'Capaciteitstekort in regio'
+            elif wait_days is not None and wait_days > 28:
+                matching_status = 'Wachtlijstrisico'
+                local_failure_reason = 'Wachttijd loopt op'
+            elif wait_days is None and free_slots is None:
+                matching_status = 'Onvoldoende capaciteitsdata'
+                local_failure_reason = 'Capaciteitscontext ontbreekt'
+            else:
+                matching_status = 'Matchbaar'
+                local_failure_reason = failure_reason
+
+            operational_signals = []
+            if free_slots is not None:
+                if free_slots <= 0:
+                    operational_signals.append({'label': 'Geen capaciteit', 'chip_tone': 'red'})
+                elif free_slots <= 2:
+                    operational_signals.append({'label': f'Capaciteit beperkt ({int(free_slots)})', 'chip_tone': 'amber'})
+                else:
+                    operational_signals.append({'label': 'Capaciteit beschikbaar', 'chip_tone': 'green'})
+
+            if wait_days is not None and len(operational_signals) < 2:
+                if wait_days >= 35:
+                    operational_signals.append({'label': 'Wachtlijst', 'chip_tone': 'red'})
+                elif wait_days > 21:
+                    operational_signals.append({'label': f'{int(wait_days)}d wachttijd', 'chip_tone': 'amber'})
+                else:
+                    operational_signals.append({'label': f'{int(wait_days)}d wachttijd', 'chip_tone': 'green'})
+
+            if region_match is False and len(operational_signals) < 2:
+                operational_signals.append({'label': 'Regio: afwijking', 'chip_tone': 'amber'})
+
+            if any(signal['label'] in ['Geen capaciteit', 'Wachtlijst'] for signal in operational_signals):
+                capacity_pressure_count += 1
+
+            normalized_suggestion = dict(suggestion)
+            normalized_suggestion.update({
+                'provider_name': provider_name,
+                'match_score': suggestion.get('match_score') if isinstance(suggestion.get('match_score'), (int, float)) else 0,
+                'fit_score': suggestion.get('fit_score') if isinstance(suggestion.get('fit_score'), (int, float)) else 0,
+                'free_slots': free_slots,
+                'avg_wait_days': wait_days,
+                'operational_signals': operational_signals[:2],
+                'matching_status': matching_status,
+                'failure_reason': local_failure_reason,
+                'capacity_context': (
+                    'Capaciteit onbekend'
+                    if free_slots is None
+                    else 'Geen vrije plekken'
+                    if free_slots <= 0
+                    else f'{int(free_slots)} vrije plekken'
+                ),
+                'wait_context': (
+                    'Wachttijd onbekend'
+                    if wait_days is None
+                    else f'{int(wait_days)} dagen wachttijd'
+                ),
+                'region_context': 'Regio match' if region_match else 'Regio-afwijking',
+            })
+            normalized_suggestions.append(normalized_suggestion)
+
         _assignment = assigned_by_intake.get(intake.id)
-        selected_provider_id = _assignment.selected_provider_id if _assignment else (suggestions[0]['provider_id'] if suggestions else None)
-        if suggestions:
+        selected_provider_id = _assignment.selected_provider_id if _assignment else (normalized_suggestions[0].get('provider_id') if normalized_suggestions else None)
+        if normalized_suggestions:
             recommendation, recommendation_context, adaptive_flags = build_matching_recommendation_payload(
-                suggestions,
+                normalized_suggestions,
                 limit=3,
             )
             recommendation_context['source_view'] = 'matching_dashboard'
@@ -3329,6 +3982,14 @@ def matching_dashboard(request):
                 provider_id=recommendation.get('provider_id') if recommendation else None,
                 adaptive_flags=adaptive_flags,
             )
+
+        failure_states = decision_payload.get('capacity_failure_states') or []
+        capacity_failure_signals = [
+            capacity_failure_labels[state]
+            for state in failure_states
+            if state in capacity_failure_labels
+        ]
+
         rows.append(
             {
                 'assessment': assessment,
@@ -3336,16 +3997,43 @@ def matching_dashboard(request):
                 'can_assign': can_assign,
                 'assigned_provider': _assignment.selected_provider if _assignment else None,
                 'placement_pk': _assignment.pk if _assignment else None,
-                'suggestions': suggestions[:5],
-                'matching_map': _build_matching_map_context(intake, suggestions[:5], selected_provider_id=selected_provider_id),
+                'suggestions': normalized_suggestions,
+                'matching_map': _build_matching_map_context(intake, normalized_suggestions, selected_provider_id=selected_provider_id),
+                'matching_status': 'Toegewezen' if _assignment else ('Geen passende aanbieder' if not normalized_suggestions else 'Matchkandidaten beschikbaar'),
+                'failure_reason': failure_reason,
+                'primary_signal': presented_decision['primary_signal'],
+                'secondary_signal': presented_decision['secondary_signal'],
+                'action_block': presented_decision['action_block'],
+                'priority_indicator': presented_decision['priority_indicator'],
+                'badges': presented_decision['badges'],
+                'recommended_action': presented_decision['recommended_action'],
+                'impact_summary': presented_decision['impact_summary'],
+                'attention_band': presented_decision['attention_band'],
+                'bottleneck_badge': presented_decision['bottleneck_badge'],
+                'capacity_failure_signals': capacity_failure_signals,
+                'decision_data_integrity_ok': bool(presented_decision['recommended_action'].get('label')) and bool(presented_decision['impact_summary'].get('text')),
             }
         )
+
+    matching_operational_strip = None
+    if no_match_count > 0:
+        matching_operational_strip = {
+            'severity': 'critical',
+            'message': f'{no_match_count} casussen hebben geen match door capaciteitsdruk',
+        }
+    elif capacity_pressure_count > 0:
+        matching_operational_strip = {
+            'severity': 'warning',
+            'message': f'{capacity_pressure_count} matchkandidaten tonen capaciteitsdruk of wachtlijstrisico',
+        }
 
     context = {
         'rows': rows,
         'total_ready': len(rows),
         'assigned_count': len(assigned_by_intake),
         'selected_intake': selected_intake,
+        'matching_operational_strip': matching_operational_strip,
+        'decision_data_integrity_ok': all(row['decision_data_integrity_ok'] for row in rows),
     }
     return render(request, 'contracts/matching_dashboard.html', context)
 
@@ -3486,6 +4174,7 @@ def case_provider_response_action(request, pk):
         if normalized_status not in {
             PlacementRequest.ProviderResponseStatus.PENDING,
             PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
         }:
             messages.error(request, 'Herinnering is alleen toegestaan voor open providerreacties.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
@@ -3684,6 +4373,174 @@ def case_provider_response_action(request, pk):
 
 @login_required
 @require_POST
+def case_outcome_action(request, pk):
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden('Je hebt geen rechten om uitkomstregistratie voor deze casus te wijzigen.')
+
+    placement = PlacementRequest.objects.filter(
+        due_diligence_process=intake,
+    ).select_related('selected_provider', 'proposed_provider').order_by('-updated_at').first()
+
+    next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing"
+    if not placement:
+        messages.error(request, 'Nog geen plaatsing beschikbaar. Start eerst via matching.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    outcome_type = str(request.POST.get('outcome_type') or '').strip().lower()
+    now = timezone.now()
+
+    if outcome_type == 'provider_response':
+        raw_status = request.POST.get('status')
+        normalized_status = _normalize_provider_response_status_code(raw_status)
+        valid_statuses = {choice[0] for choice in PlacementRequest.ProviderResponseStatus.choices}
+        if normalized_status not in valid_statuses:
+            messages.error(request, 'Ongeldige providerreactie-status.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        reason_code = str(request.POST.get('reason_code') or OutcomeReasonCode.NONE).strip().upper()
+        valid_reason_codes = {choice[0] for choice in OutcomeReasonCode.choices}
+        if reason_code not in valid_reason_codes:
+            reason_code = OutcomeReasonCode.NONE
+
+        notes = (request.POST.get('notes') or '').strip()
+        placement.provider_response_status = normalized_status
+        placement.provider_response_reason_code = reason_code
+        placement.provider_response_notes = notes
+        placement.provider_response_recorded_at = now
+        placement.provider_response_recorded_by = request.user
+        if normalized_status in {
+            PlacementRequest.ProviderResponseStatus.PENDING,
+            PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+        } and placement.provider_response_requested_at is None:
+            placement.provider_response_requested_at = now
+        placement.save(
+            update_fields=[
+                'provider_response_status',
+                'provider_response_reason_code',
+                'provider_response_notes',
+                'provider_response_recorded_at',
+                'provider_response_recorded_by',
+                'provider_response_requested_at',
+                'updated_at',
+            ]
+        )
+
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'PlacementRequest',
+            object_id=placement.id,
+            object_repr=f'{intake.title} -> provider response outcome',
+            changes={
+                'outcome_type': 'provider_response',
+                'status': normalized_status,
+                'reason_code': reason_code,
+                'intake_id': intake.id,
+                'placement_id': placement.id,
+                'source': 'case_detail',
+            },
+            request=request,
+        )
+        messages.success(request, 'Providerreactie-uitkomst opgeslagen.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    messages.error(request, 'Onbekend uitkomsttype.')
+    return _redirect_to_safe_next_or_default(request, next_fallback)
+
+
+@login_required
+def provider_response_monitor(request):
+    org = get_user_organization(request.user)
+    base_context = {
+        'monitor_summary': {
+            'total_cases': 0,
+            'waiting_count': 0,
+            'overdue_count': 0,
+            'rematch_recommended_count': 0,
+            'waitlist_no_capacity_count': 0,
+            'avg_age_days': 0.0,
+            'sla_breach_count': 0,
+            'escalation_required_count': 0,
+            'forced_action_count': 0,
+        },
+        'monitor_queue_rows': [],
+        'monitor_immediate_action_rows': [],
+        'monitor_filters': {
+            'priority_mode': False,
+            'search_query': '',
+            'urgency': '',
+            'provider_response_status': '',
+            'region': '',
+            'overdue_only': False,
+            'rematch_recommended_only': False,
+            'sort': 'default',
+        },
+        'monitor_region_choices': [],
+        'monitor_status_choices': [
+            (PlacementRequest.ProviderResponseStatus.PENDING, 'Nog niet vastgelegd'),
+            (PlacementRequest.ProviderResponseStatus.NEEDS_INFO, 'Aanvullende info nodig'),
+            (PlacementRequest.ProviderResponseStatus.WAITLIST, 'Wachtlijst'),
+            (PlacementRequest.ProviderResponseStatus.REJECTED, 'Afgewezen'),
+            (PlacementRequest.ProviderResponseStatus.NO_CAPACITY, 'Geen capaciteit'),
+        ],
+        'monitor_sort_choices': [
+            ('default', 'Standaard triage'),
+            ('urgency', 'Urgentie eerst'),
+            ('oldest_waiting', 'Langst wachtend eerst'),
+        ],
+        'monitor_provider_overview_rows': [],
+        'monitor_provider_overview_total_provider_count': 0,
+        'monitor_provider_overview_is_truncated': False,
+        'monitor_updated_at': timezone.now(),
+        'monitor_has_active_filters': False,
+    }
+
+    if not org:
+        messages.error(request, 'Geen actieve organisatie gevonden voor provider response monitor.')
+        return render(request, 'contracts/provider_response_monitor.html', base_context)
+
+    query_string = request.GET.urlencode()
+    next_url = reverse('careon:provider_response_monitor')
+    if query_string:
+        next_url = f'{next_url}?{query_string}'
+
+    monitor = build_provider_response_monitor(
+        org,
+        user=request.user,
+        filters=request.GET,
+        next_url=next_url,
+    )
+    provider_overview = build_provider_response_overview(monitor['queue_rows'], limit=8)
+
+    base_context.update(
+        {
+            'monitor_summary': monitor['summary'],
+            'monitor_queue_rows': monitor['queue_rows'],
+            'monitor_immediate_action_rows': monitor['immediate_action_rows'],
+            'monitor_filters': monitor['filters'],
+            'monitor_region_choices': monitor['region_choices'],
+            'monitor_status_choices': monitor['status_choices'],
+            'monitor_sort_choices': monitor['sort_choices'],
+            'monitor_provider_overview_rows': provider_overview['rows'],
+            'monitor_provider_overview_total_provider_count': provider_overview['total_provider_count'],
+            'monitor_provider_overview_is_truncated': provider_overview['is_truncated'],
+            'monitor_updated_at': timezone.now(),
+            'monitor_has_active_filters': bool(query_string),
+        }
+    )
+
+    return render(request, 'contracts/provider_response_monitor.html', base_context)
+
+
+@login_required
+@require_POST
 def case_placement_action(request, pk):
     org = get_user_organization(request.user)
     intake = get_object_or_404(
@@ -3748,139 +4605,30 @@ def case_placement_action(request, pk):
 # ==================== DASHBOARD VIEW ====================
 
 def dashboard(request):
-    # SPA OVERRIDE NOTE: When theme/static/spa/index.html exists, the React SPA
-    # is served directly and the server-rendered template is bypassed entirely.
-    # The build_regiekamer_summary service below is fully implemented and will
-    # be active once the SPA file is absent (dev-only mode) or a dedicated API
-    # endpoint is wired to expose this data to the SPA.
+    # Regiekamer is SPA-first: always serve the frontend shell.
+    # Backend Regiekamer services remain available for API/future integration.
     spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
     if spa_index_path.exists():
         return HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
 
-    today = date.today()
-    now = timezone.now()
-    org = get_user_organization(request.user)
-
-    intakes_qs = scope_queryset_for_organization(
-        CaseIntakeProcess.objects.select_related(
-            'organization',
-            'case_coordinator',
-            'preferred_region',
-            'case_assessment',
+    # Equivalent shell fallback when frontend build artifacts are unavailable.
+    return HttpResponse(
+        (
+            '<!DOCTYPE html>'
+            '<html lang="en">'
+            '<head>'
+            '<meta charset="UTF-8" />'
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
+            '<title>SaaS Careon</title>'
+            '<style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>'
+            '</head>'
+            '<body>'
+            '<div id="root"></div>'
+            '</body>'
+            '</html>'
         ),
-        org,
+        content_type='text/html',
     )
-
-    base_active_qs = intakes_qs.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED)
-
-    # --- Input validation for filter params ---
-    selected_region = (request.GET.get('regio') or '').strip()
-    selected_status = (request.GET.get('status') or '').strip()
-    selected_urgency = (request.GET.get('urgentie') or '').strip()
-    selected_period = (request.GET.get('periode') or '14').strip()
-    search_query = (request.GET.get('q') or '').strip()
-
-    valid_status_values = {choice[0] for choice in CaseIntakeProcess.ProcessStatus.choices}
-    valid_urgency_values = {choice[0] for choice in CaseIntakeProcess.Urgency.choices}
-    valid_period_values = {'7', '14', '30', '90', 'all'}
-
-    if selected_status and selected_status not in valid_status_values:
-        selected_status = ''
-    if selected_urgency and selected_urgency not in valid_urgency_values:
-        selected_urgency = ''
-    if selected_period not in valid_period_values:
-        selected_period = '14'
-
-    filtered_qs = base_active_qs
-    if selected_region.isdigit():
-        filtered_qs = filtered_qs.filter(preferred_region_id=int(selected_region))
-    else:
-        selected_region = ''
-
-    if selected_status:
-        filtered_qs = filtered_qs.filter(status=selected_status)
-
-    if selected_urgency:
-        filtered_qs = filtered_qs.filter(urgency=selected_urgency)
-
-    if selected_period != 'all':
-        period_days = int(selected_period)
-        period_start = now - timedelta(days=period_days)
-        filtered_qs = filtered_qs.filter(updated_at__gte=period_start)
-
-    if search_query:
-        filtered_qs = filtered_qs.filter(
-            Q(title__icontains=search_query)
-            | Q(assessment_summary__icontains=search_query)
-            | Q(preferred_region__region_name__icontains=search_query)
-        )
-
-    active_intakes = list(filtered_qs.order_by('-updated_at'))
-
-    # --- Filter option builders (unchanged) ---
-    region_counts_map = {}
-    for intake in base_active_qs.select_related('preferred_region'):
-        if intake.preferred_region_id:
-            region_counts_map[intake.preferred_region_id] = {
-                'id': intake.preferred_region_id,
-                'label': intake.preferred_region.region_name,
-                'count': region_counts_map.get(intake.preferred_region_id, {}).get('count', 0) + 1,
-            }
-
-    filter_regions = sorted(region_counts_map.values(), key=lambda item: item['label'])
-    filter_statuses = [
-        {'value': code, 'label': label}
-        for code, label in CaseIntakeProcess.ProcessStatus.choices
-        if code != CaseIntakeProcess.ProcessStatus.COMPLETED
-    ]
-    filter_urgencies = [
-        {'value': code, 'label': label}
-        for code, label in CaseIntakeProcess.Urgency.choices
-    ]
-    filter_periods = [
-        {'value': '7', 'label': 'Afgelopen 7 dagen'},
-        {'value': '14', 'label': 'Afgelopen 14 dagen'},
-        {'value': '30', 'label': 'Afgelopen 30 dagen'},
-        {'value': '90', 'label': 'Afgelopen 90 dagen'},
-        {'value': 'all', 'label': 'Alle updates'},
-    ]
-
-    # --- Scoped signals queryset ---
-    signals_qs = CareSignal.objects.for_organization(org).filter(
-        status__in=[CareSignal.SignalStatus.OPEN, CareSignal.SignalStatus.IN_PROGRESS]
-    )
-
-    # --- Selected case for detail panel ---
-    selected_case_id = request.GET.get('case')
-    try:
-        selected_case_id = int(selected_case_id) if selected_case_id else None
-    except (TypeError, ValueError):
-        selected_case_id = None
-
-    # --- Delegate all decision logic to the Regiekamer service ---
-    summary = build_regiekamer_summary(
-        org=org,
-        active_intakes=active_intakes,
-        signals_qs=signals_qs,
-        selected_case_id=selected_case_id,
-        today=today,
-    )
-
-    context = {
-        'dashboard_updated_at': now,
-        'filter_regions': filter_regions,
-        'filter_statuses': filter_statuses,
-        'filter_urgencies': filter_urgencies,
-        'filter_periods': filter_periods,
-        'selected_region': selected_region,
-        'selected_status': selected_status,
-        'selected_urgency': selected_urgency,
-        'selected_period': selected_period,
-        'search_query': search_query,
-        'FEATURE_REDESIGN': is_feature_redesign_enabled(),
-        **summary,
-    }
-    return render(request, 'dashboard.html', context)
 
 
 @login_required
@@ -3950,6 +4698,17 @@ class MunicipalityConfigurationListView(TenantScopedQuerysetMixin, LoginRequired
         ctx['total_municipalities'] = municipality_stats['total']
         ctx['active_municipalities'] = municipality_stats['active']
         ctx['search_query'] = self.request.GET.get('q', '')
+        # Oversight workspace: aggregate pressure signals for MEDIUM-intensity oversight display
+        full_qs = scope_queryset_for_organization(
+            MunicipalityConfiguration.objects.prefetch_related('linked_providers'),
+            org,
+        )
+        ctx['list_summary'] = build_municipality_list_summary(full_qs)
+        
+        # Build per-row oversight data for paginated municipalities
+        for muni in ctx['municipalities']:
+            muni._oversight_row = build_municipality_oversight_row(muni)
+        
         return ctx
 
 
@@ -3961,6 +4720,11 @@ class MunicipalityConfigurationDetailView(TenantScopedQuerysetMixin, LoginRequir
     def get_queryset(self):
         org = self.get_organization()
         return scope_queryset_for_organization(MunicipalityConfiguration.objects.all(), org)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['oversight_summary'] = build_municipality_detail_summary(self.object)
+        return ctx
 
 
 class MunicipalityConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
@@ -4028,6 +4792,17 @@ class RegionalConfigurationListView(TenantScopedQuerysetMixin, LoginRequiredMixi
         ctx['search_query'] = self.request.GET.get('q', '')
         ctx['region_type_choices'] = RegionalConfiguration._meta.get_field('region_type').choices
         ctx['selected_region_type'] = self.request.GET.get('region_type', '')
+        # Oversight workspace: aggregate pressure signals for MEDIUM-intensity oversight display
+        full_qs = scope_queryset_for_organization(
+            RegionalConfiguration.objects.prefetch_related('linked_providers', 'served_municipalities'),
+            org,
+        )
+        ctx['regional_list_summary'] = build_regional_list_summary(full_qs)
+        
+        # Build per-row oversight data for paginated regions
+        for region in ctx['regions']:
+            region._oversight_row = build_regional_oversight_row(region)
+        
         return ctx
 
 
@@ -4039,6 +4814,11 @@ class RegionalConfigurationDetailView(TenantScopedQuerysetMixin, LoginRequiredMi
     def get_queryset(self):
         org = self.get_organization()
         return scope_queryset_for_organization(RegionalConfiguration.objects.all(), org)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['oversight_summary'] = build_regional_detail_summary(self.object)
+        return ctx
 
 
 class RegionalConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
@@ -4169,9 +4949,39 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             'region_choices': RegionalConfiguration.objects.filter(organization=org).order_by('region_name'),
         })
 
-        # Build intake rows for display
+        # Build intake rows for display using the shared operational decision contract.
         intake_rows = []
+        assessment_blocked_count = 0
+        waiting_risk_count = 0
+        escalation_count = 0
         for intake in ctx['intakes']:
+            decision = build_operational_decision_for_intake(intake.pk)
+            decision_payload = decision.to_dict() if decision else {}
+
+            presented_decision = present_operational_decision(
+                decision_payload,
+                action_defaults={
+                    'label': 'Monitor voortgang',
+                    'reason': 'Case beweegt door flow',
+                    'url': reverse('careon:case_detail', kwargs={'pk': intake.pk}),
+                },
+                impact_defaults={
+                    'text': 'Houdt zaak op koers',
+                    'type': 'positive',
+                },
+            )
+
+            attention_band_value = presented_decision['attention_band']['value']
+            bottleneck_state_value = presented_decision['bottleneck_state']
+            escalation_recommended = presented_decision['escalation_recommended']
+
+            if bottleneck_state_value == 'assessment':
+                assessment_blocked_count += 1
+            if attention_band_value in ['now', 'today']:
+                waiting_risk_count += 1
+            if escalation_recommended:
+                escalation_count += 1
+
             intake_rows.append({
                 'obj': intake,
                 'title': intake.title,
@@ -4181,9 +4991,51 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
                 'category': intake.care_category_main.name if intake.care_category_main else '—',
                 'region': intake.preferred_region.region_name if intake.preferred_region else '—',
                 'created': intake.start_date,
+                'primary_signal': presented_decision['primary_signal'],
+                'secondary_signal': presented_decision['secondary_signal'],
+                'action_block': presented_decision['action_block'],
+                'priority_indicator': presented_decision['priority_indicator'],
+                'badges': presented_decision['badges'],
+                'recommended_action': presented_decision['recommended_action'],
+                'impact_summary': presented_decision['impact_summary'],
+                'attention_band': presented_decision['attention_band'],
+                'priority_rank': presented_decision['priority_rank'],
+                'priority_badge': presented_decision['priority_badge'],
+                'bottleneck_state': presented_decision['bottleneck_state'],
+                'bottleneck_badge': presented_decision['bottleneck_badge'],
+                'escalation_recommended': presented_decision['escalation_recommended'],
+                'strongest_signals': presented_decision['strongest_signals'],
             })
 
         ctx['intake_rows'] = intake_rows
+        ctx['decision_data_integrity_ok'] = all(
+            bool(row['recommended_action'].get('label')) and bool(row['impact_summary'].get('text'))
+            for row in intake_rows
+        )
+
+        # Local operational strip (max 1) derived only from shared decision fields.
+        operational_strip = None
+        if assessment_blocked_count > 0:
+            operational_strip = {
+                'severity': 'critical',
+                'message': f'{assessment_blocked_count} casussen blokkeren matching door ontbrekende beoordeling',
+            }
+        elif waiting_risk_count > 0:
+            operational_strip = {
+                'severity': 'warning',
+                'message': f'{waiting_risk_count} casussen hebben verhoogd risico op wachttijdoverschrijding',
+            }
+        elif escalation_count > 0:
+            operational_strip = {
+                'severity': 'critical',
+                'message': f'{escalation_count} casussen vragen escalatie om doorstroom te beschermen',
+            }
+
+        ctx['casussen_operational_strip'] = operational_strip
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
+        ctx['query_string_without_page'] = query_params.urlencode()
         return ctx
 
 
@@ -4503,6 +5355,17 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 }
             )
 
+        provider_response_summary, provider_response_actions, provider_response_action_href = _build_case_provider_response_context(
+            intake=intake,
+            placement=placement,
+        )
+
+        if not can_edit_case:
+            provider_response_actions = []
+
+        outcome_action_href = reverse('careon:case_outcome_action', kwargs={'pk': intake.pk})
+        outcome_sections = []
+
         overview_links = {
             'documents': reverse('careon:document_list'),
             'tasks': reverse('careon:task_list'),
@@ -4576,6 +5439,11 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'latest_assignment': latest_assignment,
             'matching_history': matching_history,
             'rejected_options': rejected_options,
+            'provider_response_summary': provider_response_summary,
+            'provider_response_actions': provider_response_actions,
+            'provider_response_action_href': provider_response_action_href,
+            'outcome_action_href': outcome_action_href,
+            'outcome_sections': outcome_sections,
             'selected_tab': selected_tab,
             'anonymized_title': anonymized_title,
             'region_municipality_label': region_municipality_label,
@@ -4709,6 +5577,73 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
         org = self.get_organization()
         org_assessments = CaseAssessment.objects.filter(due_diligence_process__organization=org)
 
+        assessment_rows = []
+        urgent_blocked_count = 0
+        for assessment in ctx['assessments']:
+            intake = assessment.intake
+            decision = build_operational_decision_for_intake(intake.pk)
+            decision_payload = decision.to_dict() if decision else {}
+
+            presented_decision = present_operational_decision(
+                decision_payload,
+                action_defaults={
+                    'label': 'Rond beoordeling af',
+                    'reason': 'Nodig voordat matching kan starten',
+                    'url': reverse('careon:assessment_update', kwargs={'pk': assessment.pk}),
+                },
+                impact_defaults={
+                    'text': 'Ontgrendelt vervolgstap',
+                    'type': 'accelerating',
+                },
+            )
+
+            attention_band_value = presented_decision['attention_band']['value']
+            bottleneck_state_value = presented_decision['bottleneck_state']
+            escalation_recommended = presented_decision['escalation_recommended']
+
+            if (
+                bottleneck_state_value == 'assessment'
+                and attention_band_value in ['now', 'today']
+            ):
+                urgent_blocked_count += 1
+
+            missing_copy = decision_payload.get('blocker_label') or 'Geen ontbrekende beoordelingsstap'
+            blocked_copy = (
+                (presented_decision.get('bottleneck_descriptor') or {}).get('blocked_copy')
+                or 'Geen actieve blokkade voor matching'
+            )
+
+            assessment_rows.append({
+                'obj': assessment,
+                'intake': intake,
+                'assessor': assessment.assessed_by.get_full_name() if assessment.assessed_by else '—',
+                'updated_at': assessment.updated_at,
+                'assessment_status_label': assessment.get_assessment_status_display(),
+                'missing_copy': missing_copy,
+                'blocked_copy': blocked_copy,
+                'primary_signal': presented_decision['primary_signal'],
+                'secondary_signal': presented_decision['secondary_signal'],
+                'action_block': presented_decision['action_block'],
+                'priority_indicator': presented_decision['priority_indicator'],
+                'badges': presented_decision['badges'],
+                'recommended_action': presented_decision['recommended_action'],
+                'impact_summary': presented_decision['impact_summary'],
+                'attention_band': presented_decision['attention_band'],
+                'priority_rank': presented_decision['priority_rank'],
+                'bottleneck_state': presented_decision['bottleneck_state'],
+                'strongest_signal': presented_decision['strongest_signal'],
+                'escalation_recommended': presented_decision['escalation_recommended'],
+            })
+
+        operational_strip = None
+        if urgent_blocked_count > 0:
+            operational_strip = {
+                'severity': 'warning',
+                'message': f'{urgent_blocked_count} urgente beoordelingen blokkeren doorstroom',
+                'cta_label': 'Werk beoordelingen af',
+                'cta_href': reverse('careon:assessment_list') + '?status=' + CaseAssessment.AssessmentStatus.DRAFT,
+            }
+
         ctx.update({
             'total_assessments': org_assessments.count(),
             'pending_assessments': org_assessments.filter(
@@ -4719,7 +5654,18 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
             ).count(),
             'status_choices': CaseAssessment.AssessmentStatus.choices,
             'search_query': self.request.GET.get('q', ''),
+            'assessment_rows': assessment_rows,
+            'beoordelingen_operational_strip': operational_strip,
+            'decision_data_integrity_ok': all(
+                bool(row['recommended_action'].get('label')) and bool(row['impact_summary'].get('text'))
+                for row in assessment_rows
+            ),
         })
+
+        query_params = self.request.GET.copy()
+        if 'page' in query_params:
+            query_params.pop('page')
+        ctx['query_string_without_page'] = query_params.urlencode()
 
         return ctx
 
@@ -5153,11 +6099,120 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
         all_qs = PlacementRequest.objects.filter(due_diligence_process__organization=org)
+        provider_response_copy = {
+            'pending': 'Pending: reactie uitstaand',
+            'rejected': 'Rejected: aanbieder afgewezen',
+            'waitlist': 'Waitlist: plaatsing vertraagd',
+            'no_capacity': 'No capacity: geen plek beschikbaar',
+            'accepted': 'Accepted: aanbieder bevestigd',
+            'needs_info': 'Needs info: aanvullende info gevraagd',
+        }
         editable_placement_ids = set()
+        stalled_count = 0
+        escalation_count = 0
+        derived_strip = None
+        placement_rows = []
         for placement in ctx['placements']:
             linked_case = placement.intake.case_record if placement.intake else None
             if linked_case is None or can_access_case_action(self.request.user, linked_case, CaseAction.EDIT):
                 editable_placement_ids.add(placement.pk)
+
+            decision = build_operational_decision_for_intake(placement.intake.pk) if placement.intake else None
+            decision_payload = decision.to_dict() if decision else {}
+
+            attention_band_value = decision_payload.get('attention_band') or 'monitor'
+            bottleneck_state_value = decision_payload.get('bottleneck_state') or 'none'
+
+            response_state = (decision_payload.get('provider_response_state') or placement.provider_response_status or '').lower()
+            response_label = provider_response_copy.get(response_state, placement.get_provider_response_status_display())
+
+            blocker_label = (decision_payload.get('blocker_label') or '').strip()
+            fallback_stall_reason = response_label or 'Plaatsing wacht op vervolgactie'
+            stall_reason = blocker_label or fallback_stall_reason
+
+            is_stalled = bool(decision_payload.get('is_stalled')) or response_state in {
+                'pending', 'rejected', 'waitlist', 'no_capacity', 'needs_info'
+            } or bottleneck_state_value == 'placement'
+            if is_stalled and not stall_reason:
+                stall_reason = 'Plaatsing wacht op vervolgactie'
+
+            presented_decision = present_operational_decision(
+                decision_payload,
+                action_defaults={
+                    'label': 'Stuur herinnering' if is_stalled else 'Monitor plaatsing',
+                    'reason': stall_reason,
+                    'url': reverse('careon:placement_detail', kwargs={'pk': placement.pk}),
+                },
+                impact_defaults={
+                    'text': (
+                        'Versnelt besluitvorming bij stagnerende plaatsing'
+                        if is_stalled
+                        else 'Houdt plaatsing op koers'
+                    ),
+                    'type': 'accelerating',
+                },
+                fallback_reason=stall_reason,
+            )
+
+            escalation_recommended = presented_decision['escalation_recommended']
+            escalation_reason = (decision_payload.get('escalation_reason') or '').strip()
+            if escalation_recommended and not escalation_reason:
+                escalation_reason = 'Escalatie aanbevolen'
+
+            if is_stalled:
+                stalled_count += 1
+            if escalation_recommended:
+                escalation_count += 1
+
+            if not derived_strip:
+                strip_payload = decision_payload.get('operational_strip') or {}
+                strip_message = (strip_payload.get('message') or '').strip()
+                if strip_message:
+                    derived_strip = {
+                        'severity': (strip_payload.get('severity') or 'warning').strip().lower(),
+                        'message': strip_message,
+                    }
+
+            placement_rows.append({
+                'placement': placement,
+                'phase_label': _placement_phase_label(placement),
+                'provider_name': (
+                    placement.selected_provider.name
+                    if placement.selected_provider
+                    else placement.proposed_provider.name
+                    if placement.proposed_provider
+                    else '—'
+                ),
+                'status_label': placement.get_status_display(),
+                'provider_response_label': response_label,
+                'stall_reason': stall_reason,
+                'is_stalled': is_stalled,
+                'primary_signal': presented_decision['primary_signal'],
+                'secondary_signal': presented_decision['secondary_signal'],
+                'action_block': presented_decision['action_block'],
+                'priority_indicator': presented_decision['priority_indicator'],
+                'badges': presented_decision['badges'],
+                'recommended_action': presented_decision['recommended_action'],
+                'impact_summary': presented_decision['impact_summary'],
+                'attention_band': presented_decision['attention_band'],
+                'bottleneck_badge': presented_decision['bottleneck_badge'],
+                'signal_chips': presented_decision['signal_chips'],
+                'escalation_recommended': presented_decision['escalation_recommended'],
+                'escalation_reason': escalation_reason,
+            })
+
+        placement_operational_strip = derived_strip
+        if not placement_operational_strip and escalation_count > 0:
+            placement_operational_strip = {
+                'severity': 'critical',
+                'message': f'{escalation_count} plaatsingen vragen escalatie om doorstroom te beschermen',
+            }
+        elif not placement_operational_strip and stalled_count > 1:
+            placement_operational_strip = {
+                'severity': 'warning',
+                'message': f'{stalled_count} plaatsingen staan stil door uitblijvende providerreactie',
+            }
+
         ctx.update({
             'total_count': all_qs.count(),
             'approved_count': all_qs.filter(status=PlacementRequest.Status.APPROVED).count(),
@@ -5165,13 +6220,15 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
             'status_choices': PlacementRequest.Status.choices,
             'search_query': self.request.GET.get('q', ''),
             'editable_placement_ids': editable_placement_ids,
-            'placement_rows': [
-                {
-                    'placement': placement,
-                    'phase_label': _placement_phase_label(placement),
-                }
-                for placement in ctx['placements']
-            ],
+            'placement_rows': placement_rows,
+            'placement_operational_strip': placement_operational_strip,
+            'decision_data_integrity_ok': all(
+                ((not row['is_stalled']) or bool(row['stall_reason']))
+                and bool(row['recommended_action'].get('label'))
+                and bool(row['impact_summary'].get('text'))
+                and len(row['signal_chips']) <= 2
+                for row in placement_rows
+            ),
         })
         return ctx
 

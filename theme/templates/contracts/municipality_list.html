@@ -1,24 +1,55 @@
 {% extends "base.html" %}
 {% block title %}Gemeenten - Zorgregie{% endblock %}
 {% block content %}
-<div class="ds-list-shell">
+<div class="oversight-workspace">
+
     <div class="ds-list-header">
         <div>
             <h1 class="page-title">Gemeenten</h1>
-            </div>
+            <p class="provider-workspace__subtitle">Overzicht van bediende gemeenten en regionale drukpatronen.</p>
+        </div>
         <div class="page-actions">
             <a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Nieuwe gemeente</a>
         </div>
     </div>
 
-    <div class="ds-list-kpi-grid">
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Totaal</div>
-            <div class="kpi-value">{{ total_municipalities }}</div>
+    {% if list_summary.pressure_signal %}
+    <div class="oversight-workspace__context-strip oversight-workspace__context-strip--{{ list_summary.pressure_signal.tone }}">
+        <span class="oversight-workspace__strip-marker">Signaal</span>
+        <span class="oversight-workspace__strip-message--{{ list_summary.pressure_signal.tone }}">{{ list_summary.pressure_signal.message }}</span>
+    </div>
+    {% endif %}
+
+    <div class="oversight-workspace__summary-grid">
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Totaal</div>
+            <div class="oversight-workspace__summary-value">{{ total_municipalities }}</div>
+            <div class="oversight-workspace__summary-meta">gemeenten in dit netwerk</div>
         </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Actief</div>
-            <div class="ds-list-kpi-value tone-good">{{ active_municipalities }}</div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Actief</div>
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--good">{{ active_municipalities }}</div>
+            <div class="oversight-workspace__summary-meta">actieve gemeenten</div>
+        </div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Norm ingesteld</div>
+            <div class="oversight-workspace__summary-value {% if list_summary.missing_norm_count > 0 %}oversight-workspace__summary-value--warning{% else %}oversight-workspace__summary-value--good{% endif %}">
+                {{ list_summary.norm_count }}
+            </div>
+            <div class="oversight-workspace__summary-meta">
+                {% if list_summary.missing_norm_count > 0 %}
+                    {{ list_summary.missing_norm_count }} zonder wachttijdnorm
+                {% else %}
+                    alle gemeenten hebben een norm
+                {% endif %}
+            </div>
+        </div>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Zonder norm</div>
+            <div class="oversight-workspace__summary-value {% if list_summary.missing_norm_count >= 3 %}oversight-workspace__summary-value--warning{% endif %}">
+                {{ list_summary.missing_norm_count }}
+            </div>
+            <div class="oversight-workspace__summary-meta">gemeenten zonder wachttijdnorm</div>
         </div>
     </div>
 
@@ -48,8 +79,9 @@
                         <th>Code</th>
                         <th>Aanbieders</th>
                         <th>Zorgdomeinen</th>
+                        <th>Wachttijdnorm</th>
                         <th>Status</th>
-                        <th>Verantwoordelijke</th>
+                        <th>Signaal</th>
                         <th class="th-right">Acties</th>
                     </tr>
                 </thead>
@@ -59,18 +91,33 @@
                         <td><a href="{% url 'careon:municipality_detail' municipality.pk %}">{{ municipality.municipality_name }}</a></td>
                         <td>{{ municipality.municipality_code|default:"—" }}</td>
                         <td><span class="ds-badge badge-blue">{{ municipality.provider_count }}</span></td>
-                        <td>{{ municipality.care_domains_display|truncatechars:40 }}</td>
+                        <td>{{ municipality.care_domains_display|truncatechars:36 }}</td>
+                        <td>
+                            {% if municipality.max_wait_days %}
+                                <span class="ds-meta-value">{{ municipality.max_wait_days }} dagen</span>
+                            {% else %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--warning">Niet ingesteld</span>
+                            {% endif %}
+                        </td>
                         <td>
                             <span class="ds-badge {% if municipality.status == 'ACTIVE' %}badge-capacity-open{% elif municipality.status == 'INACTIVE' %}badge-low{% else %}badge-medium{% endif %}">
                                 {{ municipality.get_status_display }}
                             </span>
                         </td>
-                        <td>{{ municipality.responsible_coordinator.get_full_name|default:"—" }}</td>
+                        <td>
+                            {% if not municipality.max_wait_days and municipality.provider_count > 0 %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--warning">Norm ontbreekt</span>
+                            {% elif municipality.provider_count == 0 %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--neutral">Geen aanbieders</span>
+                            {% else %}
+                                <span class="oversight-pressure-chip oversight-pressure-chip--neutral">Ingericht</span>
+                            {% endif %}
+                        </td>
                         <td class="td-right"><a href="{% url 'careon:municipality_update' municipality.pk %}" class="btn btn-ghost">Wijzigen</a></td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="td-empty">
+                        <td colspan="8" class="td-empty">
                             U hebt nog geen gemeenten ingesteld.
                             <div class=""><a href="{% url 'careon:municipality_create' %}" class="btn btn-primary">Voeg eerste gemeente toe</a></div>
                         </td>

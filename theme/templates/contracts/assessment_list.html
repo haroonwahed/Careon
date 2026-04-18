@@ -33,37 +33,70 @@
         </form>
     </div>
 
+    {% if beoordelingen_operational_strip %}
+    <div class="ds-card assessment-operational-strip assessment-operational-strip--{{ beoordelingen_operational_strip.severity }}">
+        <div>
+            <strong class="assessment-operational-strip__label">Doorstroomsignaal</strong>
+            <p class="assessment-operational-strip__message">{{ beoordelingen_operational_strip.message }}</p>
+        </div>
+        <a href="{{ beoordelingen_operational_strip.cta_href }}" class="ds-list-row-action-btn">{{ beoordelingen_operational_strip.cta_label }}</a>
+    </div>
+    {% endif %}
+
     {% if assessments %}
     <table class="ds-list-table">
         <thead>
             <tr>
                 <th>Casus</th>
-                <th>Status</th>
-                <th>Beoordelaar</th>
+                <th>Wat ontbreekt</th>
+                <th>Wat blokkeert dit</th>
+                <th>Wat nu</th>
                 <th>Gewijzigd</th>
                 <th class="ds-cell-right">Acties</th>
             </tr>
         </thead>
         <tbody>
-            {% for assessment in assessments %}
+            {% for row in assessment_rows %}
             <tr>
                 <td>
-                    <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="ds-link">{{ assessment.intake.title }}</a>
+                    <a href="{% url 'careon:assessment_detail' row.obj.pk %}" class="ds-link assessment-row-title">{{ row.intake.title }}</a>
+                    <div class="assessment-row-meta">
+                        <span class="ds-badge badge-gray">{{ row.assessment_status_label }}</span>
+                        <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
+                        <span class="ds-note-text">Prioriteit #{{ row.priority_rank }}</span>
+                    </div>
                 </td>
+
                 <td>
-                    <span class="ds-badge
-                        {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}badge-low
-                        {% elif assessment.assessment_status == 'DRAFT' %}badge-high
-                        {% else %}badge-medium{% endif %}">
-                        {{ assessment.get_assessment_status_display }}
-                    </span>
+                    <p class="assessment-row-copy">{{ row.missing_copy }}</p>
                 </td>
-                <td>{{ assessment.assessed_by.get_full_name|default:"—" }}</td>
-                <td>{{ assessment.updated_at|date:"d-m-Y H:i" }}</td>
+
+                <td>
+                    {% if row.strongest_signal %}
+                    <span class="ds-badge {{ row.strongest_signal.badge_class }}">{{ row.strongest_signal.label }}</span>
+                    {% endif %}
+                    <p class="assessment-row-copy assessment-row-copy--subtle">{{ row.blocked_copy }}</p>
+                    {% if row.escalation_recommended %}
+                    <p class="assessment-row-escalation">Escalatie aanbevolen</p>
+                    {% endif %}
+                </td>
+
+                <td>
+                    <a href="{{ row.recommended_action.url }}" class="casus-recommended-action casus-recommended-action--{{ row.attention_band.severity }}">
+                        <div class="casus-recommended-action__main">
+                            <p class="casus-recommended-action__label">Aanbevolen actie</p>
+                            <p class="casus-recommended-action__action">{{ row.recommended_action.label }}</p>
+                            <p class="ds-note-text">{{ row.recommended_action.reason }}</p>
+                            <p class="assessment-impact-summary">{{ row.impact_summary.text }}</p>
+                        </div>
+                    </a>
+                </td>
+
+                <td>{{ row.updated_at|date:"d-m-Y H:i" }}</td>
                 <td class="ds-cell-right">
                     <div class="ds-list-row-actions">
-                        <a href="{% url 'careon:assessment_detail' assessment.pk %}" class="ds-list-row-action-btn">Bekijken</a>
-                        <a href="{% url 'careon:assessment_update' assessment.pk %}" class="ds-list-row-action-btn">Bewerken</a>
+                        <a href="{% url 'careon:assessment_detail' row.obj.pk %}" class="ds-list-row-action-btn">Bekijken</a>
+                        <a href="{% url 'careon:assessment_update' row.obj.pk %}" class="ds-list-row-action-btn">Bewerken</a>
                     </div>
                 </td>
             </tr>
@@ -76,12 +109,12 @@
         <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
         <div class="ds-list-pagination-buttons">
             {% if page_obj.has_previous %}
-            <a href="?page=1" class="ds-list-pagination-btn">Eerste</a>
-            <a href="?page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
+            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page=1" class="ds-list-pagination-btn">Eerste</a>
+            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
             {% endif %}
             {% if page_obj.has_next %}
-            <a href="?page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
-            <a href="?page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
+            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
+            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
             {% endif %}
         </div>
     </div>

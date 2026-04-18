@@ -11,6 +11,13 @@
         <span class="ds-breadcrumb-current">{{ municipality.municipality_name }}</span>
     </nav>
 
+    {% if oversight_summary.context_strip %}
+    <div class="oversight-workspace__context-strip oversight-workspace__context-strip--{{ oversight_summary.context_strip.tone }}">
+        <span class="oversight-workspace__strip-marker">Regionaal signaal</span>
+        <span class="oversight-workspace__strip-message--{{ oversight_summary.context_strip.tone }}">{{ oversight_summary.context_strip.message }}</span>
+    </div>
+    {% endif %}
+
     <section class="ds-detail-card">
         <div class="ds-detail-card-head">
             <div class="min-w-0 space-y-2">
@@ -41,25 +48,47 @@
         </div>
     </section>
 
-    <section class="ds-summary-strip">
-        <div class="ds-summary-item">
-            <p class="ds-summary-label">Huidige staat</p>
-            <p class="ds-summary-value">{{ municipality.get_status_display }}</p>
+    <div class="oversight-workspace__summary-grid">
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Aanbieders</div>
+            <div class="oversight-workspace__summary-value">{{ municipality.provider_count }}</div>
+            <div class="oversight-workspace__summary-meta">gekoppeld aan gemeente</div>
         </div>
-        <div class="ds-summary-item">
-            <p class="ds-summary-label">Aanbieders gekoppeld</p>
-            <p class="ds-summary-value">{{ municipality.provider_count }}</p>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Capaciteitsdruk</div>
+            {% if oversight_summary.capacity_pressure.has_data %}
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--{{ oversight_summary.capacity_pressure.tone }}">
+                {{ oversight_summary.capacity_pressure.under_pressure }}
+            </div>
+            <div class="oversight-workspace__summary-meta">{{ oversight_summary.capacity_pressure.label }}</div>
+            {% else %}
+            <div class="oversight-workspace__summary-value">—</div>
+            <div class="oversight-workspace__summary-meta">geen capaciteitsdata</div>
+            {% endif %}
         </div>
-        <div class="ds-summary-item {% if not municipality.max_wait_days %}ds-summary-item--risk{% endif %}">
-            <p class="ds-summary-label">Wachttijdnorm</p>
-            <p class="ds-summary-value">{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}Niet ingesteld{% endif %}</p>
+        <div class="oversight-workspace__summary-card">
+            <div class="oversight-workspace__summary-label">Gemiddelde wachttijd</div>
+            {% if oversight_summary.wait_pressure.has_data %}
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--{{ oversight_summary.wait_pressure.tone }}">
+                {{ oversight_summary.wait_pressure.avg_days }}d
+            </div>
+            <div class="oversight-workspace__summary-meta">{{ oversight_summary.wait_pressure.label }}</div>
+            {% else %}
+            <div class="oversight-workspace__summary-value">—</div>
+            <div class="oversight-workspace__summary-meta">geen wachtdata</div>
+            {% endif %}
         </div>
-        <div class="ds-summary-item">
-            <p class="ds-summary-label">Beslisregel</p>
-            <p class="ds-summary-value">Regie bewaakt capaciteit</p>
-            <p class="ds-summary-caption">Gemeente stuurt op doorstroom</p>
+        <div class="oversight-workspace__summary-card {% if oversight_summary.wait_norm_risk %}ds-summary-item--risk{% endif %}">
+            <div class="oversight-workspace__summary-label">Wachttijdnorm</div>
+            {% if municipality.max_wait_days %}
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--good">{{ municipality.max_wait_days }}d</div>
+            <div class="oversight-workspace__summary-meta">maximale norm ingesteld</div>
+            {% else %}
+            <div class="oversight-workspace__summary-value oversight-workspace__summary-value--warning">—</div>
+            <div class="oversight-workspace__summary-meta">norm niet ingesteld</div>
+            {% endif %}
         </div>
-    </section>
+    </div>
 
     <div class="ds-detail-grid">
         <div class="ds-detail-main">
@@ -134,6 +163,26 @@
                         <dt>Maximale wachttijd</dt>
                         <dd>{% if municipality.max_wait_days %}{{ municipality.max_wait_days }} dagen{% else %}—{% endif %}</dd>
                     </div>
+                    {% if oversight_summary.capacity_pressure.has_data %}
+                    <div class="ds-aside-metric">
+                        <dt>Capaciteitsdruk</dt>
+                        <dd>
+                            <span class="oversight-pressure-chip oversight-pressure-chip--{{ oversight_summary.capacity_pressure.tone }}">
+                                {{ oversight_summary.capacity_pressure.label }}
+                            </span>
+                        </dd>
+                    </div>
+                    {% endif %}
+                    {% if oversight_summary.wait_pressure.has_data %}
+                    <div class="ds-aside-metric">
+                        <dt>Wachtdruk</dt>
+                        <dd>
+                            <span class="oversight-pressure-chip oversight-pressure-chip--{{ oversight_summary.wait_pressure.tone }}">
+                                {{ oversight_summary.wait_pressure.label }}
+                            </span>
+                        </dd>
+                    </div>
+                    {% endif %}
                     <div class="ds-aside-metric">
                         <dt>Laatst bijgewerkt</dt>
                         <dd>{{ municipality.updated_at|date:"d-m-Y H:i" }}</dd>
