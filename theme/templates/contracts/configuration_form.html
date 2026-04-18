@@ -19,7 +19,7 @@
             <div class="ds-detail-card-inner">
                 <div class="ds-detail-grid-2 form-grid-2">
             {% for field in form %}
-            <div class="ds-detail-row {% if field.name == 'description' or field.name == 'notes' or field.name == 'title' %}endif %} ds-field-item ds-field-item">
+            <div class="ds-detail-row ds-field-item ds-field-item">
                 <label class="ds-detail-label field-label">{{ field.label }}</label>
                 {{ field }}
                 {% if field.errors %}<p class="ds-helper-text form-help text-danger">{{ field.errors.0 }}</p>{% endif %}

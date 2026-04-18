@@ -13,6 +13,16 @@
         </div>
     </header>
 
+    {% if messages %}
+    <div class="mt-3 space-y-2" aria-live="polite">
+        {% for message in messages %}
+        <div class="rounded-md border px-3 py-2 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800{% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-slate-200 bg-slate-50 ds-text-strong{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <form method="get" class="ds-list-filters">
         <div class="ds-list-filter-row">
             <div class="ds-list-filter-group">

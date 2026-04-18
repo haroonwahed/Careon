@@ -1,5 +1,6 @@
 
 import os
+import re
 from importlib import reload
 
 from django.contrib.auth.models import User
@@ -19,20 +20,27 @@ class DesignSystemTests(TestCase):
             password='testpass123',
         )
 
+    def _assert_spa_shell(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<div id="root"></div>', html=True)
+        body = response.content.decode('utf-8')
+        self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.js')
+        self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.css')
+        # Dashboard is SPA-first; legacy server-rendered dashboard content should not be asserted.
+        self.assertNotContains(response, 'Deze casus is geblokkeerd')
+        self.assertNotContains(response, 'main-layout')
+
     def test_dashboard_loads_with_feature_flag_enabled(self):
         os.environ['FEATURE_REDESIGN'] = 'true'
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Careon')
-        self.assertContains(response, 'Deze casus is geblokkeerd')
+        self._assert_spa_shell(response)
 
     def test_dashboard_loads_with_feature_flag_disabled(self):
         os.environ['FEATURE_REDESIGN'] = 'false'
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Dashboard')
+        self._assert_spa_shell(response)
 
     def test_button_component_snippet(self):
         template = Template(
@@ -64,18 +72,13 @@ class DesignSystemTests(TestCase):
         os.environ['FEATURE_REDESIGN'] = 'true'
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'main-layout')
-        self.assertContains(response, 'sidebar-container')
-        self.assertContains(response, '@media (max-width: 1024px)')
+        self._assert_spa_shell(response)
 
     def test_search_and_notifications_links_exist(self):
         os.environ['FEATURE_REDESIGN'] = 'true'
         self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
-        self.assertContains(response, 'id="global-search-input"')
-        self.assertContains(response, 'Zoek casus, client, document of actie')
-        self.assertContains(response, '/care/search/')
-        self.assertContains(response, 'title="Meldingen"')
+        self._assert_spa_shell(response)
 
     @override_settings(DEBUG=True)
     def test_debug_urlconf_exposes_static_files(self):

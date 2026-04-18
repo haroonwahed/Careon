@@ -156,34 +156,32 @@ class RolePermissionAlignmentTests(TestCase):
 
         case_response = self.client.get(reverse('careon:case_detail', kwargs={'pk': self.intake.pk}))
         self.assertEqual(case_response.status_code, 200)
-        self.assertContains(case_response, 'Alleen-lezen')
-        self.assertNotContains(case_response, '+ Taak toevoegen')
-        self.assertNotContains(case_response, '+ Signaal toevoegen')
+        self.assertNotContains(case_response, f'/care/casussen/{self.intake.pk}/taken/new/')
+        self.assertNotContains(case_response, f'/care/casussen/{self.intake.pk}/signalen/new/')
+        self.assertNotContains(case_response, reverse('careon:case_update', kwargs={'pk': self.intake.pk}))
 
         matching_response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(matching_response.status_code, 200)
-        self.assertContains(matching_response, 'Geen bewerkrechten')
-        self.assertNotContains(matching_response, 'Wijs toe')
+        self.assertNotContains(matching_response, reverse('careon:case_matching_action', kwargs={'pk': self.intake.pk}))
 
         placement_list_response = self.client.get(reverse('careon:placement_list'))
         self.assertEqual(placement_list_response.status_code, 200)
-        self.assertContains(placement_list_response, 'Open casus')
+        self.assertContains(placement_list_response, reverse('careon:case_detail', kwargs={'pk': self.intake.pk}))
 
         signal_list_response = self.client.get(reverse('careon:signal_list'))
         self.assertEqual(signal_list_response.status_code, 200)
-        self.assertContains(signal_list_response, 'Alleen-lezen')
+        self.assertNotContains(signal_list_response, reverse('careon:signal_create'))
 
         document_list_response = self.client.get(reverse('careon:document_list'))
         self.assertEqual(document_list_response.status_code, 200)
-        self.assertContains(document_list_response, 'Alleen-lezen')
+        self.assertNotContains(document_list_response, reverse('careon:document_create'))
 
         deadline_list_response = self.client.get(reverse('careon:task_list') + '?show=all')
         self.assertEqual(deadline_list_response.status_code, 200)
-        self.assertContains(deadline_list_response, 'Alleen-lezen')
+        self.assertNotContains(deadline_list_response, reverse('careon:task_create'))
 
         assessment_detail_response = self.client.get(reverse('careon:assessment_detail', kwargs={'pk': self.assessment.pk}))
         self.assertEqual(assessment_detail_response.status_code, 200)
-        self.assertContains(assessment_detail_response, 'Alleen-lezen')
         self.assertNotContains(assessment_detail_response, reverse('careon:assessment_update', kwargs={'pk': self.assessment.pk}))
 
     def test_owner_and_admin_keep_edit_actions_visible(self):
@@ -192,13 +190,25 @@ class RolePermissionAlignmentTests(TestCase):
 
             case_response = self.client.get(reverse('careon:case_detail', kwargs={'pk': self.intake.pk}))
             self.assertEqual(case_response.status_code, 200)
-            self.assertContains(case_response, 'Bewerken')
-            self.assertContains(case_response, '+ Taak toevoegen')
-            self.assertContains(case_response, '+ Signaal toevoegen')
+            self.assertContains(case_response, f'/care/casussen/{self.intake.pk}/taken/new/')
+            self.assertContains(case_response, f'/care/casussen/{self.intake.pk}/signalen/new/')
 
             matching_response = self.client.get(reverse('careon:matching_dashboard'))
             self.assertEqual(matching_response.status_code, 200)
-            self.assertContains(matching_response, 'Open casus voor')
+
+            matching_action_response = self.client.post(
+                reverse('careon:case_matching_action', kwargs={'pk': self.intake.pk}),
+                {'action': 'reject', 'provider_id': str(self.provider.pk)},
+                follow=False,
+            )
+            self.assertNotEqual(matching_action_response.status_code, 403)
+
+            placement_action_response = self.client.post(
+                reverse('careon:case_placement_action', kwargs={'pk': self.intake.pk}),
+                {'status': PlacementRequest.Status.APPROVED},
+                follow=False,
+            )
+            self.assertNotEqual(placement_action_response.status_code, 403)
 
             assessment_detail_response = self.client.get(reverse('careon:assessment_detail', kwargs={'pk': self.assessment.pk}))
             self.assertEqual(assessment_detail_response.status_code, 200)

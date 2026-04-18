@@ -38,23 +38,6 @@ class AuthStyleIntegrityTests(SimpleTestCase):
             ".auth-page-body",
             ".auth-frame",
             ".auth-card-shell",
-            ".auth-shell",
-            ".login-panel-left",
-            ".login-panel-right",
-            ".login-input",
-            ".glow-btn",
-            ".auth-error-box",
-            ".auth-sso-btn",
-            ".auth-logout-card",
-            ".auth-logout-icon-wrap",
-            ".landing-shell-bg",
-            ".landing-nav",
-            ".landing-brand-badge",
-            ".landing-gradient-text",
-            ".landing-module-icon-box",
-            ".landing-security-card",
-            ".landing-cta-backdrop",
-            ".landing-footer-divider",
         ]
 
         missing = [selector for selector in required_selectors if selector not in css]

@@ -80,7 +80,7 @@ class MatchingRecommendationsTests(TestCase):
         self.assertContains(response, 'Capaciteit')
         self.assertContains(response, 'Matching')
         self.assertContains(response, 'Aanbevolen actie')
-        self.assertContains(response, 'Bevestig plaatsing')
+        self.assertContains(response, 'Voer aanbevolen actie uit')
         self.assertContains(response, 'Plaats direct')
         self.assertContains(response, 'Gedragsinvloed')
         self.assertContains(response, 'Limited provider history, behavioral influence kept neutral')
@@ -132,7 +132,9 @@ class MatchingRecommendationsTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Regio: match')
+        self.assertContains(response, 'ROAZ Noord')
+        matching_map = response.context['rows'][0]['matching_map']
+        self.assertEqual(matching_map['provider_markers'][0]['geo_fit_score'], 100)
 
     def test_matching_panel_exposes_map_contract_and_empty_geo_state(self):
         provider = CareProvider.objects.create(

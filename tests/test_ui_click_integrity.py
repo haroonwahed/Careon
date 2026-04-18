@@ -249,7 +249,9 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         dashboard_response = self.client.get(reverse('dashboard'), follow=True)
         self.assertEqual(dashboard_response.status_code, 200)
         dashboard_html = dashboard_response.content.decode('utf-8')
-        self.assertIn('href="/care/casussen/new/"', dashboard_html)
+        self.assertIn('<div id="root"></div>', dashboard_html)
+        self.assertIn('/static/spa/assets/index-', dashboard_html)
+        self.assertNotIn('href="/care/casussen/new/"', dashboard_html)
         self.assertNotIn('/care/casussen/new/?v=', dashboard_html)
 
         list_response = self.client.get(reverse('careon:case_list'), follow=True)
@@ -278,7 +280,9 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         response = self.client.get(reverse('dashboard'), follow=True)
         self.assertEqual(response.status_code, 200)
         html = response.content.decode('utf-8')
-        self.assertIn('href="/care/casussen/new/"', html)
+        self.assertIn('<div id="root"></div>', html)
+        self.assertIn('/static/spa/assets/index-', html)
+        self.assertNotIn('href="/care/casussen/new/"', html)
         self.assertNotIn('/care/casussen/new/?v=', html)
 
     def test_static_templates_have_matching_label_for_and_id_pairs(self):

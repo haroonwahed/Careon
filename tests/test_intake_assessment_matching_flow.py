@@ -141,7 +141,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Approved Intake Zonder Profiel')
-        self.assertContains(response, 'Geen zorgaanbieders beschikbaar voor deze beoordeling.')
+        self.assertContains(response, 'Nog geen kandidaten om geografisch te tonen')
 
     def test_intake_detail_uses_semantic_detail_page_primitives(self):
         intake = CaseIntakeProcess.objects.create(

@@ -1,10 +1,12 @@
 import os
+from datetime import date
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
-from contracts.models import CareConfiguration, Client as CareProvider, Organization, OrganizationMembership
+from contracts.models import CareConfiguration, CareSignal, Client as CareProvider, Organization, OrganizationMembership
+from contracts.regiekamer_service import build_regiekamer_summary
 
 
 class DashboardShellTestCase(TestCase):
@@ -25,48 +27,33 @@ class DashboardShellTestCase(TestCase):
         self.client.login(username='testuser', password='testpass123')
         os.environ['FEATURE_REDESIGN'] = 'true'
 
-    def test_dashboard_primary_focus(self):
+    def test_dashboard_returns_spa_shell(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Deze casus is geblokkeerd')
-        self.assertContains(response, 'Start beoordeling')
-        self.assertContains(response, 'Andere actieve casussen')
-        self.assertContains(response, 'Beoordeling ontbreekt')
-        self.assertContains(response, 'Wachttijd: 2 dagen')
+        self.assertContains(response, '<!DOCTYPE html>')
+        self.assertContains(response, '<div id="root"></div>', html=False)
+        self.assertContains(response, '<title>SaaS Careon</title>', html=False)
 
-    def test_dashboard_container_constraint(self):
+    def test_dashboard_spa_shell_includes_mount_styles(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'max-width: 1440px')
+        self.assertContains(response, '#root { height: 100%; }', html=False)
 
-    def test_dashboard_top_bar(self):
+    def test_dashboard_spa_shell_uses_module_bundle_or_fallback_shell(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="global-search-input"')
-        self.assertContains(response, 'Zoek casus, client, document of actie')
-        self.assertNotContains(response, 'header-org-chip')
-        self.assertContains(response, 'title="Thema wisselen"')
-        self.assertContains(response, 'title="Meldingen"')
-        self.assertContains(response, 'Nieuwe casus')
-        self.assertContains(response, 'Uitloggen')
+        content = response.content.decode('utf-8')
+        self.assertIn('<div id="root"></div>', content)
+        self.assertTrue(
+            ('<script type="module"' in content) or ('<style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>' in content)
+        )
 
-    def test_dashboard_panels(self):
+    def test_dashboard_is_not_server_rendered_regiekamer_template(self):
         response = self.client.get(reverse('dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Welkom terug')
-        self.assertContains(response, 'Operationele signalen')
-        self.assertContains(response, 'Casussen zonder match')
-        self.assertContains(response, 'Wachttijd overschreden')
-        self.assertContains(response, 'Beoordeling ontbreekt')
-        self.assertContains(response, 'Urgente casussen')
-        self.assertContains(response, 'Blokkerende casus')
-        self.assertContains(response, 'Andere actieve casussen')
-        self.assertContains(response, 'Actieve casus')
-        self.assertContains(response, 'Kerngegevens')
-        self.assertContains(response, 'Tijdlijn')
-        self.assertContains(response, 'Knelpunten')
-        self.assertContains(response, 'Capaciteitssignalen')
-        self.assertContains(response, 'Laatst bijgewerkt')
+        self.assertNotContains(response, 'command-grid')
+        self.assertNotContains(response, 'decision-alert-strip')
+        self.assertNotContains(response, 'decision-focus-panel')
 
     def test_case_list_alias_uses_configuration_shell(self):
         provider = CareProvider.objects.create(
@@ -88,25 +75,18 @@ class DashboardShellTestCase(TestCase):
         self.assertContains(response, 'Zoek op titel of casus-ID...')
         self.assertContains(response, 'Nieuwe casus')
 
-    def test_accessibility_features(self):
-        response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'aria-label="Globaal zoeken"')
-        self.assertContains(response, 'title="Thema wisselen"')
-        self.assertContains(response, 'type="submit"')
-
-    def test_typography_and_spacing(self):
-        response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'command-grid')
-        self.assertContains(response, 'decision-alert-strip')
-        self.assertContains(response, 'decision-alert-card')
-        self.assertContains(response, 'decision-focus-panel')
-        self.assertContains(response, 'decision-rail-column')
-        self.assertContains(response, 'decision-rail-card')
-        self.assertContains(response, 'ds-insight-section')
-        self.assertContains(response, 'ds-insight-head')
-        self.assertContains(response, 'queue-row')
+    def test_regiekamer_service_remains_available_independently(self):
+        summary = build_regiekamer_summary(
+            org=self.organization,
+            active_intakes=[],
+            signals_qs=CareSignal.objects.none(),
+            selected_case_id=None,
+            today=date.today(),
+        )
+        self.assertIn('regiekamer_kpis', summary)
+        self.assertIn('recommended_action', summary)
+        self.assertIn('priority_queue', summary)
+        self.assertIn('command_bar', summary)
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:
