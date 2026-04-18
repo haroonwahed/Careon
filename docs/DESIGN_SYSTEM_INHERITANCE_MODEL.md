@@ -467,3 +467,337 @@ CTA: (optional)
 ### Priority Language
 - Use only the 5 variants defined above
 - Never invent new urgency/priority language
+
+---
+
+# 🔒 DESIGN SYSTEM GOVERNANCE ADDENDUM
+
+## Purpose
+
+This addendum enforces how the design system is used, not just what it contains.
+
+Without this, the system will slowly drift into:
+- Inconsistent urgency
+- Duplicated logic
+- UI overload
+- Conflicting signals
+
+This document prevents that.
+
+---
+
+## 1. Page Intensity Rules (Signal Density Control)
+
+Every page has a maximum allowed intensity level.
+
+This prevents UI inflation and alert fatigue.
+
+### Intensity Levels
+
+| Level | Description | Allowed Elements |
+|-------|-------------|------------------|
+| HIGH | Command center | Full command bar, multiple signal strips, predictive signals |
+| MEDIUM-HIGH | Operational pressure | 1 signal strip, priority badges, action blocks |
+| MEDIUM | Focused execution | Minimal signals, action blocks, limited badges |
+| LOW-MEDIUM | Informational | Subtle indicators only |
+| LOW | Reference / analytics | No urgency signals |
+
+### Page Mapping
+
+| Page | Intensity |
+|------|-----------|
+| Regiekamer | HIGH |
+| Casussen | MEDIUM-HIGH |
+| Matching | MEDIUM-HIGH |
+| Beoordelingen | MEDIUM |
+| Plaatsingen | MEDIUM |
+| Zorgaanbieders | LOW-MEDIUM |
+| Gemeenten/Regio | LOW-MEDIUM |
+| Reports | LOW |
+
+### Hard Limits
+
+**Regiekamer (HIGH)**
+- Max 1 command bar
+- Max 3 signal strips
+- Max 1 predictive section
+
+**MEDIUM-HIGH pages** (Casussen, Matching)
+- Max 1 signal strip
+- Max 1 priority badge per item
+- Max 2 signals per card
+
+**MEDIUM pages** (Beoordelingen, Plaatsingen)
+- Max 1 signal strip (optional)
+- Max 1 signal per item
+
+**LOW pages** (Zorgaanbieders, Regional, Reports)
+- No signal strips
+- No urgency badges
+
+---
+
+## 2. Primitive Usage Rules (Mandatory vs Optional)
+
+### Mandatory Primitives
+
+These MUST appear on all operational pages:
+
+**RecommendedActionBlock**
+
+Required when:
+- User can take action
+- Item affects flow
+
+**ImpactSummary**
+
+Required when:
+- Action is shown
+
+👉 **Rule: No action without impact**
+
+### Conditional Primitives
+
+**OperationalSignalStrip**
+
+Only allowed when:
+- Real operational issue exists
+- Affects multiple items or system state
+
+NOT allowed for:
+- Informational messages
+- Empty states
+
+**PriorityBadge**
+
+Only allowed when:
+- Items are ranked or triaged
+
+NOT allowed for:
+- Flat lists
+- Non-priority views
+
+**BottleneckBadge**
+
+Only allowed when:
+- Item actually blocks flow
+
+NOT allowed for:
+- General warnings
+- Soft issues
+
+**AttentionBand**
+
+Must map to real logic:
+- `attention-now` → Directe actie
+- `attention-today` → Vandaag oppakken
+- `attention-monitor` → Monitoren
+- `attention-waiting` → Wacht op externe partij
+
+No custom variants allowed.
+
+---
+
+## 3. Logic vs UI Separation (Critical Rule)
+
+### Rule
+
+UI components must never decide operational meaning.
+
+### Logic Layer (Backend/Service)
+
+Responsible for:
+- `recommended_action`
+- `impact_summary`
+- `attention_band`
+- `priority_rank`
+- `bottleneck_state`
+- `escalation_recommended`
+
+### UI Layer
+
+Responsible for:
+- Rendering primitives
+- Visual hierarchy
+- Layout and interaction
+
+### Forbidden
+
+❌ UI deciding:
+- Urgency
+- Priority
+- Escalation
+- Bottlenecks
+
+### Required
+
+✅ UI consumes:
+- Structured decision objects from services
+
+---
+
+## 4. Single Source of Truth (No Logic Duplication)
+
+### Rule
+
+Operational logic must be centralized.
+
+### Required Pattern
+
+- Regiekamer service = source
+- Other pages consume same logic
+- No page-specific logic forks
+
+### Forbidden
+
+❌ This:
+- "Quick fix" logic in templates
+- Duplicated conditions in views
+- Slightly different rules per page
+
+### Reason
+
+Without this:
+- Same case shows different states per page
+- Users lose trust immediately
+
+---
+
+## 5. Vocabulary Enforcement
+
+### Approved Language Only
+
+**Signals**
+- "Blokkeert matching"
+- "Overschrijdt wachttijd"
+- "Capaciteitstekort"
+
+**Actions**
+- "Rond beoordeling af"
+- "Start matching"
+- "Escaleren"
+
+**Impact**
+- "Vergroot kans op match"
+- "Versnelt plaatsing"
+- "Voorkomt SLA-overschrijding"
+
+### Forbidden Language
+
+❌ Generic:
+- "Bekijk"
+- "Open"
+- "Details"
+- "Status"
+- "Info"
+
+❌ Vague:
+- "Let op"
+- "Mogelijk probleem"
+- "Controleer dit"
+
+### Rule
+
+Every message must answer:
+1. What is wrong
+2. Why it matters
+3. What to do
+
+---
+
+## 6. Anti-Patterns (Strictly Forbidden)
+
+### 1. Command Bar Everywhere
+Only Regiekamer gets full command bar.
+
+### 2. Signal Overload
+More signals ≠ better UX
+
+### 3. Predictive Noise
+Predictions only when they change action.
+
+### 4. Fake Priority
+No priority badges without real ranking logic.
+
+### 5. Action Without Impact
+Every action must explain outcome.
+
+### 6. Conflicting States
+Same case cannot:
+- Be "Directe actie" on one page
+- And "Monitoren" on another
+
+---
+
+## 7. Operational Contract (Backend ↔ UI)
+
+### Standard Fields
+
+Every operational item should support:
+
+```json
+{
+  "recommended_action": "",
+  "impact_summary": "",
+  "attention_band": "",
+  "priority_rank": 0,
+  "bottleneck_state": "",
+  "escalation_recommended": false
+}
+```
+
+### Usage
+
+| Field | Used by |
+|-------|---------|
+| `recommended_action` | All pages |
+| `impact_summary` | All actions |
+| `attention_band` | Casussen, Matching |
+| `priority_rank` | Casussen, Regiekamer |
+| `bottleneck_state` | Beoordelingen, Matching |
+| `escalation_recommended` | Casussen, Plaatsingen |
+
+---
+
+## 8. Enforcement Rules
+
+### Before Adding UI
+
+Ask:
+1. Does this signal change action?
+2. Is this already shown elsewhere?
+3. Is this derived from shared logic?
+
+If NO → do not add it
+
+### Before Adding Logic
+
+Ask:
+1. Does this exist in Regiekamer logic?
+2. Can this be reused?
+
+If YES → reuse  
+If NO → extend shared service
+
+---
+
+## 9. Success Criteria
+
+The system is correct when:
+
+✅ Every page feels consistent but not identical  
+✅ Users always know what to do next  
+✅ Signals are rare but meaningful  
+✅ No duplicated logic exists  
+✅ Actions always explain impact  
+✅ Urgency is trustworthy  
+
+---
+
+## Final Principle
+
+**Clarity beats completeness.**
+
+**Consistency beats cleverness.**
+
+**Action beats information.**
