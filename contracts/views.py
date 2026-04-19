@@ -99,12 +99,6 @@ AUTO_INTAKE_TASKS = {
         'priority': Deadline.Priority.HIGH,
         'source': Deadline.GenerationSource.INTAKE,
     },
-    CaseIntakeProcess.ProcessStatus.ASSESSMENT: {
-        'title': 'Beoordeling uitvoeren',
-        'task_type': Deadline.TaskType.ASSESSMENT_PERFORM,
-        'priority': Deadline.Priority.HIGH,
-        'source': Deadline.GenerationSource.ASSESSMENT,
-    },
     CaseIntakeProcess.ProcessStatus.MATCHING: {
         'title': 'Match selecteren',
         'task_type': Deadline.TaskType.SELECT_MATCH,
@@ -186,7 +180,6 @@ def _merge_document_context_tags(existing_tags, *, phase='', event=''):
 def _flow_stage_for_intake_status(intake_status):
     flow_stage_map = {
         CaseIntakeProcess.ProcessStatus.INTAKE: 'aanvraag',
-        CaseIntakeProcess.ProcessStatus.ASSESSMENT: 'beoordeling',
         CaseIntakeProcess.ProcessStatus.MATCHING: 'matching',
         CaseIntakeProcess.ProcessStatus.DECISION: 'intake_aanbieder',
         CaseIntakeProcess.ProcessStatus.COMPLETED: 'plaatsing',
@@ -725,7 +718,6 @@ def _region_pressure_summary(*, intake, provider_profiles, region_id):
 
     active_statuses = {
         CaseIntakeProcess.ProcessStatus.INTAKE,
-        CaseIntakeProcess.ProcessStatus.ASSESSMENT,
         CaseIntakeProcess.ProcessStatus.MATCHING,
         CaseIntakeProcess.ProcessStatus.DECISION,
     }
@@ -1388,8 +1380,8 @@ def sync_automatic_deadlines_for_organization(org, user=None):
 
 PHASE_TO_PROCESS_STATUS = {
     CareCase.CasePhase.INTAKE: CaseIntakeProcess.ProcessStatus.INTAKE,
-    CareCase.CasePhase.BEOORDELING: CaseIntakeProcess.ProcessStatus.ASSESSMENT,
     CareCase.CasePhase.MATCHING: CaseIntakeProcess.ProcessStatus.MATCHING,
+    CareCase.CasePhase.PROVIDER_BEOORDELING: CaseIntakeProcess.ProcessStatus.MATCHING,
     CareCase.CasePhase.PLAATSING: CaseIntakeProcess.ProcessStatus.DECISION,
     CareCase.CasePhase.ACTIEF: CaseIntakeProcess.ProcessStatus.COMPLETED,
     CareCase.CasePhase.AFGEROND: CaseIntakeProcess.ProcessStatus.COMPLETED,
@@ -1483,7 +1475,7 @@ def sync_case_flow_state(case, user=None):
         if assessment.assessment_status == CaseAssessment.AssessmentStatus.DRAFT:
             assessment.assessment_status = CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING
             assessment_changed = True
-    elif case.case_phase == CareCase.CasePhase.BEOORDELING and assessment.assessment_status == CaseAssessment.AssessmentStatus.DRAFT:
+    elif case.case_phase == CareCase.CasePhase.PROVIDER_BEOORDELING and assessment.assessment_status == CaseAssessment.AssessmentStatus.DRAFT:
         assessment.assessment_status = CaseAssessment.AssessmentStatus.UNDER_REVIEW
         assessment_changed = True
     if assessment_changed:
@@ -3056,7 +3048,6 @@ def reports_dashboard(request):
         .filter(
             status__in=[
                 CaseIntakeProcess.ProcessStatus.INTAKE,
-                CaseIntakeProcess.ProcessStatus.ASSESSMENT,
                 CaseIntakeProcess.ProcessStatus.MATCHING,
                 CaseIntakeProcess.ProcessStatus.DECISION,
             ],
@@ -3125,7 +3116,6 @@ def reports_dashboard(request):
     # Doorstroomtrend op basis van het centrale zorgproces
     flow_counts = {
         'case': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE).count(),
-        'assessment': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT).count(),
         'matching': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.MATCHING).count(),
         'placement': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.DECISION).count(),
         'follow_up': cases_qs.filter(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count(),
@@ -3133,14 +3123,12 @@ def reports_dashboard(request):
     max_flow = max(max(flow_counts.values()), 1)
     flow_stages = [
         {'key': 'case', 'label': 'Intake', 'count': flow_counts['case'], 'width': int((flow_counts['case'] / max_flow) * 100)},
-        {'key': 'assessment', 'label': 'Beoordeling', 'count': flow_counts['assessment'], 'width': int((flow_counts['assessment'] / max_flow) * 100)},
         {'key': 'matching', 'label': 'Matching', 'count': flow_counts['matching'], 'width': int((flow_counts['matching'] / max_flow) * 100)},
         {'key': 'placement', 'label': 'Plaatsing', 'count': flow_counts['placement'], 'width': int((flow_counts['placement'] / max_flow) * 100)},
         {'key': 'follow_up', 'label': 'Opvolging', 'count': flow_counts['follow_up'], 'width': int((flow_counts['follow_up'] / max_flow) * 100)},
     ]
     flow_drops = [
-        ('Intake -> Beoordeling', max(flow_counts['case'] - flow_counts['assessment'], 0)),
-        ('Beoordeling -> Matching', max(flow_counts['assessment'] - flow_counts['matching'], 0)),
+        ('Intake -> Matching', max(flow_counts['case'] - flow_counts['matching'], 0)),
         ('Matching -> Plaatsing', max(flow_counts['matching'] - flow_counts['placement'], 0)),
         ('Plaatsing -> Opvolging', max(flow_counts['placement'] - flow_counts['follow_up'], 0)),
     ]
@@ -3699,7 +3687,6 @@ def _provider_response_status_label(status_code):
 def _workflow_stage_label(workflow_stage):
     stage_labels = {
         'aanvraag': 'Intake',
-        'beoordeling': 'Beoordeling',
         'matching': 'Matching',
         'intake_aanbieder': 'Plaatsing',
         'plaatsing': 'Plaatsing',
@@ -3948,7 +3935,7 @@ def case_communication_action(request, pk):
     next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie"
 
     workflow_stage = (request.POST.get('workflow_stage') or _flow_stage_for_intake_status(intake.status)).strip()
-    if workflow_stage not in {'aanvraag', 'beoordeling', 'matching', 'intake_aanbieder', 'plaatsing'}:
+    if workflow_stage not in {'aanvraag', 'matching', 'intake_aanbieder', 'plaatsing'}:
         workflow_stage = _flow_stage_for_intake_status(intake.status)
 
     if normalized_action in {'add_message', 'add_internal_note', 'reply', 'escalate'}:
@@ -4321,6 +4308,12 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
                 'recommended_action_detail': ownership['ownership_reason'],
                 'recommended_action_tone': recommended_action_tone,
                 'action_deadline_label': ownership['action_deadline_label'],
+                # Waitlist prioritization fields
+                'urgency_validated': intake.urgency_validated,
+                'urgency_granted_date': intake.urgency_granted_date,
+                'start_date': intake.start_date,
+                # 0 = validated urgent (jumps ahead), 1 = normal FCFS
+                'waitlist_bucket': 0 if (intake.urgency_validated and intake.urgency_granted_date) else 1,
                 'flags': {
                     'is_waiting': normalized_status in {
                         PlacementRequest.ProviderResponseStatus.PENDING,
@@ -4419,10 +4412,26 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
             -row['case_id'],
         )
 
+    from datetime import date as _date
+    _sentinel = _date(9999, 12, 31)
+
+    def _waitlist_sort_key(row):
+        """
+        Policy-aligned waitlist sort key.
+        1. Validated urgent cases first, sorted by urgency_granted_date ASC
+        2. Non-urgent cases sorted by start_date ASC (FCFS / aanmeldingsdatum)
+        """
+        bucket = row['waitlist_bucket']  # 0 = urgent, 1 = normal
+        if bucket == 0:
+            return (0, row['urgency_granted_date'] or _sentinel, _sentinel)
+        return (1, _sentinel, row['start_date'] or _sentinel)
+
     if sort_mode == 'oldest_waiting':
-        filtered_rows.sort(key=lambda row: (-row['age_days'], -row['urgency_rank'], _default_sort_key(row)))
+        # Primary: waitlist policy order; secondary: age_days as tie-break
+        filtered_rows.sort(key=lambda row: (_waitlist_sort_key(row), -row['age_days']))
     elif sort_mode == 'urgency':
-        filtered_rows.sort(key=lambda row: (-row['urgency_rank'], -row['age_days'], _default_sort_key(row)))
+        # Primary: waitlist policy order; secondary: urgency_rank as tie-break
+        filtered_rows.sort(key=lambda row: (_waitlist_sort_key(row), -row['urgency_rank']))
     else:
         filtered_rows.sort(key=_default_sort_key)
 
@@ -4533,13 +4542,30 @@ def matching_dashboard(request):
         messages.error(request, 'Geen actieve organisatie gevonden voor matching.')
         return render(request, 'contracts/matching_dashboard.html', {'rows': [], 'total_ready': 0})
 
+    from django.db.models import Case as DBCase, IntegerField as DBInt, Value, When
+    _urgency_bucket_expr = DBCase(
+        When(
+            due_diligence_process__urgency_validated=True,
+            due_diligence_process__urgency_granted_date__isnull=False,
+            then=Value(0),
+        ),
+        default=Value(1),
+        output_field=DBInt(),
+    )
     approved_assessments_qs = (
         CaseAssessment.objects.filter(
             due_diligence_process__organization=org,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
         )
         .select_related('due_diligence_process', 'due_diligence_process__care_category_main', 'assessed_by')
-        .order_by('-updated_at')
+        .annotate(_wl_bucket=_urgency_bucket_expr)
+        # Waitlist order: validated urgent (by urgency_granted_date) first,
+        # then non-urgent by start_date ascending (aanmeldingsdatum / FCFS).
+        .order_by(
+            '_wl_bucket',
+            'due_diligence_process__urgency_granted_date',
+            'due_diligence_process__start_date',
+        )
     )
 
     selected_intake = None
@@ -5607,7 +5633,7 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
         if flow == 'intake':
             qs = qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE)
         elif flow == 'assessment':
-            qs = qs.filter(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT)
+            qs = qs.filter(status=CaseIntakeProcess.ProcessStatus.INTAKE)
         elif flow == 'matching':
             qs = qs.filter(status__in=[
                 CaseIntakeProcess.ProcessStatus.MATCHING,
@@ -5652,6 +5678,12 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
         if region and region.isdigit():
             qs = qs.filter(preferred_region_id=int(region))
 
+        # Apply waitlist-aligned ordering when viewing the matching flow.
+        # For other flows, fall back to creation date descending.
+        active_flow = self.request.GET.get('flow')
+        if active_flow == 'matching':
+            from contracts.waitlist import apply_waitlist_order
+            return apply_waitlist_order(qs)
         return qs.order_by('-created_at')
 
     def get_context_data(self, **kwargs):
@@ -5802,7 +5834,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         assessment_status_label = assessment.get_assessment_status_display() if assessment else 'Nog niet gestart'
 
         matching_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
-        matching_status_label = 'Klaar voor matching' if assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING else 'Wacht op beoordeling'
+        matching_status_label = 'Klaar voor matching' if intake.status == CaseIntakeProcess.ProcessStatus.MATCHING else 'Wacht op matching'
 
         placement_href = reverse('careon:placement_detail', kwargs={'pk': placement.pk}) if placement else reverse('careon:matching_dashboard')
         placement_action_label = 'Open plaatsing' if placement else 'Start via matching'
@@ -5825,23 +5857,11 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'href': reverse('careon:case_list'),
                 'help': 'Je kunt deze casus bekijken, maar niet wijzigen. Neem contact op met een beheerder.',
             }
-        elif not assessment:
-            next_action = {
-                'label': 'Start beoordeling',
-                'href': assessment_href,
-                'help': 'Deze casus heeft nog geen beoordeling. Rond eerst de beoordeling af.',
-            }
-        elif assessment.assessment_status != CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
-            next_action = {
-                'label': 'Werk beoordeling bij',
-                'href': assessment_href,
-                'help': 'De beoordeling is nog niet gereed voor matching.',
-            }
         elif not placement:
             next_action = {
-                'label': 'Koppel aanbieder',
+                'label': 'Start matching',
                 'href': matching_href,
-                'help': 'Koppel nu een passende aanbieder via matching.',
+                'help': 'Kies een passende aanbieder via matching.',
             }
         else:
             next_action = {
@@ -5852,20 +5872,12 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
 
         matching_requirements = [
             {
-                'label': 'Beoordeling bestaat',
-                'ok': bool(assessment),
-            },
-            {
-                'label': 'Beoordelingstatus is Gereed voor matching',
-                'ok': bool(assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING),
-            },
-            {
-                'label': 'Beoordeling staat op klaar voor matching',
-                'ok': bool(assessment and assessment.matching_ready),
+                'label': 'Casus heeft een aanbieder nodig',
+                'ok': bool(placement and placement.selected_provider_id),
             },
         ]
-        ready_for_matching = all(item['ok'] for item in matching_requirements)
-        matching_missing = [item['label'] for item in matching_requirements if not item['ok']]
+        ready_for_matching = True  # No longer gated on assessment
+        matching_missing = []
 
         placement_requirements = [
             {
@@ -5881,10 +5893,9 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         placement_missing = [item['label'] for item in placement_requirements if not item['ok']]
 
         active_flow_stage = _flow_stage_for_intake_status(intake.status)
-        flow_order = ['aanvraag', 'beoordeling', 'matching', 'intake_aanbieder', 'plaatsing']
+        flow_order = ['aanvraag', 'matching', 'intake_aanbieder', 'plaatsing']
         flow_labels = {
             'aanvraag': 'Aanvraag',
-            'beoordeling': 'Beoordeling',
             'matching': 'Matching',
             'intake_aanbieder': 'Intake aanbieder',
             'plaatsing': 'Plaatsing',
@@ -6254,6 +6265,9 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
         return response
 
     def get_success_url(self):
+        case_record = getattr(self.object, 'contract', None)
+        if case_record:
+            return f"{reverse('dashboard')}?page=casussen&case={case_record.pk}"
         return f"{reverse('dashboard')}?page=casussen"
 
 

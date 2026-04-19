@@ -437,8 +437,8 @@ class CareCase(models.Model):
 
     class CasePhase(models.TextChoices):
         INTAKE = 'intake', 'Intake'
-        BEOORDELING = 'beoordeling', 'Beoordeling'
         MATCHING = 'matching', 'Matching'
+        PROVIDER_BEOORDELING = 'provider_beoordeling', 'Aanbiederbeoordeling'
         PLAATSING = 'plaatsing', 'Plaatsing'
         ACTIEF = 'actief', 'Actief'
         AFGEROND = 'afgerond', 'Afgerond'
@@ -1521,10 +1521,9 @@ class WorkflowStep(models.Model):
 
 
 class CaseIntakeProcess(models.Model):
-    """Care/intake & assessment processes (Intakes & Beoordelingen)"""
+    """Care/intake & matching processes (Intakes & Matching)"""
     class ProcessStatus(models.TextChoices):
         INTAKE = 'INTAKE', 'Intake'
-        ASSESSMENT = 'ASSESSMENT', 'Beoordeling'
         MATCHING = 'MATCHING', 'Matching'
         DECISION = 'DECISION', 'Matchbesluit'
         COMPLETED = 'COMPLETED', 'Afgerond'
@@ -1693,11 +1692,68 @@ class CaseIntakeProcess(models.Model):
         verbose_name='Intake-uitkomst vastgelegd door',
     )
     
+    # ── Urgency validation (gemeente-controlled) ──────────────────────────────
+    # urgency_validated may only be set to True by gemeente users and only when
+    # urgency_document is present. When validated, urgency_granted_date drives
+    # waitlist priority instead of start_date.
+    urgency_validated = models.BooleanField(
+        default=False,
+        verbose_name='Urgentie gevalideerd',
+        help_text='Mag alleen worden ingesteld door gemeente, en alleen als urgentieverklaring is bijgevoegd.',
+    )
+    urgency_document = models.FileField(
+        upload_to='urgency_documents/%Y/%m/',
+        null=True,
+        blank=True,
+        verbose_name='Urgentieverklaring',
+        help_text='Verplicht voordat urgentie kan worden gevalideerd.',
+    )
+    urgency_granted_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Datum urgentieverlening',
+        help_text='Datum waarop urgentie door gemeente is vastgesteld. Bepaalt prioriteitsvolgorde bij urgente casussen.',
+    )
+    urgency_validated_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='validated_urgencies',
+        verbose_name='Urgentie gevalideerd door',
+    )
+    urgency_validated_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Urgentie gevalideerd op',
+    )
+
+    # ── Arrangement metadata ──────────────────────────────────────────────────
+    # Stores the care arrangement details once a placement is confirmed.
+    arrangement_type_code = models.CharField(
+        max_length=100,
+        blank=True,
+        verbose_name='Arrangementcode',
+        help_text='Bijv. ZIN-dagbehandeling, PGB-ambulant.',
+    )
+    arrangement_provider = models.CharField(
+        max_length=200,
+        blank=True,
+        verbose_name='Arrangementaanbieder',
+        help_text='Naam of referentie van de aanbieder die het arrangement uitvoert.',
+    )
+    arrangement_end_date = models.DateField(
+        null=True,
+        blank=True,
+        verbose_name='Einddatum arrangement',
+        help_text='Verwachte of bevestigde einddatum van het zorgtraject.',
+    )
+
     # Legacy fields (kept for migration compatibility)
     transaction_type = models.CharField(max_length=20, blank=True)
     target_company = models.CharField(max_length=200, blank=True)
     deal_value = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1817,6 +1873,46 @@ class CaseIntakeProcess(models.Model):
     @case_record.setter
     def case_record(self, value):
         self.contract = value
+
+    # ── Urgency validation helpers ─────────────────────────────────────────────
+
+    @property
+    def urgency_document_present(self) -> bool:
+        """True when an urgency document has been uploaded."""
+        return bool(self.urgency_document)
+
+    def can_validate_urgency(self) -> tuple[bool, str]:
+        """
+        Returns (True, '') when urgency validation is allowed.
+        Returns (False, reason) when blocked.
+
+        Rules:
+        - Document must be present (urgency_document_present)
+        - urgency must not already be validated
+        """
+        if not self.urgency_document_present:
+            return False, 'Urgentie vereist een geldige urgentieverklaring'
+        if self.urgency_validated:
+            return False, 'Urgentie is al gevalideerd'
+        return True, ''
+
+    # ── Waitlist priority ─────────────────────────────────────────────────────
+
+    @property
+    def waitlist_priority_key(self) -> tuple:
+        """
+        Returns a sort key for waitlist ordering:
+        - Validated urgent cases first, ordered by urgency_granted_date ascending
+        - Non-urgent cases second, ordered by start_date ascending (FCFS)
+
+        Lower tuple = higher priority (use with ascending sort).
+        """
+        from datetime import date as _date
+        sentinel_date = _date(9999, 12, 31)
+
+        if self.urgency_validated and self.urgency_granted_date:
+            return (0, self.urgency_granted_date, sentinel_date)
+        return (1, sentinel_date, self.start_date or sentinel_date)
 
 
 class IntakeTask(models.Model):

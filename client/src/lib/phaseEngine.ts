@@ -9,31 +9,40 @@
  *
  * UI never guesses what to show. It calls computeCaseState(casus, role)
  * and renders what it receives.
+ *
+ * NEW FLOW (v2):
+ *   Casus → Matching → Aanbieder selecteren → Aanbiederbeoordeling → Intake → Afgerond
+ *
+ *   Gemeente:   casus aanmaken → matching uitvoeren → aanbieder kiezen → verzoek versturen
+ *   Aanbieder:  verzoek ontvangen → beoordelen → accepteren/afwijzen/wachtlijst → intake plannen
+ *   Municipality-side "Beoordelingen" is REMOVED as a workflow gate.
  */
 
 // ─── Phase & Status types ─────────────────────────────────────────────────────
 
 export type CasusPhase =
-  | "intake_initial"
-  | "beoordeling"
-  | "matching"
-  | "plaatsing"
-  | "intake_provider"
+  | "casus"               // Case created, ready for matching
+  | "matching"            // Gemeente runs matching & selects provider
+  | "aanbieder_selectie"  // Provider selected, sending placement request
+  | "provider_beoordeling" // Provider is reviewing the request
+  | "intake_provider"     // Provider accepted, planning/executing intake
   | "afgerond"
   | "geblokkeerd";
 
 export type CasusStatus =
   | "nieuw"
-  | "in_beoordeling"
-  | "beoordeling_afgerond"
-  | "matching_bezig"
-  | "match_gevonden"
-  | "plaatsing_te_bevestigen"
-  | "plaatsing_bevestigd"
+  | "klaar_voor_matching"          // Case created, ready for matching
+  | "in_matching"                  // Matching in progress
+  | "match_gevonden"               // Provider selected by gemeente
+  | "voorgesteld_aan_aanbieder"    // Placement request sent to provider
+  | "provider_beoordeelt"          // Provider is actively reviewing
+  | "geaccepteerd_voor_intake"     // Provider accepted the case
+  | "afgewezen_door_aanbieder"     // Provider rejected
+  | "op_wachtlijst"                // Provider placed on waitlist
+  | "meer_info_nodig"              // Provider needs more information
   | "intake_gepland"
   | "intake_gestart"
   | "zorg_gestart"
-  | "afgewezen"
   | "gesloten"
   | "geblokkeerd";
 
@@ -42,24 +51,23 @@ export type RiskLevel    = "high" | "medium" | "low" | "none";
 export type UserRole     = "gemeente" | "zorgaanbieder" | "admin";
 
 export type ActionType =
-  | "start_beoordeling"
+  | "start_matching"
   | "edit_basisgegevens"
   | "upload_document"
-  | "save_concept"
-  | "complete_beoordeling"
-  | "request_more_info"
   | "rerun_matching"
   | "view_provider_profile"
   | "select_provider"
+  | "stuur_naar_aanbieder"
+  | "verstuur_plaatsingsverzoek"
   | "expand_radius"
   | "escalate_case"
-  | "confirm_placement"
-  | "cancel_placement"
   | "return_to_matching"
   | "follow_up_provider"
   | "view_handover"
-  | "accept_case"
-  | "reject_case"
+  | "provider_accept_case"
+  | "provider_reject_case"
+  | "provider_request_info"
+  | "provider_waitlist_case"
   | "plan_intake"
   | "mark_intake_started"
   | "mark_intake_completed"
@@ -124,7 +132,7 @@ export interface CasusIntake {
 
 export interface CasusSignal {
   id: string;
-  type: "wachttijd" | "beoordeling" | "matching" | "capaciteit" | "intake" | "risico";
+  type: "wachttijd" | "matching" | "capaciteit" | "intake" | "risico" | "aanbieder";
   severity: "critical" | "warning" | "info";
   title: string;
   description: string;
@@ -189,83 +197,67 @@ export interface ComputedCaseState {
 // ─── Phase transition map ─────────────────────────────────────────────────────
 
 export const PHASE_TRANSITIONS: Record<CasusStatus, CasusStatus[]> = {
-  nieuw:                   ["in_beoordeling"],
-  in_beoordeling:          ["beoordeling_afgerond", "geblokkeerd"],
-  beoordeling_afgerond:    ["matching_bezig"],
-  matching_bezig:          ["match_gevonden", "geblokkeerd"],
-  match_gevonden:          ["plaatsing_te_bevestigen"],
-  plaatsing_te_bevestigen: ["plaatsing_bevestigd", "matching_bezig"],
-  plaatsing_bevestigd:     ["intake_gepland", "afgewezen"],
-  intake_gepland:          ["intake_gestart"],
-  intake_gestart:          ["zorg_gestart"],
-  zorg_gestart:            ["gesloten"],
-  afgewezen:               ["matching_bezig", "geblokkeerd"],
-  gesloten:                [],
-  geblokkeerd:             ["in_beoordeling", "matching_bezig", "intake_gepland"],
+  nieuw:                       ["klaar_voor_matching"],
+  klaar_voor_matching:         ["in_matching"],
+  in_matching:                 ["match_gevonden", "geblokkeerd"],
+  match_gevonden:              ["voorgesteld_aan_aanbieder", "in_matching"],
+  voorgesteld_aan_aanbieder:   ["provider_beoordeelt"],
+  provider_beoordeelt:         ["geaccepteerd_voor_intake", "afgewezen_door_aanbieder", "op_wachtlijst", "meer_info_nodig"],
+  geaccepteerd_voor_intake:    ["intake_gepland"],
+  afgewezen_door_aanbieder:    ["in_matching", "geblokkeerd"],
+  op_wachtlijst:               ["in_matching", "geaccepteerd_voor_intake"],
+  meer_info_nodig:             ["provider_beoordeelt", "in_matching"],
+  intake_gepland:              ["intake_gestart"],
+  intake_gestart:              ["zorg_gestart"],
+  zorg_gestart:                ["gesloten"],
+  gesloten:                    [],
+  geblokkeerd:                 ["in_matching", "intake_gepland"],
 };
 
 export function statusToPhase(status: CasusStatus): CasusPhase {
   const map: Record<CasusStatus, CasusPhase> = {
-    nieuw:                   "intake_initial",
-    in_beoordeling:          "beoordeling",
-    beoordeling_afgerond:    "beoordeling",
-    matching_bezig:          "matching",
-    match_gevonden:          "matching",
-    plaatsing_te_bevestigen: "plaatsing",
-    plaatsing_bevestigd:     "intake_provider",
-    intake_gepland:          "intake_provider",
-    intake_gestart:          "intake_provider",
-    zorg_gestart:            "afgerond",
-    afgewezen:               "geblokkeerd",
-    gesloten:                "afgerond",
-    geblokkeerd:             "geblokkeerd",
+    nieuw:                     "casus",
+    klaar_voor_matching:       "casus",
+    in_matching:               "matching",
+    match_gevonden:            "aanbieder_selectie",
+    voorgesteld_aan_aanbieder: "provider_beoordeling",
+    provider_beoordeelt:       "provider_beoordeling",
+    geaccepteerd_voor_intake:  "intake_provider",
+    afgewezen_door_aanbieder:  "geblokkeerd",
+    op_wachtlijst:             "geblokkeerd",
+    meer_info_nodig:           "provider_beoordeling",
+    intake_gepland:            "intake_provider",
+    intake_gestart:            "intake_provider",
+    zorg_gestart:              "afgerond",
+    gesloten:                  "afgerond",
+    geblokkeerd:               "geblokkeerd",
   };
   return map[status];
 }
 
 export const ALL_PHASES: { id: CasusPhase; label: string; shortLabel: string }[] = [
-  { id: "intake_initial",  label: "Intake",           shortLabel: "Intake"     },
-  { id: "beoordeling",     label: "Beoordeling",      shortLabel: "Beoordeling"},
-  { id: "matching",        label: "Matching",          shortLabel: "Matching"   },
-  { id: "plaatsing",       label: "Plaatsing",         shortLabel: "Plaatsing"  },
-  { id: "intake_provider", label: "Intake aanbieder",  shortLabel: "Aanbieder"  },
-  { id: "afgerond",        label: "Afgerond",          shortLabel: "Afgerond"   },
+  { id: "casus",               label: "Casus",                 shortLabel: "Casus"      },
+  { id: "matching",            label: "Matching",              shortLabel: "Matching"   },
+  { id: "aanbieder_selectie",  label: "Aanbieder selecteren",  shortLabel: "Selectie"   },
+  { id: "provider_beoordeling",label: "Aanbiederbeoordeling",  shortLabel: "Beoordeling"},
+  { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: "Intake"     },
+  { id: "afgerond",            label: "Afgerond",              shortLabel: "Afgerond"   },
 ];
 
 // ─── next_action computation ──────────────────────────────────────────────────
 
 function computeNextAction(casus: Casus): { label: string; detail: string; type: ComputedCaseState["decisionType"] } {
-  const { phase, assessment, matchResults, placement, intake, waitingDays } = casus;
+  const { phase, matchResults, placement, intake, waitingDays } = casus;
 
   switch (phase) {
     case "intake_initial":
+    case "beoordeling":
+    case "casus":
       return {
-        label:  "Start beoordeling",
-        detail: "Casus kan niet door naar matching zonder eerste beoordeling.",
+        label:  "Start matching",
+        detail: "Casus is klaar. Voer matching uit om een geschikte aanbieder te vinden.",
         type:   "action",
       };
-
-    case "beoordeling": {
-      if (assessment.missingFields.length > 0) {
-        return {
-          label:  `Vul ${assessment.missingFields.length} ontbrekend${assessment.missingFields.length === 1 ? " veld" : "e velden"} in`,
-          detail: `Ontbreekt: ${assessment.missingFields.join(", ")}. Beoordeling kan niet worden afgerond.`,
-          type:   "warning",
-        };
-      }
-      if (assessment.daysOverdue > 0) {
-        return {
-          label:  "Beoordeling afronden — vertraagd",
-          detail: `Beoordeling is ${assessment.daysOverdue} ${assessment.daysOverdue === 1 ? "dag" : "dagen"} over de deadline.`,
-          type:   "warning",
-        };
-      }
-      return {
-        label:  "Rond beoordeling af",
-        detail: "Alle benodigde informatie is aanwezig. Beoordeling kan worden afgerond.",
-        type:   "action",
-      };
-    }
 
     case "matching": {
       if (matchResults.length === 0) {
@@ -275,13 +267,6 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
           type:   "critical",
         };
       }
-      if (casus.selectedProviderId) {
-        return {
-          label:  "Bevestig plaatsing",
-          detail: "Aanbieder is geselecteerd. Ga door naar plaatsing.",
-          type:   "action",
-        };
-      }
       return {
         label:  "Kies aanbieder",
         detail: `${matchResults.length} passende aanbieder${matchResults.length === 1 ? "" : "s"} gevonden. Selecteer de beste optie.`,
@@ -289,20 +274,40 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
       };
     }
 
-    case "plaatsing": {
-      const v = placement.validations;
-      const failedCount = [v.assessmentComplete, v.providerSelected, v.dossierComplete, v.guardianConsent].filter(b => !b).length;
-      if (failedCount > 0) {
+    case "aanbieder_selectie": {
+      if (casus.selectedProviderId) {
         return {
-          label:  `${failedCount} validatie${failedCount === 1 ? "" : "s"} nog openstaand`,
-          detail: "Voltooi alle vereiste stappen voordat de plaatsing bevestigd kan worden.",
-          type:   "warning",
+          label:  "Verstuur plaatsingsverzoek",
+          detail: `Aanbieder geselecteerd: ${placement.providerName ?? "onbekend"}. Stuur het verzoek naar de aanbieder.`,
+          type:   "action",
         };
       }
       return {
-        label:  "Bevestig plaatsing",
-        detail: "Aanbieder is geselecteerd en alle validaties zijn geslaagd.",
+        label:  "Selecteer aanbieder",
+        detail: "Kies een aanbieder uit de matchresultaten om door te gaan.",
         type:   "action",
+      };
+    }
+
+    case "provider_beoordeling": {
+      if (placement.status === "rejected") {
+        return {
+          label:  "Aanbieder afgewezen — herstart matching",
+          detail: "Aanbieder heeft het verzoek afgewezen. Kies een andere aanbieder.",
+          type:   "critical",
+        };
+      }
+      if (intake.status === "rejected") {
+        return {
+          label:  "Verzoek afgewezen — actie vereist",
+          detail: "Aanbieder heeft het plaatsingsverzoek afgewezen. Re-routeer de casus.",
+          type:   "critical",
+        };
+      }
+      return {
+        label:  "Wacht op aanbiedersreactie",
+        detail: "Plaatsingsverzoek is verstuurd. De aanbieder beoordeelt momenteel de casus.",
+        type:   "info",
       };
     }
 
@@ -310,7 +315,7 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
       if (!intake.plannedAt) {
         return {
           label:  "Plan intake",
-          detail: "Plaatsing is bevestigd. De aanbieder moet een intake inplannen.",
+          detail: "Aanbieder heeft geaccepteerd. De aanbieder moet een intake inplannen.",
           type:   "warning",
         };
       }
@@ -362,6 +367,13 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
         detail: "Het systeem kan niet automatisch doorgaan. Bekijk de blokkades en kies een actie.",
         type:   "critical",
       };
+
+    default:
+      return {
+        label: "Bekijk casusstatus",
+        detail: "De casus bevindt zich in een onbekende fase. Open de casus om de volgende stap te bepalen.",
+        type: "info",
+      };
   }
 }
 
@@ -369,7 +381,7 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
 
 function computeSignals(casus: Casus): CasusSignal[] {
   const signals: CasusSignal[] = [];
-  const { phase, assessment, matchResults, placement, intake, waitingDays, urgency } = casus;
+  const { phase, matchResults, placement, intake, waitingDays, urgency } = casus;
 
   if (waitingDays > 7) {
     signals.push({
@@ -393,29 +405,7 @@ function computeSignals(casus: Casus): CasusSignal[] {
     });
   }
 
-  if (phase === "beoordeling" && assessment.missingFields.length > 0) {
-    signals.push({
-      id: "sig-beoordeling-ontbreekt",
-      type: "beoordeling",
-      severity: "warning",
-      title: "Beoordeling onvolledig",
-      description: `Ontbrekende velden: ${assessment.missingFields.join(", ")}.`,
-      isResolved: false,
-    });
-  }
-
-  if (phase === "beoordeling" && assessment.daysOverdue > 0) {
-    signals.push({
-      id: "sig-beoordeling-vertraagd",
-      type: "beoordeling",
-      severity: assessment.daysOverdue > 3 ? "critical" : "warning",
-      title: "Beoordeling vertraagd",
-      description: `${assessment.daysOverdue} ${assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline.`,
-      isResolved: false,
-    });
-  }
-
-  if (phase === "matching" && matchResults.length === 0) {
+  if ((phase === "matching" || phase === "aanbieder_selectie") && matchResults.length === 0) {
     signals.push({
       id: "sig-geen-aanbieder",
       type: "matching",
@@ -426,13 +416,35 @@ function computeSignals(casus: Casus): CasusSignal[] {
     });
   }
 
-  if (phase === "matching" && matchResults.length > 0 && matchResults[0].availableSpots <= 1) {
+  if ((phase === "matching" || phase === "aanbieder_selectie") && matchResults.length > 0 && matchResults[0].availableSpots <= 1) {
     signals.push({
       id: "sig-capaciteit",
       type: "capaciteit",
       severity: "warning",
       title: "Beperkte capaciteit",
       description: "Slechts 1 beschikbare plek bij de best passende aanbieder.",
+      isResolved: false,
+    });
+  }
+
+  if (phase === "provider_beoordeling" && placement.status === "rejected") {
+    signals.push({
+      id: "sig-aanbieder-afgewezen",
+      type: "matching",
+      severity: "critical",
+      title: "Aanbieder heeft afgewezen",
+      description: "De aanbieder heeft het plaatsingsverzoek afgewezen. Herstart matching.",
+      isResolved: false,
+    });
+  }
+
+  if (phase === "provider_beoordeling" && intake.providerResponseDays > 3) {
+    signals.push({
+      id: "sig-aanbieder-geen-reactie",
+      type: "intake",
+      severity: "warning",
+      title: "Aanbieder reageert niet",
+      description: `Aanbieder heeft ${intake.providerResponseDays} werkdagen niet gereageerd op het verzoek.`,
       isResolved: false,
     });
   }
@@ -448,15 +460,13 @@ function computeSignals(casus: Casus): CasusSignal[] {
     });
   }
 
-  const placementFailed = placement.validations &&
-    !placement.validations.dossierComplete;
-  if (phase === "plaatsing" && placementFailed) {
+  if (!placement.validations?.dossierComplete && (phase === "aanbieder_selectie" || phase === "provider_beoordeling")) {
     signals.push({
       id: "sig-dossier-onvolledig",
-      type: "beoordeling",
+      type: "matching",
       severity: "warning",
       title: "Dossier onvolledig",
-      description: "Niet alle vereiste documenten zijn aanwezig voor de plaatsing.",
+      description: "Niet alle vereiste documenten zijn aanwezig voor het plaatsingsverzoek.",
       isResolved: false,
     });
   }
@@ -467,7 +477,7 @@ function computeSignals(casus: Casus): CasusSignal[] {
 // ─── Allowed actions computation ─────────────────────────────────────────────
 
 function computeAllowedActions(casus: Casus, role: UserRole): CasusAction[] {
-  const { phase, assessment, matchResults, selectedProviderId } = casus;
+  const { phase, matchResults, selectedProviderId } = casus;
   const actions: CasusAction[] = [];
 
   const add = (
@@ -478,46 +488,48 @@ function computeAllowedActions(casus: Casus, role: UserRole): CasusAction[] {
   ) => actions.push({ id: `act-${type}`, type, label, priority, assignedTo: null, dueAt: null, ...extra });
 
   switch (phase) {
-    case "intake_initial":
+    case "casus":
       if (role !== "zorgaanbieder") {
-        add("start_beoordeling",  "Start beoordeling",   "primary");
+        add("start_matching",     "Start matching",      "primary");
         add("edit_basisgegevens", "Bewerk basisgegevens", "secondary");
         add("upload_document",    "Upload document",      "secondary");
       }
       break;
 
-    case "beoordeling":
+    case "matching":
       if (role !== "zorgaanbieder") {
-        if (assessment.isComplete) {
-          add("complete_beoordeling", "Beoordeling afronden", "primary");
-        } else {
-          add("save_concept",         "Concept opslaan",       "secondary");
-          add("complete_beoordeling", "Beoordeling afronden",  "primary");
-        }
-        add("request_more_info", "Aanvullende info opvragen", "secondary");
-        add("upload_document",   "Upload document",           "secondary");
+        add("select_provider",  "Selecteer aanbieder",    "primary");
+        add("rerun_matching",   "Herstart matching",      "secondary");
+        add("expand_radius",    "Vergroot zoekgebied",    "secondary");
+        add("escalate_case",    "Escaleer casus",         "destructive");
       }
       break;
 
-    case "matching":
+    case "aanbieder_selectie":
       if (role !== "zorgaanbieder") {
         if (selectedProviderId) {
-          add("select_provider",  "Bevestig selectie",       "primary");
-          add("return_to_matching", "Andere aanbieder kiezen", "secondary");
+          add("verstuur_plaatsingsverzoek", "Verstuur plaatsingsverzoek",  "primary");
+          add("stuur_naar_aanbieder",       "Stuur naar aanbieder",        "primary");
+          add("return_to_matching",         "Andere aanbieder kiezen",     "secondary");
         } else {
-          add("select_provider",  "Selecteer aanbieder",    "primary");
+          add("select_provider",  "Aanbieder selecteren",   "primary");
         }
-        add("rerun_matching",     "Herstart matching",      "secondary");
-        add("expand_radius",      "Vergroot zoekgebied",    "secondary");
         add("escalate_case",      "Escaleer casus",         "destructive");
       }
       break;
 
-    case "plaatsing":
-      if (role !== "zorgaanbieder") {
-        add("confirm_placement",   "Bevestig plaatsing",   "primary");
-        add("return_to_matching",  "Terug naar matching",  "secondary");
-        add("cancel_placement",    "Annuleer plaatsing",   "destructive");
+    case "provider_beoordeling":
+      if (role === "gemeente" || role === "admin") {
+        add("follow_up_provider", "Volg op bij aanbieder", "primary");
+        add("view_handover",      "Bekijk overdracht",     "secondary");
+        add("return_to_matching", "Herstart matching",     "secondary");
+        add("escalate_case",      "Escaleer casus",        "destructive");
+      }
+      if (role === "zorgaanbieder" || role === "admin") {
+        add("provider_accept_case",    "Accepteren",                "primary");
+        add("provider_reject_case",    "Afwijzen",                  "destructive");
+        add("provider_waitlist_case",  "Op wachtlijst plaatsen",    "secondary");
+        add("provider_request_info",   "Meer informatie nodig",     "secondary");
       }
       break;
 
@@ -528,11 +540,10 @@ function computeAllowedActions(casus: Casus, role: UserRole): CasusAction[] {
         add("escalate_case",      "Escaleer casus",        "destructive");
       }
       if (role === "zorgaanbieder" || role === "admin") {
-        add("accept_case",           "Accepteer casus",      "primary");
         add("plan_intake",           "Plan intake",          "primary");
         add("mark_intake_started",   "Intake gestart",       "secondary");
         add("mark_intake_completed", "Intake afgerond",      "secondary");
-        add("reject_case",           "Wijs af",              "destructive");
+        add("provider_reject_case",  "Alsnog afwijzen",      "destructive");
       }
       break;
 
@@ -559,7 +570,7 @@ function computeAllowedActions(casus: Casus, role: UserRole): CasusAction[] {
 // ─── Timeline events computation ─────────────────────────────────────────────
 
 function computeTimeline(casus: Casus): CasusTimelineEvent[] {
-  const { phase, assessment, placement, intake, waitingDays } = casus;
+  const { phase, placement, intake } = casus;
   const events: CasusTimelineEvent[] = [];
 
   events.push({
@@ -571,51 +582,18 @@ function computeTimeline(casus: Casus): CasusTimelineEvent[] {
     date: casus.createdAt,
   });
 
-  if (["beoordeling", "matching", "plaatsing", "intake_provider", "afgerond", "geblokkeerd"].includes(phase)) {
+  if (["matching", "aanbieder_selectie", "provider_beoordeling", "intake_provider", "afgerond", "geblokkeerd"].includes(phase)) {
     events.push({
-      id: "tl-intake-done",
+      id: "tl-matching-started",
       type: "phase_change",
-      label: "Intake afgerond",
+      label: "Matching gestart",
       actorName: casus.assignedTo,
       actorRole: "gemeente",
       date: "2026-04-06",
     });
   }
 
-  if (["matching", "plaatsing", "intake_provider", "afgerond"].includes(phase)) {
-    events.push({
-      id: "tl-beoordeling-started",
-      type: "phase_change",
-      label: "Beoordeling gestart",
-      actorName: assessment.assessor,
-      actorRole: "gemeente",
-      date: assessment.scheduledDate ?? "2026-04-08",
-    });
-
-    if (assessment.completedAt) {
-      events.push({
-        id: "tl-beoordeling-done",
-        type: "phase_change",
-        label: "Beoordeling afgerond",
-        actorName: assessment.assessor,
-        actorRole: "gemeente",
-        date: assessment.completedAt,
-      });
-    }
-  }
-
-  if (phase === "beoordeling" && assessment.daysOverdue > 0) {
-    events.push({
-      id: "tl-beoordeling-overdue",
-      type: "signal",
-      label: `Beoordeling ${assessment.daysOverdue} dagen over deadline`,
-      actorName: "Systeem",
-      actorRole: "system",
-      date: "2026-04-15",
-    });
-  }
-
-  if (["plaatsing", "intake_provider", "afgerond"].includes(phase) && placement.providerId) {
+  if (["aanbieder_selectie", "provider_beoordeling", "intake_provider", "afgerond"].includes(phase) && placement.providerId) {
     events.push({
       id: "tl-provider-selected",
       type: "action",
@@ -626,13 +604,24 @@ function computeTimeline(casus: Casus): CasusTimelineEvent[] {
     });
   }
 
+  if (["provider_beoordeling", "intake_provider", "afgerond"].includes(phase)) {
+    events.push({
+      id: "tl-verzoek-verstuurd",
+      type: "phase_change",
+      label: "Plaatsingsverzoek verstuurd naar aanbieder",
+      actorName: casus.assignedTo,
+      actorRole: "gemeente",
+      date: placement.confirmedAt ?? "2026-04-13",
+    });
+  }
+
   if (["intake_provider", "afgerond"].includes(phase) && placement.confirmedAt) {
     events.push({
-      id: "tl-placement-confirmed",
+      id: "tl-aanbieder-accepted",
       type: "phase_change",
-      label: "Plaatsing bevestigd",
-      actorName: placement.confirmedBy ?? casus.assignedTo,
-      actorRole: "gemeente",
+      label: "Aanbieder heeft verzoek geaccepteerd",
+      actorName: placement.confirmedBy ?? "Aanbieder",
+      actorRole: "zorgaanbieder",
       date: placement.confirmedAt,
     });
   }

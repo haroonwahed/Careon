@@ -990,14 +990,6 @@ def determine_next_best_action(
             "behavior_reason": None,
         }
 
-    if not bool(case_data.get("assessment_complete")):
-        return {
-            "code": "complete_assessment",
-            "priority": 2,
-            "reason": "Beoordeling is nog niet volledig of niet matching-klaar.",
-            "behavior_reason": None,
-        }
-
     if not bool(case_data.get("matching_run_exists")):
         return {
             "code": "run_matching",

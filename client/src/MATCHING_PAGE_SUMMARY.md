@@ -8,7 +8,7 @@ A **map-enhanced provider matching interface** that combines AI-powered decision
 
 ## ✅ Deliverables
 
-### 1. **Main Component** (`MatchingPageWithMap.tsx`)
+### 1. **Main Component** (`MatchingDecisionEnginePage.tsx`)
 - Split-screen layout (60% decision area, 40% map)
 - AI-powered recommendations
 - Synced card ↔ map interactions
@@ -385,7 +385,7 @@ Metrics:
 
 ```
 Implementation:
-  /components/care/MatchingPageWithMap.tsx
+  /components/care/MatchingDecisionEnginePage.tsx
   /components/care/MapProviderPin.tsx
   /components/care/MapRadiusCircle.tsx
 
@@ -411,7 +411,7 @@ Documentation:
 ### 1. Import Component
 
 ```tsx
-import { MatchingPageWithMap } from "@/components/care/MatchingPageWithMap";
+import { MatchingPageWithMap } from "@/components/care/MatchingDecisionEnginePage";
 ```
 
 ### 2. Use in Router

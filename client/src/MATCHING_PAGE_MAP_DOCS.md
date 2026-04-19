@@ -626,7 +626,7 @@ const riskSignals = useMemo(
 
 ```
 /components/care/
-  ├─ MatchingPageWithMap.tsx       (Main component)
+  ├─ MatchingDecisionEnginePage.tsx       (Main component)
   ├─ MapProviderPin.tsx             (Map pin component)
   └─ MapRadiusCircle.tsx            (Radius overlay)
 
@@ -642,7 +642,7 @@ const riskSignals = useMemo(
 ## 🎓 Usage Example
 
 ```tsx
-import { MatchingPageWithMap } from "@/components/care/MatchingPageWithMap";
+import { MatchingPageWithMap } from "@/components/care/MatchingDecisionEnginePage";
 
 function App() {
   const handleConfirmMatch = (providerId: string) => {

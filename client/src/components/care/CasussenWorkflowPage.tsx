@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Plus, Search, Shuffle, SlidersHorizontal, UserCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronDown, Plus, Search, Send, Shuffle, SlidersHorizontal, UserCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useCases } from "../../hooks/useCases";
@@ -13,7 +13,7 @@ interface CasussenWorkflowPageProps {
   canCreateCase?: boolean;
 }
 
-type SmartFocus = "assessment" | "matching" | "placement" | "urgent" | null;
+type SmartFocus = "ready" | "matching" | "provider" | "urgent" | null;
 
 const WAITING_TIME_THRESHOLD_DAYS = 10;
 const OLD_CASE_THRESHOLD_DAYS = 3;
@@ -31,7 +31,7 @@ function isOldCase(item: WorkflowCaseView): boolean {
 }
 
 function cardClasses(isUrgent: boolean, isActive: boolean): string {
-  const base = "rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm";
+  const base = "rounded-xl border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm";
   if (isUrgent) {
     return `${base} ${isActive ? "ring-2 ring-red-500/35 border-red-500/40" : "border-red-500/35 hover:border-red-500/55"}`;
   }
@@ -65,9 +65,9 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
       if (selectedRegion !== "all" && item.region !== selectedRegion) return false;
       if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) return false;
 
-      if (smartFocus === "assessment" && !(item.phase === "intake" || item.phase === "beoordeling")) return false;
-      if (smartFocus === "matching" && !item.readyForMatching) return false;
-      if (smartFocus === "placement" && !item.readyForPlacement) return false;
+      if (smartFocus === "ready" && item.phase !== "intake") return false;
+      if (smartFocus === "matching" && item.phase !== "matching") return false;
+      if (smartFocus === "provider" && item.phase !== "provider_beoordeling") return false;
       if (smartFocus === "urgent" && !isUrgentWithoutMatch(item)) return false;
 
       return true;
@@ -75,6 +75,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
   }, [workflowCases, selectedPhase, selectedRegion, selectedUrgency, smartFocus]);
 
   const sortedCases = useMemo(() => {
+    const _sentinel = '9999-12-31';
     const rank = (item: WorkflowCaseView): number => {
       if (isUrgentWithoutMatch(item)) return 0;
       if (isWaitingExceeded(item)) return 1;
@@ -83,6 +84,22 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
     };
 
     return [...filteredCases].sort((left, right) => {
+      // First: waitlist policy — validated urgent before FCFS
+      const lBucket = left.waitlistBucket ?? 1;
+      const rBucket = right.waitlistBucket ?? 1;
+      if (lBucket !== rBucket) return lBucket - rBucket;
+      if (lBucket === 0) {
+        // Both validated urgent: earliest urgency_granted_date first
+        const lDate = left.urgencyGrantedDate ?? _sentinel;
+        const rDate = right.urgencyGrantedDate ?? _sentinel;
+        if (lDate !== rDate) return lDate < rDate ? -1 : 1;
+      } else {
+        // Both normal FCFS: earliest intakeStartDate first
+        const lStart = left.intakeStartDate ?? _sentinel;
+        const rStart = right.intakeStartDate ?? _sentinel;
+        if (lStart !== rStart) return lStart < rStart ? -1 : 1;
+      }
+      // Tiebreak: urgency rank then waiting days
       const leftRank = rank(left);
       const rightRank = rank(right);
       if (leftRank !== rightRank) return leftRank - rightRank;
@@ -94,14 +111,14 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
   }, [filteredCases]);
 
   const stripMetrics = useMemo(() => ({
-    waitingAssessment: workflowCases.filter((item) => item.phase === "intake" || item.phase === "beoordeling").length,
-    readyMatching: workflowCases.filter((item) => item.readyForMatching).length,
-    waitingPlacement: workflowCases.filter((item) => item.readyForPlacement).length,
+    readyMatching: workflowCases.filter((item) => item.phase === "intake").length,
+    matchingInProgress: workflowCases.filter((item) => item.phase === "matching").length,
+    waitingProviderReview: workflowCases.filter((item) => item.phase === "provider_beoordeling").length,
     urgentWithoutMatch: workflowCases.filter((item) => isUrgentWithoutMatch(item)).length,
   }), [workflowCases]);
 
   const recommendedCases = useMemo(() => {
-    return sortedCases.filter((item) => item.phase === "intake" || item.phase === "beoordeling");
+    return sortedCases.filter((item) => item.phase === "intake" || item.phase === "matching");
   }, [sortedCases]);
 
   const handleCreateCase = () => {
@@ -125,7 +142,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen</h1>
-          <p className="text-sm text-muted-foreground">Dagelijkse workflow van beoordeling naar matching en plaatsing.</p>
+          <p className="text-sm text-muted-foreground">Dagelijkse workflow van matching naar aanbiederbeoordeling en intake.</p>
         </div>
         {canCreateCase && (
           <Button onClick={handleCreateCase}>
@@ -135,19 +152,18 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         <button
           type="button"
-          onClick={() => toggleSmartFocus("assessment")}
-          className={cardClasses(false, smartFocus === "assessment")}
+          onClick={() => toggleSmartFocus("ready")}
+          className={cardClasses(false, smartFocus === "ready")}
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op beoordeling</span>
-            <UserCheck size={18} className="text-blue-400" />
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Klaar voor matching</span>
+            <UserCheck size={16} className="text-blue-400" />
           </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingAssessment}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Nieuwe of lopende beoordelingen</p>
-          <p className="mt-3 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
+          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
         </button>
 
         <button
@@ -155,27 +171,25 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
           onClick={() => toggleSmartFocus("matching")}
           className={cardClasses(false, smartFocus === "matching")}
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Klaar voor matching</span>
-            <Shuffle size={18} className="text-amber-400" />
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">In matching</span>
+            <Shuffle size={16} className="text-amber-400" />
           </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Assessment afgerond, klaar voor providerkeuze</p>
-          <p className="mt-3 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-xl font-semibold text-foreground">{stripMetrics.matchingInProgress}</p>
+          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
         </button>
 
         <button
           type="button"
-          onClick={() => toggleSmartFocus("placement")}
-          className={cardClasses(false, smartFocus === "placement")}
+          onClick={() => toggleSmartFocus("provider")}
+          className={cardClasses(false, smartFocus === "provider")}
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op plaatsing</span>
-            <CheckCircle2 size={18} className="text-cyan-400" />
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bij aanbieder</span>
+            <Send size={16} className="text-cyan-400" />
           </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingPlacement}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Klaar om bevestiging en intake te starten</p>
-          <p className="mt-3 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-xl font-semibold text-foreground">{stripMetrics.waitingProviderReview}</p>
+          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
         </button>
 
         <button
@@ -183,19 +197,18 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
           onClick={() => toggleSmartFocus("urgent")}
           className={cardClasses(true, smartFocus === "urgent")}
         >
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-2 flex items-center justify-between">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgent zonder match</span>
-            <AlertTriangle size={18} className="text-red-400" />
+            <AlertTriangle size={16} className="text-red-400" />
           </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.urgentWithoutMatch}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Kritieke casussen met blokkade of geen passend aanbod</p>
-          <p className="mt-3 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-xl font-semibold text-foreground">{stripMetrics.urgentWithoutMatch}</p>
+          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
         </button>
       </div>
 
-      <div className="sticky top-0 z-20 flex flex-col gap-2 rounded-3xl border border-border bg-card/90 p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
+      <div className="sticky top-0 z-20 flex flex-col gap-2 rounded-3xl bg-card/90 p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <div className="min-w-0 flex-1 rounded-2xl border border-border bg-muted/40 px-3 py-2.5 flex items-center gap-2">
+          <div className="min-w-0 flex-1 rounded-2xl bg-muted/45 px-3 py-2.5 flex items-center gap-2">
             <Search className="text-muted-foreground flex-shrink-0" size={18} />
             <Input
               type="text"
@@ -210,7 +223,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
               type="button"
               variant={showFilters ? "default" : "outline"}
               onClick={() => setShowFilters((v) => !v)}
-              className={showFilters ? "shadow-sm" : "border-border bg-card text-foreground hover:bg-muted"}
+              className={showFilters ? "shadow-sm" : "border-transparent bg-muted/45 text-foreground hover:bg-muted/70"}
             >
               <SlidersHorizontal size={16} className="mr-2" />
               Filters
@@ -236,7 +249,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
                 <select
                   value={selectedPhase}
                   onChange={(event) => setSelectedPhase(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-border bg-muted/40 px-3 py-2.5 pr-8 text-sm text-foreground"
+                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
                 >
                   <option value="all">Alle fases</option>
                   {phases.filter((phase) => phase !== "all").map((phase) => (
@@ -252,7 +265,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
                 <select
                   value={selectedUrgency}
                   onChange={(event) => setSelectedUrgency(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-border bg-muted/40 px-3 py-2.5 pr-8 text-sm text-foreground"
+                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
                 >
                   <option value="all">Alle urgentie</option>
                   <option value="critical">Kritiek</option>
@@ -269,7 +282,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
                 <select
                   value={selectedRegion}
                   onChange={(event) => setSelectedRegion(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-border bg-muted/40 px-3 py-2.5 pr-8 text-sm text-foreground"
+                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
                 >
                   <option value="all">Alle regio's</option>
                   {regions.filter((region) => region !== "all").map((region) => (
@@ -284,10 +297,10 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
       </div>
 
       {!loading && !error && recommendedCases.length > 0 && (
-        <div className="rounded-2xl border border-border bg-card/55 p-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="rounded-2xl bg-card/55 p-4 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-medium text-foreground">
-              Aanbevolen actie: {recommendedCases.length} casussen wachten op beoordeling
+              Aanbevolen actie: {recommendedCases.length} casussen vragen om matching
             </p>
             <p className="text-xs text-muted-foreground">Start met de hoogste prioriteit in de huidige werkvoorraad.</p>
           </div>
@@ -297,10 +310,10 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
         </div>
       )}
 
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
+      {loading && <div className="rounded-2xl bg-card p-10 text-center text-muted-foreground shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)]">Casussen laden…</div>}
 
       {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
+        <div className="rounded-2xl bg-card p-10 text-center space-y-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)]">
           <p className="text-base font-semibold text-foreground">Casussen konden niet geladen worden</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>

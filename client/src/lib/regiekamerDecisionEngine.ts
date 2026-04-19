@@ -1,29 +1,32 @@
 import type { Casus } from "./phaseEngine";
 
 export type RegiekamerSeverity = "critical" | "warning" | "info" | "good";
-export type RegiekamerViewTarget = "beoordelingen" | "matching" | "casussen" | "plaatsingen" | "signalen";
+export type RegiekamerViewTarget = "matching" | "casussen" | "plaatsingen" | "signalen";
 export type RegiekamerFilterTarget =
-  | "assessment"
   | "noMatch"
   | "casussen"
   | "placement"
   | "waitingOverdue"
   | "capacity"
   | "highRisk"
-  | "delayed";
+  | "delayed"
+  | "aanbieder_wacht"
+  | "afgewezen";
 
-export type RegiekamerBottleneckStage = "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "none";
+export type RegiekamerBottleneckStage = "casussen" | "matching" | "plaatsingen" | "aanbieder_review" | "none";
 
 export interface RegiekamerFlowCounts {
   casussen: number;
-  beoordelingen: number;
+  klaar_voor_matching: number;
   matching: number;
-  plaatsingen: number;
+  bij_aanbieder: number;
   intake_pending: number;
 }
 
 export interface RegiekamerIssueBuckets {
-  open_beoordelingen: number;
+  klaar_voor_matching: number;
+  wacht_op_aanbieder: number;
+  afgewezen_door_aanbieder: number;
   blocked_cases: number;
   cases_without_match: number;
   waiting_time_exceeded: number;
@@ -51,7 +54,9 @@ export interface RegiekamerCommandBarSummary {
 export interface RegiekamerPriorityCard {
   key:
     | "casussen_zonder_match"
-    | "open_beoordelingen"
+    | "klaar_voor_matching"
+    | "wacht_op_aanbieder"
+    | "afgewezen_door_aanbieder"
     | "wachttijd_overschreden"
     | "plaatsingen_bezig"
     | "gem_wachttijd"
@@ -117,21 +122,23 @@ export function buildRegiekamerDecisionSummary(
   const casesInScope = cases.filter((caseItem) => caseItem.phase !== "afgerond");
 
   const flow_counts: RegiekamerFlowCounts = {
-    casussen: casesInScope.filter((c) => c.phase === "intake_initial").length,
-    beoordelingen: casesInScope.filter((c) => c.phase === "beoordeling" || !c.assessment.isComplete).length,
-    matching: casesInScope.filter((c) => c.phase === "matching" || c.phase === "geblokkeerd").length,
-    plaatsingen: casesInScope.filter((c) => c.phase === "plaatsing").length,
-    intake_pending: casesInScope.filter((c) => c.phase === "intake_provider" && c.intake.status !== "completed").length,
+    casussen: casesInScope.filter((c) => c.phase === "casus").length,
+    klaar_voor_matching: casesInScope.filter((c) => c.phase === "casus" || (c.status === "klaar_voor_matching" as string)).length,
+    matching: casesInScope.filter((c) => c.phase === "matching" || c.phase === "aanbieder_selectie" || c.phase === "geblokkeerd").length,
+    bij_aanbieder: casesInScope.filter((c) => c.phase === "provider_beoordeling").length,
+    intake_pending: casesInScope.filter((c) => c.phase === "intake_provider" && c.intake?.status !== "completed").length,
   };
 
   const blockedCases = casesInScope.filter((c) => c.phase === "geblokkeerd" || c.status === "geblokkeerd");
-  const openBeoordelingen = casesInScope.filter((c) => c.phase === "beoordeling" || !c.assessment.isComplete);
+  const casesKlaarVoorMatching = casesInScope.filter((c) => c.phase === "casus");
+  const wachtOpAanbieder = casesInScope.filter((c) => c.phase === "provider_beoordeling");
+  const afgewezenDoorAanbieder = casesInScope.filter((c) => c.status === "afgewezen_door_aanbieder" as string);
   const casesWithoutMatch = casesInScope.filter(
     (c) => (c.phase === "matching" || c.phase === "geblokkeerd") && !c.selectedProviderId
   );
   const waitingExceeded = casesInScope.filter((c) => c.waitingDays > slaDays);
   const placementPending = casesInScope.filter(
-    (c) => c.phase === "plaatsing" || c.placement.status === "proposed" || c.placement.status === "pending"
+    (c) => c.phase === "provider_beoordeling" || c.placement?.status === "proposed" || c.placement?.status === "pending"
   );
   const highRisk = casesInScope.filter(
     (c) => c.urgency === "critical" || c.urgency === "high" || c.complexity === "high"
@@ -148,7 +155,9 @@ export function buildRegiekamerDecisionSummary(
   const capacityRegion = topRegion(capacityShortageCases);
 
   const issue_buckets: RegiekamerIssueBuckets = {
-    open_beoordelingen: openBeoordelingen.length,
+    klaar_voor_matching: casesKlaarVoorMatching.length,
+    wacht_op_aanbieder: wachtOpAanbieder.length,
+    afgewezen_door_aanbieder: afgewezenDoorAanbieder.length,
     blocked_cases: blockedCases.length,
     cases_without_match: casesWithoutMatch.length,
     waiting_time_exceeded: waitingExceeded.length,
@@ -158,11 +167,12 @@ export function buildRegiekamerDecisionSummary(
   };
 
   const priorityOrder: Array<keyof RegiekamerIssueBuckets> = [
+    "afgewezen_door_aanbieder",
     "blocked_cases",
-    "open_beoordelingen",
     "cases_without_match",
     "capacity_shortages",
     "waiting_time_exceeded",
+    "wacht_op_aanbieder",
     "placements_pending",
   ];
 
@@ -171,9 +181,23 @@ export function buildRegiekamerDecisionSummary(
   let command_bar_summary: RegiekamerCommandBarSummary;
   let recommended_action: RegiekamerActionTarget;
 
-  if (primaryIssue === "blocked_cases") {
+  if (primaryIssue === "afgewezen_door_aanbieder") {
+    command_bar_summary = {
+      primary_message: `${pluralize(issue_buckets.afgewezen_door_aanbieder, "casus", "casussen")} afgewezen door aanbieder`,
+      why_it_matters: "Afgewezen casussen hebben opnieuw matching nodig",
+      cta_label: "Herstart matching",
+      tone: "critical",
+    };
+
+    recommended_action = {
+      label: "Herstart matching voor afgewezen casussen",
+      target_view: "matching",
+      target_filter: "afgewezen",
+      reason: `${pluralize(issue_buckets.afgewezen_door_aanbieder, "casus wacht", "casussen wachten")} op nieuwe aanbieder`,
+      cta_label: "Herstart matching",
+    };
+  } else if (primaryIssue === "blocked_cases") {
     const impacted = Math.max(issue_buckets.blocked_cases, issue_buckets.cases_without_match);
-    const unlockCount = issue_buckets.open_beoordelingen > 0 ? issue_buckets.open_beoordelingen : issue_buckets.cases_without_match;
 
     command_bar_summary = {
       primary_message: `${pluralize(issue_buckets.blocked_cases, "blokkade", "blokkades")} stopt doorstroom`,
@@ -183,26 +207,11 @@ export function buildRegiekamerDecisionSummary(
     };
 
     recommended_action = {
-      label: issue_buckets.open_beoordelingen > 0 ? "Rond open beoordelingen af" : "Los blokkades in matching op",
-      target_view: issue_buckets.open_beoordelingen > 0 ? "beoordelingen" : "matching",
-      target_filter: issue_buckets.open_beoordelingen > 0 ? "assessment" : "noMatch",
-      reason: `Hiermee ontgrendel je vervolgstappen voor ${pluralize(unlockCount, "casus", "casussen")}`,
+      label: "Los blokkades in matching op",
+      target_view: "matching",
+      target_filter: "noMatch",
+      reason: `Hiermee ontgrendel je vervolgstappen voor ${pluralize(issue_buckets.cases_without_match, "casus", "casussen")}`,
       cta_label: "Los blokkades op",
-    };
-  } else if (primaryIssue === "open_beoordelingen") {
-    command_bar_summary = {
-      primary_message: `${pluralize(issue_buckets.open_beoordelingen, "beoordeling", "beoordelingen")} wacht op afronding`,
-      why_it_matters: "Zonder beoordeling kan matching niet starten",
-      cta_label: "Bekijk beoordelingen",
-      tone: "warning",
-    };
-
-    recommended_action = {
-      label: "Werk open beoordelingen af",
-      target_view: "beoordelingen",
-      target_filter: "assessment",
-      reason: "Hiermee stroomt de casus door naar matching",
-      cta_label: "Bekijk beoordelingen",
     };
   } else if (primaryIssue === "cases_without_match") {
     command_bar_summary = {
@@ -289,13 +298,13 @@ export function buildRegiekamerDecisionSummary(
   }
 
   let bottleneck_stage: RegiekamerBottleneckStage = "none";
-  if (issue_buckets.blocked_cases > 0 || issue_buckets.cases_without_match > 0) {
+  if (issue_buckets.afgewezen_door_aanbieder > 0 || issue_buckets.blocked_cases > 0 || issue_buckets.cases_without_match > 0) {
     bottleneck_stage = "matching";
-  } else if (issue_buckets.open_beoordelingen > 0) {
-    bottleneck_stage = "beoordelingen";
+  } else if (issue_buckets.wacht_op_aanbieder > 0) {
+    bottleneck_stage = "aanbieder_review";
   } else if (issue_buckets.placements_pending > 0) {
     bottleneck_stage = "plaatsingen";
-  } else if (flow_counts.casussen > 0) {
+  } else if (flow_counts.klaar_voor_matching > 0) {
     bottleneck_stage = "casussen";
   }
 
@@ -314,12 +323,28 @@ export function buildRegiekamerDecisionSummary(
       action: { target_view: "matching", target_filter: "noMatch", label: "Bekijk matching" },
     },
     {
-      key: "open_beoordelingen",
-      title: "Open beoordelingen",
-      value: issue_buckets.open_beoordelingen,
-      subtitle: "Blokkeren de volgende stap",
-      severity: issue_buckets.open_beoordelingen > 0 ? "warning" : "good",
-      action: { target_view: "beoordelingen", target_filter: "assessment", label: "Bekijk beoordelingen" },
+      key: "klaar_voor_matching",
+      title: "Klaar voor matching",
+      value: issue_buckets.klaar_voor_matching,
+      subtitle: "Wachten op matching",
+      severity: issue_buckets.klaar_voor_matching > 0 ? "info" : "good",
+      action: { target_view: "matching", target_filter: "casussen", label: "Start matching" },
+    },
+    {
+      key: "wacht_op_aanbieder",
+      title: "Wacht op aanbieder",
+      value: issue_buckets.wacht_op_aanbieder,
+      subtitle: "Verzoek verstuurd, wacht op reactie",
+      severity: issue_buckets.wacht_op_aanbieder > 0 ? "info" : "good",
+      action: { target_view: "plaatsingen", target_filter: "aanbieder_wacht", label: "Bekijk aanbiederreacties" },
+    },
+    {
+      key: "afgewezen_door_aanbieder",
+      title: "Afgewezen door aanbieder",
+      value: issue_buckets.afgewezen_door_aanbieder,
+      subtitle: "Vereisen hermatching",
+      severity: issue_buckets.afgewezen_door_aanbieder > 0 ? "critical" : "good",
+      action: { target_view: "matching", target_filter: "afgewezen", label: "Herstart matching" },
     },
     {
       key: "wachttijd_overschreden",
@@ -395,11 +420,12 @@ export function buildRegiekamerDecisionSummary(
   ];
 
   const primaryRelatedSignalKey: Record<string, string> = {
+    afgewezen_door_aanbieder: "placement",
     blocked_cases: "capacity",
-    open_beoordelingen: "risk",
     cases_without_match: "capacity",
     capacity_shortages: "capacity",
     waiting_time_exceeded: "waiting",
+    wacht_op_aanbieder: "placement",
     placements_pending: "placement",
   };
 

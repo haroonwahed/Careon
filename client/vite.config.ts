@@ -65,7 +65,7 @@ function figmaAssetResolver() {
     build: {
       target: 'esnext',
       outDir: '../theme/static/spa',
-      emptyOutDir: true,
+      emptyOutDir: false,
     },
     server: {
       port: 3000,

@@ -58,7 +58,7 @@ class MatchingRecommendationsTests(TestCase):
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Intake Matching Test',
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date='2026-04-10',
@@ -113,7 +113,7 @@ class MatchingRecommendationsTests(TestCase):
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Intake Region Match',
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             preferred_region_type='ROAZ',
@@ -155,7 +155,7 @@ class MatchingRecommendationsTests(TestCase):
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Intake Map Contract',
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date='2026-04-10',
@@ -199,7 +199,7 @@ class MatchingExplainabilityUnitTests(TestCase):
         defaults = dict(
             organization=self.organization,
             title='Test Intake',
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date='2026-04-10',

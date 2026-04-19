@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Building2, ChevronDown, ChevronRight, Loader2, Maximize2, Search, SlidersHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -6,19 +6,39 @@ import { Input } from "../ui/input";
 import { useProviders } from "../../hooks/useProviders";
 import { ProviderNetworkMap } from "./ProviderNetworkMap";
 
-interface ZorgaanbiedersPageProps {
-  theme: "light" | "dark";
+type ProviderSortOption = "best-match" | "shortest-wait" | "most-capacity" | "nearby";
+
+interface ActiveCaseContext {
+  region: string;
+  careType: string;
+  urgency: string;
 }
 
-export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
+function inferTypeFilterFromCaseType(careType: string): "all" | "residentieel" | "ambulant" | "dagbehandeling" | "crisis" {
+  const normalized = careType.trim().toLowerCase();
+  if (normalized.includes("resident")) return "residentieel";
+  if (normalized.includes("ambul")) return "ambulant";
+  if (normalized.includes("dag")) return "dagbehandeling";
+  if (normalized.includes("crisis")) return "crisis";
+  return "all";
+}
+
+interface ZorgaanbiedersPageProps {
+  theme: "light" | "dark";
+  activeCaseContext?: ActiveCaseContext | null;
+}
+
+export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [hoveredProvider, setHoveredProvider] = useState<string | null>(null);
   const [mapView, setMapView] = useState<"split" | "full">("split");
+  const [sortBy, setSortBy] = useState<ProviderSortOption>("best-match");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [selectedCapacity, setSelectedCapacity] = useState<string>("all");
+  const lastPrefilledCaseKeyRef = useRef<string | null>(null);
 
   const { providers, loading, error, refetch, networkSummary, lastUpdatedAt } = useProviders({
     q: searchQuery,
@@ -45,6 +65,76 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
     });
   }, [providers, searchQuery, selectedRegion, selectedType, selectedCapacity]);
 
+  const sortedProviders = useMemo(() => {
+    const normalize = (value: string) => value.trim().toLowerCase();
+
+    const scoreBestMatch = (provider: (typeof filteredProviders)[number]) => {
+      let score = 0;
+
+      if (activeCaseContext) {
+        const caseRegion = normalize(activeCaseContext.region);
+        const providerRegions = [provider.region, provider.regionLabel, ...(provider.allRegionLabels ?? [])]
+          .filter(Boolean)
+          .map(normalize);
+        if (providerRegions.includes(caseRegion)) {
+          score += 45;
+        }
+
+        const caseCareType = normalize(activeCaseContext.careType);
+        const providerType = normalize(provider.type);
+        const providerSpecs = provider.specializations.map(normalize);
+        if (providerType.includes(caseCareType) || providerSpecs.some((spec) => spec.includes(caseCareType))) {
+          score += 35;
+        }
+
+        const urgency = normalize(activeCaseContext.urgency);
+        if (urgency.includes("kritiek")) {
+          if (provider.availableSpots > 0) score += 12;
+          if ((provider.averageWaitDays ?? 999) <= 7) score += 8;
+        }
+      }
+
+      score += Math.min(provider.availableSpots, 10) * 2;
+      score -= Math.max(provider.averageWaitDays ?? 0, 0) * 0.8;
+      return score;
+    };
+
+    const sorted = [...filteredProviders];
+    sorted.sort((left, right) => {
+      if (sortBy === "shortest-wait") {
+        const waitDiff = (left.averageWaitDays ?? Number.MAX_SAFE_INTEGER) - (right.averageWaitDays ?? Number.MAX_SAFE_INTEGER);
+        if (waitDiff !== 0) return waitDiff;
+        return right.availableSpots - left.availableSpots;
+      }
+
+      if (sortBy === "most-capacity") {
+        const capacityDiff = right.availableSpots - left.availableSpots;
+        if (capacityDiff !== 0) return capacityDiff;
+        return (left.averageWaitDays ?? Number.MAX_SAFE_INTEGER) - (right.averageWaitDays ?? Number.MAX_SAFE_INTEGER);
+      }
+
+      if (sortBy === "nearby") {
+        if (activeCaseContext?.region) {
+          const caseRegion = normalize(activeCaseContext.region);
+          const leftNear = [left.region, left.regionLabel, ...(left.allRegionLabels ?? [])]
+            .filter(Boolean)
+            .map(normalize)
+            .includes(caseRegion);
+          const rightNear = [right.region, right.regionLabel, ...(right.allRegionLabels ?? [])]
+            .filter(Boolean)
+            .map(normalize)
+            .includes(caseRegion);
+          if (leftNear !== rightNear) return leftNear ? -1 : 1;
+        }
+        return (left.averageWaitDays ?? Number.MAX_SAFE_INTEGER) - (right.averageWaitDays ?? Number.MAX_SAFE_INTEGER);
+      }
+
+      return scoreBestMatch(right) - scoreBestMatch(left);
+    });
+
+    return sorted;
+  }, [filteredProviders, sortBy, activeCaseContext]);
+
   const stats = useMemo(() => {
     const availableCapacity = providers.reduce((total, provider) => total + provider.availableSpots, 0);
     const averageWaitDays =
@@ -59,8 +149,13 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
     };
   }, [providers]);
 
+  const regionOptions = useMemo(() => {
+    const dynamicRegions = Array.from(new Set(providers.map((provider) => provider.region).filter(Boolean))).sort((left, right) => left.localeCompare(right));
+    return ["all", ...dynamicRegions];
+  }, [providers]);
+
   const availableCapacityValue = networkSummary?.total_open_slots ?? stats.availableCapacity;
-  const visibleCountValue = filteredProviders.length;
+  const visibleCountValue = sortedProviders.length;
   const waitDaysLabel = stats.averageWaitDays !== null ? `${stats.averageWaitDays} dgn` : "n.v.t.";
   const lastUpdatedLabel = lastUpdatedAt
     ? new Date(lastUpdatedAt).toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" })
@@ -69,6 +164,33 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
   const hiddenProvidersCount = Math.max(0, providers.length - filteredProviders.length);
   const hasActiveFilters =
     searchQuery !== "" || selectedRegion !== "all" || selectedType !== "all" || selectedCapacity !== "all";
+  const resultHeaderText = hasActiveFilters
+    ? `${sortedProviders.length} resultaten voor jouw filters`
+    : `${sortedProviders.length} zorgaanbieders beschikbaar`;
+
+  useEffect(() => {
+    if (!activeCaseContext) return;
+
+    const caseKey = `${activeCaseContext.region}|${activeCaseContext.careType}|${activeCaseContext.urgency}`;
+    if (lastPrefilledCaseKeyRef.current === caseKey) return;
+
+    if (searchQuery !== "" || selectedRegion !== "all" || selectedType !== "all" || selectedCapacity !== "all") {
+      return;
+    }
+
+    const normalizedCaseRegion = activeCaseContext.region.trim().toLowerCase();
+    const matchedRegion = regionOptions.find((option) => option !== "all" && option.trim().toLowerCase() === normalizedCaseRegion) ?? "all";
+    const inferredType = inferTypeFilterFromCaseType(activeCaseContext.careType);
+
+    if (matchedRegion !== "all") {
+      setSelectedRegion(matchedRegion);
+    }
+    if (inferredType !== "all") {
+      setSelectedType(inferredType);
+    }
+
+    lastPrefilledCaseKeyRef.current = caseKey;
+  }, [activeCaseContext, regionOptions, searchQuery, selectedRegion, selectedType, selectedCapacity]);
 
   const resetFilters = () => {
     setSearchQuery("");
@@ -101,7 +223,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
 
   const getRecommendationBadge = (providerId: string, index: number) => {
     if (selectedProvider === providerId) return "Aanbevolen";
-    if (index === 0) return "Beste match";
+    if (sortBy === "best-match" && index === 0) return "Beste match";
     return null;
   };
 
@@ -130,28 +252,29 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Zorgaanbieders</h1>
-              {!loading && (
-                <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  {stats.total} {stats.total === 1 ? "aanbieder" : "aanbieders"} in het netwerk
+              <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">Selecteer een aanbieder voor deze casus</p>
+              {activeCaseContext && (
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Regio: {activeCaseContext.region} • Zorgtype: {activeCaseContext.careType} • Urgentie: {activeCaseContext.urgency}
                 </p>
               )}
             </div>
 
             {!loading && stats.total > 0 && (
-              <div className="-mx-1 flex snap-x snap-mandatory gap-2 overflow-x-auto px-1 pb-1 text-xs [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 sm:text-sm">
-                <span className="inline-flex shrink-0 snap-start items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <strong className="text-slate-800 dark:text-slate-100">{availableCapacityValue}</strong> capaciteit
                 </span>
-                <span className="inline-flex shrink-0 snap-start items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                   <strong className="text-slate-800 dark:text-slate-100">{waitDaysLabel}</strong> gem. wachttijd
                 </span>
-                <span className="inline-flex shrink-0 snap-start items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
                   <strong className="text-slate-800 dark:text-slate-100">{visibleCountValue}</strong> zichtbaar
                 </span>
-                <span className="inline-flex shrink-0 snap-start items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-900/35 dark:text-emerald-300">
+                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-900/35 dark:text-emerald-300">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   <strong>Live</strong> 30s{lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
                 </span>
@@ -160,8 +283,9 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] sm:p-4 lg:flex-row lg:items-center dark:border-slate-800 dark:bg-slate-900">
-          <div className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-slate-50/85 p-3 dark:border-slate-700 dark:bg-slate-800/80">
+        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] sm:p-4 dark:border-slate-800 dark:bg-slate-900">
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+          <div className="min-w-0 flex-1 rounded-2xl bg-slate-50/85 p-3 dark:bg-slate-800/80">
             <div className="flex items-center gap-2">
               <Search className="text-slate-400 dark:text-slate-500" size={18} />
               <Input
@@ -174,33 +298,44 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
             </div>
           </div>
 
-          <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center lg:justify-end">
+          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
             <Button
               type="button"
               variant={showFilters ? "default" : "outline"}
               onClick={() => setShowFilters((current) => !current)}
-              className={`w-full justify-center ${showFilters ? "shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"}`}
+              className={`justify-center ${showFilters ? "shadow-sm" : "border-slate-300/70 bg-slate-100/85 text-slate-700 hover:bg-slate-100 dark:border-slate-700/70 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-700"}`}
             >
               <SlidersHorizontal size={16} className="mr-2" />
               Filters
             </Button>
+
+            <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-1.5 dark:bg-slate-800">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Gesorteerd op:</span>
+              <div className="relative min-w-[170px]">
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as ProviderSortOption)}
+                  className="w-full appearance-none rounded-lg bg-transparent px-2 py-1 pr-7 text-sm text-slate-700 dark:text-slate-200"
+                >
+                  <option value="best-match">Beste match</option>
+                  <option value="shortest-wait">Kortste wachttijd</option>
+                  <option value="most-capacity">Meeste capaciteit</option>
+                  <option value="nearby">Dichtbij</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+              </div>
+            </div>
+
             <Button
               type="button"
-              variant={mapView === "split" ? "default" : "outline"}
-              onClick={() => setMapView("split")}
-              className={`w-full justify-center ${mapView !== "split" ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" : ""}`}
-            >
-              Split view
-            </Button>
-            <Button
-              type="button"
-              variant={mapView === "full" ? "default" : "outline"}
-              onClick={() => setMapView("full")}
-              className={`col-span-2 w-full justify-center sm:col-span-1 sm:w-auto ${mapView !== "full" ? "border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" : ""}`}
+              variant="ghost"
+              onClick={() => setMapView((current) => (current === "split" ? "full" : "split"))}
+              className="justify-center text-slate-600 hover:bg-slate-100/70 dark:text-slate-300 dark:hover:bg-slate-800/70"
             >
               <Maximize2 size={16} className="mr-2" />
-              Kaart vergroten
+              {mapView === "split" ? "Kaart" : "Split view"}
             </Button>
+          </div>
           </div>
         </div>
 
@@ -213,14 +348,13 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                 <select
                   value={selectedRegion}
                   onChange={(event) => setSelectedRegion(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
                 >
-                  <option value="all">Alle regio&apos;s</option>
-                  <option value="Amsterdam">Amsterdam</option>
-                  <option value="Utrecht">Utrecht</option>
-                  <option value="Rotterdam">Rotterdam</option>
-                  <option value="Den Haag">Den Haag</option>
-                  <option value="Eindhoven">Eindhoven</option>
+                  {regionOptions.map((region) => (
+                    <option key={region} value={region}>
+                      {region === "all" ? "Alle regio's" : region}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                 </div>
@@ -232,7 +366,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                 <select
                   value={selectedType}
                   onChange={(event) => setSelectedType(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
                 >
                   <option value="all">Alle types</option>
                   <option value="residentieel">Residentieel</option>
@@ -250,7 +384,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                 <select
                   value={selectedCapacity}
                   onChange={(event) => setSelectedCapacity(event.target.value)}
-                  className="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
                 >
                   <option value="all">Alle niveaus</option>
                   <option value="available">Beschikbaar (3+)</option>
@@ -269,12 +403,12 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
             <div className="border-b border-slate-200 bg-slate-50/90 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/80">
               <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Kaartweergave</p>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Volledige kaartmodus · {filteredProviders.length} van {providers.length} aanbieders zichtbaar
+                Volledige kaartmodus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
               </p>
             </div>
             <div className="h-[calc(100vh-12rem)] min-h-[32rem]">
               <ProviderNetworkMap
-                providers={filteredProviders}
+                providers={sortedProviders}
                 selectedProviderId={selectedProvider}
                 hoveredProviderId={hoveredProvider}
                 onSelectProvider={setSelectedProvider}
@@ -288,11 +422,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
               <div className="order-1 min-w-0 space-y-3 2xl:min-h-[calc(100vh-15rem)] 2xl:overflow-y-auto 2xl:pr-2">
               {!loading && !error && (
                 <div className="space-y-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/80">
-                  <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">
-                    {filteredProviders.length === 0
-                      ? "Geen opties gevonden"
-                      : `${filteredProviders.length} ${filteredProviders.length === 1 ? "optie" : "opties"} in jouw selectie`}
-                  </p>
+                  <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{resultHeaderText}</p>
                   <p className="text-sm text-slate-500 dark:text-slate-400">Split view toont resultaten links en de kaart rechts.</p>
                 </div>
               )}
@@ -314,7 +444,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                 </div>
               )}
 
-              {!loading && !error && filteredProviders.length === 0 && (
+              {!loading && !error && sortedProviders.length === 0 && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800">
                   <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-700">
                     <Building2 size={22} className="text-muted-foreground" />
@@ -338,9 +468,9 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                 </div>
               )}
 
-              {!loading && !error && filteredProviders.length > 0 && (
+              {!loading && !error && sortedProviders.length > 0 && (
                 <div className="grid grid-cols-1 gap-4">
-                  {filteredProviders.map((provider, index) => {
+                  {sortedProviders.map((provider, index) => {
                     const isSelected = provider.id === selectedProvider;
                     const recommendation = getRecommendationBadge(provider.id, index);
                     const reasoningLine = getReasoningLine(provider);
@@ -474,7 +604,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                       </span>
                     </div>
                     <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                    Split modus · {filteredProviders.length} van {providers.length} aanbieders zichtbaar
+                    Split modus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
                       <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-900/35 dark:text-emerald-300">Veel capaciteit</span>
@@ -484,7 +614,7 @@ export function ZorgaanbiedersPage({ theme }: ZorgaanbiedersPageProps) {
                   </div>
                   <div className="h-[18rem] sm:h-[22rem] 2xl:h-[calc(100vh-11rem)] 2xl:min-h-[33rem]">
                     <ProviderNetworkMap
-                      providers={filteredProviders}
+                      providers={sortedProviders}
                       selectedProviderId={selectedProvider}
                       hoveredProviderId={hoveredProvider}
                       onSelectProvider={setSelectedProvider}

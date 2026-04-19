@@ -5,8 +5,8 @@ import type { SpaProvider } from "../hooks/useProviders";
 
 function mapCaseStatus(status: SpaCase["status"]): CaseStatus {
   switch (status) {
-    case "beoordeling":
-      return "assessment";
+    case "provider_beoordeling":
+      return "placement";
     case "plaatsing":
       return "placement";
     case "afgerond":
@@ -96,17 +96,17 @@ function toCasusUrgency(urgency: Case["urgency"]): CasusUrgencyLevel {
 function toCasusStatus(spaStatus: SpaCase["status"]): CasusStatus {
   switch (spaStatus) {
     case "intake":
-      return "nieuw";
-    case "beoordeling":
-      return "in_beoordeling";
+      return "klaar_voor_matching";
     case "matching":
       return "matching_bezig";
+    case "provider_beoordeling":
+      return "aanbieder_geselecteerd";
     case "plaatsing":
-      return "plaatsing_te_bevestigen";
+      return "geaccepteerd_voor_intake";
     case "afgerond":
       return "gesloten";
     default:
-      return "nieuw";
+      return "klaar_voor_matching";
   }
 }
 
@@ -141,7 +141,9 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
   const legacy = toLegacyCase(spaCase);
   const matchResults = buildMatchResults(spaCase, providers);
   const status = toCasusStatus(spaCase.status);
-  const selectedProviderId = status === "plaatsing_te_bevestigen" ? (matchResults[0]?.providerId ?? null) : null;
+  const selectedProviderId = status === "aanbieder_geselecteerd" || status === "geaccepteerd_voor_intake"
+    ? (matchResults[0]?.providerId ?? null)
+    : null;
 
   return {
     id: legacy.id,
@@ -151,14 +153,14 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
     careType: legacy.caseType,
     urgency: toCasusUrgency(legacy.urgency),
     complexity: legacy.risk === "high" ? "high" : legacy.risk === "medium" ? "medium" : "low",
-    phase: status === "nieuw"
+    phase: status === "nieuw" || status === "klaar_voor_matching"
       ? "intake_initial"
-      : status === "in_beoordeling"
-        ? "beoordeling"
-        : status === "matching_bezig"
+      : status === "matching_bezig"
           ? "matching"
-          : status === "plaatsing_te_bevestigen"
-            ? "plaatsing"
+          : status === "aanbieder_geselecteerd"
+            ? "provider_beoordeling"
+            : status === "geaccepteerd_voor_intake"
+              ? "intake_provider"
             : "afgerond",
     status,
     assignedTo: legacy.assignedTo,
@@ -166,27 +168,33 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
     updatedAt: new Date().toISOString(),
     waitingDays: legacy.waitingDays,
     assessment: {
-      isComplete: status !== "nieuw" && status !== "in_beoordeling",
+      isComplete: true,
       urgency: toCasusUrgency(legacy.urgency),
       complexity: legacy.risk === "high" ? "high" : legacy.risk === "medium" ? "medium" : "low",
       careType: legacy.caseType,
       notes: legacy.signal,
       assessor: "Onbekend",
       scheduledDate: null,
-      completedAt: status === "in_beoordeling" ? null : new Date().toISOString(),
-      daysOverdue: status === "in_beoordeling" ? Math.max(0, legacy.waitingDays - 7) : 0,
-      missingFields: status === "in_beoordeling" ? ["behandelplan"] : [],
+      completedAt: new Date().toISOString(),
+      daysOverdue: 0,
+      missingFields: [],
     },
     matchResults,
     selectedProviderId,
     placement: {
       providerId: selectedProviderId,
       providerName: matchResults[0]?.providerName ?? null,
-      status: selectedProviderId ? "proposed" : null,
-      confirmedAt: null,
+      status: spaCase.status === "provider_beoordeling"
+        ? "pending"
+        : spaCase.status === "plaatsing"
+          ? "confirmed"
+          : selectedProviderId
+            ? "proposed"
+            : null,
+      confirmedAt: spaCase.status === "plaatsing" ? new Date().toISOString() : null,
       confirmedBy: null,
       validations: {
-        assessmentComplete: status !== "nieuw" && status !== "in_beoordeling",
+        assessmentComplete: true,
         providerSelected: Boolean(selectedProviderId),
         dossierComplete: true,
         guardianConsent: true,
@@ -194,12 +202,12 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
     },
     intake: {
       providerId: selectedProviderId,
-      status: null,
+      status: spaCase.status === "plaatsing" ? "planned" : null,
       plannedAt: null,
       startedAt: null,
       completedAt: null,
       rejectedReason: null,
-      providerResponseDays: 0,
+      providerResponseDays: spaCase.status === "provider_beoordeling" ? legacy.waitingDays : 0,
     },
   };
 }

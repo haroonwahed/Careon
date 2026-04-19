@@ -81,9 +81,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
       setSelectedRegion(target.target_region);
     }
 
-    if (target.target_view === "beoordelingen") {
-      setSelectedStatus("beoordeling");
-    } else if (target.target_view === "matching") {
+    if (target.target_view === "matching") {
       setSelectedStatus("matching");
     } else if (target.target_view === "plaatsingen") {
       setSelectedStatus("plaatsing");
@@ -97,11 +95,6 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
   };
 
   const applyForecastSignal = (signal: RegiekamerForecastSignal) => {
-    if (signal.target_stage === "beoordelingen") {
-      setSelectedStatus("beoordeling");
-      setActiveKPIFilter("assessment");
-      return;
-    }
     if (signal.target_stage === "matching") {
       setSelectedStatus("matching");
       setActiveKPIFilter("noMatch");
@@ -128,16 +121,6 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
       }
     },
     {
-      id: "beoordelingen",
-      label: "Beoordelingen",
-      count: decisionSummary.flow_counts.beoordelingen,
-      filter: "assessment",
-      onClick: () => {
-        setSelectedStatus("beoordeling");
-        setActiveKPIFilter("assessment");
-      }
-    },
-    {
       id: "matching",
       label: "Matching",
       count: decisionSummary.flow_counts.matching,
@@ -148,12 +131,22 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
       }
     },
     {
+      id: "bij_aanbieder",
+      label: "Bij Aanbieder",
+      count: decisionSummary.flow_counts.bij_aanbieder,
+      filter: "aanbieder_wacht",
+      onClick: () => {
+        setSelectedStatus("provider_beoordeling");
+        setActiveKPIFilter("aanbieder_wacht");
+      }
+    },
+    {
       id: "plaatsingen",
       label: "Plaatsingen",
-      count: decisionSummary.flow_counts.plaatsingen,
+      count: decisionSummary.flow_counts.intake_pending,
       filter: "placement",
       onClick: () => {
-        setSelectedStatus("plaatsing");
+        setSelectedStatus("intake_provider");
         setActiveKPIFilter("placement");
       }
     }
@@ -161,16 +154,16 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
 
   const stageWaiting = {
     casussen: 0,
-    beoordelingen: 0,
     matching: 0,
+    bij_aanbieder: 0,
     plaatsingen: 0,
   };
 
   const stageCases = {
-    casussen: casusList.filter((c) => c.phase === "intake_initial"),
-    beoordelingen: casusList.filter((c) => c.phase === "beoordeling" || !c.assessment.isComplete),
-    matching: casusList.filter((c) => c.phase === "matching" || c.phase === "geblokkeerd"),
-    plaatsingen: casusList.filter((c) => c.phase === "plaatsing"),
+    casussen: casusList.filter((c) => c.phase === "casus"),
+    matching: casusList.filter((c) => c.phase === "matching" || c.phase === "aanbieder_selectie" || c.phase === "geblokkeerd"),
+    bij_aanbieder: casusList.filter((c) => c.phase === "provider_beoordeling"),
+    plaatsingen: casusList.filter((c) => c.phase === "intake_provider"),
   };
 
   (Object.keys(stageCases) as Array<keyof typeof stageCases>).forEach((stage) => {
@@ -198,31 +191,35 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
   }));
 
   const casesWithoutMatchCard = getPriorityCard("casussen_zonder_match");
-  const openAssessmentsCard = getPriorityCard("open_beoordelingen");
+  const wachtOpAanbiederCard = getPriorityCard("wacht_op_aanbieder");
+  const afgewezenDoorAanbiederCard = getPriorityCard("afgewezen_door_aanbieder");
   const waitingOverdueCard = getPriorityCard("wachttijd_overschreden");
   const placementsInProgressCard = getPriorityCard("plaatsingen_bezig");
   const avgWaitingTimeCard = getPriorityCard("gem_wachttijd");
   const capacityIssuesCard = getPriorityCard("capaciteitstekorten");
 
-  const criticalActionCount = (casesWithoutMatchCard?.value ?? 0) + (waitingOverdueCard?.value ?? 0);
-  const warningActionCount = (openAssessmentsCard?.value ?? 0) + (placementsInProgressCard?.value ?? 0);
+  const criticalActionCount = (casesWithoutMatchCard?.value ?? 0) + (waitingOverdueCard?.value ?? 0) + (afgewezenDoorAanbiederCard?.value ?? 0);
+  const warningActionCount = (wachtOpAanbiederCard?.value ?? 0) + (placementsInProgressCard?.value ?? 0);
   const commandTone = criticalActionCount > 0 ? "critical" : warningActionCount > 0 ? "warning" : "good";
   const commandStateLine =
     commandTone === "critical"
       ? `${criticalActionCount} casussen vereisen directe actie`
       : commandTone === "warning"
-        ? `${warningActionCount} casussen vragen opvolging`
+        ? `${warningActionCount} casussen wachten op aanbiederreactie`
         : "Doorstroom stabiel - geen directe blokkades";
 
   const actionBreakdown: string[] = [];
   if ((casesWithoutMatchCard?.value ?? 0) > 0) {
     actionBreakdown.push(`${casesWithoutMatchCard?.value} zonder match`);
   }
+  if ((afgewezenDoorAanbiederCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${afgewezenDoorAanbiederCard?.value} afgewezen door aanbieder`);
+  }
   if ((waitingOverdueCard?.value ?? 0) > 0) {
     actionBreakdown.push(`${waitingOverdueCard?.value} wachttijd overschreden`);
   }
-  if ((openAssessmentsCard?.value ?? 0) > 0) {
-    actionBreakdown.push(`${openAssessmentsCard?.value} open beoordelingen`);
+  if ((wachtOpAanbiederCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${wachtOpAanbiederCard?.value} wachten op aanbieder`);
   }
   if ((placementsInProgressCard?.value ?? 0) > 0) {
     actionBreakdown.push(`${placementsInProgressCard?.value} plaatsingen bezig`);
@@ -243,13 +240,22 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
       onSelect: () => applyDecisionTarget(casesWithoutMatchCard?.action ?? { target_view: "matching", target_filter: "noMatch" }),
     },
     {
-      key: "open-beoordelingen",
-      title: `${openAssessmentsCard?.value ?? 0} Open beoordelingen`,
-      description: "Wacht op afronding voordat matching kan starten",
-      count: openAssessmentsCard?.value ?? 0,
-      severity: (openAssessmentsCard?.value ?? 0) > 0 ? "warning" : "stable",
-      ctaLabel: "Ga naar Beoordelingen",
-      onSelect: () => applyDecisionTarget(openAssessmentsCard?.action ?? { target_view: "beoordelingen", target_filter: "assessment" }),
+      key: "afgewezen-door-aanbieder",
+      title: `${afgewezenDoorAanbiederCard?.value ?? 0} Afgewezen door aanbieder`,
+      description: "Vereisen hermatching met andere aanbieder",
+      count: afgewezenDoorAanbiederCard?.value ?? 0,
+      severity: (afgewezenDoorAanbiederCard?.value ?? 0) > 0 ? "critical" : "stable",
+      ctaLabel: "Herstart matching",
+      onSelect: () => applyDecisionTarget(afgewezenDoorAanbiederCard?.action ?? { target_view: "matching", target_filter: "afgewezen" }),
+    },
+    {
+      key: "wacht-op-aanbieder",
+      title: `${wachtOpAanbiederCard?.value ?? 0} Wacht op aanbieder`,
+      description: "Plaatsingsverzoek verstuurd, wacht op reactie",
+      count: wachtOpAanbiederCard?.value ?? 0,
+      severity: (wachtOpAanbiederCard?.value ?? 0) > 0 ? "warning" : "stable",
+      ctaLabel: "Bekijk aanbiederreacties",
+      onSelect: () => applyDecisionTarget(wachtOpAanbiederCard?.action ?? { target_view: "plaatsingen", target_filter: "aanbieder_wacht" }),
     },
     {
       key: "wachttijd-overschreden",
@@ -334,8 +340,8 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
   };
 
   const flowDiagnosticMeaning =
-    decisionSummary.bottleneck_stage === "beoordelingen"
-      ? "Beoordelingen blokkeren matching"
+    decisionSummary.bottleneck_stage === "aanbieder_review"
+      ? "Aanbieder beoordeelt plaatsingsverzoek"
       : decisionSummary.bottleneck_stage === "matching"
         ? "Matching vertraagt door capaciteit of casusfit"
         : decisionSummary.bottleneck_stage === "plaatsingen"
@@ -538,11 +544,11 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
               className="rounded-xl border border-border bg-card px-4 py-2 text-sm text-foreground"
             >
               <option value="all">Alle statussen</option>
-              <option value="intake_initial">Intake</option>
-              <option value="intake_provider">Intake aanbieder</option>
-              <option value="beoordeling">Beoordeling</option>
+              <option value="casus">Casus</option>
               <option value="matching">Matching</option>
-              <option value="plaatsing">Plaatsing</option>
+              <option value="aanbieder_selectie">Aanbieder selectie</option>
+              <option value="provider_beoordeling">Bij aanbieder</option>
+              <option value="intake_provider">Intake</option>
               <option value="geblokkeerd">Geblokkeerd</option>
             </select>
 
@@ -576,7 +582,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
                 label={
                   activeKPIFilter === "casussen" ? "Fase: Casussen" :
                   activeKPIFilter === "noMatch" ? "Zonder match" :
-                  activeKPIFilter === "assessment" ? "Open beoordelingen" :
+                  activeKPIFilter === "assessment" ? "Aanbiederfilter" :
                   activeKPIFilter === "placement" ? "Plaatsingen bezig" :
                   activeKPIFilter === "highRisk" ? "Hoog risico" :
                   activeKPIFilter === "waitingOverdue" ? "Wachttijd overschreden" :

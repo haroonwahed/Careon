@@ -98,7 +98,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 size={16} className="text-green-base" />
             <span className="font-medium text-green-base">
-              Klaar voor plaatsing
+              Klaar voor intakeoverdracht
             </span>
           </div>
         )}
@@ -114,7 +114,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
           <div className="flex items-center gap-2 text-sm">
             <AlertTriangle size={16} className="text-yellow-base" />
             <span className="font-medium text-yellow-base">
-              Controleer waarschuwingen voordat je doorgaat
+              Controleer waarschuwingen voordat intake start
             </span>
           </div>
         )}

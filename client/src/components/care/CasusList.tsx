@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "../ui/button";
 import type { WorkflowCaseView } from "../../lib/workflowUi";
 
@@ -44,7 +44,7 @@ function buildTags(item: WorkflowCaseView): string[] {
 export function CasusList({ cases, onCaseClick, canCreateCase = false, onCreateCase }: CasusListProps) {
   if (cases.length === 0) {
     return (
-      <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
+      <div className="rounded-2xl bg-card p-12 text-center space-y-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)]">
         <p className="text-lg font-semibold text-foreground">Nog geen casussen in deze fase</p>
         <p className="text-sm text-muted-foreground">
           Pas filters aan of start direct met een nieuwe casus.
@@ -63,11 +63,18 @@ export function CasusList({ cases, onCaseClick, canCreateCase = false, onCreateC
       {cases.map((item) => {
         const tags = buildTags(item);
         return (
-          <button
+          <div
             key={item.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => onCaseClick(item.id)}
-            className={`w-full rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${rowPriorityClasses(item)}`}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onCaseClick(item.id);
+              }
+            }}
+            className={`w-full cursor-pointer rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${rowPriorityClasses(item)}`}
           >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex-1 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3">
@@ -98,11 +105,23 @@ export function CasusList({ cases, onCaseClick, canCreateCase = false, onCreateC
               </div>
 
               <div className="flex items-center justify-between gap-3 lg:justify-end lg:min-w-[280px]">
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 items-center">
+                  {item.urgencyValidated && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-light border border-green-border px-2.5 py-0.5 text-xs font-semibold text-green-base">
+                      <ShieldCheck className="w-3 h-3" />
+                      Gevalideerde urgentie
+                    </span>
+                  )}
+                  {!item.urgencyValidated && item.urgencyDocumentPresent && (item.urgency === "critical" || item.urgency === "warning") && (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-yellow-light border border-yellow-border px-2.5 py-0.5 text-xs font-semibold text-yellow-700">
+                      <AlertTriangle className="w-3 h-3" />
+                      Urgentie niet gevalideerd
+                    </span>
+                  )}
                   {tags.map((tag) => (
                     <span
                       key={`${item.id}-${tag}`}
-                      className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground"
+                      className="rounded-full bg-muted/60 px-2.5 py-0.5 text-xs text-muted-foreground"
                     >
                       {tag}
                     </span>
@@ -122,7 +141,7 @@ export function CasusList({ cases, onCaseClick, canCreateCase = false, onCreateC
                 </Button>
               </div>
             </div>
-          </button>
+          </div>
         );
       })}
     </div>

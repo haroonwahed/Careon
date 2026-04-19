@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowLeft, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
@@ -67,6 +67,7 @@ type IntakeFormPayload = {
 type IntakeCreateSuccess = {
   ok: boolean;
   id: number;
+  case_id?: string;
   title: string;
   redirect_url: string;
 };
@@ -80,7 +81,7 @@ const baseTextareaClass = "w-full rounded-2xl border border-border bg-card px-3 
 
 interface NieuweCasusPageProps {
   onCancel?: () => void;
-  onCreated?: () => void;
+  onCreated?: (caseId: string) => void;
 }
 
 function FieldError({ message }: { message?: string | string[] }) {
@@ -166,6 +167,23 @@ function formatDateDisplayValue(value: string): string {
   }).format(parsed);
 }
 
+function addDays(date: Date, days: number): Date {
+  const copy = new Date(date);
+  copy.setDate(copy.getDate() + days);
+  return copy;
+}
+
+function daysBetween(startDate: string, endDate: string): number | null {
+  const start = parseDateValue(startDate);
+  const end = parseDateValue(endDate);
+  if (!start || !end) {
+    return null;
+  }
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  return Math.max(0, Math.round((end.getTime() - start.getTime()) / msPerDay));
+}
+
 function selectFieldOptions(options: Option[], placeholder?: string) {
   return (
     <>
@@ -231,6 +249,15 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const [formErrors, setFormErrors] = useState<Record<string, string | string[]>>({});
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showPageGuidance, setShowPageGuidance] = useState(false);
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [stepError, setStepError] = useState<string | null>(null);
+  const [searchRadiusKm, setSearchRadiusKm] = useState<10 | 25 | 50>(25);
+
+  const stepMeta: Array<{ id: 1 | 2 | 3; title: string }> = [
+    { id: 1, title: "Basis" },
+    { id: 2, title: "Zorgvraag" },
+    { id: 3, title: "Randvoorwaarden" },
+  ];
 
   useEffect(() => {
     let ignore = false;
@@ -241,7 +268,42 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         if (ignore) {
           return;
         }
-        setFormState(payload.initial_values);
+
+        const today = new Date();
+        const nextWeek = addDays(today, 7);
+        const urgencyDefault = payload.options.urgency.find((option) => option.value.toLowerCase().includes("medium"))?.value
+          ?? payload.options.urgency[0]?.value
+          ?? "";
+
+        const complexityDefault = payload.options.complexity.find((option) => option.value.toLowerCase().includes("medium"))?.value
+          ?? payload.options.complexity[0]?.value
+          ?? "";
+
+        const preferredRegionTypeDefault = payload.options.preferred_region_type[0]?.value ?? "";
+        const preferredCareFormDefault = payload.options.preferred_care_form[0]?.value
+          ?? payload.options.zorgvorm_gewenst[0]?.value
+          ?? "";
+
+        const regionDefault = payload.initial_values.regio
+          || payload.options.regio[0]?.value
+          || payload.options.preferred_region[0]?.value
+          || "";
+
+        const withDefaults: IntakeFormState = {
+          ...payload.initial_values,
+          start_date: payload.initial_values.start_date || formatDateInputValue(today),
+          target_completion_date: payload.initial_values.target_completion_date || formatDateInputValue(nextWeek),
+          urgency: payload.initial_values.urgency || urgencyDefault,
+          complexity: payload.initial_values.complexity || complexityDefault,
+          preferred_region_type: payload.initial_values.preferred_region_type || preferredRegionTypeDefault,
+          preferred_care_form: payload.initial_values.preferred_care_form || preferredCareFormDefault,
+          zorgvorm_gewenst: payload.initial_values.zorgvorm_gewenst || preferredCareFormDefault,
+          regio: payload.initial_values.regio || regionDefault,
+          preferred_region: payload.initial_values.preferred_region || regionDefault,
+          max_toelaatbare_wachttijd_dagen: payload.initial_values.max_toelaatbare_wachttijd_dagen || "7",
+        };
+
+        setFormState(withDefaults);
         setOptions(payload.options);
       } catch (error) {
         if (!ignore) {
@@ -266,6 +328,98 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
     return options.care_category_sub.filter((option) => option.mainCategoryId === formState.care_category_main);
   }, [options, formState]);
+
+  const deadlineDays = useMemo(() => {
+    if (!formState) {
+      return null;
+    }
+    return daysBetween(formState.start_date, formState.target_completion_date);
+  }, [formState]);
+
+  const matchingPreview = useMemo(() => {
+    if (!formState) {
+      return { label: "Medium", tone: "warning" as const, score: 2, detail: "Vul de intake volledig in voor een scherpere voorspelling." };
+    }
+
+    let score = 0;
+    const urgency = formState.urgency.toLowerCase();
+    const complexity = formState.complexity.toLowerCase();
+
+    if (urgency.includes("critical") || urgency.includes("high")) {
+      score += 3;
+    } else if (urgency.includes("medium")) {
+      score += 1;
+    }
+    if (complexity.includes("high")) {
+      score += 3;
+    } else if (complexity.includes("medium")) {
+      score += 1;
+    }
+    if ((deadlineDays ?? 7) <= 3) {
+      score += 3;
+    } else if ((deadlineDays ?? 7) <= 7) {
+      score += 2;
+    } else if ((deadlineDays ?? 7) <= 14) {
+      score += 1;
+    }
+    if (!formState.care_category_sub) {
+      score += 1;
+    }
+    if (searchRadiusKm <= 10) {
+      score += 2;
+    } else if (searchRadiusKm <= 25) {
+      score += 1;
+    }
+    if (formState.diagnostiek.length >= 3) {
+      score += 1;
+    }
+    if (formState.preferred_region_type.toLowerCase().includes("lokaal")) {
+      score += 1;
+    }
+    if ((formState.assessment_summary ?? "").trim().length >= 100) {
+      score -= 1;
+    }
+
+    if (score >= 9) {
+      return { label: "Difficult", tone: "critical" as const, score, detail: "Hoge complexiteit en beperkte speelruimte maken snelle matching onwaarschijnlijk zonder bijsturing." };
+    }
+    if (score >= 5) {
+      return { label: "Medium", tone: "warning" as const, score, detail: "Matchbaar, maar vraagt strakke regie op urgentie, regio en constraints." };
+    }
+    return { label: "Good", tone: "good" as const, score, detail: "Goede uitgangspositie met brede kans op snelle matching." };
+  }, [deadlineDays, formState, searchRadiusKm]);
+
+  const urgencyHint = useMemo(() => {
+    if (!formState) {
+      return "Kies een urgentie op basis van risico op uitval of veiligheidsimpact.";
+    }
+
+    const complexity = formState.complexity.toLowerCase();
+    const urgency = formState.urgency.toLowerCase();
+    if (complexity.includes("high") && !(urgency.includes("high") || urgency.includes("critical"))) {
+      return "Suggestie: overweeg hogere urgentie bij hoge complexiteit.";
+    }
+    if ((deadlineDays ?? 7) <= 3 && !urgency.includes("critical")) {
+      return "Korte deadline: check of urgentie voldoende hoog is ingesteld.";
+    }
+    return "Urgentie lijkt consistent met de huidige intake.";
+  }, [deadlineDays, formState]);
+
+  const regionCapacityHint = useMemo(() => {
+    if (!formState) {
+      return "";
+    }
+    if (!formState.preferred_region && !formState.regio) {
+      return "Kies een regio om capaciteitsinschatting te verbeteren.";
+    }
+    if (searchRadiusKm <= 10) {
+      return "Waarschuwing: kleine zoekradius verhoogt kans op capaciteitskrapte.";
+    }
+    if (matchingPreview.tone === "critical") {
+      return "Capaciteitswaarschuwing: verwacht beperkte beschikbaarheid, overweeg ruimere regio-instelling.";
+    }
+    return "Regionale instellingen ondersteunen een stabiele matchingroute.";
+  }, [formState, matchingPreview.tone, searchRadiusKm]);
 
   const updateField = <K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) => {
     setFormState((current) => current ? { ...current, [field]: value } : current);
@@ -306,8 +460,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
     try {
       const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", formState);
-      setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het casusoverzicht.`);
-      onCreated?.();
+      const createdCaseId = payload.case_id;
+      setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe casusdossier.`);
+      if (createdCaseId) {
+        onCreated?.(createdCaseId);
+        return;
+      }
       window.location.href = payload.redirect_url || "/dashboard/?page=casussen";
     } catch (error) {
       const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
@@ -329,6 +487,57 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     } finally {
       setSaving(false);
     }
+  };
+
+  const setDeadlinePreset = (days: 3 | 7 | 14) => {
+    if (!formState) {
+      return;
+    }
+    const fromDate = parseDateValue(formState.start_date) ?? new Date();
+    updateField("target_completion_date", formatDateInputValue(addDays(fromDate, days)));
+  };
+
+  const validateStep = (step: 1 | 2 | 3): boolean => {
+    if (!formState) {
+      return false;
+    }
+
+    if (step === 1) {
+      if (!formState.title.trim() || !formState.start_date || !formState.target_completion_date) {
+        setStepError("Vul cliënt, startdatum en deadline matching in voordat je doorgaat.");
+        return false;
+      }
+    }
+
+    if (step === 2) {
+      if (!formState.care_category_main || !formState.complexity || !formState.urgency) {
+        setStepError("Kies hoofdcategorie, complexiteit en urgentie om door te gaan.");
+        return false;
+      }
+    }
+
+    if (step === 3) {
+      if (!formState.regio && !formState.preferred_region) {
+        setStepError("Kies minimaal een regio binnen de randvoorwaarden.");
+        return false;
+      }
+    }
+
+    setStepError(null);
+    return true;
+  };
+
+  const jumpToStep = (targetStep: 1 | 2 | 3) => {
+    if (targetStep === currentStep) {
+      return;
+    }
+
+    if (targetStep > currentStep && !validateStep(currentStep)) {
+      return;
+    }
+
+    setStepError(null);
+    setCurrentStep(targetStep);
   };
 
   if (loading) {
@@ -417,184 +626,236 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       )}
 
       <section className="premium-card rounded-[28px] border border-border/70 p-5">
-        <SectionHeader step="1" title="Identificatie" copy="Leg de minimale intake vast zodat regie, beoordeling en matching direct kunnen starten." />
-        <div className="grid gap-4">
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Client *</label>
-            <input
-              value={formState.title}
-              onChange={(event) => updateField("title", event.target.value)}
-              className={baseFieldClass}
-              placeholder="Bijv. Voornaam + initialiteit"
-            />
-            <FieldError message={formErrors.title} />
+        <div className="mb-5">
+          <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            <span>Stap {currentStep} van 3</span>
+            <span>{Math.round((currentStep / 3) * 100)}%</span>
           </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <DateField
-              label="Startdatum casus *"
-              value={formState.start_date}
-              onChange={(nextValue) => updateField("start_date", nextValue)}
-              error={formErrors.start_date}
-            />
-
-            <DateField
-              label="Doeldatum matchbesluit *"
-              value={formState.target_completion_date}
-              onChange={(nextValue) => updateField("target_completion_date", nextValue)}
-              error={formErrors.target_completion_date}
-            />
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {stepMeta.map((step) => {
+              const isActive = currentStep === step.id;
+              const isCompleted = currentStep > step.id;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => {
+                    if (isCompleted || isActive) {
+                      jumpToStep(step.id);
+                    }
+                  }}
+                  disabled={!isCompleted && !isActive}
+                  className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-colors ${isActive ? "border-primary/50 bg-primary/10 text-primary" : isCompleted ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:border-emerald-400/45" : "border-border/60 bg-card/40 text-muted-foreground/70"}`}
+                >
+                  <span className="block">Stap {step.id}</span>
+                  <span className="block text-[11px] font-medium">{step.title}</span>
+                </button>
+              );
+            })}
           </div>
-        </div>
-      </section>
-
-      <section className="premium-card rounded-[28px] border border-border/70 p-5">
-        <SectionHeader step="2" title="Zorgvraag" copy="Vat de hulpvraag compact samen en plaats de casus meteen in de juiste zorgcategorie." />
-        <div className="grid gap-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Hoofdcategorie zorgvraag *</label>
-              <select
-                value={formState.care_category_main}
-                onChange={(event) => {
-                  updateField("care_category_main", event.target.value);
-                  updateField("care_category_sub", "");
-                }}
-                className={baseFieldClass}
-              >
-                <option value="">Selecteer</option>
-                {options.care_category_main.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.care_category_main} />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Subcategorie zorgvraag</label>
-              <select
-                value={formState.care_category_sub}
-                onChange={(event) => updateField("care_category_sub", event.target.value)}
-                className={baseFieldClass}
-              >
-                <option value="">---------</option>
-                {visibleSubcategories.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.care_category_sub} />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Intake samenvatting</label>
-            <textarea
-              value={formState.assessment_summary}
-              onChange={(event) => updateField("assessment_summary", event.target.value)}
-              className={`${baseTextareaClass} min-h-32`}
-              placeholder="Kern van de hulpvraag, urgentie en aandachtspunten"
-            />
-            <FieldError message={formErrors.assessment_summary} />
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gemeente</label>
-              <select
-                value={formState.gemeente}
-                onChange={(event) => updateField("gemeente", event.target.value)}
-                className={baseFieldClass}
-              >
-                {selectFieldOptions(options.gemeente, "Selecteer gemeente")}
-              </select>
-              <FieldError message={formErrors.gemeente} />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Complexiteit *</label>
-              <select
-                value={formState.complexity}
-                onChange={(event) => updateField("complexity", event.target.value)}
-                className={baseFieldClass}
-              >
-                {selectFieldOptions(options.complexity)}
-              </select>
-              <FieldError message={formErrors.complexity} />
-            </div>
+          <div className="h-2 w-full rounded-full bg-muted/40">
+            <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(currentStep / 3) * 100}%` }} />
           </div>
         </div>
-      </section>
 
-      <section className="premium-card rounded-[28px] border border-border/70 p-5">
-        <SectionHeader step="3" title="Diagnostiek en urgentie" copy="Leg vast wat matching en triage direct nodig hebben. Niet alle details hoeven nu al volledig te zijn." />
-        <div className="grid gap-5">
-          <div>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Diagnostiek</p>
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-              {options.diagnostiek.map((option) => {
-                const active = formState.diagnostiek.includes(option.value);
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => toggleDiagnostiek(option.value)}
-                    className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+        {currentStep === 1 && (
+          <div className="space-y-4">
+            <SectionHeader step="1" title="Basisinformatie" copy="Leg de basis vast zodat de casus direct met de juiste planning de intakeflow in gaat." />
 
-          <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie *</label>
-              <select
-                value={formState.urgency}
-                onChange={(event) => updateField("urgency", event.target.value)}
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliënt *</label>
+              <input
+                value={formState.title}
+                onChange={(event) => updateField("title", event.target.value)}
                 className={baseFieldClass}
-              >
-                {options.urgency.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.urgency} />
+                placeholder="Bijv. Voornaam + initialiteit"
+              />
+              <FieldError message={formErrors.title} />
+            </div>
 
-              <label className="mt-3 inline-flex items-center gap-2 text-sm text-foreground">
-                <input
-                  type="checkbox"
-                  checked={formState.urgency_applied}
-                  onChange={(event) => updateField("urgency_applied", event.target.checked)}
-                  className="h-4 w-4 rounded border-border bg-card"
+            <div className="grid gap-4 md:grid-cols-2">
+              <DateField
+                label="Startdatum casus *"
+                value={formState.start_date}
+                onChange={(nextValue) => updateField("start_date", nextValue)}
+                error={formErrors.start_date}
+              />
+
+              <div>
+                <DateField
+                  label="Deadline matching *"
+                  value={formState.target_completion_date}
+                  onChange={(nextValue) => updateField("target_completion_date", nextValue)}
+                  error={formErrors.target_completion_date}
                 />
-                Urgentie aangevraagd
-              </label>
-
-              {formState.urgency_applied && (
-                <div className="mt-3">
-                  <DateField
-                    label="Sinds wanneer aangevraagd"
-                    value={formState.urgency_applied_since}
-                    onChange={(nextValue) => updateField("urgency_applied_since", nextValue)}
-                  />
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {[3, 7, 14].map((days) => (
+                    <button
+                      key={days}
+                      type="button"
+                      onClick={() => setDeadlinePreset(days as 3 | 7 | 14)}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${deadlineDays === days ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/35 hover:text-foreground"}`}
+                    >
+                      {days} dagen
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <SectionHeader step="2" title="Zorgvraag" copy="Maak de zorgvraag zo concreet mogelijk om de kans op een snelle en passende match te verhogen." />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Hoofdcategorie *</label>
+                <select
+                  value={formState.care_category_main}
+                  onChange={(event) => {
+                    updateField("care_category_main", event.target.value);
+                    updateField("care_category_sub", "");
+                  }}
+                  className={baseFieldClass}
+                >
+                  <option value="">Selecteer</option>
+                  {options.care_category_main.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <FieldError message={formErrors.care_category_main} />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Subcategorie</label>
+                <select
+                  value={formState.care_category_sub}
+                  onChange={(event) => updateField("care_category_sub", event.target.value)}
+                  className={baseFieldClass}
+                  disabled={!formState.care_category_main}
+                >
+                  <option value="">Selecteer</option>
+                  {visibleSubcategories.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <FieldError message={formErrors.care_category_sub} />
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Complexiteit *</p>
+                <div className="grid gap-2">
+                  {options.complexity.map((option) => {
+                    const active = formState.complexity === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => updateField("complexity", option.value)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FieldError message={formErrors.complexity} />
+              </div>
+
+              <div>
+                <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie *</p>
+                <div className="grid gap-2">
+                  {options.urgency.map((option) => {
+                    const active = formState.urgency === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => updateField("urgency", option.value)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+                <FieldError message={formErrors.urgency} />
+              </div>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gewenste zorgvorm *</label>
-              <div className="grid gap-2">
-                {options.preferred_care_form.map((option) => {
-                  const active = formState.preferred_care_form === option.value;
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Toelichting (optioneel)</label>
+              <textarea
+                value={formState.assessment_summary}
+                onChange={(event) => updateField("assessment_summary", event.target.value)}
+                className={`${baseTextareaClass} min-h-28`}
+                placeholder="Beschrijf kort context of aandachtspunten voor beoordeling en matching"
+              />
+            </div>
+
+            <div className="rounded-2xl border border-blue-500/25 bg-blue-500/5 px-4 py-3 text-sm text-blue-100">
+              <p className="font-semibold">Urgentiesuggestie</p>
+              <p className="mt-1 text-blue-200/90">{urgencyHint}</p>
+            </div>
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="space-y-5">
+            <SectionHeader step="3" title="Randvoorwaarden" copy="Definieer de zoekruimte en harde voorwaarden zodat het systeem een realistische matchingverwachting kan tonen." />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Regio *</label>
+                <select
+                  value={formState.regio}
+                  onChange={(event) => {
+                    updateField("regio", event.target.value);
+                    if (!formState.preferred_region) {
+                      updateField("preferred_region", event.target.value);
+                    }
+                  }}
+                  className={baseFieldClass}
+                >
+                  <option value="">Selecteer regio</option>
+                  {options.regio.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+                <FieldError message={formErrors.regio} />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoekradius</label>
+                <div className="flex gap-2 pt-1">
+                  {[10, 25, 50].map((radius) => (
+                    <button
+                      key={radius}
+                      type="button"
+                      onClick={() => setSearchRadiusKm(radius as 10 | 25 | 50)}
+                      className={`rounded-full border px-3 py-2 text-xs font-semibold ${searchRadiusKm === radius ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/35 hover:text-foreground"}`}
+                    >
+                      {radius} km
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Constraints</p>
+              <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+                {options.diagnostiek.map((option) => {
+                  const active = formState.diagnostiek.includes(option.value);
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      onClick={() => {
-                        updateField("preferred_care_form", option.value);
-                        updateField("zorgvorm_gewenst", option.value);
-                      }}
+                      onClick={() => toggleDiagnostiek(option.value)}
                       className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
                     >
                       {option.label}
@@ -602,129 +863,100 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   );
                 })}
               </div>
-              <FieldError message={formErrors.preferred_care_form} />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Voorkeur regiotype</label>
-              <select
-                value={formState.preferred_region_type}
-                onChange={(event) => updateField("preferred_region_type", event.target.value)}
-                className={baseFieldClass}
-              >
-                {options.preferred_region_type.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.preferred_region_type} />
             </div>
 
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Voorkeursregio</label>
-              <select
-                value={formState.preferred_region}
-                onChange={(event) => updateField("preferred_region", event.target.value)}
-                className={baseFieldClass}
-              >
-                <option value="">Selecteer regio</option>
-                {options.preferred_region.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.preferred_region} />
+            <div className="rounded-2xl border border-border bg-muted/15 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Verwachting matching</p>
+              <div className="mt-2 flex items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${matchingPreview.tone === "good" ? "bg-green-500/15 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/15 text-yellow-300" : "bg-red-500/15 text-red-300"}`}>
+                  {matchingPreview.label}
+                </span>
+                <span className="text-sm text-muted-foreground">{matchingPreview.detail}</span>
+              </div>
+              <p className="mt-3 text-sm text-muted-foreground">{regionCapacityHint}</p>
+            </div>
+
+            <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle voor aanmaken</p>
+              <div className="grid gap-3 text-sm md:grid-cols-2">
+                <p><span className="text-muted-foreground">Cliënt:</span> {formState.title || "-"}</p>
+                <p><span className="text-muted-foreground">Startdatum:</span> {formatDateDisplayValue(formState.start_date)}</p>
+                <p><span className="text-muted-foreground">Deadline matching:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
+                <p><span className="text-muted-foreground">Hoofdcategorie:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Subcategorie:</span> {visibleSubcategories.find((o) => o.value === formState.care_category_sub)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Complexiteit:</span> {options.complexity.find((o) => o.value === formState.complexity)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Urgentie:</span> {options.urgency.find((o) => o.value === formState.urgency)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Regio:</span> {(options.regio.find((o) => o.value === formState.regio)?.label ?? formState.regio) || "-"}</p>
+                <p><span className="text-muted-foreground">Zoekradius:</span> {searchRadiusKm} km</p>
+                <p className="md:col-span-2"><span className="text-muted-foreground">Constraints:</span> {formState.diagnostiek.length > 0 ? formState.diagnostiek.map((value) => options.diagnostiek.find((o) => o.value === value)?.label ?? value).join(", ") : "Geen"}</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </section>
 
-      <section className="premium-card rounded-[28px] border border-border/70 p-5">
-        <SectionHeader step="4" title="Cliëntprofiel" copy="Voeg alleen context toe die helpt bij prioritering, selectie en overdracht." />
-        <div className="grid gap-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Leeftijdscategorie cliënt</label>
-              <select
-                value={formState.client_age_category}
-                onChange={(event) => updateField("client_age_category", event.target.value)}
-                className={baseFieldClass}
-              >
-                <option value="">Selecteer</option>
-                {options.client_age_category.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.client_age_category} />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gezinssituatie</label>
-              <select
-                value={formState.family_situation}
-                onChange={(event) => updateField("family_situation", event.target.value)}
-                className={baseFieldClass}
-              >
-                <option value="">Selecteer</option>
-                {options.family_situation.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.family_situation} />
-            </div>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Dagbesteding</label>
-              <input
-                value={formState.school_work_status}
-                onChange={(event) => updateField("school_work_status", event.target.value)}
-                className={baseFieldClass}
-                placeholder="School, werk of daginvulling"
-              />
-              <FieldError message={formErrors.school_work_status} />
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Casusregisseur</label>
-              <select
-                value={formState.case_coordinator}
-                onChange={(event) => updateField("case_coordinator", event.target.value)}
-                className={baseFieldClass}
-              >
-                <option value="">Nog niet toegewezen</option>
-                {options.case_coordinator.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-              <FieldError message={formErrors.case_coordinator} />
-            </div>
-          </div>
-
-          <div>
-            <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Aanvullende opmerkingen</label>
-            <textarea
-              value={formState.description}
-              onChange={(event) => updateField("description", event.target.value)}
-              className={`${baseTextareaClass} min-h-28`}
-              placeholder="Context voor beoordeling of matching die niet in de intake samenvatting past"
-            />
-            <FieldError message={formErrors.description} />
+      {stepError && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-300">
+          <div className="flex items-start gap-2">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <p>{stepError}</p>
           </div>
         </div>
-      </section>
+      )}
 
       <div className="premium-card rounded-[24px] border border-border/70 bg-card/60 p-4">
-        <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <Button variant="outline" className="gap-2" onClick={() => onCancel?.()}>
             <ArrowLeft size={15} />
             Terug
           </Button>
-          <Button className="gap-2" onClick={handleSubmit} disabled={saving}>
-            {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
-            {saving ? "Opslaan..." : "Casus aanmaken"}
-          </Button>
+
+          <div className="flex items-center gap-2">
+            {currentStep > 1 && (
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  setStepError(null);
+                  setCurrentStep((current) => (current - 1) as 1 | 2 | 3);
+                }}
+              >
+                <ArrowLeft size={15} />
+                Vorige
+              </Button>
+            )}
+
+            {currentStep < 3 && (
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  if (!validateStep(currentStep)) {
+                    return;
+                  }
+                  setCurrentStep((current) => (current + 1) as 1 | 2 | 3);
+                }}
+              >
+                Volgende
+                <ArrowRight size={15} />
+              </Button>
+            )}
+
+            {currentStep === 3 && (
+              <Button
+                className="gap-2"
+                onClick={() => {
+                  if (!validateStep(3)) {
+                    return;
+                  }
+                  handleSubmit();
+                }}
+                disabled={saving}
+              >
+                {saving ? <Loader2 size={15} className="animate-spin" /> : <Save size={15} />}
+                {saving ? "Aanmaken..." : "Casus aanmaken"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </div>

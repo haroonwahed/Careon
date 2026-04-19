@@ -13,15 +13,13 @@ interface PlacementPageProps {
   providerId: string;
   onBack: () => void;
   onCancel: () => void;
-  onConfirm: () => void;
 }
 
 export function PlacementPage({
   caseId,
   providerId,
   onBack,
-  onCancel,
-  onConfirm
+  onCancel
 }: PlacementPageProps) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
@@ -63,23 +61,23 @@ export function PlacementPage({
   // Validation items
   const validationItems = [
     {
-      id: "assessment",
-      label: "Beoordeling compleet",
+      id: "provider-response",
+      label: "Aanbieder akkoord ontvangen",
       status: "complete" as const
     },
     {
       id: "data",
-      label: "Gegevens aanwezig",
+      label: "Overdrachtsgegevens compleet",
       status: "complete" as const
     },
     {
-      id: "risks",
-      label: "Risico's bekend",
+      id: "capacity",
+      label: "Capaciteit en intakevoorwaarden bevestigd",
       status: provider.availableSpots > 0 ? "complete" as const : "warning" as const
     },
     {
-      id: "matching",
-      label: "Match bevestigd (94%)",
+      id: "intake",
+      label: "Intake kan gestart worden",
       status: "complete" as const
     }
   ];
@@ -92,10 +90,10 @@ export function PlacementPage({
   // Risk signals
   const riskSignals = [
     ...(provider.availableSpots === 0 
-      ? [{ severity: "medium" as const, message: "Geen directe capaciteit - kleine wachttijd mogelijk" }]
+      ? [{ severity: "medium" as const, message: "Geen directe startplek - plan intake met korte wachttijd" }]
       : []),
     ...(provider.responseTime > 8 
-      ? [{ severity: "low" as const, message: `Reactietijd ${provider.responseTime}u - monitor voortgang` }]
+      ? [{ severity: "low" as const, message: `Reactietijd ${provider.responseTime}u - bewaak de intakeplanning` }]
       : [])
   ];
 
@@ -105,10 +103,6 @@ export function PlacementPage({
 
   const handleFinalConfirm = async () => {
     setIsConfirming(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
     setIsConfirming(false);
     setShowConfirmationModal(false);
     setIsConfirmed(true);
@@ -124,12 +118,12 @@ export function PlacementPage({
           </div>
 
           <h1 className="text-3xl font-bold text-foreground mb-3">
-            Plaatsing succesvol! 🎯
+            Intakeoverdracht gestart
           </h1>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             De casus van <strong className="text-foreground">{caseData.clientName}</strong> is 
-            toegewezen aan <strong className="text-foreground">{provider.name}</strong>. 
-            Alle betrokken partijen zijn geïnformeerd.
+            door <strong className="text-foreground">{provider.name}</strong> geaccepteerd.
+            De intake kan nu worden ingepland en opgevolgd vanuit de plaatsingsstap.
           </p>
 
           <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
@@ -143,7 +137,7 @@ export function PlacementPage({
             </div>
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Status</p>
-              <p className="text-lg font-bold text-green-base">Geplaatst</p>
+              <p className="text-lg font-bold text-green-base">Intake gestart</p>
             </div>
           </div>
 
@@ -155,19 +149,19 @@ export function PlacementPage({
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Aanbieder</strong> ontvangt binnen 15 minuten een notificatie
+                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde intakefase
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Dossier</strong> wordt automatisch gedeeld met provider
+                  <strong className="text-foreground">Dossier</strong> blijft beschikbaar voor intakevoorbereiding en overdracht
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Intake</strong> wordt binnen 3 werkdagen ingepland
+                  <strong className="text-foreground">Intake</strong> wordt nu gepland met de aanbieder
                 </p>
               </div>
             </div>
@@ -178,7 +172,7 @@ export function PlacementPage({
               onClick={() => window.location.reload()} // Or navigate to case tracking
               className="bg-primary hover:bg-primary/90"
             >
-              Bekijk plaatsing
+              Bekijk intakefase
             </Button>
             <Button
               onClick={onBack}
@@ -210,7 +204,7 @@ export function PlacementPage({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
-                Klaar voor plaatsing
+                Provider akkoord ontvangen
               </span>
             </div>
 
@@ -219,21 +213,21 @@ export function PlacementPage({
             </h1>
 
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed break-words">
-              Match: <strong className="text-foreground">{provider.name}</strong> · Score: <strong className="text-green-base">94%</strong>
+              Match geaccepteerd door <strong className="text-foreground">{provider.name}</strong> · Score: <strong className="text-green-base">94%</strong>
             </p>
 
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-green-base" />
-                <span className="text-muted-foreground">Beste match score</span>
+                <span className="text-muted-foreground">Beste match bevestigd</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-green-base" />
-                <span className="text-muted-foreground">Directe capaciteit</span>
+                <span className="text-muted-foreground">Capaciteit afgestemd</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-green-base" />
-                <span className="text-muted-foreground">Snelle reactietijd</span>
+                <span className="text-muted-foreground">Klaar voor intakeplanning</span>
               </div>
             </div>
           </div>
@@ -357,7 +351,7 @@ export function PlacementPage({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={20} className="text-green-base" />
                   <span className="text-sm font-medium text-green-base">
-                    Alle validaties geslaagd
+                    Klaar om intake te starten
                   </span>
                 </div>
               ) : hasErrors ? (
@@ -390,7 +384,7 @@ export function PlacementPage({
                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} className="mr-2" />
-                Bevestig plaatsing
+                Start intakeoverdracht
               </Button>
             </div>
           </div>
@@ -404,10 +398,10 @@ export function PlacementPage({
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Bevestig plaatsing
+                  Start intakeoverdracht
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Controleer de details voordat je definitief plaatst
+                  Controleer de details voordat je de intakefase opent
                 </p>
               </div>
               <button
@@ -442,9 +436,9 @@ export function PlacementPage({
 
               <div className="p-4 rounded-lg border careon-alert-info">
                 <p className="text-sm text-blue-base leading-relaxed">
-                  Na bevestiging wordt de casus direct toegewezen aan {provider.name}. 
-                  De aanbieder ontvangt een notificatie en het dossier binnen 15 minuten. 
-                  Je kunt de voortgang volgen in het plaatsingen overzicht.
+                  De aanbieder heeft deze match al geaccepteerd. Met deze stap bevestig je
+                  dat de casus doorgaat naar intake en verdere overdracht. Je volgt de voortgang
+                  daarna vanuit het plaatsingenoverzicht.
                 </p>
               </div>
             </div>
@@ -466,12 +460,12 @@ export function PlacementPage({
                 {isConfirming ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Bevestigen...
+                    Intake starten...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={16} className="mr-2" />
-                    Definitief bevestigen
+                    Bevestig intakefase
                   </>
                 )}
               </Button>

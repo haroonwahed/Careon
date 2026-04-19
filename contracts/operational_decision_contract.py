@@ -11,12 +11,12 @@ This module provides ONE shared source of truth for operational decisions:
 - impact_summary: Why that action matters (outcome-focused language)
 - attention_band: App-wide urgency level (now/today/monitor/waiting)
 - priority_rank: Numeric rank for sorting/triage (1=highest)
-- bottleneck_state: What flow stage is blocked (matching/placement/assessment)
+- bottleneck_state: What flow stage is blocked (matching/placement)
 - escalation_recommended: Boolean indicating escalation need
 
 Architecture
 -----------
-All pages (Regiekamer, Casussen, Beoordelingen, Matching, Plaatsingen)
+All pages (Regiekamer, Casussen, Matching, Plaatsingen)
 consume OperationalDecision objects computed by this service.
 
 The service receives case data and returns complete decisions.
@@ -69,7 +69,6 @@ class PriorityRankBand(str, Enum):
 
 class BottleneckState(str, Enum):
     """Which flow stage is blocked."""
-    ASSESSMENT = "assessment"    # Vertraagt beoordeling
     MATCHING = "matching"        # Blokkeert matching
     PLACEMENT = "placement"      # Blokkeert plaatsing
     NONE = "none"                # No bottleneck
@@ -314,17 +313,9 @@ class OperationalDecisionBuilder:
         """
         Determine which flow stage is blocked (if any).
         
-        Priority: assessment > matching > placement > none
+        Priority: matching > placement > none
         """
         S = CaseIntakeProcess.ProcessStatus
-        AS = CaseAssessment.AssessmentStatus
-        
-        # Assessment incomplete and blocking
-        if intake.status in [S.ASSESSMENT, S.MATCHING, S.DECISION]:
-            if assessment is None or assessment.assessment_status in [
-                AS.DRAFT, AS.UNDER_REVIEW, AS.NEEDS_INFO
-            ]:
-                return BottleneckState.ASSESSMENT
         
         # No match found
         if intake.status in [S.MATCHING, S.DECISION]:
@@ -365,24 +356,14 @@ class OperationalDecisionBuilder:
         S = CaseIntakeProcess.ProcessStatus
         AS = CaseAssessment.AssessmentStatus
         
-        # Assessment incomplete
-        if assessment is None or assessment.assessment_status in [
-            AS.DRAFT, AS.UNDER_REVIEW, AS.NEEDS_INFO
-        ]:
-            if assessment:
-                return RecommendedAction(
-                    label="Rond beoordeling af",
-                    reason="Nodig voor doorstroom naar matching",
-                    action_type="review",
-                    target_url=reverse('careon:assessment_update', args=[assessment.pk]),
-                )
-            else:
-                return RecommendedAction(
-                    label="Start beoordeling",
-                    reason="Nodig voordat matching kan starten",
-                    action_type="review",
-                    target_url=reverse('careon:assessment_create') + f"?intake={intake.pk}",
-                )
+        # Case needs matching
+        if intake.status in [S.INTAKE]:
+            return RecommendedAction(
+                label="Start matching",
+                reason="Kies een passende aanbieder via matching",
+                action_type="assign",
+                target_url=reverse('careon:matching_dashboard') + f"?intake={intake.pk}",
+            )
         
         # No match found
         if intake.status in [S.MATCHING, S.DECISION]:
@@ -509,7 +490,11 @@ class OperationalDecisionBuilder:
         if has_escalation or has_critical_signal:
             return AttentionBandLevel.NOW, True, True
         
-        if bottleneck_state in [BottleneckState.ASSESSMENT] and is_urgent:
+        # Crisis urgency always requires immediate attention
+        if intake.urgency == CaseIntakeProcess.Urgency.CRISIS:
+            return AttentionBandLevel.NOW, True, True
+        
+        if bottleneck_state == BottleneckState.MATCHING and is_urgent:
             return AttentionBandLevel.NOW, True, True
         
         if waiting_days > OperationalDecisionBuilder.STAGNATION_THRESHOLD_DAYS:
@@ -519,7 +504,7 @@ class OperationalDecisionBuilder:
         if bottleneck_state != BottleneckState.NONE:
             return AttentionBandLevel.TODAY, is_urgent, True
         
-        if is_urgent and intake.status in [S.INTAKE, S.ASSESSMENT]:
+        if is_urgent and intake.status in [S.INTAKE, S.MATCHING]:
             return AttentionBandLevel.TODAY, True, True
         
         if waiting_days >= OperationalDecisionBuilder.WAITING_THRESHOLD_DAYS:
@@ -640,9 +625,6 @@ class OperationalDecisionBuilder:
         open_signals: List[CareSignal],
     ) -> tuple[Optional[str], Optional[str]]:
         """Determine the dominant blocker (one per case)."""
-        if bottleneck_state == BottleneckState.ASSESSMENT:
-            return "assessment_incomplete", "Beoordeling ontbreekt"
-        
         if bottleneck_state == BottleneckState.MATCHING:
             return "no_match", "Geen passende aanbieder"
         
@@ -704,7 +686,6 @@ def build_operational_decisions_for_organization(org_id: int) -> List[Operationa
         organization_id=org_id,
         status__in=[
             CaseIntakeProcess.ProcessStatus.INTAKE,
-            CaseIntakeProcess.ProcessStatus.ASSESSMENT,
             CaseIntakeProcess.ProcessStatus.MATCHING,
             CaseIntakeProcess.ProcessStatus.DECISION,
             CaseIntakeProcess.ProcessStatus.ON_HOLD,

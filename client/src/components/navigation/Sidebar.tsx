@@ -24,9 +24,11 @@ import {
   ChevronRight,
   ClipboardList,
   Users,
-  FileCheck,
   MapPinned,
-  CheckCircle
+  CheckCircle,
+  Inbox,
+  CalendarCheck,
+  MessageSquare
 } from "lucide-react";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
@@ -64,12 +66,6 @@ const gemeenteNavigation: NavSection[] = [
         label: "Casussen",
         icon: FileText,
         href: "/casussen"
-      },
-      {
-        id: "beoordelingen",
-        label: "Beoordelingen",
-        icon: FileCheck,
-        href: "/beoordelingen"
       },
       {
         id: "matching",
@@ -164,7 +160,7 @@ const gemeenteNavigation: NavSection[] = [
   }
 ];
 
-// ZORGAANBIEDER - Limited access (receive work)
+// ZORGAANBIEDER - Provider workflow (receive & respond to requests)
 const zorgaanbiederNavigation: NavSection[] = [
   {
     id: "werk",
@@ -172,17 +168,29 @@ const zorgaanbiederNavigation: NavSection[] = [
     color: "purple",
     items: [
       {
-        id: "intake",
-        label: "Intake",
-        icon: ClipboardList,
+        id: "nieuwe-aanvragen",
+        label: "Nieuwe aanvragen",
+        icon: Inbox,
         badge: 3,
-        href: "/intake"
+        href: "/nieuwe-aanvragen"
       },
       {
         id: "mijn-casussen",
         label: "Mijn casussen",
         icon: FileText,
         href: "/mijn-casussen"
+      },
+      {
+        id: "plaatsingsreacties",
+        label: "Plaatsingsreacties",
+        icon: MessageSquare,
+        href: "/plaatsingsreacties"
+      },
+      {
+        id: "intake",
+        label: "Intake / Planning",
+        icon: CalendarCheck,
+        href: "/intake"
       }
     ]
   },
@@ -196,6 +204,12 @@ const zorgaanbiederNavigation: NavSection[] = [
         label: "Documenten",
         icon: FolderOpen,
         href: "/documenten"
+      },
+      {
+        id: "acties",
+        label: "Acties",
+        icon: CheckSquare,
+        href: "/acties"
       }
     ]
   }

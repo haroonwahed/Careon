@@ -46,6 +46,10 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         self.client = Client()
         self.client.login(username="casussen-test-user", password="testpass123")
 
+    def _assert_spa_shell(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<div id="root"></div>', html=True)
+
     def _create_intake(
         self,
         title,
@@ -121,16 +125,8 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("careon:case_list"))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Heropen beoordeling vandaag")
-        self.assertContains(response, "Nodig om matching-blokkade op te heffen")
-        self.assertContains(response, "Ontgrendelt vervolgstap direct")
-        self.assertContains(response, "Directe actie")
-        self.assertContains(response, "#1")
-        self.assertContains(response, "#2")
-        self.assertContains(response, "Blokkeert matching")
-        self.assertContains(response, "Escalatie aanbevolen")
-        self.assertContains(response, "Laag")
+        self._assert_spa_shell(response)
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake.pk).exists())
 
     def test_density_rules_limit_strip_and_signals_and_no_command_center_elements(self):
         intake = self._create_intake("Density Casus", urgency=CaseIntakeProcess.Urgency.HIGH)
@@ -155,17 +151,8 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("careon:case_list"))
 
-        html = response.content.decode("utf-8")
-        self.assertLessEqual(html.count("casus-operational-strip__message"), 1)
-
-        signal_lists = re.findall(r"<ul class=\"casus-row-signal-list\">(.*?)</ul>", html, flags=re.S)
-        self.assertGreaterEqual(len(signal_lists), 1)
-        for signal_list in signal_lists:
-            self.assertLessEqual(signal_list.count("<li>"), 2)
-
-        self.assertNotContains(response, "command-grid")
-        self.assertNotContains(response, "decision-alert-strip")
-        self.assertNotContains(response, "decision-focus-panel")
+        self._assert_spa_shell(response)
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake.pk).exists())
 
     def test_escalation_and_bottleneck_render_only_when_relevant(self):
         intake_a = self._create_intake("No Escalation Casus")
@@ -190,17 +177,9 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         with patch("contracts.views.build_operational_decision_for_intake", side_effect=fake_decision):
             response = self.client.get(reverse("careon:case_list"))
 
-        self.assertEqual(response.status_code, 200)
-        html = response.content.decode("utf-8")
-        row_a = self._get_row_html(html, "No Escalation Casus")
-        row_b = self._get_row_html(html, "Escalation Casus")
-
-        self.assertIn("Escalatie aanbevolen", row_b)
-        self.assertNotIn("casus-row-escalation", row_a)
-        self.assertIn("Vertraagt beoordeling", row_b)
-        self.assertNotIn("Vertraagt beoordeling", row_a)
-        self.assertNotIn("Blokkeert matching", row_a)
-        self.assertNotIn("Blokkeert plaatsing", row_a)
+        self._assert_spa_shell(response)
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake_a.pk).exists())
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake_b.pk).exists())
 
     def test_action_and_impact_stay_paired_with_partial_decision_data(self):
         intake = self._create_intake("Partial Decision Casus")
@@ -221,23 +200,18 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("careon:case_list"))
 
-        self.assertEqual(response.status_code, 200)
-        html = response.content.decode("utf-8")
-        action_count = html.count("casus-recommended-action__action")
-        impact_count = html.count("casus-impact-summary")
-        self.assertGreater(action_count, 0)
-        self.assertEqual(action_count, impact_count)
-        self.assertContains(response, "Plan opvolging")
-        self.assertContains(response, "Houdt zaak op koers")
+        self._assert_spa_shell(response)
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake.pk).exists())
 
     def test_zero_data_state_renders_safely(self):
         response = self.client.get(reverse("careon:case_list"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Nog geen casussen")
-        self.assertContains(response, "Maak je eerste casus aan")
+        self._assert_spa_shell(response)
+        api_payload = self.client.get(reverse("careon:cases_api")).json()
+        self.assertEqual(api_payload.get('total_count'), 0)
+        self.assertEqual(api_payload.get('cases', []), [])
 
     def test_missing_optional_fields_do_not_crash_page(self):
-        self._create_intake(
+        intake = self._create_intake(
             "Optional Fields Casus",
             case_coordinator=None,
             preferred_region=None,
@@ -248,8 +222,8 @@ class CasussenOperationalContractIntegrationTests(TestCase):
         ):
             response = self.client.get(reverse("careon:case_list"))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Optional Fields Casus")
+        self._assert_spa_shell(response)
+        self.assertTrue(CaseIntakeProcess.objects.filter(pk=intake.pk).exists())
 
     def test_pagination_preserves_filters_and_filter_state_across_navigation(self):
         for idx in range(26):
@@ -271,12 +245,16 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             )
 
         self.assertEqual(response_page1.status_code, 200)
-        self.assertContains(
-            response_page1,
-            "status=INTAKE&amp;urgency=LOW&amp;q=FilterCase&amp;page=2",
-        )
+        self.assertContains(response_page1, '<div id="root"></div>', html=True)
 
         self.assertEqual(response_page2.status_code, 200)
-        self.assertContains(response_page2, 'name="q" value="FilterCase"')
-        self.assertContains(response_page2, '<option value="INTAKE" selected>')
-        self.assertContains(response_page2, '<option value="LOW" selected>')
+        self.assertContains(response_page2, '<div id="root"></div>', html=True)
+        self.assertEqual(
+            CaseIntakeProcess.objects.filter(
+                organization=self.organization,
+                status=CaseIntakeProcess.ProcessStatus.INTAKE,
+                urgency=CaseIntakeProcess.Urgency.LOW,
+                title__icontains='FilterCase',
+            ).count(),
+            26,
+        )

@@ -12,7 +12,7 @@ interface ApiCase {
   id: string;
   title: string;
   status: string;            // DRAFT | PENDING | IN_REVIEW | APPROVED | ACTIVE | ...
-  case_phase: string;        // intake | beoordeling | matching | plaatsing | actief | afgerond
+  case_phase: string;        // intake | matching | provider_beoordeling | plaatsing | actief | afgerond
   risk_level: string;        // LOW | MEDIUM | HIGH | CRITICAL
   service_region: string;
   contract_type: string;
@@ -21,6 +21,17 @@ interface ApiCase {
   owner: string;
   created_at: string | null;
   updated_at: string | null;
+  // Urgency validation (from linked CaseIntakeProcess)
+  urgency?: string;
+  urgency_validated?: boolean;
+  urgency_document_present?: boolean;
+  urgency_granted_date?: string | null;
+  waitlist_bucket?: number;          // 0 = validated urgent, 1 = FCFS
+  intake_start_date?: string | null; // aanmeldingsdatum
+  // Arrangement metadata
+  arrangement_type_code?: string;
+  arrangement_provider?: string;
+  arrangement_end_date?: string | null;
 }
 
 interface ApiListResponse {
@@ -33,7 +44,7 @@ interface ApiListResponse {
 
 // ---- SPA case shape (matches CaseTriageCard props) ---------------------
 
-export type CasePhase = 'intake' | 'beoordeling' | 'matching' | 'plaatsing' | 'afgerond';
+export type CasePhase = 'intake' | 'matching' | 'provider_beoordeling' | 'plaatsing' | 'afgerond';
 export type UrgencyLevel = 'critical' | 'warning' | 'normal' | 'stable';
 
 export interface SpaCase {
@@ -47,6 +58,16 @@ export interface SpaCase {
   problems: { type: 'no-match' | 'missing-assessment' | 'capacity' | 'delayed'; label: string }[];
   systemInsight: string;
   recommendedAction: string;
+  // Urgency validation
+  urgencyValidated: boolean;
+  urgencyDocumentPresent: boolean;
+  urgencyGrantedDate: string | null;
+  waitlistBucket: number;           // 0 = validated urgent first, 1 = FCFS
+  intakeStartDate: string | null;   // aanmeldingsdatum (startdatum casus)
+  // Arrangement metadata
+  arrangementTypeCode: string;
+  arrangementProvider: string;
+  arrangementEndDate: string | null;
 }
 
 // ---- Mapping helpers ---------------------------------------------------
@@ -65,7 +86,11 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 };
 
 function mapPhase(phase: string): CasePhase {
-  const valid: CasePhase[] = ['intake', 'beoordeling', 'matching', 'plaatsing', 'afgerond'];
+  if (phase === 'actief') {
+    return 'afgerond';
+  }
+
+  const valid: CasePhase[] = ['intake', 'matching', 'provider_beoordeling', 'plaatsing', 'afgerond'];
   return valid.includes(phase as CasePhase) ? (phase as CasePhase) : 'intake';
 }
 
@@ -96,18 +121,18 @@ function deriveProblems(
   if (wachttijd > 10 && phase !== 'afgerond') {
     problems.push({ type: 'delayed', label: `Wachttijd > ${wachttijd} dagen` });
   }
-  if (phase === 'beoordeling' && urgency !== 'stable') {
-    problems.push({ type: 'missing-assessment', label: 'Beoordeling in behandeling' });
+  if (phase === 'provider_beoordeling') {
+    problems.push({ type: 'missing-assessment', label: 'Aanbieder beoordeelt verzoek' });
   }
   return problems;
 }
 
 function deriveRecommendedAction(phase: CasePhase): string {
   switch (phase) {
-    case 'intake':       return 'Start beoordeling';
-    case 'beoordeling':  return 'Afronden en doorsturen naar matching';
+    case 'intake':       return 'Start matching';
     case 'matching':     return 'Selecteer aanbieder';
-    case 'plaatsing':    return 'Bevestig plaatsing';
+    case 'provider_beoordeling': return 'Wacht op aanbiederreactie';
+    case 'plaatsing':    return 'Plan intake';
     case 'afgerond':     return 'Bekijk afsluiting';
   }
 }
@@ -128,6 +153,16 @@ function mapApiCase(c: ApiCase): SpaCase {
     problems: deriveProblems(phase, urgency, wachttijd),
     systemInsight: c.content ? c.content.slice(0, 160) : '',
     recommendedAction: deriveRecommendedAction(phase),
+    // Urgency validation
+    urgencyValidated: c.urgency_validated ?? false,
+    urgencyDocumentPresent: c.urgency_document_present ?? false,
+    urgencyGrantedDate: c.urgency_granted_date ?? null,
+    waitlistBucket: c.waitlist_bucket ?? 1,
+    intakeStartDate: c.intake_start_date ?? null,
+    // Arrangement metadata
+    arrangementTypeCode: c.arrangement_type_code ?? '',
+    arrangementProvider: c.arrangement_provider ?? '',
+    arrangementEndDate: c.arrangement_end_date ?? null,
   };
 }
 

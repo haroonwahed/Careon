@@ -64,7 +64,7 @@ function scoreCase(caseItem: Casus): RegiekamerCaseForecast {
     reasons.push(`Wachttijd overschrijdt norm (${SLA_DAYS} dagen)`);
   }
 
-  if (caseItem.phase === "beoordeling" && !caseItem.assessment.isComplete) {
+  if (caseItem.phase === "beoordeling" && !(caseItem.assessment?.isComplete ?? false)) {
     score += 15;
     reasons.push("Beoordeling is nog niet compleet");
   }
@@ -76,13 +76,13 @@ function scoreCase(caseItem: Casus): RegiekamerCaseForecast {
 
   if (
     caseItem.phase === "plaatsing" &&
-    (caseItem.placement.status === "proposed" || caseItem.placement.status === "pending")
+    (caseItem.placement?.status === "proposed" || caseItem.placement?.status === "pending")
   ) {
     score += 12;
     reasons.push("Plaatsing wacht op bevestiging");
   }
 
-  if (caseItem.phase === "intake_provider" && caseItem.intake.providerResponseDays > 3) {
+  if (caseItem.phase === "intake_provider" && (caseItem.intake?.providerResponseDays ?? 0) > 3) {
     score += 12;
     reasons.push("Aanbieder reageert traag op intake");
   }
@@ -107,13 +107,13 @@ function scoreCase(caseItem: Casus): RegiekamerCaseForecast {
   let nextBestAction = "Monitor voortgang";
   let projectedImpact = "Houdt het dossier actueel";
 
-  if (caseItem.phase === "beoordeling" && !caseItem.assessment.isComplete) {
+  if (caseItem.phase === "beoordeling" && !(caseItem.assessment?.isComplete ?? false)) {
     nextBestAction = "Rond beoordeling af";
     projectedImpact = "Ontgrendelt matching voor deze casus";
   } else if ((caseItem.phase === "matching" || caseItem.phase === "geblokkeerd") && !caseItem.selectedProviderId) {
     nextBestAction = "Heroverweeg matchingcriteria";
     projectedImpact = "Vergroot kans op plaatsing binnen 48 uur";
-  } else if (caseItem.phase === "plaatsing" && caseItem.placement.status !== "confirmed") {
+  } else if (caseItem.phase === "plaatsing" && caseItem.placement?.status !== "confirmed") {
     nextBestAction = "Volg plaatsing direct op";
     projectedImpact = "Voorkomt extra wachtdagen in intake";
   } else if (caseItem.waitingDays > SLA_DAYS) {
@@ -167,7 +167,7 @@ export function buildRegiekamerPredictiveSummary(
   }, {});
 
   const assessmentDelayIds = activeCases
-    .filter((c) => c.phase === "beoordeling" && (!c.assessment.isComplete || c.waitingDays > 4))
+    .filter((c) => c.phase === "beoordeling" && (!(c.assessment?.isComplete ?? false) || c.waitingDays > 4))
     .map((c) => c.id);
 
   const matchFailureIds = activeCases
@@ -177,7 +177,7 @@ export function buildRegiekamerPredictiveSummary(
   const slaBreachIds = activeCases.filter((c) => c.waitingDays > SLA_DAYS).map((c) => c.id);
 
   const placementStallIds = activeCases
-    .filter((c) => c.phase === "plaatsing" && (c.placement.status === "pending" || c.placement.status === "proposed"))
+    .filter((c) => c.phase === "plaatsing" && (c.placement?.status === "pending" || c.placement?.status === "proposed"))
     .map((c) => c.id);
 
   const escalationIds = activeCases

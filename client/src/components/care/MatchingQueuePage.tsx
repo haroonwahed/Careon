@@ -19,10 +19,25 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
   const { providers } = useProviders({ q: "" });
 
   const queueCases = useMemo(() => {
+    const _sentinel = '9999-12-31';
     return buildWorkflowCases(cases, providers)
       .filter((item) => item.readyForMatching)
       .filter((item) => selectedRegion === "all" || item.region === selectedRegion)
-      .sort((left, right) => right.daysInCurrentPhase - left.daysInCurrentPhase);
+      .sort((a, b) => {
+        const aBucket = a.waitlistBucket ?? 1;
+        const bBucket = b.waitlistBucket ?? 1;
+        if (aBucket !== bBucket) return aBucket - bBucket;
+        if (aBucket === 0) {
+          // Both validated urgent: sort by urgency_granted_date ASC (earliest first)
+          const aDate = a.urgencyGrantedDate ?? _sentinel;
+          const bDate = b.urgencyGrantedDate ?? _sentinel;
+          return aDate < bDate ? -1 : aDate > bDate ? 1 : 0;
+        }
+        // Both normal FCFS: sort by intakeStartDate (aanmeldingsdatum) ASC
+        const aStart = a.intakeStartDate ?? _sentinel;
+        const bStart = b.intakeStartDate ?? _sentinel;
+        return aStart < bStart ? -1 : aStart > bStart ? 1 : 0;
+      });
   }, [cases, providers, selectedRegion]);
 
   const regions = useMemo(() => ["all", ...Array.from(new Set(queueCases.map((item) => item.region)))], [queueCases]);

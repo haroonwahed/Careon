@@ -60,15 +60,16 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
         self.assertEqual(action["code"], "fill_missing_information")
         self.assertEqual(action["priority"], 1)
 
-    def test_next_best_action_precedence_assessment_before_matching(self):
+    def test_next_best_action_precedence_matching_when_no_run_exists(self):
         case_data = self._base_case_data()
         case_data["assessment_complete"] = False
         case_data["matching_run_exists"] = False
 
         action = determine_next_best_action(case_data)
 
-        self.assertEqual(action["code"], "complete_assessment")
-        self.assertEqual(action["priority"], 2)
+        # With beoordeling gate removed, matching runs immediately
+        self.assertEqual(action["code"], "run_matching")
+        self.assertEqual(action["priority"], 3)
 
     def test_next_best_action_precedence_matching_before_quality(self):
         case_data = self._base_case_data()

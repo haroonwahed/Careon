@@ -29,7 +29,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
         defaults = dict(
             organization=self.organization,
             title="Adaptive Matching Intake",
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date="2026-04-10",

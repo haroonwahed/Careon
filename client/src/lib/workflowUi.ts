@@ -3,7 +3,7 @@ import { toPhaseCasus } from "./careLegacyAdapters";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
 
-export type WorkflowBoardColumn = "nieuw" | "in-beoordeling" | "klaar-voor-matching" | "in-plaatsing" | "afgerond";
+export type WorkflowBoardColumn = "nieuw" | "klaar-voor-matching" | "bij-aanbieder" | "in-intake" | "afgerond";
 
 export interface WorkflowCaseView {
   id: string;
@@ -22,7 +22,7 @@ export interface WorkflowCaseView {
   tags: string[];
   nextBestAction: string;
   nextBestActionLabel: string;
-  nextBestActionUrl: "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "intake";
+  nextBestActionUrl: "casussen" | "matching" | "plaatsingen" | "intake";
   isBlocked: boolean;
   blockReason: string | null;
   readyForMatching: boolean;
@@ -32,6 +32,16 @@ export interface WorkflowCaseView {
   intakeDateLabel: string | null;
   placementStatusLabel: string;
   workflowState: ComputedCaseState;
+  // Urgency validation
+  urgencyValidated: boolean;
+  urgencyDocumentPresent: boolean;
+  urgencyGrantedDate: string | null;
+  waitlistBucket: number;           // 0 = validated urgent first, 1 = FCFS
+  intakeStartDate: string | null;   // aanmeldingsdatum (startdatum casus)
+  // Arrangement metadata
+  arrangementTypeCode: string;
+  arrangementProvider: string;
+  arrangementEndDate: string | null;
 }
 
 function stableAge(seed: string): number {
@@ -57,13 +67,13 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
 function phaseLabel(phase: SpaCase["status"]): string {
   switch (phase) {
     case "intake":
-      return "Nieuw";
-    case "beoordeling":
-      return "In beoordeling";
-    case "matching":
       return "Klaar voor matching";
+    case "matching":
+      return "In matching";
+    case "provider_beoordeling":
+      return "Bij aanbieder";
     case "plaatsing":
-      return "In plaatsing";
+      return "Plaatsing / intake";
     case "afgerond":
       return "Afgerond";
     default:
@@ -73,12 +83,14 @@ function phaseLabel(phase: SpaCase["status"]): string {
 
 function boardColumn(phase: SpaCase["status"]): WorkflowBoardColumn {
   switch (phase) {
-    case "beoordeling":
-      return "in-beoordeling";
+    case "intake":
+      return "klaar-voor-matching";
     case "matching":
       return "klaar-voor-matching";
+    case "provider_beoordeling":
+      return "bij-aanbieder";
     case "plaatsing":
-      return "in-plaatsing";
+      return "in-intake";
     case "afgerond":
       return "afgerond";
     default:
@@ -88,10 +100,12 @@ function boardColumn(phase: SpaCase["status"]): WorkflowBoardColumn {
 
 function nextActionTarget(phase: SpaCase["status"]): WorkflowCaseView["nextBestActionUrl"] {
   switch (phase) {
-    case "beoordeling":
-      return "beoordelingen";
+    case "intake":
+      return "matching";
     case "matching":
       return "matching";
+    case "provider_beoordeling":
+      return "casussen";
     case "plaatsing":
       return "plaatsingen";
     case "afgerond":
@@ -102,7 +116,7 @@ function nextActionTarget(phase: SpaCase["status"]): WorkflowCaseView["nextBestA
 }
 
 function buildTags(spaCase: SpaCase): string[] {
-  const tags = [spaCase.zorgtype, ...spaCase.problems.map((problem) => problem.label)]
+  const tags = [spaCase.zorgtype, ...spaCase.problems.map((problem) => problem?.label)]
     .map((value) => value?.trim())
     .filter((value): value is string => Boolean(value));
 
@@ -139,13 +153,29 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
     nextBestActionUrl: nextActionTarget(spaCase.status),
     isBlocked: spaCase.status === "matching" && blockedProblem !== null,
     blockReason: blockedProblem?.label ?? workflowState.blockerReason,
-    readyForMatching: spaCase.status === "matching",
+    readyForMatching: spaCase.status === "intake" || spaCase.status === "matching",
     readyForPlacement: spaCase.status === "plaatsing",
     recommendedProvidersCount: providerMatches.length,
     recommendedProviderName: firstProvider?.name ?? null,
-    intakeDateLabel: spaCase.status === "plaatsing" ? "Intake nog plannen" : null,
-    placementStatusLabel: spaCase.status === "plaatsing" ? "Te bevestigen" : spaCase.status === "afgerond" ? "Afgerond" : "Lopend",
+    intakeDateLabel: spaCase.status === "plaatsing" ? "Intake voorbereiden" : spaCase.status === "provider_beoordeling" ? "Wacht op reactie" : null,
+    placementStatusLabel: spaCase.status === "provider_beoordeling"
+      ? "In beoordeling"
+      : spaCase.status === "plaatsing"
+        ? "Intake loopt"
+        : spaCase.status === "afgerond"
+          ? "Afgerond"
+          : "Lopend",
     workflowState,
+    // Urgency validation
+    urgencyValidated: spaCase.urgencyValidated,
+    urgencyDocumentPresent: spaCase.urgencyDocumentPresent,
+    urgencyGrantedDate: spaCase.urgencyGrantedDate,
+    waitlistBucket: spaCase.waitlistBucket,
+    intakeStartDate: spaCase.intakeStartDate,
+    // Arrangement metadata
+    arrangementTypeCode: spaCase.arrangementTypeCode,
+    arrangementProvider: spaCase.arrangementProvider,
+    arrangementEndDate: spaCase.arrangementEndDate,
   };
 }
 
@@ -153,10 +183,8 @@ export function buildWorkflowCases(spaCases: SpaCase[], providers: SpaProvider[]
   return spaCases.map((spaCase) => buildWorkflowCase(spaCase, providers));
 }
 
-export function previousStepTarget(page: "beoordelingen" | "matching" | "plaatsingen"): WorkflowCaseView["nextBestActionUrl"] {
+export function previousStepTarget(page: "matching" | "plaatsingen"): WorkflowCaseView["nextBestActionUrl"] {
   switch (page) {
-    case "beoordelingen":
-      return "casussen";
     case "matching":
       return "casussen";
     case "plaatsingen":

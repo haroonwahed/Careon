@@ -9,7 +9,7 @@
  */
 
 import { useState } from "react";
-import { MatchingPageWithMap } from "../care/MatchingPageWithMap";
+import { MatchingPageWithMap } from "../care/MatchingDecisionEnginePage";
 import { mockCases } from "../../lib/casesData";
 
 export function MatchingWorkflowDemo() {

@@ -7,6 +7,7 @@ interface AanbevolenActieProps {
   confidence?: "high" | "medium" | "low";
   actionLabel: string;
   onAction: () => void;
+  disabled?: boolean;
   variant?: "default" | "urgent";
 }
 
@@ -16,6 +17,7 @@ export function AanbevolenActie({
   confidence = "high",
   actionLabel,
   onAction,
+  disabled = false,
   variant = "default"
 }: AanbevolenActieProps) {
   const isUrgent = variant === "urgent";
@@ -57,6 +59,7 @@ export function AanbevolenActie({
           {/* Action Button */}
           <Button
             onClick={onAction}
+            disabled={disabled}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
           >
             {actionLabel}

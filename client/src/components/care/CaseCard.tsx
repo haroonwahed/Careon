@@ -6,7 +6,8 @@ import {
   ChevronRight,
   CheckCircle2,
   Info,
-  Sparkles
+  Sparkles,
+  ShieldCheck
 } from "lucide-react";
 import { Button } from "../ui/button";
 
@@ -25,6 +26,8 @@ interface CaseData {
   systemInsight: string;
   recommendedAction: string;
   lastUpdated: string;
+  urgencyValidated?: boolean;
+  urgencyDocumentPresent?: boolean;
 }
 
 interface CaseCardProps {
@@ -46,7 +49,9 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
     issues,
     systemInsight,
     recommendedAction,
-    lastUpdated
+    lastUpdated,
+    urgencyValidated,
+    urgencyDocumentPresent,
   } = caseData;
 
   // Urgency styling
@@ -159,6 +164,18 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold ${urgencyConfig.badgeBg} ${urgencyConfig.badgeText} whitespace-nowrap`}>
                   {urgencyConfig.label}
                 </span>
+                {urgencyValidated && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-light border border-green-border text-green-base whitespace-nowrap">
+                    <ShieldCheck className="w-3 h-3" />
+                    Gevalideerde urgentie
+                  </span>
+                )}
+                {!urgencyValidated && urgencyDocumentPresent && (urgency === "urgent" || urgency === "warning") && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-light border border-yellow-border text-yellow-700 whitespace-nowrap">
+                    <AlertTriangle className="w-3 h-3" />
+                    Urgentie vereist een geldige urgentieverklaring
+                  </span>
+                )}
               </div>
 
               {/* Meta Info */}

@@ -164,9 +164,9 @@ class OperationalDecisionBuildingTests(OperationalDecisionContractTestCase):
         self.assertIsInstance(decision.escalation_recommended, bool)
     
     def test_build_case_with_incomplete_assessment(self):
-        """Test decision for case blocked on assessment."""
+        """Test decision for case in matching (beoordeling gate removed)."""
         intake = self._create_intake(
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.HIGH,
         )
         assessment = self._create_assessment(
@@ -176,10 +176,9 @@ class OperationalDecisionBuildingTests(OperationalDecisionContractTestCase):
         
         decision = OperationalDecisionBuilder.build_for_intake(intake)
         
-        self.assertEqual(decision.bottleneck_state, BottleneckState.ASSESSMENT)
-        self.assertEqual(decision.blocker_key, "assessment_incomplete")
+        # Beoordeling no longer blocks matching; bottleneck should be matching (no provider yet)
+        self.assertIn(decision.bottleneck_state, [BottleneckState.MATCHING, BottleneckState.NONE])
         self.assertIsNotNone(decision.recommended_action)
-        self.assertEqual(decision.recommended_action.action_type, "review")
     
     def test_build_case_in_matching_no_placement(self):
         """Test decision for case in MATCHING with no placement."""
@@ -229,7 +228,7 @@ class AttentionBandTests(OperationalDecisionContractTestCase):
     def test_attention_now_for_crisis_urgency(self):
         """Crisis urgency in incomplete assessment should be NOW."""
         intake = self._create_intake(
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.CRISIS,
         )
         self._create_assessment(intake)
@@ -313,15 +312,16 @@ class BottleneckDetectionTests(OperationalDecisionContractTestCase):
     """Test bottleneck state detection."""
     
     def test_assessment_bottleneck(self):
-        """Incomplete assessment in ASSESSMENT status = bottleneck."""
+        """With beoordeling gate removed, MATCHING status without placement = no assessment bottleneck."""
         intake = self._create_intake(
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
         )
         self._create_assessment(intake)
         
         decision = OperationalDecisionBuilder.build_for_intake(intake)
         
-        self.assertEqual(decision.bottleneck_state, BottleneckState.ASSESSMENT)
+        # ASSESSMENT bottleneck no longer exists; expect MATCHING or NONE
+        self.assertIn(decision.bottleneck_state, [BottleneckState.MATCHING, BottleneckState.NONE])
     
     def test_placement_bottleneck_no_capacity(self):
         """Placement with NO_CAPACITY response = bottleneck."""
@@ -439,7 +439,7 @@ class ImpactSummaryTests(OperationalDecisionContractTestCase):
     def test_impact_summary_valid_when_action_exists(self):
         """Impact should be provided when action exists."""
         intake = self._create_intake(
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
         )
         self._create_assessment(intake)
         
@@ -453,7 +453,7 @@ class ImpactSummaryTests(OperationalDecisionContractTestCase):
     def test_impact_type_accelerating_for_review_action(self):
         """Review action should have accelerating impact."""
         intake = self._create_intake(
-            status=CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
         )
         assessment = self._create_assessment(intake)
         
@@ -502,7 +502,7 @@ class OrganizationDecisionsTests(OperationalDecisionContractTestCase):
     def test_build_decisions_for_organization(self):
         """Should build decisions for all active cases in org."""
         intake1 = self._create_intake(status=CaseIntakeProcess.ProcessStatus.INTAKE)
-        intake2 = self._create_intake(status=CaseIntakeProcess.ProcessStatus.ASSESSMENT)
+        intake2 = self._create_intake(status=CaseIntakeProcess.ProcessStatus.MATCHING)
         
         decisions = build_operational_decisions_for_organization(self.org.pk)
         

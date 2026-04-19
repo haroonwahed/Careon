@@ -1,279 +1,237 @@
-/**
- * IntakeListPage - Provider view of intake requests
- */
-
-import { useState } from "react";
-import { Search, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { CheckCircle2, Clock3, Loader2, Search, Send, XCircle } from "lucide-react";
+import { apiClient } from "../../lib/apiClient";
+import { useCases, type SpaCase } from "../../hooks/useCases";
 import { Button } from "../ui/button";
 import { UrgencyBadge } from "./UrgencyBadge";
-import { useCases } from "../../hooks/useCases";
-import { Loader2 } from "lucide-react";
 
 interface IntakeListPageProps {
   onCaseClick: (caseId: string) => void;
+  view?: "requests" | "responses" | "intake";
+  onRequestApproved?: (caseId: string) => void;
 }
 
-export function IntakeListPage({ onCaseClick }: IntakeListPageProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all" | "new" | "accepted" | "declined">("all");
-  const [declinedRequestIds, setDeclinedRequestIds] = useState<string[]>([]);
-
-  const { cases, loading, error } = useCases({ q: searchQuery });
-  const mockCases = cases;
-
-  // Mock intake requests for this provider
-  const intakeCases = mockCases.filter(c => c.status === "intake" || c.status === "placement");
-  const newRequestCases = mockCases
-    .filter(c => (c.status === "assessment" || c.status === "matching") && !declinedRequestIds.includes(c.id))
-    .slice(0, 3);
-  
-  const newRequests = newRequestCases.length;
-  const acceptedRequests = intakeCases.length;
-  const declinedRequests = declinedRequestIds.length;
-
-  const filteredCases = intakeCases.filter(c => {
-    const matchesSearch =
-      searchQuery === "" ||
-      c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase());
-
-    if (!matchesSearch) return false;
-    if (statusFilter === "new") return false;
-    if (statusFilter === "declined") return false;
-
+function matchesSearch(caseItem: SpaCase, query: string): boolean {
+  if (!query) {
     return true;
-  });
+  }
+
+  const haystack = [caseItem.id, caseItem.title, caseItem.regio, caseItem.zorgtype]
+    .join(" ")
+    .toLowerCase();
+
+  return haystack.includes(query.toLowerCase());
+}
+
+function requestBadge(view: IntakeListPageProps["view"]): { title: string; description: string } {
+  switch (view) {
+    case "intake":
+      return {
+        title: "Intake en plaatsing",
+        description: "Geaccepteerde casussen die nu in plaatsing of intake zitten.",
+      };
+    case "responses":
+      return {
+        title: "Plaatsingsreacties",
+        description: "Overzicht van casussen die al zijn geaccepteerd en zijn doorgestroomd naar intake.",
+      };
+    default:
+      return {
+        title: "Nieuwe aanvragen",
+        description: "Beoordeel nieuwe verzoeken van gemeenten en accepteer of wijs af.",
+      };
+  }
+}
+
+export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved }: IntakeListPageProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [submittingCaseId, setSubmittingCaseId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const { cases, loading, error, refetch } = useCases({ q: searchQuery });
+
+  const pendingRequests = useMemo(
+    () => cases.filter((caseItem) => caseItem.status === "provider_beoordeling" && matchesSearch(caseItem, searchQuery)),
+    [cases, searchQuery],
+  );
+  const intakeCases = useMemo(
+    () => cases.filter((caseItem) => caseItem.status === "plaatsing" && matchesSearch(caseItem, searchQuery)),
+    [cases, searchQuery],
+  );
+
+  const summary = requestBadge(view);
+  const visibleCases = view === "requests" ? pendingRequests : intakeCases;
+
+  const handleDecision = async (caseId: string, status: "APPROVED" | "REJECTED") => {
+    if (submittingCaseId) {
+      return;
+    }
+
+    setSubmittingCaseId(caseId);
+    setFeedback(null);
+
+    try {
+      await apiClient.post(`/care/api/cases/${caseId}/placement-action/`, { status });
+      refetch();
+
+      if (status === "APPROVED") {
+        setFeedback(`Casus ${caseId} is geaccepteerd en doorgestuurd naar intake.`);
+        onRequestApproved?.(caseId);
+      } else {
+        setFeedback(`Casus ${caseId} is afgewezen en teruggezet naar matching.`);
+      }
+    } catch (decisionError) {
+      setFeedback(decisionError instanceof Error ? decisionError.message : "Actie kon niet worden verwerkt.");
+    } finally {
+      setSubmittingCaseId(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* HEADER */}
       <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Intake Verzoeken
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {newRequests} nieuwe verzoeken vereisen uw aandacht
-        </p>
+        <h1 className="text-3xl font-bold text-foreground mb-2">{summary.title}</h1>
+        <p className="text-sm text-muted-foreground">{summary.description}</p>
       </div>
 
-      {/* STATS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <button
-          onClick={() => setStatusFilter("new")}
-          className={`premium-card p-6 text-left transition-all ${
-            statusFilter === "new" ? "ring-2 ring-red-500" : ""
-          }`}
-        >
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div className="premium-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Nieuwe verzoeken</p>
-            <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <p className="text-sm text-muted-foreground">Open aanvragen</p>
+            <Send size={18} className="text-blue-500" />
           </div>
-          <p className="text-3xl font-bold text-red-500">{newRequests}</p>
-        </button>
-
-        <button
-          onClick={() => setStatusFilter("accepted")}
-          className={`premium-card p-6 text-left transition-all ${
-            statusFilter === "accepted" ? "ring-2 ring-green-500" : ""
-          }`}
-        >
+          <p className="text-3xl font-bold text-foreground">{pendingRequests.length}</p>
+        </div>
+        <div className="premium-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Geaccepteerd</p>
-            <CheckCircle2 className="text-green-500" size={20} />
+            <p className="text-sm text-muted-foreground">In intake</p>
+            <CheckCircle2 size={18} className="text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-green-500">{acceptedRequests}</p>
-        </button>
-
-        <button
-          onClick={() => setStatusFilter("declined")}
-          className={`premium-card p-6 text-left transition-all ${
-            statusFilter === "declined" ? "ring-2 ring-gray-500" : ""
-          }`}
-        >
+          <p className="text-3xl font-bold text-foreground">{intakeCases.length}</p>
+        </div>
+        <div className="premium-card p-5">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Afgewezen</p>
-            <XCircle className="text-muted-foreground" size={20} />
+            <p className="text-sm text-muted-foreground">Gemiddelde wachttijd</p>
+            <Clock3 size={18} className="text-amber-500" />
           </div>
-          <p className="text-3xl font-bold text-muted-foreground">{declinedRequests}</p>
-        </button>
-
-        <div className="premium-card p-6">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Capaciteit beschikbaar</p>
-            <Clock className="text-blue-500" size={20} />
-          </div>
-          <p className="text-3xl font-bold text-blue-500">2/30</p>
+          <p className="text-3xl font-bold text-foreground">
+            {visibleCases.length > 0
+              ? Math.round(visibleCases.reduce((total, caseItem) => total + caseItem.wachttijd, 0) / visibleCases.length)
+              : 0}
+            <span className="ml-1 text-base font-medium text-muted-foreground">dagen</span>
+          </p>
         </div>
       </div>
 
-      {/* NEW REQUESTS (Priority) */}
-      {(statusFilter === "all" || statusFilter === "new") && newRequests > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-foreground">Nieuwe verzoeken</h2>
-            <span className="px-3 py-1 rounded-full bg-red-500/10 text-red-500 text-sm font-semibold">
-              {newRequests} nieuw
-            </span>
-          </div>
+      <div className="relative max-w-md">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+        <input
+          type="text"
+          placeholder="Zoek op casus, regio of zorgtype"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          className="w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
 
-          <div className="space-y-3">
-            {newRequestCases.map((caseItem, index) => (
+      {feedback && (
+        <div className="rounded-2xl border border-border bg-card/70 px-4 py-3 text-sm text-foreground">
+          {feedback}
+        </div>
+      )}
+
+      {loading && (
+        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
+          <Loader2 size={18} className="animate-spin" />
+          <span>Laden…</span>
+        </div>
+      )}
+
+      {!loading && error && (
+        <div className="premium-card p-6 text-sm text-destructive">
+          Fout bij laden: {error}
+        </div>
+      )}
+
+      {!loading && !error && visibleCases.length === 0 && (
+        <div className="premium-card p-8 text-center text-sm text-muted-foreground">
+          {view === "requests"
+            ? "Er staan momenteel geen open aanbiedersverzoeken klaar."
+            : "Er zijn nog geen casussen in deze fase."}
+        </div>
+      )}
+
+      {!loading && !error && visibleCases.length > 0 && (
+        <div className="space-y-3">
+          {visibleCases.map((caseItem) => {
+            const isPending = caseItem.status === "provider_beoordeling";
+            const isBusy = submittingCaseId === caseItem.id;
+
+            return (
               <div
                 key={caseItem.id}
-                className="premium-card p-6 hover:bg-card/80 transition-all cursor-pointer border-l-4 border-l-red-500"
-                onClick={() => onCaseClick(caseItem.id)}
+                className="premium-card p-6 transition-all hover:bg-card/80"
               >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-bold text-foreground">{caseItem.id}</h3>
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <h2 className="text-lg font-semibold text-foreground">{caseItem.title || `Casus ${caseItem.id}`}</h2>
                       <UrgencyBadge urgency={caseItem.urgency} />
-                      <span className="px-2 py-1 rounded-full bg-blue-500/10 text-blue-500 text-xs font-semibold">
-                        NIEUW
+                      <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
+                        {isPending ? "IN BEOORDELING" : "INTAKE / PLAATSING"}
                       </span>
                     </div>
+
                     <p className="text-sm text-muted-foreground">
-                      Gemeente {caseItem.region} · {caseItem.caseType} · {caseItem.clientAge} jaar
+                      Casus #{caseItem.id} · {caseItem.regio || "Onbekende regio"} · {caseItem.zorgtype || "Onbekend zorgtype"}
                     </p>
+
+                    <p className="max-w-3xl text-sm text-foreground/85">
+                      {caseItem.systemInsight || "Geen aanvullende toelichting beschikbaar."}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                      <span className="rounded-full bg-muted px-2.5 py-1">Wachttijd: {caseItem.wachttijd} dagen</span>
+                      <span className="rounded-full bg-muted px-2.5 py-1">Volgende stap: {caseItem.recommendedAction}</span>
+                    </div>
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Ontvangen: {caseItem.lastActivity}
-                  </p>
-                </div>
 
-                <div className="mb-4">
-                  <p className="text-sm text-foreground mb-2">
-                    <span className="font-semibold">Match score:</span> <span className="text-green-500 font-bold">{92 - index * 7}%</span>
-                  </p>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 size={14} className="text-green-500" />
-                    <span>Specialisme match</span>
-                    <CheckCircle2 size={14} className="text-green-500" />
-                    <span>Leeftijd match</span>
-                    <CheckCircle2 size={14} className="text-green-500" />
-                    <span>Locatie match</span>
+                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                    <Button variant="outline" onClick={() => onCaseClick(caseItem.id)}>
+                      Bekijk casus
+                    </Button>
+                    {isPending && (
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={() => handleDecision(caseItem.id, "REJECTED")}
+                          disabled={isBusy}
+                        >
+                          <XCircle size={16} className="mr-2" />
+                          Afwijzen
+                        </Button>
+                        <Button onClick={() => handleDecision(caseItem.id, "APPROVED")} disabled={isBusy}>
+                          {isBusy ? <Loader2 size={16} className="mr-2 animate-spin" /> : <CheckCircle2 size={16} className="mr-2" />}
+                          Accepteren
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-
-                <div className="flex items-center gap-3">
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCaseClick(caseItem.id);
-                    }}
-                  >
-                    <CheckCircle2 size={18} className="mr-2" />
-                    Accepteer
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onCaseClick(caseItem.id);
-                    }}
-                  >
-                    Bekijk details
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setDeclinedRequestIds((previous) => [...previous, caseItem.id]);
-                    }}
-                  >
-                    <XCircle size={18} className="mr-2" />
-                    Afwijzen
-                  </Button>
-                </div>
               </div>
-            ))}
-
-            {newRequestCases.length === 0 && (
-              <div className="premium-card p-6 text-center text-sm text-muted-foreground">
-                Geen nieuwe intakeverzoeken.
-              </div>
-            )}
-          </div>
+            );
+          })}
         </div>
       )}
 
-      {/* SEARCH */}
-      <div className="space-y-3">
-        <h2 className="text-lg font-bold text-foreground">Geaccepteerde casussen</h2>
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <input
-            type="text"
-            placeholder="Zoek op naam, casus ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-      </div>
-
-      {loading && <div className="flex items-center justify-center py-12 text-muted-foreground gap-2"><Loader2 size={18} className="animate-spin" /><span>Laden…</span></div>}
-      {error && <div className="p-4 text-destructive">Fout bij laden: {error}</div>}
-      {/* ACCEPTED CASES LIST */}
-      {(statusFilter === "all" || statusFilter === "accepted") && (
-      <div className="space-y-3">
-        {filteredCases.map((caseData) => (
-          <div
-            key={caseData.id}
-            className="premium-card p-6 hover:bg-card/80 transition-all cursor-pointer"
-            onClick={() => onCaseClick(caseData.id)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="font-bold text-foreground">{caseData.id}</h3>
-                  <UrgencyBadge urgency={caseData.urgency} />
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    caseData.status === "intake" 
-                      ? "bg-blue-500/10 text-blue-500" 
-                      : "bg-purple-500/10 text-purple-500"
-                  }`}>
-                    {caseData.status === "intake" ? "INTAKE GEPLAND" : "IN VOORBEREIDING"}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  {caseData.region} · {caseData.clientAge} jaar · Geaccepteerd op {new Date().toLocaleDateString('nl-NL')}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-sm">
-              <Button variant="outline" size="sm">
-                Bekijk details
-              </Button>
-              <Button variant="outline" size="sm">
-                Documenten
-              </Button>
-            </div>
-          </div>
-        ))}
-      </div>
-      )}
-
-      {statusFilter === "declined" && (
-        <div className="premium-card p-6 text-sm text-muted-foreground">
-          {declinedRequestIds.length > 0
-            ? `${declinedRequestIds.length} verzoek(en) afgewezen in deze sessie.`
-            : "Nog geen afgewezen verzoeken in deze sessie."}
-        </div>
-      )}
-
-      {/* INFO BOX */}
-      <div className="premium-card p-6 bg-blue-500/5 border-blue-500/20">
+      <div className="premium-card border-blue-500/20 bg-blue-500/5 p-6">
         <div className="flex items-start gap-4">
-          <div className="p-2 rounded-lg bg-blue-500/10">
-            <CheckCircle2 className="text-blue-500" size={24} />
+          <div className="rounded-lg bg-blue-500/10 p-2">
+            <CheckCircle2 className="text-blue-500" size={22} />
           </div>
           <div>
-            <p className="font-semibold text-foreground mb-1">Intake verzoeken</p>
+            <p className="font-semibold text-foreground mb-1">Workflow</p>
             <p className="text-sm text-muted-foreground">
-              Nieuwe intake verzoeken van gemeentes worden hier getoond. Bekijk de match score en casus details
-              voordat u accepteert of afwijst.
+              Accepteren zet de casus door naar plaatsing en intake. Afwijzen stuurt de casus terug naar matching zodat de gemeente een andere aanbieder kan kiezen.
             </p>
           </div>
         </div>

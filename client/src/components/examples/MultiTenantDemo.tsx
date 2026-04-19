@@ -8,12 +8,11 @@
  * - Platform-level multi-tenancy
  */
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { TopBar } from "../navigation/TopBar";
 import { Sidebar } from "../navigation/Sidebar";
 import { RegiekamerControlCenter } from "../care/RegiekamerControlCenter";
 import { RegiosPage } from "../care/RegiosPage";
-import { AssessmentQueuePage } from "../care/AssessmentQueuePage";
 import { MatchingPageWrapper } from "../care/MatchingPageWrapper";
 import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
 import { IntakeListPage } from "../care/IntakeListPage";
@@ -72,9 +71,10 @@ type Page =
   | "regiekamer" 
   | "casussen" 
   | "nieuwe-casus"
-  | "beoordelingen"
+    | "nieuwe-aanvragen"
   | "matching"
   | "plaatsingen"
+    | "plaatsingsreacties"
   | "acties"
   | "zorgaanbieders"
   | "gemeenten"
@@ -121,7 +121,7 @@ function getInitialPageFromPath(pathname: string): Page {
     return "instellingen";
   }
   if (pathname.startsWith("/care/beoordelingen/")) {
-    return "beoordelingen";
+    return "matching";
   }
   if (pathname.startsWith("/care/matching/")) {
     return "matching";
@@ -148,9 +148,10 @@ function getInitialPageFromLocation(): Page {
     "regiekamer",
     "casussen",
     "nieuwe-casus",
-    "beoordelingen",
+    "nieuwe-aanvragen",
     "matching",
     "plaatsingen",
+    "plaatsingsreacties",
     "acties",
     "zorgaanbieders",
     "gemeenten",
@@ -166,8 +167,9 @@ function getInitialPageFromLocation(): Page {
   ]);
 
   if (requestedPage && allowedPages.has(requestedPage)) {
-    return requestedPage as Page;
+      return requestedPage as Page;
   }
+  setCurrentPage(current.type === "gemeente" ? "regiekamer" : current.type === "zorgaanbieder" ? "nieuwe-aanvragen" : "regiekamer");
 
   return getInitialPageFromPath(window.location.pathname);
 }
@@ -202,9 +204,22 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
   const [currentPage, setCurrentPage] = useState<Page>(() => getInitialPageFromLocation());
   const [selectedCase, setSelectedCase] = useState<string | null>(() => getInitialSelectedCaseFromLocation());
+  const [matchingInitialCaseId, setMatchingInitialCaseId] = useState<string | null>(null);
+  const [placementInitialCaseId, setPlacementInitialCaseId] = useState<string | null>(null);
   const { cases } = useCases({ q: "" });
   const { providers } = useProviders({ q: "" });
   const workflowCases = buildWorkflowCases(cases, providers);
+  const activeCaseContext = useMemo(() => {
+    if (!selectedCase) return null;
+    const activeCase = workflowCases.find((item) => item.id === selectedCase);
+    if (!activeCase) return null;
+
+    return {
+      region: activeCase.region,
+      careType: activeCase.careType,
+      urgency: activeCase.urgencyLabel,
+    };
+  }, [workflowCases, selectedCase]);
   const queueCounts = {
     casussen: workflowCases.filter((casus) => casus.phase !== "afgerond").length,
     beoordelingen: workflowCases.filter((casus) => casus.phase === "intake" || casus.phase === "beoordeling").length,
@@ -234,24 +249,55 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     setCurrentPage(nextPage);
     // Reset case/provider selection when navigating
     setSelectedCase(null);
+    setMatchingInitialCaseId(null);
+    setPlacementInitialCaseId(null);
     window.history.replaceState(null, "", buildDashboardUrl(nextPage, null));
   };
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
-    // Don't change the page, just show the case detail overlay
+    window.history.replaceState(null, "", buildDashboardUrl("casussen", caseId));
+  };
+
+  const handleAssessmentCaseClick = (caseId: string) => {
+    setCurrentPage("matching");
+    setMatchingInitialCaseId(caseId);
+    setSelectedCase(null);
+    window.history.replaceState(null, "", buildDashboardUrl("matching", null));
+  };
+
+  const handleCaseCreated = (caseId: string) => {
+    setCurrentPage("casussen");
+    setSelectedCase(caseId);
     window.history.replaceState(null, "", buildDashboardUrl("casussen", caseId));
   };
 
   const handleCloseCaseDetail = () => {
+    const targetPage = currentPage === "matching" || currentPage === "plaatsingen" ? currentPage : "casussen";
     setSelectedCase(null);
-    window.history.replaceState(null, "", buildDashboardUrl("casussen", null));
+    window.history.replaceState(null, "", buildDashboardUrl(targetPage, null));
   };
 
   const handleStartMatching = (caseId: string) => {
-    void caseId;
+    setMatchingInitialCaseId(caseId);
     setSelectedCase(null);
     setCurrentPage("matching");
+    window.history.replaceState(null, "", buildDashboardUrl("matching", null));
+  };
+
+  const handleEditCase = (caseId: string) => {
+    // Navigate to case edit page or open modal
+    // For now, just log the action - parent can implement specific edit behavior
+    console.log("Edit case:", caseId);
+    // Could navigate to: setCurrentPage("edit-case") or open an edit modal
+  };
+
+  const handleCloseCase = (caseId: string) => {
+    // Close/archive the case
+    // For now, just log the action - parent can implement specific close behavior
+    console.log("Close case:", caseId);
+    // Could show confirmation dialog, then navigate back: setSelectedCase(null)
+    setSelectedCase(null);
   };
 
   const handleProviderSelect = (providerId: string) => {
@@ -344,20 +390,31 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 {currentPage === "nieuwe-casus" && (
                   <NieuweCasusPage
                     onCancel={() => setCurrentPage("casussen")}
-                    onCreated={() => setCurrentPage("casussen")}
+                    onCreated={handleCaseCreated}
                   />
                 )}
 
-                {currentPage === "beoordelingen" && (
-                  <AssessmentQueuePage onCaseClick={handleCaseClick} onNavigateToCasussen={() => setCurrentPage("casussen")} />
-                )}
-
                 {currentPage === "matching" && (
-                  <MatchingPageWrapper onNavigateToCasussen={() => setCurrentPage("casussen")} />
+                  <MatchingPageWrapper
+                    initialCaseId={matchingInitialCaseId}
+                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                    onProviderReviewStarted={(caseId) => {
+                      setMatchingInitialCaseId(null);
+                      setCurrentPage("casussen");
+                      setSelectedCase(caseId);
+                      window.history.replaceState(null, "", buildDashboardUrl("casussen", caseId));
+                    }}
+                  />
                 )}
 
                 {currentPage === "plaatsingen" && (
-                  <PlacementPageWrapper onNavigateToMatching={() => setCurrentPage("matching")} />
+                  <PlacementPageWrapper
+                    initialCaseId={placementInitialCaseId}
+                    onNavigateToMatching={() => {
+                      setPlacementInitialCaseId(null);
+                      setCurrentPage("matching");
+                    }}
+                  />
                 )}
 
                 {currentPage === "acties" && (
@@ -365,7 +422,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "zorgaanbieders" && (
-                  <ZorgaanbiedersPage theme={theme} />
+                  <ZorgaanbiedersPage theme={theme} activeCaseContext={activeCaseContext} />
                 )}
 
                 {currentPage === "gemeenten" && (
@@ -408,8 +465,24 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
             {/* ZORGAANBIEDER PAGES */}
             {currentContext.type === "zorgaanbieder" && (
               <>
+                {currentPage === "nieuwe-aanvragen" && (
+                  <IntakeListPage
+                    view="requests"
+                    onCaseClick={handleCaseClick}
+                    onRequestApproved={(caseId) => {
+                      setCurrentPage("intake");
+                      setSelectedCase(caseId);
+                      window.history.replaceState(null, "", buildDashboardUrl("intake", caseId));
+                    }}
+                  />
+                )}
+
+                {currentPage === "plaatsingsreacties" && (
+                  <IntakeListPage view="responses" onCaseClick={handleCaseClick} />
+                )}
+
                 {currentPage === "intake" && (
-                  <IntakeListPage onCaseClick={handleCaseClick} />
+                  <IntakeListPage view="intake" onCaseClick={handleCaseClick} />
                 )}
 
                 {currentPage === "mijn-casussen" && (
@@ -477,30 +550,49 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   </div>
                 )}
 
-                {/* Other admin pages... */}
-                {(currentPage === "casussen" || currentPage === "beoordelingen" || currentPage === "matching" || currentPage === "plaatsingen" || currentPage === "acties" || currentPage === "signalen") && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Admin view - all organizations
-                      </p>
-                    </div>
-                    
-                    <div className="premium-card p-12 text-center">
-                      <p className="text-muted-foreground">
-                        Admin page - showing data across all organizations
-                      </p>
-                    </div>
-                  </div>
+                {/* Shared workflow pages (same real components as gemeente) */}
+                {currentPage === "casussen" && (
+                  <CasussenWorkflowPage onCaseClick={handleCaseClick} />
+                )}
+
+                {currentPage === "matching" && (
+                  <MatchingPageWrapper
+                    initialCaseId={matchingInitialCaseId}
+                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                    onProviderReviewStarted={(caseId) => {
+                      setMatchingInitialCaseId(null);
+                      setCurrentPage("casussen");
+                      setSelectedCase(caseId);
+                      window.history.replaceState(null, "", buildDashboardUrl("casussen", caseId));
+                    }}
+                  />
+                )}
+
+                {currentPage === "plaatsingen" && (
+                  <PlacementPageWrapper
+                    initialCaseId={placementInitialCaseId}
+                    onNavigateToMatching={() => {
+                      setPlacementInitialCaseId(null);
+                      setCurrentPage("matching");
+                    }}
+                  />
+                )}
+
+                {currentPage === "acties" && (
+                  <ActiesPage onCaseClick={handleCaseClick} />
+                )}
+
+                {currentPage === "signalen" && (
+                  <SignalenPage
+                    onOpenCase={handleCaseClick}
+                    onNavigateToWorkflow={(target) => setCurrentPage(target as Page)}
+                  />
                 )}
 
                 {currentPage === "nieuwe-casus" && (
                   <NieuweCasusPage
                     onCancel={() => setCurrentPage("casussen")}
-                    onCreated={() => setCurrentPage("casussen")}
+                    onCreated={handleCaseCreated}
                   />
                 )}
 
@@ -528,9 +620,16 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 onBack={handleCloseCaseDetail}
                 onStartMatching={handleStartMatching}
                 onOpenWorkflow={(page) => {
+                  if (page === "matching") {
+                    setMatchingInitialCaseId(selectedCase);
+                  } else {
+                    setMatchingInitialCaseId(null);
+                  }
                   setSelectedCase(null);
                   setCurrentPage(page as Page);
                 }}
+                onEditCase={handleEditCase}
+                onCloseCase={handleCloseCase}
               />
             </div>
           </div>
