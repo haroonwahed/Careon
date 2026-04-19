@@ -5,41 +5,54 @@
 
 {% block body %}
 <div class="auth-layout auth-shell">
-    <!-- Left marketing panel -->
     <div class="auth-marketing-panel login-panel-left">
         <div class="login-divider"></div>
         <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full login-glow-large"></div>
         <div class="absolute bottom-1/4 left-1/4 w-48 h-48 rounded-full login-glow-small"></div>
-        <div class="relative z-10 px-12 max-w-lg">
-            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 login-icon-tile">
+        <div class="auth-marketing-copy">
+            <div class="auth-kicker">
+                <span class="auth-kicker-dot"></span>
+                Veilige toegang
+            </div>
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center login-icon-tile">
                 <svg class="w-7 h-7 login-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </div>
-            <h2 class="text-3xl font-bold mb-4 leading-tight login-title">Bescherm je zorgregie.<br>Versterk je team.</h2>
-            <p class="text-[15px] leading-relaxed login-subtitle">Careon biedt het complete platform om casussen overzichtelijk, veilig en effectief te regisseren.</p>
-            <div class="mt-12 space-y-5">
-                <div class="flex items-center gap-3.5">
+            <div>
+                <h2 class="login-title">Bescherm je zorgregie. Versterk je team.</h2>
+                <p class="login-subtitle">CareOn biedt hetzelfde heldere systeem als de Regiekamer voor veilige toegang, consistente werkflows en direct begrip van wat de volgende stap is.</p>
+            </div>
+            <div class="auth-feature-list">
+                <div class="auth-feature-row">
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 login-check-bg">
                         <svg class="w-4 h-4 login-check-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
-                    <span class="text-sm login-feature-text">Beheer aanbieders, configuraties en casussen</span>
+                    <div class="auth-feature-copy">
+                        <p class="auth-feature-title">Beheer aanbieders, configuraties en casussen</p>
+                        <p class="auth-feature-meta">Start direct in dezelfde operationele structuur als de Regiekamer.</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-3.5">
+                <div class="auth-feature-row">
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 login-check-bg">
                         <svg class="w-4 h-4 login-check-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
-                    <span class="text-sm login-feature-text">Beheer deadlines, herinneringen en opvolgflows</span>
+                    <div class="auth-feature-copy">
+                        <p class="auth-feature-title">Werk vanuit deadlines en opvolgflows</p>
+                        <p class="auth-feature-meta">Dezelfde nadruk op prioriteit, signalen en vervolgstappen.</p>
+                    </div>
                 </div>
-                <div class="flex items-center gap-3.5">
+                <div class="auth-feature-row">
                     <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 login-check-bg">
                         <svg class="w-4 h-4 login-check-icon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     </div>
-                    <span class="text-sm login-feature-text">Geautomatiseerde signalering en privacybewaking</span>
+                    <div class="auth-feature-copy">
+                        <p class="auth-feature-title">Geautomatiseerde signalering en privacybewaking</p>
+                        <p class="auth-feature-meta">Vertrouwen, auditability en rolgrenzen zitten standaard in de flow.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Right sign-in panel -->
     <div class="auth-form-panel login-panel-right">
         <div class="auth-form-container">
             <div class="flex items-center justify-between mb-10">
@@ -56,8 +69,9 @@
                 </button>
             </div>
 
+            <div class="auth-panel-eyebrow">Inloggen</div>
             <h1 class="text-2xl font-bold mb-1.5 login-title">Welkom terug</h1>
-            <p class="text-sm mb-8 login-subtitle">Log in op je account om door te gaan</p>
+            <p class="text-sm mb-8 login-subtitle">Log in om door te gaan naar je Regiekamer en openstaande werkstroom.</p>
 
             {% if form.errors %}
             <div class="mb-6 p-4 rounded-xl auth-error-box">
@@ -109,11 +123,11 @@
             {% endwith %}
             {% endif %}
 
-            <div class="mt-8 text-center">
-                <p class="text-sm login-subtitle">
-                    Nog geen account?
-                    <a href="{% url 'register' %}" class="font-semibold transition-colors duration-200 auth-link-primary">Maak gratis een account</a>
-                </p>
+            <div class="auth-form-meta">
+                <div class="auth-helper-row">
+                    <p class="auth-form-note">Nog geen account? <a href="{% url 'register' %}" class="auth-link-primary">Maak gratis een account</a></p>
+                    <a href="/" class="auth-page-link">Terug naar home</a>
+                </div>
             </div>
         </div>
     </div>

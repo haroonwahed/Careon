@@ -16,26 +16,24 @@ import {
   Filter,
   AlertTriangle,
   Clock,
-  Users,
-  TrendingUp,
   ChevronRight,
   CheckCircle2,
   AlertCircle,
   ArrowRight,
   MapPin,
-  ClipboardList,
   Siren,
-  Activity,
   BrainCircuit
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { ActionPanel, type ActionPanelItem } from "../ui/ActionPanel";
 import { useCases } from "../../hooks/useCases";
 import type { Casus, CasusPhase } from "../../lib/phaseEngine";
 import {
   buildRegiekamerDecisionSummary,
   type RegiekamerFilterTarget,
   type RegiekamerPriorityCard,
+  type RegiekamerViewTarget,
 } from "../../lib/regiekamerDecisionEngine";
 import {
   buildRegiekamerPredictiveSummary,
@@ -45,9 +43,10 @@ import {
 
 interface RegiekamerControlCenterProps {
   onCaseClick: (caseId: string) => void;
+  onNavigateToView?: (view: RegiekamerViewTarget) => void;
 }
 
-export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenterProps) {
+export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: RegiekamerControlCenterProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -68,6 +67,10 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
     target_filter: RegiekamerFilterTarget;
     target_region?: string;
   }) => {
+    if (onNavigateToView) {
+      onNavigateToView(target.target_view as RegiekamerViewTarget);
+    }
+
     const filter = target.target_filter;
 
     if (filter) {
@@ -154,7 +157,45 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         setActiveKPIFilter("placement");
       }
     }
-  ].map((stage) => ({ ...stage, isBottleneck: stage.id === decisionSummary.bottleneck_stage }));
+  ];
+
+  const stageWaiting = {
+    casussen: 0,
+    beoordelingen: 0,
+    matching: 0,
+    plaatsingen: 0,
+  };
+
+  const stageCases = {
+    casussen: casusList.filter((c) => c.phase === "intake_initial"),
+    beoordelingen: casusList.filter((c) => c.phase === "beoordeling" || !c.assessment.isComplete),
+    matching: casusList.filter((c) => c.phase === "matching" || c.phase === "geblokkeerd"),
+    plaatsingen: casusList.filter((c) => c.phase === "plaatsing"),
+  };
+
+  (Object.keys(stageCases) as Array<keyof typeof stageCases>).forEach((stage) => {
+    const list = stageCases[stage];
+    stageWaiting[stage] = list.length
+      ? Math.round(list.reduce((sum, caseItem) => sum + caseItem.waitingDays, 0) / list.length)
+      : 0;
+  });
+
+  const highestCountStage = flowStages
+    .slice()
+    .sort((a, b) => b.count - a.count)[0]?.id as keyof typeof stageWaiting | undefined;
+
+  const longestWaitStage = (Object.entries(stageWaiting) as Array<[keyof typeof stageWaiting, number]>)
+    .sort((a, b) => b[1] - a[1])[0]?.[0];
+
+  const workflowBottleneckStage =
+    longestWaitStage && stageWaiting[longestWaitStage] > 7
+      ? longestWaitStage
+      : highestCountStage ?? decisionSummary.bottleneck_stage;
+
+  const clickableFlowStages = flowStages.map((stage) => ({
+    ...stage,
+    isBottleneck: stage.id === workflowBottleneckStage,
+  }));
 
   const casesWithoutMatchCard = getPriorityCard("casussen_zonder_match");
   const openAssessmentsCard = getPriorityCard("open_beoordelingen");
@@ -162,6 +203,74 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
   const placementsInProgressCard = getPriorityCard("plaatsingen_bezig");
   const avgWaitingTimeCard = getPriorityCard("gem_wachttijd");
   const capacityIssuesCard = getPriorityCard("capaciteitstekorten");
+
+  const criticalActionCount = (casesWithoutMatchCard?.value ?? 0) + (waitingOverdueCard?.value ?? 0);
+  const warningActionCount = (openAssessmentsCard?.value ?? 0) + (placementsInProgressCard?.value ?? 0);
+  const commandTone = criticalActionCount > 0 ? "critical" : warningActionCount > 0 ? "warning" : "good";
+  const commandStateLine =
+    commandTone === "critical"
+      ? `${criticalActionCount} casussen vereisen directe actie`
+      : commandTone === "warning"
+        ? `${warningActionCount} casussen vragen opvolging`
+        : "Doorstroom stabiel - geen directe blokkades";
+
+  const actionBreakdown: string[] = [];
+  if ((casesWithoutMatchCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${casesWithoutMatchCard?.value} zonder match`);
+  }
+  if ((waitingOverdueCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${waitingOverdueCard?.value} wachttijd overschreden`);
+  }
+  if ((openAssessmentsCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${openAssessmentsCard?.value} open beoordelingen`);
+  }
+  if ((placementsInProgressCard?.value ?? 0) > 0) {
+    actionBreakdown.push(`${placementsInProgressCard?.value} plaatsingen bezig`);
+  }
+  const commandSummaryLine =
+    actionBreakdown.length > 0
+      ? actionBreakdown.slice(0, 2).join(", ")
+      : "Alle kernindicatoren zijn stabiel";
+
+  const actionPanelItems: ActionPanelItem[] = [
+    {
+      key: "casussen-zonder-match",
+      title: `${casesWithoutMatchCard?.value ?? 0} Casussen zonder match (>48u)`,
+      description: "Casussen in matching zonder passende aanbieder",
+      count: casesWithoutMatchCard?.value ?? 0,
+      severity: (casesWithoutMatchCard?.value ?? 0) > 0 ? "critical" : "stable",
+      ctaLabel: "Ga naar Matching",
+      onSelect: () => applyDecisionTarget(casesWithoutMatchCard?.action ?? { target_view: "matching", target_filter: "noMatch" }),
+    },
+    {
+      key: "open-beoordelingen",
+      title: `${openAssessmentsCard?.value ?? 0} Open beoordelingen`,
+      description: "Wacht op afronding voordat matching kan starten",
+      count: openAssessmentsCard?.value ?? 0,
+      severity: (openAssessmentsCard?.value ?? 0) > 0 ? "warning" : "stable",
+      ctaLabel: "Ga naar Beoordelingen",
+      onSelect: () => applyDecisionTarget(openAssessmentsCard?.action ?? { target_view: "beoordelingen", target_filter: "assessment" }),
+    },
+    {
+      key: "wachttijd-overschreden",
+      title: `${waitingOverdueCard?.value ?? 0} Wachttijd overschreden`,
+      description: "Casussen boven normtijd, direct prioriteren",
+      count: waitingOverdueCard?.value ?? 0,
+      severity: (waitingOverdueCard?.value ?? 0) > 0 ? "critical" : "stable",
+      ctaLabel: "Ga naar Casussen",
+      onSelect: () => applyDecisionTarget(waitingOverdueCard?.action ?? { target_view: "casussen", target_filter: "waitingOverdue" }),
+    },
+    {
+      key: "plaatsingen-bezig",
+      title: `${placementsInProgressCard?.value ?? 0} Plaatsingen bezig`,
+      description: "Wachten op bevestiging of startmoment",
+      count: placementsInProgressCard?.value ?? 0,
+      severity: (placementsInProgressCard?.value ?? 0) > 0 ? "warning" : "stable",
+      ctaLabel: "Ga naar Plaatsingen",
+      showWhenZero: true,
+      onSelect: () => applyDecisionTarget(placementsInProgressCard?.action ?? { target_view: "plaatsingen", target_filter: "placement" }),
+    },
+  ];
 
   const filteredCases = useMemo(() => {
     return casusList
@@ -224,7 +333,27 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
     good: "command-bar-gradient-info"
   };
 
-  const predictiveImpactLabel = predictiveSummary.action_impact_summary.split(". ")[0];
+  const flowDiagnosticMeaning =
+    decisionSummary.bottleneck_stage === "beoordelingen"
+      ? "Beoordelingen blokkeren matching"
+      : decisionSummary.bottleneck_stage === "matching"
+        ? "Matching vertraagt door capaciteit of casusfit"
+        : decisionSummary.bottleneck_stage === "plaatsingen"
+          ? "Plaatsingen wachten op bevestiging"
+          : decisionSummary.bottleneck_stage === "casussen"
+            ? "Intake instroom vraagt opvolging"
+            : "Doorstroom in balans";
+
+  const secondarySignal = decisionSummary.signal_strips.find((signal) => {
+    const signalText = signal.text.toLowerCase();
+    const primaryText = commandStateLine.toLowerCase();
+    return !primaryText.includes(signalText);
+  }) ?? null;
+
+  const topForecastSignal = predictiveSummary.forecast_signals[0] ?? null;
+
+  const formatStageCount = (count: number, singular: string, plural: string) =>
+    `${count} ${count === 1 ? singular : plural}`;
 
   return (
     <div className="space-y-6 pb-24">
@@ -234,151 +363,119 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
           <h1 className="mb-2 text-3xl font-semibold text-foreground">
             Regiekamer
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Operationeel overzicht en directe acties
-          </p>
         </div>
       </div>
 
-      <section className={`premium-card command-bar-surface overflow-hidden border border-border ${commandToneStyles[decisionSummary.command_bar_summary.tone]}`}>
+      <section className={`premium-card command-bar-surface overflow-hidden border border-border ${commandToneStyles[commandTone]}`}>
         <div className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/70 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-              <Siren size={13} className={decisionSummary.command_bar_summary.tone === "critical" ? "text-red-base" : decisionSummary.command_bar_summary.tone === "warning" ? "text-yellow-base" : "text-blue-base"} />
+              <Siren size={13} className={commandTone === "critical" ? "text-red-base" : commandTone === "warning" ? "text-yellow-base" : "text-green-base"} />
               Commandocentrum
             </div>
             <h2 className="text-lg font-semibold tracking-tight text-foreground md:text-xl">
-              {decisionSummary.command_bar_summary.primary_message}
+              {commandStateLine}
             </h2>
-            <p className="text-sm font-medium text-foreground">
-              Actie: {decisionSummary.recommended_action.label}
+            <p className="text-sm text-muted-foreground">
+              {commandSummaryLine}
             </p>
-            <div className="mt-2 flex items-start gap-2 rounded-lg border border-border/70 bg-card/70 px-3 py-2">
-              <BrainCircuit size={15} className="mt-0.5 text-primary" />
-              <p className="text-xs text-muted-foreground">
-                Voorspelling: {predictiveImpactLabel}
-              </p>
-            </div>
           </div>
 
           <Button onClick={() => applyDecisionTarget(decisionSummary.recommended_action)} className="gap-2 self-start lg:self-center">
-            {decisionSummary.recommended_action.cta_label}
+            Ga naar acties
             <ArrowRight size={15} />
           </Button>
         </div>
       </section>
 
-      <section className="premium-card p-3">
-        <div className="flex flex-wrap items-center gap-2">
-          {flowStages.map((stage, index) => (
+      <section className="premium-card p-4">
+        <div className="grid grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] items-stretch gap-0">
+          {clickableFlowStages.map((stage, index) => (
             <Fragment key={stage.id}>
               <button
                 onClick={stage.onClick}
-                className={`flow-stage-chip flex items-center gap-2 rounded-xl border px-3 py-2 text-left transition-all hover:-translate-y-0.5 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${
+                className={`flow-stage-chip flex flex-col items-center justify-center rounded-xl border px-4 py-5 text-center transition-all hover:-translate-y-0.5 hover:border-primary/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${
                   stage.isBottleneck
-                    ? "flow-stage-bottleneck"
+                    ? "flow-stage-bottleneck shadow-md ring-1 ring-primary/30"
                     : activeKPIFilter === stage.filter
                       ? "border-primary/45 bg-primary/10"
                       : "border-border bg-card"
                 }`}
               >
-                <span className="text-lg font-semibold text-foreground">{stage.count}</span>
-                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{stage.label}</span>
+                <p className="text-3xl font-semibold text-foreground leading-none mb-1.5">{stage.count}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  {stage.isBottleneck ? `${stage.label} — Bottleneck` : stage.label}
+                </p>
               </button>
               {index < flowStages.length - 1 && (
-                <ChevronRight size={15} className="text-muted-foreground/70" />
+                <div className="flex items-center justify-center px-1">
+                  <ChevronRight size={18} className="text-muted-foreground/50" />
+                </div>
               )}
             </Fragment>
           ))}
         </div>
+        {decisionSummary.bottleneck_stage !== "none" && (
+          <p className="px-1 pt-3 text-xs text-muted-foreground">
+            {flowDiagnosticMeaning}
+          </p>
+        )}
       </section>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        <KPICard
-          label={casesWithoutMatchCard?.title || "Casussen zonder match"}
-          value={casesWithoutMatchCard?.value || 0}
-          context={casesWithoutMatchCard?.subtitle || "Vraagt handmatige opvolging"}
-          status={casesWithoutMatchCard?.severity || "critical"}
-          icon={<Users size={17} />}
-          active={activeKPIFilter === "noMatch"}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === "noMatch" ? null : "noMatch")}
-        />
-        <KPICard
-          label={openAssessmentsCard?.title || "Open beoordelingen"}
-          value={openAssessmentsCard?.value || 0}
-          context={openAssessmentsCard?.subtitle || "Blokkeren de volgende stap"}
-          status={openAssessmentsCard?.severity || "warning"}
-          icon={<ClipboardList size={17} />}
-          active={activeKPIFilter === "assessment"}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === "assessment" ? null : "assessment")}
-        />
-        <KPICard
-          label={waitingOverdueCard?.title || "Wachttijd overschreden"}
-          value={waitingOverdueCard?.value || 0}
-          context={waitingOverdueCard?.subtitle || "Overschrijden wachttijdnorm"}
-          status={waitingOverdueCard?.severity || "warning"}
-          icon={<Clock size={17} />}
-          active={activeKPIFilter === "waitingOverdue"}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === "waitingOverdue" ? null : "waitingOverdue")}
-        />
-        <KPICard
-          label={placementsInProgressCard?.title || "Plaatsingen bezig"}
-          value={placementsInProgressCard?.value || 0}
-          context={placementsInProgressCard?.subtitle || "Wachten op bevestiging"}
-          status={placementsInProgressCard?.severity || "info"}
-          icon={<TrendingUp size={17} />}
-          active={activeKPIFilter === "placement"}
-          onClick={() => setActiveKPIFilter(activeKPIFilter === "placement" ? null : "placement")}
-        />
-        <KPICard
-          label={avgWaitingTimeCard?.title || "Gem. wachttijd"}
-          value={avgWaitingTimeCard?.value || 0}
-          suffix={avgWaitingTimeCard?.suffix || "d"}
-          context={avgWaitingTimeCard?.subtitle || "Norm is 7 dagen"}
-          status={avgWaitingTimeCard?.severity || "warning"}
-          icon={<Activity size={17} />}
-          active={activeKPIFilter === "delayed"}
+      <ActionPanel items={actionPanelItems} />
+
+      <section className="grid gap-3 md:grid-cols-2">
+        <button
+          type="button"
           onClick={() => setActiveKPIFilter(activeKPIFilter === "delayed" ? null : "delayed")}
-        />
-        <KPICard
-          label={capacityIssuesCard?.title || "Capaciteitstekorten"}
-          value={capacityIssuesCard?.value || 0}
-          context={capacityIssuesCard?.subtitle || "Geen regionale piek gedetecteerd"}
-          status={capacityIssuesCard?.severity || "critical"}
-          icon={<MapPin size={17} />}
-          active={activeKPIFilter === "capacity"}
+          className={`rounded-xl border px-4 py-3 text-left transition-all hover:border-primary/45 hover:shadow-sm ${activeKPIFilter === "delayed" ? "border-primary/45 bg-primary/10" : "border-border bg-card"}`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gemiddelde wachttijd</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{avgWaitingTimeCard?.value ?? 0}{avgWaitingTimeCard?.suffix || "d"}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{(avgWaitingTimeCard?.value ?? 0) > 7 ? "Boven norm" : "Binnen norm"}</p>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveKPIFilter(activeKPIFilter === "capacity" ? null : "capacity")}
-        />
-      </div>
+          className={`rounded-xl border px-4 py-3 text-left transition-all hover:border-primary/45 hover:shadow-sm ${activeKPIFilter === "capacity" ? "border-primary/45 bg-primary/10" : "border-border bg-card"}`}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Capaciteitstekorten</p>
+          <p className="mt-1 text-xl font-semibold text-foreground">{capacityIssuesCard?.value ?? 0}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {decisionSummary.capacity_region ? `Druk in ${decisionSummary.capacity_region}` : "Geen regionale piek"}
+          </p>
+        </button>
+      </section>
 
       <section className="grid gap-3 md:grid-cols-1">
-        {decisionSummary.signal_strips.map((signal) => (
+        {secondarySignal ? (
           <button
-            key={signal.key}
-            onClick={() => applyDecisionTarget(signal.action)}
+            key={secondarySignal.key}
+            onClick={() => applyDecisionTarget(secondarySignal.action)}
             className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${
-              signal.tone === "critical"
+              secondarySignal.tone === "critical"
                 ? "border-red-border bg-red-light/60"
-                : signal.tone === "warning"
+                : secondarySignal.tone === "warning"
                   ? "border-yellow-border bg-yellow-light/65"
                   : "border-blue-border bg-blue-light/62"
             }`}
           >
             <span className="flex items-center gap-3">
               <span className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                signal.tone === "critical"
+                secondarySignal.tone === "critical"
                   ? "bg-red-light text-red-base"
-                  : signal.tone === "warning"
+                  : secondarySignal.tone === "warning"
                     ? "bg-yellow-light text-yellow-base"
                     : "bg-blue-light text-blue-base"
               }`}>
-                {signal.tone === "critical" ? <AlertTriangle size={15} /> : signal.tone === "warning" ? <Clock size={15} /> : <MapPin size={15} />}
+                {secondarySignal.tone === "critical" ? <AlertTriangle size={15} /> : secondarySignal.tone === "warning" ? <Clock size={15} /> : <MapPin size={15} />}
               </span>
-              <span className="text-sm font-medium text-foreground">{signal.text}</span>
+              <span className="text-sm font-medium text-foreground">{secondarySignal.text}</span>
             </span>
             <ChevronRight size={16} className="text-muted-foreground" />
           </button>
-        ))}
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-border bg-card p-4">
@@ -386,23 +483,20 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
           <BrainCircuit size={16} className="text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Predictieve signalen</h3>
         </div>
-        <div className="grid gap-2 lg:grid-cols-2">
-          {predictiveSummary.forecast_signals.length > 0 ? (
-            predictiveSummary.forecast_signals.map((signal) => (
-              <button
-                key={signal.key}
-                onClick={() => applyForecastSignal(signal)}
-                className={`rounded-xl border px-3 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${
-                  signal.severity === "critical"
-                    ? "border-red-border bg-red-light/55"
-                    : signal.severity === "warning"
-                      ? "border-yellow-border bg-yellow-light/60"
-                      : "border-blue-border bg-blue-light/55"
-                }`}
-              >
-                <p className="text-sm font-medium text-foreground">{signal.text}</p>
-              </button>
-            ))
+        <div>
+          {topForecastSignal ? (
+            <button
+              onClick={() => applyForecastSignal(topForecastSignal)}
+              className={`w-full rounded-xl border px-3 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm ${
+                topForecastSignal.severity === "critical"
+                  ? "border-red-border bg-red-light/55"
+                  : topForecastSignal.severity === "warning"
+                    ? "border-yellow-border bg-yellow-light/60"
+                    : "border-blue-border bg-blue-light/55"
+              }`}
+            >
+              <p className="text-sm font-medium text-foreground">{topForecastSignal.text}</p>
+            </button>
           ) : (
             <p className="text-sm text-muted-foreground">Geen voorspellende risicosignalen gevonden.</p>
           )}
@@ -581,61 +675,6 @@ function ActiveFilterChip({ label }: ActiveFilterChipProps) {
     <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
       {label}
     </span>
-  );
-}
-
-interface KPICardProps {
-  label: string;
-  value: number;
-  context: string;
-  status: "good" | "info" | "warning" | "critical";
-  icon: React.ReactNode;
-  active: boolean;
-  onClick: () => void;
-  suffix?: string;
-}
-
-function KPICard({ label, value, context, status, icon, active, onClick, suffix }: KPICardProps) {
-  const cardStyles = {
-    good: "border-green-border/60",
-    info: "border-blue-border/60",
-    warning: "border-yellow-border/60",
-    critical: "border-red-border/60"
-  };
-
-  const iconStyles = {
-    good: "text-green-base icon-surface",
-    info: "text-blue-base icon-surface",
-    warning: "text-yellow-base icon-surface",
-    critical: "text-red-base icon-surface"
-  };
-
-  return (
-    <button
-      onClick={onClick}
-      className={`kpi-card rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 ${cardStyles[status]} ${active ? "ring-2 ring-primary/35" : ""}`}
-    >
-      <div className="flex items-start justify-between gap-3 mb-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground flex-1">
-          {label}
-        </p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span className={`flex h-8 w-8 items-center justify-center rounded-xl ${iconStyles[status]}`}>
-            {icon}
-          </span>
-          {active && <span className="h-2 w-2 rounded-full bg-primary" />}
-        </div>
-      </div>
-
-      <div>
-        <p className="text-2xl font-semibold text-foreground">
-          {value}{suffix || ""}
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-          {context}
-        </p>
-      </div>
-    </button>
   );
 }
 

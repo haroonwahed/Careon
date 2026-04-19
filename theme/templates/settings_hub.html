@@ -11,6 +11,28 @@
     </div>
 
     <div class="settings-grid">
+        <form method="post" action="{% url 'design_mode_settings' %}" class="settings-card-link">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'settings_hub' %}">
+            <div class="settings-card-head">
+                <h2 class="settings-card-title">Ontwerpmodus</h2>
+            </div>
+            <p class="settings-card-copy">De moderne workspace is de standaardinterface voor alle gebruikers.</p>
+
+            <div class="ds-radio-group" style="display: grid; gap: 8px; margin-top: 12px;">
+                <label class="ds-radio-option" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="radio" name="design_mode" value="spa" {% if design_mode == 'spa' %}checked{% endif %}>
+                    <span>Modern workspace (aanbevolen)</span>
+                </label>
+            </div>
+
+            <div style="margin-top: 12px;">
+                <button type="submit" class="app-nav-link is-active" style="display: inline-flex; border: 0; cursor: pointer;">
+                    Ontwerpmodus opslaan
+                </button>
+            </div>
+        </form>
+
         <a href="{% url 'profile' %}" class="settings-card-link">
             <div class="settings-card-head">
                 <h2 class="settings-card-title">Profiel</h2>
@@ -40,4 +62,12 @@
         </a>
     </div>
 </div>
+
+<script>
+    try {
+        window.localStorage.setItem("careon-design-mode", "{{ design_mode|default:'spa' }}");
+    } catch (e) {
+        // Ignore localStorage write errors (private mode or disabled storage).
+    }
+</script>
 {% endblock %}

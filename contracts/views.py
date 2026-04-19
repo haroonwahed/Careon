@@ -13,7 +13,7 @@ from django.contrib.auth import login
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
-from django.http import HttpResponse, HttpResponseForbidden
+from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.conf import settings
 from django.db import models, connection, DatabaseError
 from django.utils.dateparse import parse_date
@@ -24,6 +24,7 @@ from collections import defaultdict
 from decimal import Decimal
 from math import asin, cos, radians, sin, sqrt
 import csv
+import json
 import logging
 
 from .forms import (
@@ -79,6 +80,9 @@ from .governance import (
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
+# Temporary blocker: active matching flow still depends on legacy_backend module.
+# Keep until a non-legacy matching service is introduced and migrated here.
+from .provider_matching_service import MatchContext, MatchEngine
 from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
@@ -108,6 +112,10 @@ AUTO_INTAKE_TASKS = {
         'source': Deadline.GenerationSource.MATCHING,
     },
 }
+
+DESIGN_MODE_SESSION_KEY = 'careon_design_mode'
+DESIGN_MODE_SPA = 'spa'
+VALID_DESIGN_MODES = {DESIGN_MODE_SPA}
 
 
 def _resolve_deadline_case(deadline):
@@ -676,7 +684,285 @@ def _build_case_intelligence_context(
     }
 
 
+def _build_match_context_from_intake(intake, organization):
+    region_ref = ''
+    if getattr(intake, 'regio', None):
+        region_ref = intake.regio.region_code or intake.regio.region_name or ''
+    elif getattr(intake, 'preferred_region', None):
+        region_ref = intake.preferred_region.region_code or intake.preferred_region.region_name or ''
+
+    gemeente_name = ''
+    if getattr(intake, 'gemeente', None):
+        gemeente_name = intake.gemeente.municipality_name
+
+    problematiek = list(getattr(intake, 'problematiek_types', []) or [])
+    contra_indicaties = [
+        token.strip() for token in str(getattr(intake, 'contra_indicaties', '') or '').split(',') if token.strip()
+    ]
+
+    return MatchContext(
+        zorgvorm=(getattr(intake, 'zorgvorm_gewenst', '') or intake.preferred_care_form or '').lower(),
+        leeftijd=getattr(intake, 'leeftijd', None),
+        regio=(region_ref or '').strip(),
+        gemeente=(gemeente_name or '').strip(),
+        complexiteit=(intake.complexity or '').lower(),
+        urgentie=(intake.urgency or '').lower(),
+        problematiek=problematiek,
+        crisisopvang_vereist=(intake.urgency == CaseIntakeProcess.Urgency.CRISIS),
+        setting_voorkeur=getattr(intake, 'setting_voorkeur', '') or '',
+        contra_indicaties=contra_indicaties,
+        max_toelaatbare_wachttijd_dagen=getattr(intake, 'max_toelaatbare_wachttijd_dagen', None),
+        organization=organization,
+    )
+
+
+def _region_pressure_summary(*, intake, provider_profiles, region_id):
+    if not region_id:
+        return {
+            'status': 'onbekend',
+            'message': 'Regionale druk niet volledig bepaalbaar',
+        }
+
+    active_statuses = {
+        CaseIntakeProcess.ProcessStatus.INTAKE,
+        CaseIntakeProcess.ProcessStatus.ASSESSMENT,
+        CaseIntakeProcess.ProcessStatus.MATCHING,
+        CaseIntakeProcess.ProcessStatus.DECISION,
+    }
+    active_cases = CaseIntakeProcess.objects.filter(
+        organization=intake.organization,
+        status__in=active_statuses,
+    ).filter(Q(regio_id=region_id) | Q(preferred_region_id=region_id)).count()
+
+    regional_profiles = [
+        profile for profile in provider_profiles
+        if profile.served_regions.filter(id=region_id).exists() or profile.secondary_served_regions.filter(id=region_id).exists()
+    ]
+    total_free_slots = sum(max((profile.max_capacity or 0) - (profile.current_capacity or 0), 0) for profile in regional_profiles)
+
+    if total_free_slots == 0 and active_cases > 0:
+        return {
+            'status': 'kritiek',
+            'message': 'Beste inhoudelijke match, maar capaciteit in regio staat onder druk',
+        }
+
+    if active_cases > max(total_free_slots, 1):
+        return {
+            'status': 'druk',
+            'message': 'Regionale capaciteit is beperkt; monitor wachttijd en escalatiepad',
+        }
+
+    return {
+        'status': 'stabiel',
+        'message': 'Regionale dekking en capaciteit zijn op dit moment werkbaar',
+    }
+
+
+def _build_canonical_matching_suggestions_for_intake(intake, organization, *, limit=5):
+    ctx = _build_match_context_from_intake(intake, organization)
+    results = MatchEngine.run(ctx=ctx, casus=intake, max_results=max(limit * 3, 10), persist=False)
+    non_excluded = [row for row in results if not row.uitgesloten]
+    if not non_excluded:
+        return [], [row for row in results if row.uitgesloten]
+
+    provider_clients = {
+        client.name.strip().lower(): client
+        for client in Client.objects.filter(
+            organization=organization,
+            client_type='CORPORATION',
+            status=Client.Status.ACTIVE,
+        )
+    }
+
+    suggestions = []
+    for result in non_excluded[:limit]:
+        provider_name = result.zorgaanbieder.name if result.zorgaanbieder_id else 'Onbekende aanbieder'
+        provider_client = provider_clients.get(provider_name.strip().lower())
+        provider_profile = getattr(provider_client, 'provider_profile', None) if provider_client else None
+        location = _provider_location_payload(provider_profile) if provider_profile else {
+            'label': result.zorgaanbieder.short_name if result.zorgaanbieder_id else 'Locatie onbekend',
+            'latitude': None,
+            'longitude': None,
+            'region_label': '',
+            'municipality_label': '',
+            'has_coordinates': False,
+        }
+
+        trade_offs = []
+        for item in list(result.trade_offs or []):
+            if isinstance(item, dict):
+                explanation = item.get('toelichting') or item.get('factor') or ''
+                if explanation:
+                    trade_offs.append(str(explanation))
+            elif item:
+                trade_offs.append(str(item))
+
+        suggestions.append(
+            {
+                'casus_id': intake.pk,
+                'zorgprofiel_id': result.zorgprofiel_id,
+                'zorgaanbieder_id': result.zorgaanbieder_id,
+                'provider_id': provider_client.id if provider_client else None,
+                'provider_name': provider_name,
+                'match_score': float(result.totaalscore or 0.0),
+                'fit_score': float(result.score_inhoudelijke_fit or 0.0),
+                'totaalscore': float(result.totaalscore or 0.0),
+                'score_inhoudelijke_fit': float(result.score_inhoudelijke_fit or 0.0),
+                'score_regio_contract_fit': float(result.score_regio_contract_fit or result.score_contract_regio or 0.0),
+                'score_capaciteit_wachttijd_fit': float(result.score_capaciteit_wachttijd_fit or result.score_capaciteit or 0.0),
+                'score_complexiteit_veiligheid_fit': float(result.score_complexiteit_veiligheid_fit or result.score_complexiteit or 0.0),
+                'score_performance_fit': float(result.score_performance_fit or result.score_performance or 0.0),
+                'confidence_label': str(result.confidence_label or '').lower(),
+                'fit_samenvatting': result.fit_samenvatting or '',
+                'trade_offs': trade_offs,
+                'verificatie_advies': result.verificatie_advies or '',
+                'uitgesloten': bool(result.uitgesloten),
+                'uitsluitreden': result.uitsluitreden or '',
+                'ranking': result.ranking,
+                'category_match': bool(result.score_inhoudelijke_fit >= 18),
+                'urgency_match': bool(result.score_complexiteit >= 7),
+                'care_form_match': bool(result.score_inhoudelijke_fit >= 8),
+                'region_match': bool(result.score_contract_regio >= 10),
+                'free_slots': None,
+                'avg_wait_days': None,
+                'reason': result.fit_samenvatting or 'Deterministische matchscore toegepast',
+                'reasons': [result.fit_samenvatting] if result.fit_samenvatting else [],
+                'tradeoff': '; '.join(trade_offs) if trade_offs else '',
+                'capacity_status': 'available' if result.score_capaciteit >= 12 else 'limited',
+                'capacity_label': 'Capaciteit meegewogen in score',
+                'specialization_summary': result.fit_samenvatting or 'Inhoudelijke fit berekend',
+                'distance_km': None,
+                'location': location,
+                'behavior_labels': [],
+                'decision_hint': None,
+                'decision_hint_code': None,
+                'decision_comparison_to_top': '',
+                'decision_trade_offs': trade_offs,
+                'outcome_context': None,
+                'scores': {
+                    'score_inhoudelijke_fit': float(result.score_inhoudelijke_fit or 0.0),
+                    'score_regio_contract_fit': float(result.score_regio_contract_fit or result.score_contract_regio or 0.0),
+                    'score_capaciteit_wachttijd_fit': float(result.score_capaciteit_wachttijd_fit or result.score_capaciteit or 0.0),
+                    'score_complexiteit_veiligheid_fit': float(result.score_complexiteit_veiligheid_fit or result.score_complexiteit or 0.0),
+                    'score_performance_fit': float(result.score_performance_fit or result.score_performance or 0.0),
+                },
+                'explanation': {
+                    'fit_summary': result.fit_samenvatting or 'Deterministische matchscore',
+                    'factors': {
+                        'specialization': {
+                            'status': 'match' if result.score_inhoudelijke_fit >= 18 else 'review',
+                            'detail': f"Inhoudelijke fit: {result.score_inhoudelijke_fit:.1f}/35",
+                        },
+                        'urgency': {
+                            'status': 'match' if result.score_complexiteit >= 7 else 'review',
+                            'detail': f"Complexiteit/veiligheid fit: {result.score_complexiteit_veiligheid_fit or result.score_complexiteit:.1f}/15",
+                        },
+                        'care_form': {
+                            'status': 'match' if result.score_inhoudelijke_fit >= 8 else 'review',
+                            'detail': 'Zorgvorm meegewogen in inhoudelijke fit.',
+                        },
+                        'region': {
+                            'status': 'exact' if result.score_contract_regio >= 10 else 'review',
+                            'detail': f"Regio/contract fit: {result.score_regio_contract_fit or result.score_contract_regio:.1f}/20",
+                        },
+                        'capacity': {
+                            'status': 'available' if result.score_capaciteit >= 12 else 'limited',
+                            'detail': f"Capaciteit/wachttijd fit: {result.score_capaciteit_wachttijd_fit or result.score_capaciteit:.1f}/20",
+                        },
+                        'performance': {
+                            'status': 'good' if result.score_performance >= 6 else 'review',
+                            'detail': f"Performance fit: {result.score_performance_fit or result.score_performance:.1f}/10",
+                        },
+                    },
+                    'confidence': str(result.confidence_label or '').lower(),
+                    'confidence_reason': result.verificatie_advies or 'Confidence gebaseerd op score en datacompleetheid.',
+                    'trade_offs': trade_offs,
+                    'verify_manually': [result.verificatie_advies] if result.verificatie_advies else ['Verifieer capaciteit en contract voorafgaand aan plaatsing.'],
+                    'behavior_consideration': 'Deterministisch model toegepast met expliciete regio/contract- en capaciteitsfactoren.',
+                    'behavior_influence': [],
+                },
+            }
+        )
+
+    return suggestions, [row for row in results if row.uitgesloten]
+
+
+def _sync_matching_signals_for_intake(intake, suggestions, excluded_results):
+    if intake is None:
+        return
+
+    open_status = CareSignal.SignalStatus.OPEN
+    no_match_title = f'Geen werkbare match in regio voor casus {intake.pk}'
+
+    if not suggestions:
+        CareSignal.objects.update_or_create(
+            due_diligence_process=intake,
+            title=no_match_title,
+            defaults={
+                'signal_type': CareSignal.SignalType.NO_MATCH,
+                'description': 'Er is geen actieve providerdekking met contracteerbare capaciteit voor de casusregio.',
+                'risk_level': CareSignal.RiskLevel.HIGH,
+                'status': open_status,
+            },
+        )
+    else:
+        CareSignal.objects.filter(
+            due_diligence_process=intake,
+            title=no_match_title,
+            signal_type=CareSignal.SignalType.NO_MATCH,
+            status=open_status,
+        ).update(status=CareSignal.SignalStatus.RESOLVED)
+
+    weak_matches = [row for row in suggestions if (row.get('match_score') or 0) < 55]
+    if weak_matches:
+        CareSignal.objects.update_or_create(
+            due_diligence_process=intake,
+            title=f'Alleen zwakke matches voor casus {intake.pk}',
+            defaults={
+                'signal_type': CareSignal.SignalType.CAPACITY_ISSUE,
+                'description': 'Beschikbare kandidaten scoren laag op gecombineerde fit/regio/capaciteit.',
+                'risk_level': CareSignal.RiskLevel.MEDIUM,
+                'status': open_status,
+            },
+        )
+
+    urgent_threshold = int(getattr(intake, 'max_toelaatbare_wachttijd_dagen', 0) or 0)
+    if intake.urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS} and urgent_threshold:
+        top_wait = suggestions[0].get('avg_wait_days') if suggestions else None
+        if top_wait is not None and top_wait > urgent_threshold:
+            CareSignal.objects.update_or_create(
+                due_diligence_process=intake,
+                title=f'Urgente casus overschrijdt wachtnorm ({intake.pk})',
+                defaults={
+                    'signal_type': CareSignal.SignalType.WAIT_EXCEEDED,
+                    'description': 'Urgentie en wachtnorm conflicteren met beschikbare regionale capaciteit.',
+                    'risk_level': CareSignal.RiskLevel.HIGH,
+                    'status': open_status,
+                },
+            )
+
+    if excluded_results and len(excluded_results) >= 3:
+        CareSignal.objects.update_or_create(
+            due_diligence_process=intake,
+            title=f'Herhaalde regionale schaarste voor profiel ({intake.pk})',
+            defaults={
+                'signal_type': CareSignal.SignalType.CAPACITY_ISSUE,
+                'description': 'Meerdere kandidaten zijn uitgesloten door regio/contract/capaciteit.',
+                'risk_level': CareSignal.RiskLevel.MEDIUM,
+                'status': open_status,
+            },
+        )
+
+
 def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5):
+    canonical_suggestions, _excluded = _build_canonical_matching_suggestions_for_intake(
+        intake,
+        intake.organization,
+        limit=limit,
+    )
+    if canonical_suggestions:
+        return canonical_suggestions[:limit] if limit else canonical_suggestions
+
     suggestions = []
 
     for profile in provider_profiles:
@@ -702,13 +988,20 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
 
         region_match = False
         region_type_match = False
-        if intake.preferred_region_id:
-            region_match = profile.served_regions.filter(id=intake.preferred_region_id).exists()
+        effective_region_id = intake.regio_id or intake.preferred_region_id
+        if effective_region_id:
+            region_match = (
+                profile.served_regions.filter(id=effective_region_id).exists()
+                or profile.secondary_served_regions.filter(id=effective_region_id).exists()
+            )
             if region_match:
                 score += 15
                 reasons.append('Voorkeursregio match')
         elif intake.preferred_region_type:
-            region_type_match = profile.served_regions.filter(region_type=intake.preferred_region_type).exists()
+            region_type_match = (
+                profile.served_regions.filter(region_type=intake.preferred_region_type).exists()
+                or profile.secondary_served_regions.filter(region_type=intake.preferred_region_type).exists()
+            )
             if region_type_match:
                 score += 8
                 reasons.append('Regiotype match')
@@ -744,7 +1037,7 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
             case_context={
                 'urgency': intake.urgency,
                 'care_form': intake.preferred_care_form,
-                'region_id': intake.preferred_region_id,
+                'region_id': effective_region_id,
             },
         )
         explanation = _build_matching_explanation(
@@ -767,10 +1060,26 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
 
         suggestions.append(
             {
+                'casus_id': intake.pk,
+                'zorgprofiel_id': None,
+                'zorgaanbieder_id': None,
                 'provider_id': profile.client_id,
                 'provider_name': profile.client.name,
                 'match_score': min(score, 100),
                 'fit_score': min(score, 100),
+                'totaalscore': min(score, 100),
+                'score_inhoudelijke_fit': min(score, 35),
+                'score_regio_contract_fit': 15 if region_match else 6 if region_type_match else 0,
+                'score_capaciteit_wachttijd_fit': 20 if free_slots > 0 and profile.average_wait_days <= 14 else 10,
+                'score_complexiteit_veiligheid_fit': 10 if urgency_match else 4,
+                'score_performance_fit': 8 if profile.average_wait_days <= 21 else 5,
+                'confidence_label': explanation.get('confidence') or 'medium',
+                'fit_samenvatting': explanation.get('fit_summary') or '',
+                'trade_offs': explanation.get('trade_offs') or [],
+                'verificatie_advies': '; '.join(explanation.get('verify_manually') or []),
+                'uitgesloten': False,
+                'uitsluitreden': '',
+                'ranking': None,
                 'category_match': category_match,
                 'urgency_match': urgency_match,
                 'care_form_match': care_form_match,
@@ -796,6 +1105,13 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
                 '_behavior_modifier': behavior_modifier,
                 '_behavior_metrics': behavior_metrics,
                 '_behavior_signals': behavior_signals,
+                'scores': {
+                    'score_inhoudelijke_fit': min(score, 35),
+                    'score_regio_contract_fit': 15 if region_match else 6 if region_type_match else 0,
+                    'score_capaciteit_wachttijd_fit': 20 if free_slots > 0 and profile.average_wait_days <= 14 else 10,
+                    'score_complexiteit_veiligheid_fit': 10 if urgency_match else 4,
+                    'score_performance_fit': 8 if profile.average_wait_days <= 21 else 5,
+                },
             }
         )
 
@@ -1221,6 +1537,49 @@ def get_or_create_profile(user):
     return profile
 
 
+def _normalize_design_mode(value):
+    candidate = str(value or '').strip().lower()
+    # Legacy mode is retired; keep backward-compatible coercion to SPA.
+    if candidate in {DESIGN_MODE_SPA, 'legacy'}:
+        return DESIGN_MODE_SPA
+    return None
+
+
+def _get_design_mode(request):
+    stored = request.session.get(DESIGN_MODE_SESSION_KEY)
+    normalized = _normalize_design_mode(stored)
+    if normalized != DESIGN_MODE_SPA:
+        request.session[DESIGN_MODE_SESSION_KEY] = DESIGN_MODE_SPA
+        request.session.modified = True
+    return DESIGN_MODE_SPA
+
+
+def _render_spa_shell_response():
+    spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
+    if spa_index_path.exists():
+        response = HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
+        return _disable_response_caching(response)
+
+    response = HttpResponse(
+        (
+            '<!DOCTYPE html>'
+            '<html lang="en">'
+            '<head>'
+            '<meta charset="UTF-8" />'
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
+            '<title>SaaS Careon</title>'
+            '<style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>'
+            '</head>'
+            '<body>'
+            '<div id="root"></div>'
+            '</body>'
+            '</html>'
+        ),
+        content_type='text/html',
+    )
+    return _disable_response_caching(response)
+
+
 def index(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -1492,9 +1851,9 @@ class ClientDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
                     'label': f'Casus {selected_intake.pk}: {selected_intake.title}',
                     'score': fit_score,
                     'details': [
-                        f'Zorgvorm fit: {'Ja' if form_fit else 'Nee'}',
-                        f'Urgentie fit: {'Ja' if urgency_fit else 'Nee'}',
-                        f'Categorie fit: {'Ja' if category_fit else 'Nee'}',
+                        f"Zorgvorm fit: {'Ja' if form_fit else 'Nee'}",
+                        f"Urgentie fit: {'Ja' if urgency_fit else 'Nee'}",
+                        f"Categorie fit: {'Ja' if category_fit else 'Nee'}",
                     ],
                 }
             else:
@@ -3190,6 +3549,46 @@ def toggle_redesign(request):
     return redirect('dashboard')
 
 
+@login_required
+def design_mode_settings(request):
+    if request.method == 'GET':
+        return JsonResponse({'ok': True, 'design_mode': DESIGN_MODE_SPA})
+
+    requested_mode = request.POST.get('design_mode')
+    if not requested_mode and request.content_type and 'application/json' in request.content_type:
+        try:
+            payload = json.loads(request.body.decode('utf-8') or '{}')
+        except json.JSONDecodeError:
+            payload = {}
+        requested_mode = payload.get('design_mode')
+
+    design_mode = _normalize_design_mode(requested_mode)
+    if design_mode is None:
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Invalid design mode. Use "spa".',
+            },
+            status=400,
+        )
+
+    request.session[DESIGN_MODE_SESSION_KEY] = DESIGN_MODE_SPA
+    request.session.modified = True
+
+    wants_json = (
+        request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        or 'application/json' in request.headers.get('Accept', '')
+        or (request.content_type and 'application/json' in request.content_type)
+    )
+    if wants_json:
+        return JsonResponse({'ok': True, 'design_mode': DESIGN_MODE_SPA})
+
+    next_url = request.POST.get('next') or request.GET.get('next') or reverse('settings_hub')
+    if not url_has_allowed_host_and_scheme(next_url, {request.get_host()}, require_https=request.is_secure()):
+        next_url = reverse('settings_hub')
+    return redirect(next_url)
+
+
 def profile(request):
     profile_obj = get_or_create_profile(request.user) if request.user.is_authenticated else None
     form = UserProfileForm(instance=profile_obj) if profile_obj else None
@@ -3198,7 +3597,13 @@ def profile(request):
 
 @login_required
 def settings_hub(request):
-    return render(request, 'settings_hub.html')
+    return render(
+        request,
+        'settings_hub.html',
+        {
+            'design_mode': DESIGN_MODE_SPA,
+        },
+    )
 
 
 @login_required
@@ -3291,6 +3696,230 @@ def _provider_response_status_label(status_code):
     return labels.get(normalized, normalized.title())
 
 
+def _workflow_stage_label(workflow_stage):
+    stage_labels = {
+        'aanvraag': 'Intake',
+        'beoordeling': 'Beoordeling',
+        'matching': 'Matching',
+        'intake_aanbieder': 'Plaatsing',
+        'plaatsing': 'Plaatsing',
+    }
+    return stage_labels.get(workflow_stage, 'Intake')
+
+
+def _communication_type_label(item_type):
+    labels = {
+        'operational_message': 'Operationeel bericht',
+        'internal_note': 'Interne notitie',
+        'provider_response': 'Aanbiederreactie',
+        'decision_item': 'Besluititem',
+        'escalation_item': 'Escalatie',
+    }
+    return labels.get(item_type, 'Communicatie')
+
+
+def _decision_item_message(log_entry):
+    decision_messages = {
+        CaseDecisionLog.EventType.MATCH_RECOMMENDED: 'Matching gestart met nieuwe aanbeveling.',
+        CaseDecisionLog.EventType.PROVIDER_SELECTED: 'Aanbieder geselecteerd voor plaatsing.',
+        CaseDecisionLog.EventType.RESEND_TRIGGERED: 'Herinnering verstuurd naar aanbieder.',
+        CaseDecisionLog.EventType.PROVIDE_MISSING_INFO: 'Aanvullende informatie geregistreerd.',
+        CaseDecisionLog.EventType.REMATCH_TRIGGERED: 'Her-match geactiveerd voor deze casus.',
+        CaseDecisionLog.EventType.CONTINUE_WAITING: 'Expliciet gekozen om te blijven wachten.',
+        CaseDecisionLog.EventType.SLA_ESCALATION: 'SLA-escalatie vastgelegd voor opvolging.',
+    }
+    if log_entry.optional_reason:
+        return log_entry.optional_reason
+    if log_entry.event_type == CaseDecisionLog.EventType.SLA_ESCALATION:
+        from_state = (log_entry.recommended_value or {}).get('sla_state') or ''
+        to_state = (log_entry.actual_value or {}).get('sla_state') or (log_entry.sla_state or '')
+        if from_state and to_state:
+            return f'SLA wijzigde van {from_state} naar {to_state}.'
+    return decision_messages.get(log_entry.event_type, log_entry.user_action or 'Besluit vastgelegd voor deze casus.')
+
+
+def _derive_communication_item_from_log(log_entry, *, active_stage, resolved_ids):
+    adaptive_flags = log_entry.adaptive_flags or {}
+    communication_type = adaptive_flags.get('communication_type')
+    status = adaptive_flags.get('communication_status') or 'informational'
+    workflow_stage = adaptive_flags.get('workflow_stage') or active_stage
+    message = log_entry.optional_reason or ''
+
+    if log_entry.event_type == CaseDecisionLog.EventType.CASE_COMMUNICATION:
+        item_type = communication_type or 'operational_message'
+        if not message:
+            message = log_entry.user_action or 'Communicatie-item toegevoegd.'
+    elif log_entry.event_type == CaseDecisionLog.EventType.SLA_ESCALATION:
+        item_type = 'escalation_item'
+        status = 'open' if status != 'resolved' else status
+        message = message or _decision_item_message(log_entry)
+    else:
+        item_type = 'decision_item'
+        message = message or _decision_item_message(log_entry)
+
+    if log_entry.pk in resolved_ids and status == 'open':
+        status = 'resolved'
+
+    source_label = 'Systeem'
+    if log_entry.actor_id:
+        source_label = log_entry.actor.get_full_name() if log_entry.actor else 'Gebruiker'
+        source_label = source_label or (log_entry.actor.username if log_entry.actor else 'Gebruiker')
+
+    is_open = status == 'open'
+    blocks_progress = bool(adaptive_flags.get('blocks_progress')) and is_open
+    blocking_label = ''
+    if blocks_progress:
+        blocking_label = f'Open vraag blokkeert {_workflow_stage_label(workflow_stage).lower()}.'
+
+    return {
+        'id': f'log-{log_entry.pk}',
+        'source_id': log_entry.pk,
+        'source_kind': 'decision_log',
+        'type': item_type,
+        'type_label': _communication_type_label(item_type),
+        'sender': source_label,
+        'timestamp': log_entry.timestamp,
+        'message': message,
+        'workflow_stage': workflow_stage,
+        'workflow_stage_label': _workflow_stage_label(workflow_stage),
+        'status': status,
+        'status_label': 'Open' if status == 'open' else 'Afgehandeld' if status == 'resolved' else 'Informatief',
+        'is_open': is_open,
+        'blocks_progress': blocks_progress,
+        'blocking_label': blocking_label,
+    }
+
+
+def _build_case_communication_context(*, intake, placement, provider_response_summary, decision_logs, selected_filter):
+    active_stage = _flow_stage_for_intake_status(intake.status)
+
+    resolved_ids = set()
+    for log_entry in decision_logs:
+        flags = log_entry.adaptive_flags or {}
+        if flags.get('communication_action') == 'resolve_item':
+            target_id = flags.get('resolves_log_id')
+            try:
+                resolved_ids.add(int(target_id))
+            except (TypeError, ValueError):
+                continue
+
+    items = []
+    for log_entry in decision_logs:
+        flags = log_entry.adaptive_flags or {}
+        if flags.get('communication_action') == 'resolve_item':
+            continue
+        items.append(
+            _derive_communication_item_from_log(
+                log_entry,
+                active_stage=active_stage,
+                resolved_ids=resolved_ids,
+            )
+        )
+
+    if provider_response_summary:
+        provider_status = provider_response_summary.get('status')
+        provider_status_label = provider_response_summary.get('status_label')
+        provider_notes = getattr(placement, 'provider_response_notes', '') if placement else ''
+
+        provider_is_open = provider_status in {
+            PlacementRequest.ProviderResponseStatus.PENDING,
+            PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            PlacementRequest.ProviderResponseStatus.WAITLIST,
+            PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            PlacementRequest.ProviderResponseStatus.REJECTED,
+        }
+        provider_blocks = provider_is_open and (
+            provider_response_summary.get('is_overdue')
+            or provider_status in {
+                PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+                PlacementRequest.ProviderResponseStatus.WAITLIST,
+                PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            }
+        )
+
+        if provider_status == PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+            provider_blocking_label = 'Aanbiederreactie wacht op opvolging.'
+        elif provider_status == PlacementRequest.ProviderResponseStatus.WAITLIST:
+            provider_blocking_label = 'Wachtlijststatus vraagt besluit op vervolgroute.'
+        elif provider_blocks:
+            provider_blocking_label = 'Open vraag blokkeert matching.'
+        else:
+            provider_blocking_label = ''
+
+        provider_message = provider_notes.strip() if provider_notes else f'Laatste aanbiederreactie: {provider_status_label.lower()}.'
+
+        items.append(
+            {
+                'id': 'provider-response',
+                'source_id': placement.pk if placement else None,
+                'source_kind': 'provider_response',
+                'type': 'provider_response',
+                'type_label': _communication_type_label('provider_response'),
+                'sender': 'Aanbieder',
+                'timestamp': provider_response_summary.get('requested_at') or provider_response_summary.get('deadline_at') or timezone.now(),
+                'message': provider_message,
+                'workflow_stage': 'matching',
+                'workflow_stage_label': _workflow_stage_label('matching'),
+                'status': 'open' if provider_is_open else 'informational',
+                'status_label': 'Open' if provider_is_open else 'Informatief',
+                'is_open': provider_is_open,
+                'blocks_progress': provider_blocks,
+                'blocking_label': provider_blocking_label,
+                'provider_status_label': provider_status_label,
+            }
+        )
+
+    items.sort(key=lambda item: item.get('timestamp') or timezone.now(), reverse=True)
+
+    filter_mapping = {
+        'alles': lambda item: True,
+        'open': lambda item: item.get('is_open'),
+        'aanbiederreacties': lambda item: item.get('type') == 'provider_response',
+        'interne_notities': lambda item: item.get('type') == 'internal_note',
+        'besluiten': lambda item: item.get('type') == 'decision_item',
+    }
+    selected = selected_filter if selected_filter in filter_mapping else 'alles'
+    filtered_items = [item for item in items if filter_mapping[selected](item)]
+
+    open_items = [item for item in items if item.get('is_open')]
+    internal_notes = [item for item in items if item.get('type') == 'internal_note']
+    provider_items = [item for item in items if item.get('type') == 'provider_response']
+    open_questions = [
+        item
+        for item in open_items
+        if item.get('type') in {'operational_message', 'provider_response', 'escalation_item'}
+    ]
+
+    latest_provider = provider_items[0] if provider_items else None
+    if latest_provider:
+        latest_provider_copy = f"Laatste aanbiederreactie: {latest_provider.get('provider_status_label', latest_provider.get('status_label', 'onbekend')).lower()}"
+    else:
+        latest_provider_copy = 'Geen aanbiederreactie'
+
+    summary_items = [
+        f"{len(open_questions)} open vraag" if len(open_questions) == 1 else f"{len(open_questions)} open vragen",
+        latest_provider_copy,
+        f"{len(internal_notes)} interne notitie" if len(internal_notes) == 1 else f"{len(internal_notes)} interne notities",
+        'Geen onbeantwoorde berichten' if not open_items else f"{len(open_items)} communicatie-items open",
+    ]
+
+    return {
+        'items': items,
+        'filtered_items': filtered_items,
+        'selected_filter': selected,
+        'filter_options': [
+            {'key': 'alles', 'label': 'Alles'},
+            {'key': 'open', 'label': 'Open'},
+            {'key': 'aanbiederreacties', 'label': 'Aanbiederreacties'},
+            {'key': 'interne_notities', 'label': 'Interne notities'},
+            {'key': 'besluiten', 'label': 'Besluiten'},
+        ],
+        'summary_items': summary_items,
+        'has_blocking_items': any(item.get('blocks_progress') for item in open_items),
+        'blocking_items': [item for item in open_items if item.get('blocks_progress')],
+    }
+
+
 def _provider_recommended_action_presentation(next_action):
     mapping = {
         'monitor': ('Monitor voortgang', 'medium'),
@@ -3301,6 +3930,106 @@ def _provider_recommended_action_presentation(next_action):
         'rematch': ('Start her-match', 'critical'),
     }
     return mapping.get(next_action, ('Monitor voortgang', 'medium'))
+
+
+@login_required
+@require_POST
+def case_communication_action(request, pk):
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden('Je hebt geen rechten om communicatie voor deze casus te wijzigen.')
+
+    normalized_action = (request.POST.get('action') or '').strip().lower()
+    next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie"
+
+    workflow_stage = (request.POST.get('workflow_stage') or _flow_stage_for_intake_status(intake.status)).strip()
+    if workflow_stage not in {'aanvraag', 'beoordeling', 'matching', 'intake_aanbieder', 'plaatsing'}:
+        workflow_stage = _flow_stage_for_intake_status(intake.status)
+
+    if normalized_action in {'add_message', 'add_internal_note', 'reply', 'escalate'}:
+        content = (request.POST.get('content') or '').strip()
+        if not content:
+            messages.error(request, 'Voer eerst inhoud in voor het communicatie-item.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        if normalized_action == 'add_internal_note':
+            communication_type = 'internal_note'
+            communication_status = 'informational'
+            user_action = 'internal_note'
+            blocks_progress = False
+        elif normalized_action == 'escalate':
+            communication_type = 'escalation_item'
+            communication_status = 'open'
+            user_action = 'escalation_item'
+            blocks_progress = True
+        elif normalized_action == 'reply':
+            communication_type = 'operational_message'
+            communication_status = 'informational'
+            user_action = 'reply'
+            blocks_progress = False
+        else:
+            communication_type = 'operational_message'
+            communication_status = 'open'
+            user_action = 'operational_message'
+            blocks_progress = True
+
+        log_case_decision_event(
+            case_id=intake.pk,
+            event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            user_action=user_action,
+            optional_reason=content,
+            adaptive_flags={
+                'communication_type': communication_type,
+                'communication_status': communication_status,
+                'workflow_stage': workflow_stage,
+                'blocks_progress': blocks_progress,
+            },
+        )
+        messages.success(request, 'Communicatie-item toegevoegd aan de casus.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if normalized_action == 'mark_resolved':
+        target_log_id = (request.POST.get('target_log_id') or '').strip()
+        try:
+            target_log_id_int = int(target_log_id)
+        except (TypeError, ValueError):
+            messages.error(request, 'Selecteer een geldig communicatie-item om af te handelen.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        exists = CaseDecisionLog.objects.filter(
+            Q(case_id=intake.pk) | Q(case_id_snapshot=intake.pk),
+            pk=target_log_id_int,
+        ).exists()
+        if not exists:
+            messages.error(request, 'Communicatie-item niet gevonden voor deze casus.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        log_case_decision_event(
+            case_id=intake.pk,
+            event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            user_action='resolve_item',
+            optional_reason='Communicatie-item gemarkeerd als afgehandeld.',
+            adaptive_flags={
+                'communication_action': 'resolve_item',
+                'resolves_log_id': target_log_id_int,
+                'communication_status': 'resolved',
+                'workflow_stage': workflow_stage,
+            },
+        )
+        messages.success(request, 'Communicatie-item gemarkeerd als afgehandeld.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    messages.error(request, 'Onbekende communicatie-actie.')
+    return _redirect_to_safe_next_or_default(request, next_fallback)
 
 
 def _provider_response_age_days(placement, hours_waiting):
@@ -3869,7 +4598,13 @@ def matching_dashboard(request):
     for assessment in assessments:
         intake = assessment.intake
         can_assign = _can_edit_intake(request.user, intake)
-        suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
+        canonical_suggestions, excluded_candidates = _build_canonical_matching_suggestions_for_intake(
+            intake,
+            org,
+            limit=5,
+        )
+        suggestions = canonical_suggestions or _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
+        _sync_matching_signals_for_intake(intake, suggestions, excluded_candidates)
         decision = build_operational_decision_for_intake(intake.pk)
         decision_payload = decision.to_dict() if decision else {}
 
@@ -3893,6 +4628,11 @@ def matching_dashboard(request):
             no_match_count += 1
 
         normalized_suggestions = []
+        pressure_context = _region_pressure_summary(
+            intake=intake,
+            provider_profiles=provider_profiles,
+            region_id=(intake.regio_id or intake.preferred_region_id),
+        )
         for suggestion in suggestions[:5]:
             provider_name = suggestion.get('provider_name') or 'Onbekende aanbieder'
             free_slots_raw = suggestion.get('free_slots')
@@ -3960,6 +4700,12 @@ def matching_dashboard(request):
                     else f'{int(wait_days)} dagen wachttijd'
                 ),
                 'region_context': 'Regio match' if region_match else 'Regio-afwijking',
+                'region_pressure_status': pressure_context['status'],
+                'region_pressure_note': (
+                    'Alternatieve aanbieder beschikbaar in aangrenzende dekking met snellere intake'
+                    if (not region_match and wait_days is not None and wait_days <= 14)
+                    else pressure_context['message']
+                ),
             })
             normalized_suggestions.append(normalized_suggestion)
 
@@ -4605,29 +5351,8 @@ def case_placement_action(request, pk):
 
 def dashboard(request):
     # Dashboard is SPA-first: always serve the React frontend shell.
-    # Legacy Regiekamer backend services have been removed; functionality lives in the SPA.
-    spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
-    if spa_index_path.exists():
-        return HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
-
-    # Equivalent shell fallback when frontend build artifacts are unavailable.
-    return HttpResponse(
-        (
-            '<!DOCTYPE html>'
-            '<html lang="en">'
-            '<head>'
-            '<meta charset="UTF-8" />'
-            '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
-            '<title>SaaS Careon</title>'
-            '<style>html, body { height: 100%; margin: 0; } #root { height: 100%; }</style>'
-            '</head>'
-            '<body>'
-            '<div id="root"></div>'
-            '</body>'
-            '</html>'
-        ),
-        content_type='text/html',
-    )
+    # Legacy Regiekamer backend pages are retired; workspace always loads the SPA.
+    return _render_spa_shell_response()
 
 
 @login_required
@@ -5254,6 +5979,13 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
 
         matching_history = _matching_history_for_intake(intake, limit=8)
         rejected_options = [entry for entry in matching_history if entry.action == AuditLog.Action.REJECT]
+        communication_logs = list(
+            CaseDecisionLog.objects.filter(
+                Q(case_id=intake.pk) | Q(case_id_snapshot=intake.pk)
+            )
+            .select_related('actor')
+            .order_by('-timestamp', '-id')[:120]
+        )
 
         intelligence_context = _build_case_intelligence_context(
             intake,
@@ -5280,7 +6012,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         matching_archive_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
 
         selected_tab = (self.request.GET.get('tab') or 'tijdlijn').lower()
-        tab_options = {'tijdlijn', 'documenten', 'taken', 'signalen', 'matching', 'plaatsing'}
+        tab_options = {'tijdlijn', 'documenten', 'taken', 'signalen', 'communicatie', 'matching', 'plaatsing'}
         if selected_tab not in tab_options:
             selected_tab = 'tijdlijn'
 
@@ -5358,11 +6090,20 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             intake=intake,
             placement=placement,
         )
+        communication_filter = (self.request.GET.get('comm_filter') or 'alles').strip().lower()
+        communication_context = _build_case_communication_context(
+            intake=intake,
+            placement=placement,
+            provider_response_summary=provider_response_summary,
+            decision_logs=communication_logs,
+            selected_filter=communication_filter,
+        )
 
         if not can_edit_case:
             provider_response_actions = []
 
         outcome_action_href = reverse('careon:case_outcome_action', kwargs={'pk': intake.pk})
+        communication_action_href = reverse('careon:case_communication_action', kwargs={'pk': intake.pk})
         outcome_sections = []
 
         overview_links = {
@@ -5441,6 +6182,14 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'provider_response_summary': provider_response_summary,
             'provider_response_actions': provider_response_actions,
             'provider_response_action_href': provider_response_action_href,
+            'communication_action_href': communication_action_href,
+            'communication_items': communication_context['items'],
+            'communication_filtered_items': communication_context['filtered_items'],
+            'communication_filter_options': communication_context['filter_options'],
+            'communication_selected_filter': communication_context['selected_filter'],
+            'communication_summary_items': communication_context['summary_items'],
+            'communication_has_blocking_items': communication_context['has_blocking_items'],
+            'communication_blocking_items': communication_context['blocking_items'],
             'outcome_action_href': outcome_action_href,
             'outcome_sections': outcome_sections,
             'selected_tab': selected_tab,
@@ -5466,6 +6215,11 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     form_class = CaseIntakeProcessForm
     template_name = 'contracts/intake_form.html'
 
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == 'GET':
+            return _render_spa_shell_response()
+        return super().dispatch(request, *args, **kwargs)
+
     def render_to_response(self, context, **response_kwargs):
         response = super().render_to_response(context, **response_kwargs)
         response['X-Careon-Template-Version'] = 'intake_form'
@@ -5483,15 +6237,24 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     def form_valid(self, form):
         org = get_user_organization(self.request.user)
         set_organization_on_instance(form.instance, org)
+        if hasattr(form.instance, 'contra_indicaties') and form.instance.contra_indicaties is None:
+            form.instance.contra_indicaties = ''
+        if hasattr(form.instance, 'problematiek_types') and form.instance.problematiek_types is None:
+            form.instance.problematiek_types = []
+        if hasattr(form.instance, 'zorgvorm_gewenst') and form.instance.zorgvorm_gewenst is None:
+            form.instance.zorgvorm_gewenst = ''
+        if hasattr(form.instance, 'setting_voorkeur') and form.instance.setting_voorkeur is None:
+            form.instance.setting_voorkeur = ''
         if not form.instance.start_date:
             form.instance.start_date = date.today()
         response = super().form_valid(form)
+        self.object.ensure_case_record(created_by=self.request.user)
         log_action(self.request.user, 'CREATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, f'Casus "{self.object.title}" aangemaakt. Volgende stap: ga verder met de intakefase.')
+        messages.success(self.request, f'Casus "{self.object.title}" aangemaakt en toegevoegd aan het casusoverzicht.')
         return response
 
     def get_success_url(self):
-        return reverse('careon:case_detail', kwargs={'pk': self.object.pk})
+        return f"{reverse('dashboard')}?page=casussen"
 
 
 class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):

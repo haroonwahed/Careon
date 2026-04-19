@@ -394,6 +394,11 @@ class CaseIntakeProcessForm(forms.ModelForm):
         widget=forms.CheckboxSelectMultiple(attrs={'class': TAILWIND_CHECKBOX}),
         label='Diagnostiek',
     )
+    problematiek_types = forms.CharField(
+        required=False,
+        widget=forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'bijv. trauma, autisme, hechting'}),
+        label='Problematiektypes (komma-gescheiden)',
+    )
 
     class Meta:
         model = CaseIntakeProcess
@@ -404,10 +409,19 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'care_category_main',
             'care_category_sub',
             'assessment_summary',
+            'gemeente',
+            'regio',
             'urgency',
+            'complexity',
+            'zorgvorm_gewenst',
             'preferred_care_form',
             'preferred_region_type',
             'preferred_region',
+            'max_toelaatbare_wachttijd_dagen',
+            'leeftijd',
+            'setting_voorkeur',
+            'contra_indicaties',
+            'problematiek_types',
             'client_age_category',
             'family_situation',
             'school_work_status',
@@ -421,10 +435,18 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'care_category_main': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'care_category_sub': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'assessment_summary': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
+            'gemeente': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'regio': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'urgency': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'complexity': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'zorgvorm_gewenst': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'preferred_care_form': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'preferred_region_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'preferred_region': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'max_toelaatbare_wachttijd_dagen': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'min': 0}),
+            'leeftijd': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'min': 0, 'max': 120}),
+            'setting_voorkeur': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'contra_indicaties': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 3}),
             'client_age_category': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'family_situation': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'school_work_status': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
@@ -438,10 +460,18 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'care_category_main': 'Hoofdcategorie zorgvraag',
             'care_category_sub': 'Subcategorie zorgvraag',
             'assessment_summary': 'Intake samenvatting',
+            'gemeente': 'Gemeente',
+            'regio': 'Regio (automatisch bepaald)',
             'urgency': 'Urgentie',
+            'complexity': 'Complexiteit',
+            'zorgvorm_gewenst': 'Gewenste zorgvorm (matching)',
             'preferred_care_form': 'Gewenste zorgvorm',
             'preferred_region_type': 'Voorkeur regiotype',
             'preferred_region': 'Voorkeursregio',
+            'max_toelaatbare_wachttijd_dagen': 'Max. toelaatbare wachttijd (dagen)',
+            'leeftijd': 'Leeftijd',
+            'setting_voorkeur': 'Settingvoorkeur',
+            'contra_indicaties': 'Contra-indicaties',
             'client_age_category': 'Leeftijdscategorie cliënt',
             'family_situation': 'Gezinssituatie',
             'school_work_status': 'Dagbesteding',
@@ -501,9 +531,25 @@ class CaseIntakeProcessForm(forms.ModelForm):
         self.fields['preferred_region'].queryset = RegionalConfiguration.objects.filter(
             status=RegionalConfiguration.Status.ACTIVE
         ).order_by('region_type', 'region_name')
+        self.fields['regio'].queryset = self.fields['preferred_region'].queryset
+        self.fields['gemeente'].queryset = MunicipalityConfiguration.objects.filter(
+            status=MunicipalityConfiguration.Status.ACTIVE
+        ).order_by('municipality_name')
+        self.fields['regio'].required = False
 
         if not self.initial.get('care_category_main'):
             self.initial['care_category_main'] = main_category.id
+
+        if self.instance and isinstance(self.instance.problematiek_types, list):
+            self.initial['problematiek_types'] = ', '.join(
+                [str(item).strip() for item in self.instance.problematiek_types if str(item).strip()]
+            )
+
+    def clean_problematiek_types(self):
+        raw = self.cleaned_data.get('problematiek_types', '')
+        if not raw:
+            return []
+        return [part.strip() for part in str(raw).split(',') if part.strip()]
 
 
 class IntakeTaskForm(forms.ModelForm):

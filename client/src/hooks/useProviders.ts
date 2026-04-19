@@ -23,10 +23,29 @@ export interface SpaProvider {
   region: string;
   type: string;
   specializations: string[];
+  latitude: number | null;
+  longitude: number | null;
+  hasCoordinates: boolean;
+  locationLabel: string;
+  regionLabel: string;
+  municipalityLabel: string;
+  secondaryRegionLabels: string[];
+  allRegionLabels: string[];
 }
 
 interface UseProvidersOptions {
   q?: string;
+  autoRefreshMs?: number;
+}
+
+interface NetworkSummary {
+  provider_count: number;
+  direct_capacity_count: number;
+  pressure_capacity_count: number;
+  high_wait_count: number;
+  total_open_slots: number;
+  subtle_summary: string | null;
+  regional_capacity_summary: string | null;
 }
 
 interface UseProvidersResult {
@@ -34,15 +53,19 @@ interface UseProvidersResult {
   loading: boolean;
   error: string | null;
   totalCount: number;
+  networkSummary: NetworkSummary | null;
+  lastUpdatedAt: number | null;
   refetch: () => void;
 }
 
 export function useProviders(options: UseProvidersOptions = {}): UseProvidersResult {
-  const { q = '' } = options;
+  const { q = '', autoRefreshMs = 30_000 } = options;
   const [providers, setProviders] = useState<SpaProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
+  const [networkSummary, setNetworkSummary] = useState<NetworkSummary | null>(null);
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
 
   const refetch = useCallback(() => setTick(t => t + 1), []);
@@ -61,13 +84,22 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
         averageWaitDays: number; offersOutpatient: boolean; offersDayTreatment: boolean;
         offersResidential: boolean; offersCrisis: boolean; serviceArea: string;
         specialFacilities: string;
-      }>; total_count: number }) => {
+        latitude: number | null;
+        longitude: number | null;
+        hasCoordinates: boolean;
+        locationLabel: string;
+        regionLabel: string;
+        municipalityLabel: string;
+        secondaryRegionLabels?: string[];
+        allRegionLabels?: string[];
+      }>; total_count: number; workspace_summary?: NetworkSummary }) => {
         if (cancelled) return;
         setTotalCount(data.total_count ?? 0);
+        if (data.workspace_summary) setNetworkSummary(data.workspace_summary);
         setProviders((data.providers ?? []).map(p => ({
           ...p,
           availableSpots: p.currentCapacity,
-          region: p.city,
+          region: p.regionLabel || p.city,
           type: [
             p.offersOutpatient ? 'ambulant' : null,
             p.offersDayTreatment ? 'dagbehandeling' : null,
@@ -77,7 +109,16 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
           specializations: p.specialFacilities
             ? p.specialFacilities.split(',').map(s => s.trim()).filter(Boolean)
             : [],
+          latitude: p.latitude ?? null,
+          longitude: p.longitude ?? null,
+          hasCoordinates: Boolean(p.hasCoordinates),
+          locationLabel: p.locationLabel ?? p.city ?? '',
+          regionLabel: p.regionLabel ?? '',
+          municipalityLabel: p.municipalityLabel ?? '',
+          secondaryRegionLabels: p.secondaryRegionLabels ?? [],
+          allRegionLabels: p.allRegionLabels ?? (p.regionLabel ? [p.regionLabel] : []),
         })));
+        setLastUpdatedAt(Date.now());
         setLoading(false);
       })
       .catch((err: Error) => {
@@ -89,5 +130,19 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
     return () => { cancelled = true; };
   }, [q, tick]);
 
-  return { providers, loading, error, totalCount, refetch };
+  useEffect(() => {
+    if (autoRefreshMs <= 0) return;
+
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        refetch();
+      }
+    }, autoRefreshMs);
+
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [autoRefreshMs, refetch]);
+
+  return { providers, loading, error, totalCount, networkSummary, lastUpdatedAt, refetch };
 }

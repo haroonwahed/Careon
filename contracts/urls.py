@@ -9,7 +9,11 @@ urlpatterns = [
     # API
     path('api/cases/', api_views.contracts_api, name='cases_api'),
     path('api/cases/bulk-update/', api_views.cases_bulk_update_api, name='cases_bulk_update_api'),
-    path('api/cases/<str:case_id>/', api_views.case_detail_api, name='case_detail_api'),
+    path('api/cases/intake-form/', api_views.intake_form_options_api, name='intake_form_options_api'),
+    path('api/cases/intake-create/', api_views.intake_create_api, name='intake_create_api'),
+    path('api/cases/<int:case_id>/matching-candidates/', api_views.matching_candidates_api, name='matching_candidates_api'),
+    path('api/cases/<int:case_id>/', api_views.case_detail_api, name='case_detail_api'),
+    path('api/cases/<str:case_ref>/', api_views.case_detail_string_fallback_api, name='case_detail_string_fallback_api'),
     path('api/assessments/', api_views.assessments_api, name='assessments_api'),
     path('api/placements/', api_views.placements_api, name='placements_api'),
     path('api/signals/', api_views.signals_api, name='signals_api'),
@@ -19,6 +23,7 @@ urlpatterns = [
     path('api/providers/', api_views.providers_api, name='providers_api'),
     path('api/municipalities/', api_views.municipalities_api, name='municipalities_api'),
     path('api/regions/', api_views.regions_api, name='regions_api'),
+    path('api/regions/health/', api_views.regions_health_api, name='regions_health_api'),
     path('api/dashboard/', api_views.dashboard_summary_api, name='dashboard_summary_api'),
 
     # Care core
@@ -123,6 +128,7 @@ urlpatterns = [
     path('casussen/<int:pk>/matching/action/', views.case_matching_action, name='case_matching_action'),
     path('casussen/<int:pk>/placement/action/', views.case_placement_action, name='case_placement_action'),
     path('casussen/<int:pk>/provider-response/action/', views.case_provider_response_action, name='case_provider_response_action'),
+    path('casussen/<int:pk>/communicatie/action/', views.case_communication_action, name='case_communication_action'),
     path('casussen/<int:pk>/outcomes/action/', views.case_outcome_action, name='case_outcome_action'),
     path('casussen/<int:pk>/documenten/new/', views.CaseScopedDocumentCreateView.as_view(), name='case_document_create'),
     path('casussen/<int:pk>/taken/new/', views.CaseScopedDeadlineCreateView.as_view(), name='case_task_create'),

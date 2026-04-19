@@ -8,8 +8,24 @@ import {
   Info,
   Sparkles
 } from "lucide-react";
-import { CaseData, CaseStatus, UrgencyLevel } from "./CasussenPage";
 import { Button } from "../ui/button";
+
+type CaseStatus = "intake" | "beoordeling" | "matching" | "plaatsing" | "afgerond";
+type UrgencyLevel = "urgent" | "warning" | "positive" | "normal";
+
+interface CaseData {
+  id: string;
+  title: string;
+  regio: string;
+  zorgtype: string;
+  wachttijd: number;
+  status: CaseStatus;
+  urgency: UrgencyLevel;
+  issues: string[];
+  systemInsight: string;
+  recommendedAction: string;
+  lastUpdated: string;
+}
 
 interface CaseCardProps {
   caseData: CaseData;

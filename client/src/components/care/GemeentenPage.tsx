@@ -137,14 +137,14 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
 
       {/* SEARCH & FILTERS */}
       <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-          <input
+        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
+          <Search className="text-muted-foreground flex-shrink-0" size={18} />
+          <Input
             type="text"
             placeholder="Zoek gemeente of regio..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-card border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground"
           />
         </div>
 

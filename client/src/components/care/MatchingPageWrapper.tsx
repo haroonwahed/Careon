@@ -5,9 +5,13 @@
 
 import { useState } from "react";
 import { MatchingPageWithMap } from "./MatchingPageWithMap";
-import { MatchingListPage } from "./MatchingListPage";
+import { MatchingQueuePage } from "./MatchingQueuePage";
 
-export function MatchingPageWrapper() {
+interface MatchingPageWrapperProps {
+  onNavigateToCasussen?: () => void;
+}
+
+export function MatchingPageWrapper({ onNavigateToCasussen }: MatchingPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [matchConfirmed, setMatchConfirmed] = useState(false);
 
@@ -40,5 +44,5 @@ export function MatchingPageWrapper() {
   }
 
   // Otherwise show the list view
-  return <MatchingListPage onCaseClick={handleCaseClick} />;
+  return <MatchingQueuePage onCaseClick={handleCaseClick} onNavigateToCasussen={onNavigateToCasussen} />;
 }

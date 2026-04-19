@@ -1,0 +1,35 @@
+naam,type_regio,provincie,actief
+Amsterdam-Amstelland,jeugdregio,Noord-Holland,true
+Zaanstreek-Waterland,jeugdregio,Noord-Holland,true
+Noord-Holland Noord,jeugdregio,Noord-Holland,true
+Haarlemmermeer,jeugdregio,Noord-Holland,true
+IJmond,jeugdregio,Noord-Holland,true
+Haaglanden,jeugdregio,Zuid-Holland,true
+Holland Rijnland,jeugdregio,Zuid-Holland,true
+Midden-Holland,jeugdregio,Zuid-Holland,true
+Rotterdam Rijnmond,jeugdregio,Zuid-Holland,true
+Zuid-Holland Zuid,jeugdregio,Zuid-Holland,true
+Utrecht Stad,jeugdregio,Utrecht,true
+Utrecht West,jeugdregio,Utrecht,true
+Lekstroom,jeugdregio,Utrecht,true
+Eemland,jeugdregio,Utrecht,true
+West-Brabant West,jeugdregio,Noord-Brabant,true
+West-Brabant Oost,jeugdregio,Noord-Brabant,true
+Hart van Brabant,jeugdregio,Noord-Brabant,true
+Noordoost Brabant,jeugdregio,Noord-Brabant,true
+Zuidoost Brabant,jeugdregio,Noord-Brabant,true
+Gelderland Midden,jeugdregio,Gelderland,true
+Gelderland Zuid,jeugdregio,Gelderland,true
+FoodValley,jeugdregio,Gelderland,true
+Achterhoek,jeugdregio,Gelderland,true
+Rivierenland,jeugdregio,Gelderland,true
+Twente,jeugdregio,Overijssel,true
+IJsselland,jeugdregio,Overijssel,true
+Flevoland,jeugdregio,Flevoland,true
+Drenthe,jeugdregio,Drenthe,true
+Friesland,jeugdregio,Friesland,true
+Groningen,jeugdregio,Groningen,true
+Noord-Limburg,jeugdregio,Limburg,true
+Midden-Limburg,jeugdregio,Limburg,true
+Zuid-Limburg,jeugdregio,Limburg,true
+Zeeland,jeugdregio,Zeeland,true

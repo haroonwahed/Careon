@@ -45,7 +45,7 @@ export function SystemEventBlock({ event, language }: SystemEventBlockProps) {
       <div className="flex-1 h-px dark:bg-[rgba(168,85,247,0.15)] bg-border" />
       
       {/* System message */}
-      <div className="text-xs text-muted-foreground text-center px-3 py-1.5 rounded-full bg-primary/5 bg-gray-50">
+      <div className="text-xs text-muted-foreground text-center px-3 py-1.5 rounded-full bg-muted/50 border border-border/50">
         {getMessage()}
       </div>
       

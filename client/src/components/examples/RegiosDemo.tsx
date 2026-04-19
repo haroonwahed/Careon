@@ -9,7 +9,6 @@
 
 import { useState } from "react";
 import { RegiosPage } from "../care/RegiosPage";
-import { RegioDetailPage } from "../care/RegioDetailPage";
 
 type View = "overview" | "detail";
 
@@ -91,14 +90,14 @@ export function RegiosDemo() {
             onViewProviders={handleViewProviders}
           />
         ) : (
-          <RegioDetailPage
-            regionId={selectedRegion!}
-            onBack={handleBack}
-            onGemeenteClick={handleGemeenteClick}
-            onProviderClick={handleProviderClick}
-            onViewAllGemeenten={handleViewAllGemeenten}
-            onViewAllProviders={handleViewAllProviders}
-          />
+          <div className="premium-card p-6">
+            <p className="text-sm text-muted-foreground">
+              Regio detail demo is verwijderd. Gebruik de actieve Regio's flow via RegiosPage.
+            </p>
+            <button onClick={handleBack} className="mt-3 text-sm text-primary hover:underline">
+              Terug naar overzicht
+            </button>
+          </div>
         )}
       </div>
     </div>

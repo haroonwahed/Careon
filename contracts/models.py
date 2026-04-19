@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 from decimal import Decimal
 from datetime import date
@@ -12,6 +12,7 @@ User = get_user_model()
 
 class RegionType(models.TextChoices):
     GEMEENTELIJK = 'GEMEENTELIJK', 'Gemeentelijk'
+    JEUGDREGIO = 'JEUGDREGIO', 'Jeugdregio'
     ROAZ = 'ROAZ', 'ROAZ'
     GGD = 'GGD', 'GGD'
     ZORGKANTOOR = 'ZORGKANTOOR', 'Zorgkantoor'
@@ -285,6 +286,12 @@ class ProviderProfile(models.Model):
         blank=True,
         related_name='provider_profiles',
         verbose_name='Bediende regio\'s',
+    )
+    secondary_served_regions = models.ManyToManyField(
+        'RegionalConfiguration',
+        blank=True,
+        related_name='provider_profiles_secondary',
+        verbose_name='Secundaire bediende regio\'s',
     )
     
     # Target care forms
@@ -1138,6 +1145,7 @@ class CaseDecisionLog(models.Model):
         REMATCH_TRIGGERED = 'REMATCH_TRIGGERED', 'Rematch triggered'
         CONTINUE_WAITING = 'CONTINUE_WAITING', 'Continue waiting'
         SLA_ESCALATION = 'SLA_ESCALATION', 'SLA state transition'
+        CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.
@@ -1600,6 +1608,54 @@ class CaseIntakeProcess(models.Model):
         related_name='preferred_intakes',
         verbose_name='Voorkeursregio',
     )
+    gemeente = models.ForeignKey(
+        'MunicipalityConfiguration',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='intake_processes',
+        verbose_name='Gemeente',
+    )
+    regio = models.ForeignKey(
+        'RegionalConfiguration',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_intakes',
+        verbose_name='Geresolveerde regio',
+        help_text='Deterministisch afgeleid uit gemeente; stabiel tenzij gemeente wijzigt.',
+    )
+    zorgvorm_gewenst = models.CharField(
+        max_length=20,
+        choices=CareForm.choices,
+        blank=True,
+        verbose_name='Zorgvorm gewenst (matching)',
+    )
+    problematiek_types = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Problematiektypes',
+    )
+    contra_indicaties = models.TextField(
+        blank=True,
+        verbose_name='Contra-indicaties',
+    )
+    max_toelaatbare_wachttijd_dagen = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Maximaal toelaatbare wachttijd (dagen)',
+    )
+    leeftijd = models.PositiveSmallIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Leeftijd (jaren)',
+    )
+    setting_voorkeur = models.CharField(
+        max_length=50,
+        blank=True,
+        verbose_name='Settingvoorkeur',
+        help_text='Bijv. open, besloten, semi_besloten, thuis.',
+    )
     
     # CARE-SPECIFIC: Client profile
     client_age_category = models.CharField(max_length=10, choices=AgeCategory.choices, null=True, blank=True, verbose_name='Leeftijdscategorie cliënt')
@@ -1653,6 +1709,106 @@ class CaseIntakeProcess(models.Model):
 
     def __str__(self):
         return f'{self.title} ({self.get_status_display()})'
+
+    def save(self, *args, **kwargs):
+        # Keep nullable payloads from older form/API clients from violating DB constraints.
+        if self.contra_indicaties is None:
+            self.contra_indicaties = ''
+        if self.problematiek_types is None:
+            self.problematiek_types = []
+        if self.zorgvorm_gewenst is None:
+            self.zorgvorm_gewenst = ''
+        if self.setting_voorkeur is None:
+            self.setting_voorkeur = ''
+
+        previous_gemeente_id = None
+        if self.pk:
+            previous_gemeente_id = (
+                CaseIntakeProcess.objects
+                .filter(pk=self.pk)
+                .values_list('gemeente_id', flat=True)
+                .first()
+            )
+
+        if self.zorgvorm_gewenst and self.preferred_care_form != self.zorgvorm_gewenst:
+            self.preferred_care_form = self.zorgvorm_gewenst
+        elif not self.zorgvorm_gewenst and self.preferred_care_form:
+            self.zorgvorm_gewenst = self.preferred_care_form
+
+        should_resolve_region = (
+            bool(self.gemeente_id)
+            and (
+                not self.regio_id
+                or not self.pk
+                or previous_gemeente_id != self.gemeente_id
+            )
+        )
+
+        if should_resolve_region:
+            gemeente = self.gemeente
+            resolved_region = None
+            if gemeente is not None:
+                resolved_region = (
+                    gemeente.regions.filter(status=RegionalConfiguration.Status.ACTIVE)
+                    .order_by('region_type', 'region_name')
+                    .first()
+                )
+                if resolved_region is None:
+                    resolved_region = gemeente.regions.order_by('region_type', 'region_name').first()
+
+            self.regio = resolved_region
+            if resolved_region and not self.preferred_region_id:
+                self.preferred_region = resolved_region
+            if resolved_region and not self.preferred_region_type:
+                self.preferred_region_type = resolved_region.region_type
+
+        if not self.regio_id and self.preferred_region_id:
+            self.regio = self.preferred_region
+
+        super().save(*args, **kwargs)
+
+    def ensure_case_record(self, created_by=None):
+        if self.contract_id:
+            return self.contract
+
+        risk_map = {
+            self.Urgency.LOW: CareCase.RiskLevel.LOW,
+            self.Urgency.MEDIUM: CareCase.RiskLevel.MEDIUM,
+            self.Urgency.HIGH: CareCase.RiskLevel.HIGH,
+            self.Urgency.CRISIS: CareCase.RiskLevel.CRITICAL,
+        }
+        contract_type_map = {
+            self.CareForm.OUTPATIENT: CareCase.ContractType.MSA,
+            self.CareForm.DAY_TREATMENT: CareCase.ContractType.SOW,
+            self.CareForm.RESIDENTIAL: CareCase.ContractType.LEASE,
+            self.CareForm.CRISIS: CareCase.ContractType.NDA,
+        }
+
+        region_label = ''
+        if self.regio_id and self.regio:
+            region_label = self.regio.region_name
+        elif self.preferred_region_id and self.preferred_region:
+            region_label = self.preferred_region.region_name
+        elif self.gemeente_id and self.gemeente:
+            region_label = self.gemeente.municipality_name
+
+        case_record = CareCase.objects.create(
+            organization=self.organization,
+            title=self.title,
+            contract_type=contract_type_map.get(self.zorgvorm_gewenst or self.preferred_care_form, CareCase.ContractType.OTHER),
+            content=(self.assessment_summary or self.description or '').strip(),
+            status=CareCase.Status.PENDING,
+            service_region=region_label,
+            risk_level=risk_map.get(self.urgency, CareCase.RiskLevel.MEDIUM),
+            start_date=self.start_date,
+            end_date=self.target_completion_date,
+            case_phase=CareCase.CasePhase.INTAKE,
+            phase_entered_at=timezone.now(),
+            created_by=created_by,
+        )
+        self.contract = case_record
+        super().save(update_fields=['contract'])
+        return case_record
 
     @property
     def case_record(self):
@@ -1861,6 +2017,7 @@ class MunicipalityConfiguration(models.Model):
     # Municipality info
     municipality_name = models.CharField(max_length=150, verbose_name='Gemeente')
     municipality_code = models.CharField(max_length=50, blank=True, verbose_name='Gemeentecode')
+    province = models.CharField(max_length=100, blank=True, default='', verbose_name='Provincie')
     
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
@@ -1929,6 +2086,7 @@ class RegionalConfiguration(models.Model):
     )
     region_name = models.CharField(max_length=150, verbose_name='Regio')
     region_code = models.CharField(max_length=50, blank=True, verbose_name='Regiode')
+    province = models.CharField(max_length=100, blank=True, default='', verbose_name='Provincie')
     
     # Configuration management
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name='Status')
@@ -2159,3 +2317,1012 @@ class DecisionQualityWeeklyReviewMark(models.Model):
 
 
 # Legacy model aliases removed. Use canonical Care* / Intake* / Placement* symbols.
+
+
+# ============================================================
+# PROVIDER DATA PIPELINE — CANONICAL INTERNAL MODEL
+# UI and matching engine MUST read exclusively from these tables.
+# External data is never promoted directly; always flows through staging.
+# ============================================================
+
+import hashlib
+import json as _json
+
+
+class Zorgaanbieder(models.Model):
+    """Canonical provider entity. System of record for all provider data."""
+
+    class ProviderType(models.TextChoices):
+        RESIDENTIEEL = 'RESIDENTIEEL', 'Residentiële zorg'
+        AMBULANT = 'AMBULANT', 'Ambulante begeleiding'
+        DAGBEHANDELING = 'DAGBEHANDELING', 'Dagbehandeling'
+        THUISBEGELEIDING = 'THUISBEGELEIDING', 'Thuisbegeleiding'
+        CRISISOPVANG = 'CRISISOPVANG', 'Crisisopvang'
+        OVERIG = 'OVERIG', 'Overig'
+
+    class TrustLevel(models.TextChoices):
+        VERIFIED = 'VERIFIED', 'Geverifieerd'
+        PROVISIONAL = 'PROVISIONAL', 'Voorlopig'
+        UNVERIFIED = 'UNVERIFIED', 'Niet geverifieerd'
+        SUSPENDED = 'SUSPENDED', 'Opgeschort'
+
+    class NormalisatieStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Wacht op normalisatie'
+        NORMALIZED = 'NORMALIZED', 'Genormaliseerd'
+        PARTIAL = 'PARTIAL', 'Gedeeltelijk genormaliseerd'
+        FAILED = 'FAILED', 'Normalisatie mislukt'
+
+    class ReviewStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Wacht op review'
+        APPROVED = 'APPROVED', 'Goedgekeurd'
+        FLAGGED = 'FLAGGED', 'Gemarkeerd voor controle'
+        REJECTED = 'REJECTED', 'Afgewezen'
+
+    class BronType(models.TextChoices):
+        MANUAL = 'manual', 'Handmatig ingevoerd'
+        SEEDED = 'seeded', 'Seed data'
+        CSV_IMPORT = 'csv_import', 'CSV import'
+        API = 'api', 'API synchronisatie'
+
+    # Canonical identifier — AGB-code when available, else system UUID
+    canonical_id = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True)
+    agb_code = models.CharField(max_length=20, blank=True, db_index=True,
+                                help_text='AGB-code als extern primair sleutel')
+    kvk_number = models.CharField(max_length=20, blank=True, db_index=True)
+    name = models.CharField(max_length=300)
+    short_name = models.CharField(max_length=100, blank=True)
+    handelsnaam = models.CharField(max_length=300, blank=True,
+                                   help_text='Handelsnaam zoals geregistreerd bij KVK')
+    omschrijving_kort = models.TextField(blank=True,
+                                         help_text='Korte beschrijving voor matching context')
+    provider_type = models.CharField(max_length=30, choices=ProviderType.choices,
+                                     default=ProviderType.OVERIG)
+    trust_level = models.CharField(max_length=20, choices=TrustLevel.choices,
+                                   default=TrustLevel.PROVISIONAL)
+    is_active = models.BooleanField(default=True)
+    landelijk_dekkend = models.BooleanField(default=False,
+                                            help_text='Aanbieder is nationaal actief')
+    logo = models.CharField(max_length=500, blank=True,
+                             help_text='URL of pad naar logo-afbeelding')
+    website = models.URLField(blank=True)
+    email = models.EmailField(blank=True)
+    phone = models.CharField(max_length=30, blank=True)
+
+    # -----------------------------------------------------------------------
+    # Source traceability
+    # -----------------------------------------------------------------------
+    last_source_system = models.CharField(max_length=100, blank=True)
+    last_import_batch = models.ForeignKey(
+        'ProviderImportBatch',
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='updated_providers',
+    )
+    bron_type = models.CharField(
+        max_length=20, choices=BronType.choices,
+        default=BronType.MANUAL, blank=True,
+        help_text='Herkomst van de data',
+    )
+    bron_id = models.CharField(max_length=200, blank=True,
+                               help_text='Primaire sleutel in het bronsysteem')
+    bron_laatst_gesynchroniseerd_op = models.DateTimeField(
+        null=True, blank=True,
+        help_text='Tijdstip van de laatste synchronisatie vanuit bron',
+    )
+
+    # -----------------------------------------------------------------------
+    # Internal quality flags
+    # -----------------------------------------------------------------------
+    is_handmatig_verrijkt = models.BooleanField(
+        default=False,
+        help_text='Intern verrijkt door een medewerker (niet overschrijfbaar door import)',
+    )
+    is_handmatig_overschreven = models.BooleanField(
+        default=False,
+        help_text='Veld(en) handmatig overschreven — beschermd tegen automatische sync',
+    )
+    normalisatie_status = models.CharField(
+        max_length=20, choices=NormalisatieStatus.choices,
+        default=NormalisatieStatus.PENDING,
+    )
+    review_status = models.CharField(
+        max_length=20, choices=ReviewStatus.choices,
+        default=ReviewStatus.PENDING,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_zorgaanbieder'
+        ordering = ['name']
+        indexes = [
+            models.Index(fields=['agb_code']),
+            models.Index(fields=['kvk_number']),
+            models.Index(fields=['trust_level', 'is_active']),
+        ]
+
+    def __str__(self):
+        return f'{self.name} ({self.agb_code or self.canonical_id})'
+
+
+class AanbiederVestiging(models.Model):
+    """Physical location/branch of a Zorgaanbieder."""
+
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder, on_delete=models.CASCADE, related_name='vestigingen'
+    )
+    vestiging_code = models.CharField(max_length=50, blank=True, db_index=True,
+                                      help_text='Externe vestigingscode')
+    name = models.CharField(max_length=300, blank=True)
+    agb_code_vestiging = models.CharField(max_length=20, blank=True, db_index=True,
+                                          help_text='AGB-code specifiek voor deze vestiging')
+    # Address fields — straat/huisnummer stored separately for geocoding
+    straat = models.CharField(max_length=200, blank=True)
+    huisnummer = models.CharField(max_length=20, blank=True)
+    address = models.CharField(max_length=500, blank=True,
+                               help_text='Volledig adres (legacy/fallback)')
+    city = models.CharField(max_length=100, blank=True)
+    postcode = models.CharField(max_length=10, blank=True)
+    gemeente = models.CharField(max_length=100, blank=True,
+                                help_text='Gemeente (officieel)')
+    provincie = models.CharField(max_length=100, blank=True)
+    region = models.CharField(max_length=100, blank=True,
+                              help_text='Canonical regio code')
+    regio_jeugd = models.CharField(max_length=100, blank=True,
+                                   help_text='Jeugdzorg regio-indeling')
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    telefoon_vestiging = models.CharField(max_length=30, blank=True)
+    email_vestiging = models.EmailField(blank=True)
+    is_primary = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
+    # Bron traceability
+    bron_type = models.CharField(max_length=20, blank=True)
+    bron_id = models.CharField(max_length=200, blank=True)
+    bron_laatst_gesynchroniseerd_op = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_aanbiedervestiging'
+        ordering = ['zorgaanbieder__name', 'city']
+        unique_together = [('zorgaanbieder', 'vestiging_code')]
+
+    def __str__(self):
+        return f'{self.zorgaanbieder.name} — {self.city or self.vestiging_code}'
+
+
+class Zorgprofiel(models.Model):
+    """
+    Care profile — primary matching entity.
+
+    Can be linked at vestiging level (preferred) or organization level (legacy v1 pipeline).
+    A vestiging can have multiple profiles for different care forms.
+    """
+
+    # Primary FK: vestiging-level profile (preferred for new records)
+    aanbieder_vestiging = models.ForeignKey(
+        AanbiederVestiging,
+        null=True, blank=True,
+        on_delete=models.CASCADE,
+        related_name='zorgprofielen',
+        help_text='Vestiging waaraan dit profiel gekoppeld is',
+    )
+    # Legacy FK: organization-level profile (backward compat with v1 pipeline)
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder,
+        null=True, blank=True,
+        on_delete=models.CASCADE,
+        related_name='zorgprofielen',
+        help_text='Zorgaanbieder op organisatieniveau',
+    )
+
+    # -------------------------------------------------------------------
+    # Care form and domain
+    # -------------------------------------------------------------------
+    zorgvorm = models.CharField(max_length=50, blank=True,
+                                help_text='Primaire zorgvorm: ambulant, residentieel, etc.')
+    zorgdomein = models.CharField(max_length=100, blank=True,
+                                  help_text='Zorgdomein: jeugd, volwassenen, lvb, etc.')
+
+    # -------------------------------------------------------------------
+    # Target group
+    # -------------------------------------------------------------------
+    doelgroep_leeftijd_van = models.PositiveSmallIntegerField(null=True, blank=True)
+    doelgroep_leeftijd_tot = models.PositiveSmallIntegerField(null=True, blank=True)
+    geslacht_beperking = models.CharField(max_length=20, blank=True)
+
+    # -------------------------------------------------------------------
+    # Problematiek and clinical suitability
+    # -------------------------------------------------------------------
+    problematiek_types = models.JSONField(default=list, blank=True,
+                                          help_text='Lijst van behandelde problematiek-types')
+    contra_indicaties = models.TextField(blank=True)
+    intensiteit = models.CharField(max_length=50, blank=True,
+                                   help_text='licht / middel / intensief / hoog_intensief')
+    setting_type = models.CharField(max_length=50, blank=True,
+                                    help_text='open / besloten / semi_besloten')
+
+    # Clinical suitability flags
+    crisis_opvang_mogelijk = models.BooleanField(default=False)
+    lvb_geschikt = models.BooleanField(default=False)
+    autisme_geschikt = models.BooleanField(default=False)
+    trauma_geschikt = models.BooleanField(default=False)
+    ggz_comorbiditeit_mogelijk = models.BooleanField(default=False)
+    verslavingsproblematiek_mogelijk = models.BooleanField(default=False)
+    veiligheidsrisico_hanteerbaar = models.BooleanField(default=False)
+    omschrijving_match_context = models.TextField(blank=True)
+
+    # -------------------------------------------------------------------
+    # Care forms (v1 compat — kept for pipeline backward compat)
+    # -------------------------------------------------------------------
+    biedt_ambulant = models.BooleanField(default=False)
+    biedt_dagbehandeling = models.BooleanField(default=False)
+    biedt_residentieel = models.BooleanField(default=False)
+    biedt_crisis = models.BooleanField(default=False)
+    biedt_thuisbegeleiding = models.BooleanField(default=False)
+
+    # Age groups served (v1 compat)
+    leeftijd_0_4 = models.BooleanField(default=False)
+    leeftijd_4_12 = models.BooleanField(default=False)
+    leeftijd_12_18 = models.BooleanField(default=False)
+    leeftijd_18_plus = models.BooleanField(default=False)
+
+    # Complexity levels (v1 compat)
+    complexiteit_enkelvoudig = models.BooleanField(default=False)
+    complexiteit_meervoudig = models.BooleanField(default=False)
+    complexiteit_zwaar = models.BooleanField(default=False)
+
+    # Urgency levels (v1 compat)
+    urgentie_laag = models.BooleanField(default=False)
+    urgentie_middel = models.BooleanField(default=False)
+    urgentie_hoog = models.BooleanField(default=False)
+    urgentie_crisis = models.BooleanField(default=False)
+
+    # Region scope
+    regio_codes = models.CharField(max_length=1000, blank=True,
+                                   help_text='Kommagescheiden canonieke regiocodes')
+    specialisaties = models.TextField(blank=True)
+    actief = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_zorgprofiel'
+        indexes = [
+            models.Index(fields=['aanbieder_vestiging']),
+            models.Index(fields=['zorgaanbieder']),
+            models.Index(fields=['zorgvorm']),
+        ]
+
+    def __str__(self):
+        owner = self.aanbieder_vestiging or self.zorgaanbieder
+        return f'Zorgprofiel: {owner}'
+
+
+class CapaciteitRecord(models.Model):
+    """
+    Point-in-time capacity snapshot per vestiging.
+    Appended on every sync; never overwritten — provides full history.
+    """
+
+    vestiging = models.ForeignKey(
+        AanbiederVestiging, on_delete=models.CASCADE, related_name='capaciteit_records'
+    )
+    import_batch = models.ForeignKey(
+        'ProviderImportBatch', on_delete=models.CASCADE, related_name='capaciteit_records'
+    )
+    # Optional link to specific care profile
+    zorgprofiel = models.ForeignKey(
+        'Zorgprofiel', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='capaciteit_records',
+    )
+    # v1 compat fields — kept for existing pipeline
+    open_slots = models.PositiveIntegerField(default=0)
+    waiting_list_size = models.PositiveIntegerField(default=0)
+    avg_wait_days = models.PositiveIntegerField(default=0)
+    max_capacity = models.PositiveIntegerField(default=0)
+    recorded_at = models.DateTimeField(default=timezone.now)
+
+    # Extended capacity fields
+    capaciteit_type = models.CharField(max_length=50, blank=True,
+                                       help_text='totaal / residentieel / ambulant / dagbehandeling')
+    totale_capaciteit = models.PositiveIntegerField(default=0)
+    beschikbare_capaciteit = models.PositiveIntegerField(default=0)
+    wachtlijst_aantal = models.PositiveIntegerField(default=0)
+    gemiddelde_wachttijd_dagen = models.PositiveIntegerField(default=0)
+    direct_pleegbaar = models.BooleanField(default=False)
+    beschikbaar_vanaf = models.DateField(null=True, blank=True)
+    toelichting_capaciteit = models.TextField(blank=True)
+    betrouwbaarheid_score = models.FloatField(
+        null=True, blank=True,
+        help_text='0.0–1.0; betrouwbaarheid van de capaciteitsopgave',
+    )
+    laatst_bijgewerkt_op = models.DateTimeField(null=True, blank=True)
+    laatst_bijgewerkt_door = models.CharField(max_length=200, blank=True)
+
+    class Meta:
+        db_table = 'provider_capaciteitrecord'
+        ordering = ['-recorded_at']
+        indexes = [
+            models.Index(fields=['vestiging', '-recorded_at']),
+            models.Index(fields=['import_batch']),
+            models.Index(fields=['zorgprofiel', '-recorded_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f'{self.vestiging} — {self.open_slots} open / '
+            f'{self.waiting_list_size} wachtend ({self.recorded_at:%Y-%m-%d})'
+        )
+
+
+class ContractRelatie(models.Model):
+    """
+    Contractual relationship between a Zorgaanbieder and an Organization (gemeente).
+    UI reads this to filter providers per organisation context.
+    """
+
+    class ContractStatus(models.TextChoices):
+        ACTIEF = 'ACTIEF', 'Actief'
+        VERLOPEN = 'VERLOPEN', 'Verlopen'
+        OPGESCHORT = 'OPGESCHORT', 'Opgeschort'
+        CONCEPT = 'CONCEPT', 'Concept'
+
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder, on_delete=models.CASCADE, related_name='contract_relaties'
+    )
+    organization = models.ForeignKey(
+        Organization, on_delete=models.CASCADE, related_name='provider_contracten'
+    )
+    contract_type = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=ContractStatus.choices,
+                               default=ContractStatus.ACTIEF)
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    # Extended contract fields
+    gemeente = models.CharField(max_length=200, blank=True,
+                                help_text='Gemeente als tekst (naast Organization FK)')
+    regio = models.CharField(max_length=200, blank=True)
+    zorgvormen_contract = models.JSONField(default=list, blank=True,
+                                           help_text='Gecontracteerde zorgvormen')
+    actief_contract = models.BooleanField(default=True)
+    voorkeursaanbieder = models.BooleanField(
+        default=False,
+        help_text='Aanbieder is voorkeursaanbieder voor deze gemeente/regio',
+    )
+    opmerkingen_contract = models.TextField(blank=True)
+
+    # Traceability
+    import_batch = models.ForeignKey(
+        'ProviderImportBatch', null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='contract_relaties'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_contractrelatie'
+        unique_together = [('zorgaanbieder', 'organization', 'contract_type')]
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return f'{self.zorgaanbieder.name} ↔ {self.organization.name} ({self.status})'
+
+
+class ProviderRegioDekking(models.Model):
+    """Actieve regiodekking per aanbieder/vestiging voor matching."""
+
+    class DekkingStatus(models.TextChoices):
+        ACTIVE = 'ACTIVE', 'Actief'
+        INACTIVE = 'INACTIVE', 'Inactief'
+        DRAFT = 'DRAFT', 'Concept'
+        SUSPENDED = 'SUSPENDED', 'Opgeschort'
+
+    class BronType(models.TextChoices):
+        MANUAL = 'manual', 'Handmatig ingevoerd'
+        SEEDED = 'seeded', 'Seed data'
+        CSV_IMPORT = 'csv_import', 'CSV import'
+        API = 'api', 'API synchronisatie'
+
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder,
+        on_delete=models.CASCADE,
+        related_name='regio_dekkingen',
+    )
+    aanbieder_vestiging = models.ForeignKey(
+        AanbiederVestiging,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='regio_dekkingen',
+    )
+    regio = models.ForeignKey(
+        RegionalConfiguration,
+        on_delete=models.CASCADE,
+        related_name='provider_dekkingen',
+    )
+    is_primair_dekkingsgebied = models.BooleanField(default=True)
+    zorgvormen = models.JSONField(default=list, blank=True)
+    doelgroepen = models.JSONField(default=list, blank=True)
+    contract_actief = models.BooleanField(default=True)
+    capaciteit_meerekenen = models.BooleanField(default=True)
+    reisafstand_score = models.FloatField(
+        default=1.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text='0.0–1.0 score voor bereikbaarheid/reisafstand.',
+    )
+    dekking_status = models.CharField(
+        max_length=20,
+        choices=DekkingStatus.choices,
+        default=DekkingStatus.ACTIVE,
+    )
+    toelichting = models.TextField(blank=True)
+    bron_type = models.CharField(
+        max_length=20,
+        choices=BronType.choices,
+        default=BronType.MANUAL,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_regiodekking'
+        ordering = ['-is_primair_dekkingsgebied', 'regio__region_name', '-updated_at']
+        unique_together = [('zorgaanbieder', 'aanbieder_vestiging', 'regio')]
+        indexes = [
+            models.Index(fields=['zorgaanbieder', 'regio', 'dekking_status']),
+            models.Index(fields=['regio', 'contract_actief']),
+        ]
+
+    def __str__(self):
+        vestiging = self.aanbieder_vestiging.name if self.aanbieder_vestiging else 'alle vestigingen'
+        return f'{self.zorgaanbieder.name} · {self.regio.region_name} · {vestiging}'
+
+
+# ============================================================
+# PROVIDER DATA PIPELINE — STAGING / IMPORT LAYER
+# ============================================================
+
+class ProviderImportBatch(models.Model):
+    """
+    Metadata record for one import run from one source system.
+    Immutable after completion — never edit a finished batch.
+    """
+
+    class BatchStatus(models.TextChoices):
+        PENDING = 'PENDING', 'In wachtrij'
+        RUNNING = 'RUNNING', 'Bezig'
+        COMPLETED = 'COMPLETED', 'Voltooid'
+        PARTIAL = 'PARTIAL', 'Deels voltooid'
+        FAILED = 'FAILED', 'Mislukt'
+
+    batch_ref = models.UUIDField(default=uuid.uuid4, unique=True, db_index=True)
+    source_system = models.CharField(max_length=100,
+                                     help_text='Identifier van het bronsysteem (bijv. "agbregister_v2")')
+    source_version = models.CharField(max_length=50, blank=True)
+    triggered_by = models.CharField(max_length=200, blank=True,
+                                    help_text='Gebruiker of scheduler die de import gestart heeft')
+    status = models.CharField(max_length=20, choices=BatchStatus.choices,
+                               default=BatchStatus.PENDING)
+    total_records = models.PositiveIntegerField(default=0)
+    processed_records = models.PositiveIntegerField(default=0)
+    created_records = models.PositiveIntegerField(default=0)
+    updated_records = models.PositiveIntegerField(default=0)
+    skipped_records = models.PositiveIntegerField(default=0)
+    conflicted_records = models.PositiveIntegerField(default=0)
+    quarantined_records = models.PositiveIntegerField(default=0)
+    error_summary = models.TextField(blank=True)
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_importbatch'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['source_system', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f'Batch {self.batch_ref} [{self.source_system}] {self.status}'
+
+
+class BronImportBatch(models.Model):
+    """Named staging batch entity for datasource imports (CSV/API/manual)."""
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'In wachtrij'
+        RUNNING = 'RUNNING', 'Bezig'
+        COMPLETED = 'COMPLETED', 'Voltooid'
+        PARTIAL = 'PARTIAL', 'Deels voltooid'
+        FAILED = 'FAILED', 'Mislukt'
+
+    provider_batch = models.OneToOneField(
+        ProviderImportBatch,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='bron_batch',
+    )
+    bron_type = models.CharField(max_length=50)
+    batch_naam = models.CharField(max_length=200)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    gestart_op = models.DateTimeField(null=True, blank=True)
+    afgerond_op = models.DateTimeField(null=True, blank=True)
+    totaal_records = models.PositiveIntegerField(default=0)
+    geslaagd_records = models.PositiveIntegerField(default=0)
+    gefaald_records = models.PositiveIntegerField(default=0)
+    warnings_count = models.PositiveIntegerField(default=0)
+    foutenlog = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_bronimportbatch'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['bron_type', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f'BronBatch {self.batch_naam} [{self.bron_type}] {self.status}'
+
+
+class BronRecordRaw(models.Model):
+    """Immutable raw source records linked to a BronImportBatch."""
+
+    import_batch = models.ForeignKey(
+        BronImportBatch,
+        on_delete=models.CASCADE,
+        related_name='raw_records',
+    )
+    external_source = models.CharField(max_length=100)
+    external_id = models.CharField(max_length=200, db_index=True)
+    payload_json = models.JSONField()
+    record_hash = models.CharField(max_length=64, db_index=True)
+    normalisatie_status = models.CharField(max_length=20, default='PENDING')
+    foutmelding = models.TextField(blank=True)
+    verwerkt_op = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_bronrecordraw'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['import_batch', 'external_id']),
+            models.Index(fields=['external_source']),
+            models.Index(fields=['normalisatie_status']),
+        ]
+
+    def __str__(self):
+        return f'BronRecord {self.external_source}:{self.external_id} ({self.normalisatie_status})'
+
+
+class BronSyncLog(models.Model):
+    """Datasource sync log with canonical entity references."""
+
+    bron_type = models.CharField(max_length=50)
+    external_id = models.CharField(max_length=200, blank=True)
+    interne_entiteit_type = models.CharField(max_length=100)
+    interne_entiteit_id = models.CharField(max_length=100, blank=True)
+    actie = models.CharField(max_length=30)
+    status = models.CharField(max_length=30)
+    melding = models.TextField(blank=True)
+    uitgevoerd_op = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_bronsynclog'
+        ordering = ['-uitgevoerd_op']
+        indexes = [
+            models.Index(fields=['bron_type', '-uitgevoerd_op']),
+            models.Index(fields=['interne_entiteit_type', 'interne_entiteit_id']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f'BronSync {self.bron_type}:{self.external_id} {self.actie}/{self.status}'
+
+
+class ProviderStagingRecord(models.Model):
+    """
+    Raw immutable record landed from external source.
+    Never mutated after insert — serves as audit evidence and replay source.
+    """
+
+    class ValidationStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Wacht op validatie'
+        VALID = 'VALID', 'Geldig'
+        INVALID = 'INVALID', 'Ongeldig'
+        QUARANTINED = 'QUARANTINED', 'In quarantaine'
+        PROMOTED = 'PROMOTED', 'Gepromoveerd naar canoniek'
+        CONFLICTED = 'CONFLICTED', 'Conflict gedetecteerd'
+
+    batch = models.ForeignKey(
+        ProviderImportBatch, on_delete=models.CASCADE, related_name='staging_records'
+    )
+    # External identity fields — used for entity resolution
+    source_id = models.CharField(max_length=200, db_index=True,
+                                 help_text='Primaire sleutel in het bronsysteem')
+    source_agb_code = models.CharField(max_length=20, blank=True, db_index=True)
+    source_kvk = models.CharField(max_length=20, blank=True)
+
+    # Raw payload — immutable after insert
+    raw_payload = models.JSONField(help_text='Onbewerkte data van het bronsysteem')
+
+    # Fingerprint for change detection (SHA-256 of sorted raw_payload)
+    payload_fingerprint = models.CharField(max_length=64, db_index=True)
+
+    validation_status = models.CharField(
+        max_length=20, choices=ValidationStatus.choices,
+        default=ValidationStatus.PENDING
+    )
+    validation_errors = models.JSONField(default=list, blank=True)
+    confidence_score = models.FloatField(default=1.0,
+                                         help_text='0.0–1.0; lager = minder betrouwbaar')
+
+    # Link to canonical record after promotion
+    canonical_provider = models.ForeignKey(
+        Zorgaanbieder, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='staging_records'
+    )
+
+    ingested_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_stagingrecord'
+        ordering = ['-ingested_at']
+        indexes = [
+            models.Index(fields=['batch', 'source_id']),
+            models.Index(fields=['source_agb_code']),
+            models.Index(fields=['validation_status']),
+            models.Index(fields=['payload_fingerprint']),
+        ]
+
+    def __str__(self):
+        return f'StagingRecord {self.source_id} [{self.batch.source_system}] {self.validation_status}'
+
+    @staticmethod
+    def compute_fingerprint(raw_payload: dict) -> str:
+        serialised = _json.dumps(raw_payload, sort_keys=True, ensure_ascii=False)
+        return hashlib.sha256(serialised.encode()).hexdigest()
+
+
+class ProviderSyncLog(models.Model):
+    """
+    Audit log entry per staging record per canonical entity.
+    Records the action taken and field-level diffs.
+    """
+
+    class SyncAction(models.TextChoices):
+        CREATED = 'CREATED', 'Aangemaakt'
+        UPDATED = 'UPDATED', 'Bijgewerkt'
+        SKIPPED = 'SKIPPED', 'Overgeslagen (geen wijziging)'
+        CONFLICTED = 'CONFLICTED', 'Conflict — wacht op resolutie'
+        QUARANTINED = 'QUARANTINED', 'In quarantaine geplaatst'
+
+    staging_record = models.ForeignKey(
+        ProviderStagingRecord, on_delete=models.CASCADE, related_name='sync_logs'
+    )
+    canonical_provider = models.ForeignKey(
+        Zorgaanbieder, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='sync_logs'
+    )
+    action = models.CharField(max_length=20, choices=SyncAction.choices)
+    field_diffs = models.JSONField(default=dict, blank=True,
+                                   help_text='{"field": {"from": old, "to": new}}')
+    message = models.TextField(blank=True)
+    logged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_synclog'
+        ordering = ['-logged_at']
+        indexes = [
+            models.Index(fields=['canonical_provider', '-logged_at']),
+            models.Index(fields=['action']),
+        ]
+
+    def __str__(self):
+        return f'SyncLog {self.action} — {self.staging_record.source_id} @ {self.logged_at:%Y-%m-%d %H:%M}'
+
+
+class ProviderSyncConflict(models.Model):
+    """
+    A field-level conflict between incoming source data and the current canonical value.
+    Requires manual resolution or auto-resolution via policy.
+    """
+
+    class ResolutionStatus(models.TextChoices):
+        UNRESOLVED = 'UNRESOLVED', 'Niet opgelost'
+        ACCEPTED_SOURCE = 'ACCEPTED_SOURCE', 'Bronwaarde geaccepteerd'
+        ACCEPTED_CANONICAL = 'ACCEPTED_CANONICAL', 'Canonieke waarde behouden'
+        MANUAL = 'MANUAL', 'Handmatig opgelost'
+
+    staging_record = models.ForeignKey(
+        ProviderStagingRecord, on_delete=models.CASCADE, related_name='conflicts'
+    )
+    canonical_provider = models.ForeignKey(
+        Zorgaanbieder, on_delete=models.CASCADE, related_name='conflicts'
+    )
+    field_name = models.CharField(max_length=100)
+    source_value = models.TextField()
+    canonical_value = models.TextField()
+    resolution_status = models.CharField(
+        max_length=25, choices=ResolutionStatus.choices,
+        default=ResolutionStatus.UNRESOLVED
+    )
+    resolved_by = models.ForeignKey(
+        User, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name='resolved_conflicts'
+    )
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_syncconflict'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['resolution_status']),
+            models.Index(fields=['canonical_provider', 'field_name']),
+        ]
+
+    def __str__(self):
+        return (
+            f'Conflict {self.field_name} — {self.canonical_provider.name} '
+            f'[{self.resolution_status}]'
+        )
+
+
+# ============================================================
+# NEW PROVIDER DOMAIN MODELS — v2 architecture
+# ============================================================
+
+
+class PrestatieProfiel(models.Model):
+    """
+    Performance profile per Zorgprofiel.
+
+    Computed periodically from completed plaatsing/intake cycles.
+    Protected field — never overwritten by external sync.
+    """
+
+    zorgprofiel = models.OneToOneField(
+        Zorgprofiel,
+        on_delete=models.CASCADE,
+        related_name='prestatie_profiel',
+    )
+    aantal_matches = models.PositiveIntegerField(default=0)
+    aantal_plaatsingen = models.PositiveIntegerField(default=0)
+    aantal_afwijzingen = models.PositiveIntegerField(default=0)
+    succesratio_match_naar_plaatsing = models.FloatField(
+        null=True, blank=True,
+        help_text='Ratio matches die leiden tot plaatsing (0.0–1.0)',
+    )
+    gemiddelde_reactietijd_uren = models.FloatField(
+        null=True, blank=True,
+        help_text='Gemiddelde reactietijd van aanbieder na match-verzoek',
+    )
+    gemiddelde_doorlooptijd_dagen = models.FloatField(
+        null=True, blank=True,
+        help_text='Gemiddelde doorlooptijd van plaatsing (eerste contact tot start)',
+    )
+    intake_no_show_ratio = models.FloatField(
+        null=True, blank=True,
+        help_text='Fractie intakes waarbij cliënt niet verschijnt',
+    )
+    plaatsing_voortijdig_beeindigd_ratio = models.FloatField(
+        null=True, blank=True,
+        help_text='Fractie plaatsingen voortijdig beëindigd',
+    )
+    kwalitatieve_opmerking = models.TextField(blank=True)
+    laatst_berekend_op = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_prestatieprofilerel'
+        verbose_name = 'Prestatieprofiel'
+        verbose_name_plural = 'Prestatieprofielen'
+
+    def __str__(self):
+        return f'Prestaties: {self.zorgprofiel}'
+
+
+class ContactpersoonAanbieder(models.Model):
+    """Contact person at a provider — for match/contract/intake communication."""
+
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder,
+        on_delete=models.CASCADE,
+        related_name='contactpersonen',
+    )
+    aanbieder_vestiging = models.ForeignKey(
+        AanbiederVestiging,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='contactpersonen',
+    )
+    naam = models.CharField(max_length=200)
+    functie = models.CharField(max_length=200, blank=True)
+    email = models.EmailField(blank=True)
+    telefoon = models.CharField(max_length=30, blank=True)
+    is_primair_match_contact = models.BooleanField(default=False)
+    is_primair_contract_contact = models.BooleanField(default=False)
+    is_primair_intake_contact = models.BooleanField(default=False)
+    actief = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'provider_contactpersoon'
+        ordering = ['naam']
+        indexes = [
+            models.Index(fields=['zorgaanbieder', 'actief']),
+        ]
+
+    def __str__(self):
+        return f'{self.naam} ({self.functie}) — {self.zorgaanbieder.name}'
+
+
+class BronMappingIssue(models.Model):
+    """
+    Mapping/normalization issue identified during CSV/API import.
+
+    Different from ProviderSyncConflict (which is about canonical field conflicts).
+    BronMappingIssue covers cases where a source field could not be mapped to
+    a canonical field at all, or the mapping is ambiguous.
+    """
+
+    class IssueType(models.TextChoices):
+        UNKNOWN_VALUE = 'UNKNOWN_VALUE', 'Onbekende bronwaarde'
+        AMBIGUOUS_MAPPING = 'AMBIGUOUS_MAPPING', 'Ambigue mapping'
+        MISSING_FIELD = 'MISSING_FIELD', 'Verplicht veld ontbreekt'
+        TYPE_MISMATCH = 'TYPE_MISMATCH', 'Type mismatch'
+        FORMAT_ERROR = 'FORMAT_ERROR', 'Formaat fout'
+        CUSTOM = 'CUSTOM', 'Overig'
+
+    import_batch = models.ForeignKey(
+        BronImportBatch,
+        on_delete=models.CASCADE,
+        related_name='mapping_issues',
+    )
+    external_id = models.CharField(max_length=200, blank=True)
+    issue_type = models.CharField(max_length=30, choices=IssueType.choices)
+    veldnaam = models.CharField(max_length=100, blank=True,
+                                help_text='Naam van het bronveld dat het issue veroorzaakte')
+    bronwaarde = models.TextField(blank=True)
+    voorgestelde_mapping = models.TextField(
+        blank=True,
+        help_text='Aanbevolen mapping-aanpassing (handmatig ingevuld of door systeem)',
+    )
+    opgelost = models.BooleanField(default=False)
+    opgelost_op = models.DateTimeField(null=True, blank=True)
+    opgelost_door = models.ForeignKey(
+        User,
+        null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name='opgeloste_mapping_issues',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_bronmappingissue'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['import_batch', 'opgelost']),
+            models.Index(fields=['issue_type']),
+        ]
+
+    def __str__(self):
+        return f'MappingIssue [{self.issue_type}] {self.veldnaam}={self.bronwaarde!r}'
+
+
+class MatchResultaat(models.Model):
+    """
+    Matching decision output: one record per provider candidate per casus.
+
+    Created by the matching engine. Read-only after creation.
+    Protected — never overwritten by external sync.
+    """
+
+    class ConfidenceLabel(models.TextChoices):
+        HOOG = 'HOOG', 'Hoge zekerheid'
+        MIDDEL = 'MIDDEL', 'Gemiddelde zekerheid'
+        LAAG = 'LAAG', 'Lage zekerheid'
+        ONZEKER = 'ONZEKER', 'Onzeker — data onvolledig'
+
+    # Case reference — FK to CareCase when available, else raw ID
+    casus = models.ForeignKey(
+        'CareCase',
+        null=True, blank=True,
+        on_delete=models.CASCADE,
+        related_name='match_resultaten',
+    )
+    casus_id_extern = models.CharField(
+        max_length=100, blank=True,
+        help_text='Casusidentificatie wanneer geen FK beschikbaar',
+    )
+
+    # Matched provider
+    zorgprofiel = models.ForeignKey(
+        Zorgprofiel,
+        on_delete=models.CASCADE,
+        related_name='match_resultaten',
+    )
+    zorgaanbieder = models.ForeignKey(
+        Zorgaanbieder,
+        on_delete=models.CASCADE,
+        related_name='match_resultaten',
+    )
+
+    # -----------------------------------------------------------------------
+    # Score components (each 0.0–1.0)
+    # -----------------------------------------------------------------------
+    totaalscore = models.FloatField(default=0.0, help_text='Gewogen totaalscore 0.0–1.0')
+    score_inhoudelijke_fit = models.FloatField(default=0.0)
+    score_capaciteit = models.FloatField(default=0.0)
+    score_contract_regio = models.FloatField(default=0.0)
+    score_complexiteit = models.FloatField(default=0.0)
+    score_performance = models.FloatField(default=0.0)
+    score_regio_contract_fit = models.FloatField(default=0.0)
+    score_capaciteit_wachttijd_fit = models.FloatField(default=0.0)
+    score_complexiteit_veiligheid_fit = models.FloatField(default=0.0)
+    score_performance_fit = models.FloatField(default=0.0)
+
+    # -----------------------------------------------------------------------
+    # Explainability
+    # -----------------------------------------------------------------------
+    confidence_label = models.CharField(
+        max_length=10, choices=ConfidenceLabel.choices,
+        default=ConfidenceLabel.ONZEKER,
+    )
+    fit_samenvatting = models.TextField(
+        blank=True,
+        help_text='Mensleesbare samenvatting van de match-redenering',
+    )
+    trade_offs = models.JSONField(
+        default=list, blank=True,
+        help_text='Lijst van trade-offs: [{"factor": "...", "toelichting": "..."}]',
+    )
+    verificatie_advies = models.TextField(
+        blank=True,
+        help_text='Aanbeveling voor verificatie-stap voor een coördinator',
+    )
+
+    # -----------------------------------------------------------------------
+    # Exclusion
+    # -----------------------------------------------------------------------
+    uitgesloten = models.BooleanField(default=False)
+    uitsluitreden = models.CharField(max_length=200, blank=True)
+
+    ranking = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        help_text='Rangorde binnen de kandidatenlijst voor deze casus',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'provider_matchresultaat'
+        ordering = ['ranking', '-totaalscore']
+        indexes = [
+            models.Index(fields=['casus', 'ranking']),
+            models.Index(fields=['zorgaanbieder', '-totaalscore']),
+            models.Index(fields=['uitgesloten']),
+        ]
+
+    def __str__(self):
+        return (
+            f'Match #{self.ranking}: {self.zorgaanbieder.name} '
+            f'(score {self.totaalscore:.2f}) casus={self.casus_id or self.casus_id_extern}'
+        )
+
+    @property
+    def casus_id(self):
+        return self.casus.pk if self.casus else None

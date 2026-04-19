@@ -48,8 +48,8 @@ export function MessageBubble({ message, language, showAvatar = true }: MessageB
           className={`
             px-4 py-2.5 rounded-2xl
             ${message.isMe
-              ? "bg-primary dark:text-white text-primary-foreground rounded-br-sm"
-              : "bg-primary/10 bg-gray-100 text-foreground rounded-bl-sm"
+              ? "bg-primary text-primary-foreground rounded-br-sm"
+              : "bg-muted/60 text-foreground rounded-bl-sm"
             }
           `}
         >

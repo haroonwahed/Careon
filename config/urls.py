@@ -26,11 +26,13 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', careon_views.index, name='index'),
+    path('favicon.ico', careon_views.favicon, name='favicon'),
     path('_health/', careon_views.health_check, name='health_check'),
     path('dashboard/', careon_views.dashboard, name='dashboard'),
     path('care/', include(('contracts.urls', 'careon'), namespace='careon')),
     path('profile/', careon_views.profile, name='profile'),
     path('settings/', careon_views.settings_hub, name='settings_hub'),
+    path('settings/design-mode/', careon_views.design_mode_settings, name='design_mode_settings'),
     path('register/', careon_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),

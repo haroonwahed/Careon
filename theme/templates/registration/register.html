@@ -5,39 +5,39 @@
 
 {% block body %}
 <div class="auth-layout auth-shell">
-    <!-- Left marketing panel -->
     <div class="auth-marketing-panel login-panel-left">
         <div class="login-divider"></div>
         <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full login-glow-large"></div>
         <div class="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full login-glow-small"></div>
-        <div class="relative z-10 px-12 max-w-lg">
-            <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-8 login-icon-tile">
+        <div class="auth-marketing-copy">
+            <div class="auth-kicker">
+                <span class="auth-kicker-dot"></span>
+                Nieuwe organisatie
+            </div>
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center login-icon-tile">
                 <svg class="w-7 h-7 login-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
             </div>
-            <h2 class="text-3xl font-bold mb-4 leading-tight login-title">Start vandaag met<br>effectieve zorgregie</h2>
-            <p class="text-[15px] leading-relaxed login-subtitle">Richt je werkomgeving in enkele minuten in. Krijg direct toegang tot aanbiederbeheer, casusregie, matching en sturing.</p>
-            <div class="mt-12 grid grid-cols-2 gap-4">
-                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-primary">
-                    <p class="text-2xl font-bold login-icon">15+</p>
-                    <p class="text-xs mt-1 login-dim">Ingebouwde modules</p>
+            <div>
+                <h2 class="login-title">Start vandaag met effectieve zorgregie</h2>
+                <p class="login-subtitle">Richt je werkomgeving in enkele minuten in en stap direct in hetzelfde ontwerp- en besluitritme als de Regiekamer.</p>
+            </div>
+            <div class="auth-stat-grid">
+                <div class="auth-stat-card">
+                    <p class="auth-stat-label">Modules</p>
+                    <p class="auth-stat-value">15+</p>
                 </div>
-                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-soft">
-                    <p class="text-2xl font-bold auth-link-primary">AVG</p>
-                    <p class="text-xs mt-1 login-dim">Privacy op orde</p>
+                <div class="auth-stat-card">
+                    <p class="auth-stat-label">Privacy</p>
+                    <p class="auth-stat-value">AVG</p>
                 </div>
-                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-primary">
-                    <p class="text-2xl font-bold login-icon">RBAC</p>
-                    <p class="text-xs mt-1 login-dim">Rolgebaseerde toegang</p>
-                </div>
-                <div class="rounded-xl p-4 auth-metric-card auth-metric-card-soft">
-                    <p class="text-2xl font-bold auth-link-primary">100%</p>
-                    <p class="text-xs mt-1 login-dim">Auditdekking</p>
+                <div class="auth-stat-card">
+                    <p class="auth-stat-label">Toegang</p>
+                    <p class="auth-stat-value">RBAC</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Right sign-up panel -->
     <div class="auth-form-panel login-panel-right">
         <div class="auth-form-container">
             <div class="flex items-center justify-between mb-10">
@@ -54,8 +54,9 @@
                 </button>
             </div>
 
+            <div class="auth-panel-eyebrow">Account aanmaken</div>
             <h1 class="text-2xl font-bold mb-1.5 login-title">Maak je account aan</h1>
-            <p class="text-sm mb-8 login-subtitle">Start met Careon in een paar stappen</p>
+            <p class="text-sm mb-8 login-subtitle">Start met CareOn in een paar stappen en ga daarna direct verder in dezelfde regiestructuur.</p>
 
             {% if form.non_field_errors %}
             <div class="mb-6 p-4 rounded-xl auth-error-box">
@@ -104,11 +105,11 @@
                 Door een account aan te maken ga je akkoord met onze servicevoorwaarden en privacyverklaring.
             </p>
 
-            <div class="mt-6 text-center">
-                <p class="text-sm login-subtitle">
-                    Heb je al een account?
-                    <a href="{% url 'login' %}" class="font-semibold transition-colors duration-200 auth-link-primary">Inloggen</a>
-                </p>
+            <div class="auth-form-meta">
+                <div class="auth-helper-row">
+                    <p class="auth-form-note">Heb je al een account? <a href="{% url 'login' %}" class="auth-link-primary">Inloggen</a></p>
+                    <a href="/" class="auth-page-link">Terug naar home</a>
+                </div>
             </div>
         </div>
     </div>

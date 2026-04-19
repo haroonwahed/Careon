@@ -8,9 +8,6 @@ services:
       DATABASE_URL='sqlite:///db.sqlite3' python manage.py test tests --verbosity=1 --settings=config.settings
       npm ci --prefix client
       npm run build --prefix client
-      rm -rf theme/static/spa
-      mkdir -p theme/static/spa
-      cp -R client/build/. theme/static/spa/
       python manage.py collectstatic --noinput --settings=config.settings
       if [ -z "$DATABASE_URL" ]; then
         echo "DATABASE_URL not set. Using SQLite for build."

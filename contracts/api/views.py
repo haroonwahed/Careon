@@ -3,20 +3,126 @@
 API views for CareOn case workspace functionality.
 """
 import json
+from datetime import date
+
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
+from django.urls import reverse
 
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
+from contracts.forms import CaseIntakeProcessForm
+from contracts.middleware import log_action
 from contracts.models import (
     CareCase, CaseAssessment, PlacementRequest, CareSignal, CareTask,
     Document, AuditLog, Client, ProviderProfile,
-    MunicipalityConfiguration, RegionalConfiguration, CaseIntakeProcess,
+    MunicipalityConfiguration, RegionalConfiguration, CaseIntakeProcess, RegionType,
 )
-from contracts.tenancy import get_user_organization, scope_queryset_for_organization
+from contracts.tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
+from contracts.provider_workspace import build_provider_workspace_summary
+from contracts.provider_matching_service import MatchContext, MatchEngine
+
+
+def _coerce_coordinate(value, *, minimum, maximum):
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return None
+
+    if numeric_value < minimum or numeric_value > maximum:
+        return None
+    return round(numeric_value, 6)
+
+
+def _extract_coordinates(source):
+    if source is None:
+        return None, None
+
+    candidate_pairs = (
+        ('latitude', 'longitude'),
+        ('lat', 'lng'),
+        ('lat', 'lon'),
+    )
+
+    for latitude_attr, longitude_attr in candidate_pairs:
+        if not hasattr(source, latitude_attr) or not hasattr(source, longitude_attr):
+            continue
+
+        latitude = _coerce_coordinate(getattr(source, latitude_attr, None), minimum=-90, maximum=90)
+        longitude = _coerce_coordinate(getattr(source, longitude_attr, None), minimum=-180, maximum=180)
+        if latitude is not None and longitude is not None:
+            return latitude, longitude
+
+    return None, None
+
+
+def _first_related(queryset_or_manager):
+    if queryset_or_manager is None:
+        return None
+
+    try:
+        return queryset_or_manager.all().first()
+    except AttributeError:
+        return None
+
+
+def _provider_location_payload(profile):
+    primary_region = _first_related(profile.served_regions)
+    municipality = _first_related(primary_region.served_municipalities) if primary_region else None
+    region_label = primary_region.region_name if primary_region else ''
+    municipality_label = municipality.municipality_name if municipality else ''
+    location_label = profile.client.city or municipality_label or region_label or profile.service_area or 'Locatie ontbreekt'
+
+    # Derive coordinates from available linked sources until explicit provider geo fields exist.
+    sources = [profile, profile.client, primary_region, municipality]
+    latitude = None
+    longitude = None
+    for source in sources:
+        latitude, longitude = _extract_coordinates(source)
+        if latitude is not None and longitude is not None:
+            break
+
+    return {
+        'label': location_label,
+        'latitude': latitude,
+        'longitude': longitude,
+        'region_label': region_label,
+        'municipality_label': municipality_label,
+        'has_coordinates': latitude is not None and longitude is not None,
+    }
+
+
+def _provider_regions_payload(profile):
+    if profile is None:
+        return {
+            'primary_region_label': '',
+            'secondary_region_labels': [],
+            'all_region_labels': [],
+        }
+
+    primary_regions = list(profile.served_regions.all())
+    secondary_regions = list(profile.secondary_served_regions.all())
+
+    primary_label = primary_regions[0].region_name if primary_regions else ''
+    secondary_labels = [region.region_name for region in secondary_regions]
+
+    labels = []
+    seen = set()
+    for region in primary_regions + secondary_regions:
+        key = (region.region_name or '').strip().lower()
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        labels.append(region.region_name)
+
+    return {
+        'primary_region_label': primary_label,
+        'secondary_region_labels': secondary_labels,
+        'all_region_labels': labels,
+    }
 
 
 def _build_case_data(case):
@@ -102,6 +208,15 @@ def case_detail_api(request, contract_id=None, case_id=None):
     """Get single case details."""
     try:
         record_id = case_id or contract_id
+        if record_id is None:
+            return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
+        # Guard against route shadowing or malformed ids (e.g. "intake-form").
+        try:
+            record_id = int(record_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
         organization = get_user_organization(request.user)
         queryset = scope_queryset_for_organization(CareCase.objects.all(), organization)
 
@@ -143,6 +258,283 @@ def cases_bulk_update_api(request):
 
 contract_detail_api = case_detail_api
 contracts_bulk_update_api = cases_bulk_update_api
+
+
+def _serialize_simple_choices(field):
+    serialized = []
+    for value, label in field.choices:
+        if value in (None, ''):
+            continue
+        serialized.append({
+            'value': str(value),
+            'label': str(label),
+        })
+    return serialized
+
+
+def _serialize_model_choices(field):
+    return [
+        {
+            'value': str(obj.pk),
+            'label': str(field.label_from_instance(obj)),
+        }
+        for obj in field.queryset
+    ]
+
+
+def _flatten_form_errors(form):
+    errors = {}
+    for field_name, field_errors in form.errors.items():
+        if field_name == '__all__':
+            errors[field_name] = [str(error) for error in field_errors]
+            continue
+        errors[field_name] = str(field_errors[0])
+    return errors
+
+
+def _apply_intake_create_defaults(instance):
+    if hasattr(instance, 'contra_indicaties') and instance.contra_indicaties is None:
+        instance.contra_indicaties = ''
+    if hasattr(instance, 'problematiek_types') and instance.problematiek_types is None:
+        instance.problematiek_types = []
+    if hasattr(instance, 'zorgvorm_gewenst') and instance.zorgvorm_gewenst is None:
+        instance.zorgvorm_gewenst = ''
+    if hasattr(instance, 'setting_voorkeur') and instance.setting_voorkeur is None:
+        instance.setting_voorkeur = ''
+
+
+def _build_intake_form_payload(form, coordinator_field):
+    care_category_sub = []
+    care_category_sub_field = form.fields.get('care_category_sub')
+    if care_category_sub_field is not None:
+        for subcategory in care_category_sub_field.queryset:
+            care_category_sub.append({
+                'value': str(subcategory.pk),
+                'label': str(care_category_sub_field.label_from_instance(subcategory)),
+                'mainCategoryId': str(subcategory.main_category_id),
+            })
+
+    def _model_options(field_name):
+        field = form.fields.get(field_name)
+        if field is None:
+            return []
+        return _serialize_model_choices(field)
+
+    def _simple_options(field_name):
+        field = form.fields.get(field_name)
+        if field is None:
+            return []
+        return _serialize_simple_choices(field)
+
+    return {
+        'initial_values': {
+            'title': '',
+            'start_date': date.today().isoformat(),
+            'target_completion_date': '',
+            'care_category_main': str(form.initial.get('care_category_main') or ''),
+            'care_category_sub': '',
+            'assessment_summary': '',
+            'gemeente': '',
+            'regio': '',
+            'urgency': CaseIntakeProcess.Urgency.MEDIUM,
+            'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+            'urgency_applied': False,
+            'urgency_applied_since': '',
+            'diagnostiek': [],
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': form.initial.get('preferred_region_type', 'GEMEENTELIJK'),
+            'preferred_region': '',
+            'max_toelaatbare_wachttijd_dagen': '',
+            'leeftijd': '',
+            'setting_voorkeur': '',
+            'contra_indicaties': '',
+            'problematiek_types': '',
+            'client_age_category': '',
+            'family_situation': '',
+            'school_work_status': '',
+            'case_coordinator': '',
+            'description': '',
+        },
+        'options': {
+            'care_category_main': _model_options('care_category_main'),
+            'care_category_sub': care_category_sub,
+            'gemeente': _model_options('gemeente'),
+            'regio': _model_options('regio'),
+            'urgency': _simple_options('urgency'),
+            'complexity': _simple_options('complexity'),
+            'diagnostiek': _simple_options('diagnostiek'),
+            'zorgvorm_gewenst': _simple_options('zorgvorm_gewenst'),
+            'preferred_care_form': _simple_options('preferred_care_form'),
+            'preferred_region_type': _simple_options('preferred_region_type'),
+            'preferred_region': _model_options('preferred_region'),
+            'client_age_category': _simple_options('client_age_category'),
+            'family_situation': _simple_options('family_situation'),
+            'case_coordinator': _serialize_model_choices(coordinator_field) if coordinator_field is not None else [],
+        },
+    }
+
+
+def _build_match_context_from_intake(intake, organization):
+    region_ref = ''
+    if getattr(intake, 'regio', None):
+        region_ref = intake.regio.region_code or intake.regio.region_name or ''
+    elif getattr(intake, 'preferred_region', None):
+        region_ref = intake.preferred_region.region_code or intake.preferred_region.region_name or ''
+
+    contra = [token.strip() for token in str(getattr(intake, 'contra_indicaties', '') or '').split(',') if token.strip()]
+    return MatchContext(
+        zorgvorm=(getattr(intake, 'zorgvorm_gewenst', '') or intake.preferred_care_form or '').lower(),
+        leeftijd=getattr(intake, 'leeftijd', None),
+        regio=region_ref,
+        gemeente=(intake.gemeente.municipality_name if getattr(intake, 'gemeente', None) else ''),
+        complexiteit=(intake.complexity or '').lower(),
+        urgentie=(intake.urgency or '').lower(),
+        problematiek=list(getattr(intake, 'problematiek_types', []) or []),
+        crisisopvang_vereist=(intake.urgency == CaseIntakeProcess.Urgency.CRISIS),
+        setting_voorkeur=getattr(intake, 'setting_voorkeur', '') or '',
+        contra_indicaties=contra,
+        max_toelaatbare_wachttijd_dagen=getattr(intake, 'max_toelaatbare_wachttijd_dagen', None),
+        organization=organization,
+    )
+
+
+@login_required
+@require_http_methods(["GET"])
+def matching_candidates_api(request, case_id):
+    organization = get_user_organization(request.user)
+    if organization is None:
+        return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
+
+    intake = CaseIntakeProcess.objects.filter(organization=organization, pk=case_id).select_related(
+        'regio', 'preferred_region', 'gemeente', 'contract'
+    ).first()
+    if intake is None:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
+    ctx = _build_match_context_from_intake(intake, organization)
+    limit = int(request.GET.get('limit', 10) or 10)
+    results = MatchEngine.run(ctx=ctx, casus=intake, max_results=max(limit, 10), persist=False)
+
+    payload = []
+    for rank, row in enumerate(results, start=1):
+        trade_offs = []
+        for item in list(row.trade_offs or []):
+            if isinstance(item, dict):
+                detail = item.get('toelichting') or item.get('factor') or ''
+                if detail:
+                    trade_offs.append(str(detail))
+            elif item:
+                trade_offs.append(str(item))
+
+        payload.append({
+            'casus_id': intake.pk,
+            'zorgprofiel_id': row.zorgprofiel_id,
+            'zorgaanbieder_id': row.zorgaanbieder_id,
+            'totaalscore': float(row.totaalscore or 0.0),
+            'score_inhoudelijke_fit': float(row.score_inhoudelijke_fit or 0.0),
+            'score_regio_contract_fit': float(row.score_regio_contract_fit or row.score_contract_regio or 0.0),
+            'score_capaciteit_wachttijd_fit': float(row.score_capaciteit_wachttijd_fit or row.score_capaciteit or 0.0),
+            'score_complexiteit_veiligheid_fit': float(row.score_complexiteit_veiligheid_fit or row.score_complexiteit or 0.0),
+            'score_performance_fit': float(row.score_performance_fit or row.score_performance or 0.0),
+            'confidence_label': (row.confidence_label or '').lower(),
+            'fit_samenvatting': row.fit_samenvatting or '',
+            'trade_offs': trade_offs,
+            'verificatie_advies': row.verificatie_advies or '',
+            'uitgesloten': bool(row.uitgesloten),
+            'uitsluitreden': row.uitsluitreden or '',
+            'ranking': row.ranking or rank,
+            'region_pressure_signal': 'Beste inhoudelijke match, maar capaciteit in regio staat onder druk' if (row.score_capaciteit_wachttijd_fit or row.score_capaciteit or 0) < 10 else '',
+        })
+
+    return JsonResponse({
+        'caseId': intake.pk,
+        'count': len(payload),
+        'matches': payload[:limit],
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def intake_form_options_api(request):
+    try:
+        organization = get_user_organization(request.user)
+        form = CaseIntakeProcessForm()
+
+        coordinator_field = form.fields.get('case_coordinator')
+        if organization and coordinator_field is not None:
+            coordinator_field.queryset = coordinator_field.queryset.filter(
+                organization_memberships__organization=organization,
+                organization_memberships__is_active=True,
+            ).distinct().order_by('first_name', 'last_name', 'username')
+
+        return JsonResponse(_build_intake_form_payload(form, coordinator_field))
+    except Exception as e:
+        return JsonResponse({'error': f'Intake-form kon niet worden opgebouwd: {str(e)}'}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def case_detail_string_fallback_api(request, case_ref):
+    """Fail-safe route for non-numeric case identifiers under /api/cases/."""
+    if str(case_ref).isdigit():
+        return case_detail_api(request, case_id=int(case_ref))
+    return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
+
+@csrf_exempt
+@login_required
+@require_http_methods(["POST"])
+def intake_create_api(request):
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Ongeldige JSON payload.'}, status=400)
+
+    if payload.get('contra_indicaties') is None:
+        payload['contra_indicaties'] = ''
+    if payload.get('problematiek_types') is None:
+        payload['problematiek_types'] = ''
+    if payload.get('zorgvorm_gewenst') is None:
+        payload['zorgvorm_gewenst'] = ''
+    if payload.get('setting_voorkeur') is None:
+        payload['setting_voorkeur'] = ''
+
+    organization = get_user_organization(request.user)
+    form = CaseIntakeProcessForm(data=payload)
+
+    coordinator_field = form.fields['case_coordinator']
+    if organization:
+        coordinator_field.queryset = coordinator_field.queryset.filter(
+            organization_memberships__organization=organization,
+            organization_memberships__is_active=True,
+        ).distinct().order_by('first_name', 'last_name', 'username')
+
+    if not form.is_valid():
+        return JsonResponse({'errors': _flatten_form_errors(form)}, status=400)
+
+    set_organization_on_instance(form.instance, organization)
+    _apply_intake_create_defaults(form.instance)
+    if not form.instance.start_date:
+        form.instance.start_date = date.today()
+
+    intake = form.save()
+    intake.ensure_case_record(created_by=request.user)
+    log_action(
+        request.user,
+        'CREATE',
+        'CaseIntakeProcess',
+        intake.id,
+        str(intake),
+        request=request,
+    )
+
+    return JsonResponse({
+        'ok': True,
+        'id': intake.pk,
+        'title': intake.title,
+        'redirect_url': f"{reverse('dashboard')}?page=casussen",
+    })
 
 
 # ---------------------------------------------------------------------------
@@ -420,7 +812,10 @@ def providers_api(request):
         qs = Client.objects.filter(
             organization=organization,
             client_type='CORPORATION',
-        ).select_related('provider_profile')
+        ).select_related('provider_profile').prefetch_related(
+            'provider_profile__served_regions__served_municipalities',
+            'provider_profile__secondary_served_regions',
+        )
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(name__icontains=q) | Q(city__icontains=q))
@@ -431,6 +826,15 @@ def providers_api(request):
         data = []
         for client in page_obj:
             pp = getattr(client, 'provider_profile', None)
+            location = _provider_location_payload(pp) if pp else {
+                'label': client.city or 'Locatie ontbreekt',
+                'latitude': None,
+                'longitude': None,
+                'region_label': '',
+                'municipality_label': '',
+                'has_coordinates': False,
+            }
+            regions_payload = _provider_regions_payload(pp)
             data.append({
                 'id': str(client.id),
                 'name': client.name,
@@ -446,8 +850,16 @@ def providers_api(request):
                 'offersCrisis': pp.offers_crisis if pp else False,
                 'serviceArea': pp.service_area if pp else '',
                 'specialFacilities': pp.special_facilities if pp else '',
+                'latitude': location['latitude'],
+                'longitude': location['longitude'],
+                'hasCoordinates': location['has_coordinates'],
+                'locationLabel': location['label'],
+                'regionLabel': location['region_label'] or regions_payload['primary_region_label'],
+                'municipalityLabel': location['municipality_label'],
+                'secondaryRegionLabels': regions_payload['secondary_region_labels'],
+                'allRegionLabels': regions_payload['all_region_labels'],
             })
-        return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
+        return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(qs))})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -489,6 +901,149 @@ def municipalities_api(request):
 # Regions
 # ---------------------------------------------------------------------------
 
+
+def _normalize_region_key(value):
+    return (value or '').strip().lower()
+
+
+def _days_in_current_phase(case):
+    if case.phase_entered_at:
+        phase_date = case.phase_entered_at.date()
+    elif case.updated_at:
+        phase_date = case.updated_at.date()
+    elif case.created_at:
+        phase_date = case.created_at.date()
+    else:
+        phase_date = date.today()
+    return max((date.today() - phase_date).days, 0)
+
+
+def _is_active_case(case):
+    completed_statuses = {
+        CareCase.Status.COMPLETED,
+        CareCase.Status.CANCELLED,
+        CareCase.Status.TERMINATED,
+        CareCase.Status.EXPIRED,
+    }
+    if case.case_phase == CareCase.CasePhase.AFGEROND:
+        return False
+    if case.status in completed_statuses:
+        return False
+    return True
+
+
+def _compute_region_status(metrics):
+    if (
+        (metrics['beschikbare_capaciteit'] == 0 and metrics['actieve_casussen'] > 0)
+        or metrics['urgente_casussen_zonder_match'] >= 4
+        or metrics['gemiddelde_wachttijd_dagen'] > 42
+        or metrics['vastgelopen_casussen'] >= 5
+    ):
+        return 'kritiek'
+
+    if (
+        metrics['capaciteitsratio'] < 0.2
+        or metrics['urgente_casussen_zonder_match'] >= 2
+        or metrics['gemiddelde_wachttijd_dagen'] > 28
+        or metrics['vastgelopen_casussen'] >= 3
+    ):
+        return 'tekort'
+
+    if (
+        metrics['capaciteitsratio'] < 0.4
+        or metrics['urgente_casussen_zonder_match'] >= 1
+        or metrics['gemiddelde_wachttijd_dagen'] > 14
+        or metrics['vastgelopen_casussen'] >= 1
+    ):
+        return 'druk'
+
+    return 'stabiel'
+
+
+def _build_signal_summary(status, metrics):
+    if status == 'stabiel':
+        return 'Geen capaciteitsproblemen'
+
+    if metrics['beschikbare_capaciteit'] == 0 and metrics['actieve_casussen'] > 0:
+        return 'Geen beschikbare capaciteit'
+
+    urgent = metrics['urgente_casussen_zonder_match']
+    if urgent > 0:
+        return '1 urgente casus zonder match' if urgent == 1 else f'{urgent} urgente casussen zonder match'
+
+    if metrics['gemiddelde_wachttijd_dagen'] > 14:
+        return 'Wachttijd boven norm'
+
+    stuck = metrics['vastgelopen_casussen']
+    if stuck > 0:
+        return '1 vastgelopen casus' if stuck == 1 else f'{stuck} vastgelopen casussen'
+
+    if metrics['capaciteitsratio'] < 0.4:
+        return 'Capaciteit onder druk'
+
+    return 'Capaciteit onder druk'
+
+
+def _build_region_health_payload(region, region_cases, region_provider_profiles):
+    actieve_cases = [case for case in region_cases if _is_active_case(case)]
+    actieve_count = len(actieve_cases)
+
+    beschikbare_capaciteit = sum(max(profile.current_capacity or 0, 0) for profile in region_provider_profiles)
+    gemiddelde_wachttijd_dagen = (
+        round(sum(_days_in_current_phase(case) for case in actieve_cases) / actieve_count)
+        if actieve_count > 0
+        else 0
+    )
+
+    urgente_zonder_match = 0
+    vastgelopen = 0
+    for case in actieve_cases:
+        days_in_phase = _days_in_current_phase(case)
+        is_urgent = case.risk_level in {CareCase.RiskLevel.HIGH, CareCase.RiskLevel.CRITICAL}
+
+        if is_urgent and not (case.preferred_provider or '').strip():
+            urgente_zonder_match += 1
+
+        if case.case_phase == CareCase.CasePhase.BEOORDELING and days_in_phase > 3:
+            vastgelopen += 1
+        elif case.case_phase == CareCase.CasePhase.MATCHING:
+            threshold = 2 if is_urgent else 5
+            if days_in_phase > threshold:
+                vastgelopen += 1
+        elif case.case_phase == CareCase.CasePhase.PLAATSING and days_in_phase > 5:
+            vastgelopen += 1
+
+    capaciteitsratio = (beschikbare_capaciteit / actieve_count) if actieve_count > 0 else 1
+
+    metrics = {
+        'actieve_casussen': actieve_count,
+        'beschikbare_capaciteit': beschikbare_capaciteit,
+        'capaciteitsratio': round(capaciteitsratio, 2),
+        'gemiddelde_wachttijd_dagen': gemiddelde_wachttijd_dagen,
+        'urgente_casussen_zonder_match': urgente_zonder_match,
+        'vastgelopen_casussen': vastgelopen,
+    }
+
+    status = _compute_region_status(metrics)
+    status_label = {
+        'stabiel': 'Stabiel',
+        'druk': 'Druk',
+        'tekort': 'Tekort',
+        'kritiek': 'Kritiek',
+    }[status]
+    signal_summary = _build_signal_summary(status, metrics)
+
+    metrics.update({
+        'status': status,
+        'status_label': status_label,
+        'heeft_tekort': status in {'tekort', 'kritiek'},
+        'heeft_hoge_wachttijd': metrics['gemiddelde_wachttijd_dagen'] > 14,
+        'heeft_kritiek_signaal': status == 'kritiek',
+        'signaal_samenvatting': signal_summary,
+        'providerCountComputed': len(region_provider_profiles),
+    })
+    return metrics
+
 @login_required
 @require_http_methods(["GET"])
 def regions_api(request):
@@ -516,6 +1071,106 @@ def regions_api(request):
                 'coordinator': r.responsible_coordinator.get_full_name() if r.responsible_coordinator else '',
             })
         return JsonResponse({'regions': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def regions_health_api(request):
+    organization = get_user_organization(request.user)
+    try:
+        qs = RegionalConfiguration.objects.filter(organization=organization)
+        q = request.GET.get('q', '')
+        if q:
+            qs = qs.filter(Q(region_name__icontains=q) | Q(region_code__icontains=q))
+
+        region_type = request.GET.get('region_type', '')
+        if region_type:
+            qs = qs.filter(region_type=region_type)
+
+        page = int(request.GET.get('page', 1))
+        page_size = int(request.GET.get('page_size', 100))
+        paginator = Paginator(qs, page_size)
+        page_obj = paginator.get_page(page)
+
+        cases_qs = scope_queryset_for_organization(CareCase.objects.all(), organization).only(
+            'id', 'service_region', 'status', 'case_phase', 'risk_level', 'preferred_provider',
+            'phase_entered_at', 'updated_at', 'created_at',
+        )
+        all_cases = list(cases_qs)
+
+        provider_clients = list(
+            Client.objects.filter(
+                organization=organization,
+                client_type='CORPORATION',
+            ).select_related('provider_profile').prefetch_related(
+                'provider_profile__served_regions',
+                'provider_profile__secondary_served_regions',
+            )
+        )
+
+        cases_by_region_key = {}
+        for case in all_cases:
+            service_key = _normalize_region_key(case.service_region)
+            if not service_key:
+                continue
+            cases_by_region_key.setdefault(service_key, []).append(case)
+
+        profiles_by_region_id = {}
+        for client in provider_clients:
+            profile = getattr(client, 'provider_profile', None)
+            if profile is None:
+                continue
+
+            region_ids = set(profile.served_regions.values_list('id', flat=True))
+            region_ids.update(profile.secondary_served_regions.values_list('id', flat=True))
+            for region_id in region_ids:
+                profiles_by_region_id.setdefault(region_id, []).append(profile)
+
+        data = []
+        for region in page_obj:
+            keys = {
+                _normalize_region_key(region.region_name),
+                _normalize_region_key(region.region_code),
+            }
+            region_cases = []
+            for key in keys:
+                region_cases.extend(cases_by_region_key.get(key, []))
+
+            # Deduplicate cases when region name/code resolve to the same key.
+            seen_case_ids = set()
+            deduped_cases = []
+            for case in region_cases:
+                if case.id in seen_case_ids:
+                    continue
+                seen_case_ids.add(case.id)
+                deduped_cases.append(case)
+
+            region_profiles = profiles_by_region_id.get(region.id, [])
+            health = _build_region_health_payload(region, deduped_cases, region_profiles)
+
+            data.append({
+                'id': str(region.id),
+                'name': region.region_name,
+                'code': region.region_code,
+                'regionType': region.region_type,
+                'configurationStatus': region.status,
+                'maxWaitDays': region.max_wait_days,
+                'providerCount': region.provider_count,
+                'municipalityCount': region.municipality_count,
+                'coordinator': region.responsible_coordinator.get_full_name() if region.responsible_coordinator else '',
+                'province': region.province,
+                'regionTypeLabel': RegionType(region.region_type).label if region.region_type in RegionType.values else region.region_type,
+                **health,
+            })
+
+        return JsonResponse({
+            'regions': data,
+            'total_count': paginator.count,
+            'page': page,
+            'total_pages': paginator.num_pages,
+        })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 

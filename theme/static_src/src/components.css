@@ -1,6 +1,11 @@
 
 /* Component Library */
+/*
+  Cleanup note: legacy utility selectors in this file are intentionally retained.
+  They are still referenced across Django templates and mixed UI surfaces.
+*/
 
+/* LEGACY STILL USED BY ACTIVE DJANGO TEMPLATES: action buttons */
 /* Button Components */
 .btn {
   @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md border;
@@ -31,6 +36,7 @@
   @apply px-6 py-3 text-base;
 }
 
+/* LEGACY STILL USED BY ACTIVE TEMPLATES: state badges */
 /* Badge Components */
 .badge {
   @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
@@ -56,6 +62,7 @@
   @apply bg-gray-100 text-gray-800;
 }
 
+/* LEGACY STILL USED BY ACTIVE TEMPLATES: card shells */
 /* Card Components */
 .card {
   @apply bg-white border border-stroke rounded-lg shadow-sm;
@@ -73,6 +80,7 @@
   @apply px-6 py-4 border-t border-stroke;
 }
 
+/* LEGACY PARTIALLY USED: keep until dashboard/template migration completes */
 /* Stat Components */
 .stat {
   @apply flex items-center p-6 bg-white border border-stroke rounded-lg;
@@ -147,6 +155,7 @@
   @apply h-2 bg-accent rounded-full transition-all duration-300;
 }
 
+/* LEGACY UNKNOWN USAGE: keep until template migration confirms safe removal */
 /* Stepper Components */
 .stepper {
   @apply flex items-center;
@@ -193,6 +202,7 @@
   @apply text-muted mb-6;
 }
 
+/* LEGACY MIXED USAGE: keep to prevent regressions in transitional UI states */
 /* Toast Components */
 .toast {
   @apply fixed bottom-4 right-4 max-w-sm bg-white border border-stroke rounded-lg shadow-lg p-4;
@@ -215,6 +225,7 @@
   @apply border-l-4 border-l-blue-500;
 }
 
+/* LEGACY LIKELY INDIRECT USAGE: keep until all loading states are audited */
 /* Skeleton Loader */
 .skeleton {
   @apply animate-pulse bg-gray-200 rounded;
@@ -228,6 +239,7 @@
   @apply w-10 h-10 bg-gray-200 rounded-full;
 }
 
+/* LEGACY UNKNOWN USAGE: keep until interactive panel migration is complete */
 /* Drawer/Modal */
 .drawer-overlay {
   @apply fixed inset-0 bg-black bg-opacity-50 z-40;

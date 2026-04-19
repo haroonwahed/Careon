@@ -1,14 +1,17 @@
+import json
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from contracts.models import (
     AuditLog,
     CareCase,
     CareConfiguration,
     CaseAssessment,
+    CaseDecisionLog,
     CaseIntakeProcess,
     Client as CareProvider,
     CareSignal,
@@ -18,6 +21,8 @@ from contracts.models import (
     OrganizationMembership,
     PlacementRequest,
     ProviderProfile,
+    MunicipalityConfiguration,
+    RegionalConfiguration,
 )
 
 
@@ -96,6 +101,59 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         intake.refresh_from_db()
         self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.INTAKE)
+
+    def test_intake_create_api_creates_linked_case_record_for_workflow(self):
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Utrecht',
+            municipality_code='UTR',
+            created_by=self.user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Utrecht',
+            region_code='RU',
+            created_by=self.user,
+        )
+        region.served_municipalities.add(municipality)
+
+        bootstrap_response = self.client.get(reverse('careon:intake_form_options_api'))
+        self.assertEqual(bootstrap_response.status_code, 200)
+        payload = bootstrap_response.json()['initial_values']
+        payload.update({
+            'title': 'API Intake Visible In Casussen',
+            'target_completion_date': str(date.today() + timedelta(days=7)),
+            'assessment_summary': 'Nieuwe intake via API',
+            'description': 'Moet zichtbaar zijn in het casusoverzicht.',
+            'urgency': CaseIntakeProcess.Urgency.HIGH,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': region.region_type,
+            'preferred_region': str(region.pk),
+            'gemeente': str(municipality.pk),
+            'case_coordinator': str(self.user.pk),
+        })
+
+        response = self.client.post(
+            reverse('careon:intake_create_api'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        body = response.json()
+        intake = CaseIntakeProcess.objects.get(pk=body['id'])
+
+        self.assertIsNotNone(intake.contract_id)
+        self.assertEqual(intake.contract.title, intake.title)
+        self.assertEqual(intake.contract.case_phase, CareCase.CasePhase.INTAKE)
+        self.assertEqual(intake.contract.status, CareCase.Status.PENDING)
+        self.assertEqual(intake.contract.service_region, region.region_name)
+
+        cases_response = self.client.get(reverse('careon:cases_api'))
+        self.assertEqual(cases_response.status_code, 200)
+        case_titles = [item['title'] for item in cases_response.json()['contracts']]
+        self.assertIn('API Intake Visible In Casussen', case_titles)
 
     def test_matching_dashboard_empty_state_without_approved_assessments(self):
         intake = CaseIntakeProcess.objects.create(
@@ -524,6 +582,199 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
                 action=AuditLog.Action.APPROVE,
                 changes__intake_id=intake.pk,
                 changes__provider_id=provider.pk,
+            ).exists()
+        )
+
+    def test_case_communication_tab_renders_structured_items_and_provider_response(self):
+        provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Communicatie Aanbieder',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.user,
+        )
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Case Communicatie Intake',
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+        placement = PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=provider,
+            selected_provider=provider,
+            care_form=intake.preferred_care_form,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
+            provider_response_requested_at=timezone.now() - timedelta(hours=10),
+            provider_response_notes='Aanvullende informatie nodig over intakecontext.',
+        )
+
+        CaseDecisionLog.objects.create(
+            case=intake,
+            placement=placement,
+            event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+            actor=self.user,
+            actor_kind=CaseDecisionLog.ActorKind.USER,
+            action_source='case_detail',
+            user_action='operational_message',
+            optional_reason='Open vraag voor matchingcoordinator.',
+            adaptive_flags={
+                'communication_type': 'operational_message',
+                'communication_status': 'open',
+                'workflow_stage': 'matching',
+                'blocks_progress': True,
+            },
+        )
+        CaseDecisionLog.objects.create(
+            case=intake,
+            event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+            actor=self.user,
+            actor_kind=CaseDecisionLog.ActorKind.USER,
+            action_source='case_detail',
+            user_action='internal_note',
+            optional_reason='Interne afstemming over vervolgstap.',
+            adaptive_flags={
+                'communication_type': 'internal_note',
+                'communication_status': 'informational',
+                'workflow_stage': 'matching',
+            },
+        )
+        CaseDecisionLog.objects.create(
+            case=intake,
+            placement=placement,
+            event_type=CaseDecisionLog.EventType.MATCH_RECOMMENDED,
+            action_source='system',
+            actor_kind=CaseDecisionLog.ActorKind.SYSTEM,
+            recommendation_context={'source': 'test'},
+        )
+
+        response = self.client.get(reverse('careon:case_detail', kwargs={'pk': intake.pk}) + '?tab=communicatie')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Casuscommunicatie')
+        self.assertContains(response, 'Open vraag blokkeert matching')
+        self.assertContains(response, 'Aanbiederreactie')
+        self.assertContains(response, 'Interne notitie')
+        self.assertContains(response, 'Besluititem')
+        self.assertContains(response, 'Aanvullende informatie nodig over intakecontext.')
+
+    def test_case_communication_action_creates_item_and_marks_resolved(self):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Case Communicatie Actie',
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+
+        create_response = self.client.post(
+            reverse('careon:case_communication_action', kwargs={'pk': intake.pk}),
+            {
+                'action': 'add_message',
+                'workflow_stage': 'matching',
+                'content': 'Vraag aan aanbieder over aanvullende intakegegevens.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie",
+            },
+            follow=True,
+        )
+        self.assertEqual(create_response.status_code, 200)
+        self.assertContains(create_response, 'Communicatie-item toegevoegd aan de casus.')
+
+        open_item = CaseDecisionLog.objects.filter(
+            case=intake,
+            event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+            user_action='operational_message',
+        ).order_by('-id').first()
+        self.assertIsNotNone(open_item)
+
+        resolve_response = self.client.post(
+            reverse('careon:case_communication_action', kwargs={'pk': intake.pk}),
+            {
+                'action': 'mark_resolved',
+                'target_log_id': str(open_item.pk),
+                'workflow_stage': 'matching',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie&comm_filter=open",
+            },
+            follow=True,
+        )
+        self.assertEqual(resolve_response.status_code, 200)
+        self.assertContains(resolve_response, 'Communicatie-item gemarkeerd als afgehandeld.')
+
+        self.assertTrue(
+            CaseDecisionLog.objects.filter(
+                case=intake,
+                event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+                user_action='resolve_item',
+                adaptive_flags__resolves_log_id=open_item.pk,
+            ).exists()
+        )
+
+    def test_case_communication_tab_empty_state_renders_safely(self):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Case Communicatie Empty',
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.LOW,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+
+        response = self.client.get(reverse('careon:case_detail', kwargs={'pk': intake.pk}) + '?tab=communicatie')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Nog geen communicatie voor deze casus. Voeg een notitie of reactie toe.')
+
+    def test_case_communication_action_respects_edit_permissions(self):
+        restricted_user = User.objects.create_user(
+            username='flow_member_readonly',
+            email='flow-member-readonly@example.com',
+            password='testpass123',
+        )
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=restricted_user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Case Communicatie Permissions',
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+
+        self.client.logout()
+        self.client.login(username='flow_member_readonly', password='testpass123')
+
+        response = self.client.post(
+            reverse('careon:case_communication_action', kwargs={'pk': intake.pk}),
+            {
+                'action': 'add_message',
+                'workflow_stage': 'matching',
+                'content': 'Niet toegestaan',
+            },
+        )
+
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(
+            CaseDecisionLog.objects.filter(
+                case=intake,
+                event_type=CaseDecisionLog.EventType.CASE_COMMUNICATION,
+                optional_reason='Niet toegestaan',
             ).exists()
         )
 

@@ -24,21 +24,15 @@
     <button type="submit" class="btn btn-secondary">Zoeken</button>
 </form>
 
-{% if placement_operational_strip %}
-<div class="ds-card placement-operational-strip placement-operational-strip--{{ placement_operational_strip.severity }}">
-    <strong class="placement-operational-strip__label">Operationeel inzicht</strong>
-    <p class="placement-operational-strip__message">{{ placement_operational_strip.message }}</p>
-</div>
-{% endif %}
-
 <div class="ds-list-table">
     <div class="ds-table-wrap ds-list-container">
         <table class="ds-table">
             <thead><tr>
                 <th>Casus</th>
-                <th>Status en reactie</th>
-                <th>Wat stagneert</th>
-                <th>Volgende stap</th>
+                <th>Toegewezen aanbieder</th>
+                <th>Zorgvorm</th>
+                <th>Startdatum</th>
+                <th>Status</th>
                 <th></th>
             </tr></thead>
             <tbody>
@@ -49,43 +43,14 @@
                         <a href="{% url 'careon:placement_detail' placement.pk %}">
                             {% if placement.intake %}{{ placement.intake.title }}{% else %}Plaatsing #{{ placement.pk }}{% endif %}
                         </a>
-                        <div class="item-meta">Aanbieder: {{ row.provider_name }}</div>
-                        <div class="item-meta">Zorgvorm: {{ placement.get_care_form_display|default:"—" }} · Start: {{ placement.start_date|date:"d-m-Y"|default:"—" }}</div>
+                        {% if placement.intake %}<div class="item-meta">{{ placement.intake.get_urgency_display }}</div>{% endif %}
                     </td>
+                    <td>{{ placement.selected_provider.name|default:placement.proposed_provider.name|default:"—" }}</td>
+                    <td>{{ placement.get_care_form_display|default:"—" }}</td>
+                    <td>{{ placement.start_date|date:"d-m-Y"|default:"—" }}</td>
                     <td>
-                        <span class="badge-sm {% if placement.status == 'APPROVED' %}ds-stage-placement{% elif placement.status == 'IN_REVIEW' %}ds-stage-assessment{% elif placement.status == 'REJECTED' %}badge-red{% else %}badge-gray{% endif %}">{{ row.status_label }}</span>
-                        <span class="ds-badge badge-gray">{{ row.provider_response_label }}</span>
-                        <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
-                        {% if row.bottleneck_badge %}
-                        <span class="ds-badge {{ row.bottleneck_badge.badge_class }}">{{ row.bottleneck_badge.label }}</span>
-                        {% endif %}
+                        <span class="badge-sm {% if placement.status == 'APPROVED' %}ds-stage-placement{% elif placement.status == 'IN_REVIEW' %}ds-stage-assessment{% elif placement.status == 'REJECTED' %}badge-red{% else %}badge-gray{% endif %}">{{ placement.get_status_display }}</span>
                         <div class="item-meta">Fase: {{ row.phase_label }}</div>
-                    </td>
-                    <td>
-                        <p class="placement-stall-reason">{{ row.stall_reason }}</p>
-                        {% if row.signal_chips %}
-                        <div class="placement-signals">
-                            {% for signal in row.signal_chips %}
-                            <span class="ds-badge placement-signal-chip {{ signal.badge_class }}">{{ signal.label }}</span>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                        {% if row.escalation_recommended %}
-                        <p class="placement-escalation-flag">Escalatie aanbevolen</p>
-                        {% if row.escalation_reason %}
-                        <p class="placement-escalation-reason">{{ row.escalation_reason }}</p>
-                        {% endif %}
-                        {% endif %}
-                    </td>
-                    <td>
-                        <a href="{{ row.recommended_action.url }}" class="casus-recommended-action casus-recommended-action--{{ row.attention_band.severity }}">
-                            <div class="casus-recommended-action__main">
-                                <p class="casus-recommended-action__label">Aanbevolen actie</p>
-                                <p class="casus-recommended-action__action">{{ row.recommended_action.label }}</p>
-                                <p class="ds-note-text">{{ row.recommended_action.reason }}</p>
-                            </div>
-                        </a>
-                        <p class="casus-impact-summary placement-impact-summary">{{ row.impact_summary.text }}</p>
                     </td>
                     <td class="ds-cell-right">
                         <a href="{% url 'careon:placement_detail' placement.pk %}" class="btn btn-ghost">Openen</a>
@@ -98,7 +63,7 @@
                 </tr>
                 {% endwith %}
                 {% empty %}
-                <tr><td colspan="5" class="empty-state">
+                <tr><td colspan="6" class="empty-state">
                     <p>Nog geen plaatsingen aangemaakt.</p>
                     <p class="ds-note-text">Plaatsingen worden aangemaakt via het matching dashboard.</p>
                     <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">→ Naar matching</a>

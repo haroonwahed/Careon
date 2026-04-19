@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Zorgregie - Regiekamer{% endblock %}
+{% block content %}
+<div class="page-wrap page-wrap-command" data-layout="max-width: 1440px">
+    <span class="visually-hidden">Urgente casussen</span>
+    <!-- @media (max-width: 1024px) -->
+    <header class="ds-list-header">
+        <div>
+            <h1 class="page-title">Regiekamer</h1>
+            <p class="page-subtitle">Command center voor zorgtoewijzing en doorstroom</p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:reports_dashboard' %}" class="btn btn-secondary">Rapportages</a>
+            <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Open volledige queue</a>
+            <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
+        </div>
+    </header>
+
+    <section class="command-alert-strip">
+        {% for alert in alert_strip %}
+        <a href="{{ alert.href }}" class="command-alert-link">
+            <div class="command-alert-meta">
+                <span>{{ alert.icon }}</span>
+                <span class="command-alert-label">{{ alert.label }}</span>
+            </div>
+            <span class="command-alert-count">{{ alert.count }}</span>
+        </a>
+        {% endfor %}
+    </section>
+
+    <div class="command-grid">
+        <section class="ds-card" data-row-template-class="queue-row">
+            <div class="ds-detail-header">
+                <h2 class="ds-card-title">Priority Case Queue</h2>
+                <span class="ds-note-text">{{ total_active_cases }} actief</span>
+            </div>
+
+            {% if priority_queue %}
+            <div class="queue-list">
+                {% for row in priority_queue %}
+                <article class="queue-row{% if selected_case_id == row.id %} is-selected{% endif %}">
+                    <div class="queue-head">
+                        <a href="?case={{ row.id }}" class="queue-title">{{ row.title }}</a>
+                        <a href="{{ row.case_href }}" class="btn btn-ghost">Open case</a>
+                    </div>
+
+                    <div class="queue-meta">
+                        <span class="ds-badge badge-blue">{{ row.phase }}</span>
+                        <span class="ds-badge {% if row.urgency_code == 'CRISIS' %}badge-critical{% elif row.urgency_code == 'HIGH' %}badge-high{% elif row.urgency_code == 'MEDIUM' %}badge-medium{% else %}badge-low{% endif %}">{{ row.urgency }}</span>
+                        <span class="ds-badge badge-low">{{ row.waiting_label }}</span>
+                        {% if row.blocker_key %}
+                        <span class="ds-badge badge-critical">{{ row.blocker }}</span>
+                        {% else %}
+                        <span class="ds-badge badge-low">Geen blokkade</span>
+                        {% endif %}
+                    </div>
+
+                    <div class="queue-next">
+                        <div>
+                            <div class="queue-next-label">Next best action</div>
+                            <strong>{{ row.next_action.label }}</strong>
+                        </div>
+                        <a href="{{ row.next_action.href }}" class="btn btn-primary">{{ row.next_action.label }}</a>
+                    </div>
+
+                    <div class="ds-list-actions">
+                        <a href="{{ row.quick_assign_href }}" class="btn btn-secondary">Assign</a>
+                        <a href="{{ row.quick_escalate_href }}" class="btn btn-secondary">Escalate</a>
+                        <a href="{{ row.quick_review_href }}" class="btn btn-secondary">Review</a>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="ds-empty-state">Geen actieve cases in de queue.</div>
+            {% endif %}
+        </section>
+
+        <section class="ds-card">
+            <div class="ds-detail-header">
+                <h2 class="ds-card-title">Active Case Panel</h2>
+                <span class="ds-note-text">Laatst bijgewerkt: {{ dashboard_updated_at|date:"d-m-Y H:i" }}</span>
+            </div>
+
+            {% if active_case %}
+            <div class="ds-summary-strip">
+                <div class="ds-summary-item">
+                    <span class="ds-summary-label">Fase</span>
+                    <strong>{{ active_case.phase }}</strong>
+                </div>
+                <div class="ds-summary-item ds-summary-item--risk">
+                    <span class="ds-summary-label">Urgentie</span>
+                    <strong>{{ active_case.urgency }}</strong>
+                </div>
+                <div class="ds-summary-item">
+                    <span class="ds-summary-label">Wachttijd</span>
+                    <strong>{{ active_case.waiting_label }}</strong>
+                </div>
+                <div class="ds-summary-item">
+                    <span class="ds-summary-label">Blokkade</span>
+                    <strong>{{ active_case.blocker }}</strong>
+                </div>
+            </div>
+
+            <div class="ds-detail-grid-2 command-detail-grid">
+                <div class="ds-card">
+                    <h3 class="ds-card-title">Key details</h3>
+                    <dl class="ds-field-list">
+                        <div class="ds-field-item">
+                            <dt>Casus</dt>
+                            <dd>{{ active_case.title }}</dd>
+                        </div>
+                        <div class="ds-field-item">
+                            <dt>Regievoerder</dt>
+                            <dd>{{ active_case.coordinator }}</dd>
+                        </div>
+                        <div class="ds-field-item">
+                            <dt>Regio</dt>
+                            <dd>{{ active_case.region }}</dd>
+                        </div>
+                        <div class="ds-field-item">
+                            <dt>Beoordeling</dt>
+                            <dd>{{ active_case.assessment_status }}</dd>
+                        </div>
+                        <div class="ds-field-item">
+                            <dt>Plaatsing</dt>
+                            <dd>{{ active_case.placement_status }}</dd>
+                        </div>
+                    </dl>
+                </div>
+
+                <div class="ds-card">
+                    <h3 class="ds-card-title">Timeline preview</h3>
+                    <div class="timeline-list">
+                        {% for item in active_case.timeline %}
+                        <div class="timeline-item">
+                            <span>{{ item.label }}</span>
+                            <strong>{{ item.value|date:"d-m-Y" }}</strong>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="ds-card command-match-card">
+                <h3 class="ds-card-title">Match status</h3>
+                <p class="ds-note-text--strong">{{ active_case.match_status }}</p>
+                <div class="ds-list-actions command-match-actions">
+                    <a href="{{ active_case.next_action.href }}" class="btn btn-primary">{{ active_case.next_action.label }}</a>
+                    <a href="{{ active_case.case_href }}" class="btn btn-secondary">Open case detail</a>
+                </div>
+            </div>
+            {% else %}
+            <div class="ds-empty-state">Selecteer een case in de queue om besliscontext te tonen.</div>
+            {% endif %}
+        </section>
+
+        <aside class="ds-detail-sections">
+            <section class="ds-card">
+                <div class="ds-detail-header">
+                    <h2 class="ds-card-title">Bottlenecks</h2>
+                    <span class="ds-note-text">Top 3</span>
+                </div>
+                {% if bottleneck_signals %}
+                <div class="signal-list">
+                    {% for signal in bottleneck_signals %}
+                    <a href="{{ signal.href }}" class="signal-item">
+                        <div class="signal-title">{{ signal.label }}</div>
+                        <div class="signal-meta">{{ signal.count }} casussen · gem. {{ signal.avg_delay }} dagen vertraging</div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="ds-empty-state">Geen dominante bottlenecks gedetecteerd.</div>
+                {% endif %}
+            </section>
+
+            <section class="ds-card">
+                <div class="ds-detail-header">
+                    <h2 class="ds-card-title">Capacity Signals</h2>
+                    <span class="ds-note-text">Aanbieders en regio</span>
+                </div>
+                {% if capacity_signals %}
+                <div class="signal-list">
+                    {% for signal in capacity_signals %}
+                    <a href="{{ signal.href }}" class="signal-item">
+                        <div class="signal-title">{{ signal.label }}</div>
+                        <div class="signal-meta">{{ signal.detail }}</div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="ds-empty-state">Geen directe capaciteitsproblemen in beeld.</div>
+                {% endif %}
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

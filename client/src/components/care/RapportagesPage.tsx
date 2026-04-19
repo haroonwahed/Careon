@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
-import { Download, FileBarChart2, Filter, Search, TrendingUp, CalendarClock, ShieldCheck } from "lucide-react";
+import { ChevronDown, Download, Eye, FileBarChart2, Filter, Search, TrendingUp, CalendarClock, ShieldCheck } from "lucide-react";
 import { Button } from "../ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
+import { toast } from "sonner@2.0.3";
 
 type ReportCategory = "doorstroom" | "kwaliteit" | "compliance";
 
@@ -14,6 +16,15 @@ interface ReportTemplate {
   lastRun: string;
   frequency: string;
   status: ReportStatus;
+}
+
+interface ExportHistoryItem {
+  id: string;
+  templateId: string;
+  label: string;
+  format: "csv" | "pdf";
+  exportedAt: string;
+  source: "auto" | "manual";
 }
 
 const reportTemplates: ReportTemplate[] = [
@@ -46,9 +57,58 @@ const reportTemplates: ReportTemplate[] = [
   }
 ];
 
+const exportHistory: ExportHistoryItem[] = [
+  {
+    id: "EXP-001",
+    templateId: "RPT-001",
+    label: "Doorstroomoverzicht",
+    format: "csv",
+    exportedAt: "Vandaag 09:15",
+    source: "auto",
+  },
+  {
+    id: "EXP-002",
+    templateId: "RPT-002",
+    label: "Matchkwaliteit",
+    format: "pdf",
+    exportedAt: "16 apr 2026 17:02",
+    source: "auto",
+  },
+];
+
+function buildReportContent(report: ReportTemplate, sourceLabel: string) {
+  return [
+    `Rapport: ${report.title}`,
+    `Categorie: ${report.category}`,
+    `Bron: ${sourceLabel}`,
+    `Laatste run: ${report.lastRun}`,
+    `Frequentie: ${report.frequency}`,
+    "",
+    report.description,
+    "",
+    "Dit is een demo-export in de frontend.",
+  ].join("\n");
+}
+
+function triggerTextDownload(filename: string, content: string, mimeType: string) {
+  const blob = new Blob([content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
+
 export function RapportagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<ReportCategory | "all">("all");
+  const [historyItems, setHistoryItems] = useState<ExportHistoryItem[]>(exportHistory);
+  const [previewReport, setPreviewReport] = useState<ReportTemplate | null>(null);
+  const [previewSource, setPreviewSource] = useState<string>("Template");
+  const [previewOpen, setPreviewOpen] = useState(false);
 
   const filteredReports = useMemo(() => {
     return reportTemplates.filter((report) => {
@@ -64,6 +124,75 @@ export function RapportagesPage() {
   }, [searchQuery, selectedCategory]);
 
   const readyCount = reportTemplates.filter((report) => report.status === "ready").length;
+
+  const formatExportedNow = () => {
+    const now = new Date();
+    return now.toLocaleString("nl-NL", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const appendHistoryItem = (report: ReportTemplate, format: "csv" | "pdf") => {
+    const entry: ExportHistoryItem = {
+      id: `EXP-${Date.now()}`,
+      templateId: report.id,
+      label: report.title,
+      format,
+      exportedAt: formatExportedNow(),
+      source: "manual",
+    };
+    setHistoryItems((previous) => [entry, ...previous].slice(0, 8));
+  };
+
+  const handleDownloadTemplate = (report: ReportTemplate, sourceLabel = "Template") => {
+    if (report.status !== "ready") {
+      toast.warning("Deze rapportage wordt nog opgebouwd en is nog niet te downloaden.");
+      return;
+    }
+
+    const now = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+    const extension = report.category === "kwaliteit" ? "pdf" : "csv";
+    const mimeType = extension === "pdf" ? "application/pdf" : "text/csv;charset=utf-8";
+    const filename = `${report.title.toLowerCase().replace(/\s+/g, "-")}-${now}.${extension}`;
+    const content = buildReportContent(report, sourceLabel);
+
+    triggerTextDownload(filename, content, mimeType);
+    appendHistoryItem(report, extension as "csv" | "pdf");
+    toast.success(`${report.title} is gedownload.`);
+  };
+
+  const handleViewTemplate = (report: ReportTemplate, sourceLabel = "Template") => {
+    if (report.status !== "ready") {
+      toast.warning("Deze rapportage is nog niet beschikbaar om te bekijken.");
+      return;
+    }
+
+    setPreviewReport(report);
+    setPreviewSource(sourceLabel);
+    setPreviewOpen(true);
+  };
+
+  const handleHistoryDownload = (entry: ExportHistoryItem) => {
+    const report = reportTemplates.find((template) => template.id === entry.templateId);
+    if (!report) {
+      toast.error("Rapporttemplate niet gevonden voor deze export.");
+      return;
+    }
+    handleDownloadTemplate(report, "Exportgeschiedenis");
+  };
+
+  const handleHistoryView = (entry: ExportHistoryItem) => {
+    const report = reportTemplates.find((template) => template.id === entry.templateId);
+    if (!report) {
+      toast.error("Rapporttemplate niet gevonden voor deze export.");
+      return;
+    }
+    handleViewTemplate(report, "Exportgeschiedenis");
+  };
 
   return (
     <div className="space-y-6">
@@ -111,16 +240,19 @@ export function RapportagesPage() {
           </div>
           <div className="flex items-center gap-2">
             <Filter size={15} className="text-muted-foreground" />
+            <div className="relative">
             <select
               value={selectedCategory}
               onChange={(event) => setSelectedCategory(event.target.value as ReportCategory | "all")}
-              className="h-10 rounded-xl border border-border bg-card px-3 text-sm text-foreground"
+              className="h-10 appearance-none rounded-xl border border-border bg-card pl-3 pr-8 text-sm text-foreground"
             >
               <option value="all">Alle categorieen</option>
               <option value="doorstroom">Doorstroom</option>
               <option value="kwaliteit">Kwaliteit</option>
               <option value="compliance">Compliance</option>
             </select>
+            <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            </div>
           </div>
         </div>
       </section>
@@ -152,17 +284,70 @@ export function RapportagesPage() {
             </div>
 
             <div className="mt-5 flex items-center gap-2">
-              <Button size="sm" className="gap-2" disabled={report.status !== "ready"}>
+              <Button
+                size="sm"
+                className="gap-2"
+                disabled={report.status !== "ready"}
+                onClick={() => handleDownloadTemplate(report)}
+              >
                 <Download size={14} />
                 Download
               </Button>
-              <Button size="sm" variant="outline">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={report.status !== "ready"}
+                onClick={() => handleViewTemplate(report)}
+              >
                 Bekijken
               </Button>
             </div>
           </article>
         ))}
       </section>
+
+      <Dialog
+        open={previewOpen && previewReport !== null}
+        onOpenChange={(open) => {
+          setPreviewOpen(open);
+          if (!open) {
+            setPreviewReport(null);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          {previewReport && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Preview · {previewReport.title}</DialogTitle>
+                <DialogDescription>Bron: {previewSource}</DialogDescription>
+              </DialogHeader>
+
+              <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground leading-6">
+                <p><span className="text-foreground font-medium">Categorie:</span> {previewReport.category}</p>
+                <p><span className="text-foreground font-medium">Laatste run:</span> {previewReport.lastRun}</p>
+                <p><span className="text-foreground font-medium">Frequentie:</span> {previewReport.frequency}</p>
+                <p className="mt-2 text-foreground">{previewReport.description}</p>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5"
+                  onClick={() => handleDownloadTemplate(previewReport, "Preview")}
+                >
+                  <Download size={13} />
+                  Download
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setPreviewOpen(false)}>
+                  Sluiten
+                </Button>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {filteredReports.length === 0 && (
         <div className="premium-card p-10 text-center text-sm text-muted-foreground">
@@ -175,15 +360,39 @@ export function RapportagesPage() {
           <ShieldCheck size={16} className="text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Exportgeschiedenis</h3>
         </div>
+        <p className="mb-3 text-xs text-muted-foreground">
+          Historiek van eerder uitgevoerde exports. Je kunt items opnieuw downloaden of bekijken.
+        </p>
         <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
-            <span className="text-foreground">Doorstroomoverzicht - CSV</span>
-            <span className="text-muted-foreground">Vandaag 09:15</span>
-          </div>
-          <div className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
-            <span className="text-foreground">Matchkwaliteit - PDF</span>
-            <span className="text-muted-foreground">16 apr 2026 17:02</span>
-          </div>
+          {historyItems.map((entry) => (
+            <div key={entry.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
+              <div>
+                <p className="text-foreground">{entry.label} - {entry.format.toUpperCase()}</p>
+                <p className="text-xs text-muted-foreground">
+                  {entry.exportedAt}{entry.source === "manual" ? " · handmatig" : " · automatisch"}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8 gap-1.5 px-2.5 text-xs"
+                  onClick={() => handleHistoryView(entry)}
+                >
+                  <Eye size={13} />
+                  Bekijken
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5 px-2.5 text-xs"
+                  onClick={() => handleHistoryDownload(entry)}
+                >
+                  <Download size={13} />
+                  Download
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>

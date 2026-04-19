@@ -5,10 +5,14 @@
 
 import { useState } from "react";
 import { PlacementPage } from "./PlacementPage";
-import { PlacementListPage } from "./PlacementListPage";
+import { PlacementTrackingPage } from "./PlacementTrackingPage";
 import { useProviders } from "../../hooks/useProviders";
 
-export function PlacementPageWrapper() {
+interface PlacementPageWrapperProps {
+  onNavigateToMatching?: () => void;
+}
+
+export function PlacementPageWrapper({ onNavigateToMatching }: PlacementPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const { providers } = useProviders({ q: "" });
 
@@ -47,5 +51,5 @@ export function PlacementPageWrapper() {
   }
 
   // Otherwise show the list view
-  return <PlacementListPage onCaseClick={handleCaseClick} />;
+  return <PlacementTrackingPage onCaseClick={handleCaseClick} onNavigateToMatching={onNavigateToMatching} />;
 }

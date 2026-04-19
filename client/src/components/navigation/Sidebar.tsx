@@ -316,9 +316,10 @@ interface SidebarProps {
   role: RoleType;
   activeItemId?: string;
   onNavigate?: (itemId: string, href: string) => void;
+  badgeOverrides?: Partial<Record<string, number>>;
 }
 
-export function Sidebar({ role, activeItemId = "regiekamer", onNavigate }: SidebarProps) {
+export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOverrides = {} }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   
   const navigationStructure = getNavigationForRole(role);
@@ -373,6 +374,7 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate }: Sideb
               {section.items.map((item) => {
                 const isActive = activeItemId === item.id;
                 const Icon = item.icon;
+                const badgeValue = badgeOverrides[item.id] ?? item.badge;
 
                 return (
                   <button
@@ -386,7 +388,7 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate }: Sideb
                       ${collapsed ? "justify-center" : ""}
                       ${isActive
                         ? "bg-primary-light text-primary shadow-sm border border-transparent"
-                        : "text-muted-foreground hover:bg-bg-subtle hover:text-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
                       }
                     `}
                     title={collapsed ? item.label : undefined}
@@ -411,22 +413,22 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate }: Sideb
                     )}
 
                     {/* Badge */}
-                    {!collapsed && item.badge !== undefined && (
+                    {!collapsed && badgeValue !== undefined && (
                       <span className={`
-                        px-2 py-0.5 rounded-full text-xs font-bold
+                        min-w-6 px-2 py-0.5 rounded-full text-xs font-semibold text-center border
                         ${isActive 
                           ? "bg-primary text-white" 
-                          : "careon-badge-red"
+                          : "bg-muted/40 text-foreground/70 border-border"
                         }
                       `}>
-                        {item.badge}
+                        {badgeValue}
                       </span>
                     )}
 
                     {/* Badge (collapsed) */}
-                    {collapsed && item.badge !== undefined && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-base rounded-full flex items-center justify-center text-xs font-bold text-white">
-                        {item.badge}
+                    {collapsed && badgeValue !== undefined && (
+                      <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-muted text-foreground border border-border rounded-full flex items-center justify-center text-[10px] font-semibold">
+                        {badgeValue}
                       </span>
                     )}
 
@@ -442,9 +444,9 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate }: Sideb
                         <span className="text-sm font-medium text-foreground">
                           {item.label}
                         </span>
-                        {item.badge !== undefined && (
-                          <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold careon-badge-red">
-                            {item.badge}
+                        {badgeValue !== undefined && (
+                          <span className="ml-2 min-w-6 px-2 py-0.5 rounded-full text-xs font-semibold text-center border bg-muted/40 text-foreground/70 border-border">
+                            {badgeValue}
                           </span>
                         )}
                       </div>
