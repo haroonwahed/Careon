@@ -92,15 +92,37 @@
                     <span class="rounded-full bg-blue-100 px-2.5 py-1 text-blue-700">Fitscore {{ top_candidate.fit_score }}%</span>
                 </div>
 
+                {% if top_candidate.explanation.warning_flags %}
+                <div class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Aandachtspunten</p>
+                    <ul class="mt-2 space-y-1 text-sm text-red-900">
+                        {% for flag in top_candidate.explanation.warning_flags %}
+                        <li>⚠ {{ flag }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
                 {% if top_candidate.explanation.trade_offs or top_candidate.decision_trade_offs %}
                 <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Let op</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Afwegingen</p>
                     <ul class="mt-2 space-y-1 text-sm text-amber-900">
                         {% for tradeoff in top_candidate.explanation.trade_offs %}
                         <li>- {{ tradeoff }}</li>
                         {% endfor %}
                         {% for tradeoff in top_candidate.decision_trade_offs %}
                         <li>- {{ tradeoff }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                {% if top_candidate.explanation.verification_guidance %}
+                <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Te verifiëren vóór plaatsing</p>
+                    <ul class="mt-2 space-y-1 text-sm text-blue-900">
+                        {% for item in top_candidate.explanation.verification_guidance %}
+                        <li>{{ item }}</li>
                         {% endfor %}
                     </ul>
                 </div>
@@ -495,10 +517,24 @@
                                 · Score {{ candidate.fit_score }}%
                                 {% if candidate.capacity %}· Capaciteit: {{ candidate.capacity }}{% endif %}
                             </div>
+                            {% if candidate.explanation.warning_flags %}
+                            <ul class="mt-1 space-y-0.5 text-xs text-red-700">
+                                {% for flag in candidate.explanation.warning_flags|slice:":2" %}
+                                <li>⚠ {{ flag }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
                             {% if candidate.explanation.trade_offs %}
                             <ul class="mt-1 space-y-0.5 text-xs ds-text-secondary">
                                 {% for tradeoff in candidate.explanation.trade_offs|slice:":2" %}
                                 <li>- {{ tradeoff }}</li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                            {% if candidate.explanation.verification_guidance %}
+                            <ul class="mt-1 space-y-0.5 text-xs text-blue-700">
+                                {% for item in candidate.explanation.verification_guidance|slice:":1" %}
+                                <li>→ {{ item }}</li>
                                 {% endfor %}
                             </ul>
                             {% endif %}

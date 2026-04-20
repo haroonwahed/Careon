@@ -70,13 +70,84 @@
           data-provider-card="{{ suggestion.provider_id }}" tabindex="-1">
           <div class="mrd-match-card__header">
             <h3 class="mrd-match-card__name">{{ suggestion.provider_name }}</h3>
-            <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}% Matchscore</span>
+            <div class="mrd-match-card__header-right">
+              <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}% Matchscore</span>
+              {% if suggestion.explanation.confidence == 'high' %}
+              <span class="ds-badge badge-green">Confidence: Hoog</span>
+              {% elif suggestion.explanation.confidence == 'medium' %}
+              <span class="ds-badge badge-amber">Confidence: Medium</span>
+              {% else %}
+              <span class="ds-badge badge-gray">Confidence: Laag</span>
+              {% endif %}
+            </div>
           </div>
+
+          <!-- Fit summary (always visible) -->
+          <p class="mrd-explainability-summary">{{ suggestion.explanation.fit_summary }}</p>
+
+          <!-- Warning flags (always visible if present) -->
+          {% if suggestion.explanation.warning_flags %}
+          <ul class="mrd-warning-flags" role="list">
+            {% for flag in suggestion.explanation.warning_flags %}
+            <li class="mrd-warning-flag"><span class="mrd-warning-flag__icon" aria-hidden="true">⚠</span> {{ flag }}</li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+
+          <!-- Expandable explainability detail -->
+          <details class="mrd-explain-detail">
+            <summary class="mrd-explain-detail__toggle">Bekijk onderbouwing</summary>
+            <div class="mrd-explain-detail__body">
+
+              <!-- Factor breakdown -->
+              {% if suggestion.explanation.factor_breakdown %}
+              <div class="mrd-factor-breakdown">
+                <p class="mrd-factor-breakdown__title">Factoranalyse</p>
+                <ul class="mrd-factor-list" role="list">
+                  {% for factor in suggestion.explanation.factor_breakdown %}
+                  <li class="mrd-factor-item">
+                    <span class="mrd-factor-item__status mrd-factor-status--{{ factor.status }}" aria-label="{{ factor.status }}"></span>
+                    <span class="mrd-factor-item__name">{{ factor.name }}</span>
+                    <span class="mrd-factor-item__detail">{{ factor.detail }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <!-- Trade-offs -->
+              {% if suggestion.explanation.trade_offs %}
+              <div class="mrd-explain-section">
+                <p class="mrd-explain-section__label">Afwegingen</p>
+                <ul class="mrd-explain-list">
+                  {% for tradeoff in suggestion.explanation.trade_offs %}
+                  <li>{{ tradeoff }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <!-- Verification guidance -->
+              {% if suggestion.explanation.verification_guidance %}
+              <div class="mrd-explain-section">
+                <p class="mrd-explain-section__label">Te verifiëren vóór plaatsing</p>
+                <ul class="mrd-explain-list">
+                  {% for item in suggestion.explanation.verification_guidance %}
+                  <li>{{ item }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+              {% endif %}
+
+              <!-- Confidence reason -->
+              {% if suggestion.explanation.confidence_reason %}
+              <p class="mrd-explain-note">{{ suggestion.explanation.confidence_reason }}</p>
+              {% endif %}
+
+            </div>
+          </details>
+
           <p class="mrd-card-status">Matching status: {{ suggestion.matching_status }}</p>
-          <div class="mrd-card-reason">
-            <p class="mrd-card-reason__label">Waarom matching faalt</p>
-            <p class="mrd-card-reason__text">{% firstof focus_row.primary_signal.label suggestion.failure_reason focus_row.failure_reason %}</p>
-          </div>
           <div class="mrd-match-card__chips">
             {% if suggestion.operational_signals %}
             <span class="mrd-chip tone-{{ suggestion.operational_signals.0.chip_tone }}">{{ suggestion.operational_signals.0.label }}</span>
@@ -109,6 +180,7 @@
         </article>
         {% endfor %}
       </div>
+
 
       {% else %}
       <div class="mrd-suggestions-empty">

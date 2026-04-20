@@ -371,10 +371,11 @@ def _provider_specialization_summary(profile):
     return 'Algemene zorgondersteuning'
 
 
-def _build_matching_explanation(*, match_score, category_match, urgency_match, care_form_match, region_match, region_type_match, free_slots, average_wait_days, specialization_summary, tradeoff):
+def _build_matching_explanation(*, match_score, category_match, urgency_match, care_form_match, region_match, region_type_match, free_slots, average_wait_days, specialization_summary, tradeoff, complexity_match=False, special_needs_ok=True):
     capacity_status, capacity_label = _capacity_status_label(free_slots)
     performance_status, performance_label = _performance_status_label(average_wait_days)
 
+    # ── Confidence ────────────────────────────────────────────────────────────
     if match_score >= 80 and free_slots > 0 and care_form_match and urgency_match:
         confidence = 'high'
         confidence_reason = 'Sterke fit op zorgvorm, urgentie en operationele haalbaarheid.'
@@ -385,20 +386,52 @@ def _build_matching_explanation(*, match_score, category_match, urgency_match, c
         confidence = 'low'
         confidence_reason = 'Aanbeveling is bruikbaar als alternatief, maar vraagt nadrukkelijke validatie.'
 
+    # ── Trade-offs ─────────────────────────────────────────────────────────────
     trade_offs = []
-    if tradeoff:
+    if care_form_match and free_slots <= 0:
+        trade_offs.append('Juiste zorgvorm maar beperkte resterende capaciteit.')
+    elif not region_match and region_type_match:
+        trade_offs.append('Nabijgelegen aanbieder maar geen exacte regiomatch.')
+    elif category_match and performance_status == 'slow':
+        trade_offs.append('Sterke categoriefit maar lange wachttijd.')
+    elif urgency_match and not care_form_match:
+        trade_offs.append('Urgentiecompatibiliteit aanwezig maar zorgvorm vraagt verificatie.')
+    elif match_score >= 70 and not region_match:
+        trade_offs.append('Goede totaalfit maar regio behoeft bevestiging.')
+    if tradeoff and tradeoff not in trade_offs:
         trade_offs.append(tradeoff)
 
+    # ── Verification guidance ──────────────────────────────────────────────────
     verify_manually = []
-    if not region_match:
+    if not region_match and not region_type_match:
+        verify_manually.append('Bevestig regionale uitvoerbaarheid: aanbieder dekt de casusregio mogelijk niet.')
+    elif not region_match:
         verify_manually.append('Controleer of de casus praktisch uitvoerbaar is binnen de gewenste regio.')
     if capacity_status != 'available':
-        verify_manually.append('Bevestig actuele capaciteit voordat je toewijst.')
+        verify_manually.append('Bevestig actuele intakeslotbeschikbaarheid vóór toewijzing.')
+    if not urgency_match:
+        verify_manually.append('Verifieer of aanbieder dit urgentieniveau accepteert.')
+    if not special_needs_ok:
+        verify_manually.append('Beoordeel geschiktheid voor bijzondere zorgsituatie.')
     if performance_status == 'slow':
         verify_manually.append('Beoordeel of de wachttijd verdedigbaar is voor deze casus.')
     if not verify_manually:
         verify_manually.append('Bevestig intake-fit en uitvoerbaarheid in de casuswerkruimte.')
 
+    # ── Warning flags ──────────────────────────────────────────────────────────
+    warning_flags = []
+    if confidence == 'low':
+        warning_flags.append('Lage confidence – meerdere factoren vragen handmatige controle.')
+    if capacity_status == 'full':
+        warning_flags.append('Aanbieder heeft geen directe vrije capaciteit.')
+    if not urgency_match:
+        warning_flags.append('Urgentiecompatibiliteit onbevestigd voor dit aanbiederprofiel.')
+    if not region_match and not region_type_match:
+        warning_flags.append('Geen regiomatch – geografische dekking moet worden bevestigd.')
+    if not special_needs_ok:
+        warning_flags.append('Bijzondere zorgsituatie: geschiktheid aanbieders moet worden geverifieerd.')
+
+    # ── Fit summary ────────────────────────────────────────────────────────────
     fit_summary_parts = []
     if category_match:
         fit_summary_parts.append('categorie')
@@ -408,40 +441,81 @@ def _build_matching_explanation(*, match_score, category_match, urgency_match, c
         fit_summary_parts.append('zorgvorm')
     if region_match:
         fit_summary_parts.append('regio')
-    fit_summary = 'Sterke fit op ' + ', '.join(fit_summary_parts[:3]) if fit_summary_parts else 'Handmatige beoordeling nodig om de fit te bevestigen.'
+    fit_summary = (
+        'Sterke fit op ' + ', '.join(fit_summary_parts[:3])
+        if fit_summary_parts
+        else 'Handmatige beoordeling nodig om de fit te bevestigen.'
+    )
+
+    # ── Factor breakdown (ordered list for template rendering) ─────────────────
+    factor_breakdown = [
+        {
+            'name': 'Zorgvorm',
+            'key': 'care_form',
+            'status': 'match' if care_form_match else 'review',
+            'detail': 'Gevraagde zorgvorm is beschikbaar.' if care_form_match else 'Zorgvorm vraagt aanvullende controle.',
+        },
+        {
+            'name': 'Urgentiecompatibiliteit',
+            'key': 'urgency',
+            'status': 'match' if urgency_match else 'review',
+            'detail': 'Urgentie past binnen het aanbiederprofiel.' if urgency_match else 'Controleer of deze aanbieder de urgentie aankan.',
+        },
+        {
+            'name': 'Specialisatie',
+            'key': 'specialization',
+            'status': 'match' if category_match else 'review',
+            'detail': 'Categorie match aanwezig.' if category_match else specialization_summary,
+        },
+        {
+            'name': 'Regionale fit',
+            'key': 'region',
+            'status': 'exact' if region_match else 'compatible' if region_type_match else 'review',
+            'detail': (
+                'Voorkeursregio sluit aan.'
+                if region_match
+                else 'Regiotype sluit aan, maar exacte locatie moet worden bevestigd.'
+                if region_type_match
+                else 'Geen harde geografische bevestiging beschikbaar.'
+            ),
+        },
+        {
+            'name': 'Beschikbare capaciteit',
+            'key': 'capacity',
+            'status': capacity_status,
+            'detail': capacity_label if free_slots <= 0 else f'{capacity_label} ({free_slots} vrije plekken).',
+        },
+        {
+            'name': 'Complexiteitsfit',
+            'key': 'complexity',
+            'status': 'match' if complexity_match else 'review',
+            'detail': 'Aanbieder is uitgerust voor de benodigde complexiteit.' if complexity_match else 'Complexiteitsgeschiktheid vraagt bevestiging.',
+        },
+        {
+            'name': 'Bijzondere behoeften',
+            'key': 'special_needs',
+            'status': 'ok' if special_needs_ok else 'warning',
+            'detail': 'Geen contra-indicaties gevonden voor bijzondere zorgsituatie.' if special_needs_ok else 'Bijzondere zorgsituatie vereist handmatige verificatie van geschiktheid.',
+        },
+    ]
+
+    # ── Backward-compatible factors dict ─────────────────────────────────────
+    factors = {item['key']: {'status': item['status'], 'detail': item['detail']} for item in factor_breakdown}
+    factors['performance'] = {
+        'status': performance_status,
+        'detail': f'{performance_label} ({average_wait_days} dagen).',
+    }
 
     return {
         'fit_summary': fit_summary,
-        'factors': {
-            'specialization': {
-                'status': 'match' if category_match else 'review',
-                'detail': 'Categorie match aanwezig.' if category_match else specialization_summary,
-            },
-            'urgency': {
-                'status': 'match' if urgency_match else 'review',
-                'detail': 'Urgentie past binnen het aanbiederprofiel.' if urgency_match else 'Controleer of deze aanbieder de urgentie aankan.',
-            },
-            'care_form': {
-                'status': 'match' if care_form_match else 'review',
-                'detail': 'Gevraagde zorgvorm is beschikbaar.' if care_form_match else 'Zorgvorm vraagt aanvullende controle.',
-            },
-            'region': {
-                'status': 'exact' if region_match else 'compatible' if region_type_match else 'review',
-                'detail': 'Voorkeursregio sluit aan.' if region_match else 'Regiotype sluit aan, maar exacte locatie moet worden bevestigd.' if region_type_match else 'Geen harde geografische bevestiging beschikbaar.',
-            },
-            'capacity': {
-                'status': capacity_status,
-                'detail': capacity_label if free_slots <= 0 else f'{capacity_label} ({free_slots} vrije plekken).',
-            },
-            'performance': {
-                'status': performance_status,
-                'detail': f'{performance_label} ({average_wait_days} dagen).',
-            },
-        },
+        'factor_breakdown': factor_breakdown,
+        'factors': factors,
         'confidence': confidence,
         'confidence_reason': confidence_reason,
         'trade_offs': trade_offs,
-        'verify_manually': verify_manually,
+        'verification_guidance': verify_manually,
+        'verify_manually': verify_manually,  # keep alias for backward compat
+        'warning_flags': warning_flags,
         'behavior_consideration': 'Niet toegepast op ranking (onvoldoende nabijheid of historie)',
         'behavior_influence': ['Limited provider history, behavioral influence kept neutral'],
     }
@@ -751,6 +825,83 @@ def _region_pressure_summary(*, intake, provider_profiles, region_id):
     }
 
 
+def _build_canonical_factor_breakdown(result):
+    """Return ordered list of factor dicts for a canonical MatchResultaat."""
+    score_complex = float(result.score_complexiteit_veiligheid_fit or result.score_complexiteit or 0.0)
+    score_cap = float(result.score_capaciteit_wachttijd_fit or result.score_capaciteit or 0.0)
+    score_regio = float(result.score_regio_contract_fit or result.score_contract_regio or 0.0)
+    score_inhoud = float(result.score_inhoudelijke_fit or 0.0)
+    score_perf = float(result.score_performance_fit or result.score_performance or 0.0)
+    return [
+        {
+            'name': 'Zorgvorm',
+            'key': 'care_form',
+            'status': 'match' if score_inhoud >= 8 else 'review',
+            'detail': 'Zorgvorm meegewogen in inhoudelijke fit.',
+        },
+        {
+            'name': 'Urgentiecompatibiliteit',
+            'key': 'urgency',
+            'status': 'match' if score_complex >= 7 else 'review',
+            'detail': f"Complexiteit/veiligheid fit: {score_complex:.1f}/15",
+        },
+        {
+            'name': 'Specialisatie',
+            'key': 'specialization',
+            'status': 'match' if score_inhoud >= 18 else 'review',
+            'detail': f"Inhoudelijke fit: {score_inhoud:.1f}/35",
+        },
+        {
+            'name': 'Regionale fit',
+            'key': 'region',
+            'status': 'exact' if score_regio >= 10 else 'review',
+            'detail': f"Regio/contract fit: {score_regio:.1f}/20",
+        },
+        {
+            'name': 'Beschikbare capaciteit',
+            'key': 'capacity',
+            'status': 'available' if score_cap >= 12 else 'limited',
+            'detail': f"Capaciteit/wachttijd fit: {score_cap:.1f}/20",
+        },
+        {
+            'name': 'Complexiteitsfit',
+            'key': 'complexity',
+            'status': 'match' if score_complex >= 10 else 'review',
+            'detail': f"Complexiteitsfit: {score_complex:.1f}/15",
+        },
+        {
+            'name': 'Bijzondere behoeften',
+            'key': 'special_needs',
+            'status': 'ok',
+            'detail': 'Geen contra-indicatie conflict gedetecteerd door matchingengine.',
+        },
+        {
+            'name': 'Performance',
+            'key': 'performance',
+            'status': 'good' if score_perf >= 6 else 'review',
+            'detail': f"Performance fit: {score_perf:.1f}/10",
+        },
+    ]
+
+
+def _build_canonical_warning_flags(result):
+    """Derive warning flags from a MatchResultaat for display on provider cards."""
+    flags = []
+    confidence = str(result.confidence_label or '').lower()
+    if confidence in {'laag', 'onzeker', 'low'}:
+        flags.append('Lage confidence – meerdere factoren vragen handmatige controle.')
+    score_cap = float(result.score_capaciteit_wachttijd_fit or result.score_capaciteit or 0.0)
+    if score_cap < 8:
+        flags.append('Aanbieder heeft mogelijk geen directe vrije capaciteit.')
+    score_complex = float(result.score_complexiteit_veiligheid_fit or result.score_complexiteit or 0.0)
+    if score_complex < 7:
+        flags.append('Urgentiecompatibiliteit onbevestigd voor dit aanbiederprofiel.')
+    score_regio = float(result.score_regio_contract_fit or result.score_contract_regio or 0.0)
+    if score_regio < 5:
+        flags.append('Geen regiomatch – geografische dekking moet worden bevestigd.')
+    return flags
+
+
 def _build_canonical_matching_suggestions_for_intake(intake, organization, *, limit=5):
     ctx = _build_match_context_from_intake(intake, organization)
     results = MatchEngine.run(ctx=ctx, casus=intake, max_results=max(limit * 3, 10), persist=False)
@@ -841,18 +992,19 @@ def _build_canonical_matching_suggestions_for_intake(intake, organization, *, li
                 },
                 'explanation': {
                     'fit_summary': result.fit_samenvatting or 'Deterministische matchscore',
+                    'factor_breakdown': _build_canonical_factor_breakdown(result),
                     'factors': {
-                        'specialization': {
-                            'status': 'match' if result.score_inhoudelijke_fit >= 18 else 'review',
-                            'detail': f"Inhoudelijke fit: {result.score_inhoudelijke_fit:.1f}/35",
+                        'care_form': {
+                            'status': 'match' if result.score_inhoudelijke_fit >= 8 else 'review',
+                            'detail': 'Zorgvorm meegewogen in inhoudelijke fit.',
                         },
                         'urgency': {
                             'status': 'match' if result.score_complexiteit >= 7 else 'review',
                             'detail': f"Complexiteit/veiligheid fit: {result.score_complexiteit_veiligheid_fit or result.score_complexiteit:.1f}/15",
                         },
-                        'care_form': {
-                            'status': 'match' if result.score_inhoudelijke_fit >= 8 else 'review',
-                            'detail': 'Zorgvorm meegewogen in inhoudelijke fit.',
+                        'specialization': {
+                            'status': 'match' if result.score_inhoudelijke_fit >= 18 else 'review',
+                            'detail': f"Inhoudelijke fit: {result.score_inhoudelijke_fit:.1f}/35",
                         },
                         'region': {
                             'status': 'exact' if result.score_contract_regio >= 10 else 'review',
@@ -862,6 +1014,14 @@ def _build_canonical_matching_suggestions_for_intake(intake, organization, *, li
                             'status': 'available' if result.score_capaciteit >= 12 else 'limited',
                             'detail': f"Capaciteit/wachttijd fit: {result.score_capaciteit_wachttijd_fit or result.score_capaciteit:.1f}/20",
                         },
+                        'complexity': {
+                            'status': 'match' if result.score_complexiteit_veiligheid_fit >= 10 else 'review',
+                            'detail': f"Complexiteitsfit: {result.score_complexiteit_veiligheid_fit or result.score_complexiteit:.1f}/15",
+                        },
+                        'special_needs': {
+                            'status': 'ok',
+                            'detail': 'Geen contra-indicatie conflict gedetecteerd door matchingengine.',
+                        },
                         'performance': {
                             'status': 'good' if result.score_performance >= 6 else 'review',
                             'detail': f"Performance fit: {result.score_performance_fit or result.score_performance:.1f}/10",
@@ -870,7 +1030,15 @@ def _build_canonical_matching_suggestions_for_intake(intake, organization, *, li
                     'confidence': str(result.confidence_label or '').lower(),
                     'confidence_reason': result.verificatie_advies or 'Confidence gebaseerd op score en datacompleetheid.',
                     'trade_offs': trade_offs,
-                    'verify_manually': [result.verificatie_advies] if result.verificatie_advies else ['Verifieer capaciteit en contract voorafgaand aan plaatsing.'],
+                    'verification_guidance': (
+                        [result.verificatie_advies] if result.verificatie_advies
+                        else ['Verifieer capaciteit en contract voorafgaand aan plaatsing.']
+                    ),
+                    'verify_manually': (
+                        [result.verificatie_advies] if result.verificatie_advies
+                        else ['Verifieer capaciteit en contract voorafgaand aan plaatsing.']
+                    ),
+                    'warning_flags': _build_canonical_warning_flags(result),
                     'behavior_consideration': 'Deterministisch model toegepast met expliciete regio/contract- en capaciteitsfactoren.',
                     'behavior_influence': [],
                 },
