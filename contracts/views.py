@@ -6080,6 +6080,16 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
 
         # Action banner: maps next_best_action code to a human label and href
         # so the template can render a prominent CTA without any business logic.
+        _complete_beoordeling_href = (
+            reverse('careon:assessment_detail', kwargs={'pk': assessment.pk})
+            if assessment
+            else f"{reverse('careon:assessment_create')}?intake={intake.pk}"
+        )
+        _resolve_stall_href = (
+            reverse('careon:placement_detail', kwargs={'pk': placement.pk})
+            if placement
+            else f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
+        )
         _action_banner_map = {
             'fill_missing_information': {
                 'label': 'Vul ontbrekende casusgegevens in',
@@ -6093,7 +6103,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             },
             'complete_beoordeling': {
                 'label': 'Rond de beoordeling af',
-                'href': reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}) if assessment else f"{reverse('careon:assessment_create')}?intake={intake.pk}",
+                'href': _complete_beoordeling_href,
                 'band': 'today',
             },
             'run_matching': {
@@ -6118,7 +6128,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             },
             'resolve_placement_stall': {
                 'label': 'Los plaatsingsstagnatie op',
-                'href': reverse('careon:placement_detail', kwargs={'pk': placement.pk}) if placement else f"{reverse('careon:matching_dashboard')}?intake={intake.pk}",
+                'href': _resolve_stall_href,
                 'band': 'today',
             },
             'start_monitoring': {

@@ -153,6 +153,30 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
         self.assertEqual(action["code"], "monitor")
         self.assertEqual(action["priority"], 7)
 
+    def test_evaluate_intelligence_not_safe_to_proceed_when_beoordeling_not_started(self):
+        case_data = self._base_case_data()
+        case_data["assessment_complete"] = False
+        case_data["assessment_status"] = None
+        case_data["matching_run_exists"] = False
+
+        result = evaluate_case_intelligence(case_data)
+
+        self.assertFalse(result["safe_to_proceed"])
+        self.assertEqual(result["next_best_action"]["code"], "start_beoordeling")
+        self.assertGreater(len(result["stop_reasons"]), 0)
+
+    def test_evaluate_intelligence_not_safe_to_proceed_when_beoordeling_incomplete(self):
+        case_data = self._base_case_data()
+        case_data["assessment_complete"] = False
+        case_data["assessment_status"] = "DRAFT"
+        case_data["matching_run_exists"] = True
+
+        result = evaluate_case_intelligence(case_data)
+
+        self.assertFalse(result["safe_to_proceed"])
+        self.assertEqual(result["next_best_action"]["code"], "complete_beoordeling")
+        self.assertGreater(len(result["stop_reasons"]), 0)
+
     def test_missing_information_detection(self):
         case_data = self._base_case_data()
         case_data["phase"] = ""
