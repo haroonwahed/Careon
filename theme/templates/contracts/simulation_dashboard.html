@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block title %}Simulatie Dashboard - Careon{% endblock %}
+{% block content %}
+<div class="ds-list-shell">
+
+    <div class="ds-list-header">
+        <div>
+            <h1 class="page-title">Simulatie Dashboard</h1>
+            <p class="ds-note-text">Pipeline stress-test: 50 gesimuleerde casussen door de volledige Zorg OS workflow.</p>
+        </div>
+        <div class="ds-list-actions">
+            <span class="ds-note-text">
+                Voer simulatie uit via:<br>
+                <code>python manage.py simulate_pipeline --seed 42 --reset</code>
+            </span>
+        </div>
+    </div>
+
+    {% if runs %}
+    <div class="ds-list-filters" style="margin-bottom:1rem;">
+        <form method="get" class="ds-list-filter-row">
+            <div class="ds-list-filter-group">
+                <label class="ds-list-filter-label" for="sim-run">Simulatieronde</label>
+                <select id="sim-run" name="run" onchange="this.form.submit()">
+                    {% for run in runs %}
+                    <option value="{{ run.pk }}" {% if selected_run.pk == run.pk %}selected{% endif %}>
+                        Run #{{ run.pk }} – seed={{ run.seed }} ({{ run.created_at|date:"d-m-Y H:i" }}) {{ run.get_status_display }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <input type="hidden" name="status" value="{{ status_filter }}">
+            <input type="hidden" name="risk" value="{{ risk_filter }}">
+            <input type="hidden" name="urgency" value="{{ urgency_filter }}">
+            <input type="hidden" name="block" value="{{ block_filter }}">
+        </form>
+    </div>
+    {% endif %}
+
+    {% if selected_run %}
+
+    {# ── Summary KPI cards ── #}
+    <div class="ds-list-kpi-grid" style="margin-bottom:1.5rem;">
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Totaal casussen</div>
+            <div class="ds-list-kpi-value">{{ selected_run.total_cases }}</div>
+        </div>
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Succesvol afgerond</div>
+            <div class="ds-list-kpi-value tone-ok">{{ selected_run.successful_flows }}</div>
+        </div>
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Geblokkeerd (data)</div>
+            <div class="ds-list-kpi-value tone-warn">{{ selected_run.blocked_missing_data }}</div>
+        </div>
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Geen capaciteit</div>
+            <div class="ds-list-kpi-value tone-critical">{{ selected_run.blocked_no_capacity }}</div>
+        </div>
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Zwakke match</div>
+            <div class="ds-list-kpi-value tone-warn">{{ selected_run.weak_match_count }}</div>
+        </div>
+        <div class="ds-list-kpi-card">
+            <div class="ds-list-kpi-label">Plaatsing vastgelopen</div>
+            <div class="ds-list-kpi-value tone-critical">{{ selected_run.stalled_placement_count }}</div>
+        </div>
+    </div>
+
+    {# ── Phase distribution ── #}
+    {% if summary.phase_percentage %}
+    <div class="ds-card" style="margin-bottom:1.5rem;padding:1rem 1.5rem;">
+        <div class="panel-title" style="margin-bottom:.75rem;">Faseverdeling (%)</div>
+        <div style="display:flex;gap:1.5rem;flex-wrap:wrap;">
+            {% for phase, pct in summary.phase_percentage.items %}
+            <div style="text-align:center;">
+                <div style="font-size:1.4rem;font-weight:700;">{{ pct }}%</div>
+                <div class="ds-note-text">{{ phase }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# ── Filters ── #}
+    <form method="get" class="ds-list-filters ds-list-filter-row" style="margin-bottom:1rem;">
+        <input type="hidden" name="run" value="{{ selected_run.pk }}">
+        <div class="ds-list-filter-group">
+            <label class="ds-list-filter-label" for="sim-status">Fase</label>
+            <select id="sim-status" name="status" onchange="this.form.submit()">
+                <option value="">Alle fasen</option>
+                {% for value, label in phase_choices %}
+                <option value="{{ value }}" {% if status_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="ds-list-filter-group">
+            <label class="ds-list-filter-label" for="sim-urgency">Urgentie</label>
+            <select id="sim-urgency" name="urgency" onchange="this.form.submit()">
+                <option value="">Alle urgentie</option>
+                {% for value, label in urgency_choices %}
+                <option value="{{ value }}" {% if urgency_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="ds-list-filter-group">
+            <label class="ds-list-filter-label" for="sim-block">Blokkeringreden</label>
+            <select id="sim-block" name="block" onchange="this.form.submit()">
+                <option value="">Alle redenen</option>
+                {% for value, label in block_choices %}
+                <option value="{{ value }}" {% if block_filter == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="ds-list-filter-group">
+            <label class="ds-list-filter-label" for="sim-risk">Risicovlag</label>
+            <input id="sim-risk" type="search" name="risk" value="{{ risk_filter }}" placeholder="bijv. NO_MATCH">
+        </div>
+        <button type="submit" class="btn btn-secondary">Filter</button>
+        <a href="?run={{ selected_run.pk }}" class="btn btn-ghost">Reset</a>
+    </form>
+
+    {# ── Case table ── #}
+    <div class="ds-table-container">
+        <table class="ds-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Fase</th>
+                    <th>Urgentie</th>
+                    <th>Complexiteit</th>
+                    <th>Leeftijdsgroep</th>
+                    <th>Zorgcategorie</th>
+                    <th>Aanbieders</th>
+                    <th>Geselecteerde aanbieder</th>
+                    <th>Plaatsingsstatus</th>
+                    <th>Blokkeringreden</th>
+                    <th>Risicovlaggen</th>
+                    <th>Volgende actie</th>
+                    <th>Detail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for result in case_results %}
+                <tr>
+                    <td>{{ result.case_number }}</td>
+                    <td>
+                        <span class="badge
+                            {% if result.current_phase == 'AFGEROND' %}badge-green
+                            {% elif result.current_phase == 'GEBLOKKEERD' %}badge-red
+                            {% elif result.current_phase == 'PLAATSING' %}badge-blue
+                            {% else %}badge-gray{% endif %}">
+                            {{ result.get_current_phase_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge
+                            {% if result.urgency_snapshot == 'CRISIS' %}badge-red
+                            {% elif result.urgency_snapshot == 'HIGH' %}badge-orange
+                            {% elif result.urgency_snapshot == 'MEDIUM' %}badge-yellow
+                            {% else %}badge-gray{% endif %}">
+                            {{ result.urgency_snapshot }}
+                        </span>
+                    </td>
+                    <td>{{ result.complexity_snapshot }}</td>
+                    <td>{{ result.age_group_snapshot }}</td>
+                    <td>{{ result.care_category_snapshot }}</td>
+                    <td class="text-center">{{ result.matched_provider_count }}</td>
+                    <td>
+                        {% if result.selected_provider %}
+                            {{ result.selected_provider.name }}
+                        {% else %}
+                            <span class="ds-note-text">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if result.placement_status %}
+                            {{ result.placement_status }}
+                        {% else %}
+                            <span class="ds-note-text">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if result.pipeline_block_reason != 'NONE' %}
+                            <span class="badge badge-red">{{ result.get_pipeline_block_reason_display }}</span>
+                        {% else %}
+                            <span class="ds-note-text">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if result.risk_flags %}
+                            {% for flag in result.risk_flags %}
+                                <span class="badge badge-orange" style="font-size:.7rem;">{{ flag }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="ds-note-text">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="ds-note-text" style="max-width:220px;white-space:normal;">
+                        {{ result.next_best_action|truncatechars:80 }}
+                    </td>
+                    <td>
+                        {% if result.intake %}
+                            <a href="{% url 'careon:case_detail' result.intake.pk %}" class="btn btn-ghost btn-xs">Casus</a>
+                        {% endif %}
+                        {% if result.placement %}
+                            <a href="{% url 'careon:placement_detail' result.placement.pk %}" class="btn btn-ghost btn-xs">Plaatsing</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="13" class="ds-empty-state">
+                        Geen resultaten voor de huidige filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% else %}
+    <div class="ds-empty-state">
+        <p>Geen simulatiedata beschikbaar.</p>
+        <p>Voer de simulatie uit via de management command:</p>
+        <pre style="background:#1e293b;color:#e2e8f0;padding:1rem;border-radius:.5rem;margin-top:.75rem;">
+python manage.py simulate_pipeline --seed 42</pre>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

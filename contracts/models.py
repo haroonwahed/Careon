@@ -3422,3 +3422,120 @@ class MatchResultaat(models.Model):
     @property
     def casus_id(self):
         return self.casus.pk if self.casus else None
+
+
+# ============================================
+# SIMULATION MODELS
+# ============================================
+
+class SimulationRun(models.Model):
+    """Tracks a single 50-case simulation run for pipeline stress-testing."""
+
+    class RunStatus(models.TextChoices):
+        RUNNING = 'RUNNING', 'Bezig'
+        COMPLETED = 'COMPLETED', 'Afgerond'
+        FAILED = 'FAILED', 'Mislukt'
+
+    seed = models.PositiveIntegerField(default=42, verbose_name='Seed (reproduceerbaar)')
+    label = models.CharField(max_length=200, blank=True, verbose_name='Label')
+    status = models.CharField(max_length=20, choices=RunStatus.choices, default=RunStatus.RUNNING, verbose_name='Status')
+    total_cases = models.PositiveIntegerField(default=0)
+    successful_flows = models.PositiveIntegerField(default=0)
+    blocked_missing_data = models.PositiveIntegerField(default=0)
+    blocked_no_capacity = models.PositiveIntegerField(default=0)
+    weak_match_count = models.PositiveIntegerField(default=0)
+    stalled_placement_count = models.PositiveIntegerField(default=0)
+    summary = models.JSONField(default=dict, blank=True, verbose_name='Samenvatting')
+    organization = models.ForeignKey(
+        'Organization',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='simulation_runs',
+    )
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'contracts_simulationrun'
+        ordering = ['-created_at']
+        verbose_name = 'Simulatieronde'
+        verbose_name_plural = 'Simulatierondes'
+
+    def __str__(self):
+        return f'SimRun #{self.pk} seed={self.seed} ({self.get_status_display()})'
+
+
+class SimulatedCaseResult(models.Model):
+    """Pipeline outcome record for a single case within a simulation run."""
+
+    class PipelinePhase(models.TextChoices):
+        INTAKE = 'INTAKE', 'Intake'
+        BEOORDELING = 'BEOORDELING', 'Beoordeling'
+        MATCHING = 'MATCHING', 'Matching'
+        PLAATSING = 'PLAATSING', 'Plaatsing'
+        INTAKE_OVERDRACHT = 'INTAKE_OVERDRACHT', 'Intake overdracht'
+        AFGEROND = 'AFGEROND', 'Afgerond'
+        GEBLOKKEERD = 'GEBLOKKEERD', 'Geblokkeerd'
+
+    class BlockReason(models.TextChoices):
+        NONE = 'NONE', 'Geen'
+        MISSING_DATA = 'MISSING_DATA', 'Ontbrekende data'
+        NO_CAPACITY = 'NO_CAPACITY', 'Geen capaciteit'
+        NO_PROVIDERS = 'NO_PROVIDERS', 'Geen aanbieders gevonden'
+        WEAK_MATCH = 'WEAK_MATCH', 'Zwakke match'
+        STALLED_PLACEMENT = 'STALLED_PLACEMENT', 'Plaatsing vastgelopen'
+        URGENT_LIMITED = 'URGENT_LIMITED', 'Urgent, beperkt aanbod'
+
+    run = models.ForeignKey(SimulationRun, on_delete=models.CASCADE, related_name='case_results')
+    case_number = models.PositiveSmallIntegerField(verbose_name='Casusnummer (1-50)')
+    intake = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simulation_results',
+    )
+    placement = models.ForeignKey(
+        'PlacementRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simulation_results',
+    )
+
+    # Pipeline outcome
+    current_phase = models.CharField(max_length=30, choices=PipelinePhase.choices, default=PipelinePhase.INTAKE)
+    next_best_action = models.CharField(max_length=300, blank=True)
+    risk_flags = models.JSONField(default=list, blank=True)
+    matched_provider_count = models.PositiveSmallIntegerField(default=0)
+    selected_provider = models.ForeignKey(
+        'Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='simulation_selections',
+    )
+    placement_status = models.CharField(max_length=30, blank=True)
+    pipeline_block_reason = models.CharField(max_length=30, choices=BlockReason.choices, default=BlockReason.NONE)
+
+    # Case metadata snapshot
+    urgency_snapshot = models.CharField(max_length=10, blank=True)
+    complexity_snapshot = models.CharField(max_length=20, blank=True)
+    age_group_snapshot = models.CharField(max_length=10, blank=True)
+    care_category_snapshot = models.CharField(max_length=100, blank=True)
+    region_snapshot = models.CharField(max_length=150, blank=True)
+    has_missing_fields = models.BooleanField(default=False)
+    has_special_needs = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'contracts_simulatedcaseresult'
+        ordering = ['run', 'case_number']
+        verbose_name = 'Gesimuleerde casus'
+        verbose_name_plural = 'Gesimuleerde casussen'
+
+    def __str__(self):
+        return f'Run#{self.run_id} Casus#{self.case_number} ({self.get_current_phase_display()})'

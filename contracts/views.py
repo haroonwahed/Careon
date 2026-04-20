@@ -45,7 +45,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
-    OutcomeReasonCode,
+    OutcomeReasonCode, SimulationRun, SimulatedCaseResult,
 )
 from .middleware import log_action
 from .permissions import (
@@ -7219,3 +7219,71 @@ class CaseScopedDocumentCreateView(_CaseScopedIntakeMixin, DocumentCreateView):
         if event:
             url += f'&event={event}'
         return url
+
+
+# ============================================================
+# SIMULATION DASHBOARD
+# ============================================================
+
+@login_required
+def simulation_dashboard(request):
+    """Developer-facing simulation dashboard: filterable table of all simulated cases."""
+    runs = SimulationRun.objects.filter(
+        organization__memberships__user=request.user,
+        organization__memberships__is_active=True,
+    ).distinct().order_by('-created_at')
+
+    selected_run_id = request.GET.get('run')
+    selected_run = None
+    case_results = SimulatedCaseResult.objects.none()
+
+    if selected_run_id:
+        try:
+            selected_run = runs.get(pk=selected_run_id)
+        except SimulationRun.DoesNotExist:
+            selected_run = None
+
+    if selected_run is None and runs.exists():
+        selected_run = runs.first()
+
+    if selected_run:
+        case_results = SimulatedCaseResult.objects.filter(run=selected_run).select_related(
+            'intake', 'placement', 'selected_provider'
+        )
+
+    # Filters
+    status_filter = request.GET.get('status', '')
+    risk_filter = request.GET.get('risk', '')
+    urgency_filter = request.GET.get('urgency', '')
+    block_filter = request.GET.get('block', '')
+
+    if status_filter:
+        case_results = case_results.filter(current_phase=status_filter)
+    if urgency_filter:
+        case_results = case_results.filter(urgency_snapshot=urgency_filter)
+    if block_filter:
+        case_results = case_results.filter(pipeline_block_reason=block_filter)
+    if risk_filter:
+        # JSON array contains filter (SQLite-compatible)
+        case_results = case_results.filter(risk_flags__icontains=risk_filter)
+
+    summary = {}
+    if selected_run:
+        summary = selected_run.summary or {}
+
+    context = {
+        'runs': runs,
+        'selected_run': selected_run,
+        'case_results': case_results,
+        'summary': summary,
+        'status_filter': status_filter,
+        'risk_filter': risk_filter,
+        'urgency_filter': urgency_filter,
+        'block_filter': block_filter,
+        'phase_choices': SimulatedCaseResult.PipelinePhase.choices,
+        'block_choices': SimulatedCaseResult.BlockReason.choices,
+        'urgency_choices': [
+            ('LOW', 'Laag'), ('MEDIUM', 'Middel'), ('HIGH', 'Hoog'), ('CRISIS', 'Crisis'),
+        ],
+    }
+    return render(request, 'contracts/simulation_dashboard.html', context)

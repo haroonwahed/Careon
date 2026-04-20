@@ -145,5 +145,7 @@ urlpatterns = [
     path('beoordelingen/<int:pk>/', views.CaseAssessmentDetailView.as_view(), name='assessment_detail'),
     path('beoordelingen/<int:pk>/edit/', views.CaseAssessmentUpdateView.as_view(), name='assessment_update'),
 
+    path('simulatie/', views.simulation_dashboard, name='simulation_dashboard'),
+
     path('', RedirectView.as_view(pattern_name='careon:case_list', permanent=False), name='home'),
 ]
