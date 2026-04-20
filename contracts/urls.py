@@ -93,6 +93,7 @@ urlpatterns = [
     path('organizations/activity/export/', views.organization_activity_export, name='organization_activity_export'),
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
+    path('admin/observability/', views.observability_report, name='observability_report'),
     path('regiekamer/provider-responses/', views.provider_response_monitor, name='provider_response_monitor'),
     path('regiekamer/', views.regiekamer_alerts, name='regiekamer_alerts'),
     path('regiekamer/alerts/<int:pk>/resolve/', views.resolve_alert, name='resolve_alert'),

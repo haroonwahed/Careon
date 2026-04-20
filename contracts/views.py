@@ -3526,6 +3526,31 @@ def reports_dashboard(request):
     return render(request, 'contracts/reports_dashboard.html', context)
 
 
+@login_required
+def observability_report(request):
+    """Decision Intelligence Observability Report (staff/admin only).
+
+    Computes V3 confidence calibration, rejection taxonomy, repeated-rejection
+    patterns, weak-match false positive rate, and operator override tracking for
+    the user's organisation.  Returns JSON when ``?format=json`` is requested,
+    otherwise renders a lightweight HTML report page.
+    """
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Toegang beperkt tot medewerkers.")
+
+    from .observability import build_full_observability_report
+    org = get_user_organization(request.user)
+    report = build_full_observability_report(org)
+
+    if request.GET.get('format') == 'json':
+        return JsonResponse(report, safe=True)
+
+    return render(request, 'contracts/observability_report.html', {
+        'report': report,
+        'org': org,
+    })
+
+
 # ==================== TASK VIEWS ====================
 
 class CareTaskKanbanView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):

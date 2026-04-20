@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}V3 Beslissintelligentie – Observability Report{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell">
+
+  <div class="ds-analytics-hero">
+    <div>
+      <h1 class="ds-analytics-headline">Decision Intelligence – Observability</h1>
+      <p class="ds-analytics-subline">V3 kalibratie, afwijzingstaxonomie en override-tracking voor {% if org %}{{ org.name }}{% else %}uw organisatie{% endif %}</p>
+    </div>
+    <div class="ds-list-actions">
+      <a href="?format=json" class="btn btn-secondary" target="_blank">Exporteer JSON</a>
+      <a href="{% url 'careon:reports_dashboard' %}" class="btn btn-secondary">Terug naar rapportages</a>
+    </div>
+  </div>
+
+  {# ── 1. Confidence Calibration ─────────────────────────────────────────── #}
+  {% with cal=report.confidence_calibration %}
+  <div class="ds-analytics-section">
+    <div class="ds-analytics-section-head">
+      <div class="ds-analytics-section-title">
+        <div class="dot dot-blue"></div>
+        <span class="panel-title">Confidence Kalibratie</span>
+      </div>
+      <span class="ds-analytics-section-meta">{{ cal.total_cases_analysed }} casussen geanalyseerd · {{ cal.total_weak_match_cases|default:"0" }} met WEAK_MATCH alert</span>
+    </div>
+    {% if cal.data_available %}
+    <div class="ds-analytics-section-inner">
+      <p class="ds-analytics-note">{{ cal.note }}</p>
+      <table class="ds-table" style="width:100%">
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Casussen</th>
+            <th>Aanbieder acceptatie</th>
+            <th>Plaatsing geslaagd</th>
+            <th>Intake afgerond</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in cal.buckets %}
+          <tr>
+            <td>{{ b.label }}</td>
+            <td>{{ b.total_cases }}</td>
+            <td>{{ b.provider_acceptance_count }} ({% if b.provider_acceptance_rate %}{{ b.provider_acceptance_rate|floatformat:1 }}{% else %}–{% endif %}%)</td>
+            <td>{{ b.placement_success_count }} ({% if b.placement_success_rate %}{{ b.placement_success_rate|floatformat:1 }}{% else %}–{% endif %}%)</td>
+            <td>{{ b.intake_completion_count }} ({% if b.intake_completion_rate %}{{ b.intake_completion_rate|floatformat:1 }}{% else %}–{% endif %}%)</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="ds-empty-state"><p>Onvoldoende data. {{ cal.note }}</p></div>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+  {# ── 2. Weak-Match False Positive Rate ────────────────────────────────── #}
+  {% with fp=report.weak_match_false_positive %}
+  <div class="ds-analytics-section">
+    <div class="ds-analytics-section-head">
+      <div class="ds-analytics-section-title">
+        <div class="dot dot-yellow"></div>
+        <span class="panel-title">WEAK_MATCH False Positive Rate</span>
+      </div>
+    </div>
+    {% if fp.data_available %}
+    <div class="ds-analytics-section-inner">
+      <div class="ds-analytics-kpi-grid">
+        <div class="ds-analytics-kpi-card">
+          <div class="ds-analytics-kpi-value">{{ fp.total_weak_match_alerts }}</div>
+          <div class="ds-analytics-kpi-label">WEAK_MATCH alerts</div>
+        </div>
+        <div class="ds-analytics-kpi-card">
+          <div class="ds-analytics-kpi-value">{% if fp.false_positive_rate %}{{ fp.false_positive_rate|floatformat:1 }}%{% else %}–{% endif %}</div>
+          <div class="ds-analytics-kpi-label">False positive rate</div>
+          <div class="ds-analytics-kpi-trend">Alert vuurde, aanbieder accepteerde toch</div>
+        </div>
+        <div class="ds-analytics-kpi-card">
+          <div class="ds-analytics-kpi-value">{% if fp.true_positive_rate %}{{ fp.true_positive_rate|floatformat:1 }}%{% else %}–{% endif %}</div>
+          <div class="ds-analytics-kpi-label">True positive rate</div>
+          <div class="ds-analytics-kpi-trend">Alert vuurde, aanbieder wees ook af</div>
+        </div>
+        <div class="ds-analytics-kpi-card">
+          <div class="ds-analytics-kpi-value">{% if fp.baseline_acceptance_rate %}{{ fp.baseline_acceptance_rate|floatformat:1 }}%{% else %}–{% endif %}</div>
+          <div class="ds-analytics-kpi-label">Baseline acceptatie (geen alert)</div>
+        </div>
+      </div>
+      <p class="ds-analytics-note">{{ fp.note }}</p>
+    </div>
+    {% else %}
+    <div class="ds-empty-state"><p>Geen WEAK_MATCH alerts gevonden voor deze organisatie.</p></div>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+  {# ── 3. Rejection Taxonomy ─────────────────────────────────────────────── #}
+  {% with tax=report.rejection_taxonomy %}
+  <div class="ds-analytics-section">
+    <div class="ds-analytics-section-head">
+      <div class="ds-analytics-section-title">
+        <div class="dot dot-red"></div>
+        <span class="panel-title">Afwijzingstaxonomie</span>
+      </div>
+      <span class="ds-analytics-section-meta">{{ tax.total_rejections }} afwijzingen totaal</span>
+    </div>
+    {% if tax.data_available %}
+    <div class="ds-analytics-section-inner">
+      <h3 class="ds-analytics-subsection-title">Verdeling per redencode (totaal)</h3>
+      <table class="ds-table">
+        <thead><tr><th>Redencode</th><th>Aantal</th><th>Aandeel</th></tr></thead>
+        <tbody>
+          {% for item in tax.overall_distribution %}
+          <tr>
+            <td>{{ item.reason_code }}</td>
+            <td>{{ item.count }}</td>
+            <td>{{ item.share|floatformat:1 }}%</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3 class="ds-analytics-subsection-title" style="margin-top:1.5rem">Per aanbieder (top 10)</h3>
+      <table class="ds-table">
+        <thead><tr><th>Aanbieder</th><th>Afwijzingen</th><th>Meest voorkomende reden</th></tr></thead>
+        <tbody>
+          {% for item in tax.by_provider|slice:":10" %}
+          <tr>
+            <td>{{ item.provider_name }}</td>
+            <td>{{ item.total_rejections }}</td>
+            <td>{{ item.top_reason_code|default:"–" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <h3 class="ds-analytics-subsection-title" style="margin-top:1.5rem">Per zorgcategorie (top 10)</h3>
+      <table class="ds-table">
+        <thead><tr><th>Zorgcategorie</th><th>Afwijzingen</th></tr></thead>
+        <tbody>
+          {% for item in tax.by_care_category|slice:":10" %}
+          <tr>
+            <td>{{ item.care_category_name }}</td>
+            <td>{{ item.total_rejections }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="ds-empty-state"><p>Geen afwijzingen gevonden voor deze organisatie.</p></div>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+  {# ── 4. Repeated Rejections ────────────────────────────────────────────── #}
+  {% with rep=report.repeated_rejections %}
+  <div class="ds-analytics-section">
+    <div class="ds-analytics-section-head">
+      <div class="ds-analytics-section-title">
+        <div class="dot dot-orange"></div>
+        <span class="panel-title">Herhaalde Afwijzingen</span>
+      </div>
+      <span class="ds-analytics-section-meta">{{ rep.total_bouncing_cases }} bouncende casussen · {{ rep.total_providers_with_pattern|default:"0" }} aanbieders met patroon</span>
+    </div>
+    {% if rep.data_available %}
+    <div class="ds-analytics-section-inner">
+      {% if rep.cases_with_repeated_rejections %}
+      <h3 class="ds-analytics-subsection-title">Casussen met herhaalde afwijzingen (top 10)</h3>
+      <table class="ds-table">
+        <thead><tr><th>Casus</th><th>Afwijzingen</th><th>Betrokken aanbieders</th></tr></thead>
+        <tbody>
+          {% for item in rep.cases_with_repeated_rejections|slice:":10" %}
+          <tr>
+            <td>{{ item.case_title }}</td>
+            <td>{{ item.total_rejections }}</td>
+            <td>{{ item.providers_involved }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+
+      {% if rep.providers_with_repeated_same_reason %}
+      <h3 class="ds-analytics-subsection-title" style="margin-top:1.5rem">Aanbieders met herhaald patroon</h3>
+      <table class="ds-table">
+        <thead><tr><th>Aanbieder</th><th>Herhaalde reden</th><th>Aantal</th></tr></thead>
+        <tbody>
+          {% for item in rep.providers_with_repeated_same_reason %}
+          <tr>
+            <td>{{ item.provider_name }}</td>
+            <td>{{ item.repeated_reason_code }}</td>
+            <td>{{ item.repeat_count }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="ds-empty-state"><p>Geen herhaalde afwijzingspatronen gevonden.</p></div>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+  {# ── 5. Override Tracking ──────────────────────────────────────────────── #}
+  {% with ov=report.override_tracking %}
+  <div class="ds-analytics-section">
+    <div class="ds-analytics-section-head">
+      <div class="ds-analytics-section-title">
+        <div class="dot dot-purple"></div>
+        <span class="panel-title">Operator Override Tracking</span>
+      </div>
+      <span class="ds-analytics-section-meta">{{ ov.total_overrides }} overrides van {{ ov.total_reviews|default:"0" }} reviews ({% if ov.override_rate %}{{ ov.override_rate|floatformat:1 }}%{% else %}–{% endif %})</span>
+    </div>
+    {% if ov.data_available %}
+    <div class="ds-analytics-section-inner">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem">
+        {% if ov.by_override_type %}
+        <div>
+          <h3 class="ds-analytics-subsection-title">Per override type</h3>
+          <table class="ds-table">
+            <thead><tr><th>Type</th><th>Aantal</th><th>Aandeel</th></tr></thead>
+            <tbody>
+              {% for item in ov.by_override_type %}
+              <tr>
+                <td>{{ item.override_type }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.share|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+
+        {% if ov.by_primary_reason %}
+        <div>
+          <h3 class="ds-analytics-subsection-title">Per primaire reden</h3>
+          <table class="ds-table">
+            <thead><tr><th>Reden</th><th>Aantal</th><th>Aandeel</th></tr></thead>
+            <tbody>
+              {% for item in ov.by_primary_reason %}
+              <tr>
+                <td>{{ item.primary_reason }}</td>
+                <td>{{ item.count }}</td>
+                <td>{{ item.share|floatformat:1 }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+      </div>
+
+      {% if ov.override_quality_distribution %}
+      <h3 class="ds-analytics-subsection-title" style="margin-top:1.5rem">Besliskwaliteit bij overrides</h3>
+      <table class="ds-table" style="max-width:400px">
+        <thead><tr><th>Kwaliteitsoordeel</th><th>Aantal</th></tr></thead>
+        <tbody>
+          {% for item in ov.override_quality_distribution %}
+          <tr><td>{{ item.decision_quality }}</td><td>{{ item.count }}</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="ds-empty-state"><p>Geen quality reviews gevonden voor deze organisatie.</p></div>
+    {% endif %}
+  </div>
+  {% endwith %}
+
+</div>
+</div>
+{% endblock %}
