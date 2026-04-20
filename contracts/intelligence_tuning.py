@@ -442,5 +442,7 @@ def transition_proposal(
     proposal.reviewed_at = datetime.now(tz=timezone.utc)
     if note:
         proposal.review_note = note
+    if new_status == 'IMPLEMENTED':
+        proposal.implemented_at = datetime.now(tz=timezone.utc)
     proposal.save()
     return proposal

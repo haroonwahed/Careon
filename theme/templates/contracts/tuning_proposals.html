@@ -53,6 +53,148 @@
         {% endfor %}
     </div>
 
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Governance panel: Top Priority                                          #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {% if top_priority_proposals %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:3px solid var(--color-warning,#f59e0b)">
+        <h2 class="ds-card-title">🏆 Hoogste Prioriteit</h2>
+        <p class="ds-card-sub">
+            De vijf open voorstellen met de hoogste prioriteitsscore (gebaseerd op ernst, steekproefomvang en voorgestelde delta).
+            Geen van deze wordt automatisch toegepast.
+        </p>
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factor</th>
+                    <th>Scope</th>
+                    <th>Status</th>
+                    <th class="text-right">Prioriteit</th>
+                    <th class="text-right">Risico</th>
+                    <th class="text-right">Δ</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in top_priority_proposals %}
+            <tr>
+                <td>{{ p.pk }}</td>
+                <td>{{ p.get_factor_type_display }}</td>
+                <td>
+                    {% if p.affected_care_category %}{{ p.affected_care_category.name }}{% endif %}
+                    {% if p.affected_provider %}{{ p.affected_provider.name }}{% endif %}
+                    {% if not p.affected_care_category and not p.affected_provider %}—{% endif %}
+                </td>
+                <td>{{ p.get_status_display }}</td>
+                <td class="text-right">
+                    {% if p.priority_score is not None %}{{ p.priority_score|floatformat:2 }}{% else %}—{% endif %}
+                </td>
+                <td class="text-right">
+                    <span class="ds-badge {% if p.risk_level == 'HIGH' %}ds-badge--danger{% else %}ds-badge--muted{% endif %}" style="font-size:0.75rem">
+                        {{ p.get_risk_level_display|default:p.risk_level }}
+                    </span>
+                </td>
+                <td class="text-right">
+                    {% if p.proposed_delta is not None %}
+                        <code>{% if p.proposed_delta >= 0 %}+{% endif %}{{ p.proposed_delta }}</code>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Governance panel: Post-implementation impact                            #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {% if implemented_with_impact %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:3px solid var(--color-success,#10b981)">
+        <h2 class="ds-card-title">📊 Geïmplementeerd met Gemeten Impact</h2>
+        <p class="ds-card-sub">
+            Geïmplementeerde voorstellen waarbij post-implementatie uitkomstdata beschikbaar is.
+            Vergelijkt confidence en acceptatiegraad voor en na de aanpassing.
+        </p>
+        {% for p in implemented_with_impact %}
+        <div style="border:1px solid var(--border-subtle);padding:0.8rem;margin-bottom:0.8rem;border-radius:6px;font-size:0.85rem">
+            <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem">
+                <strong>
+                    #{{ p.pk }} — {{ p.get_factor_type_display }}
+                    {% if p.affected_care_category %}({{ p.affected_care_category.name }}){% endif %}
+                </strong>
+                <span style="color:var(--text-muted)">
+                    {% if p.implemented_at %}{{ p.implemented_at|date:"d M Y" }}{% endif %}
+                </span>
+            </div>
+            <div style="display:flex;gap:2rem;flex-wrap:wrap">
+                <div>
+                    <span style="color:var(--text-muted)">Gem. confidence:</span>
+                    {{ p.post_impact.before_mean_confidence|default:"—" }}
+                    →
+                    {{ p.post_impact.after_mean_confidence|default:"—" }}
+                    {% if p.post_impact.delta_confidence_observed is not None %}
+                    <span style="font-weight:600;{% if p.post_impact.delta_confidence_observed > 0 %}color:var(--color-success,#10b981){% elif p.post_impact.delta_confidence_observed < 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                        (Δ {{ p.post_impact.delta_confidence_observed }})
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span style="color:var(--text-muted)">Acceptatiegraad:</span>
+                    {% if p.post_impact.before_acceptance_rate is not None %}{{ p.post_impact.before_acceptance_rate|floatformat:2 }}{% else %}—{% endif %}
+                    →
+                    {% if p.post_impact.after_acceptance_rate is not None %}{{ p.post_impact.after_acceptance_rate|floatformat:2 }}{% else %}—{% endif %}
+                    {% if p.post_impact.delta_acceptance_observed is not None %}
+                    <span style="font-weight:600;{% if p.post_impact.delta_acceptance_observed > 0 %}color:var(--color-success,#10b981){% elif p.post_impact.delta_acceptance_observed < 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                        (Δ {{ p.post_impact.delta_acceptance_observed }})
+                    </span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span style="color:var(--text-muted)">Steekproef:</span>
+                    {{ p.post_impact.before_count|default:"—" }} → {{ p.post_impact.after_count|default:"—" }}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Governance panel: Stale proposals                                       #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {% if stale_proposals %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:3px solid var(--color-danger,#ef4444)">
+        <h2 class="ds-card-title">⚠️ Verouderde Voorstellen</h2>
+        <p class="ds-card-sub">
+            Voorstellen met status <em>Voorgesteld</em> of <em>Beoordeeld</em> die langer dan 30 dagen
+            niet zijn bijgewerkt. Overweeg deze te beoordelen, goed te keuren, of af te wijzen.
+        </p>
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factor</th>
+                    <th>Status</th>
+                    <th>Laatste update</th>
+                    <th>Bron</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in stale_proposals %}
+            <tr>
+                <td>{{ p.pk }}</td>
+                <td>{{ p.get_factor_type_display }}</td>
+                <td>{{ p.get_status_display }}</td>
+                <td>{{ p.updated_at|date:"d M Y"|default:"—" }}</td>
+                <td>{{ p.get_source_display }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+
     {# ── Proposal groups ──────────────────────────────────────────────────── #}
     {% for status_val, group in grouped.items %}
     {% if group.proposals %}

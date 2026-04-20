@@ -7998,6 +7998,7 @@ def tuning_proposals(request):
         if action == 'generate':
             # Generate proposals from live calibration diagnostics
             try:
+                from .intelligence_tuning_ops import enrich_proposals
                 rows = list(_load_placement_qs(None, org))
                 diagnostics = calibration_diagnostics(rows)
                 new_proposals = proposals_from_calibration_diagnostics(
@@ -8005,6 +8006,7 @@ def tuning_proposals(request):
                     org=org,
                     actor=request.user,
                 )
+                enrich_proposals(new_proposals)
                 # Only save proposals that don't duplicate an open SUGGESTED one
                 existing_issues = set(
                     TuningProposal.objects.filter(
@@ -8067,10 +8069,37 @@ def tuning_proposals(request):
                 'count': len(items),
             }
 
+    # ── Governance panels ────────────────────────────────────────────────────
+    from .intelligence_tuning_ops import (
+        detect_stale_proposals,
+        enrich_proposals,
+    )
+
+    all_proposals = list(qs)
+    enrich_proposals(all_proposals)
+
+    # Top priority: SUGGESTED or REVIEWED, sorted by priority_score desc
+    top_priority = sorted(
+        [p for p in all_proposals if p.status in ('SUGGESTED', 'REVIEWED')],
+        key=lambda p: -(p.priority_score or 0),
+    )[:5]
+
+    # Stale proposals
+    stale = detect_stale_proposals(all_proposals)
+
+    # Implemented proposals that have post_impact data
+    implemented_with_impact = [
+        p for p in all_proposals
+        if p.status == 'IMPLEMENTED' and p.post_impact
+    ]
+
     return render(request, 'contracts/tuning_proposals.html', {
         'grouped': grouped,
         'status_choices': TP.Status.choices,
         'active_status_filter': status_filter,
         'msg': msg,
         'total_count': qs.count(),
+        'top_priority_proposals': top_priority,
+        'stale_proposals': stale,
+        'implemented_with_impact': implemented_with_impact,
     })

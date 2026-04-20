@@ -3877,6 +3877,72 @@ class TuningProposal(models.Model):
 
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ── Governance & impact tracking fields ──────────────────────────────────
+
+    class RiskLevel(models.TextChoices):
+        LOW = 'LOW', 'Laag risico'
+        HIGH = 'HIGH', 'Hoog risico'
+
+    risk_level = models.CharField(
+        max_length=4,
+        choices=RiskLevel.choices,
+        default=RiskLevel.LOW,
+        verbose_name='Risiconiveau',
+        help_text=(
+            'Hoog risico wanneer |delta| > 0.15 of het voorstel aanbiedersspecifiek is. '
+            'Puur adviserend; geen effect op workflowlogica.'
+        ),
+    )
+
+    priority_score = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Prioriteitsscore',
+        help_text=(
+            'Adviserende prioriteitsscore 0–1 berekend op basis van ernst, '
+            'steekproefomvang en verwachte impact van de delta. '
+            'Hoger = hogere prioriteit.'
+        ),
+    )
+
+    sample_count = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        verbose_name='Steekproefomvang',
+        help_text='Aantal plaatsingsrijen waarop dit voorstel is gebaseerd.',
+    )
+
+    group_key = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        db_index=True,
+        verbose_name='Groepsleutel',
+        help_text=(
+            'Deterministische sleutel voor deduplicatie en groepering van vergelijkbare '
+            'voorstellen over meerdere kalibratie-runs. '
+            'Formaat: "<source>|<factor_type>|<scope>".'
+        ),
+    )
+
+    implemented_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Geïmplementeerd op',
+        help_text='Tijdstip waarop de status op IMPLEMENTED werd gezet.',
+    )
+
+    post_impact = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Post-implementatie impact',
+        help_text=(
+            'Vergelijking van uitkomsten voor en na implementatie. '
+            'Bevat before_mean_confidence, after_mean_confidence, delta_observed, '
+            'acceptance_rate_before, acceptance_rate_after en sample_count.'
+        ),
+    )
+
     # ── Allowed status transitions ────────────────────────────────────────────
 
     _ALLOWED_TRANSITIONS = {
@@ -3899,6 +3965,7 @@ class TuningProposal(models.Model):
         indexes = [
             models.Index(fields=['organization', 'status']),
             models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['organization', 'group_key']),
         ]
 
     def __str__(self):
