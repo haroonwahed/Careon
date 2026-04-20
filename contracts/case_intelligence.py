@@ -56,6 +56,10 @@ CASE_DATA_SHAPE: Dict[str, str] = {
     "provider_response_requested_at": "date|datetime|None: latest provider response request timestamp",
     "provider_response_deadline_at": "date|datetime|None: response deadline timestamp",
     "provider_response_last_reminder_at": "date|datetime|None: last reminder timestamp",
+    "provider_evaluation_nba_code": (
+        "str|None: next-best-action code from provider evaluation "
+        "(awaiting_provider_evaluation|provider_rejected|provider_requested_more_info|ready_for_placement)"
+    ),
     "now": "date|datetime|None: optional override for deterministic time-based rules",
 }
 
@@ -1010,6 +1014,37 @@ def determine_next_best_action(
     behavior_signals: Dict[str, Any] = (
         derive_behavior_signals(provider_metrics) if provider_metrics else {}
     )
+
+    # Provider evaluation NBA codes take priority over generic SLA handling.
+    evaluation_nba = str(case_data.get("provider_evaluation_nba_code") or "").strip()
+    if evaluation_nba == "provider_rejected":
+        return {
+            "code": "run_matching",
+            "priority": 4,
+            "reason": "Aanbieder heeft de casus afgewezen. Start een her-match met alternatieve aanbieders.",
+            "behavior_reason": None,
+        }
+    if evaluation_nba == "provider_requested_more_info":
+        return {
+            "code": "provide_evaluation_info",
+            "priority": 4,
+            "reason": "Aanbieder wacht op aanvullende informatie voordat een beslissing kan worden genomen.",
+            "behavior_reason": None,
+        }
+    if evaluation_nba == "awaiting_provider_evaluation":
+        return {
+            "code": "awaiting_provider_evaluation",
+            "priority": 4,
+            "reason": "Wachten op beslissing van de aanbieder (acceptatie, afwijzing of aanvullende informatie).",
+            "behavior_reason": None,
+        }
+    if evaluation_nba == "ready_for_placement":
+        return {
+            "code": "confirm_placement",
+            "priority": 5,
+            "reason": "Aanbieder heeft de casus geaccepteerd. Plaatsing kan worden bevestigd.",
+            "behavior_reason": None,
+        }
 
     if provider_response_status in {"PENDING", "NEEDS_INFO", "WAITLIST"}:
         if sla_state == "FORCED_ACTION":

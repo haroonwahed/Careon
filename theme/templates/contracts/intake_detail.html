@@ -194,6 +194,45 @@
             </aside>
         </div>
         {% endwith %}
+
+        {# ── Aanbieder Beoordeling banner ──────────────────────────────────── #}
+        {% if latest_provider_evaluation %}
+        <div class="mt-4 rounded-xl border {% if latest_provider_evaluation.is_accepted %}border-emerald-300 bg-emerald-50{% elif latest_provider_evaluation.is_rejected %}border-red-300 bg-red-50{% else %}border-amber-300 bg-amber-50{% endif %} p-4 flex items-start justify-between gap-4">
+            <div class="space-y-1">
+                <p class="text-xs font-semibold uppercase tracking-wide {% if latest_provider_evaluation.is_accepted %}text-emerald-700{% elif latest_provider_evaluation.is_rejected %}text-red-700{% else %}text-amber-700{% endif %}">
+                    Aanbiederbeoordeling
+                </p>
+                <p class="text-sm font-semibold ds-text-strong">
+                    {{ latest_provider_evaluation.get_decision_display }}
+                    {% if latest_provider_evaluation.reason_code %}
+                    – {{ latest_provider_evaluation.get_reason_code_display }}
+                    {% endif %}
+                </p>
+                <p class="text-xs ds-text-muted">Vastgelegd op {{ latest_provider_evaluation.created_at|date:"d-m-Y H:i" }}</p>
+                {% if latest_provider_evaluation.requested_info %}
+                <p class="text-xs ds-text-secondary">Gevraagde informatie: {{ latest_provider_evaluation.requested_info }}</p>
+                {% endif %}
+            </div>
+            {% if can_edit_case %}
+            <a href="{% url 'careon:case_provider_evaluation' intake.pk %}" class="btn btn-secondary flex-shrink-0">
+                Nieuwe beoordeling vastleggen
+            </a>
+            {% endif %}
+        </div>
+        {% elif placement_unlocked_for_evaluation %}
+        <div class="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-4 flex items-start justify-between gap-4">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Aanbiederbeoordeling</p>
+                <p class="text-sm font-semibold ds-text-strong">Wacht op aanbiederbeoordeling</p>
+                <p class="text-xs ds-text-muted">Leg de beslissing van de aanbieder vast: acceptatie, afwijzing of aanvullende informatie.</p>
+            </div>
+            {% if can_edit_case %}
+            <a href="{% url 'careon:case_provider_evaluation' intake.pk %}" class="btn btn-primary flex-shrink-0">
+                Beoordeling vastleggen
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
     </section>
 
     <section class="ds-card" data-shell-slot="execution-matching">

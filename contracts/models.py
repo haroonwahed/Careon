@@ -1146,6 +1146,9 @@ class CaseDecisionLog(models.Model):
         CONTINUE_WAITING = 'CONTINUE_WAITING', 'Continue waiting'
         SLA_ESCALATION = 'SLA_ESCALATION', 'SLA state transition'
         CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
+        PROVIDER_ACCEPTED = 'PROVIDER_ACCEPTED', 'Provider accepted case'
+        PROVIDER_REJECTED = 'PROVIDER_REJECTED', 'Provider rejected case'
+        PROVIDER_NEEDS_INFO = 'PROVIDER_NEEDS_INFO', 'Provider requested more info'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.
@@ -3488,3 +3491,134 @@ class OperationalAlert(models.Model):
     @property
     def is_resolved(self):
         return self.resolved_at is not None
+
+
+class ProviderEvaluation(models.Model):
+    """Structured provider evaluation of a matched case.
+
+    After matching a provider candidate is selected and this model records
+    the provider's explicit accept / reject / needs-more-info decision.
+
+    Business rules
+    --------------
+    - Only one active (non-superseded) evaluation per (case, provider) pair
+      is meaningful at runtime.  The ``is_current`` property identifies the
+      latest evaluation for the pair.
+    - Placement may only proceed when ``decision == ACCEPT``.
+    - Rejection reasons are structured (see ``RejectionCode``).
+    - All mutations are logged via ``CaseDecisionLog`` (append-only).
+    - The ``decided_by`` field is required for non-system evaluations.
+    """
+
+    class Decision(models.TextChoices):
+        ACCEPT = 'accept', 'Accepteren'
+        REJECT = 'reject', 'Afwijzen'
+        NEEDS_MORE_INFO = 'needs_more_info', 'Meer informatie nodig'
+
+    class RejectionCode(models.TextChoices):
+        NO_CAPACITY = 'no_capacity', 'Geen capaciteit'
+        SPECIALIZATION_MISMATCH = 'specialization_mismatch', 'Specialisatie past niet'
+        URGENCY_NOT_SUPPORTED = 'urgency_not_supported', 'Urgentie niet ondersteund'
+        REGION_NOT_SUPPORTED = 'region_not_supported', 'Regio niet ondersteund'
+        MISSING_INFORMATION = 'missing_information', 'Informatie ontbreekt'
+        RISK_TOO_HIGH = 'risk_too_high', 'Risico te hoog'
+        OTHER = 'other', 'Anders'
+
+    case = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='provider_evaluations',
+        verbose_name='Casus',
+    )
+    provider = models.ForeignKey(
+        'Client',
+        on_delete=models.CASCADE,
+        related_name='provider_evaluations',
+        verbose_name='Aanbieder',
+    )
+    placement = models.ForeignKey(
+        'PlacementRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='provider_evaluations',
+        verbose_name='Plaatsing',
+    )
+    decision = models.CharField(
+        max_length=20,
+        choices=Decision.choices,
+        verbose_name='Beslissing',
+    )
+    reason_code = models.CharField(
+        max_length=30,
+        choices=RejectionCode.choices,
+        blank=True,
+        verbose_name='Redencode',
+        help_text='Verplicht bij afwijzing.',
+    )
+    capacity_flag = models.BooleanField(
+        default=False,
+        verbose_name='Capaciteitsbeperking',
+        help_text='Aanbieder heeft een actieve capaciteitsbeperking bij dit besluit.',
+    )
+    risk_notes = models.TextField(
+        blank=True,
+        verbose_name='Risiconotities',
+        help_text='Bijzonderheden rondom risico of veiligheid.',
+    )
+    requested_info = models.TextField(
+        blank=True,
+        verbose_name='Gevraagde informatie',
+        help_text='Omschrijving van ontbrekende informatie (needs_more_info-pad).',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    decided_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='provider_evaluations',
+        verbose_name='Vastgelegd door',
+    )
+
+    class Meta:
+        db_table = 'contracts_providerevaluation'
+        ordering = ['-created_at']
+        verbose_name = 'Aanbiederbeoordeling'
+        verbose_name_plural = 'Aanbiederbeoordelingen'
+        indexes = [
+            models.Index(fields=['case', 'provider', '-created_at']),
+            models.Index(fields=['decision', '-created_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f'[{self.get_decision_display()}] {self.provider} → casus {self.case_id}'
+        )
+
+    # ── Domain helpers ──────────────────────────────────────────────────────
+
+    @property
+    def is_accepted(self) -> bool:
+        return self.decision == self.Decision.ACCEPT
+
+    @property
+    def is_rejected(self) -> bool:
+        return self.decision == self.Decision.REJECT
+
+    @property
+    def is_needs_more_info(self) -> bool:
+        return self.decision == self.Decision.NEEDS_MORE_INFO
+
+    @property
+    def blocks_placement(self) -> bool:
+        """True when placement cannot proceed due to this evaluation."""
+        return self.decision in {self.Decision.REJECT, self.Decision.NEEDS_MORE_INFO}
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.decision == self.Decision.REJECT and not self.reason_code:
+            raise ValidationError({'reason_code': 'Redencode is verplicht bij afwijzing.'})
+        if self.decision == self.Decision.NEEDS_MORE_INFO and not self.requested_info:
+            raise ValidationError({'requested_info': 'Omschrijf welke informatie ontbreekt.'})
+

@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}Aanbiederbeoordeling – {{ intake.title }} - Careon{% endblock %}
+{% block content %}
+
+<div class="page-wrap ds-detail-shell" data-shell="provider-evaluation">
+    <header data-shell-slot="eval-header">
+        <nav class="ds-breadcrumb">
+            <a href="{% url 'dashboard' %}" class="ds-breadcrumb-link">Regiekamer</a>
+            <span class="mx-1">/</span>
+            <a href="{% url 'careon:case_list' %}" class="ds-breadcrumb-link">Casussen</a>
+            <span class="mx-1">/</span>
+            <a href="{% url 'careon:case_detail' intake.pk %}" class="ds-breadcrumb-link">{{ intake.title }}</a>
+            <span class="mx-1">/</span>
+            <span class="ds-breadcrumb-current">Aanbiederbeoordeling</span>
+        </nav>
+
+        <section class="ds-card ds-detail-head" data-shell-slot="eval-header-card">
+            <div class="ds-detail-card-body">
+                <div class="min-w-0 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide ds-text-muted">
+                        <span class="ds-badge badge-gray">Casus {{ intake.pk }}</span>
+                        <span class="ds-badge {% if intake.urgency == 'CRISIS' %}badge-critical{% elif intake.urgency == 'HIGH' %}badge-high{% else %}badge-low{% endif %}">
+                            {{ intake.get_urgency_display }}
+                        </span>
+                        <span class="ds-badge ds-stage-intake">{{ intake.get_status_display }}</span>
+                    </div>
+                    <h1 class="ds-page-title text-2xl font-semibold leading-tight ds-text-strong">
+                        Aanbiederbeoordeling — Casus #{{ intake.pk }}
+                    </h1>
+                    {% if provider %}
+                    <p class="text-sm ds-text-secondary">Aanbieder: <strong>{{ provider.name }}</strong></p>
+                    {% endif %}
+                </div>
+                <div class="flex flex-col items-stretch gap-2 sm:items-end">
+                    <a href="{{ back_url }}" class="btn btn-ghost">← Terug naar casus</a>
+                </div>
+            </div>
+        </section>
+    </header>
+
+    {% if messages %}
+    <div class="ds-messages space-y-2 mt-4">
+        {% for message in messages %}
+        <div class="ds-alert {% if message.tags == 'error' %}ds-alert-error{% elif message.tags == 'success' %}ds-alert-success{% else %}ds-alert-info{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Case summary ──────────────────────────────────────────────────────── #}
+    <section class="ds-card mt-4">
+        <div class="ds-detail-header">
+            <h2 class="ds-card-title">Casussamenvatting</h2>
+        </div>
+        <dl class="ds-meta-grid text-sm sm:grid-cols-3">
+            <div>
+                <dt class="ds-meta-label">Urgentie</dt>
+                <dd class="ds-meta-value font-semibold">{{ intake.get_urgency_display }}</dd>
+            </div>
+            <div>
+                <dt class="ds-meta-label">Zorgcategorie</dt>
+                <dd class="ds-meta-value">{{ intake.care_category_main.name|default:"Niet gespecificeerd" }}</dd>
+            </div>
+            <div>
+                <dt class="ds-meta-label">Gewenste zorgvorm</dt>
+                <dd class="ds-meta-value">{{ intake.get_preferred_care_form_display }}</dd>
+            </div>
+            <div>
+                <dt class="ds-meta-label">Complexiteit</dt>
+                <dd class="ds-meta-value">{{ intake.get_complexity_display }}</dd>
+            </div>
+            <div>
+                <dt class="ds-meta-label">Leeftijdscategorie</dt>
+                <dd class="ds-meta-value">{{ intake.get_client_age_category_display|default:"Niet opgegeven" }}</dd>
+            </div>
+            <div>
+                <dt class="ds-meta-label">Regio</dt>
+                <dd class="ds-meta-value">{{ intake.preferred_region.region_name|default:"Niet toegewezen" }}</dd>
+            </div>
+        </dl>
+        {% if intake.assessment_summary %}
+        <div class="mt-4 rounded-lg bg-slate-50 border border-slate-200 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide ds-text-muted">Intake samenvatting</p>
+            <p class="mt-2 text-sm ds-text-secondary">{{ intake.assessment_summary }}</p>
+        </div>
+        {% endif %}
+        {% if intake.contra_indicaties %}
+        <div class="mt-3 rounded-lg bg-red-50 border border-red-200 p-4">
+            <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Contra-indicaties</p>
+            <p class="mt-2 text-sm text-red-900">{{ intake.contra_indicaties }}</p>
+        </div>
+        {% endif %}
+    </section>
+
+    {# ── Matching explanation ──────────────────────────────────────────────── #}
+    {% if matching_explanation %}
+    <section class="ds-card mt-4">
+        <div class="ds-detail-header">
+            <h2 class="ds-card-title">Matchingtoelichting</h2>
+            {% if matching_explanation.confidence %}
+            <span class="ds-badge {% if matching_explanation.confidence == 'high' %}badge-low{% elif matching_explanation.confidence == 'medium' %}badge-high{% else %}badge-critical{% endif %}">
+                Confidence: {{ matching_explanation.confidence|capfirst }}
+            </span>
+            {% endif %}
+        </div>
+        {% if matching_explanation.fit_summary %}
+        <p class="text-sm ds-text-secondary mt-2">{{ matching_explanation.fit_summary }}</p>
+        {% endif %}
+
+        {% if matching_explanation.warning_flags %}
+        <div class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-red-700">Aandachtspunten</p>
+            <ul class="mt-2 space-y-1 text-sm text-red-900">
+                {% for flag in matching_explanation.warning_flags %}
+                <li>⚠ {{ flag }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if matching_explanation.factor_breakdown %}
+        <details class="mt-4">
+            <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide text-blue-700">
+                Factoranalyse tonen
+            </summary>
+            <div class="mt-3 overflow-x-auto">
+                <table class="w-full text-xs text-left ds-text-secondary">
+                    <thead>
+                        <tr class="border-b border-slate-200 font-semibold ds-text-muted uppercase text-[10px] tracking-wide">
+                            <th class="py-2 pr-4">Factor</th>
+                            <th class="py-2 pr-4">Status</th>
+                            <th class="py-2">Toelichting</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for factor in matching_explanation.factor_breakdown %}
+                        <tr class="border-b border-slate-100">
+                            <td class="py-2 pr-4 font-medium">{{ factor.name }}</td>
+                            <td class="py-2 pr-4">
+                                <span class="ds-badge {% if factor.status == 'ok' %}badge-low{% elif factor.status == 'warning' %}badge-high{% else %}badge-critical{% endif %}">
+                                    {{ factor.status|upper }}
+                                </span>
+                            </td>
+                            <td class="py-2 ds-text-secondary">{{ factor.detail }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+        {% endif %}
+
+        {% if matching_explanation.trade_offs %}
+        <div class="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Afwegingen</p>
+            <ul class="mt-2 space-y-1 text-sm text-amber-900">
+                {% for tradeoff in matching_explanation.trade_offs %}
+                <li>– {{ tradeoff }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if matching_explanation.verification_guidance %}
+        <div class="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Te verifiëren vóór plaatsing</p>
+            <ul class="mt-2 space-y-1 text-sm text-blue-900">
+                {% for item in matching_explanation.verification_guidance %}
+                <li>✓ {{ item }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ── Latest evaluation (if any) ────────────────────────────────────────── #}
+    {% if latest_evaluation %}
+    <section class="ds-card mt-4 {% if latest_evaluation.is_accepted %}border-emerald-300 bg-emerald-50{% elif latest_evaluation.is_rejected %}border-red-300 bg-red-50{% else %}border-amber-300 bg-amber-50{% endif %} border">
+        <div class="ds-detail-header">
+            <h2 class="ds-card-title">Laatste aanbiederbeoordeling</h2>
+            <span class="ds-badge {% if latest_evaluation.is_accepted %}badge-low{% elif latest_evaluation.is_rejected %}badge-critical{% else %}badge-high{% endif %}">
+                {{ latest_evaluation.get_decision_display }}
+            </span>
+        </div>
+        <dl class="ds-meta-grid text-sm sm:grid-cols-2 mt-3">
+            {% if latest_evaluation.reason_code %}
+            <div>
+                <dt class="ds-meta-label">Redencode</dt>
+                <dd class="ds-meta-value">{{ latest_evaluation.get_reason_code_display }}</dd>
+            </div>
+            {% endif %}
+            {% if latest_evaluation.capacity_flag %}
+            <div>
+                <dt class="ds-meta-label">Capaciteitsbeperking</dt>
+                <dd class="ds-meta-value font-semibold text-red-700">Ja</dd>
+            </div>
+            {% endif %}
+            <div>
+                <dt class="ds-meta-label">Vastgelegd op</dt>
+                <dd class="ds-meta-value">{{ latest_evaluation.created_at|date:"d-m-Y H:i" }}</dd>
+            </div>
+            {% if latest_evaluation.decided_by %}
+            <div>
+                <dt class="ds-meta-label">Vastgelegd door</dt>
+                <dd class="ds-meta-value">{{ latest_evaluation.decided_by.get_full_name|default:latest_evaluation.decided_by.username }}</dd>
+            </div>
+            {% endif %}
+        </dl>
+        {% if latest_evaluation.requested_info %}
+        <div class="mt-3 rounded-lg bg-amber-100 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-amber-800">Gevraagde informatie</p>
+            <p class="mt-2 text-sm text-amber-900">{{ latest_evaluation.requested_info }}</p>
+        </div>
+        {% endif %}
+        {% if latest_evaluation.risk_notes %}
+        <div class="mt-3 rounded-lg bg-slate-100 p-3">
+            <p class="text-xs font-semibold uppercase tracking-wide ds-text-muted">Risiconotities</p>
+            <p class="mt-2 text-sm ds-text-secondary">{{ latest_evaluation.risk_notes }}</p>
+        </div>
+        {% endif %}
+    </section>
+    {% endif %}
+
+    {# ── Placement unlocked banner ─────────────────────────────────────────── #}
+    {% if placement_unlocked %}
+    <section class="ds-card mt-4 border-emerald-400 bg-emerald-50 border">
+        <div class="flex items-start gap-3">
+            <span class="text-2xl">✅</span>
+            <div>
+                <p class="text-sm font-semibold text-emerald-900">Plaatsing ontgrendeld</p>
+                <p class="text-sm text-emerald-800">Aanbieder heeft geaccepteerd. Je kunt nu doorgaan naar de plaatsingsstap.</p>
+                <a href="{% url 'careon:case_detail' intake.pk %}?tab=plaatsing" class="btn btn-primary mt-3">
+                    Open plaatsing
+                </a>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    {# ── Decision form ─────────────────────────────────────────────────────── #}
+    <section class="ds-card mt-4">
+        <div class="ds-detail-header">
+            <h2 class="ds-card-title">Beslissing vastleggen</h2>
+        </div>
+
+        {% if not provider %}
+        <div class="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p class="text-sm text-amber-900">Geen aanbieder gekoppeld aan deze casus. Selecteer eerst een aanbieder via matching.</p>
+            <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary mt-3">Open matching</a>
+        </div>
+        {% else %}
+        <form method="post" action="{{ action_url }}" class="space-y-5 mt-3" id="provider-eval-form">
+            {% csrf_token %}
+
+            {# Decision choice #}
+            <fieldset class="space-y-3">
+                <legend class="text-sm font-semibold ds-text-strong">Beslissing voor {{ provider.name }}</legend>
+                <div class="flex flex-col gap-3 sm:flex-row sm:gap-4">
+                    <label class="eval-decision-option flex flex-1 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-emerald-400 hover:bg-emerald-50 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50">
+                        <input type="radio" name="decision" value="accept" class="mt-0.5 accent-emerald-600" required>
+                        <span>
+                            <span class="block text-sm font-semibold text-emerald-800">Accepteren</span>
+                            <span class="block text-xs ds-text-muted mt-0.5">Aanbieder accepteert de casus. Plaatsing kan worden bevestigd.</span>
+                        </span>
+                    </label>
+                    <label class="eval-decision-option flex flex-1 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-red-400 hover:bg-red-50 has-[:checked]:border-red-500 has-[:checked]:bg-red-50">
+                        <input type="radio" name="decision" value="reject" class="mt-0.5 accent-red-600" required>
+                        <span>
+                            <span class="block text-sm font-semibold text-red-800">Afwijzen</span>
+                            <span class="block text-xs ds-text-muted mt-0.5">Aanbieder wijst de casus af. Een her-match wordt aanbevolen.</span>
+                        </span>
+                    </label>
+                    <label class="eval-decision-option flex flex-1 cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-amber-400 hover:bg-amber-50 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50">
+                        <input type="radio" name="decision" value="needs_more_info" class="mt-0.5 accent-amber-600" required>
+                        <span>
+                            <span class="block text-sm font-semibold text-amber-800">Meer informatie nodig</span>
+                            <span class="block text-xs ds-text-muted mt-0.5">Aanbieder heeft aanvullende informatie nodig om te beslissen.</span>
+                        </span>
+                    </label>
+                </div>
+            </fieldset>
+
+            {# Rejection reason code (shown when reject is chosen) #}
+            <div id="rejection-reason-section" class="hidden space-y-2">
+                <label for="reason_code" class="block text-sm font-semibold ds-text-strong">
+                    Redencode afwijzing <span class="text-red-600">*</span>
+                </label>
+                <select name="reason_code" id="reason_code" class="ds-select w-full max-w-md">
+                    <option value="">– Kies een reden –</option>
+                    {% for code, label in rejection_codes %}
+                    <option value="{{ code }}">{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            {# Requested info (shown when needs_more_info is chosen) #}
+            <div id="requested-info-section" class="hidden space-y-2">
+                <label for="requested_info" class="block text-sm font-semibold ds-text-strong">
+                    Ontbrekende informatie <span class="text-red-600">*</span>
+                </label>
+                <textarea name="requested_info" id="requested_info" rows="3"
+                          placeholder="Beschrijf welke informatie ontbreekt voor een beslissing…"
+                          class="ds-textarea w-full"></textarea>
+            </div>
+
+            {# Capacity flag #}
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="capacity_flag" id="capacity_flag" value="1" class="accent-slate-700 h-4 w-4">
+                <label for="capacity_flag" class="text-sm ds-text-secondary">
+                    Aanbieder heeft momenteel een capaciteitsbeperking
+                </label>
+            </div>
+
+            {# Risk notes #}
+            <div class="space-y-2">
+                <label for="risk_notes" class="block text-sm font-semibold ds-text-strong">
+                    Risiconotities <span class="text-xs font-normal ds-text-muted">(optioneel)</span>
+                </label>
+                <textarea name="risk_notes" id="risk_notes" rows="2"
+                          placeholder="Bijzonderheden rondom veiligheid of risico (optioneel)…"
+                          class="ds-textarea w-full"></textarea>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <button type="submit" class="btn btn-primary" id="eval-submit-btn">
+                    Beslissing vastleggen
+                </button>
+                <a href="{{ back_url }}" class="btn btn-ghost">Annuleren</a>
+            </div>
+        </form>
+
+        <script>
+        (function () {
+            var form = document.getElementById('provider-eval-form');
+            if (!form) return;
+            var radios = form.querySelectorAll('input[type="radio"][name="decision"]');
+            var rejectionSection = document.getElementById('rejection-reason-section');
+            var requestedSection = document.getElementById('requested-info-section');
+
+            function updateSections() {
+                var selected = form.querySelector('input[type="radio"][name="decision"]:checked');
+                var val = selected ? selected.value : '';
+                rejectionSection.classList.toggle('hidden', val !== 'reject');
+                requestedSection.classList.toggle('hidden', val !== 'needs_more_info');
+            }
+
+            radios.forEach(function (r) { r.addEventListener('change', updateSections); });
+            updateSections();
+        })();
+        </script>
+        {% endif %}
+    </section>
+</div>
+
+{% endblock %}

@@ -45,7 +45,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
-    OutcomeReasonCode, OperationalAlert,
+    OutcomeReasonCode, OperationalAlert, ProviderEvaluation,
 )
 from .middleware import log_action
 from .permissions import (
@@ -87,6 +87,12 @@ from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from .alert_engine import generate_alerts_for_case, build_regiekamer_summary
+from .provider_evaluation_service import (
+    get_evaluation_nba_code,
+    latest_evaluation_for_case_provider,
+    placement_unlocked_for_case,
+    record_provider_evaluation,
+)
 from config.feature_flags import is_feature_redesign_enabled
 
 logger = logging.getLogger(__name__)
@@ -5312,6 +5318,173 @@ def case_provider_response_action(request, pk):
 
 
 @login_required
+def case_provider_evaluation_view(request, pk):
+    """Render the Aanbieder Beoordeling evaluation page for a case.
+
+    GET  – Show the evaluation form with case summary and matching explanation.
+    POST – Record the provider evaluation (accept / reject / needs_more_info).
+    """
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(
+            CaseIntakeProcess.objects.select_related(
+                'contract', 'care_category_main', 'care_category_sub',
+                'preferred_region', 'gemeente',
+            ),
+            org,
+        ),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden('Je hebt geen rechten om de aanbiederbeoordeling voor deze casus te wijzigen.')
+
+    placement = (
+        PlacementRequest.objects.filter(due_diligence_process=intake)
+        .select_related('selected_provider', 'proposed_provider')
+        .order_by('-updated_at')
+        .first()
+    )
+
+    next_fallback = reverse('careon:case_detail', kwargs={'pk': intake.pk})
+
+    if request.method == 'POST':
+        return _handle_provider_evaluation_post(request, intake, placement, next_fallback)
+
+    # GET – build context for the evaluation page
+    provider = placement.selected_provider or placement.proposed_provider if placement else None
+    latest_evaluation = (
+        latest_evaluation_for_case_provider(intake, provider) if provider else None
+    )
+
+    matching_explanation = None
+    if placement:
+        try:
+            matching_explanation = _build_matching_explanation_for_placement(intake, placement)
+        except Exception:
+            pass
+
+    context = {
+        'intake': intake,
+        'placement': placement,
+        'provider': provider,
+        'latest_evaluation': latest_evaluation,
+        'matching_explanation': matching_explanation,
+        'rejection_codes': ProviderEvaluation.RejectionCode.choices,
+        'decision_choices': ProviderEvaluation.Decision.choices,
+        'action_url': reverse('careon:case_provider_evaluation_action', kwargs={'pk': intake.pk}),
+        'back_url': next_fallback,
+        'placement_unlocked': placement_unlocked_for_case(intake),
+    }
+    return render(request, 'contracts/provider_evaluation.html', context)
+
+
+def _build_matching_explanation_for_placement(intake, placement):
+    """Extract matching explanation context for the evaluation page."""
+    if not placement:
+        return None
+    provider = placement.selected_provider or placement.proposed_provider
+    if not provider:
+        return None
+    if not hasattr(provider, 'provider_profile'):
+        return None
+    try:
+        profile = provider.provider_profile
+        categories = list(profile.target_care_categories.values_list('name', flat=True)) if hasattr(profile, 'target_care_categories') else []
+        category_match = bool(intake.care_category_main and categories)
+        return _build_matching_explanation(
+            match_score=0,
+            category_match=category_match,
+            urgency_match=True,
+            care_form_match=True,
+            region_match=True,
+            region_type_match=True,
+            free_slots=getattr(profile, 'available_spots', 0) or 0,
+            average_wait_days=getattr(profile, 'average_wait_days', 0) or 0,
+            specialization_summary=getattr(profile, 'specialization_summary', '') or '',
+            tradeoff='',
+        )
+    except Exception:
+        return None
+
+
+@login_required
+@require_POST
+def case_provider_evaluation_action(request, pk):
+    """Handle POST submission of a provider evaluation decision."""
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden('Je hebt geen rechten om de aanbiederbeoordeling voor deze casus te wijzigen.')
+
+    placement = (
+        PlacementRequest.objects.filter(due_diligence_process=intake)
+        .select_related('selected_provider', 'proposed_provider')
+        .order_by('-updated_at')
+        .first()
+    )
+
+    next_fallback = reverse('careon:case_detail', kwargs={'pk': intake.pk})
+    return _handle_provider_evaluation_post(request, intake, placement, next_fallback)
+
+
+def _handle_provider_evaluation_post(request, intake, placement, next_fallback):
+    """Parse and persist a provider evaluation POST submission."""
+    provider = None
+    if placement:
+        provider = placement.selected_provider or placement.proposed_provider
+
+    if not provider:
+        messages.error(request, 'Geen aanbieder gekoppeld aan deze casus. Selecteer eerst een aanbieder via matching.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    decision = (request.POST.get('decision') or '').strip()
+    reason_code = (request.POST.get('reason_code') or '').strip()
+    capacity_flag = request.POST.get('capacity_flag') in ('1', 'true', 'on')
+    risk_notes = (request.POST.get('risk_notes') or '').strip()
+    requested_info = (request.POST.get('requested_info') or '').strip()
+
+    try:
+        record_provider_evaluation(
+            intake=intake,
+            provider=provider,
+            placement=placement,
+            decision=decision,
+            reason_code=reason_code,
+            capacity_flag=capacity_flag,
+            risk_notes=risk_notes,
+            requested_info=requested_info,
+            decided_by_id=request.user.id,
+            action_source='case_detail',
+        )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return _redirect_to_safe_next_or_default(
+            request,
+            reverse('careon:case_provider_evaluation', kwargs={'pk': intake.pk}),
+        )
+
+    _decision_labels = {
+        ProviderEvaluation.Decision.ACCEPT: 'Aanbieder heeft de casus geaccepteerd. Plaatsing kan worden bevestigd.',
+        ProviderEvaluation.Decision.REJECT: 'Aanbieder heeft de casus afgewezen. Overweeg een her-match.',
+        ProviderEvaluation.Decision.NEEDS_MORE_INFO: 'Aanbieder vraagt om aanvullende informatie. Lever de ontbrekende gegevens aan.',
+    }
+    messages.success(request, _decision_labels.get(decision, 'Beoordeling vastgelegd.'))
+
+    try:
+        generate_alerts_for_case(intake)
+    except Exception:
+        logger.exception('Alert generation failed after provider evaluation for case %s', intake.pk)
+
+    return _redirect_to_safe_next_or_default(request, next_fallback)
+
+
+
+@login_required
 @require_POST
 def case_outcome_action(request, pk):
     org = get_user_organization(request.user)
@@ -6285,6 +6458,14 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             selected_filter=communication_filter,
         )
 
+        # Provider evaluation context
+        eval_provider = placement_selected_provider
+        latest_provider_evaluation = (
+            latest_evaluation_for_case_provider(intake, eval_provider)
+            if eval_provider else None
+        )
+        _placement_unlocked = placement_unlocked_for_case(intake)
+
         if not can_edit_case:
             provider_response_actions = []
 
@@ -6368,6 +6549,8 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'provider_response_summary': provider_response_summary,
             'provider_response_actions': provider_response_actions,
             'provider_response_action_href': provider_response_action_href,
+            'latest_provider_evaluation': latest_provider_evaluation,
+            'placement_unlocked_for_evaluation': _placement_unlocked,
             'communication_action_href': communication_action_href,
             'communication_items': communication_context['items'],
             'communication_filtered_items': communication_context['filtered_items'],
