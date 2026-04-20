@@ -1,0 +1,133 @@
+{# Centre panel: active case workspace for the selected alert #}
+{% if active_workspace %}
+
+<div class="rgk-panel-hdr">
+  <div>
+    <h2 style="margin:0 0 2px;font-size:15px;font-weight:700;">Actieve casus</h2>
+    <p style="margin:0;font-size:12px;color:var(--app-muted);">{{ active_workspace.case_label|truncatechars:60 }}</p>
+  </div>
+  <span class="badge
+    {% if active_workspace.alert.severity == 'CRITICAL' %}badge-critical
+    {% elif active_workspace.alert.severity == 'HIGH' %}badge-high
+    {% else %}badge-low{% endif %}"
+    style="font-size:11px;">{{ active_workspace.alert.severity }}</span>
+</div>
+
+{# ── Case meta chips ── #}
+<div class="rgk-ws-meta">
+  <div class="rgk-ws-chip">
+    <span>Status</span>
+    <strong>{{ active_workspace.status|default:"-" }}</strong>
+  </div>
+  <div class="rgk-ws-chip">
+    <span>Urgentie</span>
+    <strong>{{ active_workspace.urgency|default:"-" }}</strong>
+  </div>
+  {% if active_workspace.region %}
+  <div class="rgk-ws-chip">
+    <span>Regio</span>
+    <strong>{{ active_workspace.region }}</strong>
+  </div>
+  {% endif %}
+  {% if active_workspace.care_category %}
+  <div class="rgk-ws-chip">
+    <span>Zorgcategorie</span>
+    <strong>{{ active_workspace.care_category|truncatechars:20 }}</strong>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Flow timeline ── #}
+<div class="rgk-timeline">
+  {% for step in active_workspace.timeline %}
+  <div class="rgk-tstep{% if step.done %} is-done{% endif %}{% if step.active %} is-active{% endif %}">
+    <span class="rgk-tdot"></span>
+    {{ step.label }}
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Drill-down links ── #}
+<div class="rgk-drilldown-row">
+  {% if active_workspace.case_detail_url %}
+  <a href="{{ active_workspace.case_detail_url }}" class="btn btn-ghost btn-sm">Open casus</a>
+  {% endif %}
+  {% if active_workspace.placement_url %}
+  <a href="{{ active_workspace.placement_url }}" class="btn btn-ghost btn-sm">Open plaatsing</a>
+  {% endif %}
+  {% if active_workspace.matching_url %}
+  <a href="{{ active_workspace.matching_url }}" class="btn btn-ghost btn-sm">Matching bekijken</a>
+  {% endif %}
+</div>
+
+{# ── Decision card ── #}
+<div class="rgk-decision-card">
+  <div class="rgk-dc-hdr">
+    <h3>{{ active_workspace.alert.title }}</h3>
+    <p>{{ active_workspace.alert.description|truncatechars:200 }}</p>
+  </div>
+
+  <div class="rgk-dc-grid">
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Aanbevolen actie</span>
+      <strong>{{ active_workspace.alert.recommended_action|default:active_workspace.alert.action_label }}</strong>
+    </div>
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Impact</span>
+      <strong>{{ active_workspace.alert.impact }}</strong>
+    </div>
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Open sinds</span>
+      <strong>{{ active_workspace.alert.hours_open }} uur</strong>
+    </div>
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Signaaltype</span>
+      <strong style="font-size:11px;">{{ active_workspace.alert.alert_type }}</strong>
+    </div>
+  </div>
+
+  <div class="rgk-dc-actions">
+    {% if active_workspace.alert.action_url %}
+    <a href="{{ active_workspace.alert.action_url }}" class="btn btn-primary btn-sm">
+      {{ active_workspace.alert.action_label }}
+    </a>
+    {% endif %}
+
+    <form method="post" action="{% url 'careon:resolve_alert' active_workspace.alert.id %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button type="submit" class="btn btn-secondary btn-sm"
+        onclick="return confirm('Alert markeren als afgehandeld?')">
+        Markeer als opgelost
+      </button>
+    </form>
+  </div>
+</div>
+
+{# ── Alert-type-specific advice ── #}
+{% with alert_type=active_workspace.alert.alert_type %}
+{% if alert_type == 'missing_critical_data' %}
+  {% include "contracts/partials/regiekamer/workspace/_missing_data_advice.html" %}
+{% elif alert_type == 'incomplete_beoordeling' %}
+  {% include "contracts/partials/regiekamer/workspace/_beoordeling_advice.html" %}
+{% elif alert_type == 'urgent_unmatched_case' %}
+  {% include "contracts/partials/regiekamer/workspace/_matching_advice.html" %}
+{% elif alert_type == 'weak_match_needs_review' %}
+  {% include "contracts/partials/regiekamer/workspace/_weak_match_advice.html" %}
+{% elif alert_type == 'placement_stalled' %}
+  {% include "contracts/partials/regiekamer/workspace/_placement_stalled_advice.html" %}
+{% elif alert_type == 'no_capacity_available' %}
+  {% include "contracts/partials/regiekamer/workspace/_capacity_risk_advice.html" %}
+{% endif %}
+{% endwith %}
+
+{% else %}
+{# No selected alert #}
+<div class="rgk-workspace-empty">
+  <div style="text-align:center;">
+    <div style="font-size:36px;margin-bottom:10px;opacity:.4;">⚡</div>
+    <h2 style="margin:0 0 6px;font-size:17px;">Geen actieve casus</h2>
+    <p class="ds-note-text">Selecteer een signaal uit de prioriteitenlijst.</p>
+  </div>
+</div>
+{% endif %}

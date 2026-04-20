@@ -1,169 +1,156 @@
 {% extends "base.html" %}
 {% block title %}Regiekamer – Careon{% endblock %}
 {% block content %}
-<div class="ds-list-shell">
+{% load static %}
+<style>
+/* ─── Regiekamer v2 layout ─────────────────────────────── */
+.rgk-shell { display: flex; flex-direction: column; gap: 14px; padding: 16px; height: 100%; }
+.rgk-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.rgk-topbar-title { margin: 0 0 2px; font-size: 20px; font-weight: 700; }
+.rgk-topbar-sub { margin: 0; font-size: 12px; color: var(--app-muted); }
+.rgk-topbar-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
-    <div class="ds-list-header">
-        <div>
-            <h1 class="page-title">Regiekamer</h1>
-            <p class="ds-note-text">Operationeel controlepanel — alertes gegenereerd vanuit de centrale casus-evaluatielogica.</p>
-        </div>
-        <div class="ds-list-actions">
-            <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-secondary">Matching</a>
-            <a href="{% url 'careon:placement_list' %}" class="btn btn-secondary">Plaatsingen</a>
-            <a href="{% url 'careon:reports_dashboard' %}" class="btn btn-secondary">Rapportages</a>
-            <a href="{% url 'careon:regiekamer' %}" class="btn btn-primary">Ververs alertes</a>
-        </div>
+/* error bar */
+.rgk-error-bar { border-left: 3px solid #f59e0b; background: rgba(245,158,11,.08); border-radius: 8px; padding: 8px 12px; font-size: 13px; color: #fcd34d; }
+
+/* grid */
+.rgk-grid { display: grid; grid-template-columns: 300px minmax(0,1fr) 280px; gap: 14px; align-items: start; flex: 1; min-height: 0; }
+@media (max-width: 1200px) { .rgk-grid { grid-template-columns: 1fr; } .rgk-panel-queue,.rgk-panel-intel { position: static; } }
+
+.rgk-panel { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 14px; }
+.rgk-panel-queue,.rgk-panel-intel { position: sticky; top: 16px; }
+.rgk-panel-body { padding: 14px; }
+.rgk-panel-hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.rgk-panel-hdr h2 { margin: 0; font-size: 15px; font-weight: 700; }
+.rgk-panel-count { font-size: 12px; background: rgba(139,92,246,.18); color: #c4b5fd; border-radius: 999px; padding: 2px 8px; }
+
+/* queue */
+.rgk-queue { display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 200px); overflow-y: auto; }
+.rgk-queue-item { display: block; text-decoration: none; color: inherit; border: 1px solid var(--app-border); border-radius: 11px; padding: 11px 12px; background: var(--app-surface); transition: border-color .14s, transform .14s; }
+.rgk-queue-item:hover { border-color: rgba(139,92,246,.5); transform: translateY(-1px); }
+.rgk-queue-item.is-active { border-color: #8b5cf6; background: rgba(139,92,246,.07); }
+.rgk-queue-item.sev-CRITICAL { border-left: 3px solid #ef4444; }
+.rgk-queue-item.sev-HIGH     { border-left: 3px solid #f59e0b; }
+.rgk-queue-item.sev-MEDIUM   { border-left: 3px solid #6366f1; }
+.rgk-queue-item.sev-LOW      { border-left: 3px solid #10b981; }
+.rgk-qi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.rgk-qi-title { font-size: 13px; font-weight: 600; margin: 0 0 3px; line-height: 1.3; }
+.rgk-qi-case  { font-size: 12px; color: var(--app-muted); margin: 0 0 3px; }
+.rgk-qi-impact { font-size: 11px; color: var(--app-muted); margin: 0 0 6px; }
+.rgk-qi-footer { display: flex; align-items: center; justify-content: space-between; }
+.rgk-qi-action { font-size: 11px; color: #a78bfa; font-weight: 600; }
+.rgk-age { font-size: 11px; color: var(--app-muted); }
+
+/* urgency bands */
+.rgk-band { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.rgk-band-critical-now  { background: rgba(239,68,68,.2);   color: #fca5a5; }
+.rgk-band-critical-soon { background: rgba(245,158,11,.18); color: #fcd34d; }
+.rgk-band-normal        { display: none; }
+
+/* empty queue */
+.rgk-empty { border: 1px dashed var(--app-border); border-radius: 11px; padding: 24px; text-align: center; }
+.rgk-empty-icon { font-size: 28px; margin-bottom: 8px; }
+.rgk-empty h3 { margin: 0 0 4px; font-size: 14px; }
+.rgk-empty p  { margin: 0; font-size: 12px; color: var(--app-muted); }
+
+/* workspace */
+.rgk-workspace-empty { display: grid; place-items: center; min-height: 320px; }
+.rgk-ws-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.rgk-ws-chip { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 9px; padding: 8px 12px; min-width: 110px; }
+.rgk-ws-chip span { display: block; font-size: 11px; color: var(--app-muted); margin-bottom: 3px; }
+.rgk-ws-chip strong { font-size: 13px; }
+.rgk-timeline { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.rgk-tstep { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; font-size: 12px; background: rgba(100,116,139,.14); color: var(--app-muted); }
+.rgk-tstep.is-done   { background: rgba(16,185,129,.15); color: #6ee7b7; }
+.rgk-tstep.is-active { background: rgba(139,92,246,.18); color: #c4b5fd; }
+.rgk-tdot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.rgk-decision-card { background: var(--app-surface); border: 1px solid var(--app-border); border-radius: 12px; padding: 16px; margin-bottom: 14px; }
+.rgk-dc-hdr h3 { margin: 0 0 4px; font-size: 17px; }
+.rgk-dc-hdr p  { margin: 0 0 14px; font-size: 13px; color: var(--app-muted); }
+.rgk-dc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px; }
+.rgk-dc-block { border: 1px solid var(--app-border); border-radius: 10px; padding: 11px; }
+.rgk-dc-label { display: block; font-size: 11px; color: var(--app-muted); margin-bottom: 4px; }
+.rgk-dc-block strong { font-size: 13px; }
+.rgk-dc-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.rgk-ws-note { border: 1px dashed var(--app-border); border-radius: 11px; padding: 14px; }
+.rgk-ws-note h3 { margin: 0 0 8px; font-size: 14px; }
+.rgk-ws-note ul { margin: 0; padding-left: 18px; }
+.rgk-ws-note ul li { font-size: 13px; color: var(--app-muted); margin-bottom: 4px; }
+.rgk-drilldown-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+
+/* intelligence panel */
+.rgk-intel-section + .rgk-intel-section { border-top: 1px solid var(--app-border); padding-top: 12px; margin-top: 12px; }
+.rgk-intel-section h3 { margin: 0 0 10px; font-size: 13px; font-weight: 700; color: var(--app-muted); text-transform: uppercase; letter-spacing: .04em; }
+.rgk-intel-card { border: 1px solid var(--app-border); border-radius: 10px; padding: 11px; margin-bottom: 8px; }
+.rgk-intel-card strong { display: block; font-size: 13px; margin-bottom: 3px; }
+.rgk-intel-card p { margin: 0 0 6px; font-size: 12px; color: var(--app-muted); }
+.rgk-intel-card a { font-size: 12px; color: #a78bfa; font-weight: 600; text-decoration: none; }
+.rgk-intel-card.is-muted { background: transparent; }
+.rgk-metric-row { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; font-size: 13px; border-bottom: 1px solid var(--app-border); }
+.rgk-metric-row:last-child { border-bottom: none; }
+.rgk-metric-val { font-weight: 700; }
+.rgk-metric-val.tone-crit { color: #fca5a5; }
+.rgk-metric-val.tone-warn { color: #fcd34d; }
+.rgk-filter-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.rgk-pill { display: inline-block; text-decoration: none; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: rgba(100,116,139,.14); color: var(--app-muted); transition: background .14s; }
+.rgk-pill:hover { background: rgba(139,92,246,.18); color: #c4b5fd; }
+.rgk-pill.is-active { background: rgba(139,92,246,.25); color: #c4b5fd; }
+</style>
+
+<div class="rgk-shell">
+
+  {% if no_org %}
+  <div class="rgk-empty" style="margin:auto;max-width:480px;">
+    <div class="rgk-empty-icon">🏢</div>
+    <h3>Geen organisatie</h3>
+    <p>Geen organisatie gekoppeld aan uw account. Neem contact op met uw beheerder.</p>
+  </div>
+
+  {% else %}
+
+  {# ── Top bar ── #}
+  <div class="rgk-topbar">
+    <div>
+      <h1 class="rgk-topbar-title">Regiekamer</h1>
+      <p class="rgk-topbar-sub">Operationeel controlepanel · alertes gegenereerd vanuit de centrale casus-evaluatielogica</p>
+    </div>
+    <div class="rgk-topbar-actions">
+      <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-secondary btn-sm">Matching</a>
+      <a href="{% url 'careon:placement_list' %}" class="btn btn-secondary btn-sm">Plaatsingen</a>
+      <a href="{% url 'careon:regiekamer' %}{% if filter_type %}?filter={{ filter_type }}{% endif %}" class="btn btn-primary btn-sm">↻ Ververs</a>
+    </div>
+  </div>
+
+  {% if alert_refresh_error %}
+  <div class="rgk-error-bar" role="alert">{{ alert_refresh_error }}</div>
+  {% endif %}
+
+  {# ── 3-column grid ── #}
+  <div class="rgk-grid">
+
+    {# ── LEFT: Priority queue ── #}
+    <div class="rgk-panel rgk-panel-queue">
+      <div class="rgk-panel-body">
+        {% include "contracts/partials/regiekamer/_priority_queue.html" %}
+      </div>
     </div>
 
-    {% if no_org %}
-    <div class="ds-empty-state">
-        <p>Geen organisatie gekoppeld aan uw account. Neem contact op met uw beheerder.</p>
-    </div>
-    {% else %}
-
-    {% if alert_refresh_error %}
-    <div class="ds-card" style="border-left:3px solid var(--color-warn,#f59e0b);padding:.75rem 1rem;margin-bottom:1rem;" role="alert">
-        <span class="ds-note-text">{{ alert_refresh_error }}</span>
-    </div>
-    {% endif %}
-
-    {# ── KPI counter row ── #}
-    <div class="ds-list-kpi-grid" style="margin-bottom:1.5rem;">
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Totaal open</div>
-            <div class="ds-list-kpi-value {% if counters.total > 0 %}tone-warn{% endif %}">{{ counters.total }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Kritiek</div>
-            <div class="ds-list-kpi-value {% if counters.critical > 0 %}tone-critical{% endif %}">{{ counters.critical }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Urgent zonder match</div>
-            <div class="ds-list-kpi-value {% if counters.urgent_unmatched > 0 %}tone-critical{% endif %}">{{ counters.urgent_unmatched }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Geblokkeerd (data)</div>
-            <div class="ds-list-kpi-value {% if counters.blocked_data > 0 %}tone-warn{% endif %}">{{ counters.blocked_data }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Geen capaciteit</div>
-            <div class="ds-list-kpi-value {% if counters.no_capacity > 0 %}tone-critical{% endif %}">{{ counters.no_capacity }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Zwakke match</div>
-            <div class="ds-list-kpi-value {% if counters.weak_match > 0 %}tone-warn{% endif %}">{{ counters.weak_match }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Plaatsing vastgelopen</div>
-            <div class="ds-list-kpi-value {% if counters.stalled_placement > 0 %}tone-critical{% endif %}">{{ counters.stalled_placement }}</div>
-        </div>
+    {# ── CENTER: Active workspace ── #}
+    <div class="rgk-panel">
+      <div class="rgk-panel-body">
+        {% include "contracts/partials/regiekamer/_active_workspace.html" %}
+      </div>
     </div>
 
-    {% if not alert_groups %}
-    <div class="ds-empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:3rem;height:3rem;margin-bottom:.75rem;opacity:.4;">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <p style="font-size:1.1rem;font-weight:600;margin-bottom:.25rem;">Geen openstaande alertes</p>
-        <p class="ds-note-text">Alle casussen worden correct opgevolgd. Klik op "Ververs alertes" om de evaluatie opnieuw uit te voeren.</p>
+    {# ── RIGHT: System intelligence ── #}
+    <div class="rgk-panel rgk-panel-intel">
+      <div class="rgk-panel-body">
+        {% include "contracts/partials/regiekamer/_system_intelligence.html" %}
+      </div>
     </div>
-    {% else %}
 
-    {# ── Alert groups, highest severity first ── #}
-    {% for group in alert_groups %}
-    <section style="margin-bottom:2rem;">
-        <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;">
-            <span class="badge
-                {% if group.severity == 'CRITICAL' %}badge-red
-                {% elif group.severity == 'HIGH' %}badge-orange
-                {% elif group.severity == 'MEDIUM' %}badge-yellow
-                {% else %}badge-gray{% endif %}"
-                style="font-size:.75rem;padding:.3rem .7rem;">
-                {{ group.severity_label }}
-            </span>
-            <span class="ds-note-text">{{ group.count }} alert{{ group.count|pluralize:"e,es" }}</span>
-        </div>
+  </div>{% comment %}rgk-grid{% endcomment %}
+  {% endif %}{% comment %}no_org{% endcomment %}
 
-        <div class="ds-table-container">
-            <table class="ds-table">
-                <thead>
-                    <tr>
-                        <th>Type</th>
-                        <th>Casus</th>
-                        <th>Omschrijving</th>
-                        <th>Aanbevolen actie</th>
-                        <th>Fase</th>
-                        <th>Acties</th>
-                        <th>Afhandelen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for alert in group.alerts %}
-                    <tr>
-                        <td>
-                            <span class="badge
-                                {% if alert.severity == 'CRITICAL' %}badge-red
-                                {% elif alert.severity == 'HIGH' %}badge-orange
-                                {% elif alert.severity == 'MEDIUM' %}badge-yellow
-                                {% else %}badge-gray{% endif %}"
-                                style="font-size:.7rem;">
-                                {{ alert.get_alert_type_display }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'careon:case_detail' alert.case.pk %}" class="ds-link">
-                                {{ alert.case.title|truncatechars:50 }}
-                            </a>
-                            <div class="ds-note-text">#{{ alert.case.pk }}</div>
-                        </td>
-                        <td style="max-width:220px;white-space:normal;" class="ds-note-text">
-                            {{ alert.description|truncatechars:120 }}
-                        </td>
-                        <td style="max-width:200px;white-space:normal;">
-                            {{ alert.recommended_action|truncatechars:100 }}
-                        </td>
-                        <td>
-                            <span class="badge badge-gray" style="font-size:.7rem;">{{ alert.source_phase }}</span>
-                        </td>
-                        <td>
-                            {# ── Drill-down CTAs ── #}
-                            <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-                                <a href="{% url 'careon:case_detail' alert.case.pk %}" class="btn btn-ghost btn-xs" title="Open casus">Casus</a>
-                                {% if alert.placement %}
-                                <a href="{% url 'careon:placement_detail' alert.placement.pk %}" class="btn btn-ghost btn-xs" title="Open plaatsing">Plaatsing</a>
-                                {% endif %}
-                                {% if alert.alert_type == 'urgent_unmatched_case' or alert.alert_type == 'no_capacity_available' or alert.alert_type == 'weak_match_needs_review' %}
-                                <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case.pk }}" class="btn btn-primary btn-xs" title="Start matching">Matching</a>
-                                {% endif %}
-                                {% if alert.alert_type == 'placement_stalled' and alert.placement %}
-                                <a href="{% url 'careon:placement_detail' alert.placement.pk %}" class="btn btn-primary btn-xs">Plaatsing bekijken</a>
-                                {% endif %}
-                                {% if alert.alert_type == 'missing_critical_data' or alert.alert_type == 'incomplete_beoordeling' %}
-                                <a href="{% url 'careon:case_update' alert.case.pk %}" class="btn btn-primary btn-xs">Casus aanvullen</a>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            <form method="post" action="{% url 'careon:resolve_alert' alert.pk %}" style="display:inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="next" value="{% url 'careon:regiekamer' %}">
-                                <button type="submit" class="btn btn-ghost btn-xs" title="Markeer als afgehandeld"
-                                    onclick="return confirm('Alert markeren als afgehandeld?')">
-                                    Afhandelen
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </section>
-    {% endfor %}
-
-    {% endif %}{# alert_groups #}
-    {% endif %}{# no_org #}
-
-</div>
+</div>{% comment %}rgk-shell{% endcomment %}
 {% endblock %}

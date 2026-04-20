@@ -1,0 +1,45 @@
+{# Left panel: ranked priority queue of open alerts #}
+<div class="rgk-panel-hdr">
+  <h2>Prioriteiten</h2>
+  <span class="rgk-panel-count">{{ queue|length }} open</span>
+</div>
+
+{% if queue %}
+<div class="rgk-queue">
+  {% for item in queue %}
+  <a href="?alert={{ item.id }}{% if filter_type %}&filter={{ filter_type }}{% endif %}"
+     class="rgk-queue-item sev-{{ item.severity }}{% if selected_alert_id == item.id %} is-active{% endif %}">
+
+    <div class="rgk-qi-top">
+      <span class="badge
+        {% if item.severity == 'CRITICAL' %}badge-critical
+        {% elif item.severity == 'HIGH' %}badge-high
+        {% elif item.severity == 'MEDIUM' %}badge-low
+        {% else %}badge-gray{% endif %}"
+        style="font-size:10px;padding:2px 7px;">{{ item.severity }}</span>
+      <span class="rgk-age">{{ item.hours_open }}u</span>
+    </div>
+
+    {% if item.urgency_band != 'normal' %}
+    <span class="rgk-band rgk-band-{{ item.urgency_band }}" style="margin-bottom:5px;">
+      {% if item.urgency_band == 'critical-now' %}⚡ Direct ingrijpen{% else %}⚠ Vandaag oppakken{% endif %}
+    </span>
+    {% endif %}
+
+    <p class="rgk-qi-title">{{ item.title|truncatechars:60 }}</p>
+    <p class="rgk-qi-case">{{ item.case_label|truncatechars:45 }}</p>
+    <p class="rgk-qi-impact">{{ item.impact }}</p>
+
+    <div class="rgk-qi-footer">
+      <span class="rgk-qi-action">{{ item.action_label }} →</span>
+    </div>
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<div class="rgk-empty">
+  <div class="rgk-empty-icon">✓</div>
+  <h3>Geen open signalen</h3>
+  <p>De flow ziet er momenteel schoon uit.</p>
+</div>
+{% endif %}

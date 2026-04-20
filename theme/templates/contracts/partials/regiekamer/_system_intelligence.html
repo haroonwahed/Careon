@@ -1,0 +1,83 @@
+{# Right panel: system intelligence – patterns, health metrics, quick filters #}
+<div class="rgk-panel-hdr">
+  <h2>Systeemintelligentie</h2>
+</div>
+
+{# ── Patterns ── #}
+<div class="rgk-intel-section">
+  <h3>Patronen</h3>
+  {% if system_intelligence.patterns %}
+  {% for pattern in system_intelligence.patterns %}
+  <div class="rgk-intel-card">
+    <strong>{{ pattern.title }}</strong>
+    <p>{{ pattern.description }}</p>
+    <a href="{{ pattern.cta_url }}">{{ pattern.cta_label }} →</a>
+  </div>
+  {% endfor %}
+  {% else %}
+  <div class="rgk-intel-card is-muted">
+    <p>Geen opvallende patronen gedetecteerd.</p>
+  </div>
+  {% endif %}
+</div>
+
+{# ── Flow health ── #}
+<div class="rgk-intel-section">
+  <h3>Flow health</h3>
+  <div>
+    <div class="rgk-metric-row">
+      <span>Open signalen</span>
+      <span class="rgk-metric-val">{{ system_intelligence.metrics.open_alerts }}</span>
+    </div>
+    <div class="rgk-metric-row">
+      <span>Hoog risico</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.high_severity > 0 %}tone-crit{% endif %}">
+        {{ system_intelligence.metrics.high_severity }}
+      </span>
+    </div>
+    <div class="rgk-metric-row">
+      <span>Urgent zonder match</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.urgent_unmatched > 0 %}tone-crit{% endif %}">
+        {{ system_intelligence.metrics.urgent_unmatched }}
+      </span>
+    </div>
+    <div class="rgk-metric-row">
+      <span>Plaatsingen vast</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.stalled_cases > 0 %}tone-warn{% endif %}">
+        {{ system_intelligence.metrics.stalled_cases }}
+      </span>
+    </div>
+    <div class="rgk-metric-row">
+      <span>Zwakke matches</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.weak_matches > 0 %}tone-warn{% endif %}">
+        {{ system_intelligence.metrics.weak_matches }}
+      </span>
+    </div>
+    <div class="rgk-metric-row">
+      <span>Geen capaciteit</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.no_capacity > 0 %}tone-warn{% endif %}">
+        {{ system_intelligence.metrics.no_capacity }}
+      </span>
+    </div>
+  </div>
+</div>
+
+{# ── Quick filters ── #}
+<div class="rgk-intel-section">
+  <h3>Snelfilters</h3>
+  <div class="rgk-filter-pills">
+    <a href="{% url 'careon:regiekamer' %}" class="rgk-pill{% if not filter_type %} is-active{% endif %}">Alles</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=urgent_unmatched_case"
+       class="rgk-pill{% if filter_type == 'urgent_unmatched_case' %} is-active{% endif %}">Urgent zonder match</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=placement_stalled"
+       class="rgk-pill{% if filter_type == 'placement_stalled' %} is-active{% endif %}">Plaatsing vast</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=no_capacity_available"
+       class="rgk-pill{% if filter_type == 'no_capacity_available' %} is-active{% endif %}">Geen capaciteit</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=weak_match_needs_review"
+       class="rgk-pill{% if filter_type == 'weak_match_needs_review' %} is-active{% endif %}">Zwakke match</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=missing_critical_data"
+       class="rgk-pill{% if filter_type == 'missing_critical_data' %} is-active{% endif %}">Ontbrekende data</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=incomplete_beoordeling"
+       class="rgk-pill{% if filter_type == 'incomplete_beoordeling' %} is-active{% endif %}">Beoordeling open</a>
+  </div>
+</div>

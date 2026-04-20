@@ -7290,29 +7290,249 @@ def simulation_dashboard(request):
 
 
 # ============================================================
-# REGIEKAMER – OPERATIONAL ALERT CONTROL INTERFACE
+# REGIEKAMER – OPERATIONAL CONTROL TOWER (V2)
 # ============================================================
+
+# ── Alert type UI metadata ──────────────────────────────────
+_ALERT_TYPE_UI = {
+    'urgent_unmatched_case': {
+        'label': 'Geen match voor urgente casus',
+        'action_label': 'Start matching',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Blokkeert plaatsing',
+        'tone': 'critical',
+    },
+    'incomplete_beoordeling': {
+        'label': 'Beoordeling onvolledig',
+        'action_label': 'Voltooi beoordeling',
+        'action_url_name': 'careon:assessment_detail',
+        'action_uses_pk': True,  # pk = case_assessment pk (resolved in view)
+        'impact': 'Volgende stap geblokkeerd',
+        'tone': 'warning',
+    },
+    'missing_critical_data': {
+        'label': 'Kritieke gegevens ontbreken',
+        'action_label': 'Vul casus aan',
+        'action_url_name': 'careon:case_update',
+        'action_uses_pk': True,  # pk = case pk
+        'impact': 'Besluitvorming onbetrouwbaar',
+        'tone': 'warning',
+    },
+    'weak_match_needs_review': {
+        'label': 'Zwakke match vereist review',
+        'action_label': 'Review match',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Verhoogd plaatsingsrisico',
+        'tone': 'medium',
+    },
+    'placement_stalled': {
+        'label': 'Plaatsing loopt vast',
+        'action_label': 'Bevestig plaatsing',
+        'action_url_name': 'careon:placement_detail',
+        'action_uses_pk': True,  # pk = placement pk
+        'impact': 'Doorlooptijd loopt op',
+        'tone': 'critical',
+    },
+    'no_capacity_available': {
+        'label': 'Capaciteitsrisico aanbieder',
+        'action_label': 'Herstart matching',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Kans op afwijzing of vertraging',
+        'tone': 'medium',
+    },
+}
+
+_SEVERITY_RANK = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
+
+
+def _hours_open(alert):
+    from django.utils import timezone as tz
+    end = alert.resolved_at or tz.now()
+    return max(0, int((end - alert.created_at).total_seconds() // 3600))
+
+
+def _priority_score(alert):
+    """Lower = higher priority. Severity dominant; age adds urgency."""
+    rank = _SEVERITY_RANK.get(alert.severity, 9)
+    age_penalty = min(_hours_open(alert) // 6, 10)
+    return (rank * 100) - age_penalty
+
+
+def _urgency_band(alert):
+    hours = _hours_open(alert)
+    if alert.severity == 'CRITICAL' and hours >= 8:
+        return 'critical-now'
+    if alert.severity in ('CRITICAL', 'HIGH') and hours >= 4:
+        return 'critical-soon'
+    return 'normal'
+
+
+def _build_queue_item(alert):
+    case = alert.case
+    ui = _ALERT_TYPE_UI.get(alert.alert_type, {})
+    # Resolve action URL
+    action_url = None
+    try:
+        if ui.get('action_uses_pk'):
+            if alert.alert_type == 'placement_stalled' and alert.placement_id:
+                action_url = reverse('careon:placement_detail', args=[alert.placement_id])
+            elif alert.alert_type == 'incomplete_beoordeling' and case and hasattr(case, 'case_assessment'):
+                assessment = getattr(case, 'case_assessment', None)
+                if assessment:
+                    action_url = reverse('careon:assessment_detail', args=[assessment.pk])
+            elif case:
+                action_url = reverse(ui['action_url_name'], args=[case.pk])
+        elif ui.get('action_url_name'):
+            base_url = reverse(ui['action_url_name'])
+            if case:
+                action_url = f"{base_url}?intake={case.pk}"
+            else:
+                action_url = base_url
+    except Exception:
+        action_url = reverse('careon:case_detail', args=[case.pk]) if case else None
+
+    return {
+        'id': alert.pk,
+        'alert': alert,
+        'case': case,
+        'case_pk': case.pk if case else None,
+        'case_label': case.title if case else 'Onbekende casus',
+        'severity': alert.severity,
+        'severity_lower': alert.severity.lower(),
+        'alert_type': alert.alert_type,
+        'title': alert.title,
+        'description': alert.description,
+        'recommended_action': alert.recommended_action,
+        'action_label': ui.get('action_label', 'Open'),
+        'action_url': action_url,
+        'impact': ui.get('impact', ''),
+        'tone': ui.get('tone', 'medium'),
+        'hours_open': _hours_open(alert),
+        'urgency_band': _urgency_band(alert),
+        'priority_score': _priority_score(alert),
+        'created_at': alert.created_at,
+    }
+
+
+def _build_active_workspace(selected_alert):
+    if not selected_alert:
+        return None
+    item = _build_queue_item(selected_alert)
+    case = selected_alert.case
+
+    # Timeline – reflect CaseIntakeProcess.ProcessStatus
+    status = getattr(case, 'status', '') or ''
+    _done = lambda phases: status in phases
+    timeline = [
+        {'key': 'INTAKE', 'label': 'Intake', 'done': _done(['MATCHING', 'DECISION', 'COMPLETED']), 'active': status == 'INTAKE'},
+        {'key': 'MATCHING', 'label': 'Matching', 'done': _done(['DECISION', 'COMPLETED']), 'active': status == 'MATCHING'},
+        {'key': 'DECISION', 'label': 'Matchbesluit', 'done': _done(['COMPLETED']), 'active': status == 'DECISION'},
+        {'key': 'COMPLETED', 'label': 'Afgerond', 'done': status == 'COMPLETED', 'active': False},
+    ]
+
+    region_label = None
+    if case:
+        if getattr(case, 'preferred_region', None):
+            region_label = case.preferred_region.region_name
+        elif getattr(case, 'gemeente', None):
+            region_label = str(case.gemeente)
+
+    care_category_label = None
+    if case and getattr(case, 'care_category_main', None):
+        care_category_label = str(case.care_category_main)
+
+    return {
+        'alert': item,
+        'case': case,
+        'case_label': case.title if case else 'Onbekende casus',
+        'status': getattr(case, 'get_status_display', lambda: status)() if case else None,
+        'urgency': getattr(case, 'get_urgency_display', lambda: None)() if case else None,
+        'region': region_label,
+        'care_category': care_category_label,
+        'timeline': timeline,
+        'case_detail_url': reverse('careon:case_detail', args=[case.pk]) if case else None,
+        'placement_url': (
+            reverse('careon:placement_detail', args=[selected_alert.placement_id])
+            if selected_alert.placement_id else None
+        ),
+        'matching_url': (
+            reverse('careon:matching_dashboard') + f'?intake={case.pk}'
+            if case else None
+        ),
+    }
+
+
+def _build_system_intelligence(org, open_alerts):
+    from contracts.models import RegiekamerAlert as _RA
+    _AT = _RA.AlertType
+    by_type = {}
+    for a in open_alerts:
+        by_type[a.alert_type] = by_type.get(a.alert_type, 0) + 1
+
+    pattern_cards = []
+    if by_type.get(_AT.URGENT_UNMATCHED, 0) >= 3:
+        pattern_cards.append({
+            'title': 'Patroon: urgente casussen zonder match',
+            'description': f"{by_type[_AT.URGENT_UNMATCHED]} open signalen vragen directe actie.",
+            'cta_label': 'Bekijk matching-werkvoorraad',
+            'cta_url': reverse('careon:regiekamer') + '?filter=urgent_unmatched_case',
+        })
+    if by_type.get(_AT.PLACEMENT_STALLED, 0) >= 3:
+        pattern_cards.append({
+            'title': 'Patroon: plaatsingen lopen vast',
+            'description': f"{by_type[_AT.PLACEMENT_STALLED]} casussen stagneren in plaatsing.",
+            'cta_label': 'Bekijk plaatsingsissues',
+            'cta_url': reverse('careon:regiekamer') + '?filter=placement_stalled',
+        })
+    if by_type.get(_AT.NO_CAPACITY, 0) >= 2:
+        pattern_cards.append({
+            'title': 'Capaciteitsdruk bij aanbieders',
+            'description': f"{by_type[_AT.NO_CAPACITY]} signalen wijzen op capaciteitsproblemen.",
+            'cta_label': 'Bekijk aanbieders',
+            'cta_url': reverse('careon:client_list'),
+        })
+    if by_type.get(_AT.MISSING_CRITICAL_DATA, 0) >= 2:
+        pattern_cards.append({
+            'title': 'Kritieke gegevens ontbreken in meerdere casussen',
+            'description': f"{by_type[_AT.MISSING_CRITICAL_DATA]} casussen missen data voor besluitvorming.",
+            'cta_label': 'Bekijk casussen',
+            'cta_url': reverse('careon:regiekamer') + '?filter=missing_critical_data',
+        })
+
+    total = len(open_alerts)
+    high_sev = sum(1 for a in open_alerts if a.severity in ('CRITICAL', 'HIGH'))
+    return {
+        'patterns': pattern_cards,
+        'metrics': {
+            'open_alerts': total,
+            'high_severity': high_sev,
+            'stalled_cases': by_type.get(_AT.PLACEMENT_STALLED, 0),
+            'weak_matches': by_type.get(_AT.WEAK_MATCH, 0),
+            'no_capacity': by_type.get(_AT.NO_CAPACITY, 0),
+            'urgent_unmatched': by_type.get(_AT.URGENT_UNMATCHED, 0),
+        },
+    }
+
 
 @login_required
 def regiekamer(request):
-    """Regiekamer: operational alert control interface.
+    """Regiekamer v2: 3-column operational control tower.
 
-    Generates/refreshes alerts for the user's organization on each visit,
-    then presents them grouped by severity with direct CTA buttons.
+    Left panel: priority-ranked alert queue.
+    Centre panel: active case workspace.
+    Right panel: system intelligence (patterns + health metrics + quick filters).
     """
     from contracts.alert_engine import generate_alerts_for_organization
     from contracts.models import RegiekamerAlert
 
     org = get_user_organization(request.user)
     if org is None:
-        context = {
-            'no_org': True,
-            'alert_groups': [],
-            'counters': {},
-        }
-        return render(request, 'contracts/regiekamer.html', context)
+        return render(request, 'contracts/regiekamer.html', {'no_org': True})
 
-    # Refresh alerts for this org (idempotent)
+    # Refresh alerts (idempotent)
     alert_refresh_error = None
     try:
         generate_alerts_for_organization(org.pk)
@@ -7320,54 +7540,59 @@ def regiekamer(request):
         logger.exception('Alert refresh failed for org pk=%s', org.pk)
         alert_refresh_error = 'Alertes konden niet worden vernieuwd. Bestaande alertes worden getoond.'
 
-    # Fetch all open alerts ordered by severity then created_at
-    severity_order = {
-        RegiekamerAlert.Severity.CRITICAL: 0,
-        RegiekamerAlert.Severity.HIGH: 1,
-        RegiekamerAlert.Severity.MEDIUM: 2,
-        RegiekamerAlert.Severity.LOW: 3,
-    }
-    open_alerts = list(
-        RegiekamerAlert.objects.filter(
-            organization=org,
-            is_resolved=False,
-        )
-        .select_related('case', 'placement', 'placement__proposed_provider')
-        .order_by('created_at')
+    # Parse GET params
+    selected_alert_id = request.GET.get('alert', '')
+    filter_type = request.GET.get('filter', '')
+
+    # Load all open alerts
+    qs = (
+        RegiekamerAlert.objects
+        .filter(organization=org, is_resolved=False)
+        .select_related('case', 'case__case_assessment', 'case__care_category_main',
+                        'case__preferred_region', 'placement', 'placement__proposed_provider')
+        .order_by('-created_at')
     )
-    open_alerts.sort(key=lambda a: (severity_order.get(a.severity, 9), a.created_at))
+    if filter_type:
+        qs = qs.filter(alert_type=filter_type)
 
-    # Build counters
-    _AT = RegiekamerAlert.AlertType
-    counters = {
-        'total': len(open_alerts),
-        'critical': sum(1 for a in open_alerts if a.severity == RegiekamerAlert.Severity.CRITICAL),
-        'urgent_unmatched': sum(1 for a in open_alerts if a.alert_type == _AT.URGENT_UNMATCHED),
-        'blocked_data': sum(1 for a in open_alerts if a.alert_type == _AT.MISSING_CRITICAL_DATA),
-        'no_capacity': sum(1 for a in open_alerts if a.alert_type == _AT.NO_CAPACITY),
-        'weak_match': sum(1 for a in open_alerts if a.alert_type == _AT.WEAK_MATCH),
-        'stalled_placement': sum(1 for a in open_alerts if a.alert_type == _AT.PLACEMENT_STALLED),
-    }
+    all_open_alerts = list(qs)
 
-    # Group by severity
-    alert_groups = []
-    for sev_code, sev_label in RegiekamerAlert.Severity.choices:
-        group = [a for a in open_alerts if a.severity == sev_code]
-        if group:
-            alert_groups.append({
-                'severity': sev_code,
-                'severity_label': sev_label,
-                'alerts': group,
-                'count': len(group),
-            })
+    # Build ranked queue
+    queue = [_build_queue_item(a) for a in all_open_alerts]
+    queue.sort(key=lambda x: x['priority_score'])
+
+    # Resolve active workspace
+    selected_alert = None
+    if selected_alert_id and selected_alert_id.isdigit():
+        try:
+            selected_alert = next(
+                (a for a in all_open_alerts if a.pk == int(selected_alert_id)), None
+            )
+        except Exception:
+            pass
+    if selected_alert is None and all_open_alerts:
+        selected_alert = all_open_alerts[0] if not queue else next(
+            (a['alert'] for a in queue), None
+        )
+
+    # Counts for quick filter chips (unfiltered)
+    all_open_unfiltered = (
+        all_open_alerts if not filter_type
+        else list(
+            RegiekamerAlert.objects.filter(organization=org, is_resolved=False)
+            .only('alert_type', 'severity')
+        )
+    )
 
     context = {
-        'alert_groups': alert_groups,
-        'counters': counters,
-        'org': org,
         'no_org': False,
-        'alert_type_labels': dict(RegiekamerAlert.AlertType.choices),
         'alert_refresh_error': alert_refresh_error,
+        'queue': queue,
+        'active_workspace': _build_active_workspace(selected_alert),
+        'system_intelligence': _build_system_intelligence(org, all_open_unfiltered),
+        'selected_alert_id': int(selected_alert_id) if selected_alert_id and selected_alert_id.isdigit() else (selected_alert.pk if selected_alert else None),
+        'filter_type': filter_type,
+        'resolve_url': reverse('careon:resolve_alert', args=[0]).rstrip('0'),
     }
     return render(request, 'contracts/regiekamer.html', context)
 
