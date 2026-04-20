@@ -22,6 +22,12 @@
     </div>
     {% else %}
 
+    {% if alert_refresh_error %}
+    <div class="ds-card" style="border-left:3px solid var(--color-warn,#f59e0b);padding:.75rem 1rem;margin-bottom:1rem;" role="alert">
+        <span class="ds-note-text">{{ alert_refresh_error }}</span>
+    </div>
+    {% endif %}
+
     {# ── KPI counter row ── #}
     <div class="ds-list-kpi-grid" style="margin-bottom:1.5rem;">
         <div class="ds-list-kpi-card">

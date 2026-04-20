@@ -7313,10 +7313,12 @@ def regiekamer(request):
         return render(request, 'contracts/regiekamer.html', context)
 
     # Refresh alerts for this org (idempotent)
+    alert_refresh_error = None
     try:
         generate_alerts_for_organization(org.pk)
     except Exception:
-        pass
+        logger.exception('Alert refresh failed for org pk=%s', org.pk)
+        alert_refresh_error = 'Alertes konden niet worden vernieuwd. Bestaande alertes worden getoond.'
 
     # Fetch all open alerts ordered by severity then created_at
     severity_order = {
@@ -7365,6 +7367,7 @@ def regiekamer(request):
         'org': org,
         'no_org': False,
         'alert_type_labels': dict(RegiekamerAlert.AlertType.choices),
+        'alert_refresh_error': alert_refresh_error,
     }
     return render(request, 'contracts/regiekamer.html', context)
 
@@ -7374,6 +7377,7 @@ def resolve_alert(request, alert_pk):
     """Manually resolve a Regiekamer alert via POST."""
     from contracts.alert_engine import resolve_alert_manually
     from django.contrib import messages
+    from django.utils.http import url_has_allowed_host_and_scheme
 
     if request.method != 'POST':
         return redirect(reverse('careon:regiekamer'))
@@ -7384,5 +7388,14 @@ def resolve_alert(request, alert_pk):
     else:
         messages.warning(request, 'Alert niet gevonden of al afgehandeld.')
 
-    next_url = request.POST.get('next') or reverse('careon:regiekamer')
+    raw_next = request.POST.get('next', '')
+    fallback = reverse('careon:regiekamer')
+    if raw_next and url_has_allowed_host_and_scheme(
+        url=raw_next,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        next_url = raw_next
+    else:
+        next_url = fallback
     return redirect(next_url)

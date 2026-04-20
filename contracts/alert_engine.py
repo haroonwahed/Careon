@@ -20,11 +20,13 @@ Public API
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from typing import Any
 
 from django.db import transaction
 from django.utils import timezone
+from django.utils.timezone import make_aware
 
 from contracts.models import (
     CaseAssessment,
@@ -34,6 +36,8 @@ from contracts.models import (
     RegiekamerAlert,
     SimulatedCaseResult,
 )
+
+logger = logging.getLogger(__name__)
 from contracts.operational_decision_contract import (
     AttentionBandLevel,
     BottleneckState,
@@ -211,7 +215,6 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
         if ref is not None:
             now_ts = timezone.now()
             if not timezone.is_aware(ref):
-                from django.utils.timezone import make_aware
                 ref = make_aware(ref)
             hours_waiting = max(0, (now_ts - ref).total_seconds() / 3600)
             if hours_waiting >= 72:
@@ -356,7 +359,7 @@ def generate_alerts_for_organization(org_id: int) -> dict:
             for alert in active:
                 by_type[alert.alert_type] = by_type.get(alert.alert_type, 0) + 1
         except Exception:
-            pass
+            logger.exception('Alert generation failed for intake pk=%s', intake.pk)
 
     return {
         'org_id': org_id,
