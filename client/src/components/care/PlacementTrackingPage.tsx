@@ -36,8 +36,8 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
   });
 
   const emptyCopy = {
-    "te-bevestigen": "Plaatsingen verschijnen hier zodra een aanbieder de match heeft geaccepteerd.",
-    lopend: "Lopende plaatsingen volgen nadat intake en overdracht zijn gestart.",
+    "te-bevestigen": "Plaatsingen verschijnen hier zodra matching een aanbieder heeft opgeleverd.",
+    lopend: "Lopende plaatsingen ontstaan nadat een match bevestigd is en intake gepland wordt.",
     afgerond: "Afgeronde plaatsingen verschijnen nadat intake en overdracht zijn afgerond.",
   } as const;
 

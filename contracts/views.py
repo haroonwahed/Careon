@@ -3674,14 +3674,15 @@ def _build_provider_response_governance_context(placement):
 def _provider_response_status_label(status_code):
     normalized = _normalize_provider_response_status_code(status_code)
     labels = {
-        PlacementRequest.ProviderResponseStatus.PENDING: 'Nog niet vastgelegd',
-        PlacementRequest.ProviderResponseStatus.ACCEPTED: 'Geaccepteerd',
-        PlacementRequest.ProviderResponseStatus.REJECTED: 'Afgewezen',
-        PlacementRequest.ProviderResponseStatus.NEEDS_INFO: 'Aanvullende info nodig',
-        PlacementRequest.ProviderResponseStatus.WAITLIST: 'Wachtlijst',
-        PlacementRequest.ProviderResponseStatus.NO_CAPACITY: 'Geen capaciteit',
+        str(PlacementRequest.ProviderResponseStatus.PENDING): 'Nog niet vastgelegd',
+        str(PlacementRequest.ProviderResponseStatus.ACCEPTED): 'Geaccepteerd',
+        str(PlacementRequest.ProviderResponseStatus.REJECTED): 'Afgewezen',
+        str(PlacementRequest.ProviderResponseStatus.NEEDS_INFO): 'Aanvullende info nodig',
+        str(PlacementRequest.ProviderResponseStatus.WAITLIST): 'Wachtlijst',
+        str(PlacementRequest.ProviderResponseStatus.NO_CAPACITY): 'Geen capaciteit',
     }
-    return labels.get(normalized, normalized.title())
+    normalized_key = str(normalized)
+    return labels.get(normalized_key, normalized_key.title())
 
 
 def _workflow_stage_label(workflow_stage):
@@ -3785,8 +3786,10 @@ def _build_case_communication_context(*, intake, placement, provider_response_su
         flags = log_entry.adaptive_flags or {}
         if flags.get('communication_action') == 'resolve_item':
             target_id = flags.get('resolves_log_id')
+            if target_id in {None, ''}:
+                continue
             try:
-                resolved_ids.add(int(target_id))
+                resolved_ids.add(int(str(target_id)))
             except (TypeError, ValueError):
                 continue
 
@@ -4030,6 +4033,13 @@ def _provider_response_age_days(placement, hours_waiting):
     return max(int(hours_waiting // 24), 0)
 
 
+def _coerce_sla_int(value):
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return 0
+
+
 def _provider_response_actions_for_case_detail(*, normalized_status, sla_state):
     if normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
         return []
@@ -4128,11 +4138,13 @@ def _build_case_provider_response_context(*, intake, placement):
         return None, [], None
 
     normalized_status, sla, _, _ = _build_provider_response_governance_context(placement)
+    hours_waiting = _coerce_sla_int(sla['hours_waiting'])
+    next_threshold_hours = _coerce_sla_int(sla['next_threshold_hours'])
     ownership = derive_provider_response_ownership(
         provider_response_status=normalized_status,
         sla_state=sla['sla_state'],
-        hours_waiting=sla['hours_waiting'],
-        next_threshold_hours=sla['next_threshold_hours'],
+        hours_waiting=hours_waiting,
+        next_threshold_hours=next_threshold_hours,
         now=timezone.now(),
         case_phase=intake.status,
     )
@@ -4145,9 +4157,9 @@ def _build_case_provider_response_context(*, intake, placement):
         'status': normalized_status,
         'status_label': _provider_response_status_label(normalized_status),
         'sla_state': sla['sla_state'],
-        'sla_hours_waiting': sla['hours_waiting'],
-        'sla_escalates_in_hours': max(sla['next_threshold_hours'] - sla['hours_waiting'], 0) if sla['next_threshold_hours'] else 0,
-        'age_days': _provider_response_age_days(placement, sla['hours_waiting']),
+        'sla_hours_waiting': hours_waiting,
+        'sla_escalates_in_hours': max(next_threshold_hours - hours_waiting, 0) if next_threshold_hours else 0,
+        'age_days': _provider_response_age_days(placement, hours_waiting),
         'requested_at': requested_at,
         'deadline_at': placement.provider_response_deadline_at,
         'is_overdue': sla['sla_state'] in {'OVERDUE', 'ESCALATED', 'FORCED_ACTION'},
@@ -4177,10 +4189,10 @@ def _to_bool_filter(value):
 
 def _urgency_rank(urgency_code):
     ranks = {
-        CaseIntakeProcess.Urgency.CRISIS: 4,
-        CaseIntakeProcess.Urgency.HIGH: 3,
-        CaseIntakeProcess.Urgency.MEDIUM: 2,
-        CaseIntakeProcess.Urgency.LOW: 1,
+        str(CaseIntakeProcess.Urgency.CRISIS): 4,
+        str(CaseIntakeProcess.Urgency.HIGH): 3,
+        str(CaseIntakeProcess.Urgency.MEDIUM): 2,
+        str(CaseIntakeProcess.Urgency.LOW): 1,
     }
     return ranks.get(str(urgency_code or '').strip().upper(), 0)
 
@@ -4235,11 +4247,13 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
             continue
 
         sla = calculate_provider_response_sla(placement, now=timezone.now())
+        hours_waiting = _coerce_sla_int(sla['hours_waiting'])
+        next_threshold_hours = _coerce_sla_int(sla['next_threshold_hours'])
         ownership = derive_provider_response_ownership(
             provider_response_status=normalized_status,
             sla_state=sla['sla_state'],
-            hours_waiting=sla['hours_waiting'],
-            next_threshold_hours=sla['next_threshold_hours'],
+            hours_waiting=hours_waiting,
+            next_threshold_hours=next_threshold_hours,
             now=timezone.now(),
             case_phase=intake.status,
         )
@@ -4264,7 +4278,7 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
             ownership['next_action']
         )
 
-        age_days = _provider_response_age_days(placement, sla['hours_waiting'])
+        age_days = _provider_response_age_days(placement, hours_waiting)
         case_href = _case_detail_tab_href(intake.pk, 'plaatsing')
 
         resend_action = None
@@ -4291,8 +4305,8 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
                 'status': normalized_status,
                 'status_label': _provider_response_status_label(normalized_status),
                 'sla_state': sla['sla_state'],
-                'sla_hours_waiting': sla['hours_waiting'],
-                'sla_escalates_in_hours': max(sla['next_threshold_hours'] - sla['hours_waiting'], 0) if sla['next_threshold_hours'] else 0,
+                'sla_hours_waiting': hours_waiting,
+                'sla_escalates_in_hours': max(next_threshold_hours - hours_waiting, 0) if next_threshold_hours else 0,
                 'next_owner': ownership['next_owner'],
                 'next_owner_label': ownership['next_owner_label'],
                 'escalation_level_label': ownership['escalation_level_label'],

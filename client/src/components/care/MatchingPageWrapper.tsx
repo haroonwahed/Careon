@@ -1,66 +1,35 @@
 /**
- * MatchingPageWrapper - Wraps the matching decision engine detail view
+ * MatchingPageWrapper - Wraps the already-designed MatchingPageWithMap
  * Shows list view → detail view workflow
  */
 
-import { useEffect, useState } from "react";
-import { MatchingPageWithMap } from "./MatchingDecisionEnginePage";
+import { useState } from "react";
+import { MatchingPageWithMap } from "./MatchingPageWithMap";
 import { MatchingQueuePage } from "./MatchingQueuePage";
-import { apiClient } from "../../lib/apiClient";
 
 interface MatchingPageWrapperProps {
   onNavigateToCasussen?: () => void;
-  onProviderReviewStarted?: (caseId: string) => void;
-  initialCaseId?: string | null;
 }
 
-export function MatchingPageWrapper({ onNavigateToCasussen, onProviderReviewStarted, initialCaseId = null }: MatchingPageWrapperProps) {
-  const [selectedCase, setSelectedCase] = useState<string | null>(initialCaseId);
-  const [isSubmittingMatch, setIsSubmittingMatch] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (initialCaseId) {
-      setSelectedCase(initialCaseId);
-    }
-  }, [initialCaseId]);
+export function MatchingPageWrapper({ onNavigateToCasussen }: MatchingPageWrapperProps) {
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [matchConfirmed, setMatchConfirmed] = useState(false);
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
   };
 
   const handleBack = () => {
-    if (isSubmittingMatch) {
-      return;
-    }
     setSelectedCase(null);
-    setSubmitError(null);
+    setMatchConfirmed(false);
   };
 
-  const handleConfirmMatch = async (providerId: string) => {
-    if (!selectedCase || isSubmittingMatch) {
-      return;
-    }
-
-    setIsSubmittingMatch(true);
-    setSubmitError(null);
-
-    const parsedProviderId = Number.parseInt(providerId, 10);
-
-    try {
-      await apiClient.post(`/care/api/cases/${selectedCase}/matching-action/`, {
-        action: "assign",
-        provider_id: Number.isNaN(parsedProviderId) ? providerId : parsedProviderId,
-      });
-
-      onProviderReviewStarted?.(selectedCase);
-      setSelectedCase(null);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Aanbiedersverzoek kon niet verstuurd worden.";
-      setSubmitError(message);
-    } finally {
-      setIsSubmittingMatch(false);
-    }
+  const handleConfirmMatch = (providerId: string) => {
+    setMatchConfirmed(true);
+    // Could show success message, then go back to list
+    setTimeout(() => {
+      handleBack();
+    }, 2000);
   };
 
   // If case is selected, show the full matching workflow
@@ -70,8 +39,6 @@ export function MatchingPageWrapper({ onNavigateToCasussen, onProviderReviewStar
         caseId={selectedCase}
         onBack={handleBack}
         onConfirmMatch={handleConfirmMatch}
-        isSubmittingMatch={isSubmittingMatch}
-        submitError={submitError}
       />
     );
   }

@@ -50,6 +50,33 @@ interface TopBarProps {
   onLogout?: () => void;
 }
 
+function getCsrfToken(): string {
+  const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
+}
+
+function submitLogoutForm(): void {
+  const form = document.createElement("form");
+  form.method = "post";
+  form.action = "/logout/";
+  form.style.display = "none";
+
+  const csrfInput = document.createElement("input");
+  csrfInput.type = "hidden";
+  csrfInput.name = "csrfmiddlewaretoken";
+  csrfInput.value = getCsrfToken();
+  form.appendChild(csrfInput);
+
+  const nextInput = document.createElement("input");
+  nextInput.type = "hidden";
+  nextInput.name = "next";
+  nextInput.value = "/login/";
+  form.appendChild(nextInput);
+
+  document.body.appendChild(form);
+  form.submit();
+}
+
 export function TopBar({
   theme,
   onThemeToggle,
@@ -87,6 +114,12 @@ export function TopBar({
     setAccountDropdownOpen(false);
     setRoleDropdownOpen(false);
     onNotificationClick?.();
+  };
+
+  const handleLogout = () => {
+    onLogout?.();
+    setAccountDropdownOpen(false);
+    submitLogoutForm();
   };
 
   const getRoleIcon = (type: RoleType) => {
@@ -422,10 +455,7 @@ export function TopBar({
                   <div className="h-px bg-border my-1" />
 
                   <button
-                    onClick={() => {
-                      onLogout?.();
-                      setAccountDropdownOpen(false);
-                    }}
+                    onClick={handleLogout}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors text-left"
                   >
                     <LogOut size={16} className="text-red-400" />

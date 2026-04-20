@@ -21,6 +21,8 @@ The blueprint is configured for Render's free web plan. If Render still asks for
 
 The build step installs Python and Node dependencies, builds the React client, copies the generated SPA into `theme/static/spa`, then runs `collectstatic` and `migrate`.
 
+If `DATABASE_URL` is not available yet during build, the Render blueprint now uses a temporary SQLite database under `/tmp` for Django management commands. Production runtime still requires a real PostgreSQL `DATABASE_URL`.
+
 This setup expects an external PostgreSQL database. Add its connection string manually as `DATABASE_URL` in Render.
 
 Do not paste placeholder values like `:port` into `DATABASE_URL`. Use a real connection string, for example:

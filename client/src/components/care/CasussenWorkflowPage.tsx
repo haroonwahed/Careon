@@ -1,11 +1,10 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ChevronDown, Plus, Search, Send, Shuffle, SlidersHorizontal, UserCheck } from "lucide-react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Plus, Search, Shuffle, UserCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
-import { buildWorkflowCases, type WorkflowCaseView } from "../../lib/workflowUi";
-import { CasusList } from "./CasusList";
+import { buildWorkflowCases, type WorkflowBoardColumn, type WorkflowCaseView } from "../../lib/workflowUi";
 
 interface CasussenWorkflowPageProps {
   onCaseClick: (caseId: string) => void;
@@ -13,35 +12,54 @@ interface CasussenWorkflowPageProps {
   canCreateCase?: boolean;
 }
 
-type SmartFocus = "ready" | "matching" | "provider" | "urgent" | null;
+type SmartFocus = "assessment" | "matching" | "placement" | "urgent" | null;
 
-const WAITING_TIME_THRESHOLD_DAYS = 10;
-const OLD_CASE_THRESHOLD_DAYS = 3;
+const BOARD_COLUMNS: Array<{ id: WorkflowBoardColumn; label: string }> = [
+  { id: "nieuw", label: "Nieuw" },
+  { id: "in-beoordeling", label: "In beoordeling" },
+  { id: "klaar-voor-matching", label: "Klaar voor matching" },
+  { id: "in-plaatsing", label: "In plaatsing" },
+  { id: "afgerond", label: "Afgerond" },
+];
 
-function isUrgentWithoutMatch(item: WorkflowCaseView): boolean {
-  return item.urgency === "critical" && item.isBlocked;
-}
-
-function isWaitingExceeded(item: WorkflowCaseView): boolean {
-  return item.daysInCurrentPhase >= WAITING_TIME_THRESHOLD_DAYS;
-}
-
-function isOldCase(item: WorkflowCaseView): boolean {
-  return item.daysInCurrentPhase >= OLD_CASE_THRESHOLD_DAYS;
-}
-
-function cardClasses(isUrgent: boolean, isActive: boolean): string {
-  const base = "rounded-xl border bg-card p-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm";
-  if (isUrgent) {
-    return `${base} ${isActive ? "ring-2 ring-red-500/35 border-red-500/40" : "border-red-500/35 hover:border-red-500/55"}`;
+function urgencyBadgeClasses(urgency: WorkflowCaseView["urgency"]) {
+  switch (urgency) {
+    case "critical":
+      return "bg-red-500/10 text-red-400 border-red-500/30";
+    case "warning":
+      return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+    case "normal":
+      return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+    default:
+      return "bg-muted/40 text-muted-foreground border-border";
   }
-  return `${base} ${isActive ? "ring-2 ring-primary/35 border-primary/40" : "border-border hover:border-primary/45"}`;
+}
+
+function shortcutLabel(item: WorkflowCaseView) {
+  if (item.phase === "intake") return "Start beoordeling";
+  if (item.phase === "provider_beoordeling") return "Open beoordeling";
+  if (item.phase === "matching") return "Start matching";
+  if (item.phase === "plaatsing") return "Open plaatsing";
+  return "Bekijk casus";
+}
+
+function workflowStepLabel(page: WorkflowCaseView["nextBestActionUrl"]) {
+  switch (page) {
+    case "beoordelingen":
+      return "Beoordeling";
+    case "matching":
+      return "Matching";
+    case "plaatsingen":
+      return "Plaatsing";
+    case "intake":
+      return "Intake";
+    default:
+      return "Casussen";
+  }
 }
 
 export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase = false }: CasussenWorkflowPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [showFilters, setShowFilters] = useState(false);
-  const [selectedPhase, setSelectedPhase] = useState("all");
   const [selectedRegion, setSelectedRegion] = useState("all");
   const [selectedUrgency, setSelectedUrgency] = useState("all");
   const [smartFocus, setSmartFocus] = useState<SmartFocus>(null);
@@ -50,91 +68,44 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
   const { providers } = useProviders({ q: "" });
 
   const workflowCases = useMemo(() => buildWorkflowCases(cases, providers), [cases, providers]);
-
-  const regions = useMemo(() => {
-    return ["all", ...Array.from(new Set(workflowCases.map((item) => item.region).filter(Boolean)))];
-  }, [workflowCases]);
-
-  const phases = useMemo(() => {
-    return ["all", ...Array.from(new Set(workflowCases.map((item) => item.phase)))];
-  }, [workflowCases]);
+  const regions = useMemo(() => ["all", ...Array.from(new Set(workflowCases.map((item) => item.region)))], [workflowCases]);
 
   const filteredCases = useMemo(() => {
     return workflowCases.filter((item) => {
-      if (selectedPhase !== "all" && item.phase !== selectedPhase) return false;
       if (selectedRegion !== "all" && item.region !== selectedRegion) return false;
       if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) return false;
-
-      if (smartFocus === "ready" && item.phase !== "intake") return false;
-      if (smartFocus === "matching" && item.phase !== "matching") return false;
-      if (smartFocus === "provider" && item.phase !== "provider_beoordeling") return false;
-      if (smartFocus === "urgent" && !isUrgentWithoutMatch(item)) return false;
-
+      if (smartFocus === "assessment" && !(item.phase === "intake" || item.phase === "provider_beoordeling")) return false;
+      if (smartFocus === "matching" && !item.readyForMatching) return false;
+      if (smartFocus === "placement" && !item.readyForPlacement) return false;
+      if (smartFocus === "urgent" && !(item.urgency === "critical" && item.isBlocked)) return false;
       return true;
     });
-  }, [workflowCases, selectedPhase, selectedRegion, selectedUrgency, smartFocus]);
+  }, [workflowCases, selectedRegion, selectedUrgency, smartFocus]);
 
-  const sortedCases = useMemo(() => {
-    const _sentinel = '9999-12-31';
-    const rank = (item: WorkflowCaseView): number => {
-      if (isUrgentWithoutMatch(item)) return 0;
-      if (isWaitingExceeded(item)) return 1;
-      if (isOldCase(item)) return 2;
-      return 3;
-    };
+  const stripMetrics = useMemo(() => ({
+    waitingAssessment: workflowCases.filter((item) => item.phase === "intake" || item.phase === "provider_beoordeling").length,
+    readyMatching: workflowCases.filter((item) => item.readyForMatching).length,
+    waitingPlacement: workflowCases.filter((item) => item.readyForPlacement).length,
+    urgentWithoutMatch: workflowCases.filter((item) => item.urgency === "critical" && item.isBlocked).length,
+  }), [workflowCases]);
 
-    return [...filteredCases].sort((left, right) => {
-      // First: waitlist policy — validated urgent before FCFS
-      const lBucket = left.waitlistBucket ?? 1;
-      const rBucket = right.waitlistBucket ?? 1;
-      if (lBucket !== rBucket) return lBucket - rBucket;
-      if (lBucket === 0) {
-        // Both validated urgent: earliest urgency_granted_date first
-        const lDate = left.urgencyGrantedDate ?? _sentinel;
-        const rDate = right.urgencyGrantedDate ?? _sentinel;
-        if (lDate !== rDate) return lDate < rDate ? -1 : 1;
-      } else {
-        // Both normal FCFS: earliest intakeStartDate first
-        const lStart = left.intakeStartDate ?? _sentinel;
-        const rStart = right.intakeStartDate ?? _sentinel;
-        if (lStart !== rStart) return lStart < rStart ? -1 : 1;
-      }
-      // Tiebreak: urgency rank then waiting days
-      const leftRank = rank(left);
-      const rightRank = rank(right);
-      if (leftRank !== rightRank) return leftRank - rightRank;
-      if (left.daysInCurrentPhase !== right.daysInCurrentPhase) {
-        return right.daysInCurrentPhase - left.daysInCurrentPhase;
-      }
-      return left.id.localeCompare(right.id);
+  const groupedCases = useMemo(() => {
+    return BOARD_COLUMNS.reduce<Record<WorkflowBoardColumn, WorkflowCaseView[]>>((accumulator, column) => {
+      accumulator[column.id] = filteredCases
+        .filter((item) => item.boardColumn === column.id)
+        .sort((left, right) => right.daysInCurrentPhase - left.daysInCurrentPhase);
+      return accumulator;
+    }, {
+      nieuw: [],
+      "in-beoordeling": [],
+      "klaar-voor-matching": [],
+      "in-plaatsing": [],
+      afgerond: [],
     });
   }, [filteredCases]);
 
-  const stripMetrics = useMemo(() => ({
-    readyMatching: workflowCases.filter((item) => item.phase === "intake").length,
-    matchingInProgress: workflowCases.filter((item) => item.phase === "matching").length,
-    waitingProviderReview: workflowCases.filter((item) => item.phase === "provider_beoordeling").length,
-    urgentWithoutMatch: workflowCases.filter((item) => isUrgentWithoutMatch(item)).length,
-  }), [workflowCases]);
-
-  const recommendedCases = useMemo(() => {
-    return sortedCases.filter((item) => item.phase === "intake" || item.phase === "matching");
-  }, [sortedCases]);
-
   const handleCreateCase = () => {
     onCreateCase?.();
-  };
-
-  const resetFilters = () => {
-    setSearchQuery("");
-    setSelectedPhase("all");
-    setSelectedRegion("all");
-    setSelectedUrgency("all");
-    setSmartFocus(null);
-  };
-
-  const toggleSmartFocus = (focus: SmartFocus) => {
-    setSmartFocus((current) => (current === focus ? null : focus));
   };
 
   return (
@@ -142,7 +113,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen</h1>
-          <p className="text-sm text-muted-foreground">Dagelijkse workflow van matching naar aanbiederbeoordeling en intake.</p>
+          <p className="text-sm text-muted-foreground">Centrale pipeline van casus naar intake-overdracht.</p>
         </div>
         {canCreateCase && (
           <Button onClick={handleCreateCase}>
@@ -152,181 +123,158 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <button
-          type="button"
-          onClick={() => toggleSmartFocus("ready")}
-          className={cardClasses(false, smartFocus === "ready")}
-        >
-          <div className="mb-2 flex items-center justify-between">
+      <div className="rounded-2xl border border-border bg-card/45 p-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Workflow</p>
+        <p className="mt-1 text-sm text-foreground">Casus → Beoordeling → Matching → Plaatsing → Intake</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <button type="button" onClick={() => setSmartFocus(smartFocus === "assessment" ? null : "assessment")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "assessment" ? "ring-2 ring-primary/35" : "border-border"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op beoordeling</span>
+            <UserCheck size={18} className="text-blue-400" />
+          </div>
+          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingAssessment}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Nieuwe of lopende beoordelingen</p>
+        </button>
+        <button type="button" onClick={() => setSmartFocus(smartFocus === "matching" ? null : "matching")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "matching" ? "ring-2 ring-primary/35" : "border-border"}`}>
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Klaar voor matching</span>
-            <UserCheck size={16} className="text-blue-400" />
+            <Shuffle size={18} className="text-amber-400" />
           </div>
-          <p className="text-xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
-          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-2xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Assessment afgerond, klaar voor providerkeuze</p>
         </button>
-
-        <button
-          type="button"
-          onClick={() => toggleSmartFocus("matching")}
-          className={cardClasses(false, smartFocus === "matching")}
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">In matching</span>
-            <Shuffle size={16} className="text-amber-400" />
+        <button type="button" onClick={() => setSmartFocus(smartFocus === "placement" ? null : "placement")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "placement" ? "ring-2 ring-primary/35" : "border-border"}`}>
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op plaatsing</span>
+            <CheckCircle2 size={18} className="text-cyan-400" />
           </div>
-          <p className="text-xl font-semibold text-foreground">{stripMetrics.matchingInProgress}</p>
-          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingPlacement}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Klaar om bevestiging en intake te starten</p>
         </button>
-
-        <button
-          type="button"
-          onClick={() => toggleSmartFocus("provider")}
-          className={cardClasses(false, smartFocus === "provider")}
-        >
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bij aanbieder</span>
-            <Send size={16} className="text-cyan-400" />
-          </div>
-          <p className="text-xl font-semibold text-foreground">{stripMetrics.waitingProviderReview}</p>
-          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => toggleSmartFocus("urgent")}
-          className={cardClasses(true, smartFocus === "urgent")}
-        >
-          <div className="mb-2 flex items-center justify-between">
+        <button type="button" onClick={() => setSmartFocus(smartFocus === "urgent" ? null : "urgent")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "urgent" ? "ring-2 ring-primary/35" : "border-border"}`}>
+          <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgent zonder match</span>
-            <AlertTriangle size={16} className="text-red-400" />
+            <AlertTriangle size={18} className="text-red-400" />
           </div>
-          <p className="text-xl font-semibold text-foreground">{stripMetrics.urgentWithoutMatch}</p>
-          <p className="mt-2 text-xs font-medium text-primary">Bekijk casussen →</p>
+          <p className="text-2xl font-semibold text-foreground">{stripMetrics.urgentWithoutMatch}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Kritieke casussen met blokkade of geen passend aanbod</p>
         </button>
       </div>
 
-      <div className="sticky top-0 z-20 flex flex-col gap-2 rounded-3xl bg-card/90 p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <div className="min-w-0 flex-1 rounded-2xl bg-muted/45 px-3 py-2.5 flex items-center gap-2">
-            <Search className="text-muted-foreground flex-shrink-0" size={18} />
-            <Input
-              type="text"
-              placeholder="Zoek casus of cliënt"
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant={showFilters ? "default" : "outline"}
-              onClick={() => setShowFilters((v) => !v)}
-              className={showFilters ? "shadow-sm" : "border-transparent bg-muted/45 text-foreground hover:bg-muted/70"}
-            >
-              <SlidersHorizontal size={16} className="mr-2" />
-              Filters
-              {(selectedPhase !== "all" || selectedUrgency !== "all" || selectedRegion !== "all") && (
-                <span className="ml-2 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                  {[selectedPhase, selectedUrgency, selectedRegion].filter((v) => v !== "all").length}
-                </span>
-              )}
-            </Button>
-            {(selectedPhase !== "all" || selectedUrgency !== "all" || selectedRegion !== "all" || searchQuery !== "") && (
-              <Button type="button" variant="ghost" onClick={resetFilters} className="text-muted-foreground hover:text-foreground">
-                Reset
-              </Button>
-            )}
-          </div>
+      <div className="flex items-center gap-3">
+        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
+          <Search className="text-muted-foreground flex-shrink-0" size={18} />
+          <Input type="text" placeholder="Zoek casussen, cliënten, regio's..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground" />
         </div>
-
-        {showFilters && (
-          <div className="grid grid-cols-1 gap-2 pt-1 md:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Fase</label>
-              <div className="relative">
-                <select
-                  value={selectedPhase}
-                  onChange={(event) => setSelectedPhase(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
-                >
-                  <option value="all">Alle fases</option>
-                  {phases.filter((phase) => phase !== "all").map((phase) => (
-                    <option key={phase} value={phase}>{phase}</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Urgentie</label>
-              <div className="relative">
-                <select
-                  value={selectedUrgency}
-                  onChange={(event) => setSelectedUrgency(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
-                >
-                  <option value="all">Alle urgentie</option>
-                  <option value="critical">Kritiek</option>
-                  <option value="warning">Hoog</option>
-                  <option value="normal">Normaal</option>
-                  <option value="stable">Laag</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Regio</label>
-              <div className="relative">
-                <select
-                  value={selectedRegion}
-                  onChange={(event) => setSelectedRegion(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-muted/45 px-3 py-2.5 pr-8 text-sm text-foreground"
-                >
-                  <option value="all">Alle regio's</option>
-                  {regions.filter((region) => region !== "all").map((region) => (
-                    <option key={region} value={region}>{region}</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-        )}
+        <select value={selectedRegion} onChange={(event) => setSelectedRegion(event.target.value)} className="w-44 px-3 py-3 pr-10 appearance-none bg-card border border-border rounded-2xl text-sm text-foreground">
+          {regions.map((region) => (
+            <option key={region} value={region}>{region === "all" ? "Alle regio's" : region}</option>
+          ))}
+        </select>
+        <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-40 px-3 py-3 pr-10 appearance-none bg-card border border-border rounded-2xl text-sm text-foreground">
+          <option value="all">Alle urgentie</option>
+          <option value="critical">Kritiek</option>
+          <option value="warning">Hoog</option>
+          <option value="normal">Normaal</option>
+          <option value="stable">Laag</option>
+        </select>
       </div>
 
-      {!loading && !error && recommendedCases.length > 0 && (
-        <div className="rounded-2xl bg-card/55 p-4 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div>
-            <p className="text-sm font-medium text-foreground">
-              Aanbevolen actie: {recommendedCases.length} casussen vragen om matching
-            </p>
-            <p className="text-xs text-muted-foreground">Start met de hoogste prioriteit in de huidige werkvoorraad.</p>
-          </div>
-          <Button variant="outline" onClick={() => onCaseClick(recommendedCases[0].id)}>
-            Start met casus #{recommendedCases[0].id}
-          </Button>
-        </div>
-      )}
-
-      {loading && <div className="rounded-2xl bg-card p-10 text-center text-muted-foreground shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)]">Casussen laden…</div>}
+      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
 
       {!loading && error && (
-        <div className="rounded-2xl bg-card p-10 text-center space-y-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)]">
+        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
           <p className="text-base font-semibold text-foreground">Casussen konden niet geladen worden</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
         </div>
       )}
 
-      {!loading && !error && (
-        <CasusList
-          cases={sortedCases}
-          onCaseClick={onCaseClick}
-          canCreateCase={canCreateCase}
-          onCreateCase={handleCreateCase}
-        />
+      {!loading && !error && filteredCases.length === 0 && (
+        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
+          <p className="text-lg font-semibold text-foreground">Nog geen casussen in de pipeline</p>
+          <p className="text-sm text-muted-foreground">
+            {canCreateCase
+              ? "Start in de eerste workflowstap en voeg een nieuwe casus toe."
+              : "Nieuwe casussen verschijnen hier zodra ze aan jouw werkvoorraad zijn toegewezen."}
+          </p>
+          {canCreateCase && <Button onClick={handleCreateCase}>Nieuwe casus</Button>}
+        </div>
+      )}
+
+      {!loading && !error && filteredCases.length > 0 && (
+        <div className="overflow-x-auto pb-2">
+          <div className="grid min-w-[1180px] grid-cols-5 gap-4">
+            {BOARD_COLUMNS.map((column) => (
+              <section key={column.id} className="rounded-2xl border border-border bg-card/55 p-4 space-y-3">
+                <div>
+                  <h2 className="text-sm font-semibold text-foreground">{column.label}</h2>
+                  <p className="text-xs text-muted-foreground">{groupedCases[column.id].length} casussen</p>
+                </div>
+
+                <div className="space-y-3">
+                  {groupedCases[column.id].map((item) => (
+                    <button key={item.id} type="button" onClick={() => onCaseClick(item.id)} className="w-full rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{item.id}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{item.clientLabel}</p>
+                        </div>
+                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${urgencyBadgeClasses(item.urgency)}`}>
+                          {item.urgencyLabel}
+                        </span>
+                      </div>
+
+                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
+                        <div>
+                          <p>Leeftijd</p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{item.clientAge} jaar</p>
+                        </div>
+                        <div>
+                          <p>Regio</p>
+                          <p className="mt-1 text-sm font-medium text-foreground">{item.municipality}</p>
+                        </div>
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {item.tags.slice(0, 2).map((tag) => (
+                          <span key={tag} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">{tag}</span>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Fase</p>
+                          <p className="text-sm font-medium text-foreground">{item.phaseLabel}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Volgende stap</p>
+                          <p className="text-sm font-medium text-foreground">{workflowStepLabel(item.nextBestActionUrl)}</p>
+                        </div>
+                        <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
+                          event.stopPropagation();
+                          onCaseClick(item.id);
+                        }}>
+                          {shortcutLabel(item)}
+                          <ArrowRight size={14} />
+                        </Button>
+                      </div>
+                    </button>
+                  ))}
+
+                  {groupedCases[column.id].length === 0 && (
+                    <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center">
+                      <p className="text-sm font-medium text-foreground">Geen casussen</p>
+                      <p className="mt-1 text-xs text-muted-foreground">Deze kolom vult zich vanuit de vorige workflowstap.</p>
+                    </div>
+                  )}
+                </div>
+              </section>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

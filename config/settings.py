@@ -81,10 +81,14 @@ def _database_config() -> dict[str, object]:
         }
 
     if scheme == 'sqlite':
-        sqlite_path = parsed.path or '/db.sqlite3'
+        sqlite_target = database_url[len('sqlite:///'):]
+        if database_url.startswith('sqlite:////'):
+            sqlite_path = Path('/') / sqlite_target.lstrip('/')
+        else:
+            sqlite_path = BASE_DIR / sqlite_target.lstrip('/') if sqlite_target else BASE_DIR / 'db.sqlite3'
         return {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': Path(sqlite_path),
+            'NAME': sqlite_path,
         }
 
     raise _invalid_database_url(

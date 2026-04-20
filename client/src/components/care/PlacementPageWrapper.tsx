@@ -3,26 +3,18 @@
  * Shows list view → detail view workflow
  */
 
-import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState } from "react";
 import { PlacementPage } from "./PlacementPage";
 import { PlacementTrackingPage } from "./PlacementTrackingPage";
-import { useCasePlacement } from "../../hooks/useCasePlacement";
+import { useProviders } from "../../hooks/useProviders";
 
 interface PlacementPageWrapperProps {
   onNavigateToMatching?: () => void;
-  initialCaseId?: string | null;
 }
 
-export function PlacementPageWrapper({ onNavigateToMatching, initialCaseId = null }: PlacementPageWrapperProps) {
-  const [selectedCase, setSelectedCase] = useState<string | null>(initialCaseId);
-  const { placement, loading: placementLoading } = useCasePlacement(selectedCase);
-
-  useEffect(() => {
-    if (initialCaseId) {
-      setSelectedCase(initialCaseId);
-    }
-  }, [initialCaseId]);
+export function PlacementPageWrapper({ onNavigateToMatching }: PlacementPageWrapperProps) {
+  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const { providers } = useProviders({ q: "" });
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
@@ -38,17 +30,8 @@ export function PlacementPageWrapper({ onNavigateToMatching, initialCaseId = nul
 
   // If case is selected, show the full placement workflow
   if (selectedCase) {
-    if (placementLoading) {
-      return (
-        <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
-          <Loader2 size={18} className="animate-spin" />
-          <span>Plaatsing laden...</span>
-        </div>
-      );
-    }
-
-    const providerId = placement?.resolvedProviderId ?? "";
-
+    const providerId = providers[0]?.id ?? "";
+    
     return (
       <PlacementPage
         caseId={selectedCase}

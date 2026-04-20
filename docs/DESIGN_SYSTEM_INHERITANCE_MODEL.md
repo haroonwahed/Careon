@@ -12,9 +12,10 @@ Every operational page should inherit decision intelligence from Regiekamer's co
 
 ### 1. Regiekamer (Strategic Control Tower)
 
-**Role**: Full operational command center
+**Role**: Full operational command center.
 
 **Uniquely Keeps**:
+
 - Full command bar with tone-driven state
 - Bottleneck stage visualization across full flow
 - Cross-flow signal strips
@@ -22,6 +23,7 @@ Every operational page should inherit decision intelligence from Regiekamer's co
 - Global operational prioritization
 
 **Answers**:
+
 - What is wrong now?
 - What is about to go wrong?
 - What should we do first?
@@ -35,9 +37,10 @@ Every operational page should inherit decision intelligence from Regiekamer's co
 
 ### 2. Casussen (Tactical Triage Workspace)
 
-**Role**: Front-line case routing and urgency sorting
+**Role**: Front-line case routing and urgency sorting.
 
 **Should Inherit**:
+
 - Recommended action guidance
 - Why this matters language
 - Impact summary per action
@@ -47,35 +50,41 @@ Every operational page should inherit decision intelligence from Regiekamer's co
 - Escalation recommendation
 
 **Should NOT Inherit**:
+
 - Full-width command bar
 - Full-page tone system
 - Global forecasting strip overload
 
 **Best Pattern**:
+
 Each casus card shows:
-- Title / case reference
-- Urgency / stage / phase
-- 1–2 strongest signals only
+
+- Title or case reference
+- Urgency, stage, or phase
+- 1 to 2 strongest signals only
 - Recommended action
 - Impact of that action
-- Subtle rank/priority marker
+- Subtle rank or priority marker
 
 **Ideal Top Strip**:
+
+```text
+2 casussen blokkeren matching door ontbrekende beoordeling
+3 casussen hebben verhoogd risico op wachttijdoverschrijding
 ```
-"2 casussen blokkeren matching door ontbrekende beoordeling"
-"3 casussen hebben verhoogd risico op wachttijdoverschrijding"
-```
+
 Context without stealing Regiekamer's job.
 
-**Design Inheritance Level**: **HIGH** — Most like Regiekamer's operational child
+**Design Inheritance Level**: **HIGH**. Most like Regiekamer's operational child.
 
 ---
 
 ### 3. Beoordelingen (Decision Completion Workspace)
 
-**Role**: Assessment bottleneck management
+**Role**: Assessment bottleneck management.
 
 **Should Inherit**:
+
 - Bottleneck language
 - Downstream impact language
 - Urgency-aware sorting
@@ -83,39 +92,45 @@ Context without stealing Regiekamer's job.
 - Recommended next action on each item
 
 **Should NOT Inherit**:
+
 - Predictive overload
 - Multi-signal command architecture
 - Complex system-tone dominance
 
 **Best Pattern**:
+
 Each beoordeling row answers:
+
 - What is missing?
 - What is blocked because of it?
 - What should happen now?
 
 Example:
-```
-"Psychiatrische beoordeling ontbreekt"
-"Blokkeert matching voor deze casus"
-"Vraag beoordeling aan → maakt matching mogelijk"
+
+```text
+Psychiatrische beoordeling ontbreekt
+Blokkeert matching voor deze casus
+Vraag beoordeling aan -> maakt matching mogelijk
 ```
 
 **Ideal Header Pattern**:
-```
+
+```text
 Light local action banner:
-"2 urgente beoordelingen blokkeren doorstroom"
-CTA: "Werk beoordelingen af"
+2 urgente beoordelingen blokkeren doorstroom
+CTA: Werk beoordelingen af
 ```
 
-**Design Inheritance Level**: **MEDIUM-HIGH** — Sharp and consequential, calmer than Regiekamer
+**Design Inheritance Level**: **MEDIUM-HIGH**. Sharp and consequential, calmer than Regiekamer.
 
 ---
 
 ### 4. Matching (Friction Resolution Workspace)
 
-**Role**: Provider fit and capacity problem-solving
+**Role**: Provider fit and capacity problem-solving.
 
 **Should Inherit**:
+
 - No-match signals
 - Capacity-pressure language
 - Reason-for-failure explanations
@@ -124,40 +139,46 @@ CTA: "Werk beoordelingen af"
 - Local predictive signals only when relevant
 
 **Should NOT Inherit**:
+
 - Global orchestration UI
 - Full predictive layer at all times
 - Heavy command-center framing
 
 **Best Pattern**:
+
 Each matching item shows:
+
 - Provider fit status
 - Blockers
-- Capacity/wait explanation
+- Capacity or wait explanation
 - Next best action
 - Impact of action
 
 Example:
-```
-"Geen passende aanbieder gevonden"
-"Capaciteitstekort in regio Utrecht"
-"Vergroot zoekgebied → verhoogt kans op match"
+
+```text
+Geen passende aanbieder gevonden
+Capaciteitstekort in regio Utrecht
+Vergroot zoekgebied -> verhoogt kans op match
 ```
 
 **Ideal Top Strip**:
-```
-"3 casussen hebben geen match door capaciteitsdruk"
-CTA: "Bekijk matchingproblemen"
+
+```text
+3 casussen hebben geen match door capaciteitsdruk
+CTA: Bekijk matchingproblemen
 ```
 
-**Design Inheritance Level**: **HIGH** — Very operational; matching is a main pressure zone
+**Design Inheritance Level**: **HIGH**. Very operational; matching is a main pressure zone.
 
 ---
 
 ### 5. Plaatsingen (Follow-Through Workspace)
 
-**Role**: Provider response and deadline protection
+**Role**: Provider response and deadline protection.
 
 **Should Inherit**:
+
 - Waiting-on-provider signals
 - Escalation recommendations
 - Deadline risk language
@@ -165,12 +186,15 @@ CTA: "Bekijk matchingproblemen"
 - Local urgency strip
 
 **Should NOT Inherit**:
+
 - Full flow-bar command experience
 - Broad predictive summaries unrelated to placement
 - Too many competing signals
 
 **Best Pattern**:
+
 Each placement item shows:
+
 - Current status
 - Provider response state
 - Whether it is stalled
@@ -178,126 +202,143 @@ Each placement item shows:
 - Impact of action
 
 Example:
-```
-"Providerreactie blijft uit"
-"Plaatsing vertraagt"
-"Herinner aanbieder → verkleint kans op vertraging"
+
+```text
+Providerreactie blijft uit
+Plaatsing vertraagt
+Herinner aanbieder -> verkleint kans op vertraging
 
 OR
 
-"Geen reactie na 2 reminders"
-"Escalatie aanbevolen"
-"Escaleren → versnelt besluitvorming"
+Geen reactie na 2 reminders
+Escalatie aanbevolen
+Escaleren -> versnelt besluitvorming
 ```
 
-**Design Inheritance Level**: **MEDIUM-HIGH** — Flow protection, not discovery
+**Design Inheritance Level**: **MEDIUM-HIGH**. Flow protection, not discovery.
 
 ---
 
 ### 6. Zorgaanbieders (Capacity and Capability Workspace)
 
-**Role**: Provider availability and pressure monitoring
+**Role**: Provider availability and pressure monitoring.
 
 **Should Inherit**:
+
 - Capacity warning chips
 - Wait pressure indicators
 - Operational badges
 - Subtle risk summaries
 
 **Should NOT Inherit**:
+
 - Command bar
 - Triage ranking like cases
 - Heavy predictive framing across the page
 
 **Best Pattern**:
-Provider cards/rows show:
+
+Provider cards or rows show:
+
 - Capacity state
 - Wait pressure
 - Care type fit
 - Operational availability signal
 
 Example:
-```
-"Volgepland"
-"Gem. wachttijd 18 dagen"
-"Capaciteitsdruk hoog"
+
+```text
+Volgepland
+Gem. wachttijd 18 dagen
+Capaciteitsdruk hoog
 ```
 
 **Ideal Top Strip**:
-```
-"4 aanbieders in regio Amsterdam zitten op of boven capaciteit"
+
+```text
+4 aanbieders in regio Amsterdam zitten op of boven capaciteit
 ```
 
-**Design Inheritance Level**: **LOW-MEDIUM** — More resource-oriented than decision-oriented
+**Design Inheritance Level**: **LOW-MEDIUM**. More resource-oriented than decision-oriented.
 
 ---
 
 ### 7. Gemeenten / Regio / Institution Pages (Oversight Workspace)
 
-**Role**: Regional policy and capacity planning
+**Role**: Regional policy and capacity planning.
 
 **Should Inherit**:
+
 - Aggregated signal language
 - Bottleneck summaries
 - Capacity and wait pressure indicators
-- Trend/pattern strips
+- Trend or pattern strips
 
 **Should NOT Inherit**:
+
 - Case-level tactical action UI
 - Full command bar drama
 - High-frequency operational CTA behavior everywhere
 
 **Best Pattern**:
+
 Shows:
+
 - Where pressure is rising
-- Which providers/flows are under strain
+- Which providers or flows are under strain
 - What regional intervention may help
 
 Example:
-```
-"Capaciteitstekort in jeugd GGZ in regio Utrecht"
-"3 casussen wachten langer dan norm"
-"Herzie regionale spreiding"
+
+```text
+Capaciteitstekort in jeugd GGZ in regio Utrecht
+3 casussen wachten langer dan norm
+Herzie regionale spreiding
 ```
 
-**Design Inheritance Level**: **MEDIUM** — Informed and strategic, not tactical
+**Design Inheritance Level**: **MEDIUM**. Informed and strategic, not tactical.
 
 ---
 
 ### 8. Reports / Analytics (Reflection and Monitoring Workspace)
 
-**Role**: Historical pattern and intervention analysis
+**Role**: Historical pattern and intervention analysis.
 
 **Should Inherit**:
+
 - Bottleneck concepts
 - Signal categorization
 - Severity levels
 - Flow-based framing
 
 **Should NOT Inherit**:
+
 - Urgent command styling
 - Action-heavy cards everywhere
 - Strong CTA language unless operationally actionable
 
 **Best Pattern**:
+
 Reports answer:
+
 - Where pressure accumulates
 - Where delays repeat
 - What pattern needs intervention
 
 This is where Regiekamer's logic becomes historical and analytical.
 
-**Design Inheritance Level**: **MEDIUM** — Analytical reflection on orchestration
+**Design Inheritance Level**: **MEDIUM**. Analytical reflection on orchestration.
 
 ---
 
 ## App-Wide Design Primitives
 
-These 6 components should be standardized and reusable across all operational pages (Regiekamer → Beoordelingen → Matching → Plaatsingen):
+These 6 components should be standardized and reusable across all operational pages: Regiekamer, Beoordelingen, Matching, and Plaatsingen.
 
 ### 1. Recommended Action Block
 
 **Structure**:
+
 - Action (verb + target)
 - Why now (the blocker or opportunity)
 - Impact (outcome of action)
@@ -305,10 +346,11 @@ These 6 components should be standardized and reusable across all operational pa
 **Component**: `RecommendedActionBlock`
 
 **Example**:
-```
-Action: "Rond beoordeling af"
-Why: "Zonder dit kan matching niet starten"
-Impact: "Ontgrendelt vervolgstap"
+
+```text
+Action: Rond beoordeling af
+Why: Zonder dit kan matching niet starten
+Impact: Ontgrendelt vervolgstap
 ```
 
 **Usage**: Every action-oriented page should use this for consistency.
@@ -318,84 +360,91 @@ Impact: "Ontgrendelt vervolgstap"
 ### 2. Operational Signal Strip
 
 **Structure**:
-- Severity badge (critical / warning / info)
+
+- Severity badge: critical, warning, or info
 - Short issue summary
 - Optional CTA
 
 **Component**: `OperationalSignalStrip`
 
 **Example**:
-```
+
+```text
 Severity: critical
-Issue: "2 casussen overschrijden wachttijdnorm"
-CTA: (optional)
+Issue: 2 casussen overschrijden wachttijdnorm
+CTA: optional
 ```
 
-**Usage**: Local action banners on Casussen, Beoordelingen, Matching, Plaatsingen
+**Usage**: Local action banners on Casussen, Beoordelingen, Matching, and Plaatsingen.
 
 ---
 
 ### 3. Priority Badge
 
 **Variants**:
-- `priority-first` — Hoogste prioriteit
-- `priority-soon` — Eerst oppakken
-- `priority-monitor` — Monitoren
-- `priority-waiting` — Wacht op externe partij
-- `priority-escalate` — Escalatie aanbevolen
+
+- `priority-first` -> Hoogste prioriteit
+- `priority-soon` -> Eerst oppakken
+- `priority-monitor` -> Monitoren
+- `priority-waiting` -> Wacht op externe partij
+- `priority-escalate` -> Escalatie aanbevolen
 
 **Component**: `PriorityBadge`
 
-**Usage**: On every casus card and actionable item across operational pages
+**Usage**: On every casus card and actionable item across operational pages.
 
 ---
 
 ### 4. Bottleneck Badge
 
-**Variants** (used locally on pages):
-- `bottleneck-matching` — Blokkeert matching
-- `bottleneck-placement` — Blokkeert plaatsing
-- `bottleneck-assessment` — Vertraagt beoordeling
+**Variants** used locally on pages:
+
+- `bottleneck-matching` -> Blokkeert matching
+- `bottleneck-placement` -> Blokkeert plaatsing
+- `bottleneck-assessment` -> Vertraagt beoordeling
 
 **Component**: `BottleneckBadge`
 
-**Usage**: Signal that an item is blocking critical flow stages
+**Usage**: Signal that an item is blocking critical flow stages.
 
 ---
 
 ### 5. Impact Summary
 
-**Structure**: Short outcome-focused language
+**Structure**: Short outcome-focused language.
 
 **Component**: `ImpactSummary`
 
 **Examples**:
-- "Vergroot kans op match"
-- "Voorkomt SLA-overschrijding"
-- "Versnelt plaatsing"
-- "Vermindert wachttijd"
 
-**Usage**: Appear alongside every action recommendation
+- Vergroot kans op match
+- Voorkomt SLA-overschrijding
+- Versnelt plaatsing
+- Vermindert wachttijd
+
+**Usage**: Appear alongside every action recommendation.
 
 ---
 
 ### 6. Risk / Attention Band
 
-**Shared app-wide language** (severity/urgency):
-- `attention-now` — Directe actie
-- `attention-today` — Vandaag oppakken
-- `attention-monitor` — Monitoren
-- `attention-waiting` — Wacht op externe partij
+**Shared app-wide language** for severity and urgency:
+
+- `attention-now` -> Directe actie
+- `attention-today` -> Vandaag oppakken
+- `attention-monitor` -> Monitoren
+- `attention-waiting` -> Wacht op externe partij
 
 **Component**: `AttentionBand`
 
-**Usage**: Standardizes urgency language across all pages
+**Usage**: Standardizes urgency language across all pages.
 
 ---
 
 ## Implementation Roadmap
 
 ### Phase 1: Create Core Primitives
+
 1. `RecommendedActionBlock.tsx`
 2. `OperationalSignalStrip.tsx`
 3. `PriorityBadge.tsx`
@@ -404,31 +453,37 @@ CTA: (optional)
 6. `AttentionBand.tsx`
 
 ### Phase 2: Update Regiekamer
+
 - Already implements most patterns
 - Audit for consistency with primitives
 - Ensure it remains the source of truth
 
 ### Phase 3: Implement on Casussen
+
 - Add inherited decision signals
 - Use primitives for action blocks and badges
 - Top strip with local operational insight
 
 ### Phase 4: Implement on Beoordelingen
+
 - Bottleneck language throughout
 - Recommended actions with impact
 - Local urgency strip
 
 ### Phase 5: Implement on Matching
+
 - No-match signals with capacity language
 - Reason-for-failure explanations
 - Local predictive signals only
 
 ### Phase 6: Implement on Plaatsingen
+
 - Provider response state signals
 - Deadline risk language
 - Escalation recommendations
 
 ### Phase 7: Extend to Providers, Regional, Reports
+
 - Apply inheritance model at appropriate level
 - Use primitives for consistency
 
@@ -436,47 +491,51 @@ CTA: (optional)
 
 ## Design Governance Rules
 
-1. **Only Regiekamer decides global state** (tone, bottleneck, predictive signals)
-2. **Other pages inherit signals, not orchestration**
-3. **Every action must have impact language**
-4. **Every signal must indicate why it matters**
-5. **Use the 6 primitives consistently across pages**
-6. **Local context trumps global command framing**
-7. **Calm pages should never feel like Regiekamer**
-8. **Decision pages should always show recommended next action**
+1. **Only Regiekamer decides global state** for tone, bottleneck, and predictive signals.
+2. **Other pages inherit signals, not orchestration**.
+3. **Every action must have impact language**.
+4. **Every signal must indicate why it matters**.
+5. **Use the 6 primitives consistently across pages**.
+6. **Local context trumps global command framing**.
+7. **Calm pages should never feel like Regiekamer**.
+8. **Decision pages should always show recommended next action**.
 
 ---
 
 ## Vocabulary Standardization
 
-### Operational Tone (Regiekamer → Casussen inheritance)
-- ❌ "Alert" or "Notice" (too generic)
-- ✅ "Blokkeert matching" (why it matters)
-- ✅ "Overschrijdt wachttijd" (operational impact)
+### Operational Tone (Regiekamer -> Casussen inheritance)
+
+- Blokkeert matching instead of generic alert language
+- Overschrijdt wachttijd instead of neutral status language
 
 ### Recommended Action Language
-- ❌ "Open casus"
-- ✅ "Rond beoordeling af → maakt matching mogelijk"
+
+- Avoid generic "Open casus"
+- Prefer "Rond beoordeling af -> maakt matching mogelijk"
 
 ### Impact Language
-- ✅ "Vergroot kans op match"
-- ✅ "Voorkomt SLA-overschrijding"
-- ✅ "Versnelt plaatsing"
-- ✅ "Vermindert capaciteitsdruk"
+
+- Vergroot kans op match
+- Voorkomt SLA-overschrijding
+- Versnelt plaatsing
+- Vermindert capaciteitsdruk
 
 ### Priority Language
+
 - Use only the 5 variants defined above
-- Never invent new urgency/priority language
+- Never invent new urgency or priority language
 
 ---
 
-# 🔒 DESIGN SYSTEM GOVERNANCE ADDENDUM
+## Design System Governance Addendum
 
 ## Purpose
 
 This addendum enforces how the design system is used, not just what it contains.
 
 Without this, the system will slowly drift into:
+
 - Inconsistent urgency
 - Duplicated logic
 - UI overload
@@ -495,17 +554,17 @@ This prevents UI inflation and alert fatigue.
 ### Intensity Levels
 
 | Level | Description | Allowed Elements |
-|-------|-------------|------------------|
+| ----- | ----------- | ---------------- |
 | HIGH | Command center | Full command bar, multiple signal strips, predictive signals |
 | MEDIUM-HIGH | Operational pressure | 1 signal strip, priority badges, action blocks |
 | MEDIUM | Focused execution | Minimal signals, action blocks, limited badges |
 | LOW-MEDIUM | Informational | Subtle indicators only |
-| LOW | Reference / analytics | No urgency signals |
+| LOW | Reference or analytics | No urgency signals |
 
 ### Page Mapping
 
 | Page | Intensity |
-|------|-----------|
+| ---- | --------- |
 | Regiekamer | HIGH |
 | Casussen | MEDIUM-HIGH |
 | Matching | MEDIUM-HIGH |
@@ -517,21 +576,25 @@ This prevents UI inflation and alert fatigue.
 
 ### Hard Limits
 
-**Regiekamer (HIGH)**
+#### Regiekamer (HIGH)
+
 - Max 1 command bar
 - Max 3 signal strips
 - Max 1 predictive section
 
-**MEDIUM-HIGH pages** (Casussen, Matching)
+**MEDIUM-HIGH pages** such as Casussen and Matching:
+
 - Max 1 signal strip
 - Max 1 priority badge per item
 - Max 2 signals per card
 
-**MEDIUM pages** (Beoordelingen, Plaatsingen)
-- Max 1 signal strip (optional)
+**MEDIUM pages** such as Beoordelingen and Plaatsingen:
+
+- Max 1 signal strip, optional
 - Max 1 signal per item
 
-**LOW pages** (Zorgaanbieders, Regional, Reports)
+**LOW pages** such as Zorgaanbieders, Regional, and Reports:
+
 - No signal strips
 - No urgency badges
 
@@ -541,58 +604,67 @@ This prevents UI inflation and alert fatigue.
 
 ### Mandatory Primitives
 
-These MUST appear on all operational pages:
+These must appear on all operational pages.
 
-**RecommendedActionBlock**
+#### RecommendedActionBlock
 
 Required when:
+
 - User can take action
 - Item affects flow
 
-**ImpactSummary**
+#### ImpactSummary
 
 Required when:
+
 - Action is shown
 
-👉 **Rule: No action without impact**
+Rule: no action without impact.
 
 ### Conditional Primitives
 
-**OperationalSignalStrip**
+#### OperationalSignalStrip
 
 Only allowed when:
-- Real operational issue exists
-- Affects multiple items or system state
 
-NOT allowed for:
+- A real operational issue exists
+- It affects multiple items or system state
+
+Not allowed for:
+
 - Informational messages
 - Empty states
 
-**PriorityBadge**
+#### PriorityBadge
 
 Only allowed when:
+
 - Items are ranked or triaged
 
-NOT allowed for:
+Not allowed for:
+
 - Flat lists
 - Non-priority views
 
-**BottleneckBadge**
+#### BottleneckBadge
 
 Only allowed when:
-- Item actually blocks flow
 
-NOT allowed for:
+- The item actually blocks flow
+
+Not allowed for:
+
 - General warnings
 - Soft issues
 
-**AttentionBand**
+#### AttentionBand
 
 Must map to real logic:
-- `attention-now` → Directe actie
-- `attention-today` → Vandaag oppakken
-- `attention-monitor` → Monitoren
-- `attention-waiting` → Wacht op externe partij
+
+- `attention-now` -> Directe actie
+- `attention-today` -> Vandaag oppakken
+- `attention-monitor` -> Monitoren
+- `attention-waiting` -> Wacht op externe partij
 
 No custom variants allowed.
 
@@ -600,13 +672,14 @@ No custom variants allowed.
 
 ## 3. Logic vs UI Separation (Critical Rule)
 
-### Rule
+### Separation Rule
 
 UI components must never decide operational meaning.
 
 ### Logic Layer (Backend/Service)
 
 Responsible for:
+
 - `recommended_action`
 - `impact_summary`
 - `attention_band`
@@ -617,22 +690,21 @@ Responsible for:
 ### UI Layer
 
 Responsible for:
+
 - Rendering primitives
 - Visual hierarchy
 - Layout and interaction
 
-### Forbidden
+### Forbidden UI Behavior
 
-❌ UI deciding:
-- Urgency
-- Priority
-- Escalation
-- Bottlenecks
+- UI deciding urgency
+- UI deciding priority
+- UI deciding escalation
+- UI deciding bottlenecks
 
 ### Required
 
-✅ UI consumes:
-- Structured decision objects from services
+- UI consumes structured decision objects from services
 
 ---
 
@@ -644,22 +716,19 @@ Operational logic must be centralized.
 
 ### Required Pattern
 
-- Regiekamer service = source
-- Other pages consume same logic
+- Regiekamer service is the source
+- Other pages consume the same logic
 - No page-specific logic forks
 
 ### Forbidden
 
-❌ This:
-- "Quick fix" logic in templates
+- Quick-fix logic in templates
 - Duplicated conditions in views
 - Slightly different rules per page
 
 ### Reason
 
-Without this:
-- Same case shows different states per page
-- Users lose trust immediately
+Without this, the same case shows different states per page and users lose trust immediately.
 
 ---
 
@@ -667,69 +736,62 @@ Without this:
 
 ### Approved Language Only
 
-**Signals**
-- "Blokkeert matching"
-- "Overschrijdt wachttijd"
-- "Capaciteitstekort"
+#### Signals
 
-**Actions**
-- "Rond beoordeling af"
-- "Start matching"
-- "Escaleren"
+- Blokkeert matching
+- Overschrijdt wachttijd
+- Capaciteitstekort
 
-**Impact**
-- "Vergroot kans op match"
-- "Versnelt plaatsing"
-- "Voorkomt SLA-overschrijding"
+#### Actions
+
+- Rond beoordeling af
+- Start matching
+- Escaleren
+
+#### Impact
+
+- Vergroot kans op match
+- Versnelt plaatsing
+- Voorkomt SLA-overschrijding
 
 ### Forbidden Language
 
-❌ Generic:
-- "Bekijk"
-- "Open"
-- "Details"
-- "Status"
-- "Info"
+Generic:
 
-❌ Vague:
-- "Let op"
-- "Mogelijk probleem"
-- "Controleer dit"
+- Bekijk
+- Open
+- Details
+- Status
+- Info
 
-### Rule
+Vague:
+
+- Let op
+- Mogelijk probleem
+- Controleer dit
+
+### Message Rule
 
 Every message must answer:
-1. What is wrong
-2. Why it matters
-3. What to do
+
+1. What is wrong.
+2. Why it matters.
+3. What to do.
 
 ---
 
 ## 6. Anti-Patterns (Strictly Forbidden)
 
-### 1. Command Bar Everywhere
-Only Regiekamer gets full command bar.
-
-### 2. Signal Overload
-More signals ≠ better UX
-
-### 3. Predictive Noise
-Predictions only when they change action.
-
-### 4. Fake Priority
-No priority badges without real ranking logic.
-
-### 5. Action Without Impact
-Every action must explain outcome.
-
-### 6. Conflicting States
-Same case cannot:
-- Be "Directe actie" on one page
-- And "Monitoren" on another
+1. Command bar everywhere. Only Regiekamer gets a full command bar.
+2. Signal overload. More signals do not equal better UX.
+3. Predictive noise. Predictions only matter when they change action.
+4. Fake priority. No priority badges without real ranking logic.
+5. Action without impact. Every action must explain outcome.
+6. Conflicting states. The same case cannot be `Directe actie` on one page and `Monitoren` on another.
 
 ---
 
-## 7. Operational Contract (Backend ↔ UI)
+## 7. Operational Contract (Backend -> UI)
 
 ### Standard Fields
 
@@ -749,7 +811,7 @@ Every operational item should support:
 ### Usage
 
 | Field | Used by |
-|-------|---------|
+| ----- | ------- |
 | `recommended_action` | All pages |
 | `impact_summary` | All actions |
 | `attention_band` | Casussen, Matching |
@@ -764,20 +826,23 @@ Every operational item should support:
 ### Before Adding UI
 
 Ask:
+
 1. Does this signal change action?
 2. Is this already shown elsewhere?
 3. Is this derived from shared logic?
 
-If NO → do not add it
+If the answer is no, do not add it.
 
 ### Before Adding Logic
 
 Ask:
+
 1. Does this exist in Regiekamer logic?
 2. Can this be reused?
 
-If YES → reuse  
-If NO → extend shared service
+If yes, reuse it.
+
+If no, extend the shared service.
 
 ---
 
@@ -785,12 +850,12 @@ If NO → extend shared service
 
 The system is correct when:
 
-✅ Every page feels consistent but not identical  
-✅ Users always know what to do next  
-✅ Signals are rare but meaningful  
-✅ No duplicated logic exists  
-✅ Actions always explain impact  
-✅ Urgency is trustworthy  
+- Every page feels consistent but not identical
+- Users always know what to do next
+- Signals are rare but meaningful
+- No duplicated logic exists
+- Actions always explain impact
+- Urgency is trustworthy
 
 ---
 
