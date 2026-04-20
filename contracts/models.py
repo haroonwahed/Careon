@@ -1079,6 +1079,17 @@ class PlacementRequest(models.Model):
         verbose_name='Plaatsingskwaliteit vastgelegd door',
     )
 
+    # Decision intelligence observability: predicted confidence score at the
+    # time the provider was selected.  Written once; never updated.
+    # 0.0–1.0 float from build_v3_evidence(); None when intelligence was not
+    # run (e.g. legacy records or placements created before V3 rollout).
+    predicted_confidence = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Voorspeld vertrouwensniveau',
+        help_text='Confidence score van de V3 intelligence op het moment van aanbiedersselectie (0.0–1.0).',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

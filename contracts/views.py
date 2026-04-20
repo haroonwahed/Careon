@@ -7909,3 +7909,58 @@ def resolve_alert(request, alert_pk):
     else:
         next_url = fallback
     return redirect(next_url)
+
+
+# ---------------------------------------------------------------------------
+# Intelligence observability report (staff / admin only)
+# ---------------------------------------------------------------------------
+
+@login_required
+def intelligence_observability_report(request):
+    """Lightweight developer/admin observability report for V3 decision intelligence.
+
+    Shows:
+    - Predicted confidence vs actual provider acceptance rate (bucketed)
+    - Predicted confidence vs placement success rate (bucketed)
+    - Predicted confidence vs intake started on time (bucketed)
+    - Rejection reason distribution (by reason code, care category, provider)
+    - Repeated rejection patterns (cases/providers with ≥2 rejections)
+    - Weak-match false positive rate
+
+    Access restricted to staff or organization owners to avoid exposing
+    aggregate operational data to regular users.
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_observability import observability_summary
+    from .tenancy import get_user_organization
+
+    org = get_user_organization(request.user)
+
+    # Optional care category filter from query string
+    care_category_filter = (request.GET.get('care_category') or '').strip()
+
+    try:
+        summary = observability_summary(org=org)
+    except Exception:  # pragma: no cover – DB unavailable in some test envs
+        summary = {}
+
+    # Build rejection distribution with optional filter
+    if care_category_filter:
+        from .intelligence_observability import rejection_reason_distribution
+        try:
+            filtered_rejection_dist = rejection_reason_distribution(
+                org=org,
+                care_category=care_category_filter,
+            )
+        except Exception:  # pragma: no cover
+            filtered_rejection_dist = []
+    else:
+        filtered_rejection_dist = summary.get('rejection_reason_distribution', [])
+
+    return render(request, 'contracts/intelligence_observability_report.html', {
+        'summary': summary,
+        'filtered_rejection_distribution': filtered_rejection_dist,
+        'care_category_filter': care_category_filter,
+    })

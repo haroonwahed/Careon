@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Intelligence Observability Rapport - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Intelligence Observability Rapport</h1>
+            <p class="ds-analytics-sub">V3 beslissingsintelligentie — kalibratie & kwaliteitsmeting</p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ── Care category filter ─────────────────────────────────────────────── #}
+    <form method="get" class="ds-list-filters" style="margin-bottom:1.5rem">
+        <div>
+            <label for="care-category-filter" class="ds-list-filter-label">Filter op zorgcategorie</label>
+            <input
+                id="care-category-filter"
+                name="care_category"
+                type="text"
+                value="{{ care_category_filter }}"
+                placeholder="bijv. Jeugd"
+                style="padding:0.35rem 0.6rem;border:1px solid var(--border-subtle);border-radius:4px;background:var(--surface-raised);color:var(--text-primary);"
+            >
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm">Filteren</button>
+        {% if care_category_filter %}
+        <a href="{% url 'careon:intelligence_observability_report' %}" class="btn btn-ghost btn-sm">Wis filter</a>
+        {% endif %}
+    </form>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 1 · Confidence vs provider acceptance                                  #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">1. Voorspeld vertrouwen vs. aanbiederacceptatie</h2>
+        <p class="ds-card-sub">Acceptatiepercentage per confidence-bucket (op basis van <code>predicted_confidence</code>).</p>
+        <table class="ds-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Bucket</th>
+                    <th class="text-right">Indicaties</th>
+                    <th class="text-right">Geaccepteerd</th>
+                    <th class="text-right">Acceptatiegraad</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in summary.confidence_vs_acceptance %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td class="text-right">{{ row.total }}</td>
+                    <td class="text-right">{{ row.accepted }}</td>
+                    <td class="text-right">
+                        {% if row.acceptance_rate is not None %}
+                            {{ row.acceptance_rate|floatformat:1 }}%
+                        {% else %}
+                            <span class="ds-text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="ds-text-muted">Geen data beschikbaar.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 2 · Confidence vs placement success                                    #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">2. Voorspeld vertrouwen vs. plaatsingssucces</h2>
+        <p class="ds-card-sub">Plaatsingssucces = <code>placement_quality_status = GOOD_FIT</code>.</p>
+        <table class="ds-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Bucket</th>
+                    <th class="text-right">Indicaties</th>
+                    <th class="text-right">Succesvolle plaatsing</th>
+                    <th class="text-right">Slagingspercentage</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in summary.confidence_vs_placement %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td class="text-right">{{ row.total }}</td>
+                    <td class="text-right">{{ row.successful }}</td>
+                    <td class="text-right">
+                        {% if row.success_rate is not None %}
+                            {{ row.success_rate|floatformat:1 }}%
+                        {% else %}
+                            <span class="ds-text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="ds-text-muted">Geen data beschikbaar.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 3 · Confidence vs intake on time                                       #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">3. Voorspeld vertrouwen vs. intakestatus</h2>
+        <p class="ds-card-sub">Intake op tijd gestart = <code>intake_outcome_status = COMPLETED</code>.</p>
+        <table class="ds-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Bucket</th>
+                    <th class="text-right">Indicaties</th>
+                    <th class="text-right">Intake afgerond</th>
+                    <th class="text-right">Intakegraad</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in summary.confidence_vs_intake %}
+                <tr>
+                    <td>{{ row.label }}</td>
+                    <td class="text-right">{{ row.total }}</td>
+                    <td class="text-right">{{ row.intake_started }}</td>
+                    <td class="text-right">
+                        {% if row.intake_rate is not None %}
+                            {{ row.intake_rate|floatformat:1 }}%
+                        {% else %}
+                            <span class="ds-text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="ds-text-muted">Geen data beschikbaar.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 4 · Rejection reason distribution                                      #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">4. Afwijzingsreden-distributie
+            {% if care_category_filter %}
+                <span class="ds-badge ds-badge--info">{{ care_category_filter }}</span>
+            {% endif %}
+        </h2>
+        <p class="ds-card-sub">Afwijzingen gegroepeerd op redencode, zorgcategorie en aanbieder.</p>
+        <table class="ds-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Redencode</th>
+                    <th>Zorgcategorie</th>
+                    <th>Aanbieder</th>
+                    <th class="text-right">Aantal</th>
+                    <th class="text-right">% van alle afwijzingen</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in filtered_rejection_distribution %}
+                <tr>
+                    <td><code>{{ row.reason_code }}</code></td>
+                    <td>{{ row.care_category }}</td>
+                    <td>{{ row.provider_name }}</td>
+                    <td class="text-right">{{ row.count }}</td>
+                    <td class="text-right">
+                        {% if row.pct_of_rejections is not None %}
+                            {{ row.pct_of_rejections|floatformat:1 }}%
+                        {% else %}
+                            <span class="ds-text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5" class="ds-text-muted">Geen afwijzingen gevonden{% if care_category_filter %} voor "{{ care_category_filter }}"{% endif %}.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 5 · Repeated rejection patterns                                        #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">5. Herhaalde afwijzingspatronen</h2>
+        <p class="ds-card-sub">Casus/aanbieder-combinaties met ≥ 2 afwijzingen.</p>
+        <table class="ds-table" style="width:100%">
+            <thead>
+                <tr>
+                    <th>Casus ID</th>
+                    <th>Aanbieder</th>
+                    <th class="text-right">Afwijzingen</th>
+                    <th>Redencodes</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in summary.repeated_rejection_patterns %}
+                <tr>
+                    <td>{% if row.case_id %}<code>#{{ row.case_id }}</code>{% else %}<span class="ds-text-muted">—</span>{% endif %}</td>
+                    <td>{{ row.provider_name }}</td>
+                    <td class="text-right">
+                        <span class="ds-badge {% if row.rejection_count >= 3 %}ds-badge--danger{% else %}ds-badge--warning{% endif %}">
+                            {{ row.rejection_count }}
+                        </span>
+                    </td>
+                    <td>
+                        {% for code in row.reason_codes %}
+                            <code style="margin-right:4px">{{ code }}</code>
+                        {% endfor %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="4" class="ds-text-muted">Geen herhaalde afwijzingspatronen gevonden.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 6 · Weak-match false positive rate                                     #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {% with fp=summary.weak_match_false_positive_rate %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">6. Zwakke-match fout-positief rate</h2>
+        <p class="ds-card-sub">
+            Een fout-positief is een door de intelligentie als "zwak" gemarkeerde match
+            (<code>predicted_confidence &lt; 0.50</code>) die toch succesvol bleek
+            (aanbieder geaccepteerd + <code>GOOD_FIT</code>).
+        </p>
+        {% if fp %}
+        <div class="ds-kpi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-top:1rem">
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">Indicaties met confidence</div>
+                <div class="ds-kpi-value">{{ fp.total_with_confidence }}</div>
+            </div>
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">Zwakke-match alerts</div>
+                <div class="ds-kpi-value">{{ fp.weak_match_flagged }}</div>
+            </div>
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">Fout-positieven</div>
+                <div class="ds-kpi-value {% if fp.false_positive_rate and fp.false_positive_rate > 0.25 %}ds-kpi-value--danger{% endif %}">
+                    {{ fp.false_positives }}
+                </div>
+            </div>
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">FP-rate</div>
+                <div class="ds-kpi-value">
+                    {% if fp.false_positive_rate is not None %}
+                        {{ fp.false_positive_rate|floatformat:1 }}%
+                    {% else %}
+                        <span class="ds-text-muted">—</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">Echte positieven</div>
+                <div class="ds-kpi-value">{{ fp.true_positives }}</div>
+            </div>
+            <div class="ds-kpi-card">
+                <div class="ds-kpi-label">TP-rate</div>
+                <div class="ds-kpi-value">
+                    {% if fp.true_positive_rate is not None %}
+                        {{ fp.true_positive_rate|floatformat:1 }}%
+                    {% else %}
+                        <span class="ds-text-muted">—</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="ds-text-muted">Geen data beschikbaar.</p>
+        {% endif %}
+    </section>
+    {% endwith %}
+
+</div>{# /ds-analytics-shell #}
+</div>{# /page-wrap #}
+{% endblock %}
