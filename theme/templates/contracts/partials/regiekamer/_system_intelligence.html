@@ -42,6 +42,12 @@
       </span>
     </div>
     <div class="rgk-metric-row">
+      <span>Afwijzingen aanbieder</span>
+      <span class="rgk-metric-val {% if system_intelligence.metrics.provider_rejections > 0 %}tone-crit{% endif %}">
+        {{ system_intelligence.metrics.provider_rejections }}
+      </span>
+    </div>
+    <div class="rgk-metric-row">
       <span>Plaatsingen vast</span>
       <span class="rgk-metric-val {% if system_intelligence.metrics.stalled_cases > 0 %}tone-warn{% endif %}">
         {{ system_intelligence.metrics.stalled_cases }}
@@ -62,22 +68,24 @@
   </div>
 </div>
 
-{# ── Quick filters ── #}
+{# ── Quick filters (V3 taxonomy) ── #}
 <div class="rgk-intel-section">
   <h3>Snelfilters</h3>
   <div class="rgk-filter-pills">
     <a href="{% url 'careon:regiekamer' %}" class="rgk-pill{% if not filter_type %} is-active{% endif %}">Alles</a>
     <a href="{% url 'careon:regiekamer' %}?filter=urgent_unmatched_case"
        class="rgk-pill{% if filter_type == 'urgent_unmatched_case' %} is-active{% endif %}">Urgent zonder match</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=provider_rejected_case"
+       class="rgk-pill{% if filter_type == 'provider_rejected_case' %} is-active{% endif %}">Afwijzing aanbieder</a>
     <a href="{% url 'careon:regiekamer' %}?filter=placement_stalled"
        class="rgk-pill{% if filter_type == 'placement_stalled' %} is-active{% endif %}">Plaatsing vast</a>
     <a href="{% url 'careon:regiekamer' %}?filter=no_capacity_available"
        class="rgk-pill{% if filter_type == 'no_capacity_available' %} is-active{% endif %}">Geen capaciteit</a>
-    <a href="{% url 'careon:regiekamer' %}?filter=weak_match_needs_review"
-       class="rgk-pill{% if filter_type == 'weak_match_needs_review' %} is-active{% endif %}">Zwakke match</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=weak_match_needs_verification"
+       class="rgk-pill{% if filter_type == 'weak_match_needs_verification' %} is-active{% endif %}">Zwakke match</a>
+    <a href="{% url 'careon:regiekamer' %}?filter=missing_summary"
+       class="rgk-pill{% if filter_type == 'missing_summary' %} is-active{% endif %}">Samenvatting</a>
     <a href="{% url 'careon:regiekamer' %}?filter=missing_critical_data"
        class="rgk-pill{% if filter_type == 'missing_critical_data' %} is-active{% endif %}">Ontbrekende data</a>
-    <a href="{% url 'careon:regiekamer' %}?filter=incomplete_beoordeling"
-       class="rgk-pill{% if filter_type == 'incomplete_beoordeling' %} is-active{% endif %}">Beoordeling open</a>
   </div>
 </div>

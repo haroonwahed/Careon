@@ -35,9 +35,15 @@
     <strong>{{ active_workspace.care_category|truncatechars:20 }}</strong>
   </div>
   {% endif %}
+  {% if active_workspace.alert.stage %}
+  <div class="rgk-ws-chip">
+    <span>Fase signaal</span>
+    <strong style="text-transform:capitalize;">{{ active_workspace.alert.stage|cut:"_" }}</strong>
+  </div>
+  {% endif %}
 </div>
 
-{# ── Flow timeline ── #}
+{# ── V3 flow timeline: Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake ── #}
 <div class="rgk-timeline">
   {% for step in active_workspace.timeline %}
   <div class="rgk-tstep{% if step.done %} is-done{% endif %}{% if step.active %} is-active{% endif %}">
@@ -52,11 +58,11 @@
   {% if active_workspace.case_detail_url %}
   <a href="{{ active_workspace.case_detail_url }}" class="btn btn-ghost btn-sm">Open casus</a>
   {% endif %}
-  {% if active_workspace.placement_url %}
-  <a href="{{ active_workspace.placement_url }}" class="btn btn-ghost btn-sm">Open plaatsing</a>
-  {% endif %}
   {% if active_workspace.matching_url %}
   <a href="{{ active_workspace.matching_url }}" class="btn btn-ghost btn-sm">Matching bekijken</a>
+  {% endif %}
+  {% if active_workspace.placement_url %}
+  <a href="{{ active_workspace.placement_url }}" class="btn btn-ghost btn-sm">Plaatsing bekijken</a>
   {% endif %}
 </div>
 
@@ -104,20 +110,63 @@
   </div>
 </div>
 
-{# ── Alert-type-specific advice ── #}
+{# ── Decision evidence block ── #}
+{% if active_workspace.fit_summary or active_workspace.confidence or active_workspace.factor_breakdown or active_workspace.trade_offs %}
+<div class="rgk-decision-card" style="margin-bottom:14px;">
+  <div class="rgk-dc-hdr">
+    <h3 style="font-size:14px;">Beslissingsonderbouwing</h3>
+  </div>
+  {% if active_workspace.fit_summary %}
+  <div class="rgk-dc-block" style="margin-bottom:10px;">
+    <span class="rgk-dc-label">Fit samenvatting</span>
+    <span style="font-size:13px;">{{ active_workspace.fit_summary }}</span>
+  </div>
+  {% endif %}
+  {% if active_workspace.confidence %}
+  <div class="rgk-dc-block" style="margin-bottom:10px;">
+    <span class="rgk-dc-label">Matchvertrouwen</span>
+    <strong>{{ active_workspace.confidence }}</strong>
+  </div>
+  {% endif %}
+  {% if active_workspace.factor_breakdown %}
+  <div class="rgk-dc-block" style="margin-bottom:10px;">
+    <span class="rgk-dc-label">Factoranalyse</span>
+    <span style="font-size:12px;color:var(--app-muted);">{{ active_workspace.factor_breakdown }}</span>
+  </div>
+  {% endif %}
+  {% if active_workspace.trade_offs %}
+  <div class="rgk-dc-block">
+    <span class="rgk-dc-label">Afwegingen</span>
+    <span style="font-size:12px;color:var(--app-muted);">{{ active_workspace.trade_offs }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+{# ── Alert-type-specific advice (V3 dispatch) ── #}
 {% with alert_type=active_workspace.alert.alert_type %}
 {% if alert_type == 'missing_critical_data' %}
   {% include "contracts/partials/regiekamer/workspace/_missing_data_advice.html" %}
-{% elif alert_type == 'incomplete_beoordeling' %}
-  {% include "contracts/partials/regiekamer/workspace/_beoordeling_advice.html" %}
+{% elif alert_type == 'missing_summary' %}
+  {% include "contracts/partials/regiekamer/workspace/_missing_summary_advice.html" %}
+{% elif alert_type == 'summary_missing_or_stale' %}
+  {% include "contracts/partials/regiekamer/workspace/_summary_stale_advice.html" %}
 {% elif alert_type == 'urgent_unmatched_case' %}
   {% include "contracts/partials/regiekamer/workspace/_matching_advice.html" %}
-{% elif alert_type == 'weak_match_needs_review' %}
+{% elif alert_type == 'weak_match_needs_verification' %}
   {% include "contracts/partials/regiekamer/workspace/_weak_match_advice.html" %}
+{% elif alert_type == 'provider_review_pending' %}
+  {% include "contracts/partials/regiekamer/workspace/_provider_review_pending_advice.html" %}
+{% elif alert_type == 'provider_rejected_case' %}
+  {% include "contracts/partials/regiekamer/workspace/_provider_rejected_advice.html" %}
+{% elif alert_type == 'provider_capacity_risk' %}
+  {% include "contracts/partials/regiekamer/workspace/_capacity_risk_advice.html" %}
+{% elif alert_type == 'no_capacity_available' %}
+  {% include "contracts/partials/regiekamer/workspace/_no_capacity_advice.html" %}
 {% elif alert_type == 'placement_stalled' %}
   {% include "contracts/partials/regiekamer/workspace/_placement_stalled_advice.html" %}
-{% elif alert_type == 'no_capacity_available' %}
-  {% include "contracts/partials/regiekamer/workspace/_capacity_risk_advice.html" %}
+{% elif alert_type == 'intake_not_started' %}
+  {% include "contracts/partials/regiekamer/workspace/_intake_not_started_advice.html" %}
 {% endif %}
 {% endwith %}
 

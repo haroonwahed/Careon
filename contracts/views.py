@@ -7293,57 +7293,120 @@ def simulation_dashboard(request):
 # REGIEKAMER – OPERATIONAL CONTROL TOWER (V2)
 # ============================================================
 
-# ── Alert type UI metadata ──────────────────────────────────
+# ── V3 alert type UI metadata ────────────────────────────────
+# stage aligns with Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake
 _ALERT_TYPE_UI = {
-    'urgent_unmatched_case': {
-        'label': 'Geen match voor urgente casus',
-        'action_label': 'Start matching',
-        'action_url_name': 'careon:matching_dashboard',
-        'action_uses_pk': False,
-        'impact': 'Blokkeert plaatsing',
-        'tone': 'critical',
-    },
-    'incomplete_beoordeling': {
-        'label': 'Beoordeling onvolledig',
-        'action_label': 'Voltooi beoordeling',
-        'action_url_name': 'careon:assessment_detail',
-        'action_uses_pk': True,  # pk = case_assessment pk (resolved in view)
-        'impact': 'Volgende stap geblokkeerd',
-        'tone': 'warning',
-    },
     'missing_critical_data': {
         'label': 'Kritieke gegevens ontbreken',
-        'action_label': 'Vul casus aan',
+        'action_label': 'Casus aanvullen',
         'action_url_name': 'careon:case_update',
-        'action_uses_pk': True,  # pk = case pk
-        'impact': 'Besluitvorming onbetrouwbaar',
+        'action_uses_pk': True,
+        'impact': 'Matching en samenvatting zijn onbetrouwbaar',
         'tone': 'warning',
+        'stage': 'casus',
     },
-    'weak_match_needs_review': {
-        'label': 'Zwakke match vereist review',
-        'action_label': 'Review match',
+    'missing_summary': {
+        'label': 'Samenvatting ontbreekt',
+        'action_label': 'Casus aanvullen',
+        'action_url_name': 'careon:case_update',
+        'action_uses_pk': True,
+        'impact': 'Geen heldere basis voor matching',
+        'tone': 'warning',
+        'stage': 'samenvatting',
+    },
+    'summary_missing_or_stale': {
+        'label': 'Samenvatting verouderd of incompleet',
+        'action_label': 'Casus bekijken',
+        'action_url_name': 'careon:case_detail',
+        'action_uses_pk': True,
+        'impact': 'Besluitvorming is gebaseerd op verouderde context',
+        'tone': 'medium',
+        'stage': 'samenvatting',
+    },
+    'urgent_unmatched_case': {
+        'label': 'Urgente casus zonder match',
+        'action_label': 'Matching openen',
         'action_url_name': 'careon:matching_dashboard',
         'action_uses_pk': False,
-        'impact': 'Verhoogd plaatsingsrisico',
+        'impact': 'Direct risico op vertraging in zorgstart',
+        'tone': 'critical',
+        'stage': 'matching',
+    },
+    'weak_match_needs_verification': {
+        'label': 'Zwakke match vereist verificatie',
+        'action_label': 'Match verifiëren',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Verhoogde kans op afwijzing door aanbieder',
         'tone': 'medium',
+        'stage': 'matching',
+    },
+    'provider_review_pending': {
+        'label': 'Aanbieder beoordeling wacht op actie',
+        'action_label': 'Plaatsing openen',
+        'action_url_name': 'careon:placement_detail',
+        'action_uses_pk': True,
+        'impact': 'Casus wacht op acceptatie of afwijzing',
+        'tone': 'medium',
+        'stage': 'aanbieder_beoordeling',
+    },
+    'provider_rejected_case': {
+        'label': 'Casus afgewezen door aanbieder',
+        'action_label': 'Afwijzing beoordelen',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Nieuwe match of herpositionering nodig',
+        'tone': 'critical',
+        'stage': 'aanbieder_beoordeling',
+    },
+    'provider_capacity_risk': {
+        'label': 'Capaciteitsrisico bij aanbieder',
+        'action_label': 'Aanbieder controleren',
+        'action_url_name': 'careon:client_list',
+        'action_uses_pk': False,
+        'impact': 'Hoge kans op vertraging of afwijzing',
+        'tone': 'medium',
+        'stage': 'aanbieder_beoordeling',
+    },
+    'no_capacity_available': {
+        'label': 'Geen capaciteit beschikbaar',
+        'action_label': 'Alternatieven zoeken',
+        'action_url_name': 'careon:matching_dashboard',
+        'action_uses_pk': False,
+        'impact': 'Plaatsing kan niet doorgaan',
+        'tone': 'critical',
+        'stage': 'matching',
     },
     'placement_stalled': {
         'label': 'Plaatsing loopt vast',
-        'action_label': 'Bevestig plaatsing',
+        'action_label': 'Plaatsing openen',
         'action_url_name': 'careon:placement_detail',
-        'action_uses_pk': True,  # pk = placement pk
-        'impact': 'Doorlooptijd loopt op',
+        'action_uses_pk': True,
+        'impact': 'Geaccepteerde casus stroomt niet door',
         'tone': 'critical',
+        'stage': 'plaatsing',
     },
-    'no_capacity_available': {
-        'label': 'Capaciteitsrisico aanbieder',
-        'action_label': 'Herstart matching',
-        'action_url_name': 'careon:matching_dashboard',
-        'action_uses_pk': False,
-        'impact': 'Kans op afwijzing of vertraging',
-        'tone': 'medium',
+    'intake_not_started': {
+        'label': 'Intake nog niet gestart',
+        'action_label': 'Intake openen',
+        'action_url_name': 'careon:intake_detail',
+        'action_uses_pk': True,
+        'impact': 'Zorg start later dan gepland',
+        'tone': 'low',
+        'stage': 'intake',
     },
 }
+
+# ── Backward-compatible aliases for legacy alert type names ──
+_ALERT_TYPE_ALIASES = {
+    'incomplete_beoordeling': 'missing_summary',
+    'weak_match_needs_review': 'weak_match_needs_verification',
+}
+
+
+def _normalize_alert_type(alert_type):
+    """Map legacy alert type names to V3-aligned equivalents."""
+    return _ALERT_TYPE_ALIASES.get(alert_type, alert_type)
 
 _SEVERITY_RANK = {'CRITICAL': 0, 'HIGH': 1, 'MEDIUM': 2, 'LOW': 3}
 
@@ -7372,17 +7435,16 @@ def _urgency_band(alert):
 
 def _build_queue_item(alert):
     case = alert.case
-    ui = _ALERT_TYPE_UI.get(alert.alert_type, {})
+    normalized_type = _normalize_alert_type(alert.alert_type)
+    ui = _ALERT_TYPE_UI.get(normalized_type, {})
     # Resolve action URL
     action_url = None
     try:
         if ui.get('action_uses_pk'):
-            if alert.alert_type == 'placement_stalled' and alert.placement_id:
+            if normalized_type == 'placement_stalled' and alert.placement_id:
                 action_url = reverse('careon:placement_detail', args=[alert.placement_id])
-            elif alert.alert_type == 'incomplete_beoordeling' and case and hasattr(case, 'case_assessment'):
-                assessment = getattr(case, 'case_assessment', None)
-                if assessment:
-                    action_url = reverse('careon:assessment_detail', args=[assessment.pk])
+            elif normalized_type == 'provider_review_pending' and alert.placement_id:
+                action_url = reverse('careon:placement_detail', args=[alert.placement_id])
             elif case:
                 action_url = reverse(ui['action_url_name'], args=[case.pk])
         elif ui.get('action_url_name'):
@@ -7402,7 +7464,8 @@ def _build_queue_item(alert):
         'case_label': case.title if case else 'Onbekende casus',
         'severity': alert.severity,
         'severity_lower': alert.severity.lower(),
-        'alert_type': alert.alert_type,
+        'alert_type': normalized_type,
+        'alert_type_raw': alert.alert_type,
         'title': alert.title,
         'description': alert.description,
         'recommended_action': alert.recommended_action,
@@ -7410,6 +7473,7 @@ def _build_queue_item(alert):
         'action_url': action_url,
         'impact': ui.get('impact', ''),
         'tone': ui.get('tone', 'medium'),
+        'stage': ui.get('stage', ''),
         'hours_open': _hours_open(alert),
         'urgency_band': _urgency_band(alert),
         'priority_score': _priority_score(alert),
@@ -7417,21 +7481,61 @@ def _build_queue_item(alert):
     }
 
 
+def _build_v3_timeline(case, selected_alert=None):
+    """Build the V3 6-step flow timeline: Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake."""
+    _V3_PHASE_ORDER = {
+        'casus': 0,
+        'samenvatting': 1,
+        'matching': 2,
+        'aanbieder_beoordeling': 3,
+        'plaatsing': 4,
+        'intake': 5,
+        'afgerond': 6,
+    }
+    # Map CaseIntakeProcess.ProcessStatus values to V3 stages for done-state inference
+    _STATUS_TO_V3_STAGE = {
+        'INTAKE': 'casus',
+        'MATCHING': 'matching',
+        'DECISION': 'aanbieder_beoordeling',
+        'COMPLETED': 'afgerond',
+        'ON_HOLD': 'casus',
+    }
+    current_alert_stage = None
+    if selected_alert:
+        normalized = _normalize_alert_type(selected_alert.alert_type)
+        current_alert_stage = _ALERT_TYPE_UI.get(normalized, {}).get('stage')
+
+    db_status = getattr(case, 'status', None) or ''
+    v3_phase = _STATUS_TO_V3_STAGE.get(db_status, 'casus')
+    current_phase_score = _V3_PHASE_ORDER.get(v3_phase, 0)
+
+    def is_done(stage):
+        return current_phase_score > _V3_PHASE_ORDER.get(stage, 0)
+
+    def is_active(stage):
+        if current_alert_stage:
+            return current_alert_stage == stage
+        return v3_phase == stage
+
+    steps = [
+        ('casus', 'Casus'),
+        ('samenvatting', 'Samenvatting'),
+        ('matching', 'Matching'),
+        ('aanbieder_beoordeling', 'Aanbieder Beoordeling'),
+        ('plaatsing', 'Plaatsing'),
+        ('intake', 'Intake'),
+    ]
+    return [
+        {'key': key, 'label': label, 'done': is_done(key), 'active': is_active(key)}
+        for key, label in steps
+    ]
+
+
 def _build_active_workspace(selected_alert):
     if not selected_alert:
         return None
     item = _build_queue_item(selected_alert)
     case = selected_alert.case
-
-    # Timeline – reflect CaseIntakeProcess.ProcessStatus
-    status = getattr(case, 'status', '') or ''
-    _done = lambda phases: status in phases
-    timeline = [
-        {'key': 'INTAKE', 'label': 'Intake', 'done': _done(['MATCHING', 'DECISION', 'COMPLETED']), 'active': status == 'INTAKE'},
-        {'key': 'MATCHING', 'label': 'Matching', 'done': _done(['DECISION', 'COMPLETED']), 'active': status == 'MATCHING'},
-        {'key': 'DECISION', 'label': 'Matchbesluit', 'done': _done(['COMPLETED']), 'active': status == 'DECISION'},
-        {'key': 'COMPLETED', 'label': 'Afgerond', 'done': status == 'COMPLETED', 'active': False},
-    ]
 
     region_label = None
     if case:
@@ -7444,62 +7548,89 @@ def _build_active_workspace(selected_alert):
     if case and getattr(case, 'care_category_main', None):
         care_category_label = str(case.care_category_main)
 
+    # Drill-down URLs – safe fallback to case_detail for routes that don't exist yet
+    def _safe_url(name, *args):
+        try:
+            return reverse(name, args=args) if args else reverse(name)
+        except Exception:
+            return reverse('careon:case_detail', args=[case.pk]) if case else None
+
+    matching_url = (
+        _safe_url('careon:matching_dashboard') + f'?intake={case.pk}'
+        if case else None
+    )
+    placement_url = (
+        _safe_url('careon:placement_detail', selected_alert.placement_id)
+        if selected_alert.placement_id else None
+    )
+
     return {
         'alert': item,
         'case': case,
         'case_label': case.title if case else 'Onbekende casus',
-        'status': getattr(case, 'get_status_display', lambda: status)() if case else None,
+        'status': getattr(case, 'get_status_display', lambda: None)() if case else None,
         'urgency': getattr(case, 'get_urgency_display', lambda: None)() if case else None,
         'region': region_label,
         'care_category': care_category_label,
-        'timeline': timeline,
-        'case_detail_url': reverse('careon:case_detail', args=[case.pk]) if case else None,
-        'placement_url': (
-            reverse('careon:placement_detail', args=[selected_alert.placement_id])
-            if selected_alert.placement_id else None
-        ),
-        'matching_url': (
-            reverse('careon:matching_dashboard') + f'?intake={case.pk}'
-            if case else None
-        ),
+        'timeline': _build_v3_timeline(case, selected_alert),
+        'case_detail_url': _safe_url('careon:case_detail', case.pk) if case else None,
+        'matching_url': matching_url,
+        'placement_url': placement_url,
+        # Decision evidence fields – exposed for future explainability data
+        'fit_summary': getattr(case, 'fit_summary', None),
+        'confidence': getattr(case, 'match_confidence', None),
+        'factor_breakdown': getattr(case, 'factor_breakdown', None),
+        'trade_offs': getattr(case, 'trade_offs', None),
     }
 
 
 def _build_system_intelligence(org, open_alerts):
     from contracts.models import RegiekamerAlert as _RA
     _AT = _RA.AlertType
+    # Count by normalized (V3) alert type
     by_type = {}
     for a in open_alerts:
-        by_type[a.alert_type] = by_type.get(a.alert_type, 0) + 1
+        normalized = _normalize_alert_type(a.alert_type)
+        by_type[normalized] = by_type.get(normalized, 0) + 1
 
+    regiekamer_url = reverse('careon:regiekamer')
     pattern_cards = []
-    if by_type.get(_AT.URGENT_UNMATCHED, 0) >= 3:
+
+    if by_type.get('urgent_unmatched_case', 0) >= 3:
         pattern_cards.append({
             'title': 'Patroon: urgente casussen zonder match',
-            'description': f"{by_type[_AT.URGENT_UNMATCHED]} open signalen vragen directe actie.",
+            'description': f"{by_type['urgent_unmatched_case']} urgente casussen wachten nog op een passende aanbieder.",
             'cta_label': 'Bekijk matching-werkvoorraad',
-            'cta_url': reverse('careon:regiekamer') + '?filter=urgent_unmatched_case',
+            'cta_url': f"{regiekamer_url}?filter=urgent_unmatched_case",
         })
-    if by_type.get(_AT.PLACEMENT_STALLED, 0) >= 3:
+    if by_type.get('provider_rejected_case', 0) >= 2:
+        pattern_cards.append({
+            'title': 'Patroon: meerdere afwijzingen door aanbieders',
+            'description': f"{by_type['provider_rejected_case']} casussen zijn afgewezen en vragen herpositionering of scherpere matching.",
+            'cta_label': 'Bekijk afwijzingen',
+            'cta_url': f"{regiekamer_url}?filter=provider_rejected_case",
+        })
+    if by_type.get('no_capacity_available', 0) >= 2:
+        pattern_cards.append({
+            'title': 'Capaciteitsdruk in aanbod',
+            'description': f"{by_type['no_capacity_available']} signalen tonen ontbrekende capaciteit voor actieve casussen.",
+            'cta_label': 'Bekijk capaciteitsissues',
+            'cta_url': f"{regiekamer_url}?filter=no_capacity_available",
+        })
+    missing_summary_count = by_type.get('missing_summary', 0) + by_type.get('summary_missing_or_stale', 0)
+    if missing_summary_count >= 2:
+        pattern_cards.append({
+            'title': 'Samenvattingen remmen doorstroom',
+            'description': f"{missing_summary_count} casussen missen een actuele samenvatting, waardoor matching minder betrouwbaar wordt.",
+            'cta_label': 'Bekijk samenvattingen',
+            'cta_url': f"{regiekamer_url}?filter=missing_summary",
+        })
+    if by_type.get('placement_stalled', 0) >= 3:
         pattern_cards.append({
             'title': 'Patroon: plaatsingen lopen vast',
-            'description': f"{by_type[_AT.PLACEMENT_STALLED]} casussen stagneren in plaatsing.",
+            'description': f"{by_type['placement_stalled']} casussen stagneren in de plaatsingsfase.",
             'cta_label': 'Bekijk plaatsingsissues',
-            'cta_url': reverse('careon:regiekamer') + '?filter=placement_stalled',
-        })
-    if by_type.get(_AT.NO_CAPACITY, 0) >= 2:
-        pattern_cards.append({
-            'title': 'Capaciteitsdruk bij aanbieders',
-            'description': f"{by_type[_AT.NO_CAPACITY]} signalen wijzen op capaciteitsproblemen.",
-            'cta_label': 'Bekijk aanbieders',
-            'cta_url': reverse('careon:client_list'),
-        })
-    if by_type.get(_AT.MISSING_CRITICAL_DATA, 0) >= 2:
-        pattern_cards.append({
-            'title': 'Kritieke gegevens ontbreken in meerdere casussen',
-            'description': f"{by_type[_AT.MISSING_CRITICAL_DATA]} casussen missen data voor besluitvorming.",
-            'cta_label': 'Bekijk casussen',
-            'cta_url': reverse('careon:regiekamer') + '?filter=missing_critical_data',
+            'cta_url': f"{regiekamer_url}?filter=placement_stalled",
         })
 
     total = len(open_alerts)
@@ -7509,10 +7640,11 @@ def _build_system_intelligence(org, open_alerts):
         'metrics': {
             'open_alerts': total,
             'high_severity': high_sev,
+            'urgent_unmatched': by_type.get('urgent_unmatched_case', 0),
+            'provider_rejections': by_type.get('provider_rejected_case', 0),
             'stalled_cases': by_type.get(_AT.PLACEMENT_STALLED, 0),
-            'weak_matches': by_type.get(_AT.WEAK_MATCH, 0),
-            'no_capacity': by_type.get(_AT.NO_CAPACITY, 0),
-            'urgent_unmatched': by_type.get(_AT.URGENT_UNMATCHED, 0),
+            'weak_matches': by_type.get('weak_match_needs_verification', 0),
+            'no_capacity': by_type.get('no_capacity_available', 0),
         },
     }
 
@@ -7553,7 +7685,13 @@ def regiekamer(request):
         .order_by('-created_at')
     )
     if filter_type:
-        qs = qs.filter(alert_type=filter_type)
+        # Normalize the filter value so legacy URL params still work
+        normalized_filter = _normalize_alert_type(filter_type)
+        # Query both the raw and normalized names to handle legacy alert types
+        if normalized_filter != filter_type:
+            qs = qs.filter(alert_type__in=[filter_type, normalized_filter])
+        else:
+            qs = qs.filter(alert_type=filter_type)
 
     all_open_alerts = list(qs)
 
