@@ -3696,3 +3696,211 @@ class RegiekamerAlert(models.Model):
 
     def __str__(self):
         return f'[{self.severity}] {self.get_alert_type_display()} – {self.case.title}'
+
+
+# ===========================================================================
+# Intelligence Tuning Workflow
+# ===========================================================================
+
+
+class TuningProposal(models.Model):
+    """A human-reviewed, advisory-only intelligence tuning proposal.
+
+    Proposals are generated from calibration diagnostics (or manually by staff)
+    and describe a *suggested* adjustment to the matching / confidence scoring
+    weights.  They are never auto-applied; a staff member must explicitly set
+    status to APPROVED/IMPLEMENTED.
+
+    Lifecycle:  SUGGESTED → REVIEWED → APPROVED / REJECTED
+                                    APPROVED → IMPLEMENTED
+
+    All weight deltas are advisory.  No code path reads these values to
+    automatically change matching behaviour.
+    """
+
+    # ── Status choices ──────────────────────────────────────────────────────
+
+    class Status(models.TextChoices):
+        SUGGESTED = 'SUGGESTED', 'Voorgesteld'
+        REVIEWED = 'REVIEWED', 'Beoordeeld'
+        APPROVED = 'APPROVED', 'Goedgekeurd'
+        REJECTED = 'REJECTED', 'Afgewezen'
+        IMPLEMENTED = 'IMPLEMENTED', 'Geïmplementeerd'
+
+    # ── Factor types (what is being tuned) ──────────────────────────────────
+
+    class FactorType(models.TextChoices):
+        SPECIALIZATION_WEIGHT = 'SPECIALIZATION_WEIGHT', 'Specialisatiegewicht'
+        PROVIDER_RELIABILITY_BOOST = 'PROVIDER_RELIABILITY_BOOST', 'Aanbieder betrouwbaarheidsbonus'
+        CAPACITY_REJECTION_PENALTY = 'CAPACITY_REJECTION_PENALTY', 'Capaciteitsafwijzingspenalty'
+        CATEGORY_CONFIDENCE_THRESHOLD = 'CATEGORY_CONFIDENCE_THRESHOLD', 'Categorie confidence-drempel'
+        REGION_WEIGHT = 'REGION_WEIGHT', 'Regiogewicht'
+        COMPLEXITY_THRESHOLD = 'COMPLEXITY_THRESHOLD', 'Complexiteitsdrempel'
+        OTHER = 'OTHER', 'Overig'
+
+    # ── Source (what diagnostic produced this) ───────────────────────────────
+
+    class Source(models.TextChoices):
+        HIGH_CONF_LOW_ACCEPT = 'high_conf_low_accept', 'Hoog vertrouwen / lage acceptatie'
+        LOW_CONF_HIGH_SUCCESS = 'low_conf_high_success', 'Laag vertrouwen / hoog succes'
+        CATEGORY_DRIFT = 'category_drift', 'Zorgcategorie drift'
+        PROVIDER_DRIFT = 'provider_drift', 'Aanbieder drift'
+        TAXONOMY_CLUSTER = 'taxonomy_cluster', 'Afwijzingstaxonomie cluster'
+        MANUAL = 'manual', 'Handmatig'
+
+    # ── Core fields ──────────────────────────────────────────────────────────
+
+    organization = models.ForeignKey(
+        'Organization',
+        on_delete=models.CASCADE,
+        related_name='tuning_proposals',
+        verbose_name='Organisatie',
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.SUGGESTED,
+        db_index=True,
+        verbose_name='Status',
+    )
+
+    source = models.CharField(
+        max_length=40,
+        choices=Source.choices,
+        default=Source.MANUAL,
+        verbose_name='Bron',
+    )
+
+    factor_type = models.CharField(
+        max_length=40,
+        choices=FactorType.choices,
+        verbose_name='Factor',
+    )
+
+    # ── Affected scope ───────────────────────────────────────────────────────
+
+    affected_care_category = models.ForeignKey(
+        'CareCategoryMain',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tuning_proposals',
+        verbose_name='Zorgcategorie',
+    )
+
+    affected_provider = models.ForeignKey(
+        'Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tuning_proposals',
+        verbose_name='Aanbieder',
+    )
+
+    # ── Proposal content ─────────────────────────────────────────────────────
+
+    detected_issue = models.TextField(
+        verbose_name='Gedetecteerd probleem',
+        help_text='Beschrijving van de kalibratie-anomalie die dit voorstel triggerde.',
+    )
+
+    recommendation = models.TextField(
+        verbose_name='Aanbeveling',
+        help_text='Adviserende omschrijving van de gewenste aanpassing.',
+    )
+
+    proposed_delta = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Voorgestelde delta',
+        help_text=(
+            'Indicatieve numerieke gewichtsaanpassing (bijv. +0.10 of -0.05). '
+            'Puur adviserend; wordt nooit automatisch toegepast.'
+        ),
+    )
+
+    rationale = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Onderbouwing',
+        help_text='Aanvullende toelichting of context bij het voorstel.',
+    )
+
+    # ── Simulation snapshot (optional, written at proposal creation time) ────
+
+    simulation_before = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Simulatie voor',
+        help_text='Verwachte confidence/ranking vóór aanpassing (snapshot van voorbeeldscenario\'s).',
+    )
+
+    simulation_after = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Simulatie na',
+        help_text='Verwachte confidence/ranking ná aanpassing (snapshot van voorbeeldscenario\'s).',
+    )
+
+    # ── Audit trail ──────────────────────────────────────────────────────────
+
+    created_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_tuning_proposals',
+        verbose_name='Aangemaakt door',
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Aangemaakt op')
+
+    reviewed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='reviewed_tuning_proposals',
+        verbose_name='Beoordeeld door',
+    )
+    reviewed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Beoordeeld op',
+    )
+
+    review_note = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Beoordelingsnotitie',
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # ── Allowed status transitions ────────────────────────────────────────────
+
+    _ALLOWED_TRANSITIONS = {
+        Status.SUGGESTED: {Status.REVIEWED, Status.REJECTED},
+        Status.REVIEWED: {Status.APPROVED, Status.REJECTED},
+        Status.APPROVED: {Status.IMPLEMENTED, Status.REJECTED},
+        Status.REJECTED: set(),
+        Status.IMPLEMENTED: set(),
+    }
+
+    def can_transition_to(self, new_status: str) -> bool:
+        """Return True when the requested status transition is valid."""
+        return new_status in self._ALLOWED_TRANSITIONS.get(self.status, set())
+
+    class Meta:
+        db_table = 'contracts_tuningproposal'
+        ordering = ['-created_at']
+        verbose_name = 'Tuningvoorstel'
+        verbose_name_plural = 'Tuningvoorstellen'
+        indexes = [
+            models.Index(fields=['organization', 'status']),
+            models.Index(fields=['status', 'created_at']),
+        ]
+
+    def __str__(self):
+        cat = self.affected_care_category.name if self.affected_care_category else '—'
+        return f'[{self.get_status_display()}] {self.get_factor_type_display()} – {cat}'

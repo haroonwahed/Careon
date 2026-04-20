@@ -7964,3 +7964,113 @@ def intelligence_observability_report(request):
         'filtered_rejection_distribution': filtered_rejection_dist,
         'care_category_filter': care_category_filter,
     })
+
+
+# ===========================================================================
+# Tuning Proposals – Regiekamer reporting area
+# ===========================================================================
+
+
+def tuning_proposals(request):
+    """Staff/owner-only view listing TuningProposals for the current organisation.
+
+    Supports:
+    - Listing all proposals, grouped by status
+    - Filtering by status via ?status=SUGGESTED etc.
+    - Generating proposals from live calibration diagnostics (POST ?action=generate)
+    - Status transitions via POST ?action=transition&proposal_id=<pk>&new_status=<s>
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_calibration import calibration_diagnostics
+    from .intelligence_observability import _load_placement_qs
+    from .intelligence_tuning import proposals_from_calibration_diagnostics, transition_proposal
+    from .models import TuningProposal
+    from .tenancy import get_user_organization
+
+    org = get_user_organization(request.user)
+
+    # ── POST actions ────────────────────────────────────────────────────────
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+
+        if action == 'generate':
+            # Generate proposals from live calibration diagnostics
+            try:
+                rows = list(_load_placement_qs(None, org))
+                diagnostics = calibration_diagnostics(rows)
+                new_proposals = proposals_from_calibration_diagnostics(
+                    diagnostics=diagnostics,
+                    org=org,
+                    actor=request.user,
+                )
+                # Only save proposals that don't duplicate an open SUGGESTED one
+                existing_issues = set(
+                    TuningProposal.objects.filter(
+                        organization=org,
+                        status=TuningProposal.Status.SUGGESTED,
+                    ).values_list('detected_issue', flat=True)
+                )
+                saved = 0
+                for p in new_proposals:
+                    if p.detected_issue not in existing_issues:
+                        p.save()
+                        existing_issues.add(p.detected_issue)
+                        saved += 1
+                msg = f'{saved} nieuw(e) tuningvoorstel(len) gegenereerd.'
+            except Exception as exc:  # pragma: no cover
+                msg = f'Fout bij genereren: {exc}'
+            return redirect(
+                reverse('careon:tuning_proposals') + f'?msg={msg}'
+            )
+
+        if action == 'transition':
+            proposal_pk = request.POST.get('proposal_id')
+            new_status = request.POST.get('new_status', '')
+            note = request.POST.get('review_note', '')
+            try:
+                proposal = TuningProposal.objects.get(pk=proposal_pk, organization=org)
+                transition_proposal(proposal, new_status, actor=request.user, note=note)
+                msg = f'Status bijgewerkt naar {proposal.get_status_display()}.'
+            except TuningProposal.DoesNotExist:
+                msg = 'Voorstel niet gevonden.'
+            except ValueError as exc:
+                msg = str(exc)
+            except Exception as exc:  # pragma: no cover
+                msg = f'Fout: {exc}'
+            return redirect(
+                reverse('careon:tuning_proposals') + f'?msg={msg}'
+            )
+
+    # ── GET: list proposals ──────────────────────────────────────────────────
+    from .models import TuningProposal
+
+    status_filter = (request.GET.get('status') or '').strip().upper()
+    msg = request.GET.get('msg', '')
+
+    qs = TuningProposal.objects.filter(organization=org).select_related(
+        'affected_care_category', 'affected_provider', 'created_by', 'reviewed_by'
+    )
+    if status_filter and status_filter in TuningProposal.Status.values:
+        qs = qs.filter(status=status_filter)
+
+    # Group by status for display
+    from .models import TuningProposal as TP
+    grouped = {}
+    for choice_value, choice_label in TP.Status.choices:
+        items = [p for p in qs if p.status == choice_value]
+        if items or not status_filter:
+            grouped[choice_value] = {
+                'label': choice_label,
+                'proposals': items,
+                'count': len(items),
+            }
+
+    return render(request, 'contracts/tuning_proposals.html', {
+        'grouped': grouped,
+        'status_choices': TP.Status.choices,
+        'active_status_filter': status_filter,
+        'msg': msg,
+        'total_count': qs.count(),
+    })

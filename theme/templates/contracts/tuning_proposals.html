@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Tuningvoorstellen - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Tuningvoorstellen</h1>
+            <p class="ds-analytics-sub">
+                Gecontroleerde intelligentie-tuning — advies-alleen voorstellen afgeleid van kalibratie-signalen.
+                Geen enkel voorstel wordt automatisch toegepast.
+            </p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:intelligence_observability_report' %}" class="btn btn-secondary btn-sm">← Kalibratie-rapport</a>
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ── Flash message ────────────────────────────────────────────────────── #}
+    {% if msg %}
+    <div class="ds-alert ds-alert--info" style="margin-bottom:1rem">{{ msg }}</div>
+    {% endif %}
+
+    {# ── Generate from calibration ────────────────────────────────────────── #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">Voorstellen genereren</h2>
+        <p class="ds-card-sub">
+            Analyseert actuele kalibratie-signalen en maakt nieuwe <em>Voorgesteld</em>-proposals aan
+            voor patronen die nog niet eerder zijn gesignaleerd. Bestaande voorstellen blijven onaangetast.
+        </p>
+        <form method="post" style="margin-top:0.8rem">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="generate">
+            <button type="submit" class="btn btn-primary btn-sm">
+                Genereer voorstellen uit kalibratie-signalen
+            </button>
+        </form>
+    </section>
+
+    {# ── Status filter pills ──────────────────────────────────────────────── #}
+    <div class="ds-list-filters" style="margin-bottom:1rem;flex-wrap:wrap;gap:0.4rem">
+        <a href="{% url 'careon:tuning_proposals' %}"
+           class="btn btn-sm {% if not active_status_filter %}btn-primary{% else %}btn-secondary{% endif %}">
+           Alle ({{ total_count }})
+        </a>
+        {% for val, label in status_choices %}
+        <a href="{% url 'careon:tuning_proposals' %}?status={{ val }}"
+           class="btn btn-sm {% if active_status_filter == val %}btn-primary{% else %}btn-secondary{% endif %}">
+           {{ label }}
+        </a>
+        {% endfor %}
+    </div>
+
+    {# ── Proposal groups ──────────────────────────────────────────────────── #}
+    {% for status_val, group in grouped.items %}
+    {% if group.proposals %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">
+            <span class="ds-badge
+                {% if status_val == 'SUGGESTED' %}ds-badge--info
+                {% elif status_val == 'REVIEWED' %}ds-badge--warning
+                {% elif status_val == 'APPROVED' %}ds-badge--success
+                {% elif status_val == 'REJECTED' %}ds-badge--muted
+                {% elif status_val == 'IMPLEMENTED' %}ds-badge--success
+                {% endif %}">
+                {{ group.label }}
+            </span>
+            <span style="font-size:0.9rem;margin-left:0.5rem">({{ group.count }})</span>
+        </h2>
+
+        {% for proposal in group.proposals %}
+        <div class="ds-analytics-card" style="border:1px solid var(--border-subtle);padding:1rem;margin-bottom:1rem;border-radius:6px">
+
+            {# Header row #}
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.5rem">
+                <div>
+                    <span class="ds-badge ds-badge--muted" style="font-size:0.75rem">
+                        {{ proposal.get_factor_type_display }}
+                    </span>
+                    <span class="ds-badge ds-badge--muted" style="font-size:0.75rem;margin-left:4px">
+                        {{ proposal.get_source_display }}
+                    </span>
+                    {% if proposal.affected_care_category %}
+                    <span class="ds-badge ds-badge--info" style="font-size:0.75rem;margin-left:4px">
+                        {{ proposal.affected_care_category.name }}
+                    </span>
+                    {% endif %}
+                    {% if proposal.affected_provider %}
+                    <span class="ds-badge ds-badge--info" style="font-size:0.75rem;margin-left:4px">
+                        {{ proposal.affected_provider.name }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div style="font-size:0.78rem;color:var(--text-muted)">
+                    #{{ proposal.pk }} &middot; {{ proposal.created_at|date:"d M Y H:i" }}
+                    {% if proposal.created_by %}&middot; {{ proposal.created_by.get_full_name|default:proposal.created_by.username }}{% endif %}
+                </div>
+            </div>
+
+            {# Detected issue #}
+            <p style="font-size:0.88rem;margin:0.4rem 0 0.2rem">
+                <strong>Probleem:</strong> {{ proposal.detected_issue }}
+            </p>
+
+            {# Recommendation #}
+            <p style="font-size:0.88rem;margin:0.2rem 0">
+                <strong>Aanbeveling:</strong> {{ proposal.recommendation }}
+            </p>
+
+            {# Proposed delta #}
+            {% if proposal.proposed_delta is not None %}
+            <p style="font-size:0.88rem;margin:0.2rem 0">
+                <strong>Voorgestelde delta:</strong>
+                <code>{% if proposal.proposed_delta >= 0 %}+{% endif %}{{ proposal.proposed_delta }}</code>
+            </p>
+            {% endif %}
+
+            {# Rationale #}
+            {% if proposal.rationale %}
+            <p style="font-size:0.82rem;color:var(--text-muted);margin:0.2rem 0">
+                <em>{{ proposal.rationale }}</em>
+            </p>
+            {% endif %}
+
+            {# Simulation snapshots #}
+            {% if proposal.simulation_before or proposal.simulation_after %}
+            <details style="margin-top:0.6rem">
+                <summary style="font-size:0.85rem;cursor:pointer;color:var(--text-secondary)">Simulatie voor/na</summary>
+                <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap">
+                    {% if proposal.simulation_before %}
+                    <div style="flex:1;min-width:200px">
+                        <strong style="font-size:0.8rem">Vóór</strong>
+                        <ul style="font-size:0.8rem;margin:0.3rem 0 0 1rem">
+                            <li>Gem. confidence: {{ proposal.simulation_before.before_mean_confidence|default:"—" }}</li>
+                            <li>Hoge-conf. %: {{ proposal.simulation_before.before_high_conf_pct|default:"—" }}</li>
+                            <li>In scope: {{ proposal.simulation_before.in_scope_rows|default:"—" }}</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    {% if proposal.simulation_after %}
+                    <div style="flex:1;min-width:200px">
+                        <strong style="font-size:0.8rem">Na</strong>
+                        <ul style="font-size:0.8rem;margin:0.3rem 0 0 1rem">
+                            <li>Gem. confidence: {{ proposal.simulation_after.after_mean_confidence|default:"—" }}</li>
+                            <li>Hoge-conf. %: {{ proposal.simulation_after.after_high_conf_pct|default:"—" }}</li>
+                            <li>Delta toegepast: {{ proposal.simulation_after.delta_applied|default:"—" }}</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+            </details>
+            {% endif %}
+
+            {# Review note #}
+            {% if proposal.review_note %}
+            <p style="font-size:0.82rem;margin:0.4rem 0;border-left:3px solid var(--border-subtle);padding-left:0.5rem">
+                <em>Beoordelingsnotitie:</em> {{ proposal.review_note }}
+            </p>
+            {% endif %}
+
+            {# Reviewer / reviewed_at #}
+            {% if proposal.reviewed_by %}
+            <p style="font-size:0.78rem;color:var(--text-muted)">
+                Beoordeeld door {{ proposal.reviewed_by.get_full_name|default:proposal.reviewed_by.username }}
+                op {{ proposal.reviewed_at|date:"d M Y H:i" }}
+            </p>
+            {% endif %}
+
+            {# Status transition actions #}
+            {% if status_val == 'SUGGESTED' %}
+            <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap">
+                <form method="post" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="transition">
+                    <input type="hidden" name="proposal_id" value="{{ proposal.pk }}">
+                    <input type="hidden" name="new_status" value="REVIEWED">
+                    <button type="submit" class="btn btn-secondary btn-sm">Markeer als beoordeeld</button>
+                </form>
+                <form method="post" style="display:inline" onsubmit="return confirm('Afwijzen?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="transition">
+                    <input type="hidden" name="proposal_id" value="{{ proposal.pk }}">
+                    <input type="hidden" name="new_status" value="REJECTED">
+                    <button type="submit" class="btn btn-danger btn-sm">Afwijzen</button>
+                </form>
+            </div>
+            {% elif status_val == 'REVIEWED' %}
+            <div style="margin-top:0.8rem">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="transition">
+                    <input type="hidden" name="proposal_id" value="{{ proposal.pk }}">
+                    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:flex-end">
+                        <div>
+                            <label for="note-{{ proposal.pk }}" style="font-size:0.82rem;display:block;margin-bottom:2px">Notitie (optioneel)</label>
+                            <input type="text" id="note-{{ proposal.pk }}" name="review_note"
+                                   placeholder="Toelichting bij beslissing"
+                                   style="padding:0.3rem 0.5rem;border:1px solid var(--border-subtle);border-radius:4px;font-size:0.85rem;background:var(--surface-raised);color:var(--text-primary)">
+                        </div>
+                        <button type="submit" name="new_status" value="APPROVED" class="btn btn-primary btn-sm">Goedkeuren</button>
+                        <button type="submit" name="new_status" value="REJECTED" class="btn btn-danger btn-sm" onclick="return confirm('Afwijzen?')">Afwijzen</button>
+                    </div>
+                </form>
+            </div>
+            {% elif status_val == 'APPROVED' %}
+            <div style="display:flex;gap:0.5rem;margin-top:0.8rem;flex-wrap:wrap">
+                <form method="post" style="display:inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="transition">
+                    <input type="hidden" name="proposal_id" value="{{ proposal.pk }}">
+                    <input type="hidden" name="new_status" value="IMPLEMENTED">
+                    <button type="submit" class="btn btn-primary btn-sm">Markeer als geïmplementeerd</button>
+                </form>
+                <form method="post" style="display:inline" onsubmit="return confirm('Toch afwijzen?')">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="transition">
+                    <input type="hidden" name="proposal_id" value="{{ proposal.pk }}">
+                    <input type="hidden" name="new_status" value="REJECTED">
+                    <button type="submit" class="btn btn-danger btn-sm">Afwijzen</button>
+                </form>
+            </div>
+            {% endif %}
+
+        </div>{# /proposal card #}
+        {% endfor %}
+    </section>
+    {% endif %}
+    {% endfor %}
+
+    {% if not total_count %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <p class="ds-text-muted">Geen tuningvoorstellen gevonden. Klik op "Genereer voorstellen" om te starten.</p>
+    </section>
+    {% endif %}
+
+</div>{# /ds-analytics-shell #}
+</div>{# /page-wrap #}
+{% endblock %}

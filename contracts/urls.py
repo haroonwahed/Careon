@@ -149,6 +149,7 @@ urlpatterns = [
     path('regiekamer/', views.regiekamer, name='regiekamer'),
     path('regiekamer/alertes/<int:alert_pk>/resolve/', views.resolve_alert, name='resolve_alert'),
     path('regiekamer/intelligence-rapport/', views.intelligence_observability_report, name='intelligence_observability_report'),
+    path('regiekamer/tuningvoorstellen/', views.tuning_proposals, name='tuning_proposals'),
 
     path('', RedirectView.as_view(pattern_name='careon:case_list', permanent=False), name='home'),
 ]
