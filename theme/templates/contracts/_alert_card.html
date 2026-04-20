@@ -1,0 +1,51 @@
+{% comment %}
+Partial: _alert_card.html
+Context: alert (OperationalAlert instance)
+{% endcomment %}
+{% load tz %}
+<div class="ds-alert-card {% if alert.is_resolved %}ds-alert-card--resolved{% elif alert.severity == 'high' %}ds-alert-card--urgent{% elif alert.severity == 'medium' %}ds-alert-card--warning{% else %}ds-alert-card--neutral{% endif %}">
+    <div class="ds-alert-card-body">
+        <div class="ds-alert-card-meta">
+            <span class="ds-alert-badge ds-alert-badge--{{ alert.severity }}">{{ alert.get_severity_display }}</span>
+            <span class="ds-alert-type">{{ alert.get_alert_type_display }}</span>
+            {% if alert.is_resolved %}
+            <span class="ds-alert-resolved-badge">Opgelost</span>
+            {% endif %}
+        </div>
+        <h3 class="ds-alert-card-title">{{ alert.title }}</h3>
+        <p class="ds-alert-card-description">{{ alert.description }}</p>
+        <p class="ds-alert-card-action">
+            <strong>Aanbevolen actie:</strong> {{ alert.recommended_action }}
+        </p>
+        <p class="ds-alert-card-timestamp">
+            Aangemaakt: {{ alert.created_at|date:"d-m-Y H:i" }}
+            {% if alert.is_resolved %}– Opgelost: {{ alert.resolved_at|date:"d-m-Y H:i" }}{% endif %}
+        </p>
+    </div>
+    {% if not alert.is_resolved %}
+    <div class="ds-alert-card-actions">
+        <!-- CTA: open case -->
+        <a href="{% url 'careon:case_detail' pk=alert.case_id %}" class="btn btn-sm btn-secondary">Open casus</a>
+
+        <!-- CTA based on alert type -->
+        {% if alert.alert_type == 'incomplete_beoordeling' %}
+        <a href="{% url 'careon:assessment_list' %}?case={{ alert.case_id }}" class="btn btn-sm btn-primary">Beoordeling afronden</a>
+        {% elif alert.alert_type == 'urgent_unmatched_case' or alert.alert_type == 'missing_critical_data' or alert.alert_type == 'weak_match_needs_review' %}
+        <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Start matching</a>
+        {% elif alert.alert_type == 'weak_match_needs_review' %}
+        <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Review match</a>
+        {% elif alert.alert_type == 'placement_stalled' %}
+        <a href="{% url 'careon:case_detail' pk=alert.case_id %}?tab=plaatsing" class="btn btn-sm btn-primary">Bevestig plaatsing</a>
+        {% elif alert.alert_type == 'provider_capacity_risk' %}
+        <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Heroverweeg match</a>
+        {% endif %}
+
+        <!-- Resolve CTA -->
+        <form method="post" action="{% url 'careon:resolve_alert' pk=alert.pk %}" style="display:inline;">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <button type="submit" class="btn btn-sm btn-ghost">Markeer opgelost</button>
+        </form>
+    </div>
+    {% endif %}
+</div>

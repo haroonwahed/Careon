@@ -86,6 +86,7 @@ class SpaShellMigrationMiddleware:
 
     EXCLUDED_PREFIXES = (
         '/care/api/',
+        '/care/regiekamer/',
     )
 
     def __init__(self, get_response):

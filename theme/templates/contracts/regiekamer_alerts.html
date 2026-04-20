@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Regiekamer – Operationele Alerts – Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+    <header class="ds-list-header">
+        <div>
+            <h1 class="page-title">Regiekamer</h1>
+            <p class="page-subtitle">Operationeel controlepaneel – actie vereist</p>
+        </div>
+        <div class="ds-list-actions">
+            {% if show_resolved %}
+            <a href="{% url 'careon:regiekamer_alerts' %}" class="btn btn-secondary">Toon open alerts</a>
+            {% else %}
+            <a href="{% url 'careon:regiekamer_alerts' %}?show_resolved=1" class="btn btn-secondary">Toon opgelost</a>
+            {% endif %}
+            <a href="{% url 'careon:provider_response_monitor' %}" class="btn btn-secondary">Provider response monitor</a>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="mt-3 space-y-2" aria-live="polite">
+        {% for message in messages %}
+        <div class="rounded-md border px-3 py-2 text-sm {% if message.tags == 'error' %}border-red-200 bg-red-50 text-red-800{% elif message.tags == 'warning' %}border-amber-200 bg-amber-50 text-amber-800{% elif message.tags == 'success' %}border-emerald-200 bg-emerald-50 text-emerald-800{% else %}border-slate-200 bg-slate-50 ds-text-strong{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- SUMMARY CARDS -->
+    <div class="ds-summary-cards">
+        <div class="ds-summary-card ds-summary-card--urgent">
+            <div class="ds-summary-card-value">{{ summary.urgent_unmatched }}</div>
+            <div class="ds-summary-card-label">Urgente casussen zonder match</div>
+        </div>
+        <div class="ds-summary-card ds-summary-card--warning">
+            <div class="ds-summary-card-value">{{ summary.stalled_placements }}</div>
+            <div class="ds-summary-card-label">Stagnerende plaatsingen</div>
+        </div>
+        <div class="ds-summary-card ds-summary-card--warning">
+            <div class="ds-summary-card-value">{{ summary.capacity_risk }}</div>
+            <div class="ds-summary-card-label">Aanbieders met capaciteitsrisico</div>
+        </div>
+        <div class="ds-summary-card ds-summary-card--neutral">
+            <div class="ds-summary-card-value">{{ summary.missing_data }}</div>
+            <div class="ds-summary-card-label">Casussen met ontbrekende data</div>
+        </div>
+    </div>
+
+    {% if not show_resolved and summary.total == 0 %}
+    <!-- EMPTY STATE -->
+    <div class="ds-empty-state">
+        <div class="ds-empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="48" height="48">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"/>
+                <circle cx="12" cy="12" r="9"/>
+            </svg>
+        </div>
+        <h2 class="ds-empty-state-title">Geen actieve alerts</h2>
+        <p class="ds-empty-state-text">Alle casussen zijn op dit moment zonder actie-vereiste signalen. De Regiekamer monitort continu op nieuwe casuswijzigingen.</p>
+        <a href="{% url 'careon:case_list' %}" class="btn btn-primary">Bekijk casussen</a>
+    </div>
+    {% else %}
+
+    <!-- HOGE PRIORITEIT -->
+    {% if alerts_high %}
+    <section class="ds-alert-section">
+        <h2 class="ds-section-title ds-section-title--urgent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Hoge prioriteit
+            <span class="ds-badge ds-badge--urgent">{{ alerts_high|length }}</span>
+        </h2>
+        <div class="ds-alert-list">
+            {% for alert in alerts_high %}
+            {% include "contracts/_alert_card.html" with alert=alert %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- MIDDELHOGE PRIORITEIT -->
+    {% if alerts_medium %}
+    <section class="ds-alert-section">
+        <h2 class="ds-section-title ds-section-title--warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Middelhoge prioriteit
+            <span class="ds-badge ds-badge--warning">{{ alerts_medium|length }}</span>
+        </h2>
+        <div class="ds-alert-list">
+            {% for alert in alerts_medium %}
+            {% include "contracts/_alert_card.html" with alert=alert %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- LAGE PRIORITEIT -->
+    {% if alerts_low %}
+    <section class="ds-alert-section">
+        <h2 class="ds-section-title ds-section-title--neutral">
+            Lage prioriteit
+            <span class="ds-badge">{{ alerts_low|length }}</span>
+        </h2>
+        <div class="ds-alert-list">
+            {% for alert in alerts_low %}
+            {% include "contracts/_alert_card.html" with alert=alert %}
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if show_resolved and not alerts_high and not alerts_medium and not alerts_low %}
+    <div class="ds-empty-state">
+        <p class="ds-empty-state-text">Geen opgeloste alerts gevonden.</p>
+    </div>
+    {% endif %}
+
+    {% endif %}
+</div>
+{% endblock %}

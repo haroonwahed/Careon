@@ -93,6 +93,8 @@ urlpatterns = [
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
     path('regiekamer/provider-responses/', views.provider_response_monitor, name='provider_response_monitor'),
+    path('regiekamer/', views.regiekamer_alerts, name='regiekamer_alerts'),
+    path('regiekamer/alerts/<int:pk>/resolve/', views.resolve_alert, name='resolve_alert'),
     path('search/', views.global_search, name='global_search'),
 
     path('wachttijden/', views.WaitTimeListView.as_view(), name='waittime_list'),

@@ -45,7 +45,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
-    OutcomeReasonCode,
+    OutcomeReasonCode, OperationalAlert,
 )
 from .middleware import log_action
 from .permissions import (
@@ -86,6 +86,7 @@ from .provider_matching_service import MatchContext, MatchEngine
 from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
+from .alert_engine import generate_alerts_for_case, build_regiekamer_summary
 from config.feature_flags import is_feature_redesign_enabled
 
 logger = logging.getLogger(__name__)
@@ -6010,6 +6011,12 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         )
         intelligence = intelligence_context['intelligence']
         candidate_hint_map = intelligence_context['candidate_hint_map']
+
+        # Generate operational alerts from the case evaluation output.
+        try:
+            generate_alerts_for_case(intake)
+        except Exception:
+            logger.exception('Alert generation failed for case %s', intake.pk)
         for row in matching_preview_candidates:
             hint = candidate_hint_map.get(row['provider_id'])
             if not hint:
@@ -7219,3 +7226,98 @@ class CaseScopedDocumentCreateView(_CaseScopedIntakeMixin, DocumentCreateView):
         if event:
             url += f'&event={event}'
         return url
+
+
+# ==================== REGIEKAMER ALERT VIEWS ====================
+
+@login_required
+def regiekamer_alerts(request):
+    """Regiekamer operational control interface.
+
+    Groups active alerts by severity (high → medium → low) and surfaces
+    summary cards for the four priority categories.
+    """
+    org = get_user_organization(request.user)
+    if not org:
+        messages.error(request, 'Geen actieve organisatie gevonden.')
+        return redirect(reverse('dashboard'))
+
+    unresolved_qs = (
+        OperationalAlert.objects
+        .filter(case__organization=org, resolved_at__isnull=True)
+        .select_related('case')
+        .order_by('severity', '-created_at')
+    )
+
+    show_resolved = request.GET.get('show_resolved') == '1'
+    if show_resolved:
+        alerts_qs = (
+            OperationalAlert.objects
+            .filter(case__organization=org)
+            .select_related('case')
+            .order_by('resolved_at', 'severity', '-created_at')
+        )
+    else:
+        alerts_qs = unresolved_qs
+
+    severity_order = {
+        OperationalAlert.Severity.HIGH: 0,
+        OperationalAlert.Severity.MEDIUM: 1,
+        OperationalAlert.Severity.LOW: 2,
+    }
+    alerts_by_severity = {
+        OperationalAlert.Severity.HIGH: [],
+        OperationalAlert.Severity.MEDIUM: [],
+        OperationalAlert.Severity.LOW: [],
+    }
+    for alert in alerts_qs:
+        bucket = alerts_by_severity.get(alert.severity)
+        if bucket is not None:
+            bucket.append(alert)
+
+    summary = build_regiekamer_summary(org)
+
+    return render(request, 'contracts/regiekamer_alerts.html', {
+        'alerts_high': alerts_by_severity[OperationalAlert.Severity.HIGH],
+        'alerts_medium': alerts_by_severity[OperationalAlert.Severity.MEDIUM],
+        'alerts_low': alerts_by_severity[OperationalAlert.Severity.LOW],
+        'summary': summary,
+        'show_resolved': show_resolved,
+        'alert_type_labels': dict(OperationalAlert.AlertType.choices),
+    })
+
+
+@login_required
+@require_POST
+def resolve_alert(request, pk):
+    """Mark a single operational alert as resolved."""
+    org = get_user_organization(request.user)
+    alert = get_object_or_404(
+        OperationalAlert.objects.select_related('case'),
+        pk=pk,
+        case__organization=org,
+    )
+    if not alert.is_resolved:
+        alert.resolved_at = timezone.now()
+        alert.save(update_fields=['resolved_at'])
+        log_action(
+            request.user,
+            AuditLog.Action.UPDATE,
+            'OperationalAlert',
+            object_id=alert.pk,
+            object_repr=str(alert),
+            changes={'resolved_at': alert.resolved_at.isoformat()},
+            request=request,
+        )
+        messages.success(request, 'Alert als opgelost gemarkeerd.')
+    else:
+        messages.info(request, 'Alert was al opgelost.')
+
+    next_url = request.POST.get('next') or reverse('careon:regiekamer_alerts')
+    if url_has_allowed_host_and_scheme(
+        url=next_url,
+        allowed_hosts={request.get_host()},
+        require_https=request.is_secure(),
+    ):
+        return redirect(next_url)
+    return redirect(reverse('careon:regiekamer_alerts'))

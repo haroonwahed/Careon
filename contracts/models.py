@@ -3422,3 +3422,69 @@ class MatchResultaat(models.Model):
     @property
     def casus_id(self):
         return self.casus.pk if self.casus else None
+
+
+class OperationalAlert(models.Model):
+    """Operational alert generated from case evaluation output.
+
+    Alerts are created automatically by the alert engine whenever
+    ``evaluate_case_intelligence`` runs for a case.  Each alert is
+    deduplicated per (case, alert_type) pair so that only one unresolved
+    alert of each type exists per case at any time.
+
+    Resolved alerts are retained for audit purposes; only unresolved alerts
+    drive the Regiekamer control interface.
+    """
+
+    class Severity(models.TextChoices):
+        HIGH = 'high', 'Hoog'
+        MEDIUM = 'medium', 'Middel'
+        LOW = 'low', 'Laag'
+
+    class AlertType(models.TextChoices):
+        URGENT_UNMATCHED_CASE = 'urgent_unmatched_case', 'Urgente casus zonder match'
+        INCOMPLETE_BEOORDELING = 'incomplete_beoordeling', 'Onvolledige beoordeling'
+        MISSING_CRITICAL_DATA = 'missing_critical_data', 'Kritieke data ontbreekt'
+        WEAK_MATCH_NEEDS_REVIEW = 'weak_match_needs_review', 'Zwakke match – review vereist'
+        PLACEMENT_STALLED = 'placement_stalled', 'Plaatsing stagneert'
+        PROVIDER_CAPACITY_RISK = 'provider_capacity_risk', 'Capaciteitsrisico aanbieder'
+
+    case = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='operational_alerts',
+        verbose_name='Casus',
+    )
+    alert_type = models.CharField(
+        max_length=40,
+        choices=AlertType.choices,
+        verbose_name='Alert type',
+    )
+    severity = models.CharField(
+        max_length=10,
+        choices=Severity.choices,
+        default=Severity.MEDIUM,
+        verbose_name='Ernst',
+    )
+    title = models.CharField(max_length=300, verbose_name='Titel')
+    description = models.TextField(verbose_name='Omschrijving')
+    recommended_action = models.TextField(verbose_name='Aanbevolen actie')
+    created_at = models.DateTimeField(auto_now_add=True)
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='Opgelost op')
+
+    class Meta:
+        db_table = 'contracts_operationalalert'
+        ordering = ['-created_at']
+        verbose_name = 'Operationeel alert'
+        verbose_name_plural = 'Operationele alerts'
+        indexes = [
+            models.Index(fields=['case', 'alert_type', 'resolved_at']),
+            models.Index(fields=['severity', 'resolved_at']),
+        ]
+
+    def __str__(self):
+        return f'[{self.get_severity_display()}] {self.title} – casus {self.case_id}'
+
+    @property
+    def is_resolved(self):
+        return self.resolved_at is not None
