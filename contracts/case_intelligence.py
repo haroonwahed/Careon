@@ -1,8 +1,90 @@
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from contracts.governance import get_policy_values
 from contracts.provider_metrics import build_provider_behavior_metrics, derive_behavior_signals
+
+
+# ---------------------------------------------------------------------------
+# Rejection reason taxonomy
+# Maps OutcomeReasonCode values (from models.OutcomeReasonCode) to structured
+# guidance used in build_v3_evidence() provider_feedback output.
+# ---------------------------------------------------------------------------
+
+REJECTION_TAXONOMY: Dict[str, Dict[str, str]] = {
+    'CAPACITY': {
+        'label': 'Capaciteit',
+        'description': 'Aanbieder heeft onvoldoende capaciteit voor plaatsing.',
+        'guidance': 'Selecteer een aanbieder met aantoonbaar beschikbare capaciteit.',
+        'matching_signal': 'Prioriteer kandidaten met vrije capaciteit in komende 14 dagen.',
+    },
+    'WAITLIST': {
+        'label': 'Wachtlijst',
+        'description': 'Aanbieder heeft cliënt op wachtlijst geplaatst.',
+        'guidance': 'Overweeg aanbieder zonder wachtlijst of verhoog urgentie.',
+        'matching_signal': 'Filter op aanbieders met wachttijd ≤ 14 dagen.',
+    },
+    'CLIENT_DECLINED': {
+        'label': 'Cliënt heeft afgezien',
+        'description': 'Cliënt heeft zelf de plaatsing bij deze aanbieder afgewezen.',
+        'guidance': 'Bespreek voorkeuren en bezwaren opnieuw met cliënt.',
+        'matching_signal': 'Verifieer cliëntvoorkeur vóór volgende aanbiedersselectie.',
+    },
+    'PROVIDER_DECLINED': {
+        'label': 'Aanbieder heeft afgewezen',
+        'description': 'Aanbieder heeft de casus expliciet afgewezen.',
+        'guidance': 'Herstart matching met een andere aanbieder.',
+        'matching_signal': 'Markeer aanbieder als niet-beschikbaar voor deze casus.',
+    },
+    'NO_SHOW': {
+        'label': 'Niet verschenen',
+        'description': 'Cliënt of aanbieder is niet verschenen bij intake.',
+        'guidance': 'Controleer cliëntbetrokkenheid en plan herhaalde intake.',
+        'matching_signal': 'Noteer no-show risico in cliëntprofiel.',
+    },
+    'NO_RESPONSE': {
+        'label': 'Geen reactie',
+        'description': 'Aanbieder heeft niet gereageerd op plaatsingsverzoek.',
+        'guidance': 'Escaleer: aanbieder reageert niet binnen SLA-termijn.',
+        'matching_signal': 'Deprioriteer aanbieder bij toekomstige matches totdat reactie is ontvangen.',
+    },
+    'CARE_MISMATCH': {
+        'label': 'Zorgvraag past niet',
+        'description': 'Zorgvraag van cliënt sluit niet aan op het aanbod van de aanbieder.',
+        'guidance': 'Verfijn het zorgprofiel en selecteer een aanbieder met passende specialisatie.',
+        'matching_signal': 'Verhoog gewicht van specialisatiematch bij hermatching.',
+    },
+    'REGION_MISMATCH': {
+        'label': 'Regio past niet',
+        'description': 'Aanbieder valt buiten de voorkeursregio van cliënt.',
+        'guidance': 'Selecteer een aanbieder in de voorkeursregio.',
+        'matching_signal': 'Beperk kandidatenlijst tot aanbieders binnen gewenste regio.',
+    },
+    'SAFETY_RISK': {
+        'label': 'Veiligheidsrisico',
+        'description': 'Er is een veiligheidsrisico gesignaleerd bij de voorgestelde plaatsing.',
+        'guidance': 'Escaleer direct naar casemanager: veiligheidsrisico vereist menselijke beslissing.',
+        'matching_signal': 'Blokkeer automatische rematch – handmatige goedkeuring vereist.',
+    },
+    'ADMINISTRATIVE_BLOCK': {
+        'label': 'Administratieve blokkade',
+        'description': 'Administratieve of contractuele blokkade verhindert plaatsing.',
+        'guidance': 'Verhelp administratieve blokkade vóór opnieuw starten van matching.',
+        'matching_signal': 'Controleer contract- en toelatingsstatus bij aanbieder.',
+    },
+    'OTHER': {
+        'label': 'Anders',
+        'description': 'Reden voor afwijzing valt buiten de standaard categorieën.',
+        'guidance': 'Registreer specifieke reden en overleg met casemanager.',
+        'matching_signal': 'Documenteer reden voor toekomstige beslissingsondersteuning.',
+    },
+    'NONE': {
+        'label': 'Geen specifieke reden',
+        'description': 'Geen reden opgegeven voor de uitkomst.',
+        'guidance': 'Vraag de aanbieder om een specifieke reden te vermelden.',
+        'matching_signal': '',
+    },
+}
 
 
 CASE_DATA_REQUIRED_FIELDS = (
@@ -1176,13 +1258,34 @@ def generate_candidate_hints(case_data: Dict[str, Any]) -> List[Dict[str, Any]]:
                 hint_code = "high_confidence_alternative"
                 hint = "Sterk alternatief met hogere confidence dan de eerste optie."
 
-            if top_trade_offs:
+        try:
+            _metrics = build_provider_behavior_metrics(candidate["provider_id"])
+            behavior_signals = derive_behavior_signals(_metrics)
+        except Exception:
+            _metrics = {}
+            behavior_signals = {}
+
+        # Build specific comparison text explaining why this candidate differs from #1
+        if index > 0:
+            comparison_parts: List[str] = []
+            if candidate["has_capacity_issue"] is False and top_candidate["has_capacity_issue"] is True:
+                comparison_parts.append("betere capaciteit")
+            if candidate["wait_days"] < top_candidate["wait_days"]:
+                diff = top_candidate["wait_days"] - candidate["wait_days"]
+                comparison_parts.append(f"kortere wachttijd ({diff} dagen minder)")
+            if (not candidate.get("has_region_mismatch")) and top_candidate.get("has_region_mismatch"):
+                comparison_parts.append("betere regio-overeenkomst")
+            if confidence == "high" and top_confidence != "high":
+                comparison_parts.append("hogere confidence")
+            if comparison_parts:
+                comparison_to_top = (
+                    f"Voordeel t.o.v. optie 1: {', '.join(comparison_parts)}. "
+                    f"Topoptie heeft {len(top_trade_offs)} trade-off(s), deze optie {len(trade_offs)}."
+                )
+            elif top_trade_offs:
                 comparison_to_top = (
                     f"Topoptie heeft {len(top_trade_offs)} trade-off(s), deze optie {len(trade_offs)}."
                 )
-
-        _metrics = build_provider_behavior_metrics(candidate["provider_id"])
-        behavior_signals = derive_behavior_signals(_metrics)
 
         hints.append(
             {
@@ -1244,17 +1347,37 @@ def build_v3_evidence(
         fit_summary = 'Geen kandidaten beschikbaar voor matching.'
 
     # ── Confidence score ─────────────────────────────────────────────────────
+    # Base score from match quality label — only meaningful when candidates exist
     raw_confidence = _normalize_confidence(case_data.get('top_match_confidence'))
-    base_confidence = _CONFIDENCE_MAP.get(raw_confidence, 0.0)
-    # Penalise for each active risk signal
-    penalty = min(len(risk_signals) * 0.05, 0.3)
-    # Bonus for reliable provider (from top hint behavior signals)
-    bonus = 0.0
-    if top_hint:
-        behavior = top_hint.get('behavior_signals') or {}
-        if behavior.get('response_speed') == 'fast' and behavior.get('acceptance_pattern') == 'high':
-            bonus = 0.1
-    confidence = round(max(0.0, min(1.0, base_confidence - penalty + bonus)), 2)
+    if not candidate_hints or not case_data.get('matching_run_exists'):
+        # No candidates or no matching run → confidence is 0
+        confidence = 0.0
+    else:
+        base_confidence = _CONFIDENCE_MAP.get(raw_confidence, 0.0)
+        # Penalise for each active risk signal (max −0.30)
+        penalty = min(len(risk_signals) * 0.05, 0.30)
+        # Additional penalty for repeated rejections
+        rejected_count_for_conf = _coerce_int(case_data.get('rejected_provider_count'))
+        if rejected_count_for_conf >= 2:
+            penalty = min(penalty + 0.10, 0.40)
+        # Calibrate using provider outcome signals when available
+        behavior_adj = 0.0
+        if top_hint:
+            behavior = top_hint.get('behavior_signals') or {}
+            # Outcome-based bonus: fast responder + high acceptance + good intake success
+            if (
+                behavior.get('response_speed') == 'fast'
+                and behavior.get('acceptance_pattern') == 'high'
+            ):
+                behavior_adj += 0.08
+                if behavior.get('intake_pattern') in ('high_success', 'good'):
+                    behavior_adj += 0.05
+            # Outcome-based penalty: frequent no-capacity / slow responder
+            if behavior.get('capacity_pattern') in ('often_full', 'limited'):
+                behavior_adj -= 0.07
+            if behavior.get('response_speed') == 'slow':
+                behavior_adj -= 0.05
+        confidence = round(max(0.0, min(1.0, base_confidence - penalty + behavior_adj)), 2)
 
     # ── Factor breakdown ─────────────────────────────────────────────────────
     factor_breakdown: List[str] = []
@@ -1301,6 +1424,18 @@ def build_v3_evidence(
         verification_guidance.append(
             f'Bespreek wachttijd van {top_hint["wait_days"]} dagen met de cliënt.'
         )
+    # Add guidance from rejection taxonomy if a reason code is present
+    reason_code = str(case_data.get('rejection_reason_code') or '').strip().upper()
+    if reason_code and reason_code != 'NONE':
+        taxonomy_entry = REJECTION_TAXONOMY.get(reason_code)
+        if taxonomy_entry and taxonomy_entry.get('guidance'):
+            guidance_text = taxonomy_entry['guidance']
+            if guidance_text not in verification_guidance:
+                verification_guidance.append(guidance_text)
+        if taxonomy_entry and taxonomy_entry.get('matching_signal'):
+            signal_text = taxonomy_entry['matching_signal']
+            if signal_text and signal_text not in verification_guidance:
+                verification_guidance.append(signal_text)
     for signal in risk_signals:
         action = signal.get('action')
         if action and action not in verification_guidance:
@@ -1319,13 +1454,28 @@ def build_v3_evidence(
             'WAITLIST': 'waitlist',
             'PENDING': 'pending',
         }
+        # Build risk_notes from rejection count and taxonomy
+        risk_note_parts: List[str] = []
+        if rejected_count >= 2:
+            risk_note_parts.append('Herhaalde afwijzing — heroverweeg selectiecriteria.')
+        # Taxonomy-based matching signal for future matching
+        if reason_code and reason_code != 'NONE':
+            taxonomy_entry = REJECTION_TAXONOMY.get(reason_code)
+            if taxonomy_entry and taxonomy_entry.get('matching_signal'):
+                risk_note_parts.append(taxonomy_entry['matching_signal'])
+
+        # Human-readable label for the reason code
+        taxonomy_label = ''
+        if reason_code and reason_code != 'NONE':
+            taxonomy_entry = REJECTION_TAXONOMY.get(reason_code)
+            taxonomy_label = taxonomy_entry['label'] if taxonomy_entry else reason_code
+
         provider_feedback = {
             'provider_name': provider_name or 'Onbekend',
             'decision': decision_map.get(provider_response_status, provider_response_status.lower()),
-            'reason_code': case_data.get('rejection_reason_code') or '',
-            'risk_notes': (
-                'Herhaalde afwijzing — heroverweeg selectiecriteria.' if rejected_count >= 2 else ''
-            ),
+            'reason_code': reason_code,
+            'reason_label': taxonomy_label,
+            'risk_notes': ' '.join(risk_note_parts),
             'attempt_count': rejected_count,
             'sla_state': intelligence.get('sla_state', ''),
         }
