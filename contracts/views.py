@@ -45,7 +45,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
-    OutcomeReasonCode, SimulationRun, SimulatedCaseResult,
+    OutcomeReasonCode, SimulationRun, SimulatedCaseResult, RegiekamerAlert,
 )
 from .middleware import log_action
 from .permissions import (
@@ -7287,3 +7287,102 @@ def simulation_dashboard(request):
         ],
     }
     return render(request, 'contracts/simulation_dashboard.html', context)
+
+
+# ============================================================
+# REGIEKAMER – OPERATIONAL ALERT CONTROL INTERFACE
+# ============================================================
+
+@login_required
+def regiekamer(request):
+    """Regiekamer: operational alert control interface.
+
+    Generates/refreshes alerts for the user's organization on each visit,
+    then presents them grouped by severity with direct CTA buttons.
+    """
+    from contracts.alert_engine import generate_alerts_for_organization
+    from contracts.models import RegiekamerAlert
+
+    org = get_user_organization(request.user)
+    if org is None:
+        context = {
+            'no_org': True,
+            'alert_groups': [],
+            'counters': {},
+        }
+        return render(request, 'contracts/regiekamer.html', context)
+
+    # Refresh alerts for this org (idempotent)
+    try:
+        generate_alerts_for_organization(org.pk)
+    except Exception:
+        pass
+
+    # Fetch all open alerts ordered by severity then created_at
+    severity_order = {
+        RegiekamerAlert.Severity.CRITICAL: 0,
+        RegiekamerAlert.Severity.HIGH: 1,
+        RegiekamerAlert.Severity.MEDIUM: 2,
+        RegiekamerAlert.Severity.LOW: 3,
+    }
+    open_alerts = list(
+        RegiekamerAlert.objects.filter(
+            organization=org,
+            is_resolved=False,
+        )
+        .select_related('case', 'placement', 'placement__proposed_provider')
+        .order_by('created_at')
+    )
+    open_alerts.sort(key=lambda a: (severity_order.get(a.severity, 9), a.created_at))
+
+    # Build counters
+    _AT = RegiekamerAlert.AlertType
+    counters = {
+        'total': len(open_alerts),
+        'critical': sum(1 for a in open_alerts if a.severity == RegiekamerAlert.Severity.CRITICAL),
+        'urgent_unmatched': sum(1 for a in open_alerts if a.alert_type == _AT.URGENT_UNMATCHED),
+        'blocked_data': sum(1 for a in open_alerts if a.alert_type == _AT.MISSING_CRITICAL_DATA),
+        'no_capacity': sum(1 for a in open_alerts if a.alert_type == _AT.NO_CAPACITY),
+        'weak_match': sum(1 for a in open_alerts if a.alert_type == _AT.WEAK_MATCH),
+        'stalled_placement': sum(1 for a in open_alerts if a.alert_type == _AT.PLACEMENT_STALLED),
+    }
+
+    # Group by severity
+    alert_groups = []
+    for sev_code, sev_label in RegiekamerAlert.Severity.choices:
+        group = [a for a in open_alerts if a.severity == sev_code]
+        if group:
+            alert_groups.append({
+                'severity': sev_code,
+                'severity_label': sev_label,
+                'alerts': group,
+                'count': len(group),
+            })
+
+    context = {
+        'alert_groups': alert_groups,
+        'counters': counters,
+        'org': org,
+        'no_org': False,
+        'alert_type_labels': dict(RegiekamerAlert.AlertType.choices),
+    }
+    return render(request, 'contracts/regiekamer.html', context)
+
+
+@login_required
+def resolve_alert(request, alert_pk):
+    """Manually resolve a Regiekamer alert via POST."""
+    from contracts.alert_engine import resolve_alert_manually
+    from django.contrib import messages
+
+    if request.method != 'POST':
+        return redirect(reverse('careon:regiekamer'))
+
+    alert = resolve_alert_manually(alert_pk, resolved_by_user=request.user)
+    if alert:
+        messages.success(request, f'Alert "{alert.get_alert_type_display()}" afgehandeld.')
+    else:
+        messages.warning(request, 'Alert niet gevonden of al afgehandeld.')
+
+    next_url = request.POST.get('next') or reverse('careon:regiekamer')
+    return redirect(next_url)

@@ -3539,3 +3539,115 @@ class SimulatedCaseResult(models.Model):
 
     def __str__(self):
         return f'Run#{self.run_id} Casus#{self.case_number} ({self.get_current_phase_display()})'
+
+
+# ============================================
+# REGIEKAMER ALERT MODEL
+# ============================================
+
+class RegiekamerAlert(models.Model):
+    """Operational alert generated from centralized case evaluation output.
+
+    Alert rows are idempotent: one open alert per (case, alert_type) at a time.
+    They are resolved automatically when the underlying condition no longer
+    applies, or manually via the Regiekamer interface.
+    """
+
+    class Severity(models.TextChoices):
+        CRITICAL = 'CRITICAL', 'Kritiek'
+        HIGH = 'HIGH', 'Hoog'
+        MEDIUM = 'MEDIUM', 'Middel'
+        LOW = 'LOW', 'Laag'
+
+    class AlertType(models.TextChoices):
+        URGENT_UNMATCHED = 'urgent_unmatched_case', 'Urgente casus zonder match'
+        MISSING_CRITICAL_DATA = 'missing_critical_data', 'Ontbrekende kritieke gegevens'
+        INCOMPLETE_BEOORDELING = 'incomplete_beoordeling', 'Onvolledige beoordeling'
+        WEAK_MATCH = 'weak_match_needs_review', 'Zwakke match – review vereist'
+        NO_CAPACITY = 'no_capacity_available', 'Geen capaciteit beschikbaar'
+        PLACEMENT_STALLED = 'placement_stalled', 'Plaatsing vastgelopen'
+
+    # Core identifiers
+    organization = models.ForeignKey(
+        'Organization',
+        on_delete=models.CASCADE,
+        related_name='regiekamer_alerts',
+    )
+    case = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='regiekamer_alerts',
+        verbose_name='Casus',
+    )
+    placement = models.ForeignKey(
+        'PlacementRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='regiekamer_alerts',
+        verbose_name='Plaatsing',
+    )
+
+    # Alert classification
+    alert_type = models.CharField(
+        max_length=40,
+        choices=AlertType.choices,
+        verbose_name='Type alert',
+        db_index=True,
+    )
+    severity = models.CharField(
+        max_length=10,
+        choices=Severity.choices,
+        default=Severity.MEDIUM,
+        verbose_name='Prioriteit',
+        db_index=True,
+    )
+
+    # Human-readable content
+    title = models.CharField(max_length=300, verbose_name='Titel')
+    description = models.TextField(blank=True, verbose_name='Omschrijving')
+    recommended_action = models.TextField(blank=True, verbose_name='Aanbevolen actie')
+
+    # Pipeline context
+    source_phase = models.CharField(max_length=30, blank=True, verbose_name='Bron fase')
+
+    # Resolution
+    is_resolved = models.BooleanField(default=False, db_index=True, verbose_name='Afgehandeld')
+    resolved_at = models.DateTimeField(null=True, blank=True, verbose_name='Afgehandeld op')
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_alerts',
+        verbose_name='Afgehandeld door',
+    )
+    auto_resolved = models.BooleanField(
+        default=False,
+        verbose_name='Automatisch afgehandeld',
+        help_text='True when resolved because the underlying case condition changed.',
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'contracts_regiekameralert'
+        ordering = ['-severity', 'created_at']
+        verbose_name = 'Regiekamer Alert'
+        verbose_name_plural = 'Regiekamer Alerts'
+        # Enforce one open alert per (case, type) at a time.
+        constraints = [
+            models.UniqueConstraint(
+                fields=['case', 'alert_type'],
+                condition=models.Q(is_resolved=False),
+                name='unique_open_alert_per_case_type',
+            )
+        ]
+        indexes = [
+            models.Index(fields=['organization', 'is_resolved', 'severity']),
+            models.Index(fields=['case', 'alert_type', 'is_resolved']),
+        ]
+
+    def __str__(self):
+        return f'[{self.severity}] {self.get_alert_type_display()} – {self.case.title}'
