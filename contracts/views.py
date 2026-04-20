@@ -1380,6 +1380,7 @@ def sync_automatic_deadlines_for_organization(org, user=None):
 
 PHASE_TO_PROCESS_STATUS = {
     CareCase.CasePhase.INTAKE: CaseIntakeProcess.ProcessStatus.INTAKE,
+    CareCase.CasePhase.BEOORDELING: CaseIntakeProcess.ProcessStatus.INTAKE,
     CareCase.CasePhase.MATCHING: CaseIntakeProcess.ProcessStatus.MATCHING,
     CareCase.CasePhase.PROVIDER_BEOORDELING: CaseIntakeProcess.ProcessStatus.MATCHING,
     CareCase.CasePhase.PLAATSING: CaseIntakeProcess.ProcessStatus.DECISION,
@@ -6131,10 +6132,10 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'href': _resolve_stall_href,
                 'band': 'today',
             },
-            'start_monitoring': {
-                'label': 'Start actieve monitoring',
-                'href': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=tijdlijn",
-                'band': 'monitor',
+            'start_intake_handover': {
+                'label': 'Start intake-overdracht bij aanbieder',
+                'href': reverse('careon:intake_handoff_list'),
+                'band': 'today',
             },
             'monitor': {
                 'label': 'Monitor voortgang',

@@ -133,13 +133,13 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
         self.assertEqual(action["code"], "resolve_placement_stall")
         self.assertEqual(action["priority"], 6)
 
-    def test_next_best_action_start_monitoring_when_placement_approved(self):
+    def test_next_best_action_start_intake_handover_when_placement_approved(self):
         case_data = self._base_case_data()
         case_data["placement_status"] = "APPROVED"
 
         action = determine_next_best_action(case_data)
 
-        self.assertEqual(action["code"], "start_monitoring")
+        self.assertEqual(action["code"], "start_intake_handover")
         self.assertEqual(action["priority"], 7)
 
     def test_next_best_action_monitor_when_no_blockers(self):
@@ -296,7 +296,7 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
 
         self.assertEqual(result["missing_information"], [])
         self.assertEqual(result["risk_signals"], [])
-        self.assertEqual(result["next_best_action"]["code"], "start_monitoring")
+        self.assertEqual(result["next_best_action"]["code"], "start_intake_handover")
         self.assertEqual(result["candidate_hints"][0]["provider_id"], 101)
         self.assertEqual(result["candidate_hints"][0]["hint_code"], "top_recommended")
         self.assertIn("Beste optie", result["candidate_hints"][0]["hint"])

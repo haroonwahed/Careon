@@ -1002,3 +1002,37 @@ class LogDecisionEvaluationTests(TestCase):
                 event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
             ).exists()
         )
+
+    def test_log_deduplication_skips_repeated_same_code(self):
+        from contracts.governance import log_decision_evaluation
+
+        # First call: writes (no prior record).
+        result1 = log_decision_evaluation(self.intake.pk, self._make_intelligence(code='run_matching', priority=3))
+        self.assertTrue(result1)
+
+        # Second call with same code: deduplication kicks in — no new row.
+        result2 = log_decision_evaluation(self.intake.pk, self._make_intelligence(code='run_matching', priority=3))
+        self.assertFalse(result2)
+
+        self.assertEqual(
+            CaseDecisionLog.objects.filter(
+                case_id=self.intake.pk,
+                event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+            ).count(),
+            1,
+        )
+
+    def test_log_deduplication_writes_when_code_changes(self):
+        from contracts.governance import log_decision_evaluation
+
+        log_decision_evaluation(self.intake.pk, self._make_intelligence(code='run_matching', priority=3))
+        result = log_decision_evaluation(self.intake.pk, self._make_intelligence(code='start_beoordeling', priority=2))
+
+        self.assertTrue(result)
+        self.assertEqual(
+            CaseDecisionLog.objects.filter(
+                case_id=self.intake.pk,
+                event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+            ).count(),
+            2,
+        )

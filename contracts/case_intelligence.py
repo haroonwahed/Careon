@@ -1142,13 +1142,14 @@ def determine_next_best_action(
             "behavior_reason": None,
         }
 
-    # When placement is confirmed/approved, transition to active monitoring.
+    # When placement is approved/completed, transition to provider intake handover.
+    # This aligns with the canonical Zorg OS flow: Plaatsing → Intake (provider intake/overdracht).
     placement_status = str(case_data.get("placement_status") or "").strip().upper()
     if placement_status in {"APPROVED", "COMPLETED"}:
         return {
-            "code": "start_monitoring",
+            "code": "start_intake_handover",
             "priority": 7,
-            "reason": "Plaatsing is bevestigd. Start de actieve monitoring van de casus.",
+            "reason": "Plaatsing is bevestigd. Start de intake-overdracht bij de aanbieder.",
             "behavior_reason": None,
         }
 

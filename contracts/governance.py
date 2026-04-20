@@ -455,6 +455,11 @@ def log_decision_evaluation(
     named case so that operators and auditors can reconstruct how the system
     guided the case forward at any point in time.
 
+    **Deduplication**: a new row is only written when the ``next_best_action_code``
+    differs from the most recently recorded value for this case.  This prevents
+    spam from repeated page loads that produce the same recommendation.  The
+    first-ever evaluation for a case is always recorded.
+
     Logging is best-effort and never blocks the caller on failure.
 
     Args:
@@ -464,11 +469,30 @@ def log_decision_evaluation(
             the evaluation (defaults to ``'system'``).
 
     Returns:
-        ``True`` when the row was written, ``False`` on any error.
+        ``True`` when the row was written, ``False`` on any error or
+        when the recommendation is unchanged from the last logged state.
     """
+    if not case_id:
+        return False
+
     next_best_action = intelligence.get('next_best_action') or {}
+    current_code = next_best_action.get('code')
+
+    # Deduplication: skip write when recommendation is unchanged.
+    last_code = (
+        CaseDecisionLog.objects.filter(
+            Q(case_id=case_id) | Q(case_id_snapshot=case_id),
+            event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+        )
+        .order_by('-id')
+        .values_list('system_recommendation__code', flat=True)
+        .first()
+    )
+    if last_code == current_code:
+        return False
+
     recommendation_context: Dict[str, Any] = {
-        'next_best_action_code': next_best_action.get('code'),
+        'next_best_action_code': current_code,
         'next_best_action_priority': next_best_action.get('priority'),
         'safe_to_proceed': intelligence.get('safe_to_proceed'),
         'sla_state': intelligence.get('sla_state'),
@@ -477,7 +501,7 @@ def log_decision_evaluation(
         'escalation_required': intelligence.get('escalation_required'),
     }
     system_recommendation: Dict[str, Any] = {
-        'code': next_best_action.get('code'),
+        'code': current_code,
         'priority': next_best_action.get('priority'),
         'reason': next_best_action.get('reason'),
     }
