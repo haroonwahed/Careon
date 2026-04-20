@@ -116,6 +116,9 @@ def record_provider_evaluation(
         _log_decision_event(evaluation, placement, decided_by_id, action_source)
         _log_audit(evaluation, intake, placement, decided_by_id, action_source)
 
+        if decision == ProviderEvaluation.Decision.NEEDS_MORE_INFO:
+            _create_or_update_info_request(intake, provider, evaluation, requested_info)
+
     return evaluation
 
 
@@ -317,4 +320,26 @@ def _log_audit(
     except Exception:
         logger.exception(
             'Failed to write AuditLog for ProviderEvaluation %s', evaluation.pk
+        )
+
+
+def _create_or_update_info_request(
+    intake: CaseIntakeProcess,
+    provider: Client,
+    evaluation: ProviderEvaluation,
+    requested_info: str,
+) -> None:
+    """Delegate to information_request_service — wrapped so import errors don't block evaluation."""
+    try:
+        from .information_request_service import create_or_update_info_request
+        create_or_update_info_request(
+            intake=intake,
+            provider=provider,
+            evaluation=evaluation,
+            requested_info_text=requested_info,
+        )
+    except Exception:
+        logger.exception(
+            'Failed to create/update CaseInformationRequest for ProviderEvaluation %s',
+            evaluation.pk,
         )

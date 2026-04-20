@@ -890,3 +890,104 @@ def build_tuning_observability_report(organization: Any) -> Dict[str, Any]:
         "low_confidence_accepted": build_low_confidence_accepted_report(organization),
         "top_overridden_rules": build_top_overridden_rules_report(organization),
     }
+
+
+def build_info_request_metrics_report(organization: Any) -> Dict[str, Any]:
+    """Compute observability metrics for the provider information request loop.
+
+    Metrics
+    -------
+    - total_open: open or in_progress requests for the org
+    - total_resolved: resolved or resubmitted requests for the org
+    - average_resolution_hours: average hours between created_at and resolved_at
+    - stale_count: requests open for more than STALE_DAYS days
+    - repeated_request_cases: cases with ≥2 information requests (repeat loop)
+    - providers_with_most_requests: top providers by total info-request count
+    - data_available: False when there are no requests at all
+    """
+    try:
+        from django.db.models import Avg, Count, ExpressionWrapper, F, FloatField
+        from django.utils import timezone
+        from contracts.models import CaseInformationRequest
+
+        _STALE_DAYS = 3
+        cutoff = timezone.now() - __import__('datetime').timedelta(days=_STALE_DAYS)
+
+        base_qs = CaseInformationRequest.objects.filter(case__organization=organization)
+        total = base_qs.count()
+        if not total:
+            return {
+                "total_open": 0,
+                "total_resolved": 0,
+                "average_resolution_hours": None,
+                "stale_count": 0,
+                "repeated_request_cases": [],
+                "providers_with_most_requests": [],
+                "data_available": False,
+            }
+
+        open_statuses = [CaseInformationRequest.Status.OPEN, CaseInformationRequest.Status.IN_PROGRESS]
+        closed_statuses = [CaseInformationRequest.Status.RESOLVED, CaseInformationRequest.Status.RESUBMITTED]
+
+        total_open = base_qs.filter(status__in=open_statuses).count()
+        total_resolved = base_qs.filter(status__in=closed_statuses).count()
+        stale_count = base_qs.filter(status__in=open_statuses, created_at__lt=cutoff).count()
+
+        # Average resolution time (only for requests that have a resolved_at)
+        resolved_qs = base_qs.filter(resolved_at__isnull=False)
+        avg_resolution_hours: Optional[float] = None
+        if resolved_qs.exists():
+            # Compute in Python to avoid DB-level interval arithmetic portability issues
+            durations = []
+            for req in resolved_qs.only('created_at', 'resolved_at'):
+                diff = req.resolved_at - req.created_at
+                durations.append(diff.total_seconds() / 3600.0)
+            avg_resolution_hours = round(sum(durations) / len(durations), 1) if durations else None
+
+        # Cases with repeated requests (≥2 info requests)
+        repeated_cases_qs = (
+            base_qs.values('case')
+            .annotate(request_count=Count('id'))
+            .filter(request_count__gte=2)
+            .order_by('-request_count')[:20]
+        )
+        repeated_request_cases = [
+            {"case_id": row["case"], "request_count": row["request_count"]}
+            for row in repeated_cases_qs
+        ]
+
+        # Providers with most info requests
+        providers_qs = (
+            base_qs.values('provider', 'provider__name')
+            .annotate(total_requests=Count('id'))
+            .order_by('-total_requests')[:10]
+        )
+        providers_with_most_requests = [
+            {
+                "provider_id": row["provider"],
+                "provider_name": row["provider__name"],
+                "total_requests": row["total_requests"],
+            }
+            for row in providers_qs
+        ]
+
+        return {
+            "total_open": total_open,
+            "total_resolved": total_resolved,
+            "average_resolution_hours": avg_resolution_hours,
+            "stale_count": stale_count,
+            "repeated_request_cases": repeated_request_cases,
+            "providers_with_most_requests": providers_with_most_requests,
+            "data_available": True,
+        }
+    except Exception:
+        logger.exception("build_info_request_metrics_report failed")
+        return {
+            "total_open": 0,
+            "total_resolved": 0,
+            "average_resolution_hours": None,
+            "stale_count": 0,
+            "repeated_request_cases": [],
+            "providers_with_most_requests": [],
+            "data_available": False,
+        }

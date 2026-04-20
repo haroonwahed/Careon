@@ -27,6 +27,7 @@ from django.utils import timezone
 from contracts.case_intelligence import evaluate_case_intelligence
 from contracts.models import (
     CaseAssessment,
+    CaseInformationRequest,
     CaseIntakeProcess,
     OperationalAlert,
     PlacementRequest,
@@ -48,6 +49,11 @@ _MISSING_CRITICAL_DATA = OperationalAlert.AlertType.MISSING_CRITICAL_DATA
 _WEAK_MATCH = OperationalAlert.AlertType.WEAK_MATCH_NEEDS_REVIEW
 _PLACEMENT_STALLED = OperationalAlert.AlertType.PLACEMENT_STALLED
 _CAPACITY_RISK = OperationalAlert.AlertType.PROVIDER_CAPACITY_RISK
+_PROVIDER_INFO_REQUESTED = OperationalAlert.AlertType.PROVIDER_INFO_REQUESTED
+_PROVIDER_INFO_STALE = OperationalAlert.AlertType.PROVIDER_INFO_STALE
+
+# Number of days before an open information request is considered stale.
+_INFO_REQUEST_STALE_DAYS = 3
 
 
 # ---------------------------------------------------------------------------
@@ -117,6 +123,7 @@ def _build_case_data_for_alert(intake: CaseIntakeProcess) -> Dict[str, Any]:
         'provider_response_deadline_at': getattr(placement, 'provider_response_deadline_at', None) if placement else None,
         'provider_response_last_reminder_at': getattr(placement, 'provider_response_last_reminder_at', None) if placement else None,
         'now': timezone.now(),
+        'provider_evaluation_nba_code': _get_evaluation_nba_code(intake),
     }
 
 
@@ -125,6 +132,15 @@ def _build_case_data_for_alert(intake: CaseIntakeProcess) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 AlertSpec = Tuple[str, str, str, str, str]  # (alert_type, severity, title, description, recommended_action)
+
+
+def _get_evaluation_nba_code(intake: CaseIntakeProcess) -> str | None:
+    """Return evaluation NBA code without creating a circular import loop."""
+    try:
+        from contracts.provider_evaluation_service import get_evaluation_nba_code
+        return get_evaluation_nba_code(intake)
+    except Exception:
+        return None
 
 
 def _evaluate_alert_specs(
@@ -227,7 +243,53 @@ def _evaluate_alert_specs(
             action,
         ))
 
+    # ── provider_info_requested / provider_info_stale ─────────────────────
+    open_requests = _get_open_info_requests(intake)
+    if open_requests:
+        now = timezone.now()
+        stale_cutoff = now - __import__('datetime').timedelta(days=_INFO_REQUEST_STALE_DAYS)
+        oldest_created_at = min(r.created_at for r in open_requests)
+        provider_name = open_requests[0].provider.name if open_requests else ''
+        if oldest_created_at < stale_cutoff:
+            specs.append((
+                _PROVIDER_INFO_STALE,
+                _HIGH,
+                'Informatieverzoek verlopen',
+                (
+                    f'Aanbieder "{provider_name}" wacht al meer dan {_INFO_REQUEST_STALE_DAYS} dagen '
+                    f'op aanvullende informatie. Verzoek is niet tijdig opgelost.'
+                ),
+                'Los het openstaande informatieverzoek direct op en dien de casus opnieuw in.',
+            ))
+        else:
+            specs.append((
+                _PROVIDER_INFO_REQUESTED,
+                _MEDIUM,
+                'Aanbieder vraagt om aanvullende informatie',
+                (
+                    f'Aanbieder "{provider_name}" heeft aanvullende informatie aangevraagd '
+                    f'voordat een besluit kan worden genomen.'
+                ),
+                'Open het informatieverzoek, lever de ontbrekende gegevens aan en dien de casus opnieuw in.',
+            ))
+
     return specs
+
+
+def _get_open_info_requests(intake: CaseIntakeProcess) -> list:
+    """Return open CaseInformationRequest objects for *intake* without import loops."""
+    try:
+        return list(
+            CaseInformationRequest.objects.filter(
+                case=intake,
+                status__in=[
+                    CaseInformationRequest.Status.OPEN,
+                    CaseInformationRequest.Status.IN_PROGRESS,
+                ],
+            ).select_related('provider')
+        )
+    except Exception:
+        return []
 
 
 # ---------------------------------------------------------------------------
@@ -370,4 +432,35 @@ def build_regiekamer_summary(organization) -> Dict[str, Any]:
         'total_high': total_high,
         'total': total,
         'provider_health': provider_health,
+        'open_info_requests': _count_open_info_requests(organization),
+        'stale_info_requests': _count_stale_info_requests(organization),
     }
+
+
+def _count_open_info_requests(organization) -> int:
+    try:
+        return CaseInformationRequest.objects.filter(
+            case__organization=organization,
+            status__in=[
+                CaseInformationRequest.Status.OPEN,
+                CaseInformationRequest.Status.IN_PROGRESS,
+            ],
+        ).count()
+    except Exception:
+        return 0
+
+
+def _count_stale_info_requests(organization) -> int:
+    import datetime
+    cutoff = timezone.now() - datetime.timedelta(days=_INFO_REQUEST_STALE_DAYS)
+    try:
+        return CaseInformationRequest.objects.filter(
+            case__organization=organization,
+            status__in=[
+                CaseInformationRequest.Status.OPEN,
+                CaseInformationRequest.Status.IN_PROGRESS,
+            ],
+            created_at__lt=cutoff,
+        ).count()
+    except Exception:
+        return 0

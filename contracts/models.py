@@ -3451,6 +3451,8 @@ class OperationalAlert(models.Model):
         WEAK_MATCH_NEEDS_REVIEW = 'weak_match_needs_review', 'Zwakke match – review vereist'
         PLACEMENT_STALLED = 'placement_stalled', 'Plaatsing stagneert'
         PROVIDER_CAPACITY_RISK = 'provider_capacity_risk', 'Capaciteitsrisico aanbieder'
+        PROVIDER_INFO_REQUESTED = 'provider_info_requested', 'Informatieverzoek aanbieder'
+        PROVIDER_INFO_STALE = 'provider_info_stale', 'Informatieverzoek verlopen'
 
     case = models.ForeignKey(
         'CaseIntakeProcess',
@@ -3621,4 +3623,112 @@ class ProviderEvaluation(models.Model):
             raise ValidationError({'reason_code': 'Redencode is verplicht bij afwijzing.'})
         if self.decision == self.Decision.NEEDS_MORE_INFO and not self.requested_info:
             raise ValidationError({'requested_info': 'Omschrijf welke informatie ontbreekt.'})
+
+
+class CaseInformationRequest(models.Model):
+    """Tracks a provider's request for additional information during case evaluation.
+
+    Created automatically when a ``ProviderEvaluation`` with
+    ``decision=needs_more_info`` is recorded.  The operator is responsible for
+    supplying the requested information and marking the request ready for
+    resubmission, which reopens the provider evaluation loop.
+
+    Business rules
+    --------------
+    - At most one *open* or *in_progress* request per (case, provider) pair at
+      any time.  New needs_more_info evaluations update the existing open
+      request rather than creating duplicates.
+    - ``resolved`` — operator provided info, request closed.
+    - ``resubmitted`` — operator marked case ready for renewed provider
+      evaluation; this re-enters the provider evaluation loop.
+    - History is preserved: old requests are never deleted.
+    """
+
+    class Status(models.TextChoices):
+        OPEN = 'open', 'Open'
+        IN_PROGRESS = 'in_progress', 'In behandeling'
+        RESOLVED = 'resolved', 'Opgelost'
+        RESUBMITTED = 'resubmitted', 'Herindienen'
+
+    case = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='information_requests',
+        verbose_name='Casus',
+    )
+    provider = models.ForeignKey(
+        'Client',
+        on_delete=models.CASCADE,
+        related_name='information_requests',
+        verbose_name='Aanbieder',
+    )
+    evaluation = models.ForeignKey(
+        'ProviderEvaluation',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='information_requests',
+        verbose_name='Beoordeling',
+        help_text='De aanbiederbeoordeling die dit verzoek heeft getriggerd.',
+    )
+    requested_info_text = models.TextField(
+        verbose_name='Gevraagde informatie',
+        help_text='Wat de aanbieder wil weten voordat een besluit kan worden genomen.',
+    )
+    requested_fields = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name='Gevraagde velden',
+        help_text='Optionele gestructureerde lijst van specifiek gevraagde velden of ontbrekende documenten.',
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.OPEN,
+        verbose_name='Status',
+    )
+    operator_response = models.TextField(
+        blank=True,
+        verbose_name='Reactie operator',
+        help_text='Door de operator aangeleverde informatie als reactie op het verzoek.',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Opgelost op',
+    )
+    resolved_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='resolved_information_requests',
+        verbose_name='Opgelost door',
+    )
+
+    class Meta:
+        db_table = 'contracts_caseinformationrequest'
+        ordering = ['-created_at']
+        verbose_name = 'Informatieverzoek'
+        verbose_name_plural = 'Informatieverzoeken'
+        indexes = [
+            models.Index(fields=['case', 'status']),
+            models.Index(fields=['provider', '-created_at']),
+            models.Index(fields=['status', '-created_at']),
+        ]
+
+    def __str__(self):
+        return (
+            f'[{self.get_status_display()}] Informatieverzoek casus {self.case_id} – {self.provider}'
+        )
+
+    @property
+    def is_open(self) -> bool:
+        return self.status in {self.Status.OPEN, self.Status.IN_PROGRESS}
+
+    @property
+    def is_closed(self) -> bool:
+        return self.status in {self.Status.RESOLVED, self.Status.RESUBMITTED}
 

@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Informatieverzoek – {{ intake.title }} – Careon{% endblock %}
+
+{% block content %}
+<div class="page-wrap ds-detail-shell" data-shell="info-request">
+
+  {# ── Breadcrumb + header ──────────────────────────────────────────────── #}
+  <header data-shell-slot="info-request-header">
+    <nav class="ds-breadcrumb">
+      <a href="{% url 'dashboard' %}" class="ds-breadcrumb-link">Regiekamer</a>
+      <span class="mx-1">/</span>
+      <a href="{% url 'careon:case_list' %}" class="ds-breadcrumb-link">Casussen</a>
+      <span class="mx-1">/</span>
+      <a href="{% url 'careon:case_detail' intake.pk %}" class="ds-breadcrumb-link">{{ intake.title }}</a>
+      <span class="mx-1">/</span>
+      <span class="ds-breadcrumb-current">Informatieverzoek</span>
+    </nav>
+
+    <section class="ds-card ds-detail-head mt-2">
+      <div class="ds-detail-card-body">
+        <div class="min-w-0 space-y-2">
+          <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide ds-text-muted">
+            <span class="ds-badge badge-gray">Casus {{ intake.pk }}</span>
+            <span class="ds-badge {% if intake.urgency == 'CRISIS' %}badge-critical{% elif intake.urgency == 'HIGH' %}badge-high{% else %}badge-low{% endif %}">
+              {{ intake.get_urgency_display }}
+            </span>
+          </div>
+          <h1 class="ds-page-title text-2xl font-semibold leading-tight ds-text-strong">
+            Informatieverzoek aanbieder
+          </h1>
+          {% if active_request %}
+          <p class="text-sm ds-text-secondary">
+            Aanbieder: <strong>{{ active_request.provider.name }}</strong>
+            &nbsp;·&nbsp;
+            Status: <span class="font-semibold {% if active_request.status == 'open' %}text-amber-400{% elif active_request.status == 'in_progress' %}text-blue-400{% else %}text-green-400{% endif %}">
+              {{ active_request.get_status_display }}
+            </span>
+          </p>
+          {% endif %}
+        </div>
+        <div class="flex flex-col items-stretch gap-2 sm:items-end">
+          <a href="{{ back_url }}" class="btn btn-ghost">← Terug naar casus</a>
+        </div>
+      </div>
+    </section>
+  </header>
+
+  {# ── Flash messages ───────────────────────────────────────────────────── #}
+  {% if messages %}
+  <div class="ds-messages space-y-2 mt-4">
+    {% for message in messages %}
+    <div class="ds-alert {% if message.tags == 'error' %}ds-alert-error{% elif message.tags == 'success' %}ds-alert-success{% else %}ds-alert-info{% endif %}">
+      {{ message }}
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if not active_request %}
+  {# ── No open request ─────────────────────────────────────────────────── #}
+  <div class="ds-card mt-6 text-center py-10">
+    <p class="ds-text-secondary text-sm">Er zijn geen openstaande informatieverzoeken voor deze casus.</p>
+    <a href="{{ back_url }}" class="btn btn-primary mt-4">Terug naar casus</a>
+  </div>
+
+  {% else %}
+  {# ── Case context summary ─────────────────────────────────────────────── #}
+  <section class="ds-card mt-4">
+    <div class="ds-detail-header">
+      <h2 class="ds-card-title">Casuscontext</h2>
+    </div>
+    <dl class="ds-meta-grid text-sm sm:grid-cols-3">
+      <div>
+        <dt class="ds-meta-label">Zorgcategorie</dt>
+        <dd class="ds-meta-value">{{ intake.care_category_main.name|default:"Niet gespecificeerd" }}</dd>
+      </div>
+      <div>
+        <dt class="ds-meta-label">Urgentie</dt>
+        <dd class="ds-meta-value font-semibold">{{ intake.get_urgency_display }}</dd>
+      </div>
+      <div>
+        <dt class="ds-meta-label">Gewenste zorgvorm</dt>
+        <dd class="ds-meta-value">{{ intake.get_preferred_care_form_display }}</dd>
+      </div>
+      {% if intake.assessment_summary %}
+      <div class="sm:col-span-3">
+        <dt class="ds-meta-label">Beoordelingssamenvatting</dt>
+        <dd class="ds-meta-value whitespace-pre-line text-xs text-zinc-400">{{ intake.assessment_summary }}</dd>
+      </div>
+      {% endif %}
+    </dl>
+  </section>
+
+  {# ── Active request detail ────────────────────────────────────────────── #}
+  <section class="ds-card mt-4 border-l-4 {% if active_request.status == 'open' %}border-amber-500{% else %}border-blue-500{% endif %}">
+    <div class="ds-detail-header">
+      <h2 class="ds-card-title">Wat de aanbieder wil weten</h2>
+      <span class="text-xs ds-text-muted">
+        Verzoek ingediend op {{ active_request.created_at|date:"d-m-Y H:i" }}
+      </span>
+    </div>
+    <div class="mt-3 p-4 rounded-lg bg-amber-900/20 border border-amber-600/30">
+      <p class="text-sm text-amber-200 whitespace-pre-line">{{ active_request.requested_info_text }}</p>
+    </div>
+    {% if active_request.requested_fields %}
+    <div class="mt-3">
+      <p class="text-xs ds-text-muted mb-1">Specifiek gevraagde velden / documenten:</p>
+      <ul class="list-disc list-inside text-xs text-zinc-300 space-y-0.5">
+        {% for field in active_request.requested_fields %}
+        <li>{{ field }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+    {% if active_request.operator_response %}
+    <div class="mt-4 p-3 rounded-lg bg-zinc-800 border border-zinc-600">
+      <p class="text-xs ds-text-muted mb-1">Vorige reactie operator:</p>
+      <p class="text-sm text-zinc-300 whitespace-pre-line">{{ active_request.operator_response }}</p>
+    </div>
+    {% endif %}
+  </section>
+
+  {# ── Resolution form ──────────────────────────────────────────────────── #}
+  <section class="ds-card mt-4">
+    <div class="ds-detail-header">
+      <h2 class="ds-card-title">Informatie aanleveren en verzoek afhandelen</h2>
+    </div>
+    <p class="text-sm ds-text-secondary mt-1 mb-4">
+      Voer de door de aanbieder gevraagde informatie in en kies hoe het verzoek wordt afgehandeld.
+      <strong class="ds-text-strong">Herindienen</strong> stuurt de casus terug naar de aanbieder voor een nieuw besluit.
+    </p>
+    <form method="post" action="{{ action_url }}" id="info-request-form">
+      {% csrf_token %}
+      <input type="hidden" name="request_id" value="{{ active_request.pk }}">
+
+      <div class="mb-4">
+        <label for="operator_response" class="ds-form-label">
+          Aangeleverde informatie <span class="text-red-400">*</span>
+        </label>
+        <textarea
+          id="operator_response"
+          name="operator_response"
+          rows="6"
+          class="ds-input w-full mt-1"
+          placeholder="Beschrijf de informatie die je aanlevert als reactie op het verzoek van de aanbieder…"
+          required
+        >{{ active_request.operator_response }}</textarea>
+      </div>
+
+      <div class="flex flex-wrap gap-3 mt-6">
+        <button
+          type="submit"
+          name="action"
+          value="in_progress"
+          class="btn btn-ghost"
+          title="Sla je voortgang op maar dien nog niet opnieuw in"
+        >
+          Opslaan als in behandeling
+        </button>
+        <button
+          type="submit"
+          name="action"
+          value="resolve"
+          class="btn btn-secondary"
+          title="Markeer het verzoek als opgelost zonder direct te herindienen"
+        >
+          Markeren als opgelost
+        </button>
+        <button
+          type="submit"
+          name="action"
+          value="resubmit"
+          class="btn btn-primary"
+          title="Lever informatie aan én dien de casus opnieuw in voor aanbiedersbeoordeling"
+          onclick="return confirm('Weet je zeker dat je de casus wilt herindienen bij de aanbieder?')"
+        >
+          ✓ Herindienen bij aanbieder
+        </button>
+      </div>
+    </form>
+  </section>
+  {% endif %}
+
+  {# ── History ──────────────────────────────────────────────────────────── #}
+  {% if all_requests|length > 1 or active_request and active_request.is_closed %}
+  <section class="ds-card mt-6">
+    <div class="ds-detail-header">
+      <h2 class="ds-card-title">Geschiedenis informatieverzoeken</h2>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-zinc-400 uppercase text-xs">
+          <tr>
+            <th class="px-3 py-2 text-left">#</th>
+            <th class="px-3 py-2 text-left">Aanbieder</th>
+            <th class="px-3 py-2 text-left">Status</th>
+            <th class="px-3 py-2 text-left">Aangemaakt</th>
+            <th class="px-3 py-2 text-left">Opgelost</th>
+            <th class="px-3 py-2 text-left">Verzoek (samenvatting)</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+          {% for req in all_requests %}
+          <tr class="bg-zinc-900 hover:bg-zinc-800/60 transition">
+            <td class="px-3 py-2 text-zinc-500 text-xs">{{ req.pk }}</td>
+            <td class="px-3 py-2 text-zinc-300">{{ req.provider.name }}</td>
+            <td class="px-3 py-2">
+              <span class="inline-block text-[10px] px-1.5 py-0.5 rounded
+                {% if req.status == 'open' %}bg-amber-800 text-amber-200
+                {% elif req.status == 'in_progress' %}bg-blue-900 text-blue-200
+                {% elif req.status == 'resubmitted' %}bg-green-900 text-green-200
+                {% else %}bg-zinc-700 text-zinc-300{% endif %}">
+                {{ req.get_status_display }}
+              </span>
+            </td>
+            <td class="px-3 py-2 text-zinc-400 text-xs tabular-nums">{{ req.created_at|date:"d-m-Y H:i" }}</td>
+            <td class="px-3 py-2 text-zinc-400 text-xs tabular-nums">
+              {% if req.resolved_at %}{{ req.resolved_at|date:"d-m-Y H:i" }}{% else %}–{% endif %}
+            </td>
+            <td class="px-3 py-2 text-zinc-400 text-xs max-w-xs truncate">
+              {{ req.requested_info_text|truncatechars:80 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+  {% endif %}
+
+</div>
+{% endblock %}

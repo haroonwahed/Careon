@@ -45,7 +45,7 @@ from .models import (
     Client, CareConfiguration, Document, TrustAccount, ProviderProfile,
     Deadline, AuditLog, Notification, UserProfile, CaseAssessment,
     MunicipalityConfiguration, RegionalConfiguration, CaseDecisionLog,
-    OutcomeReasonCode, OperationalAlert, ProviderEvaluation,
+    OutcomeReasonCode, OperationalAlert, ProviderEvaluation, CaseInformationRequest,
 )
 from .middleware import log_action
 from .permissions import (
@@ -5644,6 +5644,154 @@ def _handle_provider_evaluation_post(request, intake, placement, next_fallback):
 
     return _redirect_to_safe_next_or_default(request, next_fallback)
 
+
+# ── Information request resolution views ────────────────────────────────────
+
+@login_required
+def case_info_request_view(request, pk):
+    """Operator-facing page for resolving a provider information request.
+
+    GET  – Show the open request(s) with case context and a resolution form.
+    POST – Delegate to ``case_info_request_action``.
+    """
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(
+            CaseIntakeProcess.objects.select_related(
+                'contract', 'care_category_main', 'preferred_region',
+            ),
+            org,
+        ),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden(
+            'Je hebt geen rechten om informatieverzoeken voor deze casus te beheren.'
+        )
+
+    if request.method == 'POST':
+        return _handle_info_request_post(request, intake)
+
+    from .information_request_service import get_open_requests_for_case, get_all_requests_for_case
+    open_requests = get_open_requests_for_case(intake)
+    all_requests = get_all_requests_for_case(intake)
+
+    # Surface the most recent open request for the resolution form
+    active_request = open_requests[0] if open_requests else None
+
+    return render(request, 'contracts/info_request_resolution.html', {
+        'intake': intake,
+        'active_request': active_request,
+        'open_requests': open_requests,
+        'all_requests': all_requests,
+        'back_url': reverse('careon:case_detail', kwargs={'pk': intake.pk}),
+        'action_url': reverse('careon:case_info_request_action', kwargs={'pk': intake.pk}),
+    })
+
+
+@login_required
+@require_POST
+def case_info_request_action(request, pk):
+    """Handle POST submission for information request resolution or resubmission."""
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not _can_edit_intake(request.user, intake):
+        return HttpResponseForbidden(
+            'Je hebt geen rechten om informatieverzoeken voor deze casus te beheren.'
+        )
+
+    return _handle_info_request_post(request, intake)
+
+
+def _handle_info_request_post(request, intake):
+    """Parse and dispatch a POST action on an information request."""
+    from .information_request_service import (
+        get_open_requests_for_case,
+        mark_info_request_in_progress,
+        resolve_info_request,
+        resubmit_info_request,
+    )
+
+    next_fallback = reverse('careon:case_detail', kwargs={'pk': intake.pk})
+    action = (request.POST.get('action') or '').strip()
+    operator_response = (request.POST.get('operator_response') or '').strip()
+    request_id_raw = (request.POST.get('request_id') or '').strip()
+
+    # Look up the specific request or fall back to the latest open one
+    info_request = None
+    if request_id_raw:
+        try:
+            from .models import CaseInformationRequest
+            info_request = CaseInformationRequest.objects.get(
+                pk=int(request_id_raw), case=intake
+            )
+        except (ValueError, CaseInformationRequest.DoesNotExist):
+            messages.error(request, 'Informatieverzoek niet gevonden.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+    else:
+        open_requests = get_open_requests_for_case(intake)
+        info_request = open_requests[0] if open_requests else None
+
+    if not info_request:
+        messages.error(request, 'Geen openstaand informatieverzoek gevonden voor deze casus.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if not operator_response and action in ('resolve', 'resubmit'):
+        messages.error(request, 'Voer een reactie in voordat je het verzoek oplost of herindient.')
+        return _redirect_to_safe_next_or_default(
+            request, reverse('careon:case_info_request', kwargs={'pk': intake.pk})
+        )
+
+    try:
+        if action == 'in_progress':
+            mark_info_request_in_progress(
+                request_obj=info_request,
+                operator_response=operator_response,
+                updated_by_id=request.user.id,
+            )
+            messages.success(request, 'Informatieverzoek gemarkeerd als in behandeling.')
+        elif action == 'resolve':
+            resolve_info_request(
+                request_obj=info_request,
+                operator_response=operator_response,
+                resolved_by_id=request.user.id,
+            )
+            messages.success(request, 'Informatieverzoek opgelost. De aangevraagde informatie is geregistreerd.')
+        elif action == 'resubmit':
+            resubmit_info_request(
+                request_obj=info_request,
+                operator_response=operator_response,
+                resolved_by_id=request.user.id,
+            )
+            messages.success(
+                request,
+                'Casus herindienen: aanvullende informatie geleverd. '
+                'De aanbieder kan nu opnieuw een beslissing nemen.',
+            )
+        else:
+            messages.error(request, f'Onbekende actie: "{action}".')
+            return _redirect_to_safe_next_or_default(
+                request, reverse('careon:case_info_request', kwargs={'pk': intake.pk})
+            )
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return _redirect_to_safe_next_or_default(
+            request, reverse('careon:case_info_request', kwargs={'pk': intake.pk})
+        )
+
+    try:
+        generate_alerts_for_case(intake)
+    except Exception:
+        logger.exception(
+            'Alert generation failed after info request action for case %s', intake.pk
+        )
+
+    return _redirect_to_safe_next_or_default(request, next_fallback)
 
 
 @login_required
