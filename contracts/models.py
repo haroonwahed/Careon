@@ -3560,12 +3560,23 @@ class RegiekamerAlert(models.Model):
         LOW = 'LOW', 'Laag'
 
     class AlertType(models.TextChoices):
+        # ── V3-native types (preferred) ──────────────────────────────────
         URGENT_UNMATCHED = 'urgent_unmatched_case', 'Urgente casus zonder match'
         MISSING_CRITICAL_DATA = 'missing_critical_data', 'Ontbrekende kritieke gegevens'
-        INCOMPLETE_BEOORDELING = 'incomplete_beoordeling', 'Onvolledige beoordeling'
-        WEAK_MATCH = 'weak_match_needs_review', 'Zwakke match – review vereist'
+        MISSING_SUMMARY = 'missing_summary', 'Samenvatting ontbreekt'
+        SUMMARY_STALE = 'summary_missing_or_stale', 'Samenvatting verouderd of incompleet'
+        WEAK_MATCH_VERIFICATION = 'weak_match_needs_verification', 'Zwakke match – verificatie vereist'
+        PROVIDER_REVIEW_PENDING = 'provider_review_pending', 'Aanbieder beoordeling wacht op actie'
+        PROVIDER_REJECTED = 'provider_rejected_case', 'Casus afgewezen door aanbieder'
+        PROVIDER_CAPACITY_RISK = 'provider_capacity_risk', 'Capaciteitsrisico bij aanbieder'
         NO_CAPACITY = 'no_capacity_available', 'Geen capaciteit beschikbaar'
         PLACEMENT_STALLED = 'placement_stalled', 'Plaatsing vastgelopen'
+        INTAKE_NOT_STARTED = 'intake_not_started', 'Intake nog niet gestart'
+        # ── Legacy types kept for backward compatibility ──────────────────
+        # DEPRECATED: use MISSING_SUMMARY instead
+        INCOMPLETE_BEOORDELING = 'incomplete_beoordeling', 'Onvolledige beoordeling (verouderd)'
+        # DEPRECATED: use WEAK_MATCH_VERIFICATION instead
+        WEAK_MATCH = 'weak_match_needs_review', 'Zwakke match – review vereist (verouderd)'
 
     # Core identifiers
     organization = models.ForeignKey(
@@ -3607,6 +3618,29 @@ class RegiekamerAlert(models.Model):
     title = models.CharField(max_length=300, verbose_name='Titel')
     description = models.TextField(blank=True, verbose_name='Omschrijving')
     recommended_action = models.TextField(blank=True, verbose_name='Aanbevolen actie')
+
+    # V3 decision evidence – structured explainability data attached at alert creation time.
+    # All fields are optional-safe; populated when intelligence data is available.
+    evidence_data = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Beslissingsonderbouwing',
+        help_text=(
+            'V3 structured evidence: fit_summary, confidence, factor_breakdown, '
+            'trade_offs, verification_guidance, provider_feedback.'
+        ),
+    )
+    rejection_count = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name='Aantal afwijzingen',
+        help_text='Number of provider rejections for this case (used to escalate priority).',
+    )
+    rejection_reason_code = models.CharField(
+        max_length=60,
+        blank=True,
+        verbose_name='Reden afwijzing',
+        help_text='Reason code provided by the provider when rejecting the case.',
+    )
 
     # Pipeline context
     source_phase = models.CharField(max_length=30, blank=True, verbose_name='Bron fase')

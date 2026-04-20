@@ -53,6 +53,14 @@ from contracts.operational_decision_contract import (
 _AT = RegiekamerAlert.AlertType
 _SEV = RegiekamerAlert.Severity
 
+# V3 legacy alias mapping: old engine type → V3 native type.
+# Used in _auto_resolve_stale so legacy DB rows are treated as equivalent
+# to their V3 successors when computing which types are still active.
+_LEGACY_ALIAS_MAP = {
+    _AT.INCOMPLETE_BEOORDELING: _AT.MISSING_SUMMARY,
+    _AT.WEAK_MATCH: _AT.WEAK_MATCH_VERIFICATION,
+}
+
 _SEVERITY_ORDER = [_SEV.CRITICAL, _SEV.HIGH, _SEV.MEDIUM, _SEV.LOW]
 
 
@@ -70,6 +78,10 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
 
     Each dict contains the fields needed to upsert a ``RegiekamerAlert``.
     No DB writes happen here — this is pure evaluation.
+
+    All emitted alert_type values are V3-native.  Legacy aliases
+    (incomplete_beoordeling, weak_match_needs_review) are no longer emitted;
+    the alias mapping in views.py handles any legacy DB rows during transition.
     """
     from contracts.operational_decision_contract import OperationalDecisionBuilder
 
@@ -88,6 +100,7 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
     )
 
     S = CaseIntakeProcess.ProcessStatus
+    PR = PlacementRequest.ProviderResponseStatus
     active = []
 
     # ── Rule 1: urgent_unmatched_case ─────────────────────────────────────
@@ -113,10 +126,10 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
 
     # ── Rule 2: missing_critical_data ─────────────────────────────────────
     # Intake has no assessment_summary AND no preferred_region.
-    missing_summary = not (intake.assessment_summary or '').strip()
+    missing_summary_text = not (intake.assessment_summary or '').strip()
     missing_region = not intake.preferred_region_id and not intake.gemeente_id
     missing_age = not intake.client_age_category
-    missing_count = sum([missing_summary, missing_region, missing_age])
+    missing_count = sum([missing_summary_text, missing_region, missing_age])
     if missing_count >= 2:
         active.append({
             'alert_type': _AT.MISSING_CRITICAL_DATA,
@@ -125,7 +138,7 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
             'description': (
                 'De volgende gegevens ontbreken: '
                 + ', '.join(filter(None, [
-                    'intakesamenvatting' if missing_summary else '',
+                    'intakesamenvatting' if missing_summary_text else '',
                     'regio' if missing_region else '',
                     'leeftijdscategorie' if missing_age else '',
                 ]))
@@ -135,58 +148,141 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
             'source_phase': intake.status,
             'placement': None,
         })
+    elif missing_count == 1 and missing_summary_text:
+        # Only the summary is missing — V3 uses a dedicated type for this
+        active.append({
+            'alert_type': _AT.MISSING_SUMMARY,
+            'severity': _SEV.MEDIUM,
+            'title': f'Samenvatting ontbreekt: {intake.title}',
+            'description': (
+                'De intakesamenvatting ontbreekt. Een heldere samenvatting is nodig '
+                'voor betrouwbare matching.'
+            ),
+            'recommended_action': 'Vul de intakesamenvatting aan via de casuspagina.',
+            'source_phase': intake.status,
+            'placement': None,
+        })
 
-    # ── Rule 3: incomplete_beoordeling ────────────────────────────────────
+    # ── Rule 3: missing_summary (V3 – replaces incomplete_beoordeling) ────
     # Case is in MATCHING or beyond but assessment is not matching-ready.
+    # This is distinct from missing_critical_data: data is present but incomplete.
     if intake.status in (S.MATCHING, S.DECISION):
         if assessment is None or not assessment.matching_ready:
-            active.append({
-                'alert_type': _AT.INCOMPLETE_BEOORDELING,
-                'severity': _SEV.MEDIUM,
-                'title': f'Beoordeling niet afgerond: {intake.title}',
-                'description': (
-                    'Casus is doorgeleid naar matching maar de beoordeling is nog niet '
-                    'goedgekeurd voor matching. '
-                    + (assessment.reason_not_ready if assessment and assessment.reason_not_ready else '')
-                ),
-                'recommended_action': 'Rond de casusbeoordeling af en markeer als gereed voor matching.',
-                'source_phase': intake.status,
-                'placement': None,
-            })
+            # Only emit if not already covered by missing_critical_data above
+            already_covered = any(r['alert_type'] == _AT.MISSING_CRITICAL_DATA for r in active)
+            if not already_covered:
+                active.append({
+                    'alert_type': _AT.MISSING_SUMMARY,
+                    'severity': _SEV.MEDIUM,
+                    'title': f'Samenvatting niet matching-klaar: {intake.title}',
+                    'description': (
+                        'Casus is doorgeleid naar matching maar de samenvatting is nog niet '
+                        'volledig voor matching-gebruik. '
+                        + (assessment.reason_not_ready if assessment and assessment.reason_not_ready else '')
+                    ),
+                    'recommended_action': (
+                        'Vul de samenvatting aan en markeer als gereed voor matching.'
+                    ),
+                    'source_phase': intake.status,
+                    'placement': None,
+                })
 
-    # ── Rule 4: weak_match_needs_review ───────────────────────────────────
+    # ── Rule 4: provider_rejected_case (V3-new) ────────────────────────────
+    # Provider has explicitly rejected the case.
+    if placement and placement.provider_response_status == PR.REJECTED:
+        # Count prior open provider_rejected alerts for this case to track attempts
+        prior_rejections = RegiekamerAlert.objects.filter(
+            case=intake,
+            alert_type=_AT.PROVIDER_REJECTED,
+        ).count()
+        rejection_count = prior_rejections + 1
+        sev = _SEV.CRITICAL if rejection_count >= 2 else _severity_for_urgency(intake.urgency)
+        active.append({
+            'alert_type': _AT.PROVIDER_REJECTED,
+            'severity': sev,
+            'title': f'Casus afgewezen door aanbieder: {intake.title}',
+            'description': (
+                f'Aanbieder "{getattr(placement.proposed_provider, "name", "onbekend")}" '
+                f'heeft de casus afgewezen. '
+                f'Poging {rejection_count}.'
+                + (' Herhaalde afwijzing – prioriteit verhoogd.' if rejection_count >= 2 else '')
+            ),
+            'recommended_action': (
+                'Herstart matching en selecteer een alternatieve aanbieder. '
+                'Leg de afwijzingsreden vast voor rapportage.'
+            ),
+            'source_phase': intake.status,
+            'placement': placement,
+            'rejection_count': rejection_count,
+        })
+
+    # ── Rule 5: provider_review_pending (V3-new) ───────────────────────────
+    # Placement is PENDING (within SLA window — not yet stalled).
+    elif placement and placement.provider_response_status == PR.PENDING:
+        ref = (
+            placement.provider_response_last_reminder_at
+            or placement.provider_response_requested_at
+            or placement.updated_at
+        )
+        if ref is not None:
+            now_ts = timezone.now()
+            if not timezone.is_aware(ref):
+                logger.warning(
+                    'Naive datetime encountered for placement pk=%s '
+                    '(checked fields: provider_response_last_reminder_at, '
+                    'provider_response_requested_at, updated_at); '
+                    'this should not happen when USE_TZ=True. Converting to UTC.',
+                    getattr(placement, 'pk', '?'),
+                )
+                ref = make_aware(ref)
+            hours_waiting = max(0, (now_ts - ref).total_seconds() / 3600)
+            if hours_waiting < 72:
+                # Within SLA — emit provider_review_pending, not placement_stalled
+                active.append({
+                    'alert_type': _AT.PROVIDER_REVIEW_PENDING,
+                    'severity': _SEV.MEDIUM,
+                    'title': f'Aanbieder beoordeling wacht: {intake.title}',
+                    'description': (
+                        f'Aanbieder "{getattr(placement.proposed_provider, "name", "onbekend")}" '
+                        f'heeft {int(hours_waiting)} uur niet gereageerd op plaatsingsverzoek.'
+                    ),
+                    'recommended_action': (
+                        'Controleer of de aanbieder het verzoek heeft ontvangen. '
+                        'Stuur een herinnering indien nodig.'
+                    ),
+                    'source_phase': intake.status,
+                    'placement': placement,
+                })
+
+    # ── Rule 6: weak_match_needs_verification (V3 – replaces weak_match_needs_review) ──
     # Placement exists but no_capacity or waitlist + urgency HIGH/CRISIS.
-    if placement and placement.provider_response_status in (
-        PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
-        PlacementRequest.ProviderResponseStatus.WAITLIST,
-    ):
+    if placement and placement.provider_response_status in (PR.NO_CAPACITY, PR.WAITLIST):
         sev = (
             _SEV.CRITICAL
             if intake.urgency == CaseIntakeProcess.Urgency.CRISIS
             else _SEV.HIGH
         )
         active.append({
-            'alert_type': _AT.WEAK_MATCH,
+            'alert_type': _AT.WEAK_MATCH_VERIFICATION,
             'severity': sev,
-            'title': f'Zwakke match – review vereist: {intake.title}',
+            'title': f'Zwakke match – verificatie vereist: {intake.title}',
             'description': (
                 f'Aanbieder "{getattr(placement.proposed_provider, "name", "onbekend")}" '
                 f'heeft geen capaciteit of staat op wachtlijst. '
                 f'Urgentie: {intake.get_urgency_display()}.'
             ),
-            'recommended_action': 'Heroverweeg de match en selecteer een aanbieder met capaciteit.',
+            'recommended_action': 'Verifieer de match en selecteer een aanbieder met capaciteit.',
             'source_phase': intake.status,
             'placement': placement,
         })
 
-    # ── Rule 5: no_capacity_available ─────────────────────────────────────
-    # NO_CAPACITY signal or placement.provider_response_status == NO_CAPACITY.
+    # ── Rule 7: no_capacity_available ─────────────────────────────────────
     no_cap_signal = any(
         s['signal_type'] == CareSignal.SignalType.CAPACITY_ISSUE for s in open_signals
     )
     no_cap_response = (
         placement is not None
-        and placement.provider_response_status == PlacementRequest.ProviderResponseStatus.NO_CAPACITY
+        and placement.provider_response_status == PR.NO_CAPACITY
     )
     if no_cap_signal or no_cap_response:
         active.append({
@@ -204,9 +300,9 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
             'placement': placement,
         })
 
-    # ── Rule 6: placement_stalled ─────────────────────────────────────────
+    # ── Rule 8: placement_stalled ─────────────────────────────────────────
     # Placement exists with PENDING response and no update for > 72 hours.
-    if placement and placement.provider_response_status == PlacementRequest.ProviderResponseStatus.PENDING:
+    if placement and placement.provider_response_status == PR.PENDING:
         ref = (
             placement.provider_response_last_reminder_at
             or placement.provider_response_requested_at
@@ -241,6 +337,35 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
                     'placement': placement,
                 })
 
+    # ── Rule 9: intake_not_started (V3-new) ───────────────────────────────
+    # Provider accepted but intake process has not been started within 5 days.
+    if placement and placement.provider_response_status == PR.ACCEPTED:
+        ref = (
+            placement.provider_response_recorded_at
+            if hasattr(placement, 'provider_response_recorded_at')
+            else placement.updated_at
+        )
+        if ref is not None:
+            now_ts = timezone.now()
+            if not timezone.is_aware(ref):
+                ref = make_aware(ref)
+            days_since_acceptance = max(0, (now_ts - ref).total_seconds() / 86400)
+            if days_since_acceptance >= 5:
+                active.append({
+                    'alert_type': _AT.INTAKE_NOT_STARTED,
+                    'severity': _SEV.LOW,
+                    'title': f'Intake nog niet gestart: {intake.title}',
+                    'description': (
+                        f'Aanbieder heeft geaccepteerd maar de intake is na '
+                        f'{int(days_since_acceptance)} dagen nog niet gestart.'
+                    ),
+                    'recommended_action': (
+                        'Neem contact op met de aanbieder om een intakedatum te plannen.'
+                    ),
+                    'source_phase': intake.status,
+                    'placement': placement,
+                })
+
     return active
 
 
@@ -252,8 +377,13 @@ def _upsert_alert(intake: CaseIntakeProcess, org_id: int, alert_data: dict) -> R
     """Create or update a single open alert for *intake*.
 
     Idempotent: updates existing open alert rather than creating duplicates.
+    Persists V3 evidence fields (evidence_data, rejection_count, rejection_reason_code)
+    when present in alert_data.
     """
     placement = alert_data.pop('placement', None)
+    rejection_count = alert_data.pop('rejection_count', 0)
+    rejection_reason_code = alert_data.pop('rejection_reason_code', '')
+    evidence_data = alert_data.pop('evidence_data', None)
     defaults = {
         'organization_id': org_id,
         'severity': alert_data['severity'],
@@ -266,7 +396,11 @@ def _upsert_alert(intake: CaseIntakeProcess, org_id: int, alert_data: dict) -> R
         'resolved_at': None,
         'resolved_by': None,
         'auto_resolved': False,
+        'rejection_count': rejection_count,
+        'rejection_reason_code': rejection_reason_code,
     }
+    if evidence_data is not None:
+        defaults['evidence_data'] = evidence_data
     alert, _ = RegiekamerAlert.objects.update_or_create(
         case=intake,
         alert_type=alert_data['alert_type'],
@@ -282,12 +416,22 @@ def _auto_resolve_stale(
 ) -> int:
     """Auto-resolve open alerts that no longer match any active rule.
 
+    Legacy DB rows (incomplete_beoordeling, weak_match_needs_review) are treated
+    as equivalent to their V3 successors so they are not incorrectly auto-resolved
+    when the engine now emits the V3 type.
+
     Returns the number of alerts resolved.
     """
+    # Expand active_types to include legacy aliases that map to an active V3 type
+    effective_active: set[str] = set(active_types)
+    for legacy_type, v3_type in _LEGACY_ALIAS_MAP.items():
+        if v3_type in active_types:
+            effective_active.add(legacy_type)
+
     stale = RegiekamerAlert.objects.filter(
         case=intake,
         is_resolved=False,
-    ).exclude(alert_type__in=active_types)
+    ).exclude(alert_type__in=effective_active)
     count = stale.count()
     stale.update(
         is_resolved=True,

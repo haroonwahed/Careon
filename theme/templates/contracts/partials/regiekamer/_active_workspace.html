@@ -122,25 +122,112 @@
     <span style="font-size:13px;">{{ active_workspace.fit_summary }}</span>
   </div>
   {% endif %}
-  {% if active_workspace.confidence %}
+  {% if active_workspace.confidence is not None %}
   <div class="rgk-dc-block" style="margin-bottom:10px;">
     <span class="rgk-dc-label">Matchvertrouwen</span>
-    <strong>{{ active_workspace.confidence }}</strong>
+    {% with c=active_workspace.confidence %}
+    <span style="font-weight:700;font-size:13px;
+      {% if c >= 0.8 %}color:#22c55e;{% elif c >= 0.5 %}color:#f59e0b;{% else %}color:#ef4444;{% endif %}">
+      {% if c >= 0.8 %}Hoog{% elif c >= 0.5 %}Gemiddeld{% else %}Laag{% endif %}
+      ({{ c|floatformat:2 }})
+    </span>
+    {% endwith %}
   </div>
   {% endif %}
   {% if active_workspace.factor_breakdown %}
   <div class="rgk-dc-block" style="margin-bottom:10px;">
     <span class="rgk-dc-label">Factoranalyse</span>
-    <span style="font-size:12px;color:var(--app-muted);">{{ active_workspace.factor_breakdown }}</span>
+    <ul style="margin:4px 0 0 14px;padding:0;font-size:12px;color:var(--app-muted);">
+      {% for factor in active_workspace.factor_breakdown %}
+      <li>{{ factor }}</li>
+      {% endfor %}
+    </ul>
   </div>
   {% endif %}
   {% if active_workspace.trade_offs %}
   <div class="rgk-dc-block">
     <span class="rgk-dc-label">Afwegingen</span>
-    <span style="font-size:12px;color:var(--app-muted);">{{ active_workspace.trade_offs }}</span>
+    <ul style="margin:4px 0 0 14px;padding:0;font-size:12px;color:var(--app-muted);">
+      {% for t in active_workspace.trade_offs %}
+      <li>{{ t }}</li>
+      {% endfor %}
+    </ul>
   </div>
   {% endif %}
 </div>
+{% endif %}
+
+{# ── Verification guidance checklist ── #}
+{% if active_workspace.verification_guidance %}
+<div class="rgk-decision-card" style="margin-bottom:14px;">
+  <div class="rgk-dc-hdr">
+    <h3 style="font-size:14px;">Verificatiechecklist</h3>
+    <span style="font-size:11px;color:var(--app-muted);">Controleer dit voordat u verder gaat</span>
+  </div>
+  <ul style="margin:0;padding:0 0 0 4px;list-style:none;">
+    {% for step in active_workspace.verification_guidance %}
+    <li style="display:flex;align-items:flex-start;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px;">
+      <span style="color:#f59e0b;flex-shrink:0;margin-top:1px;">⚠</span>
+      {{ step }}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+{# ── Provider feedback block ── #}
+{% if active_workspace.provider_feedback %}
+{% with pf=active_workspace.provider_feedback %}
+<div class="rgk-decision-card" style="margin-bottom:14px;border-left:3px solid
+  {% if pf.decision == 'reject' or pf.decision == 'no_capacity' %}#ef4444{% elif pf.decision == 'accept' %}#22c55e{% else %}#6b7280{% endif %};">
+  <div class="rgk-dc-hdr">
+    <h3 style="font-size:14px;">Aanbieder feedback</h3>
+    {% if active_workspace.rejection_count and active_workspace.rejection_count >= 2 %}
+    <span class="badge badge-critical" style="font-size:11px;">Herhaalde afwijzing</span>
+    {% endif %}
+  </div>
+  <div class="rgk-dc-grid">
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Aanbieder</span>
+      <strong>{{ pf.provider_name|default:"-" }}</strong>
+    </div>
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Reactie</span>
+      <strong style="{% if pf.decision == 'reject' or pf.decision == 'no_capacity' %}color:#ef4444;{% elif pf.decision == 'accept' %}color:#22c55e;{% endif %}">
+        {% if pf.decision == 'accept' %}Geaccepteerd
+        {% elif pf.decision == 'reject' %}Afgewezen
+        {% elif pf.decision == 'no_capacity' %}Geen capaciteit
+        {% elif pf.decision == 'waitlist' %}Wachtlijst
+        {% elif pf.decision == 'pending' %}In behandeling
+        {% else %}{{ pf.decision }}{% endif %}
+      </strong>
+    </div>
+    {% if pf.attempt_count %}
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">Poging</span>
+      <strong>#{{ pf.attempt_count }}</strong>
+    </div>
+    {% endif %}
+    {% if pf.sla_state %}
+    <div class="rgk-dc-block">
+      <span class="rgk-dc-label">SLA status</span>
+      <strong style="font-size:11px;">{{ pf.sla_state }}</strong>
+    </div>
+    {% endif %}
+  </div>
+  {% if pf.reason_code %}
+  <div class="rgk-dc-block" style="margin-top:8px;">
+    <span class="rgk-dc-label">Reden</span>
+    <span style="font-size:12px;">{{ pf.reason_code }}</span>
+  </div>
+  {% endif %}
+  {% if pf.risk_notes %}
+  <div class="rgk-dc-block" style="margin-top:6px;">
+    <span style="font-size:11px;color:#f59e0b;">⚠ {{ pf.risk_notes }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endwith %}
 {% endif %}
 
 {# ── Alert-type-specific advice (V3 dispatch) ── #}

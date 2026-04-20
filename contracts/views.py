@@ -7531,6 +7531,125 @@ def _build_v3_timeline(case, selected_alert=None):
     ]
 
 
+def _build_case_data_for_intelligence(case) -> dict:
+    """Build the case_data dict that evaluate_case_intelligence() expects from a CaseIntakeProcess."""
+    if case is None:
+        return {}
+    assessment = getattr(case, 'case_assessment', None)
+    placement = (
+        case.indications.order_by('-updated_at').first()
+        if hasattr(case, 'indications')
+        else None
+    )
+    placement_status = None
+    placement_updated_at = None
+    selected_provider_id = None
+    provider_response_status = None
+    provider_response_requested_at = None
+    provider_response_last_reminder_at = None
+    provider_response_deadline_at = None
+    provider_response_recorded_at = None
+    selected_provider_name = ''
+    rejection_reason_code = ''
+    if placement:
+        placement_status = getattr(placement, 'status', None) or getattr(placement, 'provider_response_status', None)
+        placement_updated_at = getattr(placement, 'updated_at', None)
+        selected_provider_id = getattr(placement, 'selected_provider_id', None) or getattr(placement, 'proposed_provider_id', None)
+        provider_response_status = getattr(placement, 'provider_response_status', None)
+        provider_response_requested_at = getattr(placement, 'provider_response_requested_at', None)
+        provider_response_last_reminder_at = getattr(placement, 'provider_response_last_reminder_at', None)
+        provider_response_deadline_at = getattr(placement, 'provider_response_deadline_at', None)
+        provider_response_recorded_at = getattr(placement, 'provider_response_recorded_at', None)
+        provider = getattr(placement, 'proposed_provider', None) or getattr(placement, 'selected_provider', None)
+        selected_provider_name = getattr(provider, 'name', '') or ''
+        rejection_reason_code = getattr(placement, 'rejection_reason_code', '') or ''
+
+    # Count previous provider rejections for this case
+    from contracts.models import RegiekamerAlert as _Alert
+    rejected_provider_count = _Alert.objects.filter(
+        case=case,
+        alert_type=_Alert.AlertType.PROVIDER_REJECTED,
+    ).count()
+
+    # Try to get candidate suggestions from latest match result
+    candidate_suggestions = []
+    try:
+        from contracts.models import MatchResultaat
+        latest_match = MatchResultaat.objects.filter(
+            casus=case,
+        ).order_by('-datum_gematch').first()
+        if latest_match:
+            pass  # MatchResultaat candidates will be added when model supports it
+    except Exception:
+        pass
+
+    # Determine matching_run_exists and top match data from SimulatedCaseResult if available
+    top_match_confidence = None
+    top_match_has_capacity_issue = False
+    top_match_wait_days = None
+    matching_run_exists = bool(selected_provider_id or candidate_suggestions)
+
+    try:
+        from contracts.models import SimulatedCaseResult
+        sim = SimulatedCaseResult.objects.filter(case_intake=case).order_by('-simulated_at').first()
+        if sim:
+            top_match_confidence = getattr(sim, 'confidence_label', None) or None
+            top_match_has_capacity_issue = bool(getattr(sim, 'has_capacity_issue', False))
+            top_match_wait_days = getattr(sim, 'wait_days', None)
+            matching_run_exists = True
+            if not candidate_suggestions and getattr(sim, 'candidate_provider_id', None):
+                candidate_suggestions = [{
+                    'provider_id': sim.candidate_provider_id,
+                    'confidence': top_match_confidence or '',
+                    'has_capacity_issue': top_match_has_capacity_issue,
+                    'wait_days': top_match_wait_days or 0,
+                    'has_region_mismatch': bool(getattr(sim, 'has_region_mismatch', False)),
+                }]
+    except Exception:
+        pass
+
+    open_task_count = 0
+    try:
+        open_task_count = case.tasks.filter(status__in=['OPEN', 'IN_PROGRESS']).count()
+    except Exception:
+        pass
+
+    return {
+        'phase': case.status,
+        'care_category': str(getattr(case, 'care_category_main', '') or ''),
+        'urgency': case.urgency,
+        'assessment_complete': bool(assessment and getattr(assessment, 'matching_ready', False)),
+        'matching_run_exists': matching_run_exists,
+        'top_match_confidence': top_match_confidence,
+        'top_match_has_capacity_issue': top_match_has_capacity_issue,
+        'top_match_wait_days': top_match_wait_days,
+        'selected_provider_id': selected_provider_id,
+        'placement_status': str(placement_status or ''),
+        'placement_updated_at': placement_updated_at,
+        'rejected_provider_count': rejected_provider_count,
+        'open_signal_count': case.signals.filter(
+            status__in=['OPEN', 'IN_PROGRESS']
+        ).count() if hasattr(case, 'signals') else 0,
+        'open_task_count': open_task_count,
+        'case_updated_at': getattr(case, 'updated_at', None),
+        'candidate_suggestions': candidate_suggestions,
+        'has_preferred_region': bool(getattr(case, 'preferred_region_id', None) or getattr(case, 'gemeente_id', None)),
+        'has_assessment_summary': bool((getattr(case, 'assessment_summary', '') or '').strip()),
+        'has_client_age_category': bool(getattr(case, 'client_age_category', None)),
+        'assessment_status': getattr(assessment, 'status', None) if assessment else None,
+        'assessment_matching_ready': getattr(assessment, 'matching_ready', None) if assessment else None,
+        'matching_updated_at': getattr(case, 'updated_at', None),
+        'provider_response_status': str(provider_response_status or ''),
+        'provider_response_recorded_at': provider_response_recorded_at,
+        'provider_response_requested_at': provider_response_requested_at,
+        'provider_response_deadline_at': provider_response_deadline_at,
+        'provider_response_last_reminder_at': provider_response_last_reminder_at,
+        # Extra fields used by build_v3_evidence
+        'selected_provider_name': selected_provider_name,
+        'rejection_reason_code': rejection_reason_code,
+    }
+
+
 def _build_active_workspace(selected_alert):
     if not selected_alert:
         return None
@@ -7564,6 +7683,27 @@ def _build_active_workspace(selected_alert):
         if selected_alert.placement_id else None
     )
 
+    # ── V3 Decision evidence from intelligence engine ─────────────────────
+    evidence = {}
+    if case:
+        try:
+            from contracts.case_intelligence import evaluate_case_intelligence
+            case_data = _build_case_data_for_intelligence(case)
+            if case_data:
+                intel = evaluate_case_intelligence(case_data)
+                evidence = intel.get('v3_evidence') or {}
+        except Exception:
+            logger.exception('Intelligence evaluation failed for case pk=%s', getattr(case, 'pk', '?'))
+
+    # Prefer alert-stored evidence_data if intelligence call failed or is empty
+    alert_evidence = selected_alert.evidence_data or {}
+    fit_summary = evidence.get('fit_summary') or alert_evidence.get('fit_summary')
+    confidence = evidence.get('confidence') or alert_evidence.get('confidence')
+    factor_breakdown = evidence.get('factor_breakdown') or alert_evidence.get('factor_breakdown')
+    trade_offs = evidence.get('trade_offs') or alert_evidence.get('trade_offs')
+    verification_guidance = evidence.get('verification_guidance') or alert_evidence.get('verification_guidance')
+    provider_feedback = evidence.get('provider_feedback') or alert_evidence.get('provider_feedback')
+
     return {
         'alert': item,
         'case': case,
@@ -7578,14 +7718,16 @@ def _build_active_workspace(selected_alert):
         'placement_url': placement_url,
         # Human-readable stage label for the meta chip
         'stage_label': item.get('stage', '').replace('_', ' ').title() if item.get('stage') else None,
-        # Decision evidence fields – forward-compatible placeholders for the matching explainability
-        # model described in the system bible (fit_summary, match_confidence, factor_breakdown,
-        # trade_offs). These attributes are not yet defined on CaseIntakeProcess; getattr with
-        # a None default ensures the template renders gracefully until the model is extended.
-        'fit_summary': getattr(case, 'fit_summary', None),
-        'confidence': getattr(case, 'match_confidence', None),
-        'factor_breakdown': getattr(case, 'factor_breakdown', None),
-        'trade_offs': getattr(case, 'trade_offs', None),
+        # V3 decision evidence (real data from intelligence engine, not placeholders)
+        'fit_summary': fit_summary,
+        'confidence': confidence,
+        'factor_breakdown': factor_breakdown,
+        'trade_offs': trade_offs,
+        'verification_guidance': verification_guidance,
+        'provider_feedback': provider_feedback,
+        # Rejection context from alert model
+        'rejection_count': getattr(selected_alert, 'rejection_count', 0),
+        'rejection_reason_code': getattr(selected_alert, 'rejection_reason_code', ''),
     }
 
 

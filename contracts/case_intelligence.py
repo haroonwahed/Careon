@@ -1202,6 +1202,144 @@ def generate_candidate_hints(case_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return hints
 
 
+def build_v3_evidence(
+    case_data: Dict[str, Any],
+    intelligence: Dict[str, Any],
+) -> Dict[str, Any]:
+    """Derive the V3 decision evidence block from a fully evaluated intelligence dict.
+
+    Returns a dict with these keys (all optional-safe):
+    - fit_summary (str): one-line summary of the match quality
+    - confidence (float): 0.0–1.0 numeric confidence score
+    - factor_breakdown (list[str]): key match drivers
+    - trade_offs (list[str]): compromises in the current recommendation
+    - verification_guidance (list[str]): what the operator should verify
+    - provider_feedback (dict): structured provider response context
+    """
+    _CONFIDENCE_MAP = {'high': 0.85, 'medium': 0.6, 'low': 0.3}
+
+    candidate_hints: List[Dict[str, Any]] = intelligence.get('candidate_hints') or []
+    risk_signals: List[Dict[str, str]] = intelligence.get('risk_signals') or []
+    next_best_action: Dict[str, Any] = intelligence.get('next_best_action') or {}
+    missing_info: List[Dict[str, str]] = intelligence.get('missing_information') or []
+
+    # ── Fit summary ──────────────────────────────────────────────────────────
+    top_hint = candidate_hints[0] if candidate_hints else None
+    if top_hint:
+        top_confidence = top_hint.get('confidence', '')
+        trade_off_count = len(top_hint.get('trade_offs') or [])
+        if top_confidence == 'high' and trade_off_count == 0:
+            fit_summary = 'Sterke match: hoge confidence, geen significante afwegingen.'
+        elif top_confidence in ('high', 'medium') and trade_off_count > 0:
+            fit_summary = (
+                f'Goede match met {trade_off_count} aandachtspunt(en) in capaciteit/wachttijd.'
+            )
+        elif top_confidence == 'low' or not top_confidence:
+            fit_summary = 'Zwakke match: lage confidence – verificatie sterk aanbevolen.'
+        else:
+            fit_summary = 'Match beschikbaar; nader beoordelen voor afwijkingen.'
+    elif missing_info:
+        fit_summary = 'Matching niet mogelijk: ontbrekende casus- of beoordelingsgegevens.'
+    else:
+        fit_summary = 'Geen kandidaten beschikbaar voor matching.'
+
+    # ── Confidence score ─────────────────────────────────────────────────────
+    raw_confidence = _normalize_confidence(case_data.get('top_match_confidence'))
+    base_confidence = _CONFIDENCE_MAP.get(raw_confidence, 0.0)
+    # Penalise for each active risk signal
+    penalty = min(len(risk_signals) * 0.05, 0.3)
+    # Bonus for reliable provider (from top hint behavior signals)
+    bonus = 0.0
+    if top_hint:
+        behavior = top_hint.get('behavior_signals') or {}
+        if behavior.get('response_speed') == 'fast' and behavior.get('acceptance_pattern') == 'high':
+            bonus = 0.1
+    confidence = round(max(0.0, min(1.0, base_confidence - penalty + bonus)), 2)
+
+    # ── Factor breakdown ─────────────────────────────────────────────────────
+    factor_breakdown: List[str] = []
+    if top_hint:
+        if raw_confidence == 'high':
+            factor_breakdown.append('Specialisatie: sterke overeenkomst')
+        elif raw_confidence == 'medium':
+            factor_breakdown.append('Specialisatie: redelijke overeenkomst')
+        else:
+            factor_breakdown.append('Specialisatie: onvoldoende of onbekend')
+        if top_hint.get('has_region_mismatch'):
+            factor_breakdown.append('Regio: afwijking van voorkeur')
+        else:
+            factor_breakdown.append('Regio: passend')
+        wait = top_hint.get('wait_days', 0)
+        if wait == 0:
+            factor_breakdown.append('Wachttijd: geen wachttijd')
+        elif wait < 14:
+            factor_breakdown.append(f'Wachttijd: {wait} dagen (acceptabel)')
+        else:
+            factor_breakdown.append(f'Wachttijd: {wait} dagen (lang)')
+        if top_hint.get('has_capacity_issue'):
+            factor_breakdown.append('Capaciteit: beperkt')
+        else:
+            factor_breakdown.append('Capaciteit: beschikbaar')
+
+    # ── Trade-offs ───────────────────────────────────────────────────────────
+    trade_offs: List[str] = list(top_hint.get('trade_offs') or []) if top_hint else []
+    if len(candidate_hints) > 1:
+        comparison = candidate_hints[1].get('comparison_to_top') or ''
+        if comparison:
+            trade_offs.append(comparison)
+
+    # ── Verification guidance ────────────────────────────────────────────────
+    verification_guidance: List[str] = []
+    nba_code = next_best_action.get('code', '')
+    if nba_code == 'fill_missing_information':
+        verification_guidance.append('Vul ontbrekende casusinformatie aan voordat u verdergaat.')
+    if nba_code in ('review_matching_quality', 'validate_capacity_wait'):
+        verification_guidance.append('Verifieer de matchkwaliteit met de aanbieder.')
+    if top_hint and top_hint.get('has_capacity_issue'):
+        verification_guidance.append('Bevestig capaciteit rechtstreeks bij de aanbieder.')
+    if top_hint and (top_hint.get('wait_days') or 0) >= 28:
+        verification_guidance.append(
+            f'Bespreek wachttijd van {top_hint["wait_days"]} dagen met de cliënt.'
+        )
+    for signal in risk_signals:
+        action = signal.get('action')
+        if action and action not in verification_guidance:
+            verification_guidance.append(action)
+
+    # ── Provider feedback ────────────────────────────────────────────────────
+    provider_response_status = str(case_data.get('provider_response_status') or '').strip().upper()
+    rejected_count = _coerce_int(case_data.get('rejected_provider_count'))
+    provider_name = str(case_data.get('selected_provider_name') or '')
+    provider_feedback: Dict[str, Any] = {}
+    if provider_response_status in ('REJECTED', 'NO_CAPACITY', 'PENDING', 'ACCEPTED', 'WAITLIST'):
+        decision_map = {
+            'ACCEPTED': 'accept',
+            'REJECTED': 'reject',
+            'NO_CAPACITY': 'no_capacity',
+            'WAITLIST': 'waitlist',
+            'PENDING': 'pending',
+        }
+        provider_feedback = {
+            'provider_name': provider_name or 'Onbekend',
+            'decision': decision_map.get(provider_response_status, provider_response_status.lower()),
+            'reason_code': case_data.get('rejection_reason_code') or '',
+            'risk_notes': (
+                'Herhaalde afwijzing — heroverweeg selectiecriteria.' if rejected_count >= 2 else ''
+            ),
+            'attempt_count': rejected_count,
+            'sla_state': intelligence.get('sla_state', ''),
+        }
+
+    return {
+        'fit_summary': fit_summary,
+        'confidence': confidence,
+        'factor_breakdown': factor_breakdown,
+        'trade_offs': trade_offs,
+        'verification_guidance': verification_guidance,
+        'provider_feedback': provider_feedback if provider_feedback else None,
+    }
+
+
 def evaluate_case_intelligence(
     case_data: Dict[str, Any],
     *,
@@ -1278,7 +1416,7 @@ def evaluate_case_intelligence(
 
     safe_to_proceed = not should_stop
 
-    return {
+    result = {
         "missing_information": missing_information,
         "risk_signals": risk_signals,
         "next_best_action": next_best_action,
@@ -1303,3 +1441,6 @@ def evaluate_case_intelligence(
         "safe_to_proceed": safe_to_proceed,
         "stop_reasons": [reason for reason in stop_reasons if reason],
     }
+    # Attach V3 structured decision evidence
+    result["v3_evidence"] = build_v3_evidence(case_data, result)
+    return result
