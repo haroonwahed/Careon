@@ -47,8 +47,9 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 
 ### Startup Phase
 
-1. If `DATABASE_URL` is set, run Django migrations.
-2. Start Gunicorn server on port `$PORT`.
+1. Require `DATABASE_URL` (PostgreSQL) to be set.
+2. Run Django migrations using production settings.
+3. Start Gunicorn server on port `$PORT`.
 
 ## Troubleshooting
 
@@ -64,12 +65,12 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 
 ### Migrations Not Running
 
-- If `DATABASE_URL` is empty, migrations are skipped at startup.
+- If `DATABASE_URL` is empty, startup fails fast with a clear error.
 - Manually run migrations:
 
 ```bash
 render bash
-python manage.py migrate --settings=config.settings
+python manage.py migrate --settings=config.settings_production
 ```
 
 ### Static Files Not Loading
