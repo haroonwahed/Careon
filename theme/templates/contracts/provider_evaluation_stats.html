@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Evaluatie-overzicht – {{ provider.name }} - Careon{% endblock %}
+{% block content %}
+
+<div class="page-wrap ds-detail-shell" data-shell="provider-evaluation-stats">
+
+    {# ── Breadcrumb ─────────────────────────────────────────────────────── #}
+    <header data-shell-slot="stats-header">
+        <nav class="ds-breadcrumb">
+            <a href="{% url 'dashboard' %}" class="ds-breadcrumb-link">Regiekamer</a>
+            <span class="mx-1">/</span>
+            <a href="{% url 'careon:client_list' %}" class="ds-breadcrumb-link">Aanbieders</a>
+            <span class="mx-1">/</span>
+            <a href="{% url 'careon:client_detail' provider.pk %}" class="ds-breadcrumb-link">{{ provider.name }}</a>
+            <span class="mx-1">/</span>
+            <span class="ds-breadcrumb-current">Evaluatie-overzicht</span>
+        </nav>
+
+        <section class="ds-card ds-detail-head" data-shell-slot="stats-header-card">
+            <div class="ds-detail-card-body">
+                <div class="min-w-0 space-y-2">
+                    <div class="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-wide ds-text-muted">
+                        <span class="ds-badge badge-gray">Aanbieder {{ provider.pk }}</span>
+                        <span class="ds-badge badge-gray">Evaluatie-overzicht</span>
+                    </div>
+                    <h1 class="ds-page-title text-2xl font-semibold leading-tight ds-text-strong">
+                        Evaluatie-overzicht — {{ provider.name }}
+                    </h1>
+                    <p class="ds-text-muted text-sm">
+                        Gebaseerd op {{ evaluation_aggregates.total_evaluations }} beoordeling{{ evaluation_aggregates.total_evaluations|pluralize:"en" }} vastgelegd via de Aanbieder Beoordelingsstroom.
+                    </p>
+                </div>
+            </div>
+        </section>
+    </header>
+
+    <main class="ds-detail-main" data-shell-slot="stats-main">
+
+        {# ── Summary banner ─────────────────────────────────────────────── #}
+        {% if evaluation_signals.summary_label %}
+        <section class="ds-card ds-banner ds-banner-warning mb-4" role="alert" aria-live="polite">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                </svg>
+                <div>
+                    <p class="text-sm font-semibold ds-text-strong">{{ evaluation_signals.summary_label }}</p>
+                    {% if evaluation_signals.verification_guidance %}
+                    <ul class="mt-1 text-xs ds-text-muted list-disc list-inside space-y-0.5">
+                        {% for item in evaluation_signals.verification_guidance %}
+                        <li>{{ item }}</li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
+
+        {# ── Aggregate summary cards ────────────────────────────────────── #}
+        <section class="grid grid-cols-2 gap-4 md:grid-cols-4 mb-6" aria-label="Beoordelingssamenvatting">
+
+            <div class="ds-card p-4 text-center">
+                <p class="text-2xl font-bold ds-text-strong">{{ evaluation_aggregates.total_evaluations }}</p>
+                <p class="text-xs ds-text-muted mt-1">Totaal beoordelingen</p>
+            </div>
+
+            <div class="ds-card p-4 text-center">
+                <p class="text-2xl font-bold {% if evaluation_aggregates.acceptance_rate and evaluation_aggregates.acceptance_rate >= 0.7 %}text-green-400{% elif evaluation_aggregates.acceptance_rate and evaluation_aggregates.acceptance_rate >= 0.4 %}text-yellow-400{% else %}text-red-400{% endif %}">
+                    {% if evaluation_aggregates.acceptance_rate is not None %}
+                        {% widthratio evaluation_aggregates.acceptance_rate 1 100 %}%
+                    {% else %}—{% endif %}
+                </p>
+                <p class="text-xs ds-text-muted mt-1">Acceptatiegraad</p>
+            </div>
+
+            <div class="ds-card p-4 text-center">
+                <p class="text-2xl font-bold ds-text-strong">{{ evaluation_aggregates.rejection_count }}</p>
+                <p class="text-xs ds-text-muted mt-1">Afwijzingen</p>
+            </div>
+
+            <div class="ds-card p-4 text-center">
+                <p class="text-2xl font-bold ds-text-strong">{{ evaluation_aggregates.needs_more_info_count }}</p>
+                <p class="text-xs ds-text-muted mt-1">Meer info nodig</p>
+            </div>
+
+        </section>
+
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+
+            {# ── Rejection reason breakdown ─────────────────────────────── #}
+            <section class="ds-card ds-detail-section" aria-labelledby="rejection-reasons-heading">
+                <header class="ds-section-header">
+                    <h2 class="ds-section-title" id="rejection-reasons-heading">Afwijzingsredenen</h2>
+                </header>
+                {% if rejection_reasons %}
+                <div class="divide-y divide-white/5">
+                    {% for reason in rejection_reasons %}
+                    <div class="flex items-center justify-between py-3 px-4">
+                        <span class="text-sm ds-text-strong">{{ reason.label }}</span>
+                        <span class="ds-badge badge-gray text-xs">{{ reason.count }}×</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm ds-text-muted px-4 py-6 text-center">Geen afwijzingen vastgelegd.</p>
+                {% endif %}
+            </section>
+
+            {# ── Capacity reliability ───────────────────────────────────── #}
+            <section class="ds-card ds-detail-section" aria-labelledby="capacity-heading">
+                <header class="ds-section-header">
+                    <h2 class="ds-section-title" id="capacity-heading">Capaciteitsbetrouwbaarheid</h2>
+                </header>
+                <div class="px-4 py-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm ds-text-muted">Capaciteitsignaal</span>
+                        {% if evaluation_aggregates.capacity_reliability_signal == 'stable' %}
+                            <span class="ds-badge badge-active">Stabiel</span>
+                        {% elif evaluation_aggregates.capacity_reliability_signal == 'limited' %}
+                            <span class="ds-badge badge-capacity-limited">Beperkt</span>
+                        {% elif evaluation_aggregates.capacity_reliability_signal == 'often_full' %}
+                            <span class="ds-badge badge-capacity-full">Vaak vol</span>
+                        {% else %}
+                            <span class="ds-badge badge-gray">Onvoldoende data</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm ds-text-muted">Capaciteitsmarkering (beoordelingen)</span>
+                        <span class="text-sm font-semibold ds-text-strong">{{ evaluation_aggregates.capacity_flag_count }}</span>
+                    </div>
+                    {% if evaluation_signals.capacity_concern %}
+                    <p class="text-xs text-amber-400 mt-2">⚠ Capaciteitsbetrouwbaarheid vereist extra verificatie bij toewijzing.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+        </div>
+
+        {# ── Context aggregates per zorgcategorie ───────────────────────── #}
+        {% if category_context_rows %}
+        <section class="ds-card ds-detail-section mt-6" aria-labelledby="category-context-heading">
+            <header class="ds-section-header">
+                <h2 class="ds-section-title" id="category-context-heading">Beoordelingen per zorgcategorie</h2>
+            </header>
+            <div class="divide-y divide-white/5">
+                {% for row in category_context_rows %}
+                <div class="flex flex-wrap items-center justify-between gap-3 py-3 px-4">
+                    <span class="text-sm ds-text-strong">{{ row.category_name }}</span>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <span class="text-xs ds-text-muted">{{ row.aggregates.total_evaluations }} beoordelingen</span>
+                        {% if row.aggregates.acceptance_rate is not None %}
+                        <span class="ds-badge {% if row.aggregates.acceptance_rate >= 0.7 %}badge-active{% elif row.aggregates.acceptance_rate >= 0.4 %}badge-capacity-limited{% else %}badge-high{% endif %}">
+                            {% widthratio row.aggregates.acceptance_rate 1 100 %}% acceptatie
+                        </span>
+                        {% endif %}
+                        {% if row.signals.summary_label %}
+                        <span class="text-xs text-amber-400">{{ row.signals.summary_label }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        {# ── Recent evaluations timeline ────────────────────────────────── #}
+        <section class="ds-card ds-detail-section mt-6" aria-labelledby="recent-eval-heading">
+            <header class="ds-section-header">
+                <h2 class="ds-section-title" id="recent-eval-heading">Recente beoordelingen</h2>
+            </header>
+            {% if recent_evaluations %}
+            <div class="divide-y divide-white/5">
+                {% for eval in recent_evaluations %}
+                <div class="flex flex-wrap items-start justify-between gap-3 py-3 px-4">
+                    <div class="min-w-0">
+                        <p class="text-sm ds-text-strong truncate">
+                            <a href="{% url 'careon:case_detail' eval.case.pk %}" class="ds-link hover:underline">
+                                {{ eval.case.title }}
+                            </a>
+                        </p>
+                        {% if eval.reason_code %}
+                        <p class="text-xs ds-text-muted mt-0.5">{{ eval.get_reason_code_display }}</p>
+                        {% endif %}
+                        {% if eval.risk_notes %}
+                        <p class="text-xs ds-text-muted mt-0.5 italic">{{ eval.risk_notes|truncatechars:80 }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        {% if eval.decision == 'accept' %}
+                            <span class="ds-badge badge-active">Geaccepteerd</span>
+                        {% elif eval.decision == 'reject' %}
+                            <span class="ds-badge badge-high">Afgewezen</span>
+                        {% else %}
+                            <span class="ds-badge badge-capacity-limited">Meer info</span>
+                        {% endif %}
+                        <span class="text-xs ds-text-muted">{{ eval.created_at|date:"d-m-Y H:i" }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="text-sm ds-text-muted px-4 py-6 text-center">Geen beoordelingen gevonden voor deze aanbieder.</p>
+            {% endif %}
+        </section>
+
+        {# ── Back link ──────────────────────────────────────────────────── #}
+        <div class="mt-6">
+            <a href="{% url 'careon:client_detail' provider.pk %}" class="ds-btn-secondary text-sm">
+                ← Terug naar aanbieder
+            </a>
+        </div>
+
+    </main>
+</div>
+
+{% endblock %}

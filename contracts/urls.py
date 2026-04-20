@@ -35,6 +35,7 @@ urlpatterns = [
     path('clients/', views.ClientListView.as_view(), name='client_list'),
     path('clients/new/', views.ClientCreateView.as_view(), name='client_create'),
     path('clients/<int:pk>/', views.ClientDetailView.as_view(), name='client_detail'),
+    path('clients/<int:pk>/evaluatie-overzicht/', views.provider_evaluation_stats, name='provider_evaluation_stats'),
     path('clients/<int:pk>/edit/', views.ClientUpdateView.as_view(), name='client_update'),
 
     # Municipality & Regional Configurations

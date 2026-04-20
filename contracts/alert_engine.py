@@ -323,7 +323,8 @@ def build_regiekamer_summary(organization) -> Dict[str, Any]:
     """Compute summary card counts for the Regiekamer dashboard.
 
     Returns a dict with counts grouped by alert category for the four
-    summary cards required by the Regiekamer spec.
+    summary cards required by the Regiekamer spec, extended with
+    provider health signals derived from ProviderEvaluation outcomes.
     """
     base_qs = OperationalAlert.objects.filter(
         case__organization=organization,
@@ -349,6 +350,18 @@ def build_regiekamer_summary(organization) -> Dict[str, Any]:
     total_high = base_qs.filter(severity=_HIGH).count()
     total = base_qs.count()
 
+    # Provider health signals from evaluation outcomes.
+    try:
+        from contracts.provider_outcome_aggregates import build_regiekamer_provider_health
+        provider_health = build_regiekamer_provider_health(organization)
+    except Exception:
+        provider_health = {
+            "high_rejection_providers": [],
+            "unstable_capacity_providers": [],
+            "bouncing_cases": [],
+            "provider_health_summary": {"at_risk": 0, "unstable_capacity": 0, "bouncing": 0},
+        }
+
     return {
         'urgent_unmatched': urgent_unmatched,
         'stalled_placements': stalled_placements,
@@ -356,4 +369,5 @@ def build_regiekamer_summary(organization) -> Dict[str, Any]:
         'missing_data': missing_data,
         'total_high': total_high,
         'total': total,
+        'provider_health': provider_health,
     }

@@ -93,6 +93,12 @@ from .provider_evaluation_service import (
     placement_unlocked_for_case,
     record_provider_evaluation,
 )
+from .provider_outcome_aggregates import (
+    apply_evaluation_outcome_to_candidate,
+    build_provider_evaluation_aggregates,
+    build_provider_context_aggregates,
+    build_regiekamer_provider_health,
+)
 from config.feature_flags import is_feature_redesign_enabled
 
 logger = logging.getLogger(__name__)
@@ -1312,6 +1318,27 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
             suggestion.pop('_behavior_metrics', None)
             suggestion.pop('_behavior_signals', None)
 
+    # ── Evaluation-outcome enrichment (feedback loop) ──────────────────────
+    # Applies ProviderEvaluation aggregates as outcome signals per candidate.
+    for suggestion in suggestions:
+        pid = suggestion.get('provider_id')
+        if pid is None:
+            continue
+        try:
+            overall_agg = build_provider_evaluation_aggregates(pid)
+            ctx_agg = build_provider_context_aggregates(
+                pid,
+                care_category_id=getattr(intake, 'care_category_main_id', None),
+                urgency=getattr(intake, 'urgency', None),
+            )
+            apply_evaluation_outcome_to_candidate(suggestion, overall_agg, ctx_agg)
+        except Exception:
+            logger.exception(
+                'Evaluation outcome enrichment failed for provider %s on intake %s',
+                pid,
+                intake.pk,
+            )
+
     suggestions.sort(
         key=lambda row: (
             -row['match_score'],
@@ -2053,6 +2080,20 @@ class ClientDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
         ctx['selected_intake'] = selected_intake
         ctx['case_fit_summary'] = case_fit_summary
         ctx['provider_track_record'] = track_record
+
+        # Evaluation outcome aggregates (feedback loop)
+        try:
+            evaluation_aggregates = build_provider_evaluation_aggregates(self.object.pk)
+            from contracts.provider_outcome_aggregates import derive_evaluation_signals
+            evaluation_signals = derive_evaluation_signals(evaluation_aggregates)
+        except Exception:
+            evaluation_aggregates = None
+            evaluation_signals = {}
+        ctx['evaluation_aggregates'] = evaluation_aggregates
+        ctx['evaluation_signals'] = evaluation_signals
+        ctx['evaluation_overview_href'] = reverse(
+            'careon:provider_evaluation_stats', kwargs={'pk': self.object.pk}
+        )
         return ctx
 
 
@@ -2102,6 +2143,67 @@ class ClientUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
         org = get_user_organization(self.request.user)
         form.fields['served_regions'].queryset = RegionalConfiguration.objects.filter(organization=org).order_by('region_type', 'region_name')
         return form
+
+
+@login_required
+def provider_evaluation_stats(request, pk):
+    """Provider evaluation outcome drill-down view.
+
+    Shows acceptance trend, rejection reason breakdown, and needs-more-info
+    patterns for a single provider, scoped to the user's organization.
+    """
+    org = get_user_organization(request.user)
+    provider = get_object_or_404(
+        scope_queryset_for_organization(Client.objects.all(), org),
+        pk=pk,
+    )
+
+    evaluation_aggregates = build_provider_evaluation_aggregates(provider.pk)
+    from contracts.provider_outcome_aggregates import derive_evaluation_signals, build_provider_context_aggregates as _ctx_agg
+    evaluation_signals = derive_evaluation_signals(evaluation_aggregates)
+
+    # Acceptance trend: last 20 evaluations ordered chronologically.
+    from contracts.models import ProviderEvaluation
+    recent_evaluations = list(
+        ProviderEvaluation.objects.filter(provider=provider)
+        .select_related('case', 'decided_by')
+        .order_by('-created_at')[:20]
+    )
+
+    # Rejection reason breakdown (all time).
+    rejection_reasons = evaluation_aggregates.get('top_rejection_reasons') or []
+
+    # Per-care-category context aggregates (only for categories with ≥1 evaluation).
+    from django.db.models import Count as _Count
+    category_ids = list(
+        ProviderEvaluation.objects.filter(provider=provider)
+        .exclude(case__care_category_main__isnull=True)
+        .values('case__care_category_main_id', 'case__care_category_main__name')
+        .annotate(n=_Count('id'))
+        .filter(n__gte=1)
+        .values_list('case__care_category_main_id', flat=True)
+    )
+    category_context_rows = []
+    for cat_id in category_ids[:5]:
+        ctx_agg = _ctx_agg(provider.pk, care_category_id=cat_id)
+        if ctx_agg.get('total_evaluations', 0) > 0:
+            cat_name = ProviderEvaluation.objects.filter(
+                provider=provider, case__care_category_main_id=cat_id
+            ).values_list('case__care_category_main__name', flat=True).first() or str(cat_id)
+            category_context_rows.append({
+                'category_name': cat_name,
+                'aggregates': ctx_agg,
+                'signals': derive_evaluation_signals(ctx_agg),
+            })
+
+    return render(request, 'contracts/provider_evaluation_stats.html', {
+        'provider': provider,
+        'evaluation_aggregates': evaluation_aggregates,
+        'evaluation_signals': evaluation_signals,
+        'recent_evaluations': recent_evaluations,
+        'rejection_reasons': rejection_reasons,
+        'category_context_rows': category_context_rows,
+    })
 
 
 # ==================== CONFIGURATION VIEWS ====================
