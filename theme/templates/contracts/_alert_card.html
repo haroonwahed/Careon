@@ -38,6 +38,10 @@ Context: alert (OperationalAlert instance)
         <a href="{% url 'careon:case_detail' pk=alert.case_id %}?tab=plaatsing" class="btn btn-sm btn-primary">Bevestig plaatsing</a>
         {% elif alert.alert_type == 'provider_capacity_risk' %}
         <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Heroverweeg match</a>
+        {% elif alert.alert_type == 'provider_info_requested' %}
+        <a href="{% url 'careon:case_info_request' pk=alert.case_id %}" class="btn btn-sm btn-primary">Beantwoord verzoek</a>
+        {% elif alert.alert_type == 'provider_info_stale' %}
+        <a href="{% url 'careon:case_info_request' pk=alert.case_id %}" class="btn btn-sm btn-primary">Open verlopen verzoek</a>
         {% endif %}
 
         <!-- Resolve CTA -->

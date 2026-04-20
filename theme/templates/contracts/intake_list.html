@@ -107,6 +107,9 @@
                         <!-- BottleneckBadge primitive -->
                         <span class="ds-badge {{ row.bottleneck_badge.badge_class }}">{{ row.bottleneck_badge.label }}</span>
                         {% endif %}
+                        {% if row.demo_scenario_tag %}
+                        <span class="ds-badge badge-purple" title="Demo scenario – gegenereerd door seed_demo_data">Demo: {{ row.demo_scenario_tag }}</span>
+                        {% endif %}
                     </div>
                 </td>
 

@@ -19,6 +19,9 @@
                     <span class="ds-badge badge-gray">Casus {{ intake.pk }}</span>
                     <span class="ds-badge {% if intake.urgency == 'CRISIS' %}badge-critical{% elif intake.urgency == 'HIGH' %}badge-high{% else %}badge-low{% endif %}">{{ intake.get_urgency_display }}</span>
                     <span class="ds-badge ds-stage-intake">{{ intake.get_status_display }}</span>
+                    {% if demo_scenario_tag %}
+                    <span class="ds-badge badge-purple" title="Demo scenario – gegenereerd door seed_demo_data">Demo: {{ demo_scenario_tag }}</span>
+                    {% endif %}
                 </div>
                 <h1 class="ds-page-title truncate text-2xl font-semibold leading-tight ds-text-strong">Casus #{{ intake.pk }} - {{ anonymized_title }}</h1>
                 <dl class="ds-meta-grid text-xs sm:grid-cols-3">
@@ -38,12 +41,18 @@
             </div>
 
             <div class="flex flex-col items-stretch gap-2 sm:items-end">
-                {% if provider_response_summary and provider_response_summary.sla_state in 'OVERDUE|ESCALATED|FORCED_ACTION' %}
-                <span class="ds-badge badge-critical">{{ provider_response_summary.sla_state }}</span>
-                {% elif provider_response_summary and provider_response_summary.sla_state == 'AT_RISK' %}
-                <span class="ds-badge badge-high">AT_RISK</span>
+                {% if provider_response_summary %}
+                {% with sla=provider_response_summary.sla_state %}
+                {% if sla == 'FORCED_ACTION' or sla == 'ESCALATED' or sla == 'OVERDUE' %}
+                <span class="ds-badge badge-critical">Actie vereist</span>
+                {% elif sla == 'AT_RISK' %}
+                <span class="ds-badge badge-high">Tijdsdruk</span>
                 {% else %}
-                <span class="ds-badge badge-low">STABLE</span>
+                <span class="ds-badge badge-low">Op schema</span>
+                {% endif %}
+                {% endwith %}
+                {% else %}
+                <span class="ds-badge badge-low">Op schema</span>
                 {% endif %}
                 <p class="text-xs font-semibold ds-text-secondary">Eigenaar: {{ intake.case_coordinator.get_full_name|default:"Niet toegewezen" }}</p>
                 <a href="{{ next_action.href }}" class="btn btn-secondary">{{ next_action.label }}</a>
@@ -67,7 +76,6 @@
     <section class="ds-card" data-shell-slot="decision-block">
         <div class="ds-detail-header">
             <h2 class="ds-card-title">Beslisblok</h2>
-            <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">In 3 seconden duidelijk</span>
         </div>
 
         {% with top_candidate=matching_preview_candidates|first %}
@@ -158,20 +166,26 @@
                 {% if provider_response_summary %}
                 <div class="ds-summary-strip">
                     <div class="ds-summary-item ds-summary-item--risk">
-                        <p class="ds-summary-label">SLA urgentie</p>
+                        <p class="ds-summary-label">Tijdsdruk aanbieder</p>
                         <p class="mt-1 text-sm font-semibold ds-text-strong">
-                            {% if provider_response_summary.sla_state in 'OVERDUE|ESCALATED|FORCED_ACTION' %}
-                            {{ provider_response_summary.sla_state }} - reactie vereist
-                            {% elif provider_response_summary.sla_state == 'AT_RISK' %}
-                            AT_RISK - reageer binnen 24 uur
+                            {% with sla=provider_response_summary.sla_state %}
+                            {% if sla == 'FORCED_ACTION' %}
+                            Actie verplicht – escalatie actief
+                            {% elif sla == 'ESCALATED' %}
+                            Geëscaleerd – direct reageren
+                            {% elif sla == 'OVERDUE' %}
+                            Verlopen – reactie vereist
+                            {% elif sla == 'AT_RISK' %}
+                            Tijdsdruk – reageer binnen 24 uur
                             {% else %}
-                            ON_TRACK - binnen SLA
+                            Binnen SLA – geen actie nodig
                             {% endif %}
+                            {% endwith %}
                         </p>
                     </div>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Provider status</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Aanbieder status</p>
                     <p class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.status_label }}</p>
                     <p class="mt-1 text-xs ds-text-secondary">Laatste actie: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie vastgelegd" }}</p>
                     {% if provider_response_summary.action_deadline %}
@@ -181,8 +195,8 @@
                 {% else %}
                 <div class="ds-summary-strip">
                     <div class="ds-summary-item {% if not safe_to_proceed %}ds-summary-item--risk{% endif %}">
-                        <p class="ds-summary-label">SLA urgentie</p>
-                        <p class="mt-1 text-sm font-semibold ds-text-strong">{% if safe_to_proceed %}STABLE - klaar voor vervolgstap{% else %}AT_RISK - eerst blokkades oplossen{% endif %}</p>
+                        <p class="ds-summary-label">Tijdsdruk</p>
+                        <p class="mt-1 text-sm font-semibold ds-text-strong">{% if safe_to_proceed %}Op schema – klaar voor vervolgstap{% else %}Blokkade – los eerst openstaande punten op{% endif %}</p>
                     </div>
                 </div>
                 {% endif %}

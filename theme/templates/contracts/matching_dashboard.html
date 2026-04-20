@@ -163,7 +163,6 @@
             <p class="mrd-card-action-block__label">Aanbevolen actie</p>
             <p class="mrd-card-action-block__title">{{ focus_row.recommended_action.label }}</p>
             <p class="mrd-card-action-block__reason">{% firstof focus_row.recommended_action.reason "Voer aanbevolen actie uit" %}</p>
-            <p class="mrd-card-action-block__reason">Voer aanbevolen actie uit om matching te verbeteren.</p>
             <p class="mrd-card-action-block__impact">{{ focus_row.impact_summary.text }}</p>
             {% if focus_row.can_assign %}
             <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching"
@@ -171,7 +170,7 @@
               Plaats direct
             </a>
             {% else %}
-            <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">Voer aanbevolen actie uit</a>
+            <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">{{ focus_row.recommended_action.label }}</a>
             {% endif %}
             {% if suggestion.provider_id %}
             <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="mrd-inline-link">Bekijk profiel</a>

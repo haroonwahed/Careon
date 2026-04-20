@@ -6247,6 +6247,118 @@ class RegionalConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMi
 
 # ==================== CARE INTAKE VIEWS ====================
 
+_DEMO_SCENARIO_RE = __import__('re').compile(
+    r'Demo scenario \[([^\]]+)\]', __import__('re').IGNORECASE
+)
+
+
+def _extract_demo_scenario_tag(intake) -> str:
+    """Return the demo scenario tag if the intake was created by seed_demo_data, else ''."""
+    description = intake.description or ''
+    match = _DEMO_SCENARIO_RE.search(description)
+    if match:
+        return match.group(1)
+    # Fallback: check the title for [tag] patterns
+    title = intake.title or ''
+    title_match = __import__('re').search(r'\[([a-z0-9_-]+(?:-[a-z0-9]+)*)\]', title)
+    if title_match:
+        return title_match.group(1)
+    return ''
+
+
+_EVENT_TYPE_LABEL_NL = {
+    CaseDecisionLog.EventType.MATCH_RECOMMENDED: 'Match aanbevolen',
+    CaseDecisionLog.EventType.PROVIDER_SELECTED: 'Aanbieder geselecteerd',
+    CaseDecisionLog.EventType.RESEND_TRIGGERED: 'Herinnering verstuurd',
+    CaseDecisionLog.EventType.PROVIDE_MISSING_INFO: 'Ontbrekende informatie aangeleverd',
+    CaseDecisionLog.EventType.REMATCH_TRIGGERED: 'Her-match gestart',
+    CaseDecisionLog.EventType.CONTINUE_WAITING: 'Besloten te wachten',
+    CaseDecisionLog.EventType.SLA_ESCALATION: 'SLA-escalatie',
+    CaseDecisionLog.EventType.CASE_COMMUNICATION: 'Communicatie vastgelegd',
+    CaseDecisionLog.EventType.PROVIDER_ACCEPTED: 'Aanbieder geaccepteerd',
+    CaseDecisionLog.EventType.PROVIDER_REJECTED: 'Aanbieder afgewezen',
+    CaseDecisionLog.EventType.PROVIDER_NEEDS_INFO: 'Aanbieder vraagt meer informatie',
+}
+
+_EVALUATION_STATUS_LABEL_NL = {
+    'accept': 'Geaccepteerd',
+    'reject': 'Afgewezen',
+    'needs_more_info': 'Meer informatie gevraagd',
+}
+
+
+def _build_outcome_timeline(intake):
+    """Build a chronological list of timeline events for the case detail view.
+
+    Events are sourced from:
+    - ProviderEvaluation records (accept / reject / needs_more_info decisions)
+    - CaseDecisionLog records (system and user events)
+
+    Returns a list of dicts with keys: title, status_label, reason_label,
+    timestamp, note, user.
+    """
+    events = []
+
+    # --- ProviderEvaluation events ---
+    evals = (
+        ProviderEvaluation.objects.filter(case=intake)
+        .select_related('provider', 'decided_by')
+        .order_by('created_at')
+    )
+    for ev in evals:
+        status_label = _EVALUATION_STATUS_LABEL_NL.get(ev.decision, ev.decision)
+        reason_label = ev.get_reason_code_display() if ev.reason_code else ''
+        note_parts = []
+        if ev.risk_notes:
+            note_parts.append(ev.risk_notes)
+        if ev.requested_info:
+            note_parts.append(f'Gevraagde informatie: {ev.requested_info}')
+        events.append({
+            'title': f'Aanbiederbeoordeling – {ev.provider.name}',
+            'status_label': status_label,
+            'reason_label': reason_label,
+            'timestamp': ev.created_at,
+            'note': ' | '.join(note_parts) if note_parts else '',
+            'user': ev.decided_by,
+        })
+
+    # --- CaseDecisionLog events (key event types only) ---
+    _timeline_event_types = {
+        CaseDecisionLog.EventType.PROVIDER_SELECTED,
+        CaseDecisionLog.EventType.REMATCH_TRIGGERED,
+        CaseDecisionLog.EventType.RESEND_TRIGGERED,
+        CaseDecisionLog.EventType.PROVIDE_MISSING_INFO,
+        CaseDecisionLog.EventType.MATCH_RECOMMENDED,
+        CaseDecisionLog.EventType.PROVIDER_ACCEPTED,
+        CaseDecisionLog.EventType.PROVIDER_REJECTED,
+        CaseDecisionLog.EventType.PROVIDER_NEEDS_INFO,
+    }
+    logs = (
+        CaseDecisionLog.objects.filter(
+            Q(case_id=intake.pk) | Q(case_id_snapshot=intake.pk),
+            event_type__in=_timeline_event_types,
+        )
+        .select_related('actor', 'provider')
+        .order_by('timestamp')
+    )
+    for log in logs:
+        title = _EVENT_TYPE_LABEL_NL.get(log.event_type, log.event_type)
+        if log.provider:
+            title = f'{title} – {log.provider.name}'
+        events.append({
+            'title': title,
+            'status_label': _EVENT_TYPE_LABEL_NL.get(log.event_type, log.event_type),
+            'reason_label': '',
+            'timestamp': log.timestamp,
+            'note': log.optional_reason or '',
+            'user': log.actor,
+        })
+
+    # Chronological order (oldest first in timeline)
+    events.sort(key=lambda e: e['timestamp'])
+    return events
+
+
 class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
     """List all care intakes for the organization."""
     model = CaseIntakeProcess
@@ -6413,6 +6525,7 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
                 'bottleneck_badge': presented_decision['bottleneck_badge'],
                 'escalation_recommended': presented_decision['escalation_recommended'],
                 'strongest_signals': presented_decision['strongest_signals'],
+                'demo_scenario_tag': _extract_demo_scenario_tag(intake),
             })
 
         ctx['intake_rows'] = intake_rows
@@ -6650,6 +6763,10 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             .order_by('-timestamp', '-id')[:120]
         )
 
+        # Build a chronological timeline from ProviderEvaluation + CaseDecisionLog
+        # records so the Tijdlijn tab and Context section have meaningful content.
+        outcome_timeline_events = _build_outcome_timeline(intake)
+
         intelligence_context = _build_case_intelligence_context(
             intake,
             assessment=assessment,
@@ -6883,6 +7000,8 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'urgency_code': intake.urgency,
             },
             'phase_stepper': flow_rail,
+            'outcome_timeline_events': outcome_timeline_events,
+            'demo_scenario_tag': _extract_demo_scenario_tag(intake),
         })
 
         return ctx
