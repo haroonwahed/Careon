@@ -7576,7 +7576,12 @@ def _build_active_workspace(selected_alert):
         'case_detail_url': _safe_url('careon:case_detail', case.pk) if case else None,
         'matching_url': matching_url,
         'placement_url': placement_url,
-        # Decision evidence fields – exposed for future explainability data
+        # Human-readable stage label for the meta chip
+        'stage_label': item.get('stage', '').replace('_', ' ').title() if item.get('stage') else None,
+        # Decision evidence fields – forward-compatible placeholders for the matching explainability
+        # model described in the system bible (fit_summary, match_confidence, factor_breakdown,
+        # trade_offs). These attributes are not yet defined on CaseIntakeProcess; getattr with
+        # a None default ensures the template renders gracefully until the model is extended.
         'fit_summary': getattr(case, 'fit_summary', None),
         'confidence': getattr(case, 'match_confidence', None),
         'factor_breakdown': getattr(case, 'factor_breakdown', None),
@@ -7642,7 +7647,7 @@ def _build_system_intelligence(org, open_alerts):
             'high_severity': high_sev,
             'urgent_unmatched': by_type.get('urgent_unmatched_case', 0),
             'provider_rejections': by_type.get('provider_rejected_case', 0),
-            'stalled_cases': by_type.get(_AT.PLACEMENT_STALLED, 0),
+            'stalled_cases': by_type.get('placement_stalled', 0),
             'weak_matches': by_type.get('weak_match_needs_verification', 0),
             'no_capacity': by_type.get('no_capacity_available', 0),
         },

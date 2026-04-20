@@ -216,7 +216,9 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
             now_ts = timezone.now()
             if not timezone.is_aware(ref):
                 logger.warning(
-                    'Naive datetime encountered for placement pk=%s field ref; '
+                    'Naive datetime encountered for placement pk=%s '
+                    '(checked fields: provider_response_last_reminder_at, '
+                    'provider_response_requested_at, updated_at); '
                     'this should not happen when USE_TZ=True. Converting to UTC.',
                     getattr(placement, 'pk', '?'),
                 )

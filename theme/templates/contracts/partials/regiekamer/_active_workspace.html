@@ -35,10 +35,10 @@
     <strong>{{ active_workspace.care_category|truncatechars:20 }}</strong>
   </div>
   {% endif %}
-  {% if active_workspace.alert.stage %}
+  {% if active_workspace.stage_label %}
   <div class="rgk-ws-chip">
     <span>Fase signaal</span>
-    <strong style="text-transform:capitalize;">{{ active_workspace.alert.stage|cut:"_" }}</strong>
+    <strong>{{ active_workspace.stage_label }}</strong>
   </div>
   {% endif %}
 </div>
