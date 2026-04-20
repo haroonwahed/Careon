@@ -8144,3 +8144,72 @@ def tuning_meta_governance(request):
         'negative_impact': negative_impact_proposals(proposals),
         'total_proposals': len(proposals),
     })
+
+
+def governance_playbook(request):
+    """Staff/owner-only operational playbook view.
+
+    Provides advisory guidance on review cadence, escalation rules,
+    success criteria, archiving recommendations, and role responsibilities.
+    Read-only: no DB writes.
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_tuning_playbook import (
+        IMPLEMENTATION_EVALUATION_DAYS,
+        NEGATIVE_IMPACT_ARCHIVE_COUNT,
+        PRIORITY_REVIEW_THRESHOLD,
+        SAMPLE_COUNT_MINIMUM,
+        STALE_DAYS_HIGH_RISK,
+        STALE_DAYS_LOW_RISK,
+        SUCCESS_DELTA_THRESHOLD,
+        archive_recommendation,
+        escalation_required,
+        playbook_summary,
+        role_responsibilities,
+        success_criteria_met,
+    )
+    from .models import TuningProposal
+    from .tenancy import get_user_organization
+
+    org = get_user_organization(request.user)
+    proposals = list(
+        TuningProposal.objects.filter(organization=org).select_related(
+            'affected_care_category', 'affected_provider', 'reviewed_by'
+        )
+    )
+
+    summary = playbook_summary(proposals)
+
+    # Per-proposal playbook rows for the action table (non-terminal only)
+    action_rows = []
+    for p in proposals:
+        status = (getattr(p, 'status', '') or '').upper()
+        if status in ('REJECTED',):
+            continue
+        esc = escalation_required(p)
+        arc = archive_recommendation(p)
+        suc = success_criteria_met(p) if status == 'IMPLEMENTED' else None
+        action_rows.append({
+            'proposal': p,
+            'escalation': esc,
+            'archive': arc,
+            'success': suc,
+        })
+
+    return render(request, 'contracts/governance_playbook.html', {
+        'summary': summary,
+        'action_rows': action_rows,
+        'roles': role_responsibilities(),
+        'thresholds': {
+            'sample_count_minimum': SAMPLE_COUNT_MINIMUM,
+            'priority_review_threshold': PRIORITY_REVIEW_THRESHOLD,
+            'stale_days_low_risk': STALE_DAYS_LOW_RISK,
+            'stale_days_high_risk': STALE_DAYS_HIGH_RISK,
+            'implementation_evaluation_days': IMPLEMENTATION_EVALUATION_DAYS,
+            'success_delta_threshold': SUCCESS_DELTA_THRESHOLD,
+            'negative_impact_archive_count': NEGATIVE_IMPACT_ARCHIVE_COUNT,
+        },
+        'total_proposals': len(proposals),
+    })

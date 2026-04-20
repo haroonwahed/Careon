@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Werkafspraken — Governance Playbook - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Werkafspraken — Governance Playbook</h1>
+            <p class="ds-analytics-sub">
+                Operationele richtlijnen voor dagelijks gebruik door regisseurs, goedkeurders en beheerders.
+                Alle adviezen zijn adviserend en lees-alleen. Geen voorstel wordt automatisch gewijzigd.
+            </p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:tuning_meta_governance' %}" class="btn btn-secondary btn-sm">📊 Meta-Analyse</a>
+            <a href="{% url 'careon:tuning_proposals' %}" class="btn btn-secondary btn-sm">← Tuningvoorstellen</a>
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 1: Today's action summary                                         #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">📋 Acties voor Vandaag</h2>
+        <p class="ds-card-sub">Geaggregeerde actievereisten op basis van {{ total_proposals }} voorstel(len).</p>
+        <ul style="list-style:disc;padding-left:1.5rem;font-size:0.9rem;line-height:1.9">
+            {% for line in summary.summary_lines %}
+            <li>{{ line }}</li>
+            {% endfor %}
+        </ul>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:0.75rem;margin-top:1rem">
+            <div class="ds-stat-tile" style="{% if summary.needs_escalation %}border-color:var(--color-danger,#ef4444){% endif %}">
+                <div class="ds-stat-value">{{ summary.needs_escalation|length }}</div>
+                <div class="ds-stat-label">Escalatie vereist</div>
+            </div>
+            <div class="ds-stat-tile" style="{% if summary.overdue_review %}border-color:var(--color-warning,#f59e0b){% endif %}">
+                <div class="ds-stat-value">{{ summary.overdue_review|length }}</div>
+                <div class="ds-stat-label">Vervallen beoordeling</div>
+            </div>
+            <div class="ds-stat-tile">
+                <div class="ds-stat-value">{{ summary.ready_for_review|length }}</div>
+                <div class="ds-stat-label">Klaar voor review</div>
+            </div>
+            <div class="ds-stat-tile">
+                <div class="ds-stat-value">{{ summary.needs_success_eval|length }}</div>
+                <div class="ds-stat-label">Impact-evaluatie nodig</div>
+            </div>
+            <div class="ds-stat-tile">
+                <div class="ds-stat-value">{{ summary.archive_candidates|length }}</div>
+                <div class="ds-stat-label">Archiefkandidaten</div>
+            </div>
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 2: Per-proposal action table                                      #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🗂 Voorstel-actietabel</h2>
+        <p class="ds-card-sub">
+            Advies per voorstel. Afgewezen voorstellen zijn verborgen.
+        </p>
+        {% if action_rows %}
+        <div style="overflow-x:auto">
+        <table class="ds-table" style="width:100%;font-size:0.82rem">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factor</th>
+                    <th>Status</th>
+                    <th>Risico</th>
+                    <th>Prioriteit</th>
+                    <th>Escaleren?</th>
+                    <th>Archiveren?</th>
+                    <th>Succes?</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in action_rows %}
+            <tr>
+                <td>{{ row.proposal.pk }}</td>
+                <td>{{ row.proposal.get_factor_type_display }}</td>
+                <td>{{ row.proposal.get_status_display }}</td>
+                <td style="{% if row.proposal.risk_level == 'HIGH' %}color:var(--color-danger,#ef4444);font-weight:600{% endif %}">
+                    {{ row.proposal.risk_level }}
+                </td>
+                <td>{{ row.proposal.priority_score|default:"—" }}</td>
+                <td>
+                    {% if row.escalation.required %}
+                        <span style="color:var(--color-danger,#ef4444);font-weight:600">Ja</span>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">
+                            {% for r in row.escalation.reasons %}<div>• {{ r }}</div>{% endfor %}
+                        </div>
+                    {% else %}
+                        <span style="color:var(--color-success,#10b981)">Nee</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.archive.archive %}
+                        <span style="color:var(--color-warning,#f59e0b);font-weight:600">Ja</span>
+                        <div style="font-size:0.75rem;color:var(--text-muted)">{{ row.archive.reason }}</div>
+                    {% else %}
+                        <span style="color:var(--text-muted)">Nee</span>
+                        {% if row.archive.reason %}
+                        <div style="font-size:0.75rem;color:var(--text-muted)">{{ row.archive.reason }}</div>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    {% if row.success %}
+                        {% if row.success.met %}
+                            <span style="color:var(--color-success,#10b981);font-weight:600">✓</span>
+                        {% else %}
+                            <span style="color:var(--color-danger,#ef4444)">✗</span>
+                        {% endif %}
+                        <div style="font-size:0.75rem;color:var(--text-muted)">{{ row.success.detail }}</div>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        </div>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">Geen actieve voorstellen gevonden.</p>
+        {% endif %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 3: Rol-verantwoordelijkheden                                      #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">👥 Rolverantwoordelijkheden</h2>
+        <p class="ds-card-sub">Werkafspraken per rol in het governanceproces.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem">
+
+            <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:1rem">
+                <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem">
+                    {{ roles.reviewer.label }}
+                </h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for d in roles.reviewer.duties %}<li>{{ d }}</li>{% endfor %}
+                </ul>
+                <p style="font-size:0.8rem;margin-top:0.75rem;color:var(--text-muted)">
+                    <strong>Cadans:</strong> {{ roles.reviewer.cadence }}<br>
+                    <strong>Escaleren naar:</strong> {{ roles.reviewer.escalate_to }}
+                </p>
+            </div>
+
+            <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:1rem">
+                <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem">
+                    {{ roles.approver.label }}
+                </h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for d in roles.approver.duties %}<li>{{ d }}</li>{% endfor %}
+                </ul>
+                <p style="font-size:0.8rem;margin-top:0.75rem;color:var(--text-muted)">
+                    <strong>Escaleren naar:</strong> {{ roles.approver.escalate_to }}
+                </p>
+            </div>
+
+            <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:1rem">
+                <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem">
+                    {{ roles.observer.label }}
+                </h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for d in roles.observer.duties %}<li>{{ d }}</li>{% endfor %}
+                </ul>
+            </div>
+
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 4: Drempelwaarden en beleid                                       #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">⚙️ Beleidsdrempelwaarden</h2>
+        <p class="ds-card-sub">
+            Actieve drempelwaarden die bepalend zijn voor cadans, escalatie, succescriteria en archivering.
+            Aanpassingen vereisen een codewijziging door een beheerder.
+        </p>
+        <table class="ds-table" style="width:100%;max-width:600px;font-size:0.85rem">
+            <thead>
+                <tr><th>Parameter</th><th>Veldnaam</th><th class="text-right">Waarde</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Minimale steekproef voor actie</td><td><code>sample_count_minimum</code></td><td class="text-right">{{ thresholds.sample_count_minimum }}</td></tr>
+                <tr><td>Prioriteitsdrempel voor review</td><td><code>priority_review_threshold</code></td><td class="text-right">{{ thresholds.priority_review_threshold }}</td></tr>
+                <tr><td>Stale-termijn laag risico (dagen)</td><td><code>stale_days_low_risk</code></td><td class="text-right">{{ thresholds.stale_days_low_risk }}</td></tr>
+                <tr><td>Stale-termijn hoog risico (dagen)</td><td><code>stale_days_high_risk</code></td><td class="text-right">{{ thresholds.stale_days_high_risk }}</td></tr>
+                <tr><td>Evaluatievenster na implementatie (dagen)</td><td><code>implementation_evaluation_days</code></td><td class="text-right">{{ thresholds.implementation_evaluation_days }}</td></tr>
+                <tr><td>Minimale Δconfidence voor succes</td><td><code>success_delta_threshold</code></td><td class="text-right">+{{ thresholds.success_delta_threshold }}</td></tr>
+                <tr><td>Negatieve metingen voor archiefadvies</td><td><code>negative_impact_archive_count</code></td><td class="text-right">{{ thresholds.negative_impact_archive_count }}</td></tr>
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 5: Escalatie-regels                                               #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🚨 Escalatie-regels</h2>
+        <p class="ds-card-sub">Een voorstel wordt geëscaleerd naar de goedkeurder als aan één van de volgende criteria wordt voldaan:</p>
+        <ul style="list-style:disc;padding-left:1.5rem;font-size:0.88rem;line-height:2">
+            <li><strong>Risico-niveau HOOG</strong> — het voorstel heeft impact op meerdere aanbieders of kritische factortypes.</li>
+            <li><strong>Steekproefomvang &lt; {{ thresholds.sample_count_minimum }}</strong> — te weinig data voor een betrouwbare beslissing.</li>
+            <li><strong>Prioriteitsscore &gt; 0.85</strong> — extreem urgente kalibratie-afwijking vereist snelle actie.</li>
+            <li><strong>Termijnoverschrijding</strong> — voorstel heeft de beoordelingstermijn overschreden zonder actie.</li>
+        </ul>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 6: Succescriteria                                                 #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">✅ Succescriteria voor geïmplementeerde voorstellen</h2>
+        <p class="ds-card-sub">Een geïmplementeerd voorstel wordt als succesvol beschouwd wanneer:</p>
+        <ol style="padding-left:1.5rem;font-size:0.88rem;line-height:2">
+            <li>Status is <strong>IMPLEMENTED</strong>.</li>
+            <li>Er zijn <strong>post-impact-gegevens</strong> beschikbaar (na ≥ {{ thresholds.implementation_evaluation_days }} dagen).</li>
+            <li><code>delta_confidence_observed</code> is <strong>&gt; +{{ thresholds.success_delta_threshold }}</strong>.</li>
+            <li>De post-impact steekproef heeft <strong>≥ {{ thresholds.sample_count_minimum }} observaties</strong>.</li>
+        </ol>
+        <p class="ds-card-sub" style="margin-top:0.75rem">
+            Voorstellen die aan de eerste drie criteria voldoen maar te weinig observaties hebben,
+            worden als <em>onvoldoende onderbouwd</em> gemarkeerd en verdienen hernieuwde meting.
+        </p>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 7: Archiverings- en pensioenregels                                #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:3px solid var(--color-warning,#f59e0b)">
+        <h2 class="ds-card-title">📦 Archiverings- en Pensioenregels</h2>
+        <p class="ds-card-sub">Een voorstel is kandidaat voor archivering wanneer:</p>
+        <ul style="list-style:disc;padding-left:1.5rem;font-size:0.88rem;line-height:2">
+            <li><strong>Afgewezen (REJECTED)</strong> — definitief besloten; kan worden gearchiveerd.</li>
+            <li><strong>Verlopen</strong> — SUGGESTED of REVIEWED en langer dan {{ thresholds.stale_days_low_risk }}×2 = {{ thresholds.stale_days_low_risk|add:thresholds.stale_days_low_risk }} dagen inactief (laag risico)
+                of {{ thresholds.stale_days_high_risk }}×2 = {{ thresholds.stale_days_high_risk|add:thresholds.stale_days_high_risk }} dagen (hoog risico).</li>
+            <li><strong>Herhaalde dubbeling</strong> — groepssleutel komt meerdere malen voor; dedupliceer en archiveer de lagere-prioriteit versies.</li>
+            <li><strong>Structureel ineffectief</strong> — IMPLEMENTED met <code>delta_confidence_observed ≤ 0</code>;
+                {{ thresholds.negative_impact_archive_count }} of meer metingen bevestigen geen positief effect.</li>
+        </ul>
+        <p class="ds-card-sub" style="color:var(--text-muted);font-style:italic">
+            Archivering is een aanbeveling. Daadwerkelijke statuswijziging vereist goedkeuring van een beheerder.
+        </p>
+    </section>
+
+</div>
+</div>
+{% endblock %}
