@@ -8103,3 +8103,44 @@ def tuning_proposals(request):
         'stale_proposals': stale,
         'implemented_with_impact': implemented_with_impact,
     })
+
+
+def tuning_meta_governance(request):
+    """Staff/owner-only meta-governance analytics view for the tuning workflow.
+
+    Read-only report showing effectiveness metrics for implemented proposals,
+    reviewer behaviour, and approval/rejection ratios.
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_tuning_meta import (
+        approval_rejection_ratios,
+        care_category_proposal_stats,
+        factor_type_impact_summary,
+        negative_impact_proposals,
+        reviewer_stats,
+        top_impact_proposals,
+    )
+    from .models import TuningProposal
+    from .tenancy import get_user_organization
+
+    org = get_user_organization(request.user)
+    proposals = list(
+        TuningProposal.objects.filter(organization=org).select_related(
+            'affected_care_category', 'affected_provider', 'reviewed_by'
+        )
+    )
+
+    ratios = approval_rejection_ratios(proposals)
+
+    return render(request, 'contracts/tuning_meta_governance.html', {
+        'top_impact': top_impact_proposals(proposals),
+        'factor_impact': factor_type_impact_summary(proposals),
+        'category_stats': care_category_proposal_stats(proposals),
+        'reviewer_stats': reviewer_stats(proposals),
+        'by_source': ratios['by_source'],
+        'by_factor_type': ratios['by_factor_type'],
+        'negative_impact': negative_impact_proposals(proposals),
+        'total_proposals': len(proposals),
+    })

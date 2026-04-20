@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+{% block title %}Meta-Governance Analyse — Tuning - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Meta-Governance Analyse</h1>
+            <p class="ds-analytics-sub">
+                Lees-alleen inzichten over de effectiviteit van tuningvoorstellen, beoordelingsgedrag
+                en goedkeuringspatronen. Alle analyses zijn adviserend en worden nooit automatisch toegepast.
+            </p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:tuning_proposals' %}" class="btn btn-secondary btn-sm">← Tuningvoorstellen</a>
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 1: Top impact proposals                                           #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🏆 Grootste Positieve Impact</h2>
+        <p class="ds-card-sub">
+            Geïmplementeerde voorstellen met de hoogste geobserveerde verbetering in mean confidence.
+        </p>
+        {% if top_impact %}
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factor</th>
+                    <th>Categorie</th>
+                    <th class="text-right">Δ Confidence</th>
+                    <th class="text-right">Δ Acceptatiegraad</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in top_impact %}
+            <tr>
+                <td>{{ row.proposal.pk }}</td>
+                <td>{{ row.proposal.get_factor_type_display }}</td>
+                <td>{{ row.category_name }}</td>
+                <td class="text-right" style="color:var(--color-success,#10b981);font-weight:600">
+                    +{{ row.delta_conf }}
+                </td>
+                <td class="text-right">
+                    {% if row.delta_accept is not None %}
+                        <span style="{% if row.delta_accept > 0 %}color:var(--color-success,#10b981){% elif row.delta_accept < 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                            {% if row.delta_accept >= 0 %}+{% endif %}{{ row.delta_accept }}
+                        </span>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">
+            Nog geen geïmplementeerde voorstellen met gemeten post-impact beschikbaar.
+        </p>
+        {% endif %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 2: Factor type impact summary                                     #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">📊 Gemiddelde Impact per Factortype</h2>
+        <p class="ds-card-sub">
+            Welke factortypen leiden gemiddeld tot de grootste verbetering in confidence?
+        </p>
+        {% if factor_impact %}
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>Factortype</th>
+                    <th class="text-right">Aantal metingen</th>
+                    <th class="text-right">Gem. Δ Confidence</th>
+                    <th class="text-right">Gem. Δ Acceptatie</th>
+                    <th class="text-right">Max Δ</th>
+                    <th class="text-right">Min Δ</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in factor_impact %}
+            <tr>
+                <td>{{ row.factor_type }}</td>
+                <td class="text-right">{{ row.count_with_impact }}</td>
+                <td class="text-right" style="font-weight:600;{% if row.avg_delta_conf > 0 %}color:var(--color-success,#10b981){% elif row.avg_delta_conf < 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                    {% if row.avg_delta_conf is not None %}{% if row.avg_delta_conf >= 0 %}+{% endif %}{{ row.avg_delta_conf }}{% else %}—{% endif %}
+                </td>
+                <td class="text-right">
+                    {% if row.avg_delta_accept is not None %}{% if row.avg_delta_accept >= 0 %}+{% endif %}{{ row.avg_delta_accept }}{% else %}—{% endif %}
+                </td>
+                <td class="text-right">{% if row.max_delta_conf is not None %}{{ row.max_delta_conf }}{% else %}—{% endif %}</td>
+                <td class="text-right">{% if row.min_delta_conf is not None %}{{ row.min_delta_conf }}{% else %}—{% endif %}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">
+            Nog geen impact-data beschikbaar per factortype.
+        </p>
+        {% endif %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 3: Care category statistics                                       #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🗂 Voorstellen per Zorgcategorie</h2>
+        <p class="ds-card-sub">
+            Welke zorgcategorieën genereren de meeste voorstellen, verouderde voorstellen of herhaalde patronen?
+        </p>
+        {% if category_stats %}
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>Categorie</th>
+                    <th class="text-right">Totaal</th>
+                    <th class="text-right">Verouderd</th>
+                    <th class="text-right">Groepen</th>
+                    <th class="text-right">Goedgekeurd</th>
+                    <th class="text-right">Afgewezen</th>
+                    <th class="text-right">Geïmpl.</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in category_stats %}
+            <tr>
+                <td>{{ row.category_name }}</td>
+                <td class="text-right">{{ row.total_proposals }}</td>
+                <td class="text-right" style="{% if row.stale_count > 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                    {{ row.stale_count }}
+                </td>
+                <td class="text-right">{{ row.distinct_groups }}</td>
+                <td class="text-right">{{ row.approved_count }}</td>
+                <td class="text-right">{{ row.rejected_count }}</td>
+                <td class="text-right">{{ row.implemented_count }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">
+            Nog geen voorstellen beschikbaar.
+        </p>
+        {% endif %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 4: Reviewer statistics                                            #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">👤 Beoordelaarsstatistieken</h2>
+        <p class="ds-card-sub">
+            Overzicht van goedkeuringsvolume en gemiddelde geobserveerde impact per beoordelaar.
+        </p>
+        {% if reviewer_stats %}
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>Beoordelaar</th>
+                    <th class="text-right">Beoordeeld</th>
+                    <th class="text-right">Goedgekeurd</th>
+                    <th class="text-right">Afgewezen</th>
+                    <th class="text-right">Geïmpl.</th>
+                    <th class="text-right">Met impact</th>
+                    <th class="text-right">Gem. Δ Conf</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in reviewer_stats %}
+            <tr>
+                <td>{{ row.reviewer_name }}</td>
+                <td class="text-right">{{ row.total_reviewed }}</td>
+                <td class="text-right">{{ row.approved_count }}</td>
+                <td class="text-right">{{ row.rejected_count }}</td>
+                <td class="text-right">{{ row.implemented_count }}</td>
+                <td class="text-right">{{ row.proposals_with_impact }}</td>
+                <td class="text-right">
+                    {% if row.avg_delta_conf is not None %}
+                        <span style="{% if row.avg_delta_conf > 0 %}color:var(--color-success,#10b981){% elif row.avg_delta_conf < 0 %}color:var(--color-danger,#ef4444){% endif %}">
+                            {% if row.avg_delta_conf >= 0 %}+{% endif %}{{ row.avg_delta_conf }}
+                        </span>
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">
+            Nog geen beoordelaarsdata beschikbaar.
+        </p>
+        {% endif %}
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 5: Approval / rejection ratios                                    #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">✅ Goedkeurings- en Afwijzingsratio's</h2>
+        <p class="ds-card-sub">
+            Verhouding tussen goedgekeurde en afgewezen voorstellen, uitgesplitst naar bron en factortype.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;flex-wrap:wrap">
+            <div>
+                <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem">Per bron</h3>
+                {% if by_source %}
+                <table class="ds-table" style="width:100%;font-size:0.8rem">
+                    <thead>
+                        <tr>
+                            <th>Bron</th>
+                            <th class="text-right">Goedgekeurd</th>
+                            <th class="text-right">Afgewezen</th>
+                            <th class="text-right">Ratio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for src, data in by_source.items %}
+                    <tr>
+                        <td style="font-size:0.78rem">{{ src }}</td>
+                        <td class="text-right">{{ data.approved }}</td>
+                        <td class="text-right">{{ data.rejected }}</td>
+                        <td class="text-right">
+                            {% if data.approval_rate is not None %}{{ data.approval_rate|floatformat:2 }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="ds-card-sub" style="color:var(--text-muted)">Geen data.</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <h3 style="font-size:0.9rem;font-weight:600;margin-bottom:0.5rem">Per factortype</h3>
+                {% if by_factor_type %}
+                <table class="ds-table" style="width:100%;font-size:0.8rem">
+                    <thead>
+                        <tr>
+                            <th>Factortype</th>
+                            <th class="text-right">Goedgekeurd</th>
+                            <th class="text-right">Afgewezen</th>
+                            <th class="text-right">Ratio</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for ft, data in by_factor_type.items %}
+                    <tr>
+                        <td style="font-size:0.78rem">{{ ft }}</td>
+                        <td class="text-right">{{ data.approved }}</td>
+                        <td class="text-right">{{ data.rejected }}</td>
+                        <td class="text-right">
+                            {% if data.approval_rate is not None %}{{ data.approval_rate|floatformat:2 }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="ds-card-sub" style="color:var(--text-muted)">Geen data.</p>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 6: Negative impact proposals                                      #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:3px solid var(--color-danger,#ef4444)">
+        <h2 class="ds-card-title">⚠️ Goedgekeurd maar Neutraal/Negatief Effect</h2>
+        <p class="ds-card-sub">
+            Voorstellen met status <em>Goedgekeurd</em> of <em>Geïmplementeerd</em> waarbij de geobserveerde
+            confidence-delta nul of negatief is. Verdienen herziening.
+        </p>
+        {% if negative_impact %}
+        <table class="ds-table" style="width:100%;font-size:0.85rem">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Factor</th>
+                    <th>Categorie</th>
+                    <th>Status</th>
+                    <th class="text-right">Δ Confidence</th>
+                    <th class="text-right">Δ Acceptatie</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for p in negative_impact %}
+            <tr>
+                <td>{{ p.pk }}</td>
+                <td>{{ p.get_factor_type_display }}</td>
+                <td>
+                    {% if p.affected_care_category %}{{ p.affected_care_category.name }}{% else %}—{% endif %}
+                </td>
+                <td>{{ p.get_status_display }}</td>
+                <td class="text-right" style="color:var(--color-danger,#ef4444);font-weight:600">
+                    {{ p.post_impact.delta_confidence_observed }}
+                </td>
+                <td class="text-right">
+                    {% if p.post_impact.delta_acceptance_observed is not None %}
+                        {{ p.post_impact.delta_acceptance_observed }}
+                    {% else %}—{% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-card-sub" style="color:var(--text-muted)">
+            Geen goedgekeurde voorstellen met negatief of neutraal effect gevonden. ✓
+        </p>
+        {% endif %}
+    </section>
+
+</div>
+</div>
+{% endblock %}
