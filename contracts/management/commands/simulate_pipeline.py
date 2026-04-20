@@ -74,7 +74,8 @@ PROBLEMATIEK_POOL = [
     'verslaving', 'huiselijk_geweld', 'eetstoornissen', 'psychose',
 ]
 
-# Weights for scenario type distribution across 50 cases
+# Target percentage distribution across 50 cases per scenario type.
+# Values sum to 100 (percentages); the list is shuffled and trimmed to 50.
 # (normal, missing_data, no_capacity, weak_match, stalled, urgent_limited)
 SCENARIO_WEIGHTS = [40, 15, 10, 10, 10, 15]
 SCENARIO_TYPES = ['normal', 'missing_data', 'no_capacity', 'weak_match', 'stalled', 'urgent_limited']
@@ -286,12 +287,18 @@ class Command(BaseCommand):
         return municipalities[0], region
 
     def _reset_simulation_data(self, org, seed):
+        from django.db import DatabaseError
         runs = SimulationRun.objects.filter(organization=org, seed=seed)
         case_ids = list(
             SimulatedCaseResult.objects.filter(run__in=runs)
             .values_list('intake_id', flat=True)
         )
-        CaseIntakeProcess.objects.filter(pk__in=case_ids).delete()
+        try:
+            CaseIntakeProcess.objects.filter(pk__in=case_ids).delete()
+        except DatabaseError as exc:
+            self.stdout.write(self.style.WARNING(
+                f'Kon intake-records niet verwijderen (mogelijk ontbrekende tabel): {exc}'
+            ))
         runs.delete()
         self.stdout.write(self.style.WARNING(f'Vorige simulatiedata verwijderd voor seed={seed}.'))
 
@@ -299,11 +306,10 @@ class Command(BaseCommand):
 
     def _build_scenario_list(self, rng: random.Random) -> list[str]:
         scenarios = []
-        remaining = 50
         for i, stype in enumerate(SCENARIO_TYPES):
             count = SCENARIO_WEIGHTS[i]
             scenarios.extend([stype] * count)
-        # Shuffle deterministically, then trim/pad to exactly 50
+        # Shuffle deterministically, then trim to exactly 50
         rng.shuffle(scenarios)
         return scenarios[:50]
 
