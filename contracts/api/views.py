@@ -1160,7 +1160,7 @@ def matching_action_api(request, case_id):
             provider=provider,
             source='spa_matching',
         )
-        # Advance case phase to plaatsing
+        # Advance case phase to provider beoordeling
         case_record = CareCase.objects.filter(
             due_diligence_process=intake
         ).first()

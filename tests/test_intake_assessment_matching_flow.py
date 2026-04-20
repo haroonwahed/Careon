@@ -116,7 +116,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(assign_response.status_code, 200)
         assign_payload = assign_response.json()
         self.assertTrue(assign_payload['ok'])
-        self.assertEqual(assign_payload['nextPage'], 'plaatsingen')
+        self.assertEqual(assign_payload['nextPage'], 'casussen')
         self.assertEqual(assign_payload['providerId'], str(provider.pk))
         self.assertTrue(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
 
