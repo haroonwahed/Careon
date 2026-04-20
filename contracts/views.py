@@ -5938,9 +5938,9 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         placement_status_actions = []
         if placement and can_edit_case:
             action_specs = [
-                (PlacementRequest.Status.IN_REVIEW, 'Markeer: in beoordeling', 'Overdracht loopt, aanbieder beoordeelt intake.'),
+                (PlacementRequest.Status.IN_REVIEW, 'Markeer: in beoordeling', 'Intake-overdracht loopt, aanbieder beoordeelt de intake.'),
                 (PlacementRequest.Status.NEEDS_INFO, 'Markeer: info nodig', 'Aanvullende informatie opgevraagd bij ketenpartner.'),
-                (PlacementRequest.Status.APPROVED, 'Bevestig plaatsing', 'Plaatsing bevestigd en overdracht afgerond.'),
+                (PlacementRequest.Status.APPROVED, 'Bevestig plaatsing', 'Plaatsing bevestigd en intake-overdracht afgerond.'),
                 (PlacementRequest.Status.REJECTED, 'Markeer: afgewezen', 'Plaatsing afgewezen, terug naar matching.'),
             ]
             for status_code, label, note in action_specs:

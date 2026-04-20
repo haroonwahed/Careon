@@ -799,16 +799,16 @@
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Overdracht & notificatie</p>
+                    <p class="ds-note-text--strong">Intake-overdracht & notificatie</p>
                 </div>
                 <div class="ds-info-grid sm:grid-cols-2">
                     <div class="ds-info-card">
-                        <span class="ds-info-label">Overdrachtstatus</span>
+                        <span class="ds-info-label">Intake-overdrachtstatus</span>
                         <strong>{% if placement_handoff_docs_count %}Gedocumenteerd{% else %}Nog niet geregistreerd{% endif %}</strong>
                         {% if latest_handoff_doc %}
-                        <p class="text-xs ds-text-secondary">Laatste overdrachtsdocument: {{ latest_handoff_doc.title }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
+                        <p class="text-xs ds-text-secondary">Laatste intake-overdrachtsdocument: {{ latest_handoff_doc.title }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
                         {% else %}
-                        <p class="text-xs ds-text-secondary">Voeg document toe met event provider_handoff voor overdrachtsdossier.</p>
+                        <p class="text-xs ds-text-secondary">Voeg document toe met event provider_handoff voor intake-overdrachtsdossier.</p>
                         {% endif %}
                     </div>
                     <div class="ds-info-card">
