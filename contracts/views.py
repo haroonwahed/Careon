@@ -7355,7 +7355,7 @@ def _hours_open(alert):
 
 
 def _priority_score(alert):
-    """Lower = higher priority. Severity dominant; age adds urgency."""
+    """Lower score = higher priority. Severity is dominant; older alerts get lower scores (higher priority)."""
     rank = _SEVERITY_RANK.get(alert.severity, 9)
     age_penalty = min(_hours_open(alert) // 6, 10)
     return (rank * 100) - age_penalty

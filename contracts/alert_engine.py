@@ -215,6 +215,11 @@ def _evaluate_rules(intake: CaseIntakeProcess) -> list[dict]:
         if ref is not None:
             now_ts = timezone.now()
             if not timezone.is_aware(ref):
+                logger.warning(
+                    'Naive datetime encountered for placement pk=%s field ref; '
+                    'this should not happen when USE_TZ=True. Converting to UTC.',
+                    getattr(placement, 'pk', '?'),
+                )
                 ref = make_aware(ref)
             hours_waiting = max(0, (now_ts - ref).total_seconds() / 3600)
             if hours_waiting >= 72:
