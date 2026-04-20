@@ -592,3 +592,301 @@ def build_full_observability_report(organization: Any) -> Dict[str, Any]:
         "weak_match_false_positive": build_weak_match_false_positive_report(organization),
         "override_tracking": build_override_tracking_report(organization),
     }
+
+
+# ---------------------------------------------------------------------------
+# Extended tuning observability – noisy rules, false-positives, low-confidence
+# ---------------------------------------------------------------------------
+
+
+def build_noisy_rules_report(organization: Any) -> Dict[str, Any]:
+    """Identify alert types that fire frequently but are rarely blocking.
+
+    "Noisy" = alert fires for a case but the case progresses to the next
+    phase (matching → placement → intake) despite the alert.
+
+    Returns
+    -------
+    dict with keys:
+    ``alert_type_counts``   : list[dict]  — alert_type, total_fired, resolved_without_block, noise_rate
+    ``noisiest_alert_type`` : str | None
+    ``data_available``      : bool
+    """
+    try:
+        return _compute_noisy_rules(organization)
+    except Exception:
+        logger.exception("build_noisy_rules_report failed")
+        return {"alert_type_counts": [], "noisiest_alert_type": None, "data_available": False}
+
+
+def _compute_noisy_rules(organization: Any) -> Dict[str, Any]:
+    from django.db.models import Count, Q
+    from contracts.models import OperationalAlert, CaseIntakeProcess
+
+    # All resolved alerts for the org — resolved means the case moved on.
+    alert_rows = list(
+        OperationalAlert.objects.filter(
+            case__organization=organization,
+        ).values("alert_type", "resolved_at")
+    )
+
+    if not alert_rows:
+        return {"alert_type_counts": [], "noisiest_alert_type": None, "data_available": False}
+
+    total_by_type: Counter = Counter(r["alert_type"] for r in alert_rows)
+    resolved_by_type: Counter = Counter(
+        r["alert_type"] for r in alert_rows if r["resolved_at"] is not None
+    )
+
+    total_all = sum(total_by_type.values())
+
+    alert_type_counts = []
+    for alert_type, total_fired in total_by_type.most_common():
+        resolved = resolved_by_type.get(alert_type, 0)
+        noise_rate = round(resolved / total_fired, 4) if total_fired else 0.0
+        alert_type_counts.append({
+            "alert_type": alert_type,
+            "total_fired": total_fired,
+            "resolved_without_block": resolved,
+            "noise_rate": noise_rate,
+        })
+
+    # Noisiest = highest noise_rate among types with >= 3 fires.
+    qualifying = [a for a in alert_type_counts if a["total_fired"] >= 3]
+    noisiest = max(qualifying, key=lambda a: a["noise_rate"])["alert_type"] if qualifying else None
+
+    return {
+        "alert_type_counts": alert_type_counts,
+        "noisiest_alert_type": noisiest,
+        "total_alerts_analysed": total_all,
+        "data_available": True,
+    }
+
+
+def build_false_positive_signals_report(organization: Any) -> Dict[str, Any]:
+    """Identify alert types that fired but the provider later accepted the case.
+
+    A false positive is: an alert was raised for a case, but the case later
+    received at least one provider ACCEPT evaluation.
+
+    Returns
+    -------
+    dict with keys:
+    ``by_alert_type``  : list[dict]  — alert_type, fp_count, total_fired, fp_rate
+    ``top_fp_type``    : str | None  — alert type with highest false-positive rate
+    ``data_available`` : bool
+    """
+    try:
+        return _compute_false_positive_signals(organization)
+    except Exception:
+        logger.exception("build_false_positive_signals_report failed")
+        return {"by_alert_type": [], "top_fp_type": None, "data_available": False}
+
+
+def _compute_false_positive_signals(organization: Any) -> Dict[str, Any]:
+    from django.db.models import Q
+    from contracts.models import OperationalAlert, ProviderEvaluation
+
+    # Cases that eventually got an ACCEPT evaluation.
+    accepted_case_ids = set(
+        ProviderEvaluation.objects.filter(
+            case__organization=organization,
+            decision="accept",
+        ).values_list("case_id", flat=True)
+    )
+
+    if not accepted_case_ids:
+        return {"by_alert_type": [], "top_fp_type": None, "data_available": False}
+
+    alert_rows = list(
+        OperationalAlert.objects.filter(
+            case__organization=organization,
+        ).values("alert_type", "case_id")
+    )
+
+    if not alert_rows:
+        return {"by_alert_type": [], "top_fp_type": None, "data_available": False}
+
+    total_by_type: Counter = Counter(r["alert_type"] for r in alert_rows)
+    fp_by_type: Counter = Counter(
+        r["alert_type"] for r in alert_rows if r["case_id"] in accepted_case_ids
+    )
+
+    by_alert_type = []
+    for alert_type, total_fired in total_by_type.most_common():
+        fp_count = fp_by_type.get(alert_type, 0)
+        fp_rate = round(fp_count / total_fired, 4) if total_fired else 0.0
+        by_alert_type.append({
+            "alert_type": alert_type,
+            "total_fired": total_fired,
+            "fp_count": fp_count,
+            "fp_rate": fp_rate,
+        })
+
+    qualifying = [a for a in by_alert_type if a["total_fired"] >= 3]
+    top_fp = max(qualifying, key=lambda a: a["fp_rate"])["alert_type"] if qualifying else None
+
+    return {
+        "by_alert_type": by_alert_type,
+        "top_fp_type": top_fp,
+        "total_cases_with_accept": len(accepted_case_ids),
+        "data_available": True,
+    }
+
+
+def build_low_confidence_accepted_report(organization: Any) -> Dict[str, Any]:
+    """Identify cases where a WEAK_MATCH alert fired but provider accepted.
+
+    These cases indicate that the weak-match confidence threshold may be too
+    conservative — the provider accepted despite a low-confidence signal.
+
+    Returns
+    -------
+    dict with keys:
+    ``count``              : int  — cases with WEAK_MATCH alert + accept
+    ``total_weak_match``   : int  — total cases with any WEAK_MATCH alert
+    ``false_positive_rate``: float | None
+    ``cases``              : list[dict]  — case_id, case_title (up to 20)
+    ``data_available``     : bool
+    """
+    try:
+        return _compute_low_confidence_accepted(organization)
+    except Exception:
+        logger.exception("build_low_confidence_accepted_report failed")
+        return {"count": 0, "total_weak_match": 0, "false_positive_rate": None, "cases": [], "data_available": False}
+
+
+def _compute_low_confidence_accepted(organization: Any) -> Dict[str, Any]:
+    from contracts.models import OperationalAlert, ProviderEvaluation
+
+    weak_match_type = "weak_match_needs_review"
+
+    # Cases that had a WEAK_MATCH alert.
+    weak_match_case_ids = set(
+        OperationalAlert.objects.filter(
+            case__organization=organization,
+            alert_type=weak_match_type,
+        ).values_list("case_id", flat=True)
+    )
+
+    total_weak_match = len(weak_match_case_ids)
+    if total_weak_match == 0:
+        return {"count": 0, "total_weak_match": 0, "false_positive_rate": None, "cases": [], "data_available": False}
+
+    # Among those, which also got an ACCEPT evaluation?
+    accepted_rows = list(
+        ProviderEvaluation.objects.filter(
+            case__organization=organization,
+            case_id__in=weak_match_case_ids,
+            decision="accept",
+        ).values("case_id", "case__title").distinct()
+    )
+
+    count = len(accepted_rows)
+    false_positive_rate = round(count / total_weak_match, 4) if total_weak_match else None
+
+    cases = [
+        {
+            "case_id": r["case_id"],
+            "case_title": r["case__title"] or f"Casus {r['case_id']}",
+        }
+        for r in accepted_rows[:20]
+    ]
+
+    return {
+        "count": count,
+        "total_weak_match": total_weak_match,
+        "false_positive_rate": false_positive_rate,
+        "cases": cases,
+        "data_available": True,
+    }
+
+
+def build_top_overridden_rules_report(organization: Any) -> Dict[str, Any]:
+    """Identify alert types most correlated with operator overrides.
+
+    Uses the DecisionQualityReview records to find override events, then
+    correlates them with the most recent unresolved alert on the same case.
+
+    Returns
+    -------
+    dict with keys:
+    ``by_alert_type``   : list[dict]  — alert_type, case_count, override_count
+    ``top_overridden``  : str | None
+    ``data_available``  : bool
+    """
+    try:
+        return _compute_top_overridden_rules(organization)
+    except Exception:
+        logger.exception("build_top_overridden_rules_report failed")
+        return {"by_alert_type": [], "top_overridden": None, "data_available": False}
+
+
+def _compute_top_overridden_rules(organization: Any) -> Dict[str, Any]:
+    from contracts.models import DecisionQualityReview, OperationalAlert
+
+    # Overrides: all DecisionQualityReview rows with override_present=True.
+    override_rows = list(
+        DecisionQualityReview.objects.filter(
+            case__organization=organization,
+            override_present=True,
+        ).values("case_id")
+    )
+
+    if not override_rows:
+        return {"by_alert_type": [], "top_overridden": None, "data_available": False}
+
+    override_case_ids = {r["case_id"] for r in override_rows}
+
+    # For each case with an override, find which alert types were active.
+    alert_rows = list(
+        OperationalAlert.objects.filter(
+            case__organization=organization,
+            case_id__in=override_case_ids,
+        ).values("case_id", "alert_type")
+    )
+
+    if not alert_rows:
+        return {"by_alert_type": [], "top_overridden": None, "data_available": False}
+
+    # Group by alert_type: count distinct cases that had an override.
+    by_type: Dict[str, set] = defaultdict(set)
+    for r in alert_rows:
+        by_type[r["alert_type"]].add(r["case_id"])
+
+    override_count_by_type = {
+        at: len(case_ids) for at, case_ids in by_type.items()
+    }
+
+    by_alert_type = sorted(
+        [
+            {
+                "alert_type": alert_type,
+                "override_case_count": count,
+            }
+            for alert_type, count in override_count_by_type.items()
+        ],
+        key=lambda x: -x["override_case_count"],
+    )
+
+    top_overridden = by_alert_type[0]["alert_type"] if by_alert_type else None
+
+    return {
+        "by_alert_type": by_alert_type,
+        "top_overridden": top_overridden,
+        "total_overridden_cases": len(override_case_ids),
+        "data_available": True,
+    }
+
+
+def build_tuning_observability_report(organization: Any) -> Dict[str, Any]:
+    """Combine all four tuning-specific observability sub-reports.
+
+    Intended for the tuning admin view alongside ``build_full_observability_report``.
+    """
+    return {
+        "noisy_rules": build_noisy_rules_report(organization),
+        "false_positive_signals": build_false_positive_signals_report(organization),
+        "low_confidence_accepted": build_low_confidence_accepted_report(organization),
+        "top_overridden_rules": build_top_overridden_rules_report(organization),
+    }

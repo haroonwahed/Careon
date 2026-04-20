@@ -1,0 +1,266 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block title %}Drempelwaarden & Kalibratie – Zorg OS{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-10">
+
+  {# ── Header ─────────────────────────────────────────────────────────── #}
+  <div class="flex items-start justify-between flex-wrap gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-white">Drempelwaarden &amp; Kalibratie</h1>
+      <p class="mt-1 text-sm text-zinc-400">
+        Configureerbare drempelwaarden voor beslissingsintelligentie,
+        matching­kwaliteit en aanbieder­beoordeling.
+        {% if org %}<span class="text-zinc-500">— {{ org.name }}</span>{% endif %}
+      </p>
+    </div>
+    <div class="flex gap-2">
+      <a href="?format=json"
+         class="text-xs px-3 py-1.5 rounded border border-zinc-600 text-zinc-400 hover:text-white hover:border-zinc-400 transition">
+        JSON exporteren
+      </a>
+      <a href="{% url 'careon:observability_report' %}"
+         class="text-xs px-3 py-1.5 rounded border border-zinc-600 text-zinc-400 hover:text-white hover:border-zinc-400 transition">
+        ← Observability rapport
+      </a>
+    </div>
+  </div>
+
+  {% if overridden_count %}
+  <div class="rounded-lg bg-amber-900/30 border border-amber-600/40 px-4 py-3 text-sm text-amber-300">
+    <strong>{{ overridden_count }} drempelwaarde{% if overridden_count != 1 %}n{% endif %} overschreven</strong>
+    via SystemPolicyConfig — afwijkend van fabrieksinstelling.
+  </div>
+  {% endif %}
+
+  {# ── Threshold Registry ─────────────────────────────────────────────── #}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-3">Drempelwaarden – Volledig overzicht</h2>
+    <div class="overflow-x-auto rounded-lg border border-zinc-700">
+      <table class="w-full text-sm text-left">
+        <thead class="bg-zinc-800 text-zinc-400 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 w-48">Naam</th>
+            <th class="px-4 py-2">Label</th>
+            <th class="px-4 py-2 w-24 text-right">Standaard</th>
+            <th class="px-4 py-2 w-24 text-right">Huidig</th>
+            <th class="px-4 py-2 w-28">Module</th>
+            <th class="px-4 py-2 w-40">Rapporten</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+          {% for t in thresholds %}
+          <tr class="{% if t.is_overridden %}bg-amber-900/10{% else %}bg-zinc-900 hover:bg-zinc-800/60{% endif %} transition">
+            <td class="px-4 py-2 font-mono text-xs text-zinc-300 align-top">
+              {{ t.key }}
+              {% if t.is_overridden %}
+              <span class="ml-1 inline-block text-[10px] px-1 py-0.5 rounded bg-amber-700 text-amber-100">overschreven</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-zinc-200 align-top">
+              {{ t.label }}
+              <p class="mt-0.5 text-xs text-zinc-500">{{ t.description }}</p>
+            </td>
+            <td class="px-4 py-2 text-right text-zinc-400 align-top tabular-nums">{{ t.default_value }}</td>
+            <td class="px-4 py-2 text-right align-top tabular-nums {% if t.is_overridden %}text-amber-300 font-semibold{% else %}text-zinc-300{% endif %}">
+              {{ t.resolved_value }}
+            </td>
+            <td class="px-4 py-2 align-top">
+              {% for m in t.affected_modules %}
+              <span class="inline-block text-[10px] px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-300 mr-1 mb-1">{{ m }}</span>
+              {% endfor %}
+            </td>
+            <td class="px-4 py-2 align-top">
+              {% for r in t.affected_reports %}
+              <span class="inline-block text-[10px] px-1.5 py-0.5 rounded bg-blue-900/50 text-blue-300 mr-1 mb-1">{{ r }}</span>
+              {% endfor %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="px-4 py-6 text-center text-zinc-500">Geen drempelwaarden beschikbaar.</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  {# ── Noisy Rules ─────────────────────────────────────────────────────── #}
+  {% with nr=tuning_report.noisy_rules %}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-1">Ruis­rules (meest genegeerd)</h2>
+    <p class="text-sm text-zinc-500 mb-3">
+      Alert­types die vaak worden gegenereerd maar de casus toch zonder blokkade doorstroomt.
+      Hoge ruis­rate (&gt;70%) duidt op een te lage drempelwaarde.
+    </p>
+    {% if nr.data_available %}
+    <div class="overflow-x-auto rounded-lg border border-zinc-700">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-zinc-400 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 text-left">Alert type</th>
+            <th class="px-4 py-2 text-right">Totaal</th>
+            <th class="px-4 py-2 text-right">Opgelost zonder blokkade</th>
+            <th class="px-4 py-2 text-right">Ruis­rate</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+          {% for row in nr.alert_type_counts %}
+          <tr class="bg-zinc-900 hover:bg-zinc-800/60 transition">
+            <td class="px-4 py-2 font-mono text-xs text-zinc-300">
+              {{ row.alert_type }}
+              {% if row.alert_type == nr.noisiest_alert_type %}
+              <span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-red-800 text-red-200">meeste ruis</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-right tabular-nums text-zinc-400">{{ row.total_fired }}</td>
+            <td class="px-4 py-2 text-right tabular-nums text-zinc-400">{{ row.resolved_without_block }}</td>
+            <td class="px-4 py-2 text-right tabular-nums {% if row.noise_rate >= 0.7 %}text-red-400{% elif row.noise_rate >= 0.4 %}text-amber-400{% else %}text-green-400{% endif %}">
+              {% widthratio row.noise_rate 1 100 %}%
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-4 text-center text-zinc-500">Geen ruis­data beschikbaar.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-sm text-zinc-500 italic py-3">Geen voldoende gegevens om ruis­rules te berekenen.</div>
+    {% endif %}
+  </section>
+  {% endwith %}
+
+  {# ── False-positive signals ──────────────────────────────────────────── #}
+  {% with fp=tuning_report.false_positive_signals %}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-1">Vals-positieve signalen</h2>
+    <p class="text-sm text-zinc-500 mb-3">
+      Alert­types die zijn gegenereerd voor casussen waarbij de aanbieder later toch accepteerde.
+      Hoge FP­-rate duidt op een te agressieve drempelwaarde.
+    </p>
+    {% if fp.data_available %}
+    <div class="overflow-x-auto rounded-lg border border-zinc-700">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-zinc-400 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 text-left">Alert type</th>
+            <th class="px-4 py-2 text-right">Totaal alerts</th>
+            <th class="px-4 py-2 text-right">Vals-positief</th>
+            <th class="px-4 py-2 text-right">FP-rate</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+          {% for row in fp.by_alert_type %}
+          <tr class="bg-zinc-900 hover:bg-zinc-800/60 transition">
+            <td class="px-4 py-2 font-mono text-xs text-zinc-300">
+              {{ row.alert_type }}
+              {% if row.alert_type == fp.top_fp_type %}
+              <span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-red-800 text-red-200">hoogste FP</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-right tabular-nums text-zinc-400">{{ row.total_fired }}</td>
+            <td class="px-4 py-2 text-right tabular-nums text-zinc-400">{{ row.fp_count }}</td>
+            <td class="px-4 py-2 text-right tabular-nums {% if row.fp_rate >= 0.5 %}text-red-400{% elif row.fp_rate >= 0.25 %}text-amber-400{% else %}text-zinc-400{% endif %}">
+              {% widthratio row.fp_rate 1 100 %}%
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-4 py-4 text-center text-zinc-500">Geen vals-positieve signalen gevonden.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-sm text-zinc-500 italic py-3">Onvoldoende gegevens voor vals-positieve analyse.</div>
+    {% endif %}
+  </section>
+  {% endwith %}
+
+  {# ── Low confidence accepted ─────────────────────────────────────────── #}
+  {% with lca=tuning_report.low_confidence_accepted %}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-1">Lage confidence – toch geaccepteerd</h2>
+    <p class="text-sm text-zinc-500 mb-3">
+      Casussen waarbij een <code class="text-blue-400">weak_match_needs_review</code> alert is gegenereerd,
+      maar de aanbieder de casus alsnog heeft geaccepteerd.
+      Hoge FP­-rate suggereert dat de drempelwaarde voor zwakke matchingkwaliteit te laag ligt.
+    </p>
+    {% if lca.data_available %}
+    <div class="grid grid-cols-3 gap-4 mb-4">
+      <div class="rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-center">
+        <div class="text-2xl font-bold text-white">{{ lca.count }}</div>
+        <div class="text-xs text-zinc-500 mt-1">Lage confidence + geaccepteerd</div>
+      </div>
+      <div class="rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-center">
+        <div class="text-2xl font-bold text-white">{{ lca.total_weak_match }}</div>
+        <div class="text-xs text-zinc-500 mt-1">Totaal lage confidence alerts</div>
+      </div>
+      <div class="rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-3 text-center">
+        <div class="text-2xl font-bold {% if lca.false_positive_rate and lca.false_positive_rate >= 0.3 %}text-amber-400{% else %}text-white{% endif %}">
+          {% if lca.false_positive_rate %}{% widthratio lca.false_positive_rate 1 100 %}%{% else %}–{% endif %}
+        </div>
+        <div class="text-xs text-zinc-500 mt-1">FP-rate</div>
+      </div>
+    </div>
+    {% if lca.cases %}
+    <div class="text-xs text-zinc-500 mb-1">Recente gevallen (max 20):</div>
+    <ul class="space-y-1">
+      {% for c in lca.cases %}
+      <li class="text-sm text-zinc-400">
+        <span class="font-mono text-zinc-500">#{{ c.case_id }}</span> {{ c.case_title }}
+      </li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% else %}
+    <div class="text-sm text-zinc-500 italic py-3">Geen lage-confidence casussen met acceptatie gevonden.</div>
+    {% endif %}
+  </section>
+  {% endwith %}
+
+  {# ── Top overridden rules ────────────────────────────────────────────── #}
+  {% with tor=tuning_report.top_overridden_rules %}
+  <section>
+    <h2 class="text-lg font-semibold text-white mb-1">Meest overschreven regels</h2>
+    <p class="text-sm text-zinc-500 mb-3">
+      Alert­types die het vaakst correleren met een operator-overschrijving (DecisionQualityReview).
+      Hoge overschrijvingsfrequentie duidt op een te agressieve of onjuist gekalibreerde regel.
+    </p>
+    {% if tor.data_available %}
+    <div class="overflow-x-auto rounded-lg border border-zinc-700">
+      <table class="w-full text-sm">
+        <thead class="bg-zinc-800 text-zinc-400 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 text-left">Alert type</th>
+            <th class="px-4 py-2 text-right">Casussen met overschrijving</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-zinc-800">
+          {% for row in tor.by_alert_type %}
+          <tr class="bg-zinc-900 hover:bg-zinc-800/60 transition">
+            <td class="px-4 py-2 font-mono text-xs text-zinc-300">
+              {{ row.alert_type }}
+              {% if row.alert_type == tor.top_overridden %}
+              <span class="ml-1 text-[10px] px-1 py-0.5 rounded bg-amber-800 text-amber-200">meest overschreven</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2 text-right tabular-nums text-zinc-400">{{ row.override_case_count }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="2" class="px-4 py-4 text-center text-zinc-500">Geen overschrijvingen gevonden.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-sm text-zinc-500 italic py-3">Geen overschrijvingsdata beschikbaar.</div>
+    {% endif %}
+  </section>
+  {% endwith %}
+
+</div>
+{% endblock %}

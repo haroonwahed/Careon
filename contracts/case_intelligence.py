@@ -5,6 +5,31 @@ from contracts.governance import get_policy_values
 from contracts.provider_metrics import build_provider_behavior_metrics, derive_behavior_signals
 
 
+def _get_intelligence_thresholds() -> Dict[str, Any]:
+    """Return all case-intelligence thresholds, resolved via tuning_config."""
+    try:
+        from contracts.tuning_config import get_thresholds
+        return get_thresholds(
+            "LONG_WAIT_DAYS_THRESHOLD",
+            "PLACEMENT_STALL_DAYS",
+            "PROVIDER_RESPONSE_DELAYED_DAYS",
+            "PROVIDER_NOT_RESPONDING_DAYS",
+            "PROVIDER_NOT_RESPONDING_OVERDUE_DAYS",
+            "HIGH_URGENCY_RESPONSE_DELAY_DAYS",
+            "STALE_CASE_DAYS",
+        )
+    except Exception:
+        return {
+            "LONG_WAIT_DAYS_THRESHOLD": 28,
+            "PLACEMENT_STALL_DAYS": 7,
+            "PROVIDER_RESPONSE_DELAYED_DAYS": 3,
+            "PROVIDER_NOT_RESPONDING_DAYS": 7,
+            "PROVIDER_NOT_RESPONDING_OVERDUE_DAYS": 5,
+            "HIGH_URGENCY_RESPONSE_DELAY_DAYS": 2,
+            "STALE_CASE_DAYS": 10,
+        }
+
+
 CASE_DATA_REQUIRED_FIELDS = (
     "phase",
     "care_category",
@@ -660,6 +685,14 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
     _validate_case_data(case_data)
 
     today = _resolve_today(case_data)
+    t = _get_intelligence_thresholds()
+    long_wait_days = int(t.get("LONG_WAIT_DAYS_THRESHOLD", 28))
+    stall_days = int(t.get("PLACEMENT_STALL_DAYS", 7))
+    response_delayed_days = int(t.get("PROVIDER_RESPONSE_DELAYED_DAYS", 3))
+    not_responding_days = int(t.get("PROVIDER_NOT_RESPONDING_DAYS", 7))
+    not_responding_overdue_days = int(t.get("PROVIDER_NOT_RESPONDING_OVERDUE_DAYS", 5))
+    urgency_delay_days = int(t.get("HIGH_URGENCY_RESPONSE_DELAY_DAYS", 2))
+    stale_case_days_threshold = int(t.get("STALE_CASE_DAYS", 10))
     signals: List[Dict[str, str]] = []
 
     open_signal_count = _coerce_int(case_data.get("open_signal_count"))
@@ -706,7 +739,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
         )
 
     top_wait_days = _coerce_int(case_data.get("top_match_wait_days"))
-    if top_wait_days >= 28:
+    if top_wait_days >= long_wait_days:
         signals.append(
             {
                 "code": "long_wait_risk",
@@ -718,7 +751,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
 
     placement_status = str(case_data.get("placement_status") or "").strip().upper()
     placement_stalled_days = _days_since(case_data.get("placement_updated_at"), today=today)
-    if placement_status in {"IN_REVIEW", "NEEDS_INFO"} and placement_stalled_days >= 7:
+    if placement_status in {"IN_REVIEW", "NEEDS_INFO"} and placement_stalled_days >= stall_days:
         signals.append(
             {
                 "code": "placement_stalled",
@@ -736,7 +769,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
     urgency = str(case_data.get("urgency") or "").strip().upper()
 
     if provider_response_status in {"PENDING", "NEEDS_INFO"}:
-        if response_age_days >= 3 or response_deadline_overdue:
+        if response_age_days >= response_delayed_days or response_deadline_overdue:
             signals.append(
                 {
                     "code": "provider_response_delayed",
@@ -745,7 +778,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
                     "action": "Stuur herinnering of werk ontbrekende informatie direct bij.",
                 }
             )
-        if response_age_days >= 7 or (response_deadline_overdue and response_age_days >= 5):
+        if response_age_days >= not_responding_days or (response_deadline_overdue and response_age_days >= not_responding_overdue_days):
             signals.append(
                 {
                     "code": "provider_not_responding",
@@ -754,7 +787,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
                     "action": "Escaleer en start zo nodig rematch met alternatieve aanbieders.",
                 }
             )
-        if urgency in {"HIGH", "CRISIS"} and response_age_days >= 2:
+        if urgency in {"HIGH", "CRISIS"} and response_age_days >= urgency_delay_days:
             signals.append(
                 {
                     "code": "high_urgency_response_delay",
@@ -784,7 +817,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
         )
 
     stale_case_days = _days_since(case_data.get("case_updated_at"), today=today)
-    if stale_case_days >= 10:
+    if stale_case_days >= stale_case_days_threshold:
         signals.append(
             {
                 "code": "stale_case",
@@ -829,7 +862,9 @@ def _is_weak_or_low_confidence(case_data: Dict[str, Any]) -> bool:
 def _needs_capacity_wait_validation(case_data: Dict[str, Any]) -> bool:
     if bool(case_data.get("top_match_has_capacity_issue")):
         return True
-    return _coerce_int(case_data.get("top_match_wait_days")) >= 28
+    t = _get_intelligence_thresholds()
+    long_wait_days = int(t.get("LONG_WAIT_DAYS_THRESHOLD", 28))
+    return _coerce_int(case_data.get("top_match_wait_days")) >= long_wait_days
 
 
 def _is_placement_stalled(case_data: Dict[str, Any]) -> bool:
@@ -837,7 +872,9 @@ def _is_placement_stalled(case_data: Dict[str, Any]) -> bool:
     if placement_status not in {"IN_REVIEW", "NEEDS_INFO"}:
         return False
     today = _resolve_today(case_data)
-    return _days_since(case_data.get("placement_updated_at"), today=today) >= 7
+    t = _get_intelligence_thresholds()
+    stall_days = int(t.get("PLACEMENT_STALL_DAYS", 7))
+    return _days_since(case_data.get("placement_updated_at"), today=today) >= stall_days
 
 
 def _build_sla_explanation(adj: Dict[str, int], signals: Dict[str, Any]) -> str | None:
@@ -1175,6 +1212,9 @@ def generate_candidate_hints(case_data: Dict[str, Any]) -> List[Dict[str, Any]]:
     if not suggestions:
         return []
 
+    t = _get_intelligence_thresholds()
+    long_wait_days = int(t.get("LONG_WAIT_DAYS_THRESHOLD", 28))
+
     hints: List[Dict[str, Any]] = []
     top_candidate = suggestions[0]
     top_confidence = top_candidate["confidence"]
@@ -1201,7 +1241,7 @@ def generate_candidate_hints(case_data: Dict[str, Any]) -> List[Dict[str, Any]]:
             if candidate["has_capacity_issue"] is False and top_candidate["has_capacity_issue"] is True:
                 hint_code = "capacity_alternative"
                 hint = "Overweeg deze optie als alternatief vanwege betere capaciteit."
-            elif candidate["wait_days"] < top_candidate["wait_days"] and top_candidate["wait_days"] >= 28:
+            elif candidate["wait_days"] < top_candidate["wait_days"] and top_candidate["wait_days"] >= long_wait_days:
                 hint_code = "wait_time_alternative"
                 hint = "Overweeg deze optie als alternatief met kortere wachttijd."
             elif len(trade_offs) < len(top_trade_offs):

@@ -37,32 +37,55 @@ from typing import Any, Dict, List, Optional
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Threshold constants
+# Threshold constants (kept as fallback-safe module-level defaults)
 # ---------------------------------------------------------------------------
+# These values are authoritative defaults.  All runtime code should use
+# ``_get_thresholds()`` (below) to allow governance-layer DB overrides.
+# The module-level names are preserved so that external test code that
+# monkeypatches them continues to work.
 
-# Minimum evaluations before rates are considered reliable.
 _MIN_EVALUATIONS_SUFFICIENT = 3
-
-# Acceptance rate below which a confidence penalty is applied.
 _LOW_ACCEPTANCE_THRESHOLD = 0.40
 _VERY_LOW_ACCEPTANCE_THRESHOLD = 0.20
-
-# Rejection rate above which a warning flag is emitted.
 _HIGH_REJECTION_THRESHOLD = 0.60
-
-# needs_more_info rate above which verification guidance is surfaced.
 _HIGH_NEEDS_INFO_THRESHOLD = 0.30
-
-# Capacity flag rate above which a capacity reliability concern is raised.
 _HIGH_CAPACITY_FLAG_THRESHOLD = 0.40
-
-# Regiekamer: minimum evaluations for a provider to appear in health summary.
 _REGIEKAMER_MIN_EVALUATIONS = 3
+_PENALTY_LOW_ACCEPTANCE = 0.10
+_PENALTY_VERY_LOW_ACCEPTANCE = 0.20
 
-# Confidence penalty weights (applied as a float reduction to confidence label).
-# These are qualitative; actual score adjustment is handled by the caller.
-_PENALTY_LOW_ACCEPTANCE = 0.10       # -10 pp on effective confidence
-_PENALTY_VERY_LOW_ACCEPTANCE = 0.20  # -20 pp
+
+def _get_agg_thresholds() -> dict:
+    """Return all outcome-aggregate thresholds, resolved via tuning_config."""
+    try:
+        from contracts.tuning_config import get_thresholds
+        return get_thresholds(
+            "MIN_EVALUATIONS_SUFFICIENT",
+            "LOW_ACCEPTANCE_THRESHOLD",
+            "VERY_LOW_ACCEPTANCE_THRESHOLD",
+            "HIGH_REJECTION_THRESHOLD",
+            "HIGH_NEEDS_INFO_THRESHOLD",
+            "HIGH_CAPACITY_FLAG_THRESHOLD",
+            "REGIEKAMER_MIN_EVALUATIONS",
+            "PENALTY_LOW_ACCEPTANCE",
+            "PENALTY_VERY_LOW_ACCEPTANCE",
+            "CAPACITY_LIMITED_BAND",
+            "BOUNCING_CASE_MIN_EVALUATIONS",
+        )
+    except Exception:
+        return {
+            "MIN_EVALUATIONS_SUFFICIENT": _MIN_EVALUATIONS_SUFFICIENT,
+            "LOW_ACCEPTANCE_THRESHOLD": _LOW_ACCEPTANCE_THRESHOLD,
+            "VERY_LOW_ACCEPTANCE_THRESHOLD": _VERY_LOW_ACCEPTANCE_THRESHOLD,
+            "HIGH_REJECTION_THRESHOLD": _HIGH_REJECTION_THRESHOLD,
+            "HIGH_NEEDS_INFO_THRESHOLD": _HIGH_NEEDS_INFO_THRESHOLD,
+            "HIGH_CAPACITY_FLAG_THRESHOLD": _HIGH_CAPACITY_FLAG_THRESHOLD,
+            "REGIEKAMER_MIN_EVALUATIONS": _REGIEKAMER_MIN_EVALUATIONS,
+            "PENALTY_LOW_ACCEPTANCE": _PENALTY_LOW_ACCEPTANCE,
+            "PENALTY_VERY_LOW_ACCEPTANCE": _PENALTY_VERY_LOW_ACCEPTANCE,
+            "CAPACITY_LIMITED_BAND": 0.20,
+            "BOUNCING_CASE_MIN_EVALUATIONS": 2,
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -189,6 +212,15 @@ def derive_evaluation_signals(aggregates: Dict[str, Any]) -> Dict[str, Any]:
     ``has_sufficient_data``: bool
     ``summary_label``      : str | None  — short Dutch label for UI display
     """
+    t = _get_agg_thresholds()
+    min_suf = int(t.get("MIN_EVALUATIONS_SUFFICIENT", _MIN_EVALUATIONS_SUFFICIENT))
+    low_acc = float(t.get("LOW_ACCEPTANCE_THRESHOLD", _LOW_ACCEPTANCE_THRESHOLD))
+    very_low_acc = float(t.get("VERY_LOW_ACCEPTANCE_THRESHOLD", _VERY_LOW_ACCEPTANCE_THRESHOLD))
+    high_rej = float(t.get("HIGH_REJECTION_THRESHOLD", _HIGH_REJECTION_THRESHOLD))
+    high_nmi = float(t.get("HIGH_NEEDS_INFO_THRESHOLD", _HIGH_NEEDS_INFO_THRESHOLD))
+    pen_low = float(t.get("PENALTY_LOW_ACCEPTANCE", _PENALTY_LOW_ACCEPTANCE))
+    pen_very_low = float(t.get("PENALTY_VERY_LOW_ACCEPTANCE", _PENALTY_VERY_LOW_ACCEPTANCE))
+
     total = int(aggregates.get("total_evaluations") or 0)
     acceptance_rate = aggregates.get("acceptance_rate")
     rejection_rate = aggregates.get("rejection_rate")
@@ -217,17 +249,17 @@ def derive_evaluation_signals(aggregates: Dict[str, Any]) -> Dict[str, Any]:
 
     # ── Acceptance signals ─────────────────────────────────────────────────
     if acceptance_rate is not None:
-        if acceptance_rate < _VERY_LOW_ACCEPTANCE_THRESHOLD:
-            confidence_penalty = _PENALTY_VERY_LOW_ACCEPTANCE
+        if acceptance_rate < very_low_acc:
+            confidence_penalty = pen_very_low
             warning_flags.append("evaluation_very_low_acceptance")
             summary_label = f"Lage acceptatiegraad ({round(acceptance_rate * 100)}%)"
-        elif acceptance_rate < _LOW_ACCEPTANCE_THRESHOLD:
-            confidence_penalty = _PENALTY_LOW_ACCEPTANCE
+        elif acceptance_rate < low_acc:
+            confidence_penalty = pen_low
             warning_flags.append("evaluation_low_acceptance")
             summary_label = f"Acceptatiegraad {round(acceptance_rate * 100)}% – let op"
 
     # ── Rejection pattern signals ──────────────────────────────────────────
-    if rejection_rate is not None and rejection_rate > _HIGH_REJECTION_THRESHOLD:
+    if rejection_rate is not None and rejection_rate > high_rej:
         warning_flags.append("evaluation_high_rejection_rate")
         if not summary_label:
             summary_label = f"Hoog afwijzingspercentage ({round(rejection_rate * 100)}%)"
@@ -256,7 +288,7 @@ def derive_evaluation_signals(aggregates: Dict[str, Any]) -> Dict[str, Any]:
             )
 
     # ── Needs-more-info signals ────────────────────────────────────────────
-    if needs_more_info_rate is not None and needs_more_info_rate > _HIGH_NEEDS_INFO_THRESHOLD:
+    if needs_more_info_rate is not None and needs_more_info_rate > high_nmi:
         warning_flags.append("evaluation_frequent_info_requests")
         verification_guidance.append(
             "Aanbieder vraagt regelmatig extra informatie — zorg voor volledig dossier vóór voordracht."
@@ -338,9 +370,12 @@ def apply_evaluation_outcome_to_candidate(
         candidate_row["match_score"] = round(penalized_score, 1)
 
         # Downgrade confidence label when penalty is significant.
-        if penalty >= _PENALTY_VERY_LOW_ACCEPTANCE:
+        t = _get_agg_thresholds()
+        pen_very_low = float(t.get("PENALTY_VERY_LOW_ACCEPTANCE", _PENALTY_VERY_LOW_ACCEPTANCE))
+        pen_low = float(t.get("PENALTY_LOW_ACCEPTANCE", _PENALTY_LOW_ACCEPTANCE))
+        if penalty >= pen_very_low:
             candidate_row["confidence_label"] = "low"
-        elif penalty >= _PENALTY_LOW_ACCEPTANCE:
+        elif penalty >= pen_low:
             current_confidence = candidate_row.get("confidence_label") or ""
             if current_confidence == "high":
                 candidate_row["confidence_label"] = "medium"
@@ -412,6 +447,12 @@ def _compute_provider_health(organization: Any) -> Dict[str, Any]:
     from django.db.models import Count, Q
     from contracts.models import ProviderEvaluation
 
+    t = _get_agg_thresholds()
+    regie_min = int(t.get("REGIEKAMER_MIN_EVALUATIONS", _REGIEKAMER_MIN_EVALUATIONS))
+    high_rej = float(t.get("HIGH_REJECTION_THRESHOLD", _HIGH_REJECTION_THRESHOLD))
+    high_cap = float(t.get("HIGH_CAPACITY_FLAG_THRESHOLD", _HIGH_CAPACITY_FLAG_THRESHOLD))
+    bouncing_min = int(t.get("BOUNCING_CASE_MIN_EVALUATIONS", 2))
+
     # Provider-level evaluation counts scoped to organization.
     provider_agg = list(
         ProviderEvaluation.objects.filter(case__organization=organization)
@@ -429,7 +470,7 @@ def _compute_provider_health(organization: Any) -> Dict[str, Any]:
 
     for provider_id, rows in by_provider.items():
         total = len(rows)
-        if total < _REGIEKAMER_MIN_EVALUATIONS:
+        if total < regie_min:
             continue
 
         accepted = sum(1 for r in rows if r["decision"] == "accept")
@@ -442,7 +483,7 @@ def _compute_provider_health(organization: Any) -> Dict[str, Any]:
 
         provider_name = rows[0].get("provider__name") or f"Provider {provider_id}"
 
-        if rejection_rate is not None and rejection_rate > _HIGH_REJECTION_THRESHOLD:
+        if rejection_rate is not None and rejection_rate > high_rej:
             reason_counts = Counter(
                 r.get("reason_code") for r in rows if r["decision"] == "reject" and r.get("reason_code")
             )
@@ -456,7 +497,7 @@ def _compute_provider_health(organization: Any) -> Dict[str, Any]:
                 "top_rejection_reason": top_reason,
             })
 
-        if cap_rate is not None and cap_rate > _HIGH_CAPACITY_FLAG_THRESHOLD:
+        if cap_rate is not None and cap_rate > high_cap:
             unstable_capacity_providers.append({
                 "provider_id": provider_id,
                 "provider_name": provider_name,
@@ -470,7 +511,7 @@ def _compute_provider_health(organization: Any) -> Dict[str, Any]:
         ProviderEvaluation.objects.filter(case__organization=organization)
         .values("case_id", "case__title")
         .annotate(eval_count=Count("id"), accept_count=Count("id", filter=Q(decision="accept")))
-        .filter(eval_count__gte=2, accept_count=0)
+        .filter(eval_count__gte=bouncing_min, accept_count=0)
         .order_by("-eval_count")[:20]
     )
     bouncing_cases = [
@@ -529,7 +570,9 @@ def _compute_aggregates(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     ]
 
     capacity_reliability_signal = _capacity_reliability_signal(capacity_flag_count, total)
-    evidence_level = "sufficient" if total >= _MIN_EVALUATIONS_SUFFICIENT else "limited"
+    t = _get_agg_thresholds()
+    min_suf = int(t.get("MIN_EVALUATIONS_SUFFICIENT", _MIN_EVALUATIONS_SUFFICIENT))
+    evidence_level = "sufficient" if total >= min_suf else "limited"
 
     return {
         "total_evaluations": total,
@@ -549,10 +592,13 @@ def _compute_aggregates(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
 def _capacity_reliability_signal(capacity_flag_count: int, total: int) -> Optional[str]:
     if total == 0:
         return None
+    t = _get_agg_thresholds()
+    high_cap = float(t.get("HIGH_CAPACITY_FLAG_THRESHOLD", _HIGH_CAPACITY_FLAG_THRESHOLD))
+    limited_band = float(t.get("CAPACITY_LIMITED_BAND", 0.20))
     rate = capacity_flag_count / total
-    if rate >= _HIGH_CAPACITY_FLAG_THRESHOLD:
+    if rate >= high_cap:
         return "often_full"
-    if rate >= 0.20:
+    if rate >= limited_band:
         return "limited"
     return "stable"
 

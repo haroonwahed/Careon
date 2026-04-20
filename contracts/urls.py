@@ -94,6 +94,7 @@ urlpatterns = [
 
     path('reports/', views.reports_dashboard, name='reports_dashboard'),
     path('admin/observability/', views.observability_report, name='observability_report'),
+    path('admin/tuning/', views.tuning_summary, name='tuning_summary'),
     path('regiekamer/provider-responses/', views.provider_response_monitor, name='provider_response_monitor'),
     path('regiekamer/', views.regiekamer_alerts, name='regiekamer_alerts'),
     path('regiekamer/alerts/<int:pk>/resolve/', views.resolve_alert, name='resolve_alert'),

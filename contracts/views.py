@@ -3551,6 +3551,41 @@ def observability_report(request):
     })
 
 
+def tuning_summary(request):
+    """Threshold Tuning Summary (staff/admin only).
+
+    Shows the full threshold registry with resolved values, identifies whether
+    any thresholds have been overridden in SystemPolicyConfig, and surfaces
+    the four tuning-specific observability metrics (noisy rules,
+    false-positive signals, low-confidence-but-accepted, top overridden rules).
+
+    Returns JSON when ``?format=json`` is requested.
+    """
+    if not request.user.is_staff:
+        return HttpResponseForbidden("Toegang beperkt tot medewerkers.")
+
+    from .tuning_config import build_threshold_summary
+    from .observability import build_tuning_observability_report
+    org = get_user_organization(request.user)
+
+    thresholds = build_threshold_summary()
+    tuning_report = build_tuning_observability_report(org)
+
+    if request.GET.get('format') == 'json':
+        return JsonResponse({
+            'thresholds': thresholds,
+            'tuning_report': tuning_report,
+        }, safe=True)
+
+    overridden_count = sum(1 for t in thresholds if t['is_overridden'])
+    return render(request, 'contracts/tuning_summary.html', {
+        'thresholds': thresholds,
+        'tuning_report': tuning_report,
+        'overridden_count': overridden_count,
+        'org': org,
+    })
+
+
 # ==================== TASK VIEWS ====================
 
 class CareTaskKanbanView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
