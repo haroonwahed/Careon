@@ -126,37 +126,6 @@ def _build_case_data_for_alert(intake: CaseIntakeProcess) -> Dict[str, Any]:
 
 AlertSpec = Tuple[str, str, str, str, str]  # (alert_type, severity, title, description, recommended_action)
 
-_SIGNAL_CODE_TO_ALERT: Dict[str, Tuple[str, str, str, str, str]] = {
-    'placement_stalled': (
-        _PLACEMENT_STALLED,
-        _HIGH,
-        'Plaatsing stagneert',
-        'De plaatsingsstatus heeft al meerdere dagen geen voortgang geboekt.',
-        'Neem contact op met de aanbieder en werk de plaatsingsstatus bij.',
-    ),
-    'capacity_risk': (
-        _CAPACITY_RISK,
-        _MEDIUM,
-        'Capaciteitsrisico bij aanbieder',
-        'De geselecteerde aanbieder heeft een beperkte of onzekere capaciteit.',
-        'Valideer beschikbaarheid bij de aanbieder of start een her-match.',
-    ),
-    'provider_no_capacity': (
-        _CAPACITY_RISK,
-        _HIGH,
-        'Aanbieder heeft geen capaciteit',
-        'De geselecteerde aanbieder geeft aan geen capaciteit te hebben.',
-        'Markeer als hoog risico en voer direct een her-match uit.',
-    ),
-    'weak_matching_quality': (
-        _WEAK_MATCH,
-        _MEDIUM,
-        'Zwakke matchingkwaliteit – review vereist',
-        'De topmatch heeft een lage of ontbrekende confidence.',
-        'Controleer matchingfactoren en herzie de kandidatenlijst.',
-    ),
-}
-
 
 def _evaluate_alert_specs(
     intake: CaseIntakeProcess,
