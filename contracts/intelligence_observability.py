@@ -19,7 +19,7 @@ confidence_vs_intake(placement_qs=None) -> ConfidenceBucket list
 rejection_reason_distribution(placement_qs=None, care_category=None) -> list[dict]
 repeated_rejection_patterns(placement_qs=None, min_rejections=2) -> list[dict]
 weak_match_false_positive_rate(placement_qs=None) -> dict
-observability_summary(org=None) -> dict
+observability_summary(org=None) -> dict  # also includes calibration_diagnostics key
 """
 
 from __future__ import annotations
@@ -420,7 +420,7 @@ def observability_summary(
     org=None,
     placement_qs=None,
 ) -> Dict[str, Any]:
-    """Single-call overview combining all observability metrics.
+    """Single-call overview combining all observability metrics and calibration diagnostics.
 
     Safe when data is incomplete: each sub-function handles empty/None data.
     Returns a dict with keys:
@@ -430,14 +430,28 @@ def observability_summary(
     - rejection_reason_distribution (list)
     - repeated_rejection_patterns (list)
     - weak_match_false_positive_rate (dict)
-    - total_placements_with_confidence (int)
-    - total_placements (int)
+    - calibration_diagnostics (dict): signals and recommendations from intelligence_calibration
     """
     # Load once, pass as pre-loaded data to avoid N+1 queries.
     # When placement_qs is None (live mode) each sub-function does its own query
     # scoped to org.  For test usage, pass a pre-loaded iterable — the sub-functions
     # will accept it directly.
     rows = placement_qs
+
+    # Materialise rows once so calibration can use the same data without re-querying
+    if isinstance(rows, (list, tuple)):
+        rows_list = list(rows)
+    elif rows is None:
+        rows_list = None  # each sub-function will load independently
+    else:
+        rows_list = list(_load_placement_qs(rows, org))
+
+    from contracts.intelligence_calibration import calibration_diagnostics  # deferred
+
+    try:
+        calib = calibration_diagnostics(rows_list if rows_list is not None else list(_load_placement_qs(None, org)))
+    except Exception:
+        calib = {}
 
     return {
         "confidence_vs_acceptance": confidence_vs_acceptance(rows, org=org),
@@ -446,4 +460,5 @@ def observability_summary(
         "rejection_reason_distribution": rejection_reason_distribution(rows, org=org),
         "repeated_rejection_patterns": repeated_rejection_patterns(rows, org=org),
         "weak_match_false_positive_rate": weak_match_false_positive_rate(rows, org=org),
+        "calibration_diagnostics": calib,
     }

@@ -279,6 +279,198 @@
     </section>
     {% endwith %}
 
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# 7 · Kalibratie-signalen                                               #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {% with calib=summary.calibration_diagnostics %}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">7. Kalibratie-signalen</h2>
+        <p class="ds-card-sub">
+            Advies-alleen diagnostiek — detecteert waar confidence-scores, matching-factoren en
+            afwijzingspatronen niet overeenkomen met werkelijke uitkomsten. Geen automatische aanpassingen.
+        </p>
+
+        {# ── 7a. Prioritised recommendations ─────────────────────────────── #}
+        {% if calib.recommendations %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Aanbevelingen</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1.5rem">
+            <thead>
+                <tr>
+                    <th style="width:90px">Ernst</th>
+                    <th style="width:160px">Bron</th>
+                    <th style="width:160px">Onderwerp</th>
+                    <th>Aanbeveling</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for rec in calib.recommendations %}
+                <tr>
+                    <td>
+                        <span class="ds-badge {% if rec.severity == 'high' %}ds-badge--danger{% elif rec.severity == 'medium' %}ds-badge--warning{% else %}ds-badge--info{% endif %}">
+                            {{ rec.severity }}
+                        </span>
+                    </td>
+                    <td><code style="font-size:0.78rem">{{ rec.source }}</code></td>
+                    <td>{{ rec.subject }}</td>
+                    <td style="font-size:0.88rem">{{ rec.recommendation }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="ds-text-muted" style="margin-top:1rem">Geen kalibratie-aanbevelingen gegenereerd (onvoldoende data of geen drift gedetecteerd).</p>
+        {% endif %}
+
+        {# ── 7b. High-confidence / low-acceptance ─────────────────────────── #}
+        {% if calib.high_confidence_low_acceptance %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Hoog vertrouwen / lage acceptatie</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1rem">
+            <thead>
+                <tr>
+                    <th>Zorgcategorie</th>
+                    <th class="text-right">Hoge-conf. indicaties</th>
+                    <th class="text-right">Geaccepteerd</th>
+                    <th class="text-right">Acceptatiegraad</th>
+                    <th>Ernst</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in calib.high_confidence_low_acceptance %}
+                <tr>
+                    <td>{{ row.care_category }}</td>
+                    <td class="text-right">{{ row.total_high_conf }}</td>
+                    <td class="text-right">{{ row.accepted }}</td>
+                    <td class="text-right">{{ row.acceptance_rate|floatformat:1 }}%</td>
+                    <td><span class="ds-badge {% if row.severity == 'high' %}ds-badge--danger{% else %}ds-badge--warning{% endif %}">{{ row.severity }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {# ── 7c. Low-confidence / high-success ───────────────────────────── #}
+        {% if calib.low_confidence_high_success %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Laag vertrouwen / hoog succes</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1rem">
+            <thead>
+                <tr>
+                    <th>Zorgcategorie</th>
+                    <th class="text-right">Lage-conf. indicaties</th>
+                    <th class="text-right">Succesvolle plaatsing</th>
+                    <th class="text-right">Slagingsgraad</th>
+                    <th>Ernst</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in calib.low_confidence_high_success %}
+                <tr>
+                    <td>{{ row.care_category }}</td>
+                    <td class="text-right">{{ row.total_low_conf }}</td>
+                    <td class="text-right">{{ row.successful }}</td>
+                    <td class="text-right">{{ row.success_rate|floatformat:1 }}%</td>
+                    <td><span class="ds-badge {% if row.severity == 'high' %}ds-badge--danger{% else %}ds-badge--warning{% endif %}">{{ row.severity }}</span></td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {# ── 7d. Care category drift ──────────────────────────────────────── #}
+        {% if calib.care_category_drift %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Zorgcategorie kalibratie-drift</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1rem">
+            <thead>
+                <tr>
+                    <th>Zorgcategorie</th>
+                    <th class="text-right">Hoge-conf. accept.</th>
+                    <th class="text-right">Lage-conf. accept.</th>
+                    <th class="text-right">Gap</th>
+                    <th>Drift</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in calib.care_category_drift %}
+                <tr>
+                    <td title="{{ row.recommendation }}">{{ row.care_category }}</td>
+                    <td class="text-right">{{ row.high_conf_acceptance_rate|floatformat:1 }}%</td>
+                    <td class="text-right">{{ row.low_conf_acceptance_rate|floatformat:1 }}%</td>
+                    <td class="text-right">{{ row.gap|floatformat:2 }}</td>
+                    <td>
+                        {% if row.drift_detected %}
+                        <span class="ds-badge ds-badge--warning">drift</span>
+                        {% else %}
+                        <span class="ds-text-muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {# ── 7e. Provider drift ───────────────────────────────────────────── #}
+        {% if calib.provider_drift %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Aanbieder kalibratie-drift</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1rem">
+            <thead>
+                <tr>
+                    <th>Aanbieder</th>
+                    <th class="text-right">Gem. confidence</th>
+                    <th class="text-right">Werkelijke acceptatie</th>
+                    <th>Type drift</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in calib.provider_drift %}
+                <tr>
+                    <td title="{{ row.recommendation }}">{{ row.provider_name }}</td>
+                    <td class="text-right">{{ row.mean_confidence|floatformat:2 }}</td>
+                    <td class="text-right">{{ row.acceptance_rate|floatformat:1 }}%</td>
+                    <td>
+                        {% if row.drift_type == 'over_confident' %}
+                        <span class="ds-badge ds-badge--danger">te hoog</span>
+                        {% else %}
+                        <span class="ds-badge ds-badge--info">te laag</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {# ── 7f. Rejection taxonomy clusters ─────────────────────────────── #}
+        {% if calib.taxonomy_clusters %}
+        <h3 class="ds-card-section-title" style="margin-top:1.2rem;font-size:0.95rem;font-weight:600">Afwijzingstaxonomie clusters</h3>
+        <table class="ds-table" style="width:100%;margin-bottom:1rem">
+            <thead>
+                <tr>
+                    <th>Zorgcategorie</th>
+                    <th>Dominante redencode</th>
+                    <th class="text-right">% van afwijzingen</th>
+                    <th class="text-right">Aantal</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for row in calib.taxonomy_clusters %}
+                <tr>
+                    <td title="{{ row.recommendation }}">{{ row.care_category }}</td>
+                    <td><code>{{ row.dominant_reason_code }}</code></td>
+                    <td class="text-right">{{ row.dominant_pct|floatformat:1 }}%</td>
+                    <td class="text-right">{{ row.dominant_count }} / {{ row.total_rejections }}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if not calib.has_signals %}
+        <p class="ds-text-muted" style="margin-top:1rem">Geen kalibratie-signalen gedetecteerd met de huidige data.</p>
+        {% endif %}
+
+    </section>
+    {% endwith %}
+
 </div>{# /ds-analytics-shell #}
 </div>{# /page-wrap #}
 {% endblock %}
