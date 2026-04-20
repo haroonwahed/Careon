@@ -73,3 +73,90 @@
 @utility status-draft { @apply bg-border text-muted; }
 @utility status-inactive { @apply bg-border text-muted; }
 @utility status-unverified { @apply bg-yellow-100 text-yellow-700; }
+
+/* ── Pilot Impact Dashboard ─────────────────────────────────────────────── */
+.pilot-status-card {
+  border: 1px solid var(--ds-border, #2f3441);
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+}
+.pilot-status-card.tone-success { box-shadow: inset 0 0 0 1px rgba(52, 211, 153, 0.25); }
+.pilot-status-card.tone-warning { box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.25); }
+.pilot-status-card.tone-danger  { box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.25); }
+
+.pilot-metric-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--ds-muted, #94a3b8);
+  margin-bottom: 4px;
+}
+.pilot-metric-value {
+  display: block;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+.pilot-metric-delta {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.pilot-metric-delta.dir-up     { color: #22c55e; }
+.pilot-metric-delta.dir-down   { color: #ef4444; }
+.pilot-metric-delta.dir-neutral { color: var(--ds-muted, #94a3b8); }
+
+.pilot-hero-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.pilot-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  gap: 18px;
+}
+.pilot-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.pilot-intel-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.pilot-flow-card {
+  border: 1px solid var(--ds-border, #2f3441);
+  border-radius: 10px;
+  padding: 0.85rem;
+  background: rgba(255,255,255,0.02);
+}
+.pilot-flow-card-bottleneck {
+  box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.55);
+}
+
+.pilot-issue-item {
+  border: 1px solid var(--ds-border, #2f3441);
+  border-radius: 10px;
+  padding: 0.8rem;
+  background: rgba(255,255,255,0.02);
+}
+.pilot-issue-item.tone-danger  { box-shadow: inset 3px 0 0 #ef4444; }
+.pilot-issue-item.tone-warning { box-shadow: inset 3px 0 0 #f59e0b; }
+
+.ds-empty-state {
+  border: 1px dashed var(--ds-border, #2f3441);
+  border-radius: 10px;
+  padding: 1rem;
+  color: var(--ds-muted, #94a3b8);
+  font-size: 0.83rem;
+}
+
+@media (max-width: 1100px) {
+  .pilot-hero-grid,
+  .pilot-main-grid,
+  .pilot-flow-grid,
+  .pilot-intel-grid {
+    grid-template-columns: 1fr;
+  }
+}

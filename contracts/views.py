@@ -8267,3 +8267,76 @@ def pilot_rollout_dashboard(request):
         'readiness_caution': READINESS_CAUTION,
         'total_proposals': len(proposals),
     })
+
+
+def pilot_dashboard(request):
+    """Staff/org-owner-only Pilot Impact Dashboard.
+
+    Shows match acceptance, placement quality, intake progress, flow
+    throughput, open alerts, and intelligence confidence alignment in one
+    glance.  Supports optional ?care_category=<name> filtering.
+    Read-only: no DB writes.
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_pilot_dashboard import build_pilot_dashboard
+    from .models import CaseIntakeProcess, PlacementRequest, RegiekamerAlert
+
+    org = get_user_organization(request.user)
+    care_category = request.GET.get('care_category', '').strip()
+
+    cases_qs = scope_queryset_for_organization(
+        CaseIntakeProcess.objects.all(), org
+    )
+    placements_qs = scope_queryset_for_organization(
+        PlacementRequest.objects.select_related('due_diligence_process').all(), org
+    )
+    alerts_qs = RegiekamerAlert.objects.filter(
+        organization=org, resolved_at__isnull=True
+    ) if org else RegiekamerAlert.objects.filter(resolved_at__isnull=True)
+
+    if care_category:
+        cases_qs = cases_qs.filter(care_category_main__name__icontains=care_category)
+        placements_qs = placements_qs.filter(
+            due_diligence_process__care_category_main__name__icontains=care_category
+        )
+
+    # Hardcoded baseline — reflects typical pre-V3 performance.
+    # Replace with kpi_baseline() from the rollout module once a snapshot is stored.
+    baseline = {
+        'acceptance_rate': 55.0,
+        'placement_success_rate': 50.0,
+        'intake_started_share': 45.0,
+        'weak_match_share': 25.0,
+        'stuck_cases': 5,
+    }
+
+    try:
+        dashboard = build_pilot_dashboard(
+            cases=cases_qs,
+            alerts=alerts_qs,
+            placements=placements_qs,
+            baseline=baseline,
+        )
+    except Exception:
+        dashboard = {
+            'status': {'label': 'Onvoldoende data', 'tone': 'warning', 'key': 'watch'},
+            'hero_metrics': [],
+            'kpi_cards': [],
+            'flow': {'counts': [], 'bottleneck_label': None, 'bottleneck': None},
+            'issues': [],
+            'intelligence': {
+                'confidence_alignment': 'n.v.t.',
+                'high_conf_accepted': 'n.v.t.',
+                'low_conf_rejected': 'n.v.t.',
+                'avg_confidence': 'n.v.t.',
+            },
+            'recommendation': 'Nog geen pilotdata beschikbaar.',
+            'totals': {'cases': 0, 'placements': 0, 'open_alerts': 0},
+        }
+
+    return render(request, 'contracts/pilot_dashboard.html', {
+        'dashboard': dashboard,
+        'care_category': care_category,
+    })

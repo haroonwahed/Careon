@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}Pilot Impact Dashboard — Zorg OS V3 - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    {# ══ Page header ══════════════════════════════════════════════════════ #}
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Pilot Impact Dashboard</h1>
+            <p class="ds-analytics-sub">
+                Live meting of de V3-flow verbetert: acceptatie, plaatsingskwaliteit, intake, doorstroom en intelligence.
+            </p>
+        </div>
+        <div class="ds-list-actions">
+            {# Care category filter #}
+            <form method="get" style="display:inline-flex;gap:0.5rem;align-items:center">
+                <input type="text" name="care_category"
+                       value="{{ care_category }}"
+                       placeholder="Filter op zorgcategorie…"
+                       style="padding:0.35rem 0.7rem;border-radius:6px;border:1px solid var(--border-color,#334155);background:var(--bg-card,#0f172a);color:inherit;font-size:0.82rem">
+                <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+                {% if care_category %}<a href="?" class="btn btn-secondary btn-sm">✕ Wis</a>{% endif %}
+            </form>
+            <a href="{% url 'careon:pilot_rollout_dashboard' %}" class="btn btn-secondary btn-sm">📋 Rollout Plan</a>
+            <a href="{% url 'careon:governance_playbook' %}" class="btn btn-secondary btn-sm">📖 Werkafspraken</a>
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ══ Status card ══════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card pilot-status-card tone-{{ dashboard.status.tone }}"
+             style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+        <div style="display:flex;align-items:center;gap:1rem">
+            <span style="font-size:2rem">
+                {% if dashboard.status.tone == 'success' %}✅
+                {% elif dashboard.status.tone == 'warning' %}⚠️
+                {% else %}🚨{% endif %}
+            </span>
+            <div>
+                <div style="font-size:1.1rem;font-weight:700">{{ dashboard.status.label }}</div>
+                <p style="font-size:0.83rem;margin-top:0.2rem;max-width:480px">{{ dashboard.recommendation }}</p>
+            </div>
+        </div>
+        <div style="display:flex;gap:1.25rem;font-size:0.82rem;color:var(--text-muted)">
+            <span>📂 {{ dashboard.totals.cases }} casussen</span>
+            <span>📋 {{ dashboard.totals.placements }} plaatsingen</span>
+            <span>🔔 {{ dashboard.totals.open_alerts }} open alerts</span>
+        </div>
+    </section>
+
+    {# ══ Hero KPI strip ═══════════════════════════════════════════════════ #}
+    {% if dashboard.hero_metrics %}
+    <div class="pilot-hero-grid" style="margin-bottom:1.5rem">
+        {% for m in dashboard.hero_metrics %}
+        <div class="ds-analytics-card" style="padding:1rem">
+            <div class="pilot-metric-label">{{ m.label }}</div>
+            <div class="pilot-metric-value">{{ m.value }}</div>
+            <div class="pilot-metric-delta dir-{{ m.direction }}">{{ m.delta }}</div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ══ Main grid (KPI scoreboard + flow + issues) ═══════════════════════ #}
+    <div class="pilot-main-grid" style="margin-bottom:1.5rem">
+
+        {# KPI scoreboard #}
+        <section class="ds-analytics-card" style="padding:1.25rem">
+            <h2 class="ds-card-title" style="margin-bottom:1rem">📊 KPI Scoreboard</h2>
+            {% if dashboard.kpi_cards %}
+            <div style="display:flex;flex-direction:column;gap:0.75rem">
+                {% for card in dashboard.kpi_cards %}
+                <div style="display:flex;justify-content:space-between;align-items:center;
+                            border-bottom:1px solid var(--border-color,#334155);padding-bottom:0.6rem">
+                    <span style="font-size:0.85rem">{{ card.label }}</span>
+                    <div style="text-align:right">
+                        <span style="font-size:1rem;font-weight:700">{{ card.value }}</span>
+                        <span class="pilot-metric-delta dir-{{ card.direction }}" style="font-size:0.78rem;margin-left:0.4rem">{{ card.delta }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="ds-empty-state">Geen KPI-data beschikbaar.</div>
+            {% endif %}
+        </section>
+
+        {# Decision flow #}
+        <section class="ds-analytics-card" style="padding:1.25rem">
+            <h2 class="ds-card-title" style="margin-bottom:1rem">🔄 Beslisflow
+                {% if dashboard.flow.bottleneck_label %}
+                <span style="font-size:0.78rem;font-weight:400;color:var(--color-warning,#f59e0b);margin-left:0.5rem">
+                    Bottleneck: {{ dashboard.flow.bottleneck_label }}
+                </span>
+                {% endif %}
+            </h2>
+            {% if dashboard.flow.counts %}
+            <div class="pilot-flow-grid">
+                {% for stage in dashboard.flow.counts %}
+                <div class="pilot-flow-card {% if stage.key == dashboard.flow.bottleneck %}pilot-flow-card-bottleneck{% endif %}">
+                    <div class="pilot-metric-label">{{ stage.label }}</div>
+                    <div class="pilot-metric-value">{{ stage.count }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="ds-empty-state">Geen casusflowdata beschikbaar.</div>
+            {% endif %}
+        </section>
+
+        {# Top issues #}
+        <section class="ds-analytics-card" style="padding:1.25rem">
+            <h2 class="ds-card-title" style="margin-bottom:1rem">🚨 Openstaande Issues</h2>
+            {% if dashboard.issues %}
+            <div style="display:flex;flex-direction:column;gap:0.75rem">
+                {% for issue in dashboard.issues %}
+                <div class="pilot-issue-item tone-{{ issue.tone }}">
+                    <strong style="font-size:0.85rem">{{ issue.title }}</strong>
+                    <p style="margin:0.3rem 0 0;font-size:0.8rem;color:var(--text-muted)">{{ issue.description }}</p>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="ds-analytics-card" style="font-size:0.83rem;color:var(--text-muted)">
+                ✅ Geen openstaande issues op dit moment.
+            </div>
+            {% endif %}
+        </section>
+
+    </div>
+
+    {# ══ Intelligence panel ═══════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;padding:1.25rem">
+        <h2 class="ds-card-title" style="margin-bottom:1rem">🧠 Intelligence Prestaties</h2>
+        <div class="pilot-intel-grid">
+            <div>
+                <div class="pilot-metric-label">Confidence-afstemming</div>
+                <div class="pilot-metric-value">{{ dashboard.intelligence.confidence_alignment }}</div>
+                <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.3rem">
+                    Gemiddelde van: hoge conf. geaccepteerd + lage conf. afgewezen
+                </div>
+            </div>
+            <div>
+                <div class="pilot-metric-label">Hoge conf. → geaccepteerd</div>
+                <div class="pilot-metric-value">{{ dashboard.intelligence.high_conf_accepted }}</div>
+            </div>
+            <div>
+                <div class="pilot-metric-label">Lage conf. → afgewezen</div>
+                <div class="pilot-metric-value">{{ dashboard.intelligence.low_conf_rejected }}</div>
+            </div>
+            <div>
+                <div class="pilot-metric-label">Gem. confidence score</div>
+                <div class="pilot-metric-value">{{ dashboard.intelligence.avg_confidence }}</div>
+            </div>
+        </div>
+    </section>
+
+</div>
+</div>
+{% endblock %}

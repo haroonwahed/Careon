@@ -153,6 +153,7 @@ urlpatterns = [
     path('regiekamer/tuningvoorstellen/meta/', views.tuning_meta_governance, name='tuning_meta_governance'),
     path('regiekamer/werkafspraken/', views.governance_playbook, name='governance_playbook'),
     path('regiekamer/pilot-rollout/', views.pilot_rollout_dashboard, name='pilot_rollout_dashboard'),
+    path('regiekamer/pilot-dashboard/', views.pilot_dashboard, name='pilot_dashboard'),
 
     path('', RedirectView.as_view(pattern_name='careon:case_list', permanent=False), name='home'),
 ]
