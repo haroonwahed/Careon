@@ -640,7 +640,7 @@ def _build_case_intelligence_context(
         'provider_response_last_reminder_at': getattr(placement, 'provider_response_last_reminder_at', None) if placement else None,
         'now': timezone.now(),
     }
-    intelligence = evaluate_case_intelligence(case_data)
+    intelligence = evaluate_case_intelligence(case_data, case_id=intake.pk)
 
     known_flags = {
         'open_signals': False,
@@ -6078,6 +6078,76 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'cta': next_action['label'],
             }
 
+        # Action banner: maps next_best_action code to a human label and href
+        # so the template can render a prominent CTA without any business logic.
+        _action_banner_map = {
+            'fill_missing_information': {
+                'label': 'Vul ontbrekende casusgegevens in',
+                'href': reverse('careon:case_update', kwargs={'pk': intake.pk}),
+                'band': 'now',
+            },
+            'start_beoordeling': {
+                'label': 'Start de beoordeling',
+                'href': f"{reverse('careon:assessment_create')}?intake={intake.pk}",
+                'band': 'today',
+            },
+            'complete_beoordeling': {
+                'label': 'Rond de beoordeling af',
+                'href': reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}) if assessment else f"{reverse('careon:assessment_create')}?intake={intake.pk}",
+                'band': 'today',
+            },
+            'run_matching': {
+                'label': 'Start matching',
+                'href': f"{reverse('careon:matching_dashboard')}?intake={intake.pk}",
+                'band': 'today',
+            },
+            'review_matching_quality': {
+                'label': 'Beoordeel matchingkwaliteit',
+                'href': f"{reverse('careon:matching_dashboard')}?intake={intake.pk}",
+                'band': 'today',
+            },
+            'validate_capacity_wait': {
+                'label': 'Valideer capaciteit en wachttijd',
+                'href': f"{reverse('careon:matching_dashboard')}?intake={intake.pk}",
+                'band': 'monitor',
+            },
+            'follow_up_provider_response': {
+                'label': 'Volg providerreactie op',
+                'href': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+                'band': 'now',
+            },
+            'resolve_placement_stall': {
+                'label': 'Los plaatsingsstagnatie op',
+                'href': reverse('careon:placement_detail', kwargs={'pk': placement.pk}) if placement else f"{reverse('careon:matching_dashboard')}?intake={intake.pk}",
+                'band': 'today',
+            },
+            'start_monitoring': {
+                'label': 'Start actieve monitoring',
+                'href': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=tijdlijn",
+                'band': 'monitor',
+            },
+            'monitor': {
+                'label': 'Monitor voortgang',
+                'href': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=tijdlijn",
+                'band': 'monitor',
+            },
+        }
+        enhanced_nba = intelligence.get('next_best_action') or {}
+        _banner_defaults = _action_banner_map.get(enhanced_nba.get('code', ''), {
+            'label': 'Bekijk casus',
+            'href': reverse('careon:case_detail', kwargs={'pk': intake.pk}),
+            'band': 'monitor',
+        })
+        action_banner = {
+            'code': enhanced_nba.get('code'),
+            'label': _banner_defaults['label'],
+            'reason': enhanced_nba.get('reason', ''),
+            'href': _banner_defaults['href'],
+            'band': _banner_defaults['band'],
+            'priority': enhanced_nba.get('priority', 7),
+            'is_blocking': not intelligence.get('safe_to_proceed', True),
+        }
+
         flow_label_map = {
             'aanvraag': 'Aanvraag',
             'beoordeling': 'Beoordeling',
@@ -6179,6 +6249,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'missing_information_alerts': intelligence.get('missing_information', []),
             'enhanced_next_action': intelligence.get('next_best_action'),
             'intelligence_flags': intelligence_context['intelligence_flags'],
+            'action_banner': action_banner,
             'can_execute_matching_actions': bool(
                 can_edit_case
                 and ready_for_matching

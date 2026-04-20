@@ -437,6 +437,7 @@ class CareCase(models.Model):
 
     class CasePhase(models.TextChoices):
         INTAKE = 'intake', 'Intake'
+        BEOORDELING = 'beoordeling', 'Beoordeling'
         MATCHING = 'matching', 'Matching'
         PROVIDER_BEOORDELING = 'provider_beoordeling', 'Aanbiederbeoordeling'
         PLAATSING = 'plaatsing', 'Plaatsing'
@@ -1146,6 +1147,7 @@ class CaseDecisionLog(models.Model):
         CONTINUE_WAITING = 'CONTINUE_WAITING', 'Continue waiting'
         SLA_ESCALATION = 'SLA_ESCALATION', 'SLA state transition'
         CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
+        INTELLIGENCE_EVALUATED = 'INTELLIGENCE_EVALUATED', 'Intelligence evaluated'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.

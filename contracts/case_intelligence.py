@@ -990,6 +990,23 @@ def determine_next_best_action(
             "behavior_reason": None,
         }
 
+    # Beoordeling gate: assessment must be complete before matching can run.
+    if not bool(case_data.get("assessment_complete")):
+        assessment_status = str(case_data.get("assessment_status") or "").strip().upper()
+        if not assessment_status:
+            return {
+                "code": "start_beoordeling",
+                "priority": 2,
+                "reason": "Er is nog geen beoordeling gestart. Start de beoordeling om door te gaan naar matching.",
+                "behavior_reason": None,
+            }
+        return {
+            "code": "complete_beoordeling",
+            "priority": 2,
+            "reason": "De beoordeling is nog niet afgerond. Rond de beoordeling af voordat matching kan starten.",
+            "behavior_reason": None,
+        }
+
     if not bool(case_data.get("matching_run_exists")):
         return {
             "code": "run_matching",
@@ -1125,6 +1142,16 @@ def determine_next_best_action(
             "behavior_reason": None,
         }
 
+    # When placement is confirmed/approved, transition to active monitoring.
+    placement_status = str(case_data.get("placement_status") or "").strip().upper()
+    if placement_status in {"APPROVED", "COMPLETED"}:
+        return {
+            "code": "start_monitoring",
+            "priority": 7,
+            "reason": "Plaatsing is bevestigd. Start de actieve monitoring van de casus.",
+            "behavior_reason": None,
+        }
+
     return {
         "code": "monitor",
         "priority": 7,
@@ -1206,6 +1233,7 @@ def evaluate_case_intelligence(
     case_data: Dict[str, Any],
     *,
     provider_metrics: Dict[str, Any] | None = None,
+    case_id: int | None = None,
 ) -> Dict[str, Any]:
     """Evaluate all intelligence signals for a case.
 
@@ -1226,6 +1254,11 @@ def evaluate_case_intelligence(
         "SLA adjusted due to provider response pattern; Earlier escalation
         recommended due to reliability risk".  ``None`` when no adjustment
         was applied.
+
+    When *case_id* is supplied, every evaluation is recorded as an
+    ``INTELLIGENCE_EVALUATED`` governance event via
+    :func:`contracts.governance.log_decision_evaluation`.  Logging is
+    best-effort and never blocks the return value.
     """
     _validate_case_data(case_data)
 
@@ -1244,6 +1277,8 @@ def evaluate_case_intelligence(
     stop_action_codes = {
         "fill_missing_information",
         "complete_assessment",
+        "start_beoordeling",
+        "complete_beoordeling",
         "run_matching",
         "follow_up_provider_response",
         "review_matching_quality",
@@ -1278,7 +1313,7 @@ def evaluate_case_intelligence(
 
     safe_to_proceed = not should_stop
 
-    return {
+    result = {
         "missing_information": missing_information,
         "risk_signals": risk_signals,
         "next_best_action": next_best_action,
@@ -1303,3 +1338,9 @@ def evaluate_case_intelligence(
         "safe_to_proceed": safe_to_proceed,
         "stop_reasons": [reason for reason in stop_reasons if reason],
     }
+
+    if case_id:
+        from contracts.governance import log_decision_evaluation
+        log_decision_evaluation(case_id, result)
+
+    return result

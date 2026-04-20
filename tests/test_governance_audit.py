@@ -869,3 +869,136 @@ class SLATransitionGovernanceTests(TestCase):
         self.assertEqual(len(sla_events), 2)
         self.assertEqual(sla_events[0]['sla_state'], 'AT_RISK')
         self.assertEqual(sla_events[1]['sla_state'], 'OVERDUE')
+
+
+class LogDecisionEvaluationTests(TestCase):
+    """Tests for the governance.log_decision_evaluation audit function."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username='eval_owner',
+            email='eval@example.com',
+            password='testpass123',
+        )
+        self.organization = Organization.objects.create(
+            name='Eval Org', slug='eval-org'
+        )
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role=OrganizationMembership.Role.OWNER,
+        )
+        self.intake = CaseIntakeProcess.objects.create(
+            title='Evaluation Casus',
+            organization=self.organization,
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=timezone.now().date(),
+            target_completion_date=timezone.now().date() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+
+    def _make_intelligence(self, code='monitor', priority=7):
+        return {
+            'next_best_action': {'code': code, 'priority': priority, 'reason': 'Test reason.'},
+            'safe_to_proceed': True,
+            'sla_state': 'ON_TRACK',
+            'missing_information': [],
+            'risk_signals': [],
+            'escalation_required': False,
+        }
+
+    def test_log_writes_intelligence_evaluated_row(self):
+        from contracts.governance import log_decision_evaluation
+
+        result = log_decision_evaluation(self.intake.pk, self._make_intelligence())
+
+        self.assertTrue(result)
+        log = CaseDecisionLog.objects.get(
+            case_id=self.intake.pk,
+            event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+        )
+        self.assertEqual(log.system_recommendation['code'], 'monitor')
+        self.assertEqual(log.recommendation_context['next_best_action_code'], 'monitor')
+        self.assertEqual(log.recommendation_context['safe_to_proceed'], True)
+        self.assertEqual(log.sla_state, 'ON_TRACK')
+
+    def test_log_records_blocking_action(self):
+        from contracts.governance import log_decision_evaluation
+
+        log_decision_evaluation(
+            self.intake.pk,
+            self._make_intelligence(code='start_beoordeling', priority=2),
+        )
+        log = CaseDecisionLog.objects.get(
+            case_id=self.intake.pk,
+            event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+        )
+        self.assertEqual(log.recommendation_context['next_best_action_code'], 'start_beoordeling')
+        self.assertEqual(log.recommendation_context['next_best_action_priority'], 2)
+
+    def test_log_returns_false_for_missing_case_id(self):
+        from contracts.governance import log_decision_evaluation
+
+        result = log_decision_evaluation(None, self._make_intelligence())
+        self.assertFalse(result)
+
+    def test_evaluate_case_intelligence_logs_when_case_id_provided(self):
+        from contracts.case_intelligence import evaluate_case_intelligence
+
+        case_data = {
+            'phase': 'MATCHING',
+            'care_category': 'Jeugd',
+            'urgency': 'MEDIUM',
+            'assessment_complete': True,
+            'matching_run_exists': True,
+            'top_match_confidence': 'high',
+            'top_match_has_capacity_issue': False,
+            'top_match_wait_days': 7,
+            'selected_provider_id': 1,
+            'placement_status': 'IN_REVIEW',
+            'placement_updated_at': timezone.now().date(),
+            'rejected_provider_count': 0,
+            'open_signal_count': 0,
+            'open_task_count': 0,
+            'case_updated_at': timezone.now().date(),
+            'candidate_suggestions': [],
+        }
+        evaluate_case_intelligence(case_data, case_id=self.intake.pk)
+
+        self.assertTrue(
+            CaseDecisionLog.objects.filter(
+                case_id=self.intake.pk,
+                event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+            ).exists()
+        )
+
+    def test_evaluate_case_intelligence_no_log_without_case_id(self):
+        from contracts.case_intelligence import evaluate_case_intelligence
+
+        case_data = {
+            'phase': 'MATCHING',
+            'care_category': 'Jeugd',
+            'urgency': 'MEDIUM',
+            'assessment_complete': True,
+            'matching_run_exists': True,
+            'top_match_confidence': 'high',
+            'top_match_has_capacity_issue': False,
+            'top_match_wait_days': 7,
+            'selected_provider_id': 1,
+            'placement_status': 'IN_REVIEW',
+            'placement_updated_at': timezone.now().date(),
+            'rejected_provider_count': 0,
+            'open_signal_count': 0,
+            'open_task_count': 0,
+            'case_updated_at': timezone.now().date(),
+            'candidate_suggestions': [],
+        }
+        evaluate_case_intelligence(case_data)  # no case_id
+
+        self.assertFalse(
+            CaseDecisionLog.objects.filter(
+                event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+            ).exists()
+        )

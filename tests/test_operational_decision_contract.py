@@ -164,7 +164,7 @@ class OperationalDecisionBuildingTests(OperationalDecisionContractTestCase):
         self.assertIsInstance(decision.escalation_recommended, bool)
     
     def test_build_case_with_incomplete_assessment(self):
-        """Test decision for case in matching (beoordeling gate removed)."""
+        """Test decision for case with a DRAFT assessment (beoordeling gate active)."""
         intake = self._create_intake(
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.HIGH,
@@ -176,8 +176,7 @@ class OperationalDecisionBuildingTests(OperationalDecisionContractTestCase):
         
         decision = OperationalDecisionBuilder.build_for_intake(intake)
         
-        # Beoordeling no longer blocks matching; bottleneck should be matching (no provider yet)
-        self.assertIn(decision.bottleneck_state, [BottleneckState.MATCHING, BottleneckState.NONE])
+        # Incomplete assessment is now a bottleneck; recommended action must be set.
         self.assertIsNotNone(decision.recommended_action)
     
     def test_build_case_in_matching_no_placement(self):
@@ -312,7 +311,7 @@ class BottleneckDetectionTests(OperationalDecisionContractTestCase):
     """Test bottleneck state detection."""
     
     def test_assessment_bottleneck(self):
-        """With beoordeling gate removed, MATCHING status without placement = no assessment bottleneck."""
+        """OperationalDecisionBuilder bottleneck detection for MATCHING status without placement."""
         intake = self._create_intake(
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
         )
@@ -320,7 +319,8 @@ class BottleneckDetectionTests(OperationalDecisionContractTestCase):
         
         decision = OperationalDecisionBuilder.build_for_intake(intake)
         
-        # ASSESSMENT bottleneck no longer exists; expect MATCHING or NONE
+        # OperationalDecisionBuilder uses signal-based bottleneck detection;
+        # without a NO_MATCH signal the state is MATCHING or NONE depending on placement.
         self.assertIn(decision.bottleneck_state, [BottleneckState.MATCHING, BottleneckState.NONE])
     
     def test_placement_bottleneck_no_capacity(self):

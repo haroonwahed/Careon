@@ -60,14 +60,36 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
         self.assertEqual(action["code"], "fill_missing_information")
         self.assertEqual(action["priority"], 1)
 
-    def test_next_best_action_precedence_matching_when_no_run_exists(self):
+    def test_next_best_action_precedence_beoordeling_not_started(self):
         case_data = self._base_case_data()
         case_data["assessment_complete"] = False
+        case_data["assessment_status"] = None
         case_data["matching_run_exists"] = False
 
         action = determine_next_best_action(case_data)
 
-        # With beoordeling gate removed, matching runs immediately
+        self.assertEqual(action["code"], "start_beoordeling")
+        self.assertEqual(action["priority"], 2)
+
+    def test_next_best_action_precedence_beoordeling_incomplete(self):
+        case_data = self._base_case_data()
+        case_data["assessment_complete"] = False
+        case_data["assessment_status"] = "DRAFT"
+        case_data["matching_run_exists"] = False
+
+        action = determine_next_best_action(case_data)
+
+        self.assertEqual(action["code"], "complete_beoordeling")
+        self.assertEqual(action["priority"], 2)
+
+    def test_next_best_action_precedence_matching_when_assessment_complete_no_run(self):
+        # When assessment is complete and no matching run exists, go to run_matching.
+        case_data = self._base_case_data()
+        case_data["assessment_complete"] = True
+        case_data["matching_run_exists"] = False
+
+        action = determine_next_best_action(case_data)
+
         self.assertEqual(action["code"], "run_matching")
         self.assertEqual(action["priority"], 3)
 
@@ -111,9 +133,20 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
         self.assertEqual(action["code"], "resolve_placement_stall")
         self.assertEqual(action["priority"], 6)
 
-    def test_next_best_action_monitor_when_no_blockers(self):
+    def test_next_best_action_start_monitoring_when_placement_approved(self):
         case_data = self._base_case_data()
         case_data["placement_status"] = "APPROVED"
+
+        action = determine_next_best_action(case_data)
+
+        self.assertEqual(action["code"], "start_monitoring")
+        self.assertEqual(action["priority"], 7)
+
+    def test_next_best_action_monitor_when_no_blockers(self):
+        case_data = self._base_case_data()
+        # placement_status is IN_REVIEW in base — not APPROVED, so falls through to monitor
+        case_data["placement_status"] = "IN_REVIEW"
+        case_data["placement_updated_at"] = case_data["now"]  # fresh, not stalled
 
         action = determine_next_best_action(case_data)
 
@@ -239,7 +272,7 @@ class CaseIntelligenceRulesTests(unittest.TestCase):
 
         self.assertEqual(result["missing_information"], [])
         self.assertEqual(result["risk_signals"], [])
-        self.assertEqual(result["next_best_action"]["code"], "monitor")
+        self.assertEqual(result["next_best_action"]["code"], "start_monitoring")
         self.assertEqual(result["candidate_hints"][0]["provider_id"], 101)
         self.assertEqual(result["candidate_hints"][0]["hint_code"], "top_recommended")
         self.assertIn("Beste optie", result["candidate_hints"][0]["hint"])

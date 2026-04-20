@@ -440,6 +440,58 @@ def detect_and_log_sla_transition(
 
 
 # ---------------------------------------------------------------------------
+# Decision Evaluation Audit Logging
+# ---------------------------------------------------------------------------
+
+def log_decision_evaluation(
+    case_id: int,
+    intelligence: Dict[str, Any],
+    *,
+    action_source: str = 'system',
+) -> bool:
+    """Append a lightweight INTELLIGENCE_EVALUATED governance record.
+
+    Records the output of every ``evaluate_case_intelligence`` call for a
+    named case so that operators and auditors can reconstruct how the system
+    guided the case forward at any point in time.
+
+    Logging is best-effort and never blocks the caller on failure.
+
+    Args:
+        case_id: PK of the ``CaseIntakeProcess`` being evaluated.
+        intelligence: The full dict returned by ``evaluate_case_intelligence``.
+        action_source: Optional string identifying which code path triggered
+            the evaluation (defaults to ``'system'``).
+
+    Returns:
+        ``True`` when the row was written, ``False`` on any error.
+    """
+    next_best_action = intelligence.get('next_best_action') or {}
+    recommendation_context: Dict[str, Any] = {
+        'next_best_action_code': next_best_action.get('code'),
+        'next_best_action_priority': next_best_action.get('priority'),
+        'safe_to_proceed': intelligence.get('safe_to_proceed'),
+        'sla_state': intelligence.get('sla_state'),
+        'missing_information_count': len(intelligence.get('missing_information') or []),
+        'risk_signal_count': len(intelligence.get('risk_signals') or []),
+        'escalation_required': intelligence.get('escalation_required'),
+    }
+    system_recommendation: Dict[str, Any] = {
+        'code': next_best_action.get('code'),
+        'priority': next_best_action.get('priority'),
+        'reason': next_best_action.get('reason'),
+    }
+    return log_case_decision_event(
+        case_id=case_id,
+        event_type=CaseDecisionLog.EventType.INTELLIGENCE_EVALUATED,
+        system_recommendation=system_recommendation,
+        recommendation_context=recommendation_context,
+        action_source=action_source,
+        sla_state=str(intelligence.get('sla_state') or ''),
+    )
+
+
+# ---------------------------------------------------------------------------
 # Decision Quality Review Helpers (Pilot Evaluation)
 # ---------------------------------------------------------------------------
 
