@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block title %}Pilot Rollout Dashboard — Zorg OS V3 - Careon{% endblock %}
+{% block content %}
+<div class="page-wrap">
+<div class="ds-analytics-shell dash-grid">
+
+    <div class="ds-analytics-hero">
+        <div>
+            <h1 class="ds-analytics-headline">Pilot Rollout Dashboard</h1>
+            <p class="ds-analytics-sub">
+                Adoptie- en rollout-pakket voor de V3 beslissingsomgeving. Alles is adviserend en lees-alleen.
+            </p>
+        </div>
+        <div class="ds-list-actions">
+            <a href="{% url 'careon:governance_playbook' %}" class="btn btn-secondary btn-sm">📖 Werkafspraken</a>
+            <a href="{% url 'careon:tuning_meta_governance' %}" class="btn btn-secondary btn-sm">📊 Meta-Analyse</a>
+            <a href="{% url 'careon:tuning_proposals' %}" class="btn btn-secondary btn-sm">← Tuningvoorstellen</a>
+            <a href="{% url 'careon:regiekamer' %}" class="btn btn-secondary">← Regiekamer</a>
+        </div>
+    </div>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 0: Readiness score                                               #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem;border-left:4px solid
+        {% if readiness.tier == 'READY' %}var(--color-success,#10b981)
+        {% elif readiness.tier == 'CAUTION' %}var(--color-warning,#f59e0b)
+        {% else %}var(--color-danger,#ef4444){% endif %}">
+        <h2 class="ds-card-title">🚦 Rollout-gereedheid</h2>
+        <div style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap">
+            <div style="text-align:center">
+                <div style="font-size:2.5rem;font-weight:800;
+                    color:{% if readiness.tier == 'READY' %}var(--color-success,#10b981)
+                    {% elif readiness.tier == 'CAUTION' %}var(--color-warning,#f59e0b)
+                    {% else %}var(--color-danger,#ef4444){% endif %}">
+                    {{ readiness.score|floatformat:2 }}
+                </div>
+                <div style="font-size:0.8rem;color:var(--text-muted)">Score (0–1)</div>
+            </div>
+            <div>
+                <div style="font-size:1.1rem;font-weight:700">{{ readiness.tier_label }}</div>
+                <p style="font-size:0.88rem;margin-top:0.25rem;max-width:500px">{{ readiness.recommendation }}</p>
+            </div>
+        </div>
+
+        {% if readiness.action_items %}
+        <div style="margin-top:1rem">
+            <p style="font-size:0.85rem;font-weight:600">Openstaande actiepunten:</p>
+            <ul style="list-style:disc;padding-left:1.5rem;font-size:0.83rem;line-height:1.9">
+                {% for item in readiness.action_items %}<li>{{ item }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:0.6rem;margin-top:1.25rem">
+            {% for key, val in readiness.component_scores.items %}
+            <div class="ds-stat-tile" style="font-size:0.78rem">
+                <div class="ds-stat-value">{{ val|floatformat:2 }}</div>
+                <div class="ds-stat-label">{{ key }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 1: KPI Baseline                                                  #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">📊 KPI Baseline — Actueel ({{ total_proposals }} voorstellen)</h2>
+        <p class="ds-card-sub">Live KPI-snapshot berekend uit de huidige tuningvoorstellen.</p>
+        {% if kpi.notes %}
+        <div style="margin-bottom:0.75rem;padding:0.6rem 0.9rem;border-radius:6px;background:rgba(245,158,11,0.12);font-size:0.82rem">
+            {% for note in kpi.notes %}<div>⚠ {{ note }}</div>{% endfor %}
+        </div>
+        {% endif %}
+        <table class="ds-table" style="width:100%;max-width:700px;font-size:0.84rem">
+            <thead><tr><th>KPI</th><th>Waarde</th><th>Target</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for m in measures %}
+            {% with val=kpi|default_if_none:"" %}
+            <tr>
+                <td>{{ m.label }}</td>
+                <td>
+                    {% if m.kpi == 'approval_rate' %}{% if kpi.approval_rate is not None %}{{ kpi.approval_rate|floatformat:2 }}{% else %}—{% endif %}
+                    {% elif m.kpi == 'implementation_rate' %}{% if kpi.implementation_rate is not None %}{{ kpi.implementation_rate|floatformat:2 }}{% else %}—{% endif %}
+                    {% elif m.kpi == 'success_rate' %}{% if kpi.success_rate is not None %}{{ kpi.success_rate|floatformat:2 }}{% else %}—{% endif %}
+                    {% elif m.kpi == 'overdue_share' %}{% if kpi.overdue_share is not None %}{{ kpi.overdue_share|floatformat:2 }}{% else %}—{% endif %}
+                    {% elif m.kpi == 'high_risk_share' %}{{ kpi.high_risk_share|floatformat:2 }}
+                    {% elif m.kpi == 'sparse_data_share' %}{{ kpi.sparse_data_share|floatformat:2 }}
+                    {% elif m.kpi == 'escalation_rate' %}{% if kpi.escalation_rate is not None %}{{ kpi.escalation_rate|floatformat:2 }}{% else %}—{% endif %}
+                    {% else %}—{% endif %}
+                </td>
+                <td>{{ m.target }}</td>
+                <td style="font-size:0.75rem;color:var(--text-muted)">{{ m.frequency }}</td>
+            </tr>
+            {% endwith %}
+            {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 2: Eerste 30 dagen                                               #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">📅 Eerste 30 Dagen — Beoordelingsritme</h2>
+        <div style="display:flex;flex-direction:column;gap:0.9rem">
+        {% for milestone in rhythm %}
+        <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:0.9rem">
+            <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:0.25rem">
+                <span style="font-weight:700;font-size:0.9rem">{{ milestone.day_range }} — {{ milestone.milestone }}</span>
+                <span style="font-size:0.78rem;color:var(--text-muted)">{{ milestone.owner }}</span>
+            </div>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8;margin-top:0.4rem">
+                {% for a in milestone.actions %}<li>{{ a }}</li>{% endfor %}
+            </ul>
+            <p style="font-size:0.8rem;color:var(--color-success,#10b981);margin-top:0.35rem">
+                ✓ {{ milestone.success_signal }}
+            </p>
+        </div>
+        {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 3: Pilotscope                                                    #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🎯 Pilotscope</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem">
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Rollen</h3>
+                {% for role in scope.participating_roles %}
+                <div style="font-size:0.82rem;margin-bottom:0.4rem;border-bottom:1px solid var(--border-color,#334155);padding-bottom:0.4rem">
+                    <strong>{{ role.role }}</strong><br>
+                    {{ role.count_range }} — {{ role.commitment }}
+                </div>
+                {% endfor %}
+            </div>
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Selectiecriteria organisatie</h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for c in scope.pilot_org_criteria %}<li>{{ c }}</li>{% endfor %}
+                </ul>
+            </div>
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Zorgcategorieën (focus)</h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for c in scope.target_care_categories %}<li>{{ c }}</li>{% endfor %}
+                </ul>
+                <h3 style="font-size:0.88rem;font-weight:700;margin:0.75rem 0 0.4rem">Uitsluitingscriteria</h3>
+                <ul style="list-style:disc;padding-left:1.25rem;font-size:0.82rem;line-height:1.8">
+                    {% for e in scope.exclusion_criteria %}<li>{{ e }}</li>{% endfor %}
+                </ul>
+            </div>
+        </div>
+        <p style="font-size:0.82rem;margin-top:0.75rem;color:var(--text-muted)">
+            <strong>Gemeentescope:</strong> {{ scope.municipality_scope }}<br>
+            <strong>Pilotduur:</strong> {{ scope.estimated_pilot_duration_days }} kalenderdagen
+        </p>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 4: Dagelijkse routines                                           #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🗓 Dagelijkse & Wekelijkse Routines per Rol</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem">
+        {% for role_key, role in routines.items %}
+        <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:0.9rem">
+            <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">{{ role.label }}</h3>
+            {% if role.daily %}
+            <p style="font-size:0.78rem;font-weight:600;color:var(--text-muted)">Dagelijks:</p>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.8rem;line-height:1.8">
+                {% for d in role.daily %}<li>{{ d }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+            {% if role.weekly %}
+            <p style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-top:0.5rem">Wekelijks:</p>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.8rem;line-height:1.8">
+                {% for w in role.weekly %}<li>{{ w }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 5: Escalatiescenario's                                           #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">🚨 Escalatiescenario's</h2>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+        {% for s in scenarios %}
+        <details style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:0.9rem">
+            <summary style="font-weight:700;font-size:0.9rem;cursor:pointer">
+                {{ s.id }} — {{ s.title }}
+                <span style="font-size:0.78rem;color:var(--text-muted);margin-left:0.75rem">{{ s.role }}</span>
+            </summary>
+            <p style="font-size:0.83rem;margin-top:0.6rem">{{ s.context }}</p>
+            <p style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-top:0.5rem">Signalen:</p>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.8rem;line-height:1.8">
+                {% for sig in s.signals %}<li><code>{{ sig }}</code></li>{% endfor %}
+            </ul>
+            <p style="font-size:0.78rem;font-weight:600;color:var(--text-muted);margin-top:0.5rem">Aanbevolen actie:</p>
+            <p style="font-size:0.82rem">{{ s.recommended_action }}</p>
+            <p style="font-size:0.8rem;color:var(--color-success,#10b981);margin-top:0.4rem">✓ {{ s.outcome }}</p>
+        </details>
+        {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 6: Onboarding checklist                                          #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">✅ Onboarding Regisseur</h2>
+        <div style="display:flex;flex-direction:column;gap:0.75rem">
+        {% for step in onboarding %}
+        <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:0.85rem">
+            <div style="font-weight:700;font-size:0.88rem">Stap {{ step.step }}: {{ step.title }}</div>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.81rem;line-height:1.8;margin-top:0.4rem">
+                {% for a in step.actions %}<li>{{ a }}</li>{% endfor %}
+            </ul>
+            <p style="font-size:0.78rem;color:var(--color-success,#10b981);margin-top:0.25rem">✓ {{ step.done_when }}</p>
+        </div>
+        {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 7: Stakeholdercommunicatie                                       #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">💬 Stakeholdercommunicatie</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.25rem">
+        {% for key, sh in stakeholders.items %}
+        <div style="border:1px solid var(--border-color,#334155);border-radius:8px;padding:0.9rem">
+            <h3 style="font-size:0.9rem;font-weight:700;margin-bottom:0.4rem">{{ sh.audience }}</h3>
+            <p style="font-size:0.82rem;margin-bottom:0.6rem">{{ sh.summary }}</p>
+            <p style="font-size:0.78rem;font-weight:600;color:var(--text-muted)">Kernboodschappen:</p>
+            <ul style="list-style:disc;padding-left:1.25rem;font-size:0.8rem;line-height:1.8">
+                {% for km in sh.key_messages %}<li>{{ km }}</li>{% endfor %}
+            </ul>
+            <p style="font-size:0.78rem;margin-top:0.5rem;color:var(--text-muted)">
+                <strong>Contact:</strong> {{ sh.contact }}
+            </p>
+        </div>
+        {% endfor %}
+        </div>
+    </section>
+
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    {# Panel 8: Feedback capture                                              #}
+    {# ══════════════════════════════════════════════════════════════════════ #}
+    <section class="ds-analytics-card" style="margin-bottom:1.5rem">
+        <h2 class="ds-card-title">📝 Feedback Capture</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.25rem">
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Kanalen</h3>
+                {% for ch in feedback.channels %}
+                <div style="font-size:0.81rem;border-bottom:1px solid var(--border-color,#334155);padding-bottom:0.5rem;margin-bottom:0.5rem">
+                    <strong>{{ ch.name }}</strong><br>
+                    {{ ch.format }}<br>
+                    <span style="color:var(--text-muted)">{{ ch.participants }} — {{ ch.cadence }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Wekelijkse vragen</h3>
+                <ol style="padding-left:1.25rem;font-size:0.8rem;line-height:2">
+                    {% for q in feedback.questions %}<li>{{ q }}</li>{% endfor %}
+                </ol>
+            </div>
+            <div>
+                <h3 style="font-size:0.88rem;font-weight:700;margin-bottom:0.4rem">Opslagadvies</h3>
+                <p style="font-size:0.81rem">{{ feedback.storage_advice }}</p>
+                <div style="margin-top:0.75rem;padding:0.6rem;background:rgba(239,68,68,0.10);border-radius:6px;font-size:0.8rem">
+                    <strong>Escalatieflag:</strong> {{ feedback.escalation_flag }}
+                </div>
+            </div>
+        </div>
+    </section>
+
+</div>
+</div>
+{% endblock %}

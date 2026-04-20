@@ -8213,3 +8213,57 @@ def governance_playbook(request):
         },
         'total_proposals': len(proposals),
     })
+
+
+def pilot_rollout_dashboard(request):
+    """Staff/owner-only pilot rollout and adoption dashboard.
+
+    Provides a structured rollout guide: scope, routines, 30-day rhythm,
+    live KPI baseline, success measures, escalation scenarios, onboarding
+    checklist, stakeholder summaries, feedback guidance, and readiness score.
+    Read-only: no DB writes.
+    """
+    if not (request.user.is_staff or is_organization_owner(request.user)):
+        return HttpResponseForbidden('Toegang geweigerd: deze pagina is alleen beschikbaar voor beheerders.')
+
+    from .intelligence_pilot_rollout import (
+        READINESS_CAUTION,
+        READINESS_READY,
+        daily_operating_routines,
+        escalation_scenarios,
+        feedback_capture_guidance,
+        first_30_days_rhythm,
+        kpi_baseline,
+        pilot_scope,
+        reviewer_onboarding_checklist,
+        rollout_readiness,
+        stakeholder_communication_summaries,
+        success_measures,
+    )
+    from .models import TuningProposal
+    from .tenancy import get_user_organization
+
+    org = get_user_organization(request.user)
+    proposals = list(
+        TuningProposal.objects.filter(organization=org).select_related(
+            'affected_care_category', 'affected_provider', 'reviewed_by'
+        )
+    )
+
+    readiness = rollout_readiness(proposals)
+
+    return render(request, 'contracts/pilot_rollout_dashboard.html', {
+        'scope': pilot_scope(),
+        'routines': daily_operating_routines(),
+        'rhythm': first_30_days_rhythm(),
+        'kpi': kpi_baseline(proposals),
+        'measures': success_measures(),
+        'scenarios': escalation_scenarios(),
+        'onboarding': reviewer_onboarding_checklist(),
+        'stakeholders': stakeholder_communication_summaries(),
+        'feedback': feedback_capture_guidance(),
+        'readiness': readiness,
+        'readiness_ready': READINESS_READY,
+        'readiness_caution': READINESS_CAUTION,
+        'total_proposals': len(proposals),
+    })
