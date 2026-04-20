@@ -7313,11 +7313,5 @@ def resolve_alert(request, pk):
     else:
         messages.info(request, 'Alert was al opgelost.')
 
-    next_url = request.POST.get('next') or reverse('careon:regiekamer_alerts')
-    if url_has_allowed_host_and_scheme(
-        url=next_url,
-        allowed_hosts={request.get_host()},
-        require_https=request.is_secure(),
-    ):
-        return redirect(next_url)
-    return redirect(reverse('careon:regiekamer_alerts'))
+    next_fallback = reverse('careon:regiekamer_alerts')
+    return _redirect_to_safe_next_or_default(request, next_fallback)

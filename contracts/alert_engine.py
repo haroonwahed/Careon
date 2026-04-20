@@ -124,7 +124,7 @@ def _build_case_data_for_alert(intake: CaseIntakeProcess) -> Dict[str, Any]:
 # Alert rule evaluation
 # ---------------------------------------------------------------------------
 
-AlertSpec = Tuple[str, str, str, str]  # (alert_type, severity, title, description, recommended_action)
+AlertSpec = Tuple[str, str, str, str, str]  # (alert_type, severity, title, description, recommended_action)
 
 _SIGNAL_CODE_TO_ALERT: Dict[str, Tuple[str, str, str, str, str]] = {
     'placement_stalled': (
@@ -170,9 +170,6 @@ def _evaluate_alert_specs(
     # ── urgent_unmatched_case ──────────────────────────────────────────────
     urgency = str(intake.urgency or '').upper()
     is_urgent = urgency in {'HIGH', 'CRISIS'}
-    matching_exists = intelligence.get('missing_information') == [] and \
-        intelligence.get('next_best_action', {}).get('code') != 'run_matching'
-    # Simpler: check if next best action is run_matching for urgent case
     next_action = intelligence.get('next_best_action', {}).get('code', '')
     if is_urgent and next_action in {'run_matching', 'fill_missing_information', 'complete_assessment'}:
         specs.append((

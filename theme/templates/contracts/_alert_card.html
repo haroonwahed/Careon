@@ -30,7 +30,7 @@ Context: alert (OperationalAlert instance)
         <!-- CTA based on alert type -->
         {% if alert.alert_type == 'incomplete_beoordeling' %}
         <a href="{% url 'careon:assessment_list' %}?case={{ alert.case_id }}" class="btn btn-sm btn-primary">Beoordeling afronden</a>
-        {% elif alert.alert_type == 'urgent_unmatched_case' or alert.alert_type == 'missing_critical_data' or alert.alert_type == 'weak_match_needs_review' %}
+        {% elif alert.alert_type == 'urgent_unmatched_case' or alert.alert_type == 'missing_critical_data' %}
         <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Start matching</a>
         {% elif alert.alert_type == 'weak_match_needs_review' %}
         <a href="{% url 'careon:matching_dashboard' %}?intake={{ alert.case_id }}" class="btn btn-sm btn-primary">Review match</a>
