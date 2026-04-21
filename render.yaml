@@ -4,18 +4,12 @@ services:
     runtime: python
     plan: free
     buildCommand: |
-      BUILD_DATABASE_URL="${DATABASE_URL:-sqlite:////tmp/careon-build.sqlite3}"
       pip install -r requirements/runtime.txt
-      DATABASE_URL="$BUILD_DATABASE_URL" python manage.py test tests --verbosity=1 --settings=config.settings
+      DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py test tests --verbosity=1 --settings=config.settings
       npm ci --prefix client
       npm run build --prefix client
-      DATABASE_URL="$BUILD_DATABASE_URL" python manage.py collectstatic --noinput --settings=config.settings
-      if [ -z "$DATABASE_URL" ]; then
-        echo "DATABASE_URL not set. Using temporary SQLite for build."
-        DATABASE_URL="$BUILD_DATABASE_URL" python manage.py migrate --noinput --settings=config.settings
-      else
-        python manage.py migrate --noinput --settings=config.settings
-      fi
+      DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py collectstatic --noinput --settings=config.settings
+      DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py migrate --noinput --settings=config.settings
     startCommand: |
       if [ -z "$DATABASE_URL" ]; then
         echo "ERROR: DATABASE_URL is required for production startup. Configure a PostgreSQL connection string in Render."
