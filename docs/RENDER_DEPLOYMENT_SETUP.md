@@ -43,13 +43,12 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 2. Build the frontend.
 3. Collect Django static files.
 4. If `DATABASE_URL` is set, run Django migrations.
-5. If `DATABASE_URL` is not set, use a temporary SQLite database in `/tmp` for build-only Django commands.
+5. If `DATABASE_URL` is not set, skip migrations and use the SQLite fallback for build.
 
 ### Startup Phase
 
-1. Require `DATABASE_URL` (PostgreSQL) to be set.
-2. Run Django migrations using production settings.
-3. Start Gunicorn server on port `$PORT`.
+1. If `DATABASE_URL` is set, run Django migrations.
+2. Start Gunicorn server on port `$PORT`.
 
 ## Troubleshooting
 
@@ -65,12 +64,12 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 
 ### Migrations Not Running
 
-- If `DATABASE_URL` is empty, startup fails fast with a clear error.
+- If `DATABASE_URL` is empty, migrations are skipped at startup.
 - Manually run migrations:
 
 ```bash
 render bash
-python manage.py migrate --settings=config.settings_production
+python manage.py migrate --settings=config.settings
 ```
 
 ### Static Files Not Loading
@@ -83,7 +82,6 @@ python manage.py migrate --settings=config.settings_production
 **Current Implementation (Recommended):**
 
 - Build phase tries to run migrations only if DB is available.
-- When the production database is not available during build, Django build commands use a temporary SQLite database in `/tmp`.
 - Startup phase runs migrations before starting the app.
 - This ensures migrations run with the actual production database.
 
