@@ -19,4 +19,4 @@ Scope: keep inactive or experimental code isolated without breaking the active Z
 
 - npm run build --prefix client
 - ./.venv/bin/python manage.py check
-- targeted workflow tests for intake/assessment/matching flow
+- targeted workflow tests for intake/aanbieder beoordeling/matching flow

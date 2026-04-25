@@ -5,6 +5,8 @@
  * requests must include it as a header. GET requests don't need it.
  */
 
+import { LOGIN_URL } from "./routes";
+
 function getCsrfToken(): string {
   const match = document.cookie.match(/csrftoken=([^;]+)/);
   return match ? match[1] : '';
@@ -44,7 +46,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (response.status === 401 || response.status === 403) {
     // Session expired — redirect to login
-    window.location.href = `/login/?next=${encodeURIComponent(window.location.pathname)}`;
+    window.location.href = `${LOGIN_URL}?next=${encodeURIComponent(window.location.pathname)}`;
     throw new Error('Niet geautoriseerd');
   }
 

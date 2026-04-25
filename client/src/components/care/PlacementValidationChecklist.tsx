@@ -52,7 +52,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
           Validatie checklist
         </h3>
         <p className="text-sm text-muted-foreground">
-          {allComplete && "Alle vereisten voldaan"}
+          {allComplete && "Alle vereisten voor plaatsing zijn voldaan"}
           {hasErrors && "Er zijn blokkerende problemen"}
           {!allComplete && !hasErrors && hasWarnings && "Let op waarschuwingen"}
           {!allComplete && !hasErrors && !hasWarnings && "Controleer alle items"}
@@ -98,7 +98,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 size={16} className="text-green-base" />
             <span className="font-medium text-green-base">
-              Klaar voor intakeoverdracht
+              Klaar voor plaatsing
             </span>
           </div>
         )}
@@ -114,7 +114,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
           <div className="flex items-center gap-2 text-sm">
             <AlertTriangle size={16} className="text-yellow-base" />
             <span className="font-medium text-yellow-base">
-              Controleer waarschuwingen voordat intake start
+              Controleer waarschuwingen voordat plaatsing start
             </span>
           </div>
         )}

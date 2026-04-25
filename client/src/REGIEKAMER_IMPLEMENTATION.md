@@ -19,7 +19,7 @@ The Regiekamer helps users:
 1. **See which cases need attention** - Immediate visibility of urgent cases
 2. **Understand urgency and risks** - Visual indicators for priority and risk levels
 3. **Take immediate action** - Direct access to decision-making interfaces
-4. **Be guided through care allocation** - Structured workflow from assessment to placement
+4. **Be guided through care allocation** - Structured workflow from Casus to Intake
 
 ---
 
@@ -58,7 +58,7 @@ The system uses color to communicate **meaning**, not decoration:
 | **Amber** (#F59E0B) | Warning / Delay | Delays, moderate urgency, warnings |
 | **Green** (#10B981) | Healthy / Completed | Successful placements, low risk |
 | **Purple** (#8B5CF6) | Actions / Primary | Primary actions, brand color, active states |
-| **Blue** (#3B82F6) | Information / Assessment | Assessment phase, informational states |
+| **Blue** (#3B82F6) | Information / Aanbieder Beoordeling | Aanbieder Beoordeling phase, informational states |
 | **Cyan** (#22D3EE) | Placement | Placement phase indicator |
 
 ---
@@ -71,7 +71,7 @@ The system uses color to communicate **meaning**, not decoration:
 Regiekamer (Dashboard)
 ├── Case Detail Page
 │   ├── Case Information
-│   ├── Phase Indicator (Intake → Assessment → Matching → Placement)
+│   ├── Phase Indicator (Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake)
 │   ├── Work Area (changes per phase)
 │   └── System Intelligence Panel
 │       ├── Risks
@@ -79,7 +79,7 @@ Regiekamer (Dashboard)
 │       └── Similar Cases
 └── Matching View
     ├── Top 3 Provider Matches
-    ├── Match Scores & Explanations
+    ├── Match explanations
     └── Decision Interface
 ```
 
@@ -91,7 +91,7 @@ Case {
   clientName: string            // Anonymized (e.g., "Cliënt A.M.")
   clientAge: number
   region: string                // Municipality
-  status: CaseStatus            // intake | assessment | matching | placement | active | completed | blocked
+  status: CaseStatus            // casus | samenvatting | matching | aanbieder_beoordeling | plaatsing | intake | actief | afgerond | geblokkeerd
   urgency: UrgencyLevel         // critical | high | medium | low
   risk: RiskLevel               // high | medium | low | none
   waitingDays: number
@@ -115,7 +115,7 @@ Case {
 - **Header**: Title, subtitle, search bar, filters
 - **KPI Strip**: 6 operational KPIs
   - Casussen zonder match
-  - Open beoordelingen
+  - Open aanbieder beoordelingen
   - Plaatsingen in behandeling
   - Gemiddelde wachttijd
   - Casussen met hoog risico
@@ -138,14 +138,16 @@ Case {
 **Layout**:
 - **Decision Header**:
   - Case ID, status, urgency, risk badges
-  - Recommendation banner (e.g., "Beoordeling ontbreekt – 3 dagen stilstand")
+  - Recommendation banner (e.g., "Aanbieder Beoordeling ontbreekt – 3 dagen stilstand")
   - Recommended action button
   
 - **Phase Indicator**: Visual stepper showing progress
-  1. Casus (Intake)
-  2. Beoordeling (Assessment)
+  1. Casus
+  2. Samenvatting
   3. Matching
-  4. Plaatsing (Placement)
+  4. Aanbieder Beoordeling
+  5. Plaatsing
+  6. Intake
 
 - **3-Column Layout**:
   - **Left**: Case information, client details, timeline
@@ -168,7 +170,7 @@ Case {
 **Layout**:
 - **Header**: Case summary with requirements
 - **Provider Cards**: Top 3 matches with:
-  - Match score (0-100)
+  - Match explanation
   - Match type badge:
     - 🟢 **Beste match** (Best match)
     - 🟣 **Alternatief** (Alternative)
@@ -218,7 +220,7 @@ Case {
 #### Case Status Badge
 Shows current phase of the case:
 - 🟣 Intake
-- 🔵 Beoordeling (Assessment)
+- 🔵 Aanbieder Beoordeling
 - 🟡 Matching
 - 🔵 Plaatsing (Placement)
 - 🟢 Actief (Active)
@@ -295,14 +297,14 @@ Shows risk level:
 
 ## Mock Data
 
-All case data, providers, assessments, and signals are defined in:
+All case data, providers, aanbieder beoordelingen, and signals are defined in:
 
 **File**: `/lib/casesData.ts`
 
 **Includes**:
 - `mockCases[]` - 8 sample cases with various statuses
 - `mockProviders[]` - 5 healthcare providers
-- `mockAssessments[]` - Assessment records
+- `mockAssessments[]` - Aanbieder Beoordeling records
 - `mockSignals[]` - System alerts
 - `mockPriorityActions[]` - Prioritized tasks
 
@@ -420,7 +422,7 @@ hover:bg-primary/90  /* Hover state */
 4. **Analytics dashboard**: Trends, bottlenecks, performance metrics
 5. **Document management**: Attach and view case documents
 6. **Communication hub**: Integrated messaging with providers
-7. **Calendar integration**: Schedule assessments and meetings
+7. **Calendar integration**: Schedule aanbieder beoordelingen and meetings
 8. **Export capabilities**: Generate reports and exports
 9. **Mobile app**: Native iOS/Android companion
 10. **API integration**: Connect to real healthcare systems

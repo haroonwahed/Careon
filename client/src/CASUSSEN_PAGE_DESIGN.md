@@ -203,7 +203,7 @@ This is the **core decision block** of the page.
 **HEADER:**
 - **Checkbox** (top-left): For bulk selection
 - **Urgency badge**: Color-coded label (URGENT/AANDACHT/NORMAAL/STABIEL)
-- **Status badge**: Workflow stage (Intake/Beoordeling/Matching/Plaatsing)
+- **Status badge**: Workflow stage (Intake/Aanbieder Beoordeling/Matching/Plaatsing)
 - **Wait time indicator**: Days waiting (red if >5 days)
 
 **BODY:**
@@ -255,7 +255,7 @@ background: linear-gradient(
 
 **Types:**
 - `no-match`: AlertTriangle icon - "Geen passende match gevonden"
-- `missing-assessment`: Info icon - "Beoordeling ontbreekt"
+- `missing-aanbieder beoordeling`: Info icon - "Aanbieder Beoordeling ontbreekt"
 - `capacity`: Users icon - "Capaciteitstekort in regio"
 - `delayed`: Clock icon - "Wachttijd te lang"
 
@@ -319,7 +319,7 @@ background: linear-gradient(
 
 ```
 ┌─────────┬─────────────┬─────────┬──────────┬──────────┐
-│ Intake  │ Beoordeling │ Matching│ Plaatsing│ Afgerond │
+│ Intake  │ Aanbieder Beoordeling │ Matching│ Plaatsing│ Afgerond │
 │   (1)   │     (1)     │   (2)   │    (2)   │    (0)   │
 ├─────────┼─────────────┼─────────┼──────────┼──────────┤
 │ [Card]  │   [Card]    │ [Card]  │  [Card]  │   ---    │
@@ -336,7 +336,7 @@ background: linear-gradient(
 
 **Columns:**
 1. **Intake** - New cases entering system
-2. **Beoordeling** - Assessment in progress
+2. **Aanbieder Beoordeling** - Aanbieder Beoordeling in progress
 3. **Matching** - Provider matching active
 4. **Plaatsing** - Placement being confirmed
 5. **Intake afgerond** - Intake complete
@@ -544,7 +544,7 @@ type UrgencyLevel =
   | "stable";   // Green, going well
 
 interface Problem {
-  type: "no-match" | "missing-assessment" | "capacity" | "delayed";
+  type: "no-match" | "missing-aanbieder beoordeling" | "capacity" | "delayed";
   label: string;  // Display text
 }
 ```
@@ -649,7 +649,7 @@ interface CaseTriageCardProps {
 ```
 1. User needs to assign assessor to multiple cases
    
-2. Checks boxes on 3 cases in "Beoordeling" status
+2. Checks boxes on 3 cases in "Aanbieder Beoordeling" status
    → Bulk action bar appears
    → Shows "3 casussen geselecteerd"
    
@@ -995,7 +995,7 @@ analytics.track("view_mode_changed", {
 │ ID    │ Title        │ Status      │
 ├────────────────────────────────────┤
 │ C-001 │ Jeugd 14...  │ Matching    │
-│ C-002 │ Jeugd 11...  │ Beoordeling │
+│ C-002 │ Jeugd 11...  │ Aanbieder Beoordeling │
 │ C-003 │ Jeugd 16...  │ Plaatsing   │
 └────────────────────────────────────┘
 ```

@@ -349,7 +349,7 @@ Items (Auto Layout Vertical, Gap 6px):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ ← 12px → ℹ️ Beoordeling gepland voor 18 april ← 12px →    │
+│ ← 12px → ℹ️ Aanbieder Beoordeling gepland voor 18 april ← 12px →    │
 │    ↑                                                   ↑    │
 │   10px                                                10px  │
 │    ↓                                                   ↓    │
@@ -398,7 +398,7 @@ Text color: #3B82F6
 │ 16px  Validatie                                            │
 │ ↓                                                           │
 │ ↑                                                           │
-│ 12px  ✓ Beoordeling compleet                              │
+│ 12px  ✓ Aanbieder Beoordeling compleet                              │
 │ ↓                                                           │
 │ ↑                                                           │
 │ 8px   ✓ Matching bevestigd                                │

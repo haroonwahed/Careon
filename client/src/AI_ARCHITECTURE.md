@@ -36,7 +36,7 @@
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         WORKFLOW PAGES                              │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Regiekamer → Casussen → Beoordeling → Matching → Plaatsing → Intake│
+│  Regiekamer → Casussen → Aanbieder Beoordeling → Matching → Plaatsing → Intake│
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -68,7 +68,7 @@ if (status === "blocked")
 else if (status === "matching" && assessmentComplete)
   → Action: "Start matching proces"
 
-else if (status === "assessment" && isDelayed)
+else if (status === "aanbieder beoordeling" && isDelayed)
   → Warning: "Neem contact op met beoordelaar"
 
 else

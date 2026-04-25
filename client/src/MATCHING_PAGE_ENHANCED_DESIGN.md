@@ -766,7 +766,7 @@ Score = (Spec × 0.35) + (Cap × 0.25) + (Geo × 0.20) + (Rate × 0.10) + (Resp 
 
 ---
 
-### Scenario 3: Risk Assessment
+### Scenario 3: Risk Aanbieder Beoordeling
 
 ```
 1. User sees risky match (amber border)
@@ -897,11 +897,11 @@ Match calculation runs →
 Top 3 matches displayed
 ```
 
-### From Beoordelingen
+### From Aanbieder Beoordelingen
 
 ```
-Assessment complete →
-"Beoordeling afronden" clicked →
+Aanbieder Beoordeling complete →
+"Aanbieder Beoordeling afronden" clicked →
 Navigate to Matching with case ID →
 Matching algorithm executes
 ```

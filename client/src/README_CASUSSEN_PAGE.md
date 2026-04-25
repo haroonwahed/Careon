@@ -95,7 +95,7 @@ Every card is a **decision block**:
 **Header (Top Row):**
 - ☑️ Selection checkbox
 - Urgency badge (URGENT/AANDACHT/NORMAAL/STABIEL)
-- Status badge (Intake/Beoordeling/Matching/Plaatsing/Afgerond)
+- Status badge (Intake/Aanbieder Beoordeling/Matching/Plaatsing/Afgerond)
 - Wait time (days, red if >5)
 
 **Body:**
@@ -311,9 +311,9 @@ Even if not marked "urgent" yet.
 **Meaning:** No suitable provider found  
 **Action:** Review criteria or escalate
 
-### ℹ️ Beoordeling ontbreekt
-**Meaning:** Assessment not completed  
-**Action:** Schedule assessment
+### ℹ️ Aanbieder Beoordeling ontbreekt
+**Meaning:** Aanbieder Beoordeling not completed  
+**Action:** Schedule aanbieder beoordeling
 
 ### 👥 Capaciteitstekort in regio
 **Meaning:** Not enough providers in region  

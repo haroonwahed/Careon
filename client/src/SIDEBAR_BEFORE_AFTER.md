@@ -33,7 +33,7 @@
 - ❌ Only 3 items in navigation
 - ❌ No workflow representation
 - ❌ Generic "Communicatie" label
-- ❌ Missing critical pages (Casussen, Beoordelingen, Matching, etc.)
+- ❌ Missing critical pages (Casussen, Aanbieder Beoordelingen, Matching, etc.)
 - ❌ No visual hierarchy
 - ❌ Doesn't reflect domain
 
@@ -49,7 +49,7 @@
 │  📁 Casussen                │
 │                             │
 │  WERKFLOW                   │  ← EMPHASIZED
-│  📋 Beoordelingen       (2) │
+│  📋 Aanbieder Beoordelingen       (2) │
 │  🔀 Matching            (3) │
 │  ✅ Plaatsingen         (1) │
 │  👤 Intake                  │
@@ -115,7 +115,7 @@ Users need both the high-level control room AND a detailed case list.
 **After:**
 ```
 WERKFLOW              ← NEW SECTION, EMPHASIZED
-  Beoordelingen (2)   ← NEW: Assessments
+  Aanbieder Beoordelingen (2)   ← NEW: Aanbieder Beoordelingen
   Matching (3)        ← NEW: Provider matching
   Plaatsingen (1)     ← NEW: Placements
   Intake              ← NEW: New case intake
@@ -126,7 +126,7 @@ WERKFLOW              ← NEW SECTION, EMPHASIZED
 This is the **core of the product**. The workflow section represents where 80% of daily work happens. It maps directly to the care coordination process:
 
 ```
-Intake → Beoordeling → Matching → Plaatsing
+Intake → Aanbieder Beoordeling → Matching → Plaatsing
 ```
 
 Visual emphasis (divider + spacing) makes this section stand out as the "engine room" of the system.
@@ -210,7 +210,7 @@ Settings remain in their logical place. Future additions:
 |------|--------|-------|--------|
 | Regiekamer | ChartLine | ChartLine | ✅ Perfect fit |
 | Casussen | - | FolderOpen | NEW: Represents case files |
-| Beoordelingen | - | ClipboardList | NEW: Assessment checklist |
+| Aanbieder Beoordelingen | - | ClipboardList | NEW: Aanbieder Beoordeling checklist |
 | Matching | - | GitMerge | NEW: Matching/branching logic |
 | Plaatsingen | - | CheckCircle2 | NEW: Confirmed placements |
 | Intake | - | UserPlus | NEW: New user intake |
@@ -235,7 +235,7 @@ Settings remain in their logical place. Future additions:
 ### After
 ```typescript
 // Badges tied to workload
-{ id: "beoordelingen", badge: 2 }  // 2 overdue assessments
+{ id: "beoordelingen", badge: 2 }  // 2 overdue aanbieder beoordelingen
 { id: "matching", badge: 3 }       // 3 active matching processes
 { id: "plaatsingen", badge: 1 }    // 1 pending placement
 { id: "notifications", badge: 3 }  // 3 system signals
@@ -256,7 +256,7 @@ Badges now communicate **actionable workload**, not just notification counts.
 | Communicatie | Signalering | More urgent, action-oriented |
 | Berichten | Meldingen | More formal/professional |
 | (Missing) | Casussen | Dutch term for cases |
-| (Missing) | Beoordelingen | Domain-specific assessment term |
+| (Missing) | Aanbieder Beoordelingen | Domain-specific aanbieder beoordeling term |
 | (Missing) | Plaatsingen | Healthcare placement terminology |
 | (Missing) | Zorgaanbieders | Provider terminology |
 | (Missing) | Gemeenten | Municipality (government context) |
@@ -309,7 +309,7 @@ Navigation feels like:
 ### After: "How does work flow?"
 ```
 User thinks:
-"I check Regiekamer → Work on Beoordelingen → 
+"I check Regiekamer → Work on Aanbieder Beoordelingen → 
 Handle Matching → Confirm Plaatsingen"
 
 Navigation feels like:
@@ -390,10 +390,10 @@ Navigation feels like:
 │  1. Open app → REGIE: Regiekamer                   │
 │     See overview, check KPIs                        │
 │                                                     │
-│  2. Notice badge → WERKFLOW: Beoordelingen (2)     │
-│     2 assessments need attention                    │
+│  2. Notice badge → WERKFLOW: Aanbieder Beoordelingen (2)     │
+│     2 aanbieder beoordelingen need attention                    │
 │                                                     │
-│  3. Complete assessments → Beoordelingen (0)       │
+│  3. Complete aanbieder beoordelingen → Aanbieder Beoordelingen (0)       │
 │     Badge clears                                    │
 │                                                     │
 │  4. New signal → SIGNALERING: Signalen (4)         │
@@ -526,7 +526,7 @@ Fully type-safe, no breaking changes.
 
 ### Before
 > "Where do I see all my cases?"
-> "How do I access assessments?"
+> "How do I access aanbieder beoordelingen?"
 > "The navigation is too simple, where are the other features?"
 
 ### After

@@ -92,12 +92,12 @@ Complete type system and mock data:
 ```typescript
 - Case (8 sample cases)
 - Provider (5 healthcare providers)
-- Assessment (2 assessments)
+- Aanbieder Beoordeling (2 aanbieder beoordelingen)
 - SystemSignal (4 system alerts)
 - PriorityAction (4 priority tasks)
 ```
 
-**Statuses**: intake, assessment, matching, placement, active, completed, blocked
+**Statuses**: intake, aanbieder beoordeling, matching, placement, active, completed, blocked
 **Urgency**: critical, high, medium, low
 **Risk**: high, medium, low, none
 
@@ -110,7 +110,7 @@ Complete type system and mock data:
 - 🟡 **Amber**: Warning, delays, medium priority
 - 🟢 **Green**: Success, completed, low risk
 - 🟣 **Purple**: Actions, primary interactions
-- 🔵 **Blue**: Information, assessment phase
+- 🔵 **Blue**: Information, aanbieder beoordeling phase
 
 ### Visual Principles
 1. **Decision-first**: Every screen answers "What should I do next?"
@@ -157,7 +157,7 @@ Back to Regiekamer
 ### 1. Intelligent KPIs
 Not financial metrics, but operational ones:
 - Cases without match
-- Open assessments
+- Open aanbieder beoordelingen
 - Placements in progress
 - Average waiting time
 - High-risk cases

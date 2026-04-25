@@ -112,23 +112,23 @@ export function PlacementPage({
   if (isConfirmed) {
     return (
       <div className="space-y-6">
-        <div className="premium-card p-12 text-center">
-          <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center border-2 careon-alert-success">
-            <PartyPopper size={48} className="text-green-base" />
-          </div>
+      <div className="premium-card p-12 text-center">
+        <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center border-2 careon-alert-success">
+          <PartyPopper size={48} className="text-green-base" />
+        </div>
 
           <h1 className="text-3xl font-bold text-foreground mb-3">
-            Intakeoverdracht gestart
+            Plaatsing bevestigd
           </h1>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
             De casus van <strong className="text-foreground">{caseData.clientName}</strong> is 
             door <strong className="text-foreground">{provider.name}</strong> geaccepteerd.
-            De intake kan nu worden ingepland en opgevolgd vanuit de plaatsingsstap.
+            De intake kan nu worden ingepland vanuit de plaatsingsstap.
           </p>
 
           <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
-              <p className="text-sm text-muted-foreground mb-2">Casus ID</p>
+              <p className="text-sm text-muted-foreground mb-2">Casus-ID</p>
               <p className="text-xl font-bold text-foreground">{caseData.id}</p>
             </div>
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
@@ -137,7 +137,7 @@ export function PlacementPage({
             </div>
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Status</p>
-              <p className="text-lg font-bold text-green-base">Intake gestart</p>
+              <p className="text-lg font-bold text-green-base">Plaatsing bevestigd</p>
             </div>
           </div>
 
@@ -149,7 +149,7 @@ export function PlacementPage({
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde intakefase
+                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde plaatsing en intakeplanning
                 </p>
               </div>
               <div className="flex items-start gap-3">
@@ -169,10 +169,10 @@ export function PlacementPage({
 
           <div className="flex gap-4 justify-center">
             <Button
-              onClick={() => window.location.reload()} // Or navigate to case tracking
+              onClick={onBack}
               className="bg-primary hover:bg-primary/90"
             >
-              Bekijk intakefase
+              Terug naar plaatsingen
             </Button>
             <Button
               onClick={onBack}
@@ -204,7 +204,7 @@ export function PlacementPage({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
-                Provider akkoord ontvangen
+                Aanbieder akkoord ontvangen
               </span>
             </div>
 
@@ -351,7 +351,7 @@ export function PlacementPage({
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={20} className="text-green-base" />
                   <span className="text-sm font-medium text-green-base">
-                    Klaar om intake te starten
+                    Klaar om plaatsing te bevestigen
                   </span>
                 </div>
               ) : hasErrors ? (
@@ -384,7 +384,7 @@ export function PlacementPage({
                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} className="mr-2" />
-                Start intakeoverdracht
+                Bevestig plaatsing
               </Button>
             </div>
           </div>
@@ -398,10 +398,10 @@ export function PlacementPage({
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Start intakeoverdracht
+                  Bevestig plaatsing
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Controleer de details voordat je de intakefase opent
+                  Controleer de details voordat je de plaatsing vastzet
                 </p>
               </div>
               <button
@@ -424,7 +424,7 @@ export function PlacementPage({
                     <p className="font-semibold text-foreground">{provider.name}</p>
                   </div>
                   <div>
-                    <p className="text-muted-foreground mb-1">Match score</p>
+                    <p className="text-muted-foreground mb-1">Matchscore</p>
                     <p className="font-semibold text-green-base">94%</p>
                   </div>
                   <div>
@@ -437,7 +437,7 @@ export function PlacementPage({
               <div className="p-4 rounded-lg border careon-alert-info">
                 <p className="text-sm text-blue-base leading-relaxed">
                   De aanbieder heeft deze match al geaccepteerd. Met deze stap bevestig je
-                  dat de casus doorgaat naar intake en verdere overdracht. Je volgt de voortgang
+                  dat de casus door gaat naar plaatsing en daarna naar intake. Je volgt de voortgang
                   daarna vanuit het plaatsingenoverzicht.
                 </p>
               </div>
@@ -460,12 +460,12 @@ export function PlacementPage({
                 {isConfirming ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                    Intake starten...
+                    Plaatsing bevestigen...
                   </>
                 ) : (
                   <>
                     <CheckCircle2 size={16} className="mr-2" />
-                    Bevestig intakefase
+                    Bevestig plaatsing
                   </>
                 )}
               </Button>

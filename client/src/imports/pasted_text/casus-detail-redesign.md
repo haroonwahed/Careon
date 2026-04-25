@@ -15,7 +15,7 @@ CONTEXT
 The system is case-centric.
 
 All work happens inside a casus:
-Casus → Beoordeling → Matching → Plaatsing → Intake
+Casus → Aanbieder Beoordeling → Matching → Plaatsing → Intake
 
 Users must be able to:
 - understand the current situation
@@ -74,13 +74,13 @@ PAGE STRUCTURE
 Include:
 
 - Casus title
-- Status badge (e.g. “Beoordeling ontbreekt”)
+- Status badge (e.g. “Aanbieder Beoordeling ontbreekt”)
 - Urgency indicator
 - Next action (system recommendation)
 
 Example:
 
-“Beoordeling ontbreekt – 3 dagen stilstand”
+“Aanbieder Beoordeling ontbreekt – 3 dagen stilstand”
 → Aanbevolen: Start beoordeling
 
 Primary CTA:
@@ -101,7 +101,7 @@ LEFT (30-35%) — CONTEXT
   - Urgentie
 
 - Huidige fase indicator (stepper):
-  Casus → Beoordeling → Matching → Plaatsing → Intake
+  Casus → Aanbieder Beoordeling → Matching → Plaatsing → Intake
 
 - Key notes / samenvatting
 
@@ -111,8 +111,8 @@ CENTER (40-45%) — ACTIVE WORK AREA
 
 Dynamic based on phase:
 
-If Beoordeling:
-- structured assessment form
+If Aanbieder Beoordeling:
+- structured aanbieder beoordeling form
 
 If Matching:
 - top 3 provider cards
@@ -158,7 +158,7 @@ TIMELINE
 Visual vertical timeline:
 
 - Casus aangemaakt
-- Beoordeling afgerond
+- Aanbieder Beoordeling afgerond
 - Matching uitgevoerd
 - Plaatsing bevestigd
 - Intake gepland

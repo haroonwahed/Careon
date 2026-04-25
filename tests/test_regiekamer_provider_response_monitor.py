@@ -124,8 +124,8 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         response = self.client.get(reverse('careon:provider_response_monitor'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Provider Response Monitor')
-        self.assertContains(response, 'Actiequeue providerreacties')
+        self.assertContains(response, 'Providerreactie monitor')
+        self.assertContains(response, 'Actiequeue aanbiederreacties')
         self.assertContains(response, 'Open plaatsing')
         self.assertContains(response, f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing")
 
@@ -172,15 +172,15 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         response = self.client.get(reverse('careon:provider_response_monitor'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Requires Immediate Action')
+        self.assertContains(response, 'Directe actie vereist')
         self.assertContains(response, 'Casus Escalatie Blok')
         self.assertContains(response, 'SLA FORCED_ACTION')
-        self.assertContains(response, 'Owner:')
+        self.assertContains(response, 'Eigenaar:')
         self.assertContains(response, 'Regievoerder')
-        self.assertContains(response, 'Her-match of expliciete override')
-        self.assertContains(response, 'SLA breaches')
-        self.assertContains(response, 'Escalations required')
-        self.assertContains(response, 'Forced actions')
+        self.assertContains(response, 'Volgende beste actie:')
+        self.assertContains(response, 'SLA-overschrijdingen')
+        self.assertContains(response, 'Escalatie vereist')
+        self.assertContains(response, 'Afgedwongen acties')
 
     def test_monitor_row_recommendation_for_forced_action_is_critical(self):
         forced_intake = self._create_case('Casus Forced Urgentie')
@@ -275,10 +275,10 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         response = self.client.get(reverse('careon:provider_response_monitor'), {'priority_mode': '1'})
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'priority mode actief')
+        self.assertContains(response, 'prioriteitsstand actief')
         self.assertContains(response, 'SLA FORCED_ACTION')
         self.assertContains(response, 'SLA OVERDUE')
-        self.assertContains(response, 'Requires Immediate Action')
+        self.assertContains(response, 'Directe actie vereist')
 
     def test_monitor_excludes_accepted_and_completed_case_items(self):
         accepted_intake = self._create_case('Casus Geaccepteerd')

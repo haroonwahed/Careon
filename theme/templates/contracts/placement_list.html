@@ -45,12 +45,36 @@
                         </a>
                         {% if placement.intake %}<div class="item-meta">{{ placement.intake.get_urgency_display }}</div>{% endif %}
                     </td>
-                    <td>{{ placement.selected_provider.name|default:placement.proposed_provider.name|default:"—" }}</td>
+                    <td>
+                        {% if placement.selected_provider %}
+                            {{ placement.selected_provider.name }}
+                        {% elif placement.proposed_provider %}
+                            {{ placement.proposed_provider.name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
                     <td>{{ placement.get_care_form_display|default:"—" }}</td>
                     <td>{{ placement.start_date|date:"d-m-Y"|default:"—" }}</td>
                     <td>
                         <span class="badge-sm {% if placement.status == 'APPROVED' %}ds-stage-placement{% elif placement.status == 'IN_REVIEW' %}ds-stage-assessment{% elif placement.status == 'REJECTED' %}badge-red{% else %}badge-gray{% endif %}">{{ placement.get_status_display }}</span>
                         <div class="item-meta">Fase: {{ row.phase_label }}</div>
+                        {% if row.stall_reason %}
+                        <div class="item-meta">{{ row.stall_reason }}</div>
+                        {% endif %}
+                        <div class="item-meta"><strong>Volgende beste actie:</strong> {{ row.recommended_action.label }}</div>
+                        {% if row.recommended_action.reason %}
+                        <div class="item-meta">{{ row.recommended_action.reason }}</div>
+                        {% endif %}
+                        {% if row.impact_summary.text %}
+                        <div class="item-meta">{{ row.impact_summary.text }}</div>
+                        {% endif %}
+                        {% if row.escalation_recommended %}
+                        <div class="item-meta">Escalatie aanbevolen</div>
+                        {% if row.escalation_reason %}
+                        <div class="item-meta">{{ row.escalation_reason }}</div>
+                        {% endif %}
+                        {% endif %}
                     </td>
                     <td class="ds-cell-right">
                         <a href="{% url 'careon:placement_detail' placement.pk %}" class="btn btn-ghost">Openen</a>

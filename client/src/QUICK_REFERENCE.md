@@ -31,7 +31,7 @@ import { AanbevolenActie } from "@/components/ai";
 
 <AanbevolenActie
   title="Start matching proces"
-  explanation="Beoordeling is compleet. 3 matches gevonden."
+  explanation="Aanbieder Beoordeling is compleet. 3 matches gevonden."
   actionLabel="Start matching"
   confidence="high"
   onAction={() => handleAction()}
@@ -85,7 +85,7 @@ import { SystemInsight } from "@/components/ai";
 
 <SystemInsight
   type="success" // "info" | "warning" | "success" | "blocked" | "suggestion"
-  message="Beoordeling gepland voor 18 april"
+  message="Aanbieder Beoordeling gepland voor 18 april"
 />
 ```
 

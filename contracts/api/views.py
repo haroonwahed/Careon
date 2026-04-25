@@ -6,12 +6,13 @@ import json
 from datetime import date
 
 from django.http import JsonResponse
+from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q, Count
-from django.urls import reverse
 
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
 from contracts.forms import CaseIntakeProcessForm
@@ -21,9 +22,16 @@ from contracts.models import (
     Document, AuditLog, Client, ProviderProfile,
     MunicipalityConfiguration, RegionalConfiguration, CaseIntakeProcess, RegionType,
 )
-from contracts.tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
+from contracts.tenancy import (
+    get_scoped_object_or_404,
+    get_user_organization,
+    scope_queryset_for_organization,
+    set_organization_on_instance,
+)
 from contracts.provider_workspace import build_provider_workspace_summary
 from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
+from contracts.views import _assign_provider_to_intake
+from contracts.navigation import SPA_DASHBOARD_URL
 
 
 def _coerce_coordinate(value, *, minimum, maximum):
@@ -218,15 +226,7 @@ def case_detail_api(request, contract_id=None, case_id=None):
             return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
 
         organization = get_user_organization(request.user)
-        queryset = scope_queryset_for_organization(CareCase.objects.all(), organization)
-
-        try:
-            case = queryset.get(id=record_id)
-        except CareCase.DoesNotExist:
-            case = None
-
-        if not case:
-            return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+        case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=record_id)
 
         return JsonResponse(_build_case_data(case))
 
@@ -254,10 +254,6 @@ def cases_bulk_update_api(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
-
-contract_detail_api = case_detail_api
-contracts_bulk_update_api = cases_bulk_update_api
 
 
 def _serialize_simple_choices(field):
@@ -471,6 +467,190 @@ def case_detail_string_fallback_api(request, case_ref):
     return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
 
 
+def _assessment_decision_payload(*, case_record, intake, assessment):
+    decision_key = 'draft'
+    if assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
+        decision_key = 'matching'
+    elif assessment.assessment_status == CaseAssessment.AssessmentStatus.NEEDS_INFO:
+        decision_key = 'needs_info'
+    elif assessment.assessment_status == CaseAssessment.AssessmentStatus.UNDER_REVIEW:
+        decision_key = 'under_review'
+
+    return {
+        'caseId': str(case_record.pk),
+        'assessmentId': str(assessment.pk),
+        'form': {
+            'decision': decision_key,
+            'urgency': intake.urgency,
+            'zorgtype': intake.zorgvorm_gewenst or intake.preferred_care_form,
+            'shortDescription': assessment.notes or intake.assessment_summary or '',
+        },
+        'summary': {
+            'title': intake.title,
+            'urgency': intake.urgency,
+            'matchingReady': bool(assessment.matching_ready),
+        },
+        'hints': {
+            'suggestedUrgency': {
+                'value': intake.urgency,
+                'label': intake.get_urgency_display(),
+            },
+        },
+        'consequences': [
+            'matching',
+            'placement',
+        ],
+    }
+
+
+@login_required
+@require_http_methods(["GET", "POST"])
+def assessment_decision_api(request, case_id):
+    organization = get_user_organization(request.user)
+    case_record = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+    intake = get_scoped_object_or_404(
+        CaseIntakeProcess.objects.select_related('organization', 'contract'),
+        organization,
+        contract=case_record,
+    )
+    assessment = getattr(intake, 'case_assessment', None)
+    if assessment is None:
+        assessment = CaseAssessment.objects.create(
+            due_diligence_process=intake,
+            assessment_status=CaseAssessment.AssessmentStatus.DRAFT,
+            matching_ready=False,
+            assessed_by=request.user,
+        )
+
+    if request.method == 'GET':
+        return JsonResponse(_assessment_decision_payload(case_record=case_record, intake=intake, assessment=assessment))
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Ongeldige JSON payload.'}, status=400)
+
+    decision = (payload.get('decision') or '').strip().lower()
+    short_description = (payload.get('shortDescription') or '').strip()
+    urgency = (payload.get('urgency') or intake.urgency or '').strip()
+    complexity = (payload.get('complexity') or intake.complexity or '').strip()
+    zorgtype = (payload.get('zorgtype') or intake.zorgvorm_gewenst or intake.preferred_care_form or '').strip()
+    constraints = payload.get('constraints') or []
+
+    if urgency:
+        intake.urgency = urgency
+    if complexity:
+        intake.complexity = complexity
+    if zorgtype:
+        intake.zorgvorm_gewenst = zorgtype
+        intake.preferred_care_form = zorgtype
+
+    if decision == 'matching':
+        assessment.assessment_status = CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING
+        assessment.matching_ready = True
+        assessment.reason_not_ready = ''
+        intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
+        case_record.case_phase = CareCase.CasePhase.MATCHING
+        if short_description:
+            assessment.notes = short_description
+        if isinstance(constraints, list):
+            assessment.risk_signals = ','.join(str(item).strip() for item in constraints if str(item).strip())
+    elif decision == 'needs_info':
+        assessment.assessment_status = CaseAssessment.AssessmentStatus.NEEDS_INFO
+        assessment.matching_ready = False
+        if short_description:
+            assessment.reason_not_ready = short_description
+        assessment.notes = short_description or assessment.notes
+    else:
+        assessment.assessment_status = CaseAssessment.AssessmentStatus.UNDER_REVIEW
+        assessment.matching_ready = False
+        if short_description:
+            assessment.notes = short_description
+
+    intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'updated_at'])
+    case_record.save(update_fields=['case_phase', 'updated_at'])
+    assessment.assessed_by = request.user
+    assessment.save()
+
+    return JsonResponse({
+        'ok': True,
+        'nextPage': 'matching' if decision == 'matching' else 'assessment',
+        'caseId': str(case_record.pk),
+        'assessmentId': str(assessment.pk),
+        'assessment': _assessment_decision_payload(case_record=case_record, intake=intake, assessment=assessment),
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def matching_action_api(request, case_id):
+    organization = get_user_organization(request.user)
+    intake = get_scoped_object_or_404(
+        CaseIntakeProcess.objects.select_related('contract'),
+        organization,
+        pk=case_id,
+    )
+
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        payload = {}
+
+    action = (payload.get('action') or '').strip().lower()
+    if action != 'assign':
+        return JsonResponse({'ok': False, 'error': 'Unsupported action.'}, status=400)
+
+    provider = get_object_or_404(
+        Client.objects.filter(organization=organization, status='ACTIVE'),
+        pk=payload.get('provider_id'),
+    )
+    try:
+        placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='matching_api')
+    except ValidationError as exc:
+        return JsonResponse({'ok': False, 'error': '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.'}, status=400)
+    return JsonResponse({
+        'ok': True,
+        'nextPage': 'casussen',
+        'providerId': str(provider.pk),
+        'placementId': str(placement.pk),
+        'caseId': str(intake.pk),
+    })
+
+
+@login_required
+@require_http_methods(["GET"])
+def case_placement_detail_api(request, case_id):
+    organization = get_user_organization(request.user)
+    intake = get_scoped_object_or_404(
+        CaseIntakeProcess.objects.select_related('contract'),
+        organization,
+        pk=case_id,
+    )
+    placement = (
+        PlacementRequest.objects.filter(due_diligence_process=intake)
+        .select_related('proposed_provider', 'selected_provider')
+        .order_by('-updated_at')
+        .first()
+    )
+
+    if placement is None:
+        return JsonResponse({'caseId': str(intake.pk), 'placement': {}}, status=200)
+
+    return JsonResponse({
+        'caseId': str(intake.pk),
+        'placement': {
+            'id': str(placement.pk),
+            'status': placement.status,
+            'providerResponseStatus': placement.provider_response_status,
+            'providerResponseReasonCode': placement.provider_response_reason_code,
+            'proposedProviderId': str(placement.proposed_provider_id) if placement.proposed_provider_id else '',
+            'selectedProviderId': str(placement.selected_provider_id) if placement.selected_provider_id else '',
+            'careForm': placement.care_form,
+            'decisionNotes': placement.decision_notes,
+        },
+    })
+
+
 @csrf_exempt
 @login_required
 @require_http_methods(["POST"])
@@ -498,6 +678,7 @@ def intake_create_api(request):
         form.instance.start_date = date.today()
 
     intake = form.save()
+    case_record = intake.ensure_case_record(created_by=request.user)
     log_action(
         request.user,
         'CREATE',
@@ -511,7 +692,8 @@ def intake_create_api(request):
         'ok': True,
         'id': intake.pk,
         'title': intake.title,
-        'redirect_url': f"{reverse('dashboard')}?page=casussen&case={intake.pk}",
+        'case_id': str(case_record.pk) if case_record else '',
+        'redirect_url': f"{SPA_DASHBOARD_URL}&page=casussen&case={case_record.pk if case_record else intake.pk}",
     })
 
 
@@ -567,8 +749,7 @@ def assessments_api(request):
 def placements_api(request):
     organization = get_user_organization(request.user)
     try:
-        intakes = CaseIntakeProcess.objects.filter(organization=organization)
-        qs = PlacementRequest.objects.filter(due_diligence_process__in=intakes).select_related(
+        qs = PlacementRequest.objects.for_organization(organization).select_related(
             'due_diligence_process', 'proposed_provider', 'selected_provider'
         )
         q = request.GET.get('q', '')

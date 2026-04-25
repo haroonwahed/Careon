@@ -1,5 +1,8 @@
 # Transformation Summary: Vintsy → Regiekamer
 
+Historical transformation summary.
+This document records the migration story and is no longer the active product specification.
+
 ## Executive Summary
 
 Successfully transformed a complete e-commerce SaaS platform (Vintsy) into a **healthcare coordination control room (Regiekamer)** - a decision-first system for managing youth care cases across municipalities, care coordinators, and youth care organizations.
@@ -19,7 +22,7 @@ Successfully transformed a complete e-commerce SaaS platform (Vintsy) into a **h
 
 The operational nerve center showing:
 - **Search & Filters**: Cases, clients, providers, regions, status, urgency
-- **6 KPI Cards**: Domain-specific metrics (cases without match, open assessments, placements in progress, avg wait time, high-risk cases, capacity shortages)
+- **6 KPI Cards**: Domain-specific metrics (cases without match, open aanbieder beoordelingen, placements in progress, avg wait time, high-risk cases, capacity shortages)
 - **Active Cases Table**: Sorted by urgency, clickable to drill down
 - **System Signals Panel**: Critical alerts (capacity, delays, risks)
 - **Priority Actions Panel**: Deadline-driven next actions
@@ -40,7 +43,7 @@ Comprehensive case management interface with:
 - Suggested action based on case state
 
 **Phase Indicator:**
-- Visual progress stepper: Casus → Beoordeling → Matching → Plaatsing
+- Visual progress stepper: Casus → Aanbieder Beoordeling → Matching → Plaatsing
 
 **Three-Column Layout:**
 
@@ -50,7 +53,7 @@ Comprehensive case management interface with:
 - Timeline (event history with completion states)
 
 **Center Column - Work Area:**
-- **Assessment Work Area**: Contact assessor, update status, add notes
+- **Aanbieder Beoordeling Work Area**: Contact assessor, update status, add notes
 - **Matching Work Area**: View matches, start matching process
 - **Blocked Work Area**: Escalate case, add escalation notes
 - **Placement Work Area**: Follow up with provider, set start date
@@ -105,9 +108,9 @@ Each provider card shows:
 ### 🧩 Component Library (8 Reusable Components)
 
 #### Status & Indicators
-1. **CaseStatusBadge** - Phase indicator (intake/assessment/matching/placement/active/completed/blocked)
+1. **CaseStatusBadge** - Phase indicator (intake/aanbieder beoordeling/matching/placement/active/completed/blocked)
 2. **UrgencyBadge** - Urgency level (critical/high/medium/low) with semantic colors
-3. **RiskBadge** - Risk assessment (high/medium/low/none)
+3. **RiskBadge** - Risk aanbieder beoordeling (high/medium/low/none)
 
 #### Information Display
 4. **CareKPICard** - Domain KPI cards with urgency-aware coloring
@@ -126,7 +129,7 @@ Each provider card shows:
 
 **Core Types:**
 - `Case` - Healthcare case with client, status, urgency, risk
-- `Assessment` - Case evaluation with assessor and timeline
+- `Aanbieder Beoordeling` - Case evaluation with assessor and timeline
 - `Provider` - Care provider with capacity and specializations
 - `Placement` - Provider assignment for case
 - `SystemSignal` - System-wide alerts
@@ -175,7 +178,7 @@ Each provider card shows:
 
 **Casussen (Cases):**
 - 📋 Alle casussen
-- 🛡️ Beoordelingen
+- 🛡️ Aanbieder Beoordelingen
 - 👥 Matching
 - ➕ Plaatsingen
 
@@ -435,7 +438,7 @@ Clear separation between areas.
 ### Phase 4: Integration
 - [ ] External provider systems
 - [ ] Municipal databases
-- [ ] Assessment tools integration
+- [ ] Aanbieder Beoordeling tools integration
 - [ ] Communication platform sync
 
 ---

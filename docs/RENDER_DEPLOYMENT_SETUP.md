@@ -62,6 +62,10 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 2. Verify `DATABASE_URL` is properly set.
 3. Redeploy the service.
 
+For a field-by-field checklist of the production environment values, see:
+
+- [`docs/RENDER_ENV_FIX_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/RENDER_ENV_FIX_CHECKLIST.md)
+
 ### Migrations Not Running
 
 - If `DATABASE_URL` is empty, migrations are skipped at startup.

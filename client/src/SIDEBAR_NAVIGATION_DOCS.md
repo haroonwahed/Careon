@@ -340,7 +340,7 @@ const getActiveItem = (currentRoute: string) => {
 ```
 Count: Number of pending actions
 Source: Sum of:
-  - Incomplete assessments
+  - Incomplete aanbieder beoordelingen
   - Unconfirmed placements
   - Overdue tasks
   - Blocked cases requiring action

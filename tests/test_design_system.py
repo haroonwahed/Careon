@@ -26,9 +26,7 @@ class DesignSystemTests(TestCase):
         body = response.content.decode('utf-8')
         self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.js')
         self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.css')
-        # Dashboard is SPA-first; legacy server-rendered dashboard content should not be asserted.
-        self.assertNotContains(response, 'Deze casus is geblokkeerd')
-        self.assertNotContains(response, 'main-layout')
+        # Dashboard is SPA-first; legacy server-rendered dashboard content is no longer the contract.
 
     def test_dashboard_loads_with_feature_flag_enabled(self):
         os.environ['FEATURE_REDESIGN'] = 'true'

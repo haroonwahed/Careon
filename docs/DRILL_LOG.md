@@ -82,3 +82,30 @@ Result:
 Conclusion:
 
 - rollback from `0006` to `0005` remains unsafe on populated tenant-owned data without a dedicated downgrade migration
+
+## 2026-04-24: Release Check Validation
+
+- Environment: local development workspace
+- Scope: final release-confidence checks for workflow, dashboard, tenancy, and terminology
+
+### Checks Run
+
+Commands:
+
+```bash
+./.venv/bin/python manage.py check
+./.venv/bin/python scripts/terminology_guard.py
+./.venv/bin/python manage.py test tests.test_cross_tenant_isolation tests.test_dashboard_shell tests.test_intake_assessment_matching_flow tests.test_regiekamer_provider_response_monitor tests.test_placements_operational_contract_regression -v 1
+```
+
+Result:
+
+- success
+- `manage.py check` passed with no issues
+- terminology guard passed with no banned legacy terms
+- 96 targeted tests passed across tenant isolation, dashboard shell, workflow flow, regiekamer monitor, and placement regression suites
+
+Conclusion:
+
+- local release-confidence gate is green
+- remaining go-live work is operational/process validation on staging and production, not code-level release blockers in the checked surfaces

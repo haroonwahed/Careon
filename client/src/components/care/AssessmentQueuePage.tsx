@@ -27,8 +27,8 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordelingen</h1>
-        <p className="text-sm text-muted-foreground">Operationele queue van casussen die nog beoordeeld moeten worden.</p>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen voor matching</h1>
+        <p className="text-sm text-muted-foreground">Operationele queue van casussen die klaar zijn om doorgezet te worden.</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -45,10 +45,10 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         </select>
       </div>
 
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Beoordelingen laden…</div>}
+      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
       {!loading && error && (
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Beoordelingen konden niet geladen worden</p>
+          <p className="text-base font-semibold text-foreground">Casussen konden niet geladen worden</p>
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
         </div>
@@ -56,8 +56,8 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
 
       {!loading && !error && queueCases.length === 0 && (
         <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen beoordelingen in de queue</p>
-          <p className="text-sm text-muted-foreground">Beoordelingen starten vanuit een casus zodra intake compleet is.</p>
+          <p className="text-lg font-semibold text-foreground">Geen casussen klaar voor matching</p>
+          <p className="text-sm text-muted-foreground">Casussen verschijnen hier zodra de samenvatting compleet is en doorgezet kan worden.</p>
           <Button onClick={() => onNavigateToCasussen?.()}>Ga naar casussen</Button>
         </div>
       )}
@@ -90,7 +90,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
                 <p className="text-sm text-foreground">{item.daysInCurrentPhase} dagen</p>
                 <div className="text-right">
                   <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={() => onCaseClick?.(item.id)}>
-                    Open beoordeling
+                    Open casus
                     <ArrowRight size={14} />
                   </Button>
                 </div>
@@ -107,7 +107,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
           </div>
           <div>
             <p className="font-semibold text-foreground mb-1">Werk vanuit de casus</p>
-            <p className="text-sm text-muted-foreground">Elke beoordeling is een stap in de casusworkflow en niet een los object.</p>
+            <p className="text-sm text-muted-foreground">Elke stap is onderdeel van dezelfde casusworkflow en niet een los object.</p>
           </div>
         </div>
       </div>

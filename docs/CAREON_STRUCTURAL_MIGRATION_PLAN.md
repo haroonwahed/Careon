@@ -36,7 +36,7 @@ Recommended steady-state mapping:
 | --- | --- | --- |
 | `Contract` | `CareCase` | Chosen. Matches current user-facing case semantics and avoids generic `Record` naming. |
 | `Matter` | `CareConfiguration` | Chosen. Avoids collision with generic framework/config terminology. |
-| `DueDiligenceProcess` | `CaseIntakeProcess` | Reflects intake and assessment flow. |
+| `DueDiligenceProcess` | `CaseIntakeProcess` | Reflects intake and aanbieder beoordeling flow. |
 | `DueDiligenceTask` | `IntakeTask` | Narrower operational meaning. |
 | `DueDiligenceRisk` | `CaseRiskSignal` | Matches current UI wording. |
 | `TrademarkRequest` | `PlacementRequest` | Current runtime usage already behaves this way. |

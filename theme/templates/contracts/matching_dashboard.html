@@ -10,9 +10,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
     </div>
     <h2 class="mrd-empty__title">Geen casussen gereed voor matching</h2>
-    <p class="mrd-empty__body">Er zijn momenteel geen beoordelingen met status "Goedgekeurd voor matching".</p>
-    <p class="casus-impact-summary">Werk beoordelingen af om matching weer mogelijk te maken.</p>
-    <a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordelingen</a>
+    <p class="mrd-empty__body">Er zijn momenteel geen Aanbieder Beoordelingen met status "Goedgekeurd voor matching".</p>
+    <p class="casus-impact-summary">Werk Aanbieder Beoordelingen af om matching weer mogelijk te maken.</p>
+    <a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open Aanbieder Beoordelingen</a>
   </div>
   {% else %}
 
@@ -129,14 +129,14 @@
         <h3 class="mrd-panel-card__title">Casuscontext</h3>
         <dl class="mrd-field-list">
           <div class="mrd-field-row"><dt>Urgentie</dt><dd>{{ focus_row.intake.get_urgency_display }}</dd></div>
-          <div class="mrd-field-row"><dt>Beoordeling</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
+          <div class="mrd-field-row"><dt>Aanbieder Beoordeling</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
           <div class="mrd-field-row"><dt>Categorie</dt><dd>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</dd></div>
           <div class="mrd-field-row"><dt>Regio</dt><dd>{% firstof focus_row.intake.preferred_region.region_name focus_row.intake.region focus_row.intake.region_name "Niet opgegeven" %}</dd></div>
           <div class="mrd-field-row"><dt>Wachttijd</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.avg_wait_days != None %}{{ focus_row.suggestions.0.avg_wait_days }} d{% else %}Onbekend{% endif %}</dd></div>
           <div class="mrd-field-row"><dt>Capaciteit</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.free_slots != None %}{{ focus_row.suggestions.0.free_slots }} vrije plekken{% else %}Onbekend{% endif %}</dd></div>
         </dl>
         <div class="mrd-side-rail__actions">
-          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-ghost btn-sm">Open beoordeling</a>
+          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-ghost btn-sm">Open Aanbieder Beoordeling</a>
           <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost btn-sm">Open casus</a>
         </div>
       </section>

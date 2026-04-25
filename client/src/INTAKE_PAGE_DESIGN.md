@@ -48,7 +48,7 @@ NOT:
 │         │  Timeline        │          │
 │ (Sticky)│                  │ (Sticky) │
 │         │  Probleemschets  │          │
-│         │  Beoordeling     │Intake    │
+│         │  Aanbieder Beoordeling     │Intake    │
 │         │  Aanpak          │Status    │
 │         │  Aandachtspunten │          │
 │         │                  │Next      │
@@ -192,15 +192,15 @@ Quick reference panel with essential case information, always visible during scr
 
 ---
 
-### Section 2: Beoordeling Samenvatting
+### Section 2: Aanbieder Beoordeling Samenvatting
 
-**Purpose:** Summary of the assessment decision and reasoning.
+**Purpose:** Summary of the aanbieder beoordeling decision and reasoning.
 
 ```
 ┌────────────────────────────────────────┐
-│ • Beoordeling samenvatting             │
+│ • Aanbieder Beoordeling samenvatting             │
 │                                        │
-│ Beoordeling uitgevoerd op 15 april    │
+│ Aanbieder Beoordeling uitgevoerd op 15 april    │
 │ 2026 door Lisa de Vries (Jeugdzorg-   │
 │ specialist). Conclusie: intensieve     │
 │ ambulante begeleiding noodzakelijk...  │
@@ -210,11 +210,11 @@ Quick reference panel with essential case information, always visible during scr
 **Design:**
 - Blue background (subtle, 5% opacity)
 - Blue border
-- Assessment date + assessor name
+- Aanbieder Beoordeling date + assessor name
 - Key conclusions highlighted
 
 **Content:**
-- Assessment date
+- Aanbieder Beoordeling date
 - Assessor name + role
 - Conclusion summary
 - Urgency reasoning
@@ -346,8 +346,8 @@ Quick reference panel with essential case information, always visible during scr
 │ │   Nieuwe melding van school...      │
 │ │   Door: Emma Jansen                 │
 │ │                                      │
-│ ✅  Beoordeling afgerond 15 apr, 14:45│
-│ │   Assessment compleet...            │
+│ ✅  Aanbieder Beoordeling afgerond 15 apr, 14:45│
+│ │   Aanbieder Beoordeling compleet...            │
 │ │   Door: Lisa de Vries               │
 │ │                                      │
 │ 🔄  Matching uitgevoerd  16 apr, 10:15│
@@ -362,7 +362,7 @@ Quick reference panel with essential case information, always visible during scr
 
 **Event Types:**
 - **Created** (blue): Case creation
-- **Assessed** (purple): Assessment completion
+- **Assessed** (purple): Aanbieder Beoordeling completion
 - **Matched** (amber): Matching process
 - **Placed** (green): Placement confirmation
 - **Intake** (primary): Intake events
@@ -578,7 +578,7 @@ Quick reference panel with essential case information, always visible during scr
 2. **IntakeBriefing.tsx**
    - Core briefing sections
    - Probleemschets
-   - Beoordeling samenvatting
+   - Aanbieder Beoordeling samenvatting
    - Aanbevolen aanpak
    - Aandachtspunten
 
@@ -616,7 +616,7 @@ Quick reference panel with essential case information, always visible during scr
 1. Provider opens intake page
 2. Reads top header: "Toegewezen aan jou"
 3. Scans left panel: High urgency, 14 years old
-4. Reads briefing: Problem description, assessment
+4. Reads briefing: Problem description, aanbieder beoordeling
 5. Notes critical warning: "Start binnen 3 werkdagen"
 6. Clicks "Plan intake afspraak"
 7. Selects date/time: 19 april, 14:00
@@ -633,7 +633,7 @@ Quick reference panel with essential case information, always visible during scr
 ```
 1. Provider opens page
 2. Reads full briefing (all 4 sections)
-3. Downloads assessment report
+3. Downloads aanbieder beoordeling report
 4. Reviews school documentation
 5. Checks contact info for municipality
 6. Reads timeline to understand history
@@ -671,7 +671,7 @@ Quick reference panel with essential case information, always visible during scr
 |-------|---------|-------|
 | **Purple** | Ownership / Primary | Top header, status, primary actions |
 | **Green** | Complete / Positive | Recommendations, completed steps, checkmarks |
-| **Blue** | Information | Assessment summary, info notes, documents |
+| **Blue** | Information | Aanbieder Beoordeling summary, info notes, documents |
 | **Amber** | Warning | Medium warnings, in-progress status |
 | **Red** | Critical | High urgency, critical notes, blocking issues |
 | **Gray** | Not Started | Default status, inactive steps |
@@ -793,7 +793,7 @@ Esc         → Close modal
 
 ### Completeness
 
-- All assessment data present
+- All aanbieder beoordeling data present
 - All documents available
 - Full contact information
 - Clear action steps

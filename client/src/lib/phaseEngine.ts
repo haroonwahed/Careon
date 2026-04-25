@@ -15,7 +15,7 @@
  *
  *   Gemeente:   casus aanmaken → matching uitvoeren → aanbieder kiezen → verzoek versturen
  *   Aanbieder:  verzoek ontvangen → beoordelen → accepteren/afwijzen/wachtlijst → intake plannen
- *   Municipality-side "Beoordelingen" is REMOVED as a workflow gate.
+ *   Municipality-side provider review is REMOVED as a workflow gate.
  */
 
 // ─── Phase & Status types ─────────────────────────────────────────────────────
@@ -239,7 +239,7 @@ export const ALL_PHASES: { id: CasusPhase; label: string; shortLabel: string }[]
   { id: "casus",               label: "Casus",                 shortLabel: "Casus"      },
   { id: "matching",            label: "Matching",              shortLabel: "Matching"   },
   { id: "aanbieder_selectie",  label: "Aanbieder selecteren",  shortLabel: "Selectie"   },
-  { id: "provider_beoordeling",label: "Aanbiederbeoordeling",  shortLabel: "Beoordeling"},
+  { id: "provider_beoordeling",label: "Aanbiederbeoordeling",  shortLabel: "Aanbieder Beoordeling"},
   { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: "Intake"     },
   { id: "afgerond",            label: "Afgerond",              shortLabel: "Afgerond"   },
 ];

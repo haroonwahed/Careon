@@ -2,6 +2,7 @@ from typing import Optional
 
 from django.contrib.auth import get_user_model
 from django.db.models import Model, QuerySet
+from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 
 from .models import Organization, OrganizationMembership
@@ -66,13 +67,23 @@ def get_user_organization(user: Optional[User]) -> Optional[Organization]:
 
 def scope_queryset_for_organization(queryset: QuerySet, organization: Optional[Organization]) -> QuerySet:
     if organization is None:
-        return queryset
+        return queryset.none()
+
+    scoped_method = getattr(queryset, 'for_organization', None)
+    if callable(scoped_method):
+        scoped_queryset = scoped_method(organization)
+        if scoped_queryset is not None:
+            return scoped_queryset
 
     model_cls: type[Model] = queryset.model
     field_names = {f.name for f in model_cls._meta.get_fields()}
     if 'organization' in field_names:
         return queryset.filter(organization=organization)
     return queryset
+
+
+def get_scoped_object_or_404(queryset: QuerySet, organization: Optional[Organization], **lookup):
+    return get_object_or_404(scope_queryset_for_organization(queryset, organization), **lookup)
 
 
 def set_organization_on_instance(instance: Model, organization: Optional[Organization]) -> None:

@@ -23,7 +23,7 @@
 │                    REGIEKAMER DASHBOARD                          │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  KPI Strip: 6 Metric Cards                               │  │
-│  │  • Cases w/o match  • Assessments  • Placements          │  │
+│  │  • Cases w/o match  • Aanbieder Beoordelingen  • Placements          │  │
 │  │  • Wait time        • High risk    • Capacity issues     │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
@@ -52,7 +52,7 @@
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │  Phase Stepper                                            │  │
-│  │  [1 Casus] → [2 Beoordeling] → [3 Matching] → [4 Plaatsing]│
+│  │  [1 Casus] → [2 Aanbieder Beoordeling] → [3 Matching] → [4 Plaatsing]│
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
 │  ┌──────────┐  ┌──────────────┐  ┌─────────────────────────┐  │
@@ -61,7 +61,7 @@
 │  │ Client   │  │  WORK AREA   │  │  System Intelligence    │  │
 │  │ Info     │  │  (dynamic)   │  │                         │  │
 │  │          │  │              │  │  • Risks                │  │
-│  │ Case     │  │ Assessment   │  │  • AI Suggestions       │  │
+│  │ Case     │  │ Aanbieder Beoordeling   │  │  • AI Suggestions       │  │
 │  │ Details  │  │    OR        │  │    (with confidence)    │  │
 │  │          │  │ Matching     │  │  • Similar Cases        │  │
 │  │ Timeline │  │    OR        │  │                         │  │
@@ -136,7 +136,7 @@ App.tsx
 │   │   └── Berichten
 │   ├── Casussen section
 │   │   ├── Alle casussen
-│   │   ├── Beoordelingen
+│   │   ├── Aanbieder Beoordelingen
 │   │   ├── Matching
 │   │   └── Plaatsingen
 │   └── Analytics section
@@ -173,7 +173,7 @@ App.tsx
     │     ├── Three-column layout
     │     │   ├── Left: Info
     │     │   ├── Center: Work Area
-    │     │   │   ├── AssessmentWorkArea (if status=assessment)
+    │     │   │   ├── AssessmentWorkArea (if status=aanbieder beoordeling)
     │     │   │   ├── MatchingWorkArea (if status=matching)
     │     │   │   ├── BlockedWorkArea (if status=blocked)
     │     │   │   └── PlacementWorkArea (if status=placement)
@@ -204,7 +204,7 @@ App.tsx
 │ • mockProviders│  5 providers
 │ • mockSignals  │  4 system alerts
 │ • mockPriority │  4 priority actions
-│ • mockAssessmnt│  2 assessments
+│ • mockAssessmnt│  2 aanbieder beoordelingen
 └────────┬───────┘
          │
          │ imported by
@@ -290,7 +290,7 @@ handleConfirmMatch(providerId)
 Context         → Color      → Usage
 ──────────────────────────────────────────────────────────────
 Critical/Urgent → Red 500    → Blocked cases, high risk
-Warning/Delay   → Amber 500  → Overdue assessments, warnings
+Warning/Delay   → Amber 500  → Overdue aanbieder beoordelingen, warnings
 Success/Healthy → Green 500  → Completed, available, good state
 Primary/Action  → Purple     → Buttons, links, brand
 Info/Neutral    → Blue 500   → Information, standard state
@@ -375,7 +375,7 @@ External System          → Integration Point
 ─────────────────────────────────────────────────────────────
 Municipal Database       → Case data sync
 Provider Management Sys  → Provider info, availability
-Assessment Tools         → Assessment status, results
+Aanbieder Beoordeling Tools         → Aanbieder Beoordeling status, results
 Communication Platform   → Messages, notifications
 Reporting/BI Tools       → Analytics export
 Authentication Service   → User login, permissions

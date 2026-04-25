@@ -11,6 +11,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import login
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
@@ -80,6 +81,7 @@ from .governance import (
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
+from .navigation import SPA_DASHBOARD_URL
 # Temporary blocker: active matching flow still depends on legacy_backend module.
 # Keep until a non-legacy matching service is introduced and migrated here.
 from .provider_matching_service import MatchContext, MatchEngine
@@ -1150,6 +1152,10 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
 
 
 def _assign_provider_to_intake(*, request, intake, provider, source):
+    can_match, match_blocker = intake.can_enter_matching()
+    if not can_match:
+        raise ValidationError(match_blocker)
+
     placement, created = PlacementRequest.objects.get_or_create(
         due_diligence_process=intake,
         defaults={
@@ -1166,6 +1172,9 @@ def _assign_provider_to_intake(*, request, intake, provider, source):
         if not placement.care_form:
             placement.care_form = intake.preferred_care_form
         placement.status = PlacementRequest.Status.IN_REVIEW
+        allowed, blocker = placement.can_transition_to_status(PlacementRequest.Status.IN_REVIEW)
+        if not allowed:
+            raise ValidationError(blocker)
         placement.save(update_fields=['proposed_provider', 'selected_provider', 'care_form', 'status', 'updated_at'])
 
     if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
@@ -1488,7 +1497,8 @@ def sync_case_flow_state(case, user=None):
                 due_diligence_process=process,
                 proposed_provider=case.client,
                 selected_provider=case.client,
-                status=PlacementRequest.Status.APPROVED,
+                status=PlacementRequest.Status.IN_REVIEW,
+                provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
                 care_form=process.preferred_care_form,
                 start_date=case.start_date,
                 decision_notes='Automatisch gekoppeld vanuit de casusflow.',
@@ -1501,15 +1511,19 @@ def sync_case_flow_state(case, user=None):
             if placement.selected_provider_id != case.client_id:
                 placement.selected_provider = case.client
                 placement_updates.append('selected_provider')
-            if placement.status != PlacementRequest.Status.APPROVED:
-                placement.status = PlacementRequest.Status.APPROVED
-                placement_updates.append('status')
             if not placement.care_form and process.preferred_care_form:
                 placement.care_form = process.preferred_care_form
                 placement_updates.append('care_form')
             if not placement.start_date and case.start_date:
                 placement.start_date = case.start_date
                 placement_updates.append('start_date')
+            if placement.provider_response_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+                if placement.status != PlacementRequest.Status.APPROVED:
+                    placement.status = PlacementRequest.Status.APPROVED
+                    placement_updates.append('status')
+            elif placement.status == PlacementRequest.Status.APPROVED:
+                placement.status = PlacementRequest.Status.IN_REVIEW
+                placement_updates.append('status')
             if placement_updates:
                 placement.save(update_fields=placement_updates)
 
@@ -1573,8 +1587,6 @@ def _render_spa_shell_response():
 
 
 def index(request):
-    if request.user.is_authenticated:
-        return redirect('dashboard')
     return render(request, 'landing.html')
 
 
@@ -2560,7 +2572,7 @@ def organization_team(request):
     organization = getattr(request, 'organization', None) or get_user_organization(request.user)
     if not organization:
         messages.error(request, 'Geen actieve organisatie gevonden.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     if not can_manage_organization(request.user, organization):
         return HttpResponseForbidden('Alleen organisatie-eigenaren of beheerders kunnen teamuitnodigingen beheren.')
@@ -2871,7 +2883,7 @@ def organization_activity(request):
     organization = getattr(request, 'organization', None) or get_user_organization(request.user)
     if not organization:
         messages.error(request, 'Geen actieve organisatie gevonden.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     if not can_manage_organization(request.user, organization):
         return HttpResponseForbidden('Alleen organisatie-eigenaren of beheerders kunnen organisatieactiviteit bekijken.')
@@ -2897,7 +2909,7 @@ def organization_activity_export(request):
     organization = getattr(request, 'organization', None) or get_user_organization(request.user)
     if not organization:
         messages.error(request, 'Geen actieve organisatie gevonden.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     if not can_manage_organization(request.user, organization):
         return HttpResponseForbidden('Alleen organisatie-eigenaren of beheerders kunnen organisatieactiviteit exporteren.')
@@ -2932,18 +2944,18 @@ def accept_organization_invite(request, token):
 
     if invitation.status != OrganizationInvitation.Status.PENDING:
         messages.error(request, 'Deze uitnodiging is niet meer geldig.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     if invitation.expires_at and invitation.expires_at <= timezone.now():
         invitation.status = OrganizationInvitation.Status.EXPIRED
         invitation.save(update_fields=['status'])
         messages.error(request, 'Deze uitnodiging is verlopen.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     user_email = (request.user.email or '').strip().lower()
     if not user_email or user_email != invitation.email.lower():
         messages.error(request, f'Deze uitnodiging is voor {invitation.email}. Log in met dat e-mailadres.')
-        return redirect('dashboard')
+        return redirect(SPA_DASHBOARD_URL)
 
     membership, _ = OrganizationMembership.objects.get_or_create(
         organization=invitation.organization,
@@ -3005,7 +3017,7 @@ def reports_dashboard(request):
 
     if org:
         cases_qs = CaseIntakeProcess.objects.filter(organization=org)
-        indications_qs = PlacementRequest.objects.filter(due_diligence_process__organization=org)
+        indications_qs = PlacementRequest.objects.for_organization(org)
         risks_qs = CareSignal.objects.for_organization(org)
         provider_profiles_qs = ProviderProfile.objects.filter(client__organization=org)
         waittime_qs = TrustAccount.objects.filter(provider__organization=org).select_related('provider')
@@ -3533,8 +3545,8 @@ def toggle_redesign(request):
         os.environ['FEATURE_REDESIGN'] = new_value
         from config.feature_flags import cache
         cache.clear()
-        return redirect(request.META.get('HTTP_REFERER', 'dashboard'))
-    return redirect('dashboard')
+        return redirect(request.META.get('HTTP_REFERER', SPA_DASHBOARD_URL))
+    return redirect(SPA_DASHBOARD_URL)
 
 
 @login_required
@@ -4846,17 +4858,22 @@ def case_matching_action(request, pk):
             Client.objects.filter(organization=org, status='ACTIVE'),
             pk=request.POST.get('provider_id'),
         )
-        provider_profiles = (
-            ProviderProfile.objects.filter(client__organization=org, client__status='ACTIVE')
-            .select_related('client')
-            .prefetch_related('target_care_categories', 'served_regions')
-        )
-        suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
-        recommended_value, recommendation_context, adaptive_flags = build_matching_recommendation_payload(
-            suggestions,
-            limit=3,
-        )
-        placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='case_detail')
+        try:
+            provider_profiles = (
+                ProviderProfile.objects.filter(client__organization=org, client__status='ACTIVE')
+                .select_related('client')
+                .prefetch_related('target_care_categories', 'served_regions')
+            )
+            suggestions = _build_matching_suggestions_for_intake(intake, provider_profiles, limit=5)
+            recommended_value, recommendation_context, adaptive_flags = build_matching_recommendation_payload(
+                suggestions,
+                limit=3,
+            )
+            placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='case_detail')
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
         log_case_decision_event(
             case_id=intake.pk,
             placement_id=placement.pk,
@@ -5112,6 +5129,11 @@ def case_provider_response_action(request, pk):
             messages.error(request, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
+        can_match, match_blocker = intake.can_enter_matching()
+        if not can_match:
+            messages.error(request, match_blocker or 'Casus kan niet terug naar matching.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
         existing = placement.decision_notes or ''
         stamped_note = f"[{now.strftime('%d-%m-%Y %H:%M')}] Her-match gestart vanuit providerreactie-orchestratie."
         placement.status = PlacementRequest.Status.REJECTED
@@ -5352,6 +5374,11 @@ def case_placement_action(request, pk):
         messages.error(request, 'Ongeldige plaatsingsstatus.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
+    allowed, blocker = placement.can_transition_to_status(status)
+    if not allowed:
+        messages.error(request, blocker or 'Deze plaatsing kan nog niet naar de gevraagde status.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
     update_fields = ['updated_at']
     changes = {'status': status}
 
@@ -5383,6 +5410,32 @@ def case_placement_action(request, pk):
         changes=changes,
         request=request,
     )
+    provider_id = placement.selected_provider_id or placement.proposed_provider_id
+    if provider_id and status in {PlacementRequest.Status.APPROVED, PlacementRequest.Status.REJECTED}:
+        log_case_decision_event(
+            case_id=intake.pk,
+            placement_id=placement.pk,
+            event_type=(
+                CaseDecisionLog.EventType.PROVIDER_SELECTED
+                if status == PlacementRequest.Status.APPROVED
+                else CaseDecisionLog.EventType.REMATCH_TRIGGERED
+            ),
+            recommendation_context={
+                'placement_status': status,
+                'case_id': intake.pk,
+                'placement_id': placement.pk,
+            },
+            user_action='approve_placement' if status == PlacementRequest.Status.APPROVED else 'reject_placement',
+            actor_user_id=request.user.id,
+            action_source='case_detail',
+            provider_id=provider_id,
+            override_type='placement_confirmation' if status == PlacementRequest.Status.APPROVED else 'placement_rejection',
+            actual_value={
+                'status': status,
+                'note_present': bool(note),
+            },
+            optional_reason=note or None,
+        )
     messages.success(request, 'Plaatsing bijgewerkt vanuit de casuswerkruimte.')
     return _redirect_to_safe_next_or_default(request, next_fallback)
 
@@ -5844,11 +5897,12 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         documents = Document.objects.filter(contract=case_record).order_by('-created_at')[:5] if case_record else Document.objects.none()
 
         assessment_href = reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}) if assessment else f"{reverse('careon:assessment_create')}?intake={intake.pk}"
-        assessment_action_label = 'Open beoordeling' if assessment else 'Beoordeling starten'
+        assessment_action_label = 'Open aanbieder beoordeling' if assessment else 'Aanbieder Beoordeling starten'
         assessment_status_label = assessment.get_assessment_status_display() if assessment else 'Nog niet gestart'
 
         matching_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
-        matching_status_label = 'Klaar voor matching' if intake.status == CaseIntakeProcess.ProcessStatus.MATCHING else 'Wacht op matching'
+        matching_allowed, matching_blocker = intake.can_enter_matching()
+        matching_status_label = 'Klaar voor matching' if matching_allowed else f'Wacht op beoordeling: {matching_blocker}'
 
         placement_href = reverse('careon:placement_detail', kwargs={'pk': placement.pk}) if placement else reverse('careon:matching_dashboard')
         placement_action_label = 'Open plaatsing' if placement else 'Start via matching'
@@ -5871,6 +5925,12 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'href': reverse('careon:case_list'),
                 'help': 'Je kunt deze casus bekijken, maar niet wijzigen. Neem contact op met een beheerder.',
             }
+        elif not matching_allowed:
+            next_action = {
+                'label': 'Rond beoordeling af',
+                'href': assessment_href,
+                'help': matching_blocker,
+            }
         elif not placement:
             next_action = {
                 'label': 'Start matching',
@@ -5884,14 +5944,15 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'help': 'Werk de plaatsingsbeslissing af en start opvolging.',
             }
 
+        matching_allowed, matching_blocker = intake.can_enter_matching()
         matching_requirements = [
             {
-                'label': 'Casus heeft een aanbieder nodig',
-                'ok': bool(placement and placement.selected_provider_id),
+        'label': 'Aanbieder Beoordeling gereed voor matching',
+                'ok': matching_allowed,
             },
         ]
-        ready_for_matching = True  # No longer gated on assessment
-        matching_missing = []
+        ready_for_matching = matching_allowed
+        matching_missing = [matching_blocker] if not matching_allowed else []
 
         placement_requirements = [
             {
@@ -5899,8 +5960,12 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
                 'ok': bool(placement and placement.selected_provider_id),
             },
             {
-                'label': 'Plaatsing staat in beoordeling of bevestigd',
-                'ok': bool(placement and placement.status in [PlacementRequest.Status.IN_REVIEW, PlacementRequest.Status.APPROVED]),
+                'label': 'Aanbieder heeft acceptatie bevestigd',
+                'ok': bool(placement and placement.provider_response_status == PlacementRequest.ProviderResponseStatus.ACCEPTED),
+            },
+            {
+                'label': 'Plaatsing is bevestigd',
+                'ok': bool(placement and placement.status == PlacementRequest.Status.APPROVED),
             },
         ]
         ready_for_placement = all(item['ok'] for item in placement_requirements)
@@ -6048,11 +6113,11 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         region_municipality_label = case_record.service_region if case_record and case_record.service_region else 'Niet ingevuld'
 
         if assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
-            assessment_interpretation = 'Beoordeling staat op gereed voor matching.'
+            assessment_interpretation = 'Aanbieder Beoordeling staat op gereed voor matching.'
         elif assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.NEEDS_INFO:
             assessment_interpretation = 'Aanvullende informatie nodig voordat matching kan starten.'
         elif assessment:
-            assessment_interpretation = 'Beoordeling loopt; werk status bij om volgende stap vrij te maken.'
+            assessment_interpretation = 'Aanbieder Beoordeling loopt; werk status bij om volgende stap vrij te maken.'
         else:
             assessment_interpretation = 'Start de beoordeling om door te gaan naar matching.'
 
@@ -6094,7 +6159,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
 
         flow_label_map = {
             'aanvraag': 'Aanvraag',
-            'beoordeling': 'Beoordeling',
+            'beoordeling': 'Aanbieder Beoordeling',
             'matching': 'Matching',
             'intake_aanbieder': 'Intake aanbieder',
             'plaatsing': 'Plaatsing',
@@ -6240,11 +6305,6 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     form_class = CaseIntakeProcessForm
     template_name = 'contracts/intake_form.html'
 
-    def dispatch(self, request, *args, **kwargs):
-        if request.method == 'GET':
-            return _render_spa_shell_response()
-        return super().dispatch(request, *args, **kwargs)
-
     def render_to_response(self, context, **response_kwargs):
         response = super().render_to_response(context, **response_kwargs)
         response['X-Careon-Template-Version'] = 'intake_form'
@@ -6281,8 +6341,8 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     def get_success_url(self):
         case_record = getattr(self.object, 'contract', None)
         if case_record:
-            return f"{reverse('dashboard')}?page=casussen&case={case_record.pk}"
-        return f"{reverse('dashboard')}?page=casussen"
+            return f"/static/spa/?view=dashboard&page=casussen&case={case_record.pk}"
+        return "/static/spa/?view=dashboard&page=casussen"
 
 
 class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -6334,7 +6394,7 @@ class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
 # FIX #2: Wire CaseAssessment into care workflow
 
 class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
-    """List all case assessments (beoordelingen) for matching."""
+    """List all aanbieder beoordelingen for matching."""
     model = CaseAssessment
     template_name = 'contracts/assessment_list.html'
     context_object_name = 'assessments'
@@ -6461,7 +6521,7 @@ class CaseAssessmentListView(TenantScopedQuerysetMixin, LoginRequiredMixin, List
 
 
 class CaseAssessmentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView):
-    """Show details of a specific assessment."""
+    """Show details of a specific aanbieder beoordeling."""
     model = CaseAssessment
     template_name = 'contracts/assessment_detail.html'
     context_object_name = 'assessment'
@@ -6511,7 +6571,7 @@ class CaseAssessmentDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, De
 
 
 class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
-    """Create a new assessment for a care intake."""
+    """Create a new aanbieder beoordeling for a care intake."""
     model = CaseAssessment
     form_class = CaseAssessmentForm
     template_name = 'contracts/assessment_form.html'
@@ -6535,8 +6595,8 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': False,
-            'page_title': 'Nieuwe beoordeling',
-            'button_text': 'Beoordeling aanmaken',
+            'page_title': 'Nieuwe aanbieder beoordeling',
+            'button_text': 'Aanbieder Beoordeling aanmaken',
         })
         return ctx
 
@@ -6555,7 +6615,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
             form.instance.assessment_status = CaseAssessment.AssessmentStatus.DRAFT
         response = super().form_valid(form)
         log_action(self.request.user, 'CREATE', 'CaseAssessment', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, 'Beoordeling aangemaakt. Volgende stap: matching.')
+        messages.success(self.request, 'Aanbieder Beoordeling aangemaakt. Volgende stap: matching.')
         return response
 
     def get_success_url(self):
@@ -6563,7 +6623,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
 
 
 class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
-    """Update an existing assessment."""
+    """Update an existing aanbieder beoordeling."""
     model = CaseAssessment
     form_class = CaseAssessmentForm
     template_name = 'contracts/assessment_form.html'
@@ -6587,7 +6647,7 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': True,
-            'page_title': 'Beoordeling bewerken',
+            'page_title': 'Aanbieder Beoordeling bewerken',
             'button_text': 'Wijzigingen opslaan',
         })
         return ctx
@@ -6595,7 +6655,7 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
     def form_valid(self, form):
         response = super().form_valid(form)
         log_action(self.request.user, 'UPDATE', 'CaseAssessment', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, 'Beoordeling bijgewerkt.')
+        messages.success(self.request, 'Aanbieder Beoordeling bijgewerkt.')
         return response
 
     def get_success_url(self):
@@ -6867,7 +6927,7 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
 
     def get_queryset(self):
         org = self.get_organization()
-        qs = PlacementRequest.objects.filter(due_diligence_process__organization=org).select_related(
+        qs = PlacementRequest.objects.for_organization(org).select_related(
             'due_diligence_process', 'proposed_provider', 'selected_provider'
         ).order_by('-updated_at')
 
@@ -6888,14 +6948,14 @@ class PlacementRequestListView(TenantScopedQuerysetMixin, LoginRequiredMixin, Li
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         org = self.get_organization()
-        all_qs = PlacementRequest.objects.filter(due_diligence_process__organization=org)
+        all_qs = PlacementRequest.objects.for_organization(org)
         provider_response_copy = {
-            'pending': 'Pending: reactie uitstaand',
-            'rejected': 'Rejected: aanbieder afgewezen',
-            'waitlist': 'Waitlist: plaatsing vertraagd',
-            'no_capacity': 'No capacity: geen plek beschikbaar',
-            'accepted': 'Accepted: aanbieder bevestigd',
-            'needs_info': 'Needs info: aanvullende info gevraagd',
+            'pending': 'In afwachting: reactie uitstaand',
+            'rejected': 'Afgewezen: aanbieder heeft afgewezen',
+            'waitlist': 'Wachtlijst: plaatsing vertraagd',
+            'no_capacity': 'Geen capaciteit: geen plek beschikbaar',
+            'accepted': 'Geaccepteerd: aanbieder bevestigd',
+            'needs_info': 'Aanvullende info nodig',
         }
         editable_placement_ids = set()
         stalled_count = 0
@@ -7030,7 +7090,7 @@ class PlacementRequestDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
 
     def get_queryset(self):
         org = self.get_organization()
-        return PlacementRequest.objects.filter(due_diligence_process__organization=org).select_related(
+        return PlacementRequest.objects.for_organization(org).select_related(
             'due_diligence_process', 'proposed_provider', 'selected_provider'
         )
 
@@ -7053,7 +7113,7 @@ class PlacementRequestUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, 
 
     def get_queryset(self):
         org = self.get_organization()
-        return PlacementRequest.objects.filter(due_diligence_process__organization=org)
+        return PlacementRequest.objects.for_organization(org)
 
     def dispatch(self, request, *args, **kwargs):
         placement = self.get_object()
@@ -7201,7 +7261,7 @@ class CaseScopedDocumentCreateView(_CaseScopedIntakeMixin, DocumentCreateView):
         event = (self.request.GET.get('event') or '').strip()
         phase_label = {
             'aanvraag': 'Aanvraag',
-            'beoordeling': 'Beoordeling',
+            'beoordeling': 'Aanbieder Beoordeling',
             'matching': 'Matching',
             'intake_aanbieder': 'Intake aanbieder',
             'plaatsing': 'Plaatsing',

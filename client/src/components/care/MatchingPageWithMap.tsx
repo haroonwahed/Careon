@@ -231,7 +231,7 @@ export function MatchingPageWithMap({
                     <p className="text-sm text-muted-foreground mt-1">{bestMatch.provider.type}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Match score</p>
+                    <p className="text-xs text-muted-foreground">Matchscore</p>
                     <p className="text-3xl font-bold text-green-base">{bestMatch.score}%</p>
                   </div>
                 </div>
@@ -319,7 +319,7 @@ export function MatchingPageWithMap({
                         <p className="text-sm text-muted-foreground">{item.provider.type}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Match score</p>
+                        <p className="text-xs text-muted-foreground">Matchscore</p>
                         <p className="text-xl font-bold text-foreground">{item.score}%</p>
                       </div>
                     </div>

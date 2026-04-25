@@ -1,5 +1,8 @@
 # Careon Zorgregie - Complete Workflow Summary
 
+Historical workflow summary.
+This document is kept as a reference for the previous implementation pass, not as the active product specification.
+
 ## 🎯 System Overview
 
 **Careon Zorgregie** is a complete **healthcare coordination platform** for Dutch municipalities and youth care organizations that transforms care allocation from a manual, fragmented process into a **streamlined, AI-powered decision-to-execution workflow**.
@@ -13,8 +16,8 @@
 ```
 ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
 │             │     │             │     │             │     │             │     │             │
-│ Regiekamer  │ --> │   Casus     │ --> │ Beoordeling │ --> │  Matching   │ --> │  Plaatsing  │
-│ (Dashboard) │     │  (Triage)   │     │(Assessment) │     │  (AI Rec)   │     │  (Handover) │
+│ Regiekamer  │ --> │   Casus     │ --> │ Aanbieder Beoordeling │ --> │  Matching   │ --> │  Plaatsing  │
+│ (Dashboard) │     │  (Triage)   │     │(Aanbieder Beoordeling) │     │  (AI Rec)   │     │  (Handover) │
 │             │     │             │     │             │     │             │     │             │
 │   ✅ DONE   │     │   ✅ DONE   │     │   ✅ DONE   │     │   ✅ DONE   │     │   ✅ DONE   │
 └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘     └─────────────┘
@@ -77,9 +80,9 @@
 
 ---
 
-### 3️⃣ **Beoordelingen (Guided Assessment)**
+### 3️⃣ **Aanbieder Beoordelingen (Guided Aanbieder Beoordeling)**
 
-**Purpose:** 3-step structured assessment flow with AI-powered suggestions.
+**Purpose:** 3-step structured aanbieder beoordeling flow with AI-powered suggestions.
 
 **Key Features:**
 - Step 1: Probleemanalyse
@@ -91,15 +94,15 @@
 - Save as draft
 
 **User Actions:**
-- Complete assessment form
+- Complete aanbieder beoordeling form
 - Review AI suggestions
 - Set urgency level
 - Finalize decision
 - Navigate to matching
 
-**Time on Page:** 5-10 minutes (assessment mode)
+**Time on Page:** 5-10 minutes (aanbieder beoordeling mode)
 
-**Output:** Complete assessment record → Triggers matching
+**Output:** Complete aanbieder beoordeling record → Triggers matching
 
 ---
 
@@ -153,7 +156,7 @@
   - "Waarom deze aanbieder?"
   - Trade-offs (pros/cons)
 - **Validation checklist**:
-  - ✅ Beoordeling compleet
+  - ✅ Aanbieder Beoordeling compleet
   - ✅ Vereiste gegevens aanwezig
   - ✅ Risico's geïdentificeerd
   - ✅ Matching bevestigd
@@ -192,7 +195,7 @@
 - **Ownership banner**: "Deze casus is aan jou toegewezen ✓"
 - **Intake briefing** (4 sections):
   1. **Probleemschets**: What's going on
-  2. **Beoordeling samenvatting**: Assessment conclusion
+  2. **Aanbieder Beoordeling samenvatting**: Aanbieder Beoordeling conclusion
   3. **Aanbevolen aanpak**: Suggested care approach (step-by-step)
   4. **Belangrijke aandachtspunten**: Risks and warnings (color-coded)
 - **Documents section**: All case files with preview/download
@@ -252,12 +255,12 @@
    
    Time: 20 seconds
 
-3. BEOORDELINGEN (Assessment)
+3. BEOORDELINGEN (Aanbieder Beoordeling)
    - Step 1: Fills in problem analysis
    - Step 2: Defines care needs
    - Step 3: Sets urgency to HIGH
    - AI suggests trauma-informed care
-   - Clicks "Beoordeling afronden"
+   - Clicks "Aanbieder Beoordeling afronden"
    
    Time: 7 minutes
 
@@ -294,10 +297,10 @@
    - Sees: "Deze casus is aan jou toegewezen"
    - Reads full briefing:
      * Probleemschets
-     * Beoordeling samenvatting
+     * Aanbieder Beoordeling samenvatting
      * Aanbevolen aanpak
      * Critical warning: "Start binnen 3 werkdagen"
-   - Downloads assessment report
+   - Downloads aanbieder beoordeling report
    - Clicks "Plan intake afspraak"
    - Modal opens
    - Selects: Tuesday 14:00, On-site
@@ -325,7 +328,7 @@
 | **Amber (#F59E0B)** | Warning / Medium | Medium urgency, caution notes, risky matches |
 | **Green (#22C55E)** | Stable / Positive | Low urgency, success states, best matches, completed items |
 | **Purple (#8B5CF6)** | Actions / Primary | CTAs, selected items, ownership indicators |
-| **Blue (#3B82F6)** | Information | Insights, neutral data, assessment summaries |
+| **Blue (#3B82F6)** | Information | Insights, neutral data, aanbieder beoordeling summaries |
 
 **Principle:** Colors have meaning, not decoration.
 
@@ -415,7 +418,7 @@
 | Metric | Target | Actual |
 |--------|--------|--------|
 | Case triage time | <10s | 5s |
-| Assessment completion | <15m | 7m |
+| Aanbieder Beoordeling completion | <15m | 7m |
 | Matching decision | <2m | 15s |
 | Placement validation | <2m | 45s |
 | Intake planning | <5m | 3m |
@@ -498,7 +501,7 @@ Provider {
   specializations: string[]
 }
 
-Assessment {
+Aanbieder Beoordeling {
   caseId: string
   problemAnalysis: object
   careNeeds: object
@@ -537,7 +540,7 @@ Intake {
 
 **Before (Manual Process):**
 - Case triage: 1-2 hours
-- Assessment: 2-4 days (scheduling + execution)
+- Aanbieder Beoordeling: 2-4 days (scheduling + execution)
 - Matching: 3-5 days (research + calls)
 - Placement: 1-2 days (negotiations)
 - Intake planning: 1-3 days (scheduling)
@@ -545,7 +548,7 @@ Intake {
 
 **After (Careon Zorgregie):**
 - Case triage: 5 seconds
-- Assessment: 7 minutes
+- Aanbieder Beoordeling: 7 minutes
 - Matching: 15 seconds
 - Placement: 45 seconds
 - Intake planning: 3 minutes
@@ -580,7 +583,7 @@ Intake {
 - **AI-powered matching**: Better outcomes (78% success rate vs 62% manual)
 - **Explainability**: Full transparency in decisions
 - **Compliance**: Automatic audit trail
-- **Standardization**: Consistent assessment framework
+- **Standardization**: Consistent aanbieder beoordeling framework
 
 ---
 
@@ -595,7 +598,7 @@ Intake {
 
 ### Phase 3: Collaboration
 
-- **Multi-user workflow**: Peer review of assessments
+- **Multi-user workflow**: Peer review of aanbieder beoordelingen
 - **Provider communication**: In-app messaging
 - **Family portal**: Client visibility into process
 - **Escalation workflows**: Supervisor intervention
@@ -623,7 +626,7 @@ Intake {
 ```
 ✅ Regiekamer (Dashboard)       - Production Ready
 ✅ Casussen (Triage)             - Production Ready
-✅ Beoordelingen (Assessment)    - Production Ready
+✅ Aanbieder Beoordelingen (Aanbieder Beoordeling)    - Production Ready
 ✅ Matching (AI Recommendation)  - Production Ready
 ✅ Plaatsing (Controlled Handover) - Production Ready
 ✅ Intake (Professional Briefing)  - Production Ready

@@ -1,5 +1,8 @@
 # Regiekamer - Healthcare Coordination Control Room
 
+Historical implementation reference.
+This document describes an earlier iteration of the Regiekamer experience and is kept for context only.
+
 ## Overview
 
 This system has been transformed from an e-commerce platform into a **Regiekamer** (Control Room) - a healthcare coordination decision system used by:
@@ -92,7 +95,7 @@ This is the most critical screen in the system.
   - Recommended action banner (urgent/warning/action/normal)
   
 - **Phase Indicator**
-  - Visual stepper: Casus → Beoordeling → Matching → Plaatsing → Intake
+  - Visual stepper: Casus → Aanbieder Beoordeling → Matching → Plaatsing → Intake
   
 - **Main Content (3 columns)**:
   - **Left**: Case information
@@ -100,7 +103,7 @@ This is the most critical screen in the system.
     - Case details
     - Timeline
   - **Center**: Active work area (changes per phase)
-    - Assessment work area
+    - Aanbieder Beoordeling work area
     - Matching work area
     - Blocked work area
     - Placement work area
@@ -144,7 +147,7 @@ Provider matching decision interface.
 
 1. **CaseStatusBadge** (`/components/care/CaseStatusBadge.tsx`)
    - Displays case phase status
-   - Colors: intake, assessment, matching, placement, active, completed, blocked
+   - Colors: intake, aanbieder beoordeling, matching, placement, active, completed, blocked
 
 2. **UrgencyBadge** (`/components/care/UrgencyBadge.tsx`)
    - Shows urgency level
@@ -185,7 +188,7 @@ Provider matching decision interface.
 ### Core Types
 
 ```typescript
-type CaseStatus = "intake" | "assessment" | "matching" | "placement" | "active" | "completed" | "blocked";
+type CaseStatus = "intake" | "aanbieder beoordeling" | "matching" | "placement" | "active" | "completed" | "blocked";
 type UrgencyLevel = "critical" | "high" | "medium" | "low";
 type RiskLevel = "high" | "medium" | "low" | "none";
 ```
@@ -193,7 +196,7 @@ type RiskLevel = "high" | "medium" | "low" | "none";
 ### Main Entities
 
 1. **Case** - Healthcare case
-2. **Assessment** - Case assessment/evaluation
+2. **Aanbieder Beoordeling** - Case aanbieder beoordeling/evaluation
 3. **Provider** - Care provider (aanbieder)
 4. **Placement** - Provider placement for a case
 5. **SystemSignal** - System-wide alerts
@@ -210,7 +213,7 @@ type RiskLevel = "high" | "medium" | "low" | "none";
 
 ### Casussen (Cases)
 - 📋 **Alle casussen** (All cases)
-- 🛡️ **Beoordelingen** (Assessments)
+- 🛡️ **Aanbieder Beoordelingen** (Aanbieder Beoordelingen)
 - 👥 **Matching** (Provider matching)
 - ➕ **Plaatsingen** (Placements)
 
@@ -231,7 +234,7 @@ type RiskLevel = "high" | "medium" | "low" | "none";
    - Reviews case information and system intelligence
    
 3. **Takes action based on phase:**
-   - **Assessment phase**: Contact assessor, update status
+   - **Aanbieder Beoordeling phase**: Contact assessor, update status
    - **Matching phase**: Click "Start matching"
    - **Blocked phase**: Escalate case
    - **Placement phase**: Follow up with provider

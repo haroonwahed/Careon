@@ -27,15 +27,17 @@ function urgencyClasses(urgency: "critical" | "warning" | "normal" | "stable") {
 function primaryActionLabel(phase: string) {
   switch (phase) {
     case "intake":
-      return "Start beoordeling";
+      return "Start matching";
     case "beoordeling":
-      return "Beoordeling hervatten";
+      return "Start matching";
     case "matching":
       return "Start matching";
     case "plaatsing":
       return "Bevestig plaatsing";
+    case "provider_beoordeling":
+      return "Open plaatsing";
     default:
-      return "Bekijk plaatsing";
+      return "Bekijk intake";
   }
 }
 
@@ -65,15 +67,15 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
   }
 
   const handlePrimaryAction = () => {
-    if (workflowCase.phase === "matching") {
+    if (workflowCase.phase === "matching" || workflowCase.phase === "intake" || workflowCase.phase === "beoordeling") {
       onStartMatching(workflowCase.id);
       return;
     }
-    if (workflowCase.phase === "plaatsing" || workflowCase.phase === "afgerond") {
+    if (workflowCase.phase === "plaatsing" || workflowCase.phase === "afgerond" || workflowCase.phase === "provider_beoordeling") {
       onOpenWorkflow("plaatsingen");
       return;
     }
-    onOpenWorkflow("beoordelingen");
+    onOpenWorkflow("matching");
   };
 
   return (
@@ -121,7 +123,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
         <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-6">
           <div className="space-y-6">
             <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Casus summary</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Casus samenvatting</h3>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="text-muted-foreground">Cliënt</p>
@@ -148,17 +150,25 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
             </section>
 
             <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Beoordeling</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Aanbieder Beoordeling</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Status</span>
-                  <span className="font-medium text-foreground">{workflowCase.phase === "intake" ? "Nog niet gestart" : workflowCase.phase === "provider_beoordeling" ? "Lopend" : "Afgerond"}</span>
+                  <span className="font-medium text-foreground">
+                    {workflowCase.phase === "provider_beoordeling"
+                      ? "Lopend"
+                      : workflowCase.phase === "plaatsing"
+                        ? "Klaar voor bevestiging"
+                        : workflowCase.phase === "afgerond"
+                          ? "Afgerond"
+                          : "Nog niet gestart"}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Wachttijd</span>
                   <span className="font-medium text-foreground">{workflowCase.daysInCurrentPhase} dagen</span>
                 </div>
-                <p className="text-muted-foreground">De beoordeling stuurt door naar matching zodra de zorgvraag en urgentie bevestigd zijn.</p>
+                <p className="text-muted-foreground">De samenvatting stuurt door naar matching zodra de casus compleet is en de basisinformatie klopt.</p>
               </div>
             </section>
 
@@ -213,7 +223,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
             </section>
 
             <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">System signals</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Signalen</h3>
               <div className="space-y-3">
                 {workflowCase.workflowState.signals.length === 0 && (
                   <p className="text-sm text-muted-foreground">Geen actieve signalen.</p>
@@ -233,7 +243,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
             </section>
 
             <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Recent activity</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">Recente activiteit</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
                   <Clock3 size={16} className="mt-0.5 text-muted-foreground" />
@@ -252,7 +262,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
                 <div className="flex items-start gap-3">
                   <Building2 size={16} className="mt-0.5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium text-foreground">{workflowCase.recommendedProvidersCount} provideropties beschikbaar</p>
+                    <p className="font-medium text-foreground">{workflowCase.recommendedProvidersCount} aanbieders beschikbaar</p>
                     <p className="text-muted-foreground">Gebruik matching of plaatsing om de volgende stap uit te voeren.</p>
                   </div>
                 </div>

@@ -20,7 +20,7 @@ This created:
 
 **Solution**: One unified service that:
 - ✅ Computes all 6 decision fields consistently
-- ✅ Reusable by all pages (Regiekamer, Casussen, Beoordelingen, Matching, Plaatsingen)
+- ✅ Reusable by all pages (Regiekamer, Casussen, Aanbieder Beoordelingen, Matching, Plaatsingen)
 - ✅ Zero business logic in UI components
 - ✅ Comprehensive fallback handling
 - ✅ Fully tested
@@ -44,7 +44,7 @@ This created:
 ```
 
 **Possible actions**:
-- `review`: Perform/complete an assessment
+- `review`: Perform/complete an aanbieder beoordeling
 - `assign`: Select and assign a provider
 - `rematch`: Start matching over
 - `escalate`: Escalate to management
@@ -117,7 +117,7 @@ capped to [1, 100]
 **What**: Which flow stage is blocked (if any)
 
 **Values**:
-- `ASSESSMENT` — Beoordeling incomplete/missing
+- `ASSESSMENT` — Aanbieder Beoordeling incomplete/missing
 - `MATCHING` — No provider match found
 - `PLACEMENT` — Provider response stalled
 - `NONE` — Case flowing normally
@@ -153,14 +153,14 @@ else:
 Case Data
     ↓
 OperationalDecisionBuilder
-    ├─ Loads: intake, assessment, placement, signals
+    ├─ Loads: intake, aanbieder beoordeling, placement, signals
     ├─ Computes 6 fields independently
     └─ Returns: OperationalDecision (complete, immutable)
     ↓
 Pages consume ↓
     ├─ Regiekamer (dashboard)
     ├─ Casussen (case list)
-    ├─ Beoordelingen (assessment)
+    ├─ Aanbieder Beoordelingen (aanbieder beoordeling)
     ├─ Matching (provider selection)
     └─ Plaatsingen (placement status)
 ```
@@ -429,7 +429,7 @@ This is THE vocabulary for urgency across all pages:
 
 | Band | Meaning | Examples |
 |------|---------|----------|
-| NOW | Direct action now | Escalation signal, crisis + assessment incomplete |
+| NOW | Direct action now | Escalation signal, crisis + aanbieder beoordeling incomplete |
 | TODAY | Schedule for today | Bottleneck + high urgency, stalled case |
 | MONITOR | Watch for changes | Provider response pending |
 | WAITING | External party | Placement approved, provider deciding |
@@ -442,7 +442,7 @@ This is THE vocabulary for urgency across all pages:
 
 | Type | Trigger | Example |
 |------|---------|---------|
-| `review` | Incomplete assessment | Beoordeling ontbreekt |
+| `review` | Incomplete aanbieder beoordeling | Aanbieder Beoordeling ontbreekt |
 | `assign` | No provider | Matching | 
 | `rematch` | Provider rejected | Plaatsing afgewezen |
 | `escalate` | Escalation signal | High risk |
@@ -470,7 +470,7 @@ This is THE vocabulary for urgency across all pages:
 ### "Bottleneck shows NONE but case is blocked"
 
 → May need to review bottleneck detection logic
-→ Check: assessment status, placement status, signals
+→ Check: aanbieder beoordeling status, placement status, signals
 → Add debug print to understand which condition was hit
 
 ### "Same case, different decision on second call"

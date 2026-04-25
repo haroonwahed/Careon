@@ -27,8 +27,8 @@
 │     • Bulk actions                                          │
 │     ↓ Click case → CASUS CONTROL CENTER                    │
 │                                                             │
-│  🟡 BEOORDELINGEN       →  Assessment queue                │
-│     • List of pending assessments                           │
+│  🟡 BEOORDELINGEN       →  Aanbieder Beoordeling queue                │
+│     • List of pending aanbieder beoordelingen                           │
 │     • "Start" button only                                   │
 │     • NO FORM EXECUTION                                     │
 │     ↓ Click "Start" → CASUS CONTROL CENTER                 │
@@ -106,7 +106,7 @@
 │  ┌───────────────────────────────────────────────────┐    │
 │  │ TOP:                                               │    │
 │  │  • Status badges                                   │    │
-│  │  • Phase stepper: [Intake → Beoordeling →         │    │
+│  │  • Phase stepper: [Intake → Aanbieder Beoordeling →         │    │
 │  │                    Matching → Plaatsing]           │    │
 │  │  • AI recommendation banner                        │    │
 │  └───────────────────────────────────────────────────┘    │
@@ -124,7 +124,7 @@
 │  │             │ └────────────────┘ │              │      │
 │  │             │ ┌────────────────┐ │              │      │
 │  │             │ │ BEOORDELING    │ │              │      │
-│  │             │ │ • Assessment   │ │              │      │
+│  │             │ │ • Aanbieder Beoordeling   │ │              │      │
 │  │             │ │ • Form steps   │ │              │      │
 │  │             │ └────────────────┘ │              │      │
 │  │             │ ┌────────────────┐ │              │      │
@@ -183,24 +183,24 @@
     All without leaving Casus Control Center ✅
 ```
 
-### Example 2: Assessment Queue
+### Example 2: Aanbieder Beoordeling Queue
 
 ```
-1. User opens Beoordelingen page
+1. User opens Aanbieder Beoordelingen page
    ↓
-2. Sees list of pending assessments
+2. Sees list of pending aanbieder beoordelingen
    ↓
-3. Clicks "Start" on assessment card
+3. Clicks "Start" on aanbieder beoordeling card
    ↓
 4. CASUS CONTROL CENTER opens
-   Phase: Beoordeling
+   Phase: Aanbieder Beoordeling
    ↓
-5. Center shows assessment form
+5. Center shows aanbieder beoordeling form
    Right shows validation panel
    ↓
 6. User fills form across multiple steps
    ↓
-7. Click "Beoordeling afronden"
+7. Click "Aanbieder Beoordeling afronden"
    ↓
 8. Case automatically moves to matching phase
    Center switches to matching view ✅
@@ -240,7 +240,7 @@
 4. User clicks action
    ↓
 5. CASUS CONTROL CENTER opens for C-001
-   Phase: Beoordeling
+   Phase: Aanbieder Beoordeling
    Shows work area with "Bel beoordelaar" button
    ↓
 6. User clicks button, makes call, updates status
@@ -256,10 +256,10 @@
 ### ❌ BEFORE (WRONG)
 
 ```
-Beoordelingen Page:
+Aanbieder Beoordelingen Page:
 ├── Queue List
 └── Detail View
-    ├── Full Assessment Form
+    ├── Full Aanbieder Beoordeling Form
     ├── Stepper Navigation
     └── Validation Panel
     
@@ -271,13 +271,13 @@ Beoordelingen Page:
 ### ✅ AFTER (CORRECT)
 
 ```
-Beoordelingen Page:
+Aanbieder Beoordelingen Page:
 └── Queue List ONLY
     └── "Start" button → Opens Casus Control Center
 
 Casus Control Center:
 ├── Full Case Context
-├── Assessment Phase
+├── Aanbieder Beoordeling Phase
 │   ├── Form
 │   ├── Validation
 │   └── Risk Signals
@@ -307,7 +307,7 @@ Casus Control Center:
    - Modal overlay preserves page context
 
 4. **No Duplication**
-   - Beoordeling form = ONLY in Casus Control Center
+   - Aanbieder Beoordeling form = ONLY in Casus Control Center
    - Matching UI = ONLY in Casus Control Center
    - Plaatsing validation = ONLY in Casus Control Center
 
@@ -326,7 +326,7 @@ Casus Control Center:
 - [x] User always knows "what do I do next?"
 - [x] Regiekamer = prioritize only
 - [x] Casussen = find & manage only
-- [x] Beoordelingen = queue only
+- [x] Aanbieder Beoordelingen = queue only
 - [x] Casus Control Center = execute everything
 - [x] Can complete entire case without leaving control center
 - [x] "Stuck case" scenario flows perfectly

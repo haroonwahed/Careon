@@ -129,6 +129,10 @@ ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', default=['*'])
 CSRF_TRUSTED_ORIGINS = _csv_env(
     'CSRF_TRUSTED_ORIGINS',
     default=[
+        'http://localhost:3000',
+        'https://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://127.0.0.1:3000',
         'https://*.replit.dev',
         'https://*.repl.co',
         'https://*.riker.replit.dev',
@@ -267,8 +271,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Feature Flags
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/dashboard/'
-LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/static/spa/?view=dashboard'
+LOGOUT_REDIRECT_URL = '/static/spa/'
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@careon.local')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')

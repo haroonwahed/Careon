@@ -59,7 +59,7 @@ export function BulkActionBar({
             className="gap-2"
           >
             <UserCheck size={16} />
-            Wijs beoordelaar toe
+            Wijs aanbiederbeoordelaar toe
           </Button>
           <Button
             size="sm"

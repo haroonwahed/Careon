@@ -79,9 +79,9 @@ Context without stealing Regiekamer's job.
 
 ---
 
-### 3. Beoordelingen (Decision Completion Workspace)
+### 3. Aanbieder Beoordelingen (Decision Completion Workspace)
 
-**Role**: Assessment bottleneck management.
+**Role**: Aanbieder Beoordeling bottleneck management.
 
 **Should Inherit**:
 
@@ -333,7 +333,7 @@ This is where Regiekamer's logic becomes historical and analytical.
 
 ## App-Wide Design Primitives
 
-These 6 components should be standardized and reusable across all operational pages: Regiekamer, Beoordelingen, Matching, and Plaatsingen.
+These 6 components should be standardized and reusable across all operational pages: Regiekamer, Aanbieder Beoordelingen, Matching, and Plaatsingen.
 
 ### 1. Recommended Action Block
 
@@ -375,7 +375,7 @@ Issue: 2 casussen overschrijden wachttijdnorm
 CTA: optional
 ```
 
-**Usage**: Local action banners on Casussen, Beoordelingen, Matching, and Plaatsingen.
+**Usage**: Local action banners on Casussen, Aanbieder Beoordelingen, Matching, and Plaatsingen.
 
 ---
 
@@ -401,7 +401,7 @@ CTA: optional
 
 - `bottleneck-matching` -> Blokkeert matching
 - `bottleneck-placement` -> Blokkeert plaatsing
-- `bottleneck-assessment` -> Vertraagt beoordeling
+- `bottleneck-aanbieder beoordeling` -> Vertraagt beoordeling
 
 **Component**: `BottleneckBadge`
 
@@ -464,7 +464,7 @@ CTA: optional
 - Use primitives for action blocks and badges
 - Top strip with local operational insight
 
-### Phase 4: Implement on Beoordelingen
+### Phase 4: Implement on Aanbieder Beoordelingen
 
 - Bottleneck language throughout
 - Recommended actions with impact
@@ -568,7 +568,7 @@ This prevents UI inflation and alert fatigue.
 | Regiekamer | HIGH |
 | Casussen | MEDIUM-HIGH |
 | Matching | MEDIUM-HIGH |
-| Beoordelingen | MEDIUM |
+| Aanbieder Beoordelingen | MEDIUM |
 | Plaatsingen | MEDIUM |
 | Zorgaanbieders | LOW-MEDIUM |
 | Gemeenten/Regio | LOW-MEDIUM |
@@ -588,7 +588,7 @@ This prevents UI inflation and alert fatigue.
 - Max 1 priority badge per item
 - Max 2 signals per card
 
-**MEDIUM pages** such as Beoordelingen and Plaatsingen:
+**MEDIUM pages** such as Aanbieder Beoordelingen and Plaatsingen:
 
 - Max 1 signal strip, optional
 - Max 1 signal per item
@@ -816,7 +816,7 @@ Every operational item should support:
 | `impact_summary` | All actions |
 | `attention_band` | Casussen, Matching |
 | `priority_rank` | Casussen, Regiekamer |
-| `bottleneck_state` | Beoordelingen, Matching |
+| `bottleneck_state` | Aanbieder Beoordelingen, Matching |
 | `escalation_recommended` | Casussen, Plaatsingen |
 
 ---

@@ -53,6 +53,6 @@ class AuthStyleIntegrityTests(SimpleTestCase):
     def test_landing_page_renders_semantic_class_hooks(self):
         response = self.client.get(reverse("index"))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "landing-shell-bg")
-        self.assertContains(response, "landing-nav")
+        self.assertContains(response, "public-shell")
+        self.assertContains(response, "public-nav")
         self.assertNotContains(response, "ds-i-")

@@ -19,7 +19,7 @@ Every component maps to one or more fields from the standard operational contrac
   "impact_summary": "",
   "attention_band": "now|today|monitor|waiting",
   "priority_rank": 1-5,
-  "bottleneck_state": "matching|placement|assessment",
+  "bottleneck_state": "matching|placement|aanbieder beoordeling",
   "escalation_recommended": false
 }
 ```
@@ -186,14 +186,14 @@ const customVariants = ["ultra-urgent", "somewhat-later"];
 
 ### Governance Rule
 - **Only allowed when**: Item actually blocks critical flow (NOT for general warnings)
-- **Fixed variants only**: 3 variants (matching, placement, assessment)
+- **Fixed variants only**: 3 variants (matching, placement, aanbieder beoordeling)
 - **No duplicates**: Signal only the PRIMARY blocker, not every warning
 
 ### Props Interface
 
 ```typescript
 interface BottleneckBadgeProps {
-  variant: "matching" | "placement" | "assessment";
+  variant: "matching" | "placement" | "aanbieder beoordeling";
 }
 ```
 
@@ -203,7 +203,7 @@ interface BottleneckBadgeProps {
 |---------|-------|---------|
 | `matching` | Blokkeert matching | Prevents provider search |
 | `placement` | Blokkeert plaatsing | Prevents placement completion |
-| `assessment` | Vertraagt beoordeling | Slows assessment process |
+| `aanbieder beoordeling` | Vertraagt beoordeling | Slows aanbieder beoordeling process |
 
 ### Usage Example
 
@@ -219,7 +219,7 @@ interface BottleneckBadgeProps {
 ```tsx
 // ❌ WRONG: Multiple bottleneck badges on one item (signal overload)
 <BottleneckBadge variant="matching" />
-<BottleneckBadge variant="assessment" />
+<BottleneckBadge variant="aanbieder beoordeling" />
 
 // ❌ WRONG: For soft issues
 <BottleneckBadge variant="matching" />  {/* When it might be a bottleneck */}
@@ -347,7 +347,7 @@ All pages use the same `AttentionBand` language. This prevents users from seeing
 <div className="space-y-2">
   <RecommendedActionBlock
     label="Vraag beoordeling aan"
-    reason="Beoordeling ontbreekt"
+    reason="Aanbieder Beoordeling ontbreekt"
     severity="critical"
     onAction={handleRequestAssessment}
   />
@@ -388,7 +388,7 @@ All pages use the same `AttentionBand` language. This prevents users from seeing
 Components respect page intensity levels:
 - **HIGH** (Regiekamer): Multiple signal strips, all badges possible
 - **MEDIUM-HIGH** (Casussen, Matching): Max 1 signal strip, limited badges
-- **MEDIUM** (Beoordelingen, Plaatsingen): Minimal signals
+- **MEDIUM** (Aanbieder Beoordelingen, Plaatsingen): Minimal signals
 
 ### Rule 2: No Business Logic
 Components contain ZERO business logic:
@@ -464,7 +464,7 @@ npm run build
 
 **Phase 2**: Audit Regiekamer for consistency with primitives  
 **Phase 3**: Implement on Casussen (add inherited decision signals)  
-**Phase 4**: Implement on Beoordelingen (bottleneck language, action blocks)  
+**Phase 4**: Implement on Aanbieder Beoordelingen (bottleneck language, action blocks)  
 **Phase 5**: Implement on Matching (no-match signals, capacity language)  
 **Phase 6**: Implement on Plaatsingen (provider response state, escalation)  
 **Phase 7**: Extend to Providers, Regional, Reports  

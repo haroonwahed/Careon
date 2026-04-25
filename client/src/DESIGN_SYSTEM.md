@@ -119,8 +119,8 @@ The foundation for all major content areas.
 
 #### Status Badge
 ```tsx
-<CaseStatusBadge status="assessment" />
-// Variants: intake, assessment, matching, placement, active, completed, blocked
+<CaseStatusBadge status="aanbieder beoordeling" />
+// Variants: intake, aanbieder beoordeling, matching, placement, active, completed, blocked
 ```
 
 #### Urgency Badge

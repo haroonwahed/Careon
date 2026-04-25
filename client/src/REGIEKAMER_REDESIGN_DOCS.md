@@ -1,5 +1,8 @@
 # Regiekamer Control Center - Complete Documentation
 
+Historical design reference.
+This document captures an earlier redesign pass and is kept for reference, not as the current product contract.
+
 ## 🎯 Vision
 
 The **Regiekamer** is NOT a dashboard. It is a **command center** - an operational control tower where users monitor the system, detect issues, prioritize work, and navigate to cases that need action.
@@ -62,7 +65,7 @@ The **Regiekamer** is NOT a dashboard. It is a **command center** - an operation
 │  ACTIEVE CASUSSEN (CORE WORKING AREA)                          │
 │                                                                  │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ CASE-001         [Beoordeling] 12d ⚠️   Start beoordeling →│  │
+│  │ CASE-001         [Aanbieder Beoordeling] 12d ⚠️   Start beoordeling →│  │
 │  │ Ambulant                                                    │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                  │
@@ -152,7 +155,7 @@ const capacityIssues = getCapacityIssues();
 **Micro Context Examples:**
 - `+2` (green if down, red if up - depends on KPI)
 - `↑ boven norm` (amber warning)
-- `-1` (good for "open assessments")
+- `-1` (good for "open aanbieder beoordelingen")
 - `urgent` (red critical status)
 
 **Interaction:**
@@ -179,7 +182,7 @@ Critical: Red    #EF4444  (urgent attention needed)
 **Examples:**
 ```
 Status: intake       → "Start beoordeling"
-Status: assessment   → "Voltooi beoordeling"
+Status: aanbieder beoordeling   → "Voltooi beoordeling"
 Status: matching     → "Controleer matching"
 Status: placement    → "Bevestig plaatsing"
 Status: blocked      → "Los blokkade op"
@@ -289,7 +292,7 @@ Low:      rgba(255, 255, 255, 0.10) (Muted)
 **Status Colors (Badges):**
 ```
 Intake:       Blue    #3B82F6
-Beoordeling:  Purple  #8B5CF6
+Aanbieder Beoordeling:  Purple  #8B5CF6
 Matching:     Amber   #F59E0B
 Plaatsing:    Green   #22C55E
 Geblokkeerd:  Red     #EF4444
@@ -448,7 +451,7 @@ const kpis = {
 const getNextAction = (caseItem: Case) => {
   const actionMap = {
     intake: { action: "Start beoordeling", type: "urgent" },
-    assessment: { action: "Voltooi beoordeling", type: "urgent" },
+    aanbieder beoordeling: { action: "Voltooi beoordeling", type: "urgent" },
     matching: { action: "Controleer matching", type: "urgent" },
     placement: { action: "Bevestig plaatsing", type: "normal" },
     blocked: { action: "Los blokkade op", type: "urgent" },
@@ -600,8 +603,8 @@ Arrow ↑↓:  Navigate case list
 **Case Rows:**
 ```
 "Case CASE-001, Type: Ambulant, 
- Status: Assessment, Waiting 12 days, Risk: high. 
- Next action: Start assessment. 
+ Status: Aanbieder Beoordeling, Waiting 12 days, Risk: high. 
+ Next action: Start aanbieder beoordeling. 
  Click to open case."
 ```
 

@@ -8,7 +8,7 @@
     <link href="{% static 'css/zorgregie-design-system.css' %}" rel="stylesheet">
     <script>
         (function() {
-            var stored = localStorage.getItem('careon-theme') || 'dark';
+            var stored = localStorage.getItem('careon-auth-theme') || 'light';
             var theme = stored === 'dark' ? 'dark' : 'light';
             document.documentElement.setAttribute('data-theme', theme);
         })();
@@ -16,7 +16,7 @@
             var current = document.documentElement.getAttribute('data-theme');
             var next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('careon-theme', next);
+            localStorage.setItem('careon-auth-theme', next);
         }
     </script>
 </head>

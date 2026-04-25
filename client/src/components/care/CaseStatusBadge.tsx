@@ -24,14 +24,14 @@ export function CaseStatusBadge({ status, showIcon = true, size = "md" }: CaseSt
     icon: any;
   }> = {
     intake: {
-      label: "Intake",
+      label: "Casus",
       color: "text-[#8B5CF6]",
       bg: "bg-primary/10",
       border: "border-primary/30",
       icon: FileText
     },
     assessment: {
-      label: "Beoordeling",
+      label: "Aanbieder Beoordeling",
       color: "text-[#3B82F6]",
       bg: "bg-[rgba(59,130,246,0.1)]",
       border: "border-[rgba(59,130,246,0.3)]",

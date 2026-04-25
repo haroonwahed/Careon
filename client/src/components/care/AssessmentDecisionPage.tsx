@@ -102,13 +102,13 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
       const result = await save(formState);
       onSaved?.(result.nextPage, caseId);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Beoordeling bevestigen is mislukt.';
+      const message = err instanceof Error ? err.message : 'Doorzetten is mislukt.';
       setSubmitError(message);
     }
   };
 
   if (loading) {
-    return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Beoordeling laden…</div>;
+    return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Samenvatting laden…</div>;
   }
 
   if (error || !data || !formState) {
@@ -116,11 +116,11 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
       <div className="space-y-4">
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft size={16} />
-          Terug naar beoordelingen
+          Terug naar casussen
         </Button>
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Beoordeling niet beschikbaar</p>
-          <p className="text-sm text-muted-foreground">{error ?? 'Deze beoordeling kon niet geladen worden.'}</p>
+          <p className="text-lg font-semibold text-foreground">Samenvatting niet beschikbaar</p>
+          <p className="text-sm text-muted-foreground">{error ?? 'Deze casus kon niet geladen worden.'}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
     <div className="space-y-6 pb-12">
       <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
         <ArrowLeft size={16} />
-        Terug naar beoordelingen
+        Terug naar casussen
       </Button>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
@@ -139,9 +139,9 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <section className="rounded-3xl border border-border bg-card p-5">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Beoordeling</p>
-                <h1 className="mt-1.5 text-2xl font-semibold text-foreground">Beslissing</h1>
-                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground">Kies direct of deze casus door kan naar matching. Vul alleen de informatie in die nodig is om die beslissing verantwoord te nemen.</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Samenvatting</p>
+                <h1 className="mt-1.5 text-2xl font-semibold text-foreground">Doorzetten naar matching</h1>
+                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground">Controleer of deze casus klaar is voor matching. Vul alleen de informatie in die nodig is om die stap verantwoord te zetten.</p>
               </div>
               <div className="rounded-2xl border border-border bg-muted/20 px-3 py-2.5 text-right">
                 <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Casus</p>
@@ -283,13 +283,13 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <div className="sticky bottom-4 z-20 rounded-3xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">Bevestig beoordeling</p>
+                <p className="text-sm font-semibold text-foreground">Bevestig en ga verder</p>
                 <p className="text-sm text-muted-foreground">{formState.decision ? data.consequences[formState.decision]?.title : 'Selecteer eerst een beslissing om verder te gaan.'}</p>
                 {submitError && <p className="mt-1 text-sm text-red-300">{submitError}</p>}
               </div>
               <Button onClick={handleSubmit} disabled={!isValid || saving} className="min-w-[220px] gap-2">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {saving ? 'Opslaan...' : 'Bevestig beoordeling'}
+                {saving ? 'Opslaan...' : 'Bevestig en ga verder'}
               </Button>
             </div>
           </div>
@@ -299,7 +299,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <section className="rounded-3xl border border-border bg-card p-5">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Casus summary</h2>
+              <h2 className="text-base font-semibold text-foreground">Casus samenvatting</h2>
             </div>
             <div className="mt-4 grid gap-3 text-sm">
               <div>

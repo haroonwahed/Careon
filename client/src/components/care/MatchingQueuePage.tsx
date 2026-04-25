@@ -151,7 +151,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
             <Shuffle className="text-primary" size={20} />
           </div>
           <div>
-            <p className="font-semibold text-foreground mb-1">Werk vanuit assessment-output</p>
+            <p className="font-semibold text-foreground mb-1">Werk vanuit de samenvatting</p>
             <p className="text-sm text-muted-foreground">Gebruik matching pas zodra de casus inhoudelijk klaar is voor providerkeuze.</p>
           </div>
         </div>

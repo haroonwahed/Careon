@@ -433,7 +433,7 @@ function renderCasePhase(
     case "intake_initial":
       return <IntakeInitialPanel casus={casus} state={state} onAction={onAction} />;
     case "beoordeling":
-      return <BeoordelingPanel casus={casus} state={state} onAction={onAction} />;
+      return <AanbiederBeoordelingPanel casus={casus} state={state} onAction={onAction} />;
     case "matching":
       return <MatchingPanel casus={casus} state={state} role={role} onAction={onAction} />;
     case "plaatsing":
@@ -499,7 +499,7 @@ function IntakeInitialPanel({
 
 // ── Phase: beoordeling ────────────────────────────────────────────────────────
 
-function BeoordelingPanel({
+function AanbiederBeoordelingPanel({
   casus,
   state,
   onAction,
@@ -526,17 +526,17 @@ function BeoordelingPanel({
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">
-              Beoordeling {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
+              Aanbieder Beoordeling {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">
-              Beoordelaar: {assessment.assessor} · Gepland: {assessment.scheduledDate}
+              Aanbiederbeoordelaar: {assessment.assessor} · Gepland: {assessment.scheduledDate}
             </p>
           </div>
         </div>
       )}
 
       <div className="premium-card p-5">
-        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Beoordelingsformulier" />
+        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Aanbieder Beoordeling" />
 
         <div className="space-y-4">
           <div>
@@ -607,7 +607,7 @@ function BeoordelingPanel({
       <div className="space-y-2">
         {primaryAction && (
           <ActionButton
-            action={{ ...primaryAction, label: allFilled ? "Beoordeling afronden" : "Sla concept op" }}
+            action={{ ...primaryAction, label: allFilled ? "Aanbieder Beoordeling afronden" : "Sla concept op" }}
             onClick={() => onAction(allFilled ? "complete_beoordeling" : "save_concept")}
             fullWidth
           />
@@ -808,7 +808,7 @@ function PlaatsingPanel({
           </div>
           <div className="text-right shrink-0">
             <p className={`text-3xl font-bold ${score >= 90 ? "text-emerald-500" : score >= 80 ? "text-amber-500" : "text-muted-foreground"}`}>{score}%</p>
-            <p className="text-xs text-muted-foreground">match score</p>
+            <p className="text-xs text-muted-foreground">Matchscore</p>
           </div>
         </div>
         {provider && (
@@ -825,7 +825,7 @@ function PlaatsingPanel({
         <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Validatie checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
-            label="Beoordeling afgerond"
+            label="Aanbieder Beoordeling afgerond"
             checked={checklist.assessmentComplete}
             onChange={v => setChecklist(p => ({ ...p, assessmentComplete: v }))}
             disabled={!checklist.assessmentComplete}

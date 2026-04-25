@@ -56,7 +56,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
           Validatie & Suggesties
         </h3>
         <p className="text-xs text-muted-foreground">
-          Controleer de beoordeling voordat je afrondt
+          Controleer de samenvatting voordat je doorgaat
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
             <CheckCircle2 size={20} className="text-green-base flex-shrink-0 mt-0.5" />
             <div>
               <p className="text-sm font-medium text-green-base">
-                Beoordeling compleet
+                Samenvatting compleet
               </p>
               <p className="text-xs text-green-base/80 mt-1">
                 Alle vereiste velden zijn ingevuld en gevalideerd.

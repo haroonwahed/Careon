@@ -110,7 +110,7 @@ This guide shows the visual design details for the Casussen operational triage p
 ```
 ┌──────────────────────────────────────────────────────┐
 │ ☑️ ┌──────────┐ ┌─────────────┐          ┌────┐    │
-│    │ AANDACHT │ │ Beoordeling │          │ 5d │    │
+│    │ AANDACHT │ │ Aanbieder Beoordeling │          │ 5d │    │
 │    │ Amber bg │ │ Status      │          │    │    │
 │    └──────────┘ └─────────────┘          └────┘    │
 │                                                      │
@@ -120,11 +120,11 @@ This guide shows the visual design details for the Casussen operational triage p
 │    📍 Utrecht  📈 Dagbesteding                      │
 │                                                      │
 │    ┌──────────────────────────────────────────┐    │
-│    │ 🕐 Beoordeling vertraagd                 │    │
+│    │ 🕐 Aanbieder Beoordeling vertraagd                 │    │
 │    └──────────────────────────────────────────┘    │
 │                                                      │
 │    ┌──────────────────────────────────────────┐    │
-│    │ ℹ️  Beoordeling loopt langer dan gepland │    │
+│    │ ℹ️  Aanbieder Beoordeling loopt langer dan gepland │    │
 │    └──────────────────────────────────────────┘    │
 │                                                      │
 │    ┌──────────────────────────────────────────┐    │
@@ -279,7 +279,7 @@ Stable:
 | Status | Background | Text | Border |
 |--------|------------|------|--------|
 | Intake | Purple/20% | Purple/300 | Purple/30% |
-| Beoordeling | Blue/20% | Blue/300 | Blue/30% |
+| Aanbieder Beoordeling | Blue/20% | Blue/300 | Blue/30% |
 | Matching | Amber/20% | Amber/300 | Amber/30% |
 | Plaatsing | Green/20% | Green/300 | Green/30% |
 | Afgerond | Slate/20% | Slate/300 | Slate/30% |
@@ -340,7 +340,7 @@ Delayed (>5 days):
 | Type | Icon | Example Text |
 |------|------|--------------|
 | no-match | AlertTriangle | Geen passende match gevonden |
-| missing-assessment | Info | Beoordeling ontbreekt |
+| missing-aanbieder beoordeling | Info | Aanbieder Beoordeling ontbreekt |
 | capacity | Users | Capaciteitstekort in regio |
 | delayed | Clock | Wachttijd te lang |
 

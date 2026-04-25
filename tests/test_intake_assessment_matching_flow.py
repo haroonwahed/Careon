@@ -24,6 +24,7 @@ from contracts.models import (
     MunicipalityConfiguration,
     RegionalConfiguration,
 )
+from contracts.views import sync_case_flow_state
 
 
 class IntakeAssessmentMatchingFlowTests(TestCase):
@@ -123,6 +124,47 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         intake.refresh_from_db()
         self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.MATCHING)
 
+    def test_matching_assignment_is_blocked_until_assessment_is_ready(self):
+        provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Blocked Flow Aanbieder',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.user,
+        )
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Blocked Flow Intake',
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+        CaseAssessment.objects.create(
+            intake=intake,
+            assessment_status=CaseAssessment.AssessmentStatus.DRAFT,
+            matching_ready=False,
+            assessed_by=self.user,
+        )
+
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps(
+                {
+                    'action': 'assign',
+                    'provider_id': provider.pk,
+                }
+            ),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        body = response.json()
+        self.assertFalse(body['ok'])
+        self.assertIn('Beoordeling moet eerst gereed zijn voor matching', body['error'])
+        self.assertFalse(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
+
     def test_intake_create_api_creates_linked_case_record_for_workflow(self):
         municipality = MunicipalityConfiguration.objects.create(
             organization=self.organization,
@@ -167,7 +209,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         self.assertIsNotNone(intake.contract_id)
         self.assertEqual(body['case_id'], str(intake.contract_id))
-        self.assertEqual(body['redirect_url'], f"{reverse('dashboard')}?page=casussen&case={intake.contract_id}")
+        self.assertEqual(body['redirect_url'], f"/static/spa/?view=dashboard&page=casussen&case={intake.contract_id}")
         self.assertEqual(intake.contract.title, intake.title)
         self.assertEqual(intake.contract.case_phase, CareCase.CasePhase.INTAKE)
         self.assertEqual(intake.contract.status, CareCase.Status.PENDING)
@@ -980,6 +1022,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             proposed_provider=provider,
             selected_provider=provider,
             care_form=intake.preferred_care_form,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.ACCEPTED,
             decision_notes='Bestaande notitie',
         )
 
@@ -998,6 +1041,38 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(placement.status, PlacementRequest.Status.APPROVED)
         self.assertIn('Bestaande notitie', placement.decision_notes)
         self.assertIn('Plaatsing bevestigd vanuit casusdetail.', placement.decision_notes)
+        log = CaseDecisionLog.objects.get(event_type=CaseDecisionLog.EventType.PROVIDER_SELECTED)
+        self.assertEqual(log.case_id, intake.pk)
+        self.assertEqual(log.placement_id, placement.pk)
+        self.assertEqual(log.provider_id, provider.id)
+        self.assertEqual(log.user_action, 'approve_placement')
+        self.assertEqual(log.actor_id, self.user.id)
+
+    def test_sync_case_flow_state_keeps_placement_in_review_until_provider_acceptance(self):
+        provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Sync Flow Provider',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.user,
+        )
+        case = CareCase.objects.create(
+            organization=self.organization,
+            title='Sync Flow Case',
+            contract_type=CareCase.ContractType.OTHER,
+            status=CareCase.Status.PENDING,
+            service_region='Utrecht',
+            risk_level=CareCase.RiskLevel.MEDIUM,
+            case_phase=CareCase.CasePhase.PLAATSING,
+            client=provider,
+            created_by=self.user,
+        )
+
+        sync_case_flow_state(case, user=self.user)
+
+        intake = case.due_diligence_process
+        placement = PlacementRequest.objects.get(due_diligence_process=intake)
+        self.assertEqual(placement.status, PlacementRequest.Status.IN_REVIEW)
+        self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.PENDING)
 
     def test_overview_pages_show_next_actions(self):
         response_tasks = self.client.get(reverse('careon:task_list'))
@@ -1103,4 +1178,3 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         response = self.client.get(reverse('careon:task_list') + '?show=all')
 
         self._assert_spa_shell(response)
-

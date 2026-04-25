@@ -10,7 +10,7 @@
 │                                                        │
 │ Start matching proces                                  │ ← Title (bold)
 │                                                        │
-│ Beoordeling is compleet en alle vereiste gegevens     │ ← Explanation
+│ Aanbieder Beoordeling is compleet en alle vereiste gegevens     │ ← Explanation
 │ zijn aanwezig. Systeem heeft 3 potentiële matches     │   (muted text)
 │ geïdentificeerd in de regio.                          │
 │                                                        │
@@ -64,7 +64,7 @@ Text size: 12px
 │                                                        │
 │ ⚠️ Hoge urgentie - spoedtraject vereist               │ ← Warning item
 │                                                        │
-│ ✓ Beoordeling gepland met Dr. P. Bakker               │ ← Default item
+│ ✓ Aanbieder Beoordeling gepland met Dr. P. Bakker               │ ← Default item
 └────────────────────────────────────────────────────────┘
 
 Icon: 14px (left aligned)
@@ -108,7 +108,7 @@ Score colors:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ ℹ️ Beoordeling gepland voor 18 april met Dr. Bakker  │
+│ ℹ️ Aanbieder Beoordeling gepland voor 18 april met Dr. Bakker  │
 └────────────────────────────────────────────────────────┘
 
 Types & Colors:

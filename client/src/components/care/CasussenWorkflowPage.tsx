@@ -15,10 +15,10 @@ interface CasussenWorkflowPageProps {
 type SmartFocus = "assessment" | "matching" | "placement" | "urgent" | null;
 
 const BOARD_COLUMNS: Array<{ id: WorkflowBoardColumn; label: string }> = [
-  { id: "nieuw", label: "Nieuw" },
-  { id: "in-beoordeling", label: "In beoordeling" },
+  { id: "nieuw", label: "Casus" },
+  { id: "in-beoordeling", label: "Aanbieder Beoordeling" },
   { id: "klaar-voor-matching", label: "Klaar voor matching" },
-  { id: "in-plaatsing", label: "In plaatsing" },
+  { id: "in-plaatsing", label: "Plaatsing" },
   { id: "afgerond", label: "Afgerond" },
 ];
 
@@ -36,8 +36,8 @@ function urgencyBadgeClasses(urgency: WorkflowCaseView["urgency"]) {
 }
 
 function shortcutLabel(item: WorkflowCaseView) {
-  if (item.phase === "intake") return "Start beoordeling";
-  if (item.phase === "provider_beoordeling") return "Open beoordeling";
+  if (item.phase === "intake") return "Start matching";
+  if (item.phase === "provider_beoordeling") return "Open aanbiederbeoordeling";
   if (item.phase === "matching") return "Start matching";
   if (item.phase === "plaatsing") return "Open plaatsing";
   return "Bekijk casus";
@@ -46,7 +46,7 @@ function shortcutLabel(item: WorkflowCaseView) {
 function workflowStepLabel(page: WorkflowCaseView["nextBestActionUrl"]) {
   switch (page) {
     case "beoordelingen":
-      return "Beoordeling";
+      return "Aanbieder Beoordeling";
     case "matching":
       return "Matching";
     case "plaatsingen":
@@ -113,7 +113,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen</h1>
-          <p className="text-sm text-muted-foreground">Centrale pipeline van casus naar intake-overdracht.</p>
+          <p className="text-sm text-muted-foreground">Centrale pipeline van casus naar intake.</p>
         </div>
         {canCreateCase && (
           <Button onClick={handleCreateCase}>
@@ -125,17 +125,17 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
 
       <div className="rounded-2xl border border-border bg-card/45 p-3">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Workflow</p>
-        <p className="mt-1 text-sm text-foreground">Casus → Beoordeling → Matching → Plaatsing → Intake</p>
+        <p className="mt-1 text-sm text-foreground">Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <button type="button" onClick={() => setSmartFocus(smartFocus === "assessment" ? null : "assessment")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "assessment" ? "ring-2 ring-primary/35" : "border-border"}`}>
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op beoordeling</span>
+            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op aanbiederbeoordeling</span>
             <UserCheck size={18} className="text-blue-400" />
           </div>
           <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingAssessment}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Nieuwe of lopende beoordelingen</p>
+          <p className="mt-1 text-xs text-muted-foreground">Nieuwe of lopende aanbiederbeoordelingen</p>
         </button>
         <button type="button" onClick={() => setSmartFocus(smartFocus === "matching" ? null : "matching")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "matching" ? "ring-2 ring-primary/35" : "border-border"}`}>
           <div className="flex items-center justify-between mb-3">
@@ -143,7 +143,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
             <Shuffle size={18} className="text-amber-400" />
           </div>
           <p className="text-2xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Assessment afgerond, klaar voor providerkeuze</p>
+          <p className="mt-1 text-xs text-muted-foreground">Samenvatting gereed, klaar voor providerkeuze</p>
         </button>
         <button type="button" onClick={() => setSmartFocus(smartFocus === "placement" ? null : "placement")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "placement" ? "ring-2 ring-primary/35" : "border-border"}`}>
           <div className="flex items-center justify-between mb-3">
@@ -151,7 +151,7 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
             <CheckCircle2 size={18} className="text-cyan-400" />
           </div>
           <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingPlacement}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Klaar om bevestiging en intake te starten</p>
+          <p className="mt-1 text-xs text-muted-foreground">Klaar om plaatsing te bevestigen en intake te plannen</p>
         </button>
         <button type="button" onClick={() => setSmartFocus(smartFocus === "urgent" ? null : "urgent")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "urgent" ? "ring-2 ring-primary/35" : "border-border"}`}>
           <div className="flex items-center justify-between mb-3">

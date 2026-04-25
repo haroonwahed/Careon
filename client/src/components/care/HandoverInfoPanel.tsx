@@ -74,8 +74,8 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
 
       {/* What Happens Next */}
       <div className="premium-card p-4">
-        <h3 className="text-sm font-semibold text-foreground mb-3">
-          Wat gebeurt hierna?
+          <h3 className="text-sm font-semibold text-foreground mb-3">
+          Wat volgt na plaatsing?
         </h3>
         
         <div className="space-y-2.5">
@@ -84,7 +84,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
               <span className="text-xs font-bold text-primary">1</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
-              Aanbieder ontvangt melding
+              Aanbieder ontvangt bevestiging
             </p>
           </div>
 
@@ -93,7 +93,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
               <span className="text-xs font-bold text-primary">2</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
-              Dossier wordt gedeeld
+              Dossier wordt gedeeld voor intake
             </p>
           </div>
 
@@ -102,7 +102,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
               <span className="text-xs font-bold text-primary">3</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
-              Intake binnen 3 werkdagen
+              Intake binnen 3 werkdagen gepland
             </p>
           </div>
 
@@ -151,7 +151,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
           <ArrowRight size={20} className="text-green-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">
             <p className="text-sm font-semibold text-green-300 mb-1">
-              Overdracht verantwoordelijkheid
+              Verantwoordelijkheid verschuift
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed break-words">
               Aanbieder is verantwoordelijk voor intake en zorg. Gemeente monitort voortgang.

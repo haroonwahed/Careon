@@ -388,7 +388,7 @@ Status Badge:
   
   Mapping:
     Intake:       Blue   #3B82F6
-    Beoordeling:  Purple #8B5CF6
+    Aanbieder Beoordeling:  Purple #8B5CF6
     Matching:     Amber  #F59E0B
     Plaatsing:    Green  #22C55E
     Geblokkeerd:  Red    #EF4444
@@ -480,7 +480,7 @@ Intake:
   Background: rgba(59, 130, 246, 0.10)
   Text: #3B82F6
 
-Beoordeling:
+Aanbieder Beoordeling:
   Background: rgba(139, 92, 246, 0.10)
   Text: #8B5CF6
 

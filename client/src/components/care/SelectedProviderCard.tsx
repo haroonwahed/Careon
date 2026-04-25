@@ -66,7 +66,7 @@ export function SelectedProviderCard({
               <span className="text-3xl font-bold text-green-base">{matchScore}</span>
               <span className="text-sm text-muted-foreground">%</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Match score</p>
+            <p className="text-xs text-muted-foreground mt-1">Matchscore</p>
           </div>
         </div>
       </div>

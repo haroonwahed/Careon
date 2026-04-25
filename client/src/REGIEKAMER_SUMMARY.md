@@ -66,7 +66,7 @@ Shows exactly what to do next for each case.
 **Examples:**
 ```
 Status: intake      → "Start beoordeling"
-Status: assessment  → "Voltooi beoordeling"
+Status: aanbieder beoordeling  → "Voltooi beoordeling"
 Status: matching    → "Controleer matching"
 Status: placement   → "Bevestig plaatsing"
 Status: blocked     → "Los blokkade op"
@@ -252,7 +252,7 @@ RegiekamerControlCenter
    - Selected items
 
 🔵 Blue (Info):
-   - Status: Intake, Assessment
+   - Status: Intake, Aanbieder Beoordeling
    - Neutral KPIs
    - Informational signals
 ```
@@ -494,11 +494,11 @@ AI Command Strip:
 ```
 CASE-2024-089
 Ambulant
-[Beoordeling] 12d ⚠️
+[Aanbieder Beoordeling] 12d ⚠️
 Next: Start beoordeling →
 ```
 
-**User thinks:** "This case is 12 days waiting and needs assessment - I should do this first"
+**User thinks:** "This case is 12 days waiting and needs aanbieder beoordeling - I should do this first"
 
 ---
 
@@ -506,7 +506,7 @@ Next: Start beoordeling →
 
 **System navigates to:**
 - Case Detail Page for CASE-2024-089
-- Assessment workflow ready
+- Aanbieder Beoordeling workflow ready
 - User can immediately start beoordeling
 
 **Total time:** 8 seconds from page load to action

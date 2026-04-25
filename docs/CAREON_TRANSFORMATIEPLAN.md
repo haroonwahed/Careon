@@ -63,7 +63,7 @@ Kernmodules:
 
 ### Pakket 2: Casusdetail als hart
 
-- Casusdetail secties: Intake, Beoordeling, Matching, Indicatie, Plaatsing, Taken, Signalen, Documenten, Privacy/Audit
+- Casusdetail secties: Intake, Aanbieder Beoordeling, Matching, Indicatie, Plaatsing, Taken, Signalen, Documenten, Privacy/Audit
 - Actieknoppen in flowvolgorde
 - Intake/beoordeling loskoppelen als concurrerend startpunt
 

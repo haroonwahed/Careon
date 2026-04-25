@@ -33,7 +33,7 @@ Purple (Brand)
 └─ rgba(16,185,129,0.1)  →  Background
 └─ rgba(16,185,129,0.3)  →  Border
 
-🔵 Info/Assessment
+🔵 Info/Aanbieder Beoordeling
 └─ #3B82F6 (Blue)
 └─ rgba(59,130,246,0.1)  →  Background
 └─ rgba(59,130,246,0.3)  →  Border
@@ -205,7 +205,7 @@ Sizes:
 │ ⚠ Recommendation banner → [Action Button]                  │
 ├─────────────────────────────────────────────────────────────┤
 │ Phase Indicator                                             │
-│ ① Casus ──→ ② Beoordeling ──→ ③ Matching ──→ ④ Plaatsing │
+│ ① Casus ──→ ② Aanbieder Beoordeling ──→ ③ Matching ──→ ④ Plaatsing │
 ├──────────────┬──────────────────┬───────────────────────────┤
 │              │                  │                           │
 │ Client Info  │  Active Work     │  System Intelligence      │
@@ -302,7 +302,7 @@ text-primary
 
 ```
 Intake       → FileText
-Assessment   → ClipboardList
+Aanbieder Beoordeling   → ClipboardList
 Matching     → Search
 Placement    → MapPin
 Active       → Activity

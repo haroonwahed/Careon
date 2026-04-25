@@ -1,5 +1,8 @@
 # CareOn System - Complete Overview
 
+Historical implementation overview.
+This document describes the earlier end-to-end transformation and is kept as a reference, not as the current live product contract.
+
 ## System Transformation Complete ✅
 
 The CareOn Zorgregie platform has been fully transformed from a generic SaaS template into a **domain-driven, workflow-based healthcare coordination system** for Dutch municipalities and youth care organizations.
@@ -19,7 +22,7 @@ REGIE               → Control & overview
   └─ Casussen       → Complete case triage system
 
 WERKFLOW ⭐         → Core engine (emphasized)
-  ├─ Beoordelingen  → Assessments (2 pending)
+  ├─ Aanbieder Beoordelingen  → Aanbieder Beoordelingen (2 pending)
   ├─ Matching       → Provider matching (3 active)
   ├─ Plaatsingen    → Placements (1 waiting)
   └─ Intake         → New case intake
@@ -74,7 +77,7 @@ SYSTEEM             → Configuration
 - Header with urgency indicator and wait time
 - Client information panel
 - Care needs summary
-- Assessment timeline with status tracking
+- Aanbieder Beoordeling timeline with status tracking
 - Problem indicators (blockers, delays, capacity issues)
 - System insights (AI-generated explanations)
 - Recommended actions (contextual next steps)
@@ -165,7 +168,7 @@ Each card answers: "What's wrong? Why? What should I do?"
 ```
 
 **Board View (Kanban):**
-- 5 columns: Intake → Beoordeling → Matching → Plaatsing → Afgerond
+- 5 columns: Intake → Aanbieder Beoordeling → Matching → Plaatsing → Afgerond
 - Same card design
 - Visual bottleneck identification
 - Horizontal scroll on mobile
@@ -224,7 +227,7 @@ Each card answers: "What's wrong? Why? What should I do?"
 
 **Status Badges:**
 - Intake (purple)
-- Beoordeling (blue)
+- Aanbieder Beoordeling (blue)
 - Matching (amber)
 - Plaatsing (green)
 - Afgerond (slate)
@@ -300,7 +303,7 @@ Each card answers: "What's wrong? Why? What should I do?"
 | Casussen | ✅ Complete | Triage system with list/board views |
 | Case Detail | ✅ Complete | Full case dossier with decision support |
 | Matching | ✅ Complete | AI-powered provider matching |
-| Beoordelingen | ⏳ Placeholder | Future implementation |
+| Aanbieder Beoordelingen | ⏳ Placeholder | Future implementation |
 | Plaatsingen | ⏳ Placeholder | Future implementation |
 | Intake | ⏳ Placeholder | Future implementation |
 | Zorgaanbieders | ⏳ Placeholder | Future implementation |
@@ -694,7 +697,7 @@ Users understand where they are in the process.
 - ✅ Design system
 
 ### Phase 2: Extended Workflow (In Progress)
-- ⏳ Beoordelingen page
+- ⏳ Aanbieder Beoordelingen page
 - ⏳ Plaatsingen page
 - ⏳ Intake page
 - ⏳ Backend API integration
@@ -814,7 +817,7 @@ This fundamental shift makes the system feel like an **intelligent assistant**, 
 
 **API Integration & Full Workflow**
 
-Connect backend, complete remaining workflow pages (Beoordelingen, Plaatsingen, Intake), and launch pilot with municipality partner.
+Connect backend, complete remaining workflow pages (Aanbieder Beoordelingen, Plaatsingen, Intake), and launch pilot with municipality partner.
 
 **Target:** June 2026
 

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Bell, Building2, CheckCircle2, ChevronDown, Save, Shield, UserCog, Workflow } from "lucide-react";
 import { Button } from "../ui/button";
+import { SPA_DASHBOARD_URL } from "../../lib/routes";
 
 export function InstellingenPage() {
   const [organizationName, setOrganizationName] = useState("Gemeente Utrecht");
@@ -93,7 +94,7 @@ export function InstellingenPage() {
       }
 
       setDesignModeMessage("Ontwerpmodus opgeslagen. Workspace wordt bijgewerkt...");
-      window.location.href = "/dashboard/";
+      window.location.href = SPA_DASHBOARD_URL;
     } catch {
       setDesignModeMessage("Opslaan is mislukt. Probeer opnieuw.");
       setDesignModeSaving(false);
@@ -258,7 +259,7 @@ export function InstellingenPage() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <AccessCard title="Regisseurs" count={14} description="Case triage, matching en plaatsing" />
-          <AccessCard title="Beoordelaars" count={9} description="Beoordeling en kwaliteitscontrole" />
+          <AccessCard title="Beoordelaars" count={9} description="Aanbieder Beoordeling en kwaliteitscontrole" />
           <AccessCard title="Admins" count={3} description="Platformbeheer en autorisaties" />
         </div>
       </section>

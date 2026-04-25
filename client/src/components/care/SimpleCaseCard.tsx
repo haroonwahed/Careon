@@ -100,10 +100,11 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
 
   const getStatusLabel = (s: string): string => {
     const statusLower = s.toLowerCase();
-    if (statusLower === "assessment") return "Beoordeling";
+    if (statusLower === "assessment" || statusLower === "beoordeling") return "Aanbieder Beoordeling";
     if (statusLower === "placement") return "Plaatsing";
     if (statusLower === "completed") return "Afgerond";
     if (statusLower === "blocked") return "Geblokkeerd";
+    if (statusLower === "intake") return "Casus";
     return s.charAt(0).toUpperCase() + s.slice(1);
   };
 

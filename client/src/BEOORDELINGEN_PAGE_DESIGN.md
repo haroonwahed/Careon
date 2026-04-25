@@ -1,8 +1,8 @@
-# Beoordelingen Page - Guided Decision System
+# Aanbieder Beoordelingen Page - Guided Decision System
 
 ## Overview
 
-The **Beoordelingen (Assessments) page** is a structured decision interface where care coordinators assess cases and determine:
+The **Aanbieder Beoordelingen (Aanbieder Beoordelingen) page** is a structured decision interface where care coordinators assess cases and determine:
 
 - Whether care is needed
 - Type of care required
@@ -27,7 +27,7 @@ NOT:
 
 ### Core Principles
 
-1. **GUIDED FLOW**: Step-by-step progression through assessment
+1. **GUIDED FLOW**: Step-by-step progression through aanbieder beoordeling
 2. **DECISION CLARITY**: Every input has clear purpose and impact
 3. **PROGRESS VISIBILITY**: Users always know where they are
 4. **ERROR PREVENTION**: Validation prevents incomplete submissions
@@ -39,22 +39,22 @@ NOT:
 
 ### Two View Modes
 
-1. **LIST VIEW** (default): Work queue of open assessments
+1. **LIST VIEW** (default): Work queue of open aanbieder beoordelingen
 2. **DETAIL VIEW**: Guided decision interface with 3-panel layout
 
 ---
 
-## LIST VIEW - Assessment Queue
+## LIST VIEW - Aanbieder Beoordeling Queue
 
 ### Purpose
 
-Task queue showing all open assessments that need attention.
+Task queue showing all open aanbieder beoordelingen that need attention.
 
 ### Layout
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ Beoordelingen                                        │
+│ Aanbieder Beoordelingen                                        │
 │ Beoordeel casussen en bepaal zorgbehoefte · 3 open  │
 └──────────────────────────────────────────────────────┘
 
@@ -86,19 +86,19 @@ Open beoordelingen                          3 te doen
 ### Components
 
 **Page Header:**
-- Title: "Beoordelingen"
-- Subtitle: Dynamic count of open assessments
+- Title: "Aanbieder Beoordelingen"
+- Subtitle: Dynamic count of open aanbieder beoordelingen
 - Search bar: Real-time filtering
 - Filters button: Advanced filtering (future)
 
 **Queue Section:**
 - Header: "Open beoordelingen" + count
-- Assessment cards sorted by wait time
+- Aanbieder Beoordeling cards sorted by wait time
 - Empty state when queue is clear
 
 ---
 
-## Assessment Queue Card
+## Aanbieder Beoordeling Queue Card
 
 ### Card Anatomy
 
@@ -144,7 +144,7 @@ Open beoordelingen                          3 te doen
 
 ### CTA Buttons
 
-- **New assessment**: "Start beoordeling"
+- **New aanbieder beoordeling**: "Start beoordeling"
 - **In-progress**: "Verder gaan"
 - Purple primary button with arrow
 
@@ -157,7 +157,7 @@ Open beoordelingen                          3 te doen
 ```
 ┌─────────┬──────────────────┬──────────┐
 │  LEFT   │     CENTER       │  RIGHT   │
-│ Context │  Assessment Form │Validation│
+│ Context │  Aanbieder Beoordeling Form │Validation│
 │  Panel  │    (Stepper)     │  Panel   │
 │         │                  │          │
 │ Sticky  │   Steps 1-3      │  Sticky  │
@@ -177,7 +177,7 @@ Open beoordelingen                          3 te doen
 
 ### Purpose
 
-Always-visible case information for reference during assessment.
+Always-visible case information for reference during aanbieder beoordeling.
 
 ### Content
 
@@ -213,7 +213,7 @@ Always-visible case information for reference during assessment.
 
 ---
 
-## CENTER PANEL: Assessment Flow
+## CENTER PANEL: Aanbieder Beoordeling Flow
 
 ### Progress Stepper
 
@@ -246,7 +246,7 @@ Always-visible case information for reference during assessment.
 
 ---
 
-### Step 1: Basis Beoordeling
+### Step 1: Basis Aanbieder Beoordeling
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -481,7 +481,7 @@ Real-time validation feedback and AI-powered suggestions.
 ```
 ┌──────────────────────────────────────────────────────┐
 │ ✓ Klaar om af te ronden                              │
-│              [Opslaan als concept] [Beoordeling afronden]│
+│              [Opslaan als concept] [Aanbieder Beoordeling afronden]│
 └──────────────────────────────────────────────────────┘
 ```
 
@@ -516,11 +516,11 @@ Real-time validation feedback and AI-powered suggestions.
 - Always enabled
 - Shows toast on save
 
-**Beoordeling afronden:**
+**Aanbieder Beoordeling afronden:**
 - Type: Primary button
 - Icon: CheckCircle2
 - Color: Purple (primary)
-- Action: Complete assessment → Trigger matching
+- Action: Complete aanbieder beoordeling → Trigger matching
 - Disabled if errors present
 - Shows completion modal on success
 
@@ -588,10 +588,10 @@ Real-time validation feedback and AI-powered suggestions.
 
 ## User Workflows
 
-### Scenario 1: Complete New Assessment
+### Scenario 1: Complete New Aanbieder Beoordeling
 
 ```
-1. User opens Beoordelingen page (list view)
+1. User opens Aanbieder Beoordelingen page (list view)
 2. Sees "Open beoordelingen" section
 3. Clicks "Start beoordeling" on first item
 4. → Detail view opens
@@ -612,17 +612,17 @@ Real-time validation feedback and AI-powered suggestions.
    - Adds optional notes
    - Reviews validation panel (all green)
 
-8. Clicks "Beoordeling afronden"
+8. Clicks "Aanbieder Beoordeling afronden"
 9. Confirmation modal appears
-10. Assessment complete → Triggers matching phase
+10. Aanbieder Beoordeling complete → Triggers matching phase
 ```
 
 **Time:** 2-3 minutes for experienced user
 
-### Scenario 2: Resume Draft Assessment
+### Scenario 2: Resume Draft Aanbieder Beoordeling
 
 ```
-1. User sees assessment with "BEZIG" status
+1. User sees aanbieder beoordeling with "BEZIG" status
 2. Missing info indicators show incomplete fields
 3. Clicks "Verder gaan"
 4. → Opens to last active step
@@ -630,8 +630,8 @@ Real-time validation feedback and AI-powered suggestions.
 5. Validation panel shows errors
 6. User fills missing required fields
 7. Errors clear in real-time
-8. "Beoordeling afronden" enables
-9. User completes assessment
+8. "Aanbieder Beoordeling afronden" enables
+9. User completes aanbieder beoordeling
 ```
 
 **Time:** 1-2 minutes
@@ -649,7 +649,7 @@ Real-time validation feedback and AI-powered suggestions.
 3. User clicks "Toepassen"
 4. Urgency auto-updates to "Hoog"
 5. Suggestion disappears
-6. User continues assessment
+6. User continues aanbieder beoordeling
 ```
 
 **Time:** <10 seconds
@@ -691,7 +691,7 @@ Real-time validation feedback and AI-powered suggestions.
 
 ## Empty State
 
-### When No Assessments
+### When No Aanbieder Beoordelingen
 
 ```
 ┌─────────────────────────────┐
@@ -720,9 +720,9 @@ Real-time validation feedback and AI-powered suggestions.
 ### From Regiekamer
 
 ```
-User sees case needing assessment →
+User sees case needing aanbieder beoordeling →
 Clicks "Start beoordeling" →
-Opens Beoordelingen page (detail view) →
+Opens Aanbieder Beoordelingen page (detail view) →
 Pre-loads case context
 ```
 
@@ -731,16 +731,16 @@ Pre-loads case context
 ```
 User selects case →
 Clicks "Start beoordeling" →
-Opens Beoordelingen page →
+Opens Aanbieder Beoordelingen page →
 Context panel pre-filled
 ```
 
 ### To Matching
 
 ```
-User completes assessment →
-Clicks "Beoordeling afronden" →
-Assessment saved →
+User completes aanbieder beoordeling →
+Clicks "Aanbieder Beoordeling afronden" →
+Aanbieder Beoordeling saved →
 Triggers matching phase →
 Navigate to Matching page with case ID
 ```
@@ -750,11 +750,11 @@ Navigate to Matching page with case ID
 ```
 BeoordelingenPage
   ↓ (fetches)
-GET /api/assessments?status=open
+GET /api/aanbieder beoordelingen?status=open
   ↓ (returns)
-Assessment[]
+Aanbieder Beoordeling[]
   ↓ (on complete)
-POST /api/assessments/:id/complete
+POST /api/aanbieder beoordelingen/:id/complete
   ↓ (triggers)
 POST /api/matching/:caseId/start
   ↓ (navigate)
@@ -822,7 +822,7 @@ MatchingPage
 - Detail view: <300ms (client-side only)
 - Validation update: <50ms (instant)
 - Save draft: <1s (API call)
-- Complete assessment: <2s (API + matching trigger)
+- Complete aanbieder beoordeling: <2s (API + matching trigger)
 
 ---
 
@@ -841,7 +841,7 @@ Esc         → Cancel/close modal
 ### Screen Reader Support
 
 ```html
-<form aria-label="Beoordeling formulier">
+<form aria-label="Aanbieder Beoordeling formulier">
   <fieldset aria-required="true">
     <legend>Is zorg nodig?</legend>
     <button role="radio" aria-checked="true">Ja</button>
@@ -877,8 +877,8 @@ Esc         → Cancel/close modal
 
 ### Integration Tests
 
-- [ ] Complete assessment flow (all steps)
-- [ ] Resume draft assessment
+- [ ] Complete aanbieder beoordeling flow (all steps)
+- [ ] Resume draft aanbieder beoordeling
 - [ ] Apply smart suggestion
 - [ ] Error state handling
 - [ ] Navigation between views
@@ -899,15 +899,15 @@ Esc         → Cancel/close modal
 
 - **Auto-save**: Periodic draft saves (every 30s)
 - **Undo/redo**: Step back through changes
-- **Assessment templates**: Pre-fill common scenarios
-- **Bulk assessment**: Assess multiple similar cases
+- **Aanbieder Beoordeling templates**: Pre-fill common scenarios
+- **Bulk aanbieder beoordeling**: Assess multiple similar cases
 - **Peer review**: Request second opinion
 
 ### Phase 3: AI Intelligence
 
 - **Smart pre-fill**: AI suggests values based on case data
 - **Risk scoring**: Automatic risk calculation
-- **Similar cases**: Show comparable past assessments
+- **Similar cases**: Show comparable past aanbieder beoordelingen
 - **Outcome prediction**: ML model predicts care success
 
 ### Phase 4: Collaboration
@@ -921,7 +921,7 @@ Esc         → Cancel/close modal
 
 ## Summary
 
-The **Beoordelingen page** transforms case assessment from a passive form-filling exercise into a **guided decision-making process**. The structured approach:
+The **Aanbieder Beoordelingen page** transforms case aanbieder beoordeling from a passive form-filling exercise into a **guided decision-making process**. The structured approach:
 
 1. **Prevents errors** through validation
 2. **Guides thinking** with step-by-step flow
@@ -929,7 +929,7 @@ The **Beoordelingen page** transforms case assessment from a passive form-fillin
 4. **Ensures completeness** with clear requirements
 5. **Maintains context** with persistent case info
 
-**Key Innovation:** Real-time validation + AI suggestions = faster, more accurate assessments.
+**Key Innovation:** Real-time validation + AI suggestions = faster, more accurate aanbieder beoordelingen.
 
 ---
 

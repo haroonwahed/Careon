@@ -28,8 +28,8 @@ interface BoardViewProps {
 
 export function BoardView({ cases, onCaseClick }: BoardViewProps) {
   const columns: { status: CaseStatus; label: string; icon: any; color: string }[] = [
-    { status: "intake", label: "Intake", icon: Inbox, color: "blue" },
-    { status: "beoordeling", label: "Beoordeling", icon: ClipboardList, color: "purple" },
+    { status: "intake", label: "Casus", icon: Inbox, color: "blue" },
+    { status: "beoordeling", label: "Aanbieder Beoordeling", icon: ClipboardList, color: "purple" },
     { status: "matching", label: "Matching", icon: GitMerge, color: "orange" },
     { status: "plaatsing", label: "Plaatsing", icon: CheckCircle2, color: "green" },
     { status: "afgerond", label: "Afgerond", icon: FileCheck, color: "gray" }

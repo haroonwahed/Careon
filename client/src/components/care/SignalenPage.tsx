@@ -146,14 +146,14 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
         push({
           id: `incomplete-assessment-${assessment.id}`,
           severity: assessment.missingInfo.some((item) => item.severity === "error") ? "critical" : "warning",
-          title: "Beoordeling onvolledig",
+          title: "Samenvatting onvolledig",
           casusId: assessment.caseId,
           casusReference: assessment.caseTitle,
           explanation: assessment.missingInfo.length > 0
             ? `${assessment.missingInfo.length} ontbrekende punten blokkeren doorstroom naar matching.`
-            : "Beoordeling is nog niet afgerond voor matching.",
+            : "Samenvatting is nog niet afgerond voor matching.",
           actions: [
-            { kind: "navigate", label: "Naar beoordelingen", target: "beoordelingen" },
+            { kind: "navigate", label: "Naar casussen", target: "casussen" },
             { kind: "open_case", label: "Open casus", caseId: assessment.caseId },
           ],
         });

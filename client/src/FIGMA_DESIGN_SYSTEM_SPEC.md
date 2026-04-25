@@ -1336,7 +1336,7 @@ Uses:
 Content:
 ├─ Case Header (ID, client, urgency)
 ├─ AI Recommendation
-├─ Tabs: Overview, Beoordeling, Matching, Timeline
+├─ Tabs: Overview, Aanbieder Beoordeling, Matching, Timeline
 └─ Action buttons
 ```
 
@@ -1373,7 +1373,7 @@ Content:
 
 ---
 
-**5. Screen / Regie / Beoordeling** ⭐ NEW
+**5. Screen / Regie / Aanbieder Beoordeling** ⭐ NEW
 ```
 Uses:
 ├─ Layout / App
@@ -1387,7 +1387,7 @@ Content:
 │  ├─ AI Recommendation Block
 │  ├─ Quick decision buttons (Urgent/Medium/Low)
 │  └─ Fast facts (age, location, concerns)
-├─ Assessment Form
+├─ Aanbieder Beoordeling Form
 │  ├─ Sections: expandable/collapsible
 │  ├─ Questions with smart fields
 │  ├─ Auto-save indicators
@@ -1396,7 +1396,7 @@ Content:
 │  └─ Who decided what, when
 └─ Action Buttons
    ├─ Save & Continue
-   └─ Complete Assessment
+   └─ Complete Aanbieder Beoordeling
 
 Design principles:
 - Decision-first (recommendation at top)
@@ -1555,7 +1555,7 @@ PLACEMENT SUMMARY:
 └─ AI Confidence Block
    ├─ "94% match confidence"
    ├─ Reasoning
-   └─ Risk assessment
+   └─ Risk aanbieder beoordeling
 
 PLACEMENT DETAILS:
 ├─ Placement Date Picker
@@ -1605,7 +1605,7 @@ HEADER:
 
 INTAKE CHECKLIST:
 ├─ Document Preparation
-│  ├─ ☑ Assessment completed
+│  ├─ ☑ Aanbieder Beoordeling completed
 │  ├─ ☑ Placement confirmed
 │  ├─ ☐ Intake form sent to provider
 │  └─ ☐ Parent consent received
@@ -1620,7 +1620,7 @@ INTAKE CHECKLIST:
 
 INTAKE DOCUMENTS:
 ├─ Documents to send
-│  ├─ Assessment report (PDF)
+│  ├─ Aanbieder Beoordeling report (PDF)
 │  ├─ Medical information
 │  └─ Parent consent form
 ├─ Upload additional

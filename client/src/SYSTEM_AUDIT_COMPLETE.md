@@ -18,7 +18,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 **PASS** - All pages have clear, singular responsibilities:
 - ✅ Regiekamer: Prioritize
 - ✅ Casussen: Find & manage
-- ✅ Beoordelingen: Assessment queue
+- ✅ Aanbieder Beoordelingen: Aanbieder Beoordeling queue
 - ✅ Matching: Confirm decision
 - ✅ Plaatsing: Placement validation
 - ✅ Zorgaanbieders: Explore providers
@@ -29,8 +29,8 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 - ✅ **Casus Control Center: Execute everything**
 
 ### 2. No Workflow Duplication
-**PASS** - All workflow execution (Beoordeling/Matching/Plaatsing) happens ONLY in the Casus Control Center:
-- ✅ Beoordelingen page = queue only (FIXED)
+**PASS** - All workflow execution (Aanbieder Beoordeling/Matching/Plaatsing) happens ONLY in the Casus Control Center:
+- ✅ Aanbieder Beoordelingen page = queue only (FIXED)
 - ✅ Matching page = decision confirmation
 - ✅ Plaatsing page = validation
 - ✅ Full workflow execution = Casus Control Center
@@ -111,7 +111,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
   
 - ✅ **Center:**
   - ✅ Dynamic content based on phase:
-    - ✅ Beoordeling work area
+    - ✅ Aanbieder Beoordeling work area
     - ✅ Matching work area
     - ✅ Plaatsing work area
     - ✅ Blocked work area
@@ -138,24 +138,24 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 ### Integration:
 - ✅ Opens when clicking case from Regiekamer
 - ✅ Opens when clicking case from Casussen
-- ✅ Opens when clicking "Start" from Beoordelingen
+- ✅ Opens when clicking "Start" from Aanbieder Beoordelingen
 - ✅ Back button returns to previous view
 
 ---
 
 ## 🟡 BEOORDELINGEN CHECK
 
-**Purpose:** Assessment queue  
+**Purpose:** Aanbieder Beoordeling queue  
 **Status:** ✅ PASS (FIXED)
 
 ### Must Have:
-- ✅ List of cases needing assessment
+- ✅ List of cases needing aanbieder beoordeling
 - ✅ Status indicators (niet gestart, in behandeling)
 - ✅ Primary action: "Start" button
 - ✅ Missing info warnings
 
 ### Must NOT Have:
-- ✅ **No full assessment form** (FIXED - removed detail view)
+- ✅ **No full aanbieder beoordeling form** (FIXED - removed detail view)
 
 ### Test Result:
 ✅ **"Does this page just send me to the casus to do the work?"** - YES
@@ -164,7 +164,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 - No inline form execution
 
 ### Changes Made:
-- ❌ REMOVED: Detail view with full assessment form
+- ❌ REMOVED: Detail view with full aanbieder beoordeling form
 - ❌ REMOVED: Stepper navigation
 - ❌ REMOVED: Inline form sections
 - ✅ KEPT: Queue list with "Start" action
@@ -322,7 +322,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 - Actions clearly grouped by urgency
 - Each action has clear description
 - Links to case control center
-- Type indicators (call/email/assessment/etc.)
+- Type indicators (call/email/aanbieder beoordeling/etc.)
 
 ### Implementation:
 - ✅ Status-based grouping (overdue/today/upcoming)
@@ -372,7 +372,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 ## 🔧 FIXES APPLIED
 
 ### 1. BeoordelingenPage
-**Problem:** Had full assessment form in detail view  
+**Problem:** Had full aanbieder beoordeling form in detail view  
 **Fix:** Removed detail view entirely, kept only queue  
 **Result:** Page now sends users to Casus Control Center
 
@@ -404,7 +404,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 |------|---------|--------|--------------|--------------|
 | Regiekamer | Prioritize | ✅ PASS | 0 | 0 |
 | Casussen | Find & manage | ✅ PASS | 0 | 0 |
-| Beoordelingen | Assessment queue | ✅ PASS | 1 | 1 |
+| Aanbieder Beoordelingen | Aanbieder Beoordeling queue | ✅ PASS | 1 | 1 |
 | Matching | Confirm decision | ✅ PASS | 0 | 0 |
 | Plaatsing | Validation | ✅ PASS | 0 | 0 |
 | Zorgaanbieders | Explore providers | ✅ PASS | 0 | 0 |
@@ -432,7 +432,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 
 ### Separation of Concerns
 ✅ PASS - Clear separation:
-- **Discovery pages** → Show what exists (Regiekamer, Casussen, Beoordelingen)
+- **Discovery pages** → Show what exists (Regiekamer, Casussen, Aanbieder Beoordelingen)
 - **Exploration pages** → Understand landscape (Zorgaanbieders, Gemeenten, Regio's)
 - **Intelligence pages** → Know what's wrong/needed (Signalen, Acties)
 - **Execution page** → Do the work (Casus Control Center)
@@ -448,7 +448,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 ## 🚀 RECOMMENDATIONS FOR FUTURE
 
 ### Short Term (Completed)
-- ✅ Fix Beoordelingen page
+- ✅ Fix Aanbieder Beoordelingen page
 - ✅ Wire Casus Control Center
 - ✅ Create Signalen page
 - ✅ Create Acties page
@@ -457,7 +457,7 @@ The Regiekamer platform has undergone a comprehensive audit against the design c
 - 📋 Add saved filter views in Casussen
 - 📋 Add bulk reassignment in Acties
 - 📋 Add trend analysis in Signalen
-- 📋 Add assessment form templates in Casus Control Center
+- 📋 Add aanbieder beoordeling form templates in Casus Control Center
 
 ### Long Term (Platform Evolution)
 - 📋 Add predictive capacity warnings

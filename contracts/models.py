@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.utils import timezone
 from decimal import Decimal
@@ -927,13 +928,52 @@ class CaseAssessment(models.Model):
     @intake.setter
     def intake(self, value):
         self.due_diligence_process = value
-    
+
     def get_risk_signals_display(self):
         """Return list of signal labels."""
         if not self.risk_signals:
             return []
         codes = [s.strip() for s in self.risk_signals.split(',')]
         return [dict(self.RiskSignal.choices).get(code, code) for code in codes]
+
+    def clean(self):
+        super().clean()
+
+        if self.assessment_status == self.AssessmentStatus.APPROVED_FOR_MATCHING and not self.matching_ready:
+            raise ValidationError({
+                'matching_ready': 'Een beoordeling kan pas gereed voor matching zijn als matching_ready aan staat.',
+            })
+
+        if self.matching_ready and self.assessment_status != self.AssessmentStatus.APPROVED_FOR_MATCHING:
+            raise ValidationError({
+                'assessment_status': 'Alleen een goedgekeurde beoordeling mag matching_ready zijn.',
+            })
+
+    def can_mark_ready_for_matching(self) -> tuple[bool, str]:
+        if self.assessment_status != self.AssessmentStatus.APPROVED_FOR_MATCHING:
+            return False, 'Beoordeling moet eerst goedgekeurd zijn voor matching.'
+        if not self.matching_ready:
+            return False, 'Beoordeling staat nog niet op gereed voor matching.'
+        return True, ''
+
+
+class PlacementRequestQuerySet(models.QuerySet):
+    """Custom queryset for PlacementRequest with organization-scoping support."""
+
+    def for_organization(self, organization):
+        if not organization:
+            return self.none()
+        return self.filter(due_diligence_process__organization=organization)
+
+
+class PlacementRequestManager(models.Manager):
+    """Custom manager for PlacementRequest."""
+
+    def get_queryset(self):
+        return PlacementRequestQuerySet(self.model, using=self._db)
+
+    def for_organization(self, organization):
+        return self.get_queryset().for_organization(organization)
 
 
 class PlacementRequest(models.Model):
@@ -1082,6 +1122,8 @@ class PlacementRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = PlacementRequestManager()
+
     def __str__(self):
         if self.intake:
             return f'Indicatie: {self.intake.title}'
@@ -1094,6 +1136,60 @@ class PlacementRequest(models.Model):
     @intake.setter
     def intake(self, value):
         self.due_diligence_process = value
+
+    def get_linked_assessment(self):
+        intake = self.intake
+        if intake is None:
+            return None
+        try:
+            return intake.case_assessment
+        except CaseAssessment.DoesNotExist:
+            return None
+
+    def can_transition_to_status(self, target_status):
+        target_status = str(target_status or '').strip().upper()
+        intake = self.intake
+        assessment = self.get_linked_assessment()
+
+        if target_status == self.Status.IN_REVIEW:
+            if not (self.selected_provider_id or self.proposed_provider_id):
+                return False, 'Een aanbieder moet eerst geselecteerd zijn.'
+            if intake and intake.status not in {
+                CaseIntakeProcess.ProcessStatus.MATCHING,
+                CaseIntakeProcess.ProcessStatus.DECISION,
+            }:
+                return False, 'Casus moet eerst in matching staan.'
+            if assessment is None:
+                return False, 'Beoordeling ontbreekt.'
+            if assessment.assessment_status != CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
+                return False, 'Beoordeling moet gereed zijn voor matching.'
+            if not assessment.matching_ready:
+                return False, 'Beoordeling moet eerst gereed zijn voor matching.'
+            return True, ''
+
+        if target_status == self.Status.APPROVED:
+            if not self.selected_provider_id:
+                return False, 'Een bevestigde plaatsing vereist een geselecteerde aanbieder.'
+            if intake and intake.status not in {
+                CaseIntakeProcess.ProcessStatus.MATCHING,
+                CaseIntakeProcess.ProcessStatus.DECISION,
+            }:
+                return False, 'Casus moet eerst in matching staan.'
+            if self.provider_response_status != self.ProviderResponseStatus.ACCEPTED:
+                return False, 'Plaatsing kan pas worden bevestigd na acceptatie door de aanbieder.'
+            return True, ''
+
+        if target_status == self.Status.REJECTED:
+            if self.provider_response_status == self.ProviderResponseStatus.ACCEPTED:
+                return False, 'Een geaccepteerde plaatsing kan niet als afgewezen worden gemarkeerd.'
+            return True, ''
+
+        if target_status == self.Status.NEEDS_INFO:
+            if self.provider_response_status == self.ProviderResponseStatus.ACCEPTED:
+                return False, 'Aanvullende informatie is niet nodig na acceptatie.'
+            return True, ''
+
+        return True, ''
 
 
 class GovernanceLogImmutableError(Exception):
@@ -1822,6 +1918,36 @@ class CaseIntakeProcess(models.Model):
             self.regio = self.preferred_region
 
         super().save(*args, **kwargs)
+
+    def get_latest_assessment(self):
+        try:
+            return self.case_assessment
+        except CaseAssessment.DoesNotExist:
+            return None
+
+    def get_latest_placement(self):
+        return self.indications.select_related('selected_provider', 'proposed_provider').order_by('-updated_at', '-created_at').first()
+
+    def can_enter_matching(self) -> tuple[bool, str]:
+        if self.status == self.ProcessStatus.COMPLETED:
+            return False, 'Casus is afgerond en kan niet opnieuw naar matching zonder heropening.'
+        if self.status == self.ProcessStatus.ON_HOLD:
+            return False, 'Casus staat op wacht.'
+
+        assessment = self.get_latest_assessment()
+        if assessment is None:
+            return False, 'Beoordeling ontbreekt.'
+        if assessment.assessment_status != CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
+            return False, 'Beoordeling moet eerst gereed zijn voor matching.'
+        if not assessment.matching_ready:
+            return False, 'Beoordeling staat nog niet op gereed voor matching.'
+        return True, ''
+
+    def can_start_provider_review(self) -> tuple[bool, str]:
+        placement = self.get_latest_placement()
+        if placement is None:
+            return False, 'Plaatsing ontbreekt.'
+        return placement.can_transition_to_status(PlacementRequest.Status.IN_REVIEW)
 
     def ensure_case_record(self, created_by=None):
         if self.contract_id:

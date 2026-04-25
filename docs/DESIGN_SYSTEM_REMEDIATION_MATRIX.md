@@ -88,5 +88,5 @@ Converge the UI onto one runtime design system:
 
 - targeted Django route tests for affected detail pages
 - shell verification via `bash scripts/dev_up.sh --verify`
-- visual spot-check of dashboard, intake, assessment, matching, and placement flows
+- visual spot-check of dashboard, intake, aanbieder beoordeling, matching, and placement flows
 - grep count for inline `style="` in `theme/templates` trends down after each pass

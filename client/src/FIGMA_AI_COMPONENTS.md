@@ -308,7 +308,7 @@ Clean bullet-point summary of key information
 │                                                            │
 │  ⚠️ Urgentie hoog - spoedtraject vereist                  │
 │                                                            │
-│  ✓ Beoordeling gepland met Dr. P. Bakker                  │
+│  ✓ Aanbieder Beoordeling gepland met Dr. P. Bakker                  │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -488,7 +488,7 @@ Quick inline status message
 
 ```
 ┌────────────────────────────────────────────────────────────┐
-│ ℹ️ Beoordeling gepland voor 18 april met Dr. P. Bakker   │
+│ ℹ️ Aanbieder Beoordeling gepland voor 18 april met Dr. P. Bakker   │
 └────────────────────────────────────────────────────────────┘
 ```
 
@@ -564,7 +564,7 @@ Show validation checklist with status
 ┌────────────────────────────────────────────────────────────┐
 │  Validatie                                                 │
 │                                                            │
-│  ✓ Beoordeling compleet                                   │
+│  ✓ Aanbieder Beoordeling compleet                                   │
 │  ✓ Matching bevestigd                                     │
 │  ⚠️ Wachttijd hoger dan gemiddeld                         │
 │                                                            │

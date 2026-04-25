@@ -29,6 +29,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 import { useRegions, type SpaRegion } from "../../hooks/useRegions";
 import { Loader2 } from "lucide-react";
+import { SPA_DASHBOARD_URL } from "../../lib/routes";
 
 interface RegiosPageProps {
   onRegionClick: (regionId: string) => void;
@@ -60,7 +61,7 @@ export function RegiosPage({
       onViewProviders(regions[0].id);
       return;
     }
-    window.location.href = "/dashboard/";
+    window.location.href = SPA_DASHBOARD_URL;
   };
 
   // System-level intelligence

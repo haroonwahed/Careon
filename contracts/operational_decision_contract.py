@@ -81,7 +81,7 @@ class BottleneckState(str, Enum):
 @dataclass
 class RecommendedAction:
     """Structured recommended action (from governance logic)."""
-    label: str                          # "Rond beoordeling af"
+    label: str                          # "Rond aanbieder beoordeling af"
     reason: str                         # "Zonder dit kan matching niet starten"
     action_type: str = "default"       # review|assign|escalate|monitor|rematch
     target_url: Optional[str] = None   # Where to perform action

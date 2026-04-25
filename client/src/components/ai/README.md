@@ -23,7 +23,7 @@ import { AanbevolenActie } from "@/components/ai";
 
 <AanbevolenActie
   title="Start matching proces"
-  explanation="Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd."
+  explanation="Aanbieder Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd."
   actionLabel="Start matching"
   confidence="high" // "high" | "medium" | "low"
   variant="default" // "default" | "urgent"
@@ -34,7 +34,7 @@ import { AanbevolenActie } from "@/components/ai";
 **When to use:**
 - Top of Casus Detail page
 - Top of Matching page  
-- Top of Beoordeling page
+- Top of Aanbieder Beoordeling page
 
 **Placement:** Always at the top, before main content
 
@@ -147,7 +147,7 @@ import { SystemInsight } from "@/components/ai";
 
 <SystemInsight
   type="info" // "info" | "warning" | "success" | "blocked" | "suggestion"
-  message="Beoordeling gepland voor 18 april met Dr. P. Bakker"
+  message="Aanbieder Beoordeling gepland voor 18 april met Dr. P. Bakker"
   compact={false} // optional
 />
 ```
@@ -324,7 +324,7 @@ const getRecommendation = (caseData) => {
   if (caseData.status === "matching") {
     return {
       title: "Start matching proces",
-      explanation: "Beoordeling is compleet. Systeem heeft 3 matches...",
+      explanation: "Aanbieder Beoordeling is compleet. Systeem heeft 3 matches...",
       actionLabel: "Start matching",
       confidence: "high"
     };
@@ -333,7 +333,7 @@ const getRecommendation = (caseData) => {
   // Default
   return {
     title: "Wacht op beoordeling",
-    explanation: "Beoordeling is ingepland...",
+    explanation: "Aanbieder Beoordeling is ingepland...",
     actionLabel: "Bekijk beoordeling"
   };
 };

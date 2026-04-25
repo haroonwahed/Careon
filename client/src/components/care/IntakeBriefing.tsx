@@ -65,11 +65,11 @@ export function IntakeBriefing({ caseData }: IntakeBriefingProps) {
           </div>
         </section>
 
-        {/* Beoordeling samenvatting */}
+        {/* Samenvatting */}
         <section>
           <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">
             <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-            Beoordeling samenvatting
+            Samenvatting
           </h3>
           <div className="p-4 rounded-lg border careon-alert-info">
             <p className="text-sm text-foreground leading-relaxed">

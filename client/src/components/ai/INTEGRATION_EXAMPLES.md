@@ -43,7 +43,7 @@ export function CaseDetailPage({ caseId, onBack, onStartMatching }) {
   // ✨ AI Decision Logic
   const recommendation = {
     title: "Start matching proces",
-    explanation: "Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd.",
+    explanation: "Aanbieder Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd.",
     actionLabel: "Start matching",
     confidence: "high",
     onAction: () => onStartMatching(caseId)
@@ -205,7 +205,7 @@ import { MatchExplanation } from "@/components/ai";
 
 ```tsx
 <div className="p-4 bg-muted rounded-lg">
-  <p>Beoordeling gepland voor 18 april</p>
+  <p>Aanbieder Beoordeling gepland voor 18 april</p>
 </div>
 ```
 
@@ -216,7 +216,7 @@ import { SystemInsight } from "@/components/ai";
 
 <SystemInsight
   type="info"
-  message="Beoordeling gepland voor 18 april met Dr. P. Bakker"
+  message="Aanbieder Beoordeling gepland voor 18 april met Dr. P. Bakker"
 />
 ```
 
@@ -344,7 +344,7 @@ const getRecommendation = (caseData) => {
   if (caseData.status === "matching") {
     return {
       title: "Start matching proces",
-      explanation: "Beoordeling is compleet...",
+      explanation: "Aanbieder Beoordeling is compleet...",
       actionLabel: "Start matching",
       confidence: "high",
       onAction: () => handleStartMatching()

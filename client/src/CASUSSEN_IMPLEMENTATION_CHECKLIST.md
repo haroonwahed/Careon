@@ -20,13 +20,13 @@ This checklist tracks the implementation state of the Casussen and related workf
 
 - [x] Casussen list and workflow pages updated.
 - [x] Matching page and wrapper integrated with new handoff behavior.
-- [x] New assessment decision surface implemented.
+- [x] New aanbieder beoordeling decision surface implemented.
 - [x] New matching decision engine surface implemented.
 - [x] Sidebar and navigation links aligned with current pages.
 
 ### Backend and Data Model
 
-- [x] API endpoints for matching and assessment decision wired.
+- [x] API endpoints for matching and aanbieder beoordeling decision wired.
 - [x] Urgency validation and arrangement fields added (migration 0048).
 - [x] Provider beoordelingsfase introduced (migration 0049).
 - [x] Waitlist prioritization helper introduced in `contracts/waitlist.py`.
@@ -35,7 +35,7 @@ This checklist tracks the implementation state of the Casussen and related workf
 
 - [x] Client build passes.
 - [x] `manage.py check` passes in project venv.
-- [x] Targeted integration tests for intake/assessment/matching and operational contract flows pass.
+- [x] Targeted integration tests for intake/aanbieder beoordeling/matching and operational contract flows pass.
 
 ## What Still Needs Doing
 

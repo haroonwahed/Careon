@@ -37,7 +37,7 @@
                 <select id="intake-status" name="status" onchange="this.form.submit()">
                     <option value="">Alle statussen</option>
                     <option value="INTAKE" {% if request.GET.status == 'INTAKE' %}selected{% endif %}>Intake</option>
-                    <option value="ASSESSMENT" {% if request.GET.status == 'ASSESSMENT' %}selected{% endif %}>Beoordeling</option>
+                    <option value="ASSESSMENT" {% if request.GET.status == 'ASSESSMENT' %}selected{% endif %}>Aanbieder Beoordeling</option>
                     <option value="MATCHING" {% if request.GET.status == 'MATCHING' %}selected{% endif %}>Matching</option>
                     <option value="DECISION" {% if request.GET.status == 'DECISION' %}selected{% endif %}>Matchbesluit</option>
                     <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Afgerond</option>

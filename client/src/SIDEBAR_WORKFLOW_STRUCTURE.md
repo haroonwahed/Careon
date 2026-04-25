@@ -49,14 +49,14 @@ NOT:
 **Purpose**: Where the actual work happens
 
 ```
-📋 Beoordelingen (2)  → Assessments in progress
+📋 Aanbieder Beoordelingen (2)  → Aanbieder Beoordelingen in progress
 🔀 Matching (3)       → Active matching processes  
 ✅ Plaatsingen (1)    → Placements being confirmed
 👤 Intake             → New case intake
 ```
 
 **Badge Numbers**: Show pending workload
-- `(2)` = 2 assessments need attention
+- `(2)` = 2 aanbieder beoordelingen need attention
 - `(3)` = 3 matching processes active
 - `(1)` = 1 placement awaiting confirmation
 
@@ -69,9 +69,9 @@ NOT:
 This represents the **core engine** of the product. This is where care coordinators spend 80% of their time. The workflow is sequential but not strictly linear:
 
 ```
-Intake → Beoordeling → Matching → Plaatsing
+Intake → Aanbieder Beoordeling → Matching → Plaatsing
   ↓         ↓            ↓           ↓
-New case  Assessment  Provider   Confirmed
+New case  Aanbieder Beoordeling  Provider   Confirmed
 created   completed   selected   placement
 ```
 
@@ -228,7 +228,7 @@ Systeem:
 |---------|-------|-------|
 | Control Room | Regiekamer | Command center |
 | Cases | Casussen | Individual care cases |
-| Assessments | Beoordelingen | Evaluations |
+| Aanbieder Beoordelingen | Aanbieder Beoordelingen | Evaluations |
 | Matching | Matching | Provider matching |
 | Placements | Plaatsingen | Care placements |
 | Intake | Intake | New case intake |
@@ -259,7 +259,7 @@ Page Type → Route ID
 "casussen"        → Full case list
 
 // Werkflow  
-"beoordelingen"   → Assessments overview
+"beoordelingen"   → Aanbieder Beoordelingen overview
 "matching"        → Matching processes
 "plaatsingen"     → Placements overview
 "intake"          → New intakes
@@ -292,7 +292,7 @@ All routes are handled in `/App.tsx`:
 Currently **hard-coded** in sidebar for demonstration:
 
 ```typescript
-{ id: "beoordelingen", badge: 2 }  // 2 assessments pending
+{ id: "beoordelingen", badge: 2 }  // 2 aanbieder beoordelingen pending
 { id: "matching", badge: 3 }       // 3 matching processes
 { id: "plaatsingen", badge: 1 }    // 1 placement awaiting
 { id: "notifications", badge: 3 }  // 3 system signals
@@ -339,8 +339,8 @@ const workloadCounts = {
 ```
 1. User logs in
 2. Lands on Regiekamer
-3. Sees badge (2) on Beoordelingen
-4. Clicks → Views overdue assessments
+3. Sees badge (2) on Aanbieder Beoordelingen
+4. Clicks → Views overdue aanbieder beoordelingen
 5. Takes action
 ```
 
@@ -383,7 +383,7 @@ Arrow Up/Down → Navigate within section (future)
   </section>
   <section aria-label="Werkflow">
     <button>
-      Beoordelingen
+      Aanbieder Beoordelingen
       <span aria-label="2 pending">2</span>
     </button>
     <!-- ... -->
@@ -561,7 +561,7 @@ Regie:
 - Casussen
 
 Werkflow: (EMPHASIZED)
-- Beoordelingen (2)
+- Aanbieder Beoordelingen (2)
 - Matching (3)
 - Plaatsingen (1)
 - Intake

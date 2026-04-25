@@ -34,7 +34,7 @@ You'll see the Regiekamer dashboard with 8 sample cases.
 
 **Top Section**: 6 KPI cards showing operational metrics
 - Cases without match
-- Open assessments  
+- Open aanbieder beoordelingen  
 - Placements in progress
 - Average waiting time
 - High-risk cases
@@ -53,7 +53,7 @@ You'll see the Regiekamer dashboard with 8 sample cases.
 
 **Sections**:
 1. **Header**: Case ID, status, urgency, risk + recommendation
-2. **Phase Indicator**: Shows progress (Intake → Assessment → Matching → Placement)
+2. **Phase Indicator**: Shows progress (Intake → Aanbieder Beoordeling → Matching → Placement)
 3. **Three Columns**:
    - Left: Client info, case details, timeline
    - Center: Work area (changes based on case status)
@@ -93,7 +93,7 @@ You'll see the Regiekamer dashboard with 8 sample cases.
 | 🟡 Amber | Warning | Delays, moderate urgency |
 | 🟢 Green | Positive | Low risk, completed |
 | 🟣 Purple | Actions | Primary buttons, active states |
-| 🔵 Blue | Info | Assessment phase |
+| 🔵 Blue | Info | Aanbieder Beoordeling phase |
 
 ---
 
@@ -101,7 +101,7 @@ You'll see the Regiekamer dashboard with 8 sample cases.
 
 ### Status Badges (What phase is the case in?)
 - 🟣 **Intake** - New case
-- 🔵 **Beoordeling** - Assessment in progress
+- 🔵 **Aanbieder Beoordeling** - Aanbieder Beoordeling in progress
 - 🟡 **Matching** - Looking for providers
 - 🔵 **Plaatsing** - Placement being processed
 - 🟢 **Actief** - Active care
@@ -145,10 +145,10 @@ You'll see the Regiekamer dashboard with 8 sample cases.
 The app comes with 8 mock cases:
 
 1. **C-2026-0847** - Blocked, critical, 12 days waiting
-2. **C-2026-0891** - Assessment, high urgency, 8 days
+2. **C-2026-0891** - Aanbieder Beoordeling, high urgency, 8 days
 3. **C-2026-0923** - Matching, high urgency, 6 days
 4. **C-2026-0945** - Placement, medium urgency, 3 days
-5. **C-2026-0912** - Assessment, medium urgency, 5 days
+5. **C-2026-0912** - Aanbieder Beoordeling, medium urgency, 5 days
 6. **C-2026-0956** - Intake, low urgency, 2 days
 7. **C-2026-0873** - Matching, medium urgency, 4 days
 8. **C-2026-0834** - Blocked, critical, 18 days
@@ -159,13 +159,13 @@ The app comes with 8 mock cases:
 
 ## Common Workflows
 
-### Scenario 1: New Case Assessment
+### Scenario 1: New Case Aanbieder Beoordeling
 ```
 1. See case with status "Intake" in Regiekamer
 2. Click case to open detail page
 3. Review client information
-4. Add assessment notes in work area
-5. Update status to "Beoordeling"
+4. Add aanbieder beoordeling notes in work area
+5. Update status to "Aanbieder Beoordeling"
 ```
 
 ### Scenario 2: Finding Provider Match

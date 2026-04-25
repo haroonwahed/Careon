@@ -44,7 +44,7 @@ nano /opt/careon/.env
 sudo systemctl restart gunicorn-careon
 
 # 3. Smoke-test
-curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
+curl -s -o /dev/null -w "%{http_code}" https://<host>/static/spa/?view=dashboard
 ```
 
 **Feature flags** (toggle without a restart when using database flags):
@@ -82,7 +82,7 @@ python manage.py collectstatic --noinput
 sudo systemctl restart gunicorn-careon
 
 # 6. Verify health
-curl -s -o /dev/null -w "%{http_code}" https://<host>/dashboard/
+curl -s -o /dev/null -w "%{http_code}" https://<host>/static/spa/?view=dashboard
 ```
 
 ---

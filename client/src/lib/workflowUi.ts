@@ -56,9 +56,9 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
 function phaseLabel(phase: SpaCase["status"]): string {
   switch (phase) {
     case "intake":
-      return "Nieuw";
+      return "Casus";
     case "provider_beoordeling":
-      return "In beoordeling";
+      return "Aanbieder Beoordeling";
     case "matching":
       return "Klaar voor matching";
     case "plaatsing":
@@ -88,7 +88,7 @@ function boardColumn(phase: SpaCase["status"]): WorkflowBoardColumn {
 function nextActionTarget(phase: SpaCase["status"]): WorkflowCaseView["nextBestActionUrl"] {
   switch (phase) {
     case "provider_beoordeling":
-      return "beoordelingen";
+      return "plaatsingen";
     case "matching":
       return "matching";
     case "plaatsing":
@@ -96,7 +96,7 @@ function nextActionTarget(phase: SpaCase["status"]): WorkflowCaseView["nextBestA
     case "afgerond":
       return "intake";
     default:
-      return "casussen";
+      return "matching";
   }
 }
 

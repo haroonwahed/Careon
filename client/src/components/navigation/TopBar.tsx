@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Input } from "../ui/input";
 import { NOTIFICATIONS, formatNotificationTimestamp } from "../../lib/notificationsData";
+import { LOGOUT_URL, SPA_LANDING_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 
@@ -55,10 +56,20 @@ function getCsrfToken(): string {
   return match ? decodeURIComponent(match[1]) : "";
 }
 
+function getDjangoUrl(path: string): string {
+  const backendOrigin = import.meta.env.VITE_DJANGO_ORIGIN;
+
+  if (backendOrigin) {
+    return new URL(path, backendOrigin).toString();
+  }
+
+  return path;
+}
+
 function submitLogoutForm(): void {
   const form = document.createElement("form");
   form.method = "post";
-  form.action = "/logout/";
+  form.action = getDjangoUrl(LOGOUT_URL);
   form.style.display = "none";
 
   const csrfInput = document.createElement("input");
@@ -70,7 +81,7 @@ function submitLogoutForm(): void {
   const nextInput = document.createElement("input");
   nextInput.type = "hidden";
   nextInput.name = "next";
-  nextInput.value = "/login/";
+  nextInput.value = SPA_LANDING_URL;
   form.appendChild(nextInput);
 
   document.body.appendChild(form);

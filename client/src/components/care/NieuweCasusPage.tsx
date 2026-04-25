@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
+import { SPA_DASHBOARD_URL } from "../../lib/routes";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -466,7 +467,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         onCreated?.(createdCaseId);
         return;
       }
-      window.location.href = payload.redirect_url || "/dashboard/?page=casussen";
+      window.location.href = payload.redirect_url || `${SPA_DASHBOARD_URL}&page=casussen`;
     } catch (error) {
       const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
       const match = responseText.match(/API fout 400: (.*)$/);

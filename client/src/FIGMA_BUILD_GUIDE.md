@@ -414,7 +414,7 @@ Right side:
 **Step 2: Add Content**
 
 1. Icon: Info, 14px
-2. Text: "Beoordeling gepland voor 18 april"
+2. Text: "Aanbieder Beoordeling gepland voor 18 april"
    - Style: AI/Small
 
 **Step 3: Create Component + Variants**
@@ -448,7 +448,7 @@ Right side:
 
 1. Horizontal frames
 2. Icon: CheckCircle2 (green) or AlertCircle (amber)
-3. Text: "Beoordeling compleet"
+3. Text: "Aanbieder Beoordeling compleet"
 4. Gap: 8px
 5. Margin: 8px between items
 

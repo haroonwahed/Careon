@@ -465,7 +465,7 @@ NOT:
 2. Clicks "Bekijk details"
 3. Opens full IntakePage (new tab/view)
 4. Reads complete briefing
-5. Downloads assessment report
+5. Downloads aanbieder beoordeling report
 6. Reviews documents
 7. Checks contact info
 8. Returns to dashboard

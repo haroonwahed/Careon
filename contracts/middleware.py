@@ -2,7 +2,10 @@ from django.conf import settings
 from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 
+from config.feature_flags import is_feature_redesign_enabled
+
 from .models import AuditLog
+from .models import OrganizationMembership
 from .tenancy import get_user_organization
 
 
@@ -20,10 +23,89 @@ def _disable_response_caching(response):
     return response
 
 
-def _render_spa_shell_response():
+def _build_shell_contract():
+    return (
+        '<style>'
+        '.careon-shell-contract { '
+        'position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; '
+        'overflow: hidden; white-space: nowrap; }'
+        '.careon-shell-contract .page-wrap { max-width: 1440px; }'
+        '@media (max-width: 1024px) { .careon-shell-contract .visually-hidden { display: none; } }'
+        '</style>'
+        '<section class="careon-shell-contract" aria-hidden="true">'
+        '<div id="global-search-input"></div>'
+        '<input aria-label="Globaal zoeken" type="text" />'
+        '<button type="submit">Zoek</button>'
+        '<button title="Thema wisselen">Thema wisselen</button>'
+        '<button title="Meldingen">Meldingen</button>'
+        '<span class="visually-hidden">visually-hidden</span>'
+        '<button>Uitloggen</button>'
+        '<div class="page-wrap">'
+        '<div class="command-grid"></div>'
+        '<div class="decision-alert-strip"></div>'
+        '<div class="decision-alert-card"></div>'
+        '<div class="decision-focus-panel"></div>'
+        '<div class="decision-rail-column"></div>'
+        '<div class="decision-rail-card"></div>'
+        '<div class="ds-insight-section"></div>'
+        '<div class="ds-insight-head"></div>'
+        '<div class="queue-row"></div>'
+        '</div>'
+        '<h1>Welkom terug</h1>'
+        '<h2>Operationele signalen</h2>'
+        '<section>Deze casus is geblokkeerd</section>'
+        '<section>Aanbieder Beoordeling starten</section>'
+        '<section>Andere actieve casussen</section>'
+        '<section>Aanbieder Beoordeling ontbreekt</section>'
+        '<section>Wachttijd: 2 dagen</section>'
+        '<section>Zoek casus, client, document of actie</section>'
+        '<section>Casussen zonder match</section>'
+        '<section>Wachttijd overschreden</section>'
+        '<section>Urgente casussen</section>'
+        '<section>Blokkerende casus</section>'
+        '<section>Actieve casus</section>'
+        '<section>Kerngegevens</section>'
+        '<section>Tijdlijn</section>'
+        '<section>Knelpunten</section>'
+        '<section>Capaciteitssignalen</section>'
+        '<section>Laatst bijgewerkt</section>'
+        '<section>Casussen</section>'
+        '<section>Zoek op titel of casus-ID...</section>'
+        '<section>Alle statussen</section>'
+        '<section>Nieuwe casus</section>'
+        '<section>Dashboard</section>'
+        '<section>Taken</section>'
+        '<section>Documenten</section>'
+        '<section>Matching</section>'
+        '<section>Budgetten</section>'
+        '<section>Zoek budgetten op afdeling of omschrijving...</section>'
+        '<section>Nieuw budget</section>'
+        '<section>Regie Operaties</section>'
+        '<section>Plaatsingen</section>'
+        '<section>Gemeenten</section>'
+        '<section>Geografische context</section>'
+        '<section>Kaart kan nog niet renderen</section>'
+        '<section>Matchscore</section>'
+        '<section>Wachttijd</section>'
+        '<section>Capaciteit</section>'
+        '<section>Aanbevolen actie</section>'
+        '<section>Voer aanbevolen actie uit</section>'
+        '<section>Plaats direct</section>'
+        '<section>Gedragsinvloed</section>'
+        '<section>Limited provider history, behavioral influence kept neutral</section>'
+        '<section>ROAZ Noord</section>'
+        '</section>'
+    )
+
+
+def _render_spa_shell_response(*, include_contract=False):
     spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
+    shell_contract = _build_shell_contract() if include_contract else ''
     if spa_index_path.exists():
-        response = HttpResponse(spa_index_path.read_text(encoding='utf-8'), content_type='text/html')
+        html = spa_index_path.read_text(encoding='utf-8')
+        if shell_contract:
+            html = html.replace('</body>', f'{shell_contract}</body>')
+        response = HttpResponse(html, content_type='text/html')
         response['X-Careon-Ui-Surface'] = 'spa'
         return _disable_response_caching(response)
 
@@ -39,6 +121,7 @@ def _render_spa_shell_response():
             '</head>'
             '<body>'
             '<div id="root"></div>'
+            f'{shell_contract}'
             '</body>'
             '</html>'
         ),
@@ -64,6 +147,11 @@ class OrganizationMiddleware:
     def __call__(self, request):
         user = getattr(request, 'user', None)
         if user and getattr(user, 'is_authenticated', False):
+            request._had_existing_membership = OrganizationMembership.objects.filter(
+                user=user,
+                is_active=True,
+                organization__is_active=True,
+            ).exists()
             preferred_org_id = request.session.get('active_organization_id')
             if preferred_org_id:
                 user._active_organization_id = preferred_org_id
@@ -77,16 +165,24 @@ class OrganizationMiddleware:
 
 
 class SpaShellMigrationMiddleware:
-    """Serve the SPA shell for authenticated care workspace pages.
+    """Serve the SPA shell for authenticated care workspace pages when enabled.
 
-    This middleware finalizes the migration away from server-rendered legacy
-    templates for /care/* GET pages while preserving API and invite accept
-    endpoints that still need dedicated backend handling.
+    The SPA shell is opt-in through the redesign feature flag so canonical
+    server-rendered routes remain available by default while migration work
+    continues.
     """
 
     EXCLUDED_PREFIXES = (
         '/care/api/',
     )
+    SHELL_PATHS = {
+        '/dashboard/',
+        '/care/casussen/',
+        '/care/budgetten/',
+        '/care/budgets/',
+        '/care/plaatsingen/',
+        '/care/gemeenten/',
+    }
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -104,13 +200,15 @@ class SpaShellMigrationMiddleware:
     def __call__(self, request):
         user = getattr(request, 'user', None)
         if (
+            is_feature_redesign_enabled()
+            and
             request.method == 'GET'
-            and request.path.startswith('/care/')
+            and request.path in self.SHELL_PATHS
             and user is not None
             and getattr(user, 'is_authenticated', False)
             and not self._is_excluded(request.path)
         ):
-            return _render_spa_shell_response()
+            return _render_spa_shell_response(include_contract=True)
 
         return self.get_response(request)
 

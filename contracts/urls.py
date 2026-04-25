@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic.base import RedirectView
 from . import views
 from .api import views as api_views
+from .navigation import SPA_LANDING_URL
 
 app_name = 'careon'
 
@@ -12,6 +13,9 @@ urlpatterns = [
     path('api/cases/intake-form/', api_views.intake_form_options_api, name='intake_form_options_api'),
     path('api/cases/intake-create/', api_views.intake_create_api, name='intake_create_api'),
     path('api/cases/<int:case_id>/matching-candidates/', api_views.matching_candidates_api, name='matching_candidates_api'),
+    path('api/cases/<int:case_id>/assessment-decision/', api_views.assessment_decision_api, name='assessment_decision_api'),
+    path('api/cases/<int:case_id>/matching/action/', api_views.matching_action_api, name='matching_action_api'),
+    path('api/cases/<int:case_id>/placement-detail/', api_views.case_placement_detail_api, name='case_placement_detail_api'),
     path('api/cases/<int:case_id>/', api_views.case_detail_api, name='case_detail_api'),
     path('api/cases/<str:case_ref>/', api_views.case_detail_string_fallback_api, name='case_detail_string_fallback_api'),
     path('api/assessments/', api_views.assessments_api, name='assessments_api'),
@@ -140,5 +144,5 @@ urlpatterns = [
     path('beoordelingen/<int:pk>/', views.CaseAssessmentDetailView.as_view(), name='assessment_detail'),
     path('beoordelingen/<int:pk>/edit/', views.CaseAssessmentUpdateView.as_view(), name='assessment_update'),
 
-    path('', RedirectView.as_view(pattern_name='careon:case_list', permanent=False), name='home'),
+    path('', RedirectView.as_view(url=SPA_LANDING_URL, permanent=False), name='home'),
 ]

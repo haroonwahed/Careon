@@ -104,7 +104,7 @@ Green  (#22C55E)  →  Success, positive signals
 **Decision Logic:**
 - Status = "matching" → Recommend start matching
 - Status = "blocked" → Recommend escalation (urgent)
-- Status = "assessment" → Show assessment progress
+- Status = "aanbieder beoordeling" → Show aanbieder beoordeling progress
 
 ### Matching Page
 
@@ -142,12 +142,12 @@ Green  (#22C55E)  →  Success, positive signals
 - High urgency → Critical note in briefing
 - Complex case → Additional context in summary
 
-### Beoordeling Page
+### Aanbieder Beoordeling Page
 
 **AI Components:**
 - ✅ `SystemInsight` - Missing field warnings
 - ✅ `Risicosignalen` - Data quality issues
-- ✅ `AanbevolenActie` - "Complete assessment" when ready
+- ✅ `AanbevolenActie` - "Complete aanbieder beoordeling" when ready
 
 **Decision Logic:**
 - Missing fields → Info insights per section
@@ -177,7 +177,7 @@ import {
 // Get recommendation based on case status
 const recommendation = {
   title: "Start matching proces",
-  explanation: "Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd.",
+  explanation: "Aanbieder Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd.",
   actionLabel: "Start matching",
   confidence: "high",
   onAction: () => handleStartMatching()
@@ -228,7 +228,7 @@ return (
         {/* ✨ AI LAYER: Inline insights */}
         <SystemInsight 
           type="info" 
-          message="Beoordeling gepland voor 18 april" 
+          message="Aanbieder Beoordeling gepland voor 18 april" 
         />
       </div>
       

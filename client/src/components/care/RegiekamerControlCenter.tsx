@@ -132,7 +132,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
     },
     {
       id: "bij_aanbieder",
-      label: "Bij Aanbieder",
+      label: "Aanbieder Beoordeling",
       count: decisionSummary.flow_counts.bij_aanbieder,
       filter: "aanbieder_wacht",
       onClick: () => {
@@ -547,7 +547,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
               <option value="casus">Casus</option>
               <option value="matching">Matching</option>
               <option value="aanbieder_selectie">Aanbieder selectie</option>
-              <option value="provider_beoordeling">Bij aanbieder</option>
+              <option value="provider_beoordeling">Aanbieder beoordeling</option>
               <option value="intake_provider">Intake</option>
               <option value="geblokkeerd">Geblokkeerd</option>
             </select>
@@ -582,7 +582,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
                 label={
                   activeKPIFilter === "casussen" ? "Fase: Casussen" :
                   activeKPIFilter === "noMatch" ? "Zonder match" :
-                  activeKPIFilter === "assessment" ? "Aanbiederfilter" :
+                  activeKPIFilter === "assessment" ? "Aanbieder beoordeling" :
                   activeKPIFilter === "placement" ? "Plaatsingen bezig" :
                   activeKPIFilter === "highRisk" ? "Hoog risico" :
                   activeKPIFilter === "waitingOverdue" ? "Wachttijd overschreden" :
@@ -686,10 +686,10 @@ function ActiveFilterChip({ label }: ActiveFilterChipProps) {
 
 const PHASE_LABELS: Record<CasusPhase, string> = {
   intake_initial: "Intake",
-  beoordeling: "Beoordeling",
+  beoordeling: "Aanbieder Beoordeling",
   matching: "Matching",
   plaatsing: "Plaatsing",
-  intake_provider: "Intake aanbieder",
+  intake_provider: "Intake",
   afgerond: "Afgerond",
   geblokkeerd: "Geblokkeerd",
 };

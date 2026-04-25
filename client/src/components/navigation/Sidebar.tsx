@@ -67,7 +67,7 @@ const gemeenteNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Beoordelingen",
+        label: "Aanbieder Beoordeling",
         icon: FileCheck,
         href: "/beoordelingen"
       },
