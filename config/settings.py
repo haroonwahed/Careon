@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 import os
+import sys
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
@@ -335,6 +336,8 @@ MEDIA_ROOT = BASE_DIR / 'media'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 QUIET_TEST_LOGS = os.getenv('DJANGO_TEST_LOG_LEVEL', '').strip().upper()
+if not QUIET_TEST_LOGS and any(arg == 'test' for arg in sys.argv):
+    QUIET_TEST_LOGS = 'ERROR'
 
 # Logging — pilot warning events go to logs/pilot.log so scripts/pilot_log_summary.py
 # can parse them. All loggers also emit to the console (default Django behaviour).
