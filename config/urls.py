@@ -40,7 +40,12 @@ urlpatterns = [
 ]
 
 if settings.DEBUG:
-    urlpatterns.append(path('__reload__/', include('django_browser_reload.urls')))
+    try:
+        import django_browser_reload.urls  # noqa: F401
+    except ModuleNotFoundError:
+        pass
+    else:
+        urlpatterns.append(path('__reload__/', include('django_browser_reload.urls')))
 
 if settings.SSO_ENABLED:
     urlpatterns.append(path('oidc/', include('mozilla_django_oidc.urls')))

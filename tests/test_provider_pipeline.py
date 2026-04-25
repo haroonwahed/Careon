@@ -429,6 +429,7 @@ class ManagementCommandTests(TestCase):
         call_command(
             "run_provider_import",
             "--source", "fixture",
+            "--allow-fixture",
             "--dry-run",
             stdout=out,
         )
@@ -442,6 +443,7 @@ class ManagementCommandTests(TestCase):
         call_command(
             "run_provider_import",
             "--source", "fixture",
+            "--allow-fixture",
             stdout=out,
         )
         self.assertGreater(Zorgaanbieder.objects.count(), 0)
