@@ -121,6 +121,16 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
       }
     },
     {
+      id: "samenvatting",
+      label: "Samenvatting",
+      count: decisionSummary.flow_counts.samenvatting ?? 0,
+      filter: "samenvatting",
+      onClick: () => {
+        setSelectedStatus("all");
+        setActiveKPIFilter("samenvatting");
+      }
+    },
+    {
       id: "matching",
       label: "Matching",
       count: decisionSummary.flow_counts.matching,
@@ -154,6 +164,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
 
   const stageWaiting = {
     casussen: 0,
+    samenvatting: 0,
     matching: 0,
     bij_aanbieder: 0,
     plaatsingen: 0,
@@ -161,6 +172,7 @@ export function RegiekamerControlCenter({ onCaseClick, onNavigateToView }: Regie
 
   const stageCases = {
     casussen: casusList.filter((c) => c.phase === "casus"),
+    samenvatting: casusList.filter((c) => c.phase === "casus"),
     matching: casusList.filter((c) => c.phase === "matching" || c.phase === "aanbieder_selectie" || c.phase === "geblokkeerd"),
     bij_aanbieder: casusList.filter((c) => c.phase === "provider_beoordeling"),
     plaatsingen: casusList.filter((c) => c.phase === "intake_provider"),

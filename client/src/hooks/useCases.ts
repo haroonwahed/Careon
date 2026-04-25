@@ -87,7 +87,7 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
 
 function mapPhase(phase: string): CasePhase {
   if (phase === 'actief') {
-    return 'afgerond';
+    return 'intake';
   }
 
   const valid: CasePhase[] = ['intake', 'matching', 'provider_beoordeling', 'plaatsing', 'afgerond'];

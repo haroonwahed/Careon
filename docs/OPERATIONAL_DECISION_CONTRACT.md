@@ -1,6 +1,13 @@
 # Operational Decision Contract
 ## Shared Unified Layer for All Pages
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+This contract must remain aligned with the system-first workflow and backend source-of-truth rules defined there.
+
 ### Overview
 
 The **Operational Decision Contract** is a centralized service that computes all operational decisions consistently across all pages in Careon.

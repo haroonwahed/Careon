@@ -33,7 +33,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
   const getNextAction = () => {
     switch (caseData.phase) {
       case "intake_initial":
-        return { label: "Start matching", color: "text-primary" };
+        return { label: "Naar matching", color: "text-primary" };
       case "beoordeling":
         return { label: "Aanbieder beoordelen", color: "text-primary" };
       case "matching":

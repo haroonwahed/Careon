@@ -50,7 +50,7 @@ export function BulkActionBar({
             className="gap-2"
           >
             <GitMerge size={16} />
-            Start matching
+            Naar matching
           </Button>
           <Button
             size="sm"

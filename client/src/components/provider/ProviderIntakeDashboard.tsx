@@ -179,7 +179,7 @@ export function ProviderIntakeDashboard() {
             />
             <input
               type="text"
-              placeholder="Zoek op naam of case ID..."
+              placeholder="Zoek op naam of casus-ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-muted/30 border border-muted-foreground/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"

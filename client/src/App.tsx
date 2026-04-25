@@ -11,16 +11,27 @@ export default function App() {
 
     const storedTheme = window.localStorage.getItem("careon-theme");
     if (storedTheme === "light" || storedTheme === "dark") {
+      // Apply immediately to avoid flash of wrong theme on portals
+      if (storedTheme === "dark") document.documentElement.classList.add("dark");
       return storedTheme;
     }
 
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    if (prefersDark) document.documentElement.classList.add("dark");
+    return prefersDark ? "dark" : "light";
   });
   const [isDashboardView] = useState(() => new URLSearchParams(window.location.search).get("view") === "dashboard");
   const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL || window.location.pathname.startsWith("/static/spa/"));
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);
+    // Apply dark class to <html> so Radix UI portals rendered to document.body
+    // inherit the correct CSS custom properties (Select, Dialog, Popover, etc.)
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
   }, [theme]);
 
   if (isPublicRoute && !isDashboardView) {

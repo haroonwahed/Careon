@@ -44,15 +44,29 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     ...rest,
   });
 
-  if (response.status === 401 || response.status === 403) {
+  const responseUrl = new URL(response.url, window.location.origin);
+  const redirectedToLogin = response.redirected && responseUrl.pathname === LOGIN_URL;
+
+  if (response.status === 401 || response.status === 403 || redirectedToLogin) {
     // Session expired — redirect to login
-    window.location.href = `${LOGIN_URL}?next=${encodeURIComponent(window.location.pathname)}`;
+    const nextUrl = `${window.location.pathname}${window.location.search}`;
+    window.location.href = `${LOGIN_URL}?next=${encodeURIComponent(nextUrl)}`;
     throw new Error('Niet geautoriseerd');
   }
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
     throw new Error(`API fout ${response.status}: ${text}`);
+  }
+
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    const text = await response.text().catch(() => '');
+    throw new Error(`API fout ${response.status}: Verwacht JSON maar ontving ${contentType || 'onbekende response'}${text ? ` (${text.slice(0, 120)})` : ''}`);
   }
 
   return response.json() as Promise<T>;

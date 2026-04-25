@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, CheckCircle2, X, AlertTriangle, PartyPopper, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { PlacementValidationChecklist } from "./PlacementValidationChecklist";
@@ -6,6 +6,7 @@ import { SelectedProviderCard } from "./SelectedProviderCard";
 import { HandoverInfoPanel } from "./HandoverInfoPanel";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { apiClient } from "../../lib/apiClient";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 
 interface PlacementPageProps {
@@ -13,6 +14,25 @@ interface PlacementPageProps {
   providerId: string;
   onBack: () => void;
   onCancel: () => void;
+}
+
+interface PlacementDetailPayload {
+  caseId: string;
+  placement: {
+    id: string;
+    status: string;
+    providerResponseStatus: string;
+    providerResponseReasonCode: string;
+    proposedProviderId: string;
+    selectedProviderId: string;
+    careForm: string;
+    decisionNotes: string;
+  };
+}
+
+function getCsrfToken(): string {
+  const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : "";
 }
 
 export function PlacementPage({
@@ -24,6 +44,10 @@ export function PlacementPage({
   const [isConfirming, setIsConfirming] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [placementDetail, setPlacementDetail] = useState<PlacementDetailPayload | null>(null);
+  const [placementDetailLoading, setPlacementDetailLoading] = useState(true);
+  const [placementDetailError, setPlacementDetailError] = useState<string | null>(null);
+  const [placementConfirmError, setPlacementConfirmError] = useState<string | null>(null);
 
   const { cases, loading: casesLoading, error: casesError } = useCases({ q: "" });
   const { providers, loading: providersLoading, error: providersError } = useProviders({ q: "" });
@@ -33,7 +57,35 @@ export function PlacementPage({
   const caseData = legacyCases.find(c => c.id === caseId);
   const provider = legacyProviders.find(p => p.id === providerId) ?? legacyProviders[0];
 
-  if (casesLoading || providersLoading) {
+  useEffect(() => {
+    let cancelled = false;
+    setPlacementDetailLoading(true);
+    setPlacementDetailError(null);
+
+    apiClient
+      .get<PlacementDetailPayload>(`/care/api/cases/${caseId}/placement-detail/`)
+      .then((payload) => {
+        if (!cancelled) {
+          setPlacementDetail(payload);
+        }
+      })
+      .catch((error: Error) => {
+        if (!cancelled) {
+          setPlacementDetailError(error.message ?? "Kon plaatsingsgegevens niet laden.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPlacementDetailLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
+
+  if (casesLoading || providersLoading || placementDetailLoading) {
     return (
       <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
         <Loader2 size={18} className="animate-spin" />
@@ -42,10 +94,10 @@ export function PlacementPage({
     );
   }
 
-  if (casesError || providersError) {
+  if (casesError || providersError || placementDetailError) {
     return (
       <div className="premium-card p-6 text-center text-destructive">
-        Kon plaatsingsgegevens niet laden: {casesError ?? providersError}
+        Kon plaatsingsgegevens niet laden: {casesError ?? providersError ?? placementDetailError}
       </div>
     );
   }
@@ -58,12 +110,17 @@ export function PlacementPage({
     );
   }
 
+  const providerAccepted = placementDetail?.placement?.providerResponseStatus === "ACCEPTED";
+
   // Validation items
   const validationItems = [
     {
       id: "provider-response",
-      label: "Aanbieder akkoord ontvangen",
-      status: "complete" as const
+      label: providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op aanbiederbeoordeling",
+      status: providerAccepted ? "complete" as const : "error" as const,
+      description: providerAccepted
+        ? "De aanbieder heeft de casus bevestigd."
+        : "Plaatsing kan pas worden bevestigd nadat de aanbieder heeft geaccepteerd."
     },
     {
       id: "data",
@@ -78,11 +135,14 @@ export function PlacementPage({
     {
       id: "intake",
       label: "Intake kan gestart worden",
-      status: "complete" as const
+      status: providerAccepted ? "complete" as const : "incomplete" as const,
+      description: providerAccepted
+        ? "De intakeplanning kan direct worden opgepakt."
+        : "Intake volgt pas nadat plaatsing is bevestigd."
     }
   ];
 
-  const allValid = validationItems.every(item => 
+  const allValid = providerAccepted && validationItems.every(item =>
     item.status === "complete" || item.status === "warning"
   );
   const hasErrors = validationItems.some(item => item.status === "error");
@@ -98,14 +158,41 @@ export function PlacementPage({
   ];
 
   const handleConfirmClick = () => {
+    if (!providerAccepted) {
+      return;
+    }
+    setPlacementConfirmError(null);
     setShowConfirmationModal(true);
   };
 
   const handleFinalConfirm = async () => {
     setIsConfirming(true);
-    setIsConfirming(false);
-    setShowConfirmationModal(false);
-    setIsConfirmed(true);
+    setPlacementConfirmError(null);
+    try {
+      const formData = new FormData();
+      formData.append("status", "APPROVED");
+      formData.append("note", "Plaatsing bevestigd vanuit plaatsingsoverzicht.");
+      formData.append("next", window.location.pathname);
+
+      const response = await fetch(`/care/casussen/${caseId}/placement/action/`, {
+        method: "POST",
+        credentials: "same-origin",
+        headers: {
+          "X-CSRFToken": getCsrfToken(),
+        },
+        body: formData,
+      });
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => "");
+        throw new Error(errorText || "Plaatsing kon niet worden bevestigd.");
+      }
+      setShowConfirmationModal(false);
+      setIsConfirmed(true);
+    } catch (error) {
+      setPlacementConfirmError(error instanceof Error ? error.message : "Plaatsing kon niet worden bevestigd.");
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   // Success state
@@ -204,7 +291,7 @@ export function PlacementPage({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
-                Aanbieder akkoord ontvangen
+                {providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op aanbiederbeoordeling"}
               </span>
             </div>
 
@@ -213,13 +300,27 @@ export function PlacementPage({
             </h1>
 
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed break-words">
-              Match geaccepteerd door <strong className="text-foreground">{provider.name}</strong> · Score: <strong className="text-green-base">94%</strong>
+              {providerAccepted ? (
+                <>
+                  Match geaccepteerd door <strong className="text-foreground">{provider.name}</strong> · Score: <strong className="text-green-base">94%</strong>
+                </>
+              ) : (
+                <>
+                  Wacht op aanbiederbeoordeling voor <strong className="text-foreground">{provider.name}</strong>
+                </>
+              )}
             </p>
 
-            <div className="flex items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-green-base" />
-                <span className="text-muted-foreground">Beste match bevestigd</span>
+                {providerAccepted ? (
+                  <CheckCircle2 size={16} className="text-green-base" />
+                ) : (
+                  <AlertTriangle size={16} className="text-yellow-base" />
+                )}
+                <span className="text-muted-foreground">
+                  {providerAccepted ? "Aanbieder heeft geaccepteerd" : "Wacht op aanbiederbeoordeling"}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-green-base" />
@@ -347,11 +448,18 @@ export function PlacementPage({
         <div className="max-w-[1400px] mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              {allValid && !hasErrors ? (
+              {providerAccepted && allValid && !hasErrors ? (
                 <div className="flex items-center gap-2">
                   <CheckCircle2 size={20} className="text-green-base" />
                   <span className="text-sm font-medium text-green-base">
                     Klaar om plaatsing te bevestigen
+                  </span>
+                </div>
+              ) : !providerAccepted ? (
+                <div className="flex items-center gap-2">
+                  <AlertTriangle size={20} className="text-yellow-base" />
+                  <span className="text-sm font-medium text-yellow-base">
+                    Plaatsing kan pas worden bevestigd nadat de aanbieder heeft geaccepteerd
                   </span>
                 </div>
               ) : hasErrors ? (
@@ -380,7 +488,7 @@ export function PlacementPage({
               </Button>
               <Button
                 onClick={handleConfirmClick}
-                disabled={!allValid || hasErrors}
+                disabled={!providerAccepted || !allValid || hasErrors}
                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} className="mr-2" />
@@ -413,6 +521,11 @@ export function PlacementPage({
             </div>
 
             <div className="space-y-4 mb-8">
+              {placementConfirmError && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {placementConfirmError}
+                </div>
+              )}
               <div className="p-4 rounded-lg bg-muted/30 border border-muted-foreground/20">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
@@ -455,7 +568,7 @@ export function PlacementPage({
               <Button
                 onClick={handleFinalConfirm}
                 className="flex-1 bg-green-base hover:bg-green-base/90"
-                disabled={isConfirming}
+                disabled={isConfirming || !providerAccepted}
               >
                 {isConfirming ? (
                   <>

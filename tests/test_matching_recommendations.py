@@ -79,6 +79,7 @@ class MatchingRecommendationsTests(TestCase):
         self.assertContains(response, 'Wachttijd')
         self.assertContains(response, 'Capaciteit')
         self.assertContains(response, 'Matching')
+        self.assertContains(response, 'Matchstatus')
         self.assertContains(response, 'Aanbevolen actie')
         self.assertContains(response, 'Voer aanbevolen actie uit')
         self.assertContains(response, 'Plaats direct')

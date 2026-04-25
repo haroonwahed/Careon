@@ -191,6 +191,28 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
         self.assertContains(response, "Escaleren naar plaatsingsregisseur")
         self.assertContains(response, "Versnelt besluitvorming bij stagnerende plaatsing")
 
+    def test_placement_confirmation_is_blocked_until_provider_acceptance(self):
+        intake, placement = self._create_placement(
+            "Blocked Approval Placement",
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+        )
+
+        response = self.client.post(
+            reverse("careon:case_placement_action", kwargs={"pk": intake.pk}),
+            {
+                "status": PlacementRequest.Status.APPROVED,
+                "note": "Deze bevestiging mag nog niet slagen.",
+                "next": f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Plaatsing kan pas worden bevestigd na acceptatie door de aanbieder.")
+        placement.refresh_from_db()
+        self.assertEqual(placement.status, PlacementRequest.Status.IN_REVIEW)
+        self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.PENDING)
+
     def test_provider_response_states_are_distinguishable_and_visible(self):
         intake_pending, _ = self._create_placement(
             "Pending Response",

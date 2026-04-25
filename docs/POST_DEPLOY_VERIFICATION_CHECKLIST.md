@@ -1,5 +1,12 @@
 # Post-Deploy Verification Checklist
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+All smoke checks below should validate the live app against this canonical workflow and backend guardrail contract.
+
 Use this immediately after a Render redeploy that is expected to be production-ready.
 
 ## 0. Preconditions

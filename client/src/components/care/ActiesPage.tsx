@@ -48,14 +48,14 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
           <span className={`text-sm font-semibold px-3 py-1 rounded-full ${color}`}>{actions.length}</span>
         </div>
         {actions.map((action) => (
-          <button key={action.id} onClick={() => onCaseClick(action.linkedCaseId)} className="w-full premium-card p-4 hover:bg-muted/20 transition-all text-left group border-l-4 border-l-primary">
+          <div key={action.id} role="button" tabIndex={0} onClick={() => onCaseClick(action.linkedCaseId)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCaseClick(action.linkedCaseId); } }} className="w-full premium-card p-4 hover:bg-muted/20 transition-all text-left group border-l-4 border-l-primary cursor-pointer">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 mt-1">{getActionIcon(action.title)}</div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-1">{action.title}</h3>
                 <p className="text-sm text-muted-foreground">{action.description}</p>
                 <div className="flex items-center gap-4 text-xs mt-3">
-                  <button className="text-primary hover:underline font-medium" onClick={(event) => { event.stopPropagation(); onCaseClick(action.linkedCaseId); }}>{action.linkedCaseId}</button>
+                  <span className="text-primary hover:underline font-medium cursor-pointer" onClick={(event) => { event.stopPropagation(); onCaseClick(action.linkedCaseId); }}>{action.linkedCaseId}</span>
                   <span className="text-muted-foreground">{action.caseTitle}</span>
                   <div className="flex items-center gap-1 text-muted-foreground"><Clock size={12} />{action.dueDate}</div>
                   {action.assignedTo && <span className="text-muted-foreground">@ {action.assignedTo}</span>}
@@ -63,7 +63,7 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
               </div>
               <ChevronRight size={18} className="text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0 mt-1" />
             </div>
-          </button>
+          </div>
         ))}
       </div>
     );

@@ -30,6 +30,13 @@ import {
 } from "lucide-react";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
+type SurfaceStatus =
+  | "ACTIVE_PRODUCT"
+  | "SUPPORTING_INTERNAL"
+  | "DEMO_ONLY"
+  | "LEGACY"
+  | "DUPLICATE"
+  | "UNKNOWN";
 
 interface NavItem {
   id: string;
@@ -37,6 +44,7 @@ interface NavItem {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   badge?: number;
   href?: string;
+  surfaceStatus?: SurfaceStatus;
 }
 
 interface NavSection {
@@ -57,38 +65,44 @@ const gemeenteNavigation: NavSection[] = [
         id: "regiekamer",
         label: "Regiekamer",
         icon: LayoutDashboard,
-        href: "/regiekamer"
+        href: "/regiekamer",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
         label: "Casussen",
         icon: FileText,
-        href: "/casussen"
+        href: "/casussen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "beoordelingen",
         label: "Aanbieder Beoordeling",
         icon: FileCheck,
-        href: "/beoordelingen"
+        href: "/beoordelingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "matching",
         label: "Matching",
         icon: MapPinned,
-        href: "/matching"
+        href: "/matching",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "plaatsingen",
         label: "Plaatsingen",
         icon: CheckCircle,
-        href: "/plaatsingen"
+        href: "/plaatsingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "acties",
         label: "Acties",
         icon: CheckSquare,
         badge: 12,
-        href: "/acties"
+        href: "/acties",
+        surfaceStatus: "ACTIVE_PRODUCT",
       }
     ]
   },
@@ -101,19 +115,22 @@ const gemeenteNavigation: NavSection[] = [
         id: "zorgaanbieders",
         label: "Zorgaanbieders",
         icon: Building2,
-        href: "/zorgaanbieders"
+        href: "/zorgaanbieders",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "gemeenten",
         label: "Gemeenten",
         icon: MapPin,
-        href: "/gemeenten"
+        href: "/gemeenten",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "regios",
         label: "Regio's",
         icon: Map,
-        href: "/regios"
+        href: "/regios",
+        surfaceStatus: "ACTIVE_PRODUCT",
       }
     ]
   },
@@ -127,13 +144,15 @@ const gemeenteNavigation: NavSection[] = [
         label: "Signalen",
         icon: AlertTriangle,
         badge: 5,
-        href: "/signalen"
+        href: "/signalen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "rapportages",
         label: "Rapportages",
         icon: BarChart3,
-        href: "/rapportages"
+        href: "/rapportages",
+        surfaceStatus: "DEMO_ONLY",
       }
     ]
   },
@@ -146,19 +165,22 @@ const gemeenteNavigation: NavSection[] = [
         id: "documenten",
         label: "Documenten",
         icon: FolderOpen,
-        href: "/documenten"
+        href: "/documenten",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       },
       {
         id: "audittrail",
         label: "Audittrail",
         icon: History,
-        href: "/audittrail"
+        href: "/audittrail",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       },
       {
         id: "instellingen",
         label: "Instellingen",
         icon: Settings,
-        href: "/instellingen"
+        href: "/instellingen",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]
   }
@@ -176,13 +198,22 @@ const zorgaanbiederNavigation: NavSection[] = [
         label: "Intake",
         icon: ClipboardList,
         badge: 3,
-        href: "/intake"
+        href: "/intake",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
+        id: "beoordelingen",
+        label: "Aanbieder Beoordeling",
+        icon: FileCheck,
+        href: "/beoordelingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "mijn-casussen",
         label: "Mijn casussen",
         icon: FileText,
-        href: "/mijn-casussen"
+        href: "/mijn-casussen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       }
     ]
   },
@@ -195,7 +226,8 @@ const zorgaanbiederNavigation: NavSection[] = [
         id: "documenten",
         label: "Documenten",
         icon: FolderOpen,
-        href: "/documenten"
+        href: "/documenten",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]
   }
@@ -212,20 +244,23 @@ const adminNavigation: NavSection[] = [
         id: "regiekamer",
         label: "Regiekamer",
         icon: LayoutDashboard,
-        href: "/regiekamer"
+        href: "/regiekamer",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
         label: "Casussen",
         icon: FileText,
-        href: "/casussen"
+        href: "/casussen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "acties",
         label: "Acties",
         icon: CheckSquare,
         badge: 12,
-        href: "/acties"
+        href: "/acties",
+        surfaceStatus: "ACTIVE_PRODUCT",
       }
     ]
   },
@@ -238,19 +273,22 @@ const adminNavigation: NavSection[] = [
         id: "zorgaanbieders",
         label: "Zorgaanbieders",
         icon: Building2,
-        href: "/zorgaanbieders"
+        href: "/zorgaanbieders",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "gemeenten",
         label: "Gemeenten",
         icon: MapPin,
-        href: "/gemeenten"
+        href: "/gemeenten",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "regios",
         label: "Regio's",
         icon: Map,
-        href: "/regios"
+        href: "/regios",
+        surfaceStatus: "ACTIVE_PRODUCT",
       }
     ]
   },
@@ -264,13 +302,15 @@ const adminNavigation: NavSection[] = [
         label: "Signalen",
         icon: AlertTriangle,
         badge: 5,
-        href: "/signalen"
+        href: "/signalen",
+        surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "rapportages",
         label: "Rapportages",
         icon: BarChart3,
-        href: "/rapportages"
+        href: "/rapportages",
+        surfaceStatus: "DEMO_ONLY",
       }
     ]
   },
@@ -283,33 +323,47 @@ const adminNavigation: NavSection[] = [
         id: "gebruikers",
         label: "Gebruikers",
         icon: Users,
-        href: "/gebruikers"
+        href: "/gebruikers",
+        surfaceStatus: "LEGACY",
       },
       {
         id: "audittrail",
         label: "Audittrail",
         icon: History,
-        href: "/audittrail"
+        href: "/audittrail",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       },
       {
         id: "instellingen",
         label: "Instellingen",
         icon: Settings,
-        href: "/instellingen"
+        href: "/instellingen",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]
   }
 ];
 
+const visibleSurfaceStatuses: SurfaceStatus[] = ["ACTIVE_PRODUCT", "SUPPORTING_INTERNAL"];
+
 function getNavigationForRole(role: RoleType): NavSection[] {
-  switch (role) {
-    case "gemeente":
-      return gemeenteNavigation;
-    case "zorgaanbieder":
-      return zorgaanbiederNavigation;
-    case "admin":
-      return adminNavigation;
-  }
+  const sections = (() => {
+    switch (role) {
+      case "gemeente":
+        return gemeenteNavigation;
+      case "zorgaanbieder":
+        return zorgaanbiederNavigation;
+      case "admin":
+        return adminNavigation;
+    }
+  })();
+
+  return sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => visibleSurfaceStatuses.includes(item.surfaceStatus ?? "UNKNOWN")),
+    }))
+    .filter((section) => section.items.length > 0);
 }
 
 interface SidebarProps {
@@ -375,6 +429,7 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
                 const isActive = activeItemId === item.id;
                 const Icon = item.icon;
                 const badgeValue = badgeOverrides[item.id] ?? item.badge;
+                const isSupportingInternal = item.surfaceStatus === "SUPPORTING_INTERNAL";
 
                 return (
                   <button
@@ -404,11 +459,15 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
 
                     {/* Label */}
                     {!collapsed && (
-                      <span className={`
-                        flex-1 text-left text-sm font-medium
-                        ${isActive ? "text-primary" : ""}
-                      `}>
-                        {item.label}
+                      <span className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
+                        <span className={isActive ? "text-primary" : ""}>
+                          {item.label}
+                        </span>
+                        {isSupportingInternal && (
+                          <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Intern
+                          </span>
+                        )}
                       </span>
                     )}
 

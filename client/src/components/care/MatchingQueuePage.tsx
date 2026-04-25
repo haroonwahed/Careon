@@ -49,7 +49,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-foreground mb-2">Matching</h1>
-        <p className="text-sm text-muted-foreground">Queue van casussen die klaar zijn om aan een aanbieder gekoppeld te worden.</p>
+        <p className="text-sm text-muted-foreground">Wachtrij van casussen die klaar zijn om aan een zorgaanbieder gekoppeld te worden.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -99,7 +99,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
       {!loading && !error && queueCases.length > 0 && (
         <div className="space-y-3">
           {queueCases.map((item) => (
-            <button key={item.id} type="button" onClick={() => onCaseClick(item.id)} className="w-full rounded-2xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm">
+            <div key={item.id} role="button" tabIndex={0} onClick={() => onCaseClick(item.id)} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onCaseClick(item.id); } }} className="w-full rounded-2xl border bg-card p-5 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm cursor-pointer">
               <div className="flex items-start justify-between gap-6">
                 <div className="grid flex-1 grid-cols-[140px_80px_1fr_1fr] gap-4">
                   <div>
@@ -124,12 +124,12 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   </div>
                 </div>
                 <div className="min-w-[260px] text-right">
-                  <p className="text-xs text-muted-foreground">Readiness</p>
+                  <p className="text-xs text-muted-foreground">Gereedheid</p>
                   <p className="mt-1 text-sm font-medium text-foreground">{item.phaseLabel}</p>
                   <p className="mt-2 text-sm text-muted-foreground">{item.recommendedProvidersCount} aanbevolen aanbieders</p>
                   <div className="mt-4 flex justify-end">
                     <Button size="sm" className="gap-2">
-                      Start matching
+                      Naar matching
                       <ArrowRight size={14} />
                     </Button>
                   </div>
@@ -140,7 +140,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   {item.blockReason ?? "Deze casus vraagt handmatige opvolging voordat matching kan doorgaan."}
                 </div>
               )}
-            </button>
+            </div>
           ))}
         </div>
       )}

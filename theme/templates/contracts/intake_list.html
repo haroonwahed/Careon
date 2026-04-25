@@ -6,9 +6,21 @@
     <div class="ds-list-header">
         <div>
             <h1 class="page-title">Casussen</h1>
-            <p class="ds-note-text">{{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent in intakefase</p>
+            <p class="ds-note-text">
+                {{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent in intakefase
+                {% if can_show_archived %}
+                &middot; {{ archived_intakes }} gearchiveerd{% if not show_archived %} verborgen{% endif %}
+                {% endif %}
+            </p>
         </div>
-        <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
+        <div class="flex flex-wrap items-center gap-2">
+            {% if can_show_archived %}
+            <a href="?show_archived={% if show_archived %}0{% else %}1{% endif %}" class="btn btn-ghost">
+                {% if show_archived %}Gearchiveerde casussen verbergen{% else %}Gearchiveerde casussen tonen{% endif %}
+            </a>
+            {% endif %}
+            <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
+        </div>
     </div>
 
     <div class="ds-list-kpi-grid">
@@ -36,11 +48,11 @@
                 <label for="intake-status" class="ds-list-filter-label">Fase</label>
                 <select id="intake-status" name="status" onchange="this.form.submit()">
                     <option value="">Alle statussen</option>
-                    <option value="INTAKE" {% if request.GET.status == 'INTAKE' %}selected{% endif %}>Intake</option>
-                    <option value="ASSESSMENT" {% if request.GET.status == 'ASSESSMENT' %}selected{% endif %}>Aanbieder Beoordeling</option>
-                    <option value="MATCHING" {% if request.GET.status == 'MATCHING' %}selected{% endif %}>Matching</option>
-                    <option value="DECISION" {% if request.GET.status == 'DECISION' %}selected{% endif %}>Matchbesluit</option>
-                    <option value="COMPLETED" {% if request.GET.status == 'COMPLETED' %}selected{% endif %}>Afgerond</option>
+                    {% for status_value, status_label in status_choices %}
+                    {% if status_value != 'ARCHIVED' or can_show_archived %}
+                    <option value="{{ status_value }}" {% if request.GET.status == status_value %}selected{% endif %}>{{ status_label }}</option>
+                    {% endif %}
+                    {% endfor %}
                 </select>
             </div>
             <div class="ds-list-filter-group">
@@ -102,6 +114,9 @@
                     <a href="{% url 'careon:case_detail' row.obj.pk %}" class="ds-link casus-row-title">{{ row.title }}</a>
                     <div class="casus-row-meta">
                         <span class="ds-badge badge-gray">{{ row.status }}</span>
+                        {% if row.obj.status == 'ARCHIVED' %}
+                        <span class="ds-badge badge-low">Gearchiveerd</span>
+                        {% endif %}
                         <span class="ds-badge badge-medium">{{ row.urgency }}</span>
                         {% if row.bottleneck_badge %}
                         <!-- BottleneckBadge primitive -->
@@ -181,11 +196,14 @@
     {% else %}
     <div class="ds-list-empty">
         <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <h3 class="ds-list-empty-title">Nog geen casussen</h3>
-        <p class="ds-list-empty-copy">
-            <a href="{% url 'careon:case_create' %}" class="btn btn-primary ds-stack-top-sm">Maak je eerste casus aan</a>
-        </p>
-    </div>
+                <h3 class="ds-list-empty-title">Nog geen casussen</h3>
+                <p class="ds-list-empty-copy">
+                    <a href="{% url 'careon:case_create' %}" class="btn btn-primary ds-stack-top-sm">Maak je eerste casus aan</a>
+                </p>
+                {% if can_show_archived and not show_archived and archived_intakes %}
+                <p class="mt-3 text-xs ds-text-secondary">Er zijn ook gearchiveerde casussen. Gebruik de knop bovenaan om ze zichtbaar te maken.</p>
+                {% endif %}
+            </div>
     {% endif %}
 </div>
 

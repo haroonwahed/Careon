@@ -497,7 +497,7 @@ class CareCase(models.Model):
         ('EXECUTED', 'Gestart'),
         ('OBLIGATION_TRACKING', 'Voortgangsbewaking'),
         ('RENEWAL', 'Herbeoordeling / afronding'),
-        ('ARCHIVED', 'Archived'),
+        ('ARCHIVED', 'Gearchiveerd'),
     ], default='DRAFTING')
     case_phase = models.CharField(max_length=20, choices=CasePhase.choices, default=CasePhase.INTAKE)
     phase_entered_at = models.DateTimeField(null=True, blank=True, help_text='Timestamp when the case entered the current phase')
@@ -1151,6 +1151,9 @@ class PlacementRequest(models.Model):
         intake = self.intake
         assessment = self.get_linked_assessment()
 
+        if intake and intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
+            return False, 'Casus is gearchiveerd.'
+
         if target_status == self.Status.IN_REVIEW:
             if not (self.selected_provider_id or self.proposed_provider_id):
                 return False, 'Een aanbieder moet eerst geselecteerd zijn.'
@@ -1242,6 +1245,7 @@ class CaseDecisionLog(models.Model):
         CONTINUE_WAITING = 'CONTINUE_WAITING', 'Continue waiting'
         SLA_ESCALATION = 'SLA_ESCALATION', 'SLA state transition'
         CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
+        STATE_TRANSITION = 'STATE_TRANSITION', 'Workflow state transition'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.
@@ -1624,6 +1628,7 @@ class CaseIntakeProcess(models.Model):
         DECISION = 'DECISION', 'Matchbesluit'
         COMPLETED = 'COMPLETED', 'Afgerond'
         ON_HOLD = 'ON_HOLD', 'In wacht'
+        ARCHIVED = 'ARCHIVED', 'Gearchiveerd'
 
     class Urgency(models.TextChoices):
         LOW = 'LOW', 'Laag'
@@ -1928,7 +1933,13 @@ class CaseIntakeProcess(models.Model):
     def get_latest_placement(self):
         return self.indications.select_related('selected_provider', 'proposed_provider').order_by('-updated_at', '-created_at').first()
 
+    @property
+    def is_archived(self):
+        return self.status == self.ProcessStatus.ARCHIVED
+
     def can_enter_matching(self) -> tuple[bool, str]:
+        if self.status == self.ProcessStatus.ARCHIVED:
+            return False, 'Casus is gearchiveerd.'
         if self.status == self.ProcessStatus.COMPLETED:
             return False, 'Casus is afgerond en kan niet opnieuw naar matching zonder heropening.'
         if self.status == self.ProcessStatus.ON_HOLD:

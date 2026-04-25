@@ -126,6 +126,9 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Providerreactie monitor')
         self.assertContains(response, 'Actiequeue aanbiederreacties')
+        self.assertContains(response, 'Eigenaar')
+        self.assertContains(response, 'Wachten')
+        self.assertContains(response, 'Escaleert over')
         self.assertContains(response, 'Open plaatsing')
         self.assertContains(response, f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing")
 

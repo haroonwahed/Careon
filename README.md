@@ -3,6 +3,15 @@
 
 This is a code bundle for SaaS Careon. The original project is available at [Figma](https://www.figma.com/design/xzDw9hPkK9kBtxMocatGPe/SaaS-Careon).
 
+## Foundation first
+
+Before changing workflow, architecture, or domain behavior, start with:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md` (system-first foundation)
+- `docs/FOUNDATION_LOCK.md` (enforced workflow lock and guardrails)
+
+These two documents define the canonical flow, actor ownership, and backend source-of-truth rules.
+
 ## Running the code
 
 Run `npm i` to install the dependencies.

@@ -10,6 +10,7 @@ from contracts.models import (
     CaseAssessment,
     CaseIntakeProcess,
     Client as CareProvider,
+    OutcomeReasonCode,
     Organization,
     OrganizationMembership,
     PlacementRequest,
@@ -306,6 +307,55 @@ class ProviderResponseOrchestrationTests(TestCase):
             ).exists()
         )
 
+    def test_provider_response_reject_requires_reason_and_persists_when_valid(self):
+        self._login_owner()
+        before = PlacementRequest.objects.get(pk=self.placement.pk)
+
+        missing_reason_response = self.client.post(
+            reverse('careon:case_outcome_action', kwargs={'pk': self.intake.pk}),
+            {
+                'outcome_type': 'provider_response',
+                'status': PlacementRequest.ProviderResponseStatus.REJECTED,
+                'reason_code': OutcomeReasonCode.NONE,
+                'notes': 'Aanbieder heeft afgewezen zonder reden.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(missing_reason_response.status_code, 200)
+        self.assertContains(missing_reason_response, 'Afwijzing vereist een reden.')
+        after_missing_reason = PlacementRequest.objects.get(pk=self.placement.pk)
+        self._assert_no_provider_response_mutation(before, after_missing_reason)
+
+        valid_response = self.client.post(
+            reverse('careon:case_outcome_action', kwargs={'pk': self.intake.pk}),
+            {
+                'outcome_type': 'provider_response',
+                'status': PlacementRequest.ProviderResponseStatus.REJECTED,
+                'reason_code': OutcomeReasonCode.PROVIDER_DECLINED,
+                'notes': 'Aanbieder geeft inhoudelijke afwijzing terug.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+
+        self.assertEqual(valid_response.status_code, 200)
+        self.assertContains(valid_response, 'Providerreactie-uitkomst opgeslagen.')
+        self.placement.refresh_from_db()
+        self.assertEqual(self.placement.provider_response_status, PlacementRequest.ProviderResponseStatus.REJECTED)
+        self.assertEqual(self.placement.provider_response_reason_code, OutcomeReasonCode.PROVIDER_DECLINED)
+        self.assertEqual(self.placement.provider_response_notes, 'Aanbieder geeft inhoudelijke afwijzing terug.')
+        self.assertTrue(
+            AuditLog.objects.filter(
+                model_name='PlacementRequest',
+                action=AuditLog.Action.UPDATE,
+                changes__outcome_type='provider_response',
+                changes__status=PlacementRequest.ProviderResponseStatus.REJECTED,
+                changes__reason_code=OutcomeReasonCode.PROVIDER_DECLINED,
+            ).exists()
+        )
+
     def test_anonymous_or_unauthorized_users_cannot_trigger_actions(self):
         anonymous_response = self.client.post(
             reverse('careon:case_provider_response_action', kwargs={'pk': self.intake.pk}),
@@ -332,7 +382,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Providerreactie orchestration')
+        self.assertContains(response, 'Orkestratie van providerreacties')
         self.assertContains(response, 'Afgewezen')
 
     def test_case_detail_provider_response_block_renders_sla_badge_waiting_and_countdown(self):
@@ -351,12 +401,10 @@ class ProviderResponseOrchestrationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SLA AT_RISK')
-        self.assertContains(response, 'Waiting: 50 hours')
-        self.assertContains(response, 'Escalates in')
-        self.assertContains(response, 'Action required by')
-        self.assertContains(response, 'Recommended action')
-        self.assertContains(response, 'Escalation level')
+        self.assertContains(response, 'Waiting 50 uur')
+        self.assertContains(response, 'Provider status')
         self.assertContains(response, 'Regievoerder')
+        self.assertContains(response, 'Stuur herinnering')
 
     def test_forced_action_case_detail_shows_critical_banner_and_rematch_primary(self):
         self._login_owner()

@@ -1,5 +1,12 @@
 # Careon Structural Migration Plan
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+All migration decisions in this plan must remain compatible with the canonical workflow and backend source-of-truth constraints.
+
 ## Goal
 
 Replace the remaining legacy contract-platform runtime symbols and data model names with Careon-native terminology without breaking tenant isolation, URLs, admin flows, or production data.

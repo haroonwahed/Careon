@@ -28,7 +28,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen voor matching</h1>
-        <p className="text-sm text-muted-foreground">Operationele queue van casussen die klaar zijn om doorgezet te worden.</p>
+        <p className="text-sm text-muted-foreground">Operationele wachtrij van casussen die klaar zijn om doorgezet te worden.</p>
       </div>
 
       <div className="flex items-center gap-3">

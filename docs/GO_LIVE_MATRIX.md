@@ -1,5 +1,12 @@
 # Go-Live Readiness Matrix
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+Readiness scoring in this matrix should be evaluated against the system-first workflow and backend source-of-truth rules defined there.
+
 Aanbieder Beoordeling date: 2026-04-24
 
 ## How To Read This

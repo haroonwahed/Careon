@@ -12,6 +12,18 @@
             <span class="ds-breadcrumb-current">{{ anonymized_title }}</span>
         </nav>
 
+        {% if is_archived_case %}
+        <div class="ds-card border-slate-200 bg-slate-50 px-4 py-3 mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Gearchiveerd</p>
+                    <p class="text-sm text-slate-700">Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.</p>
+                </div>
+                <span class="ds-badge badge-low">Alleen-lezen</span>
+            </div>
+        </div>
+        {% endif %}
+
         <section class="ds-card ds-detail-head intake-identity-card" data-shell-slot="case-header-card">
         <div class="ds-detail-card-body">
             <div class="min-w-0 space-y-2">
@@ -54,11 +66,21 @@
                     <a href="{% url 'careon:case_signal_create' intake.pk %}" class="btn btn-ghost">Escaleren</a>
                 </div>
                 {% endif %}
+                {% if can_archive_case %}
+                <form method="post" action="{% url 'careon:case_archive_action' intake.pk %}" onsubmit="return confirm('Casus archiveren? Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-ghost">Casus archiveren</button>
+                </form>
+                {% endif %}
+                {% if not is_archived_case %}
                 <div class="flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-xs font-medium ds-text-secondary">
                     <a href="{{ assessment_href }}" class="ds-link">{{ assessment_action_label }}</a>
                     <a href="{{ matching_href }}" class="ds-link">Matching</a>
                     <a href="{{ placement_href }}" class="ds-link">{{ placement_action_label }}</a>
                 </div>
+                {% else %}
+                <p class="text-xs font-medium ds-text-secondary">Casus is gearchiveerd; workflow-acties zijn uitgeschakeld.</p>
+                {% endif %}
             </div>
         </div>
         </section>
@@ -628,7 +650,7 @@
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Providerreactie orchestration</p>
+                    <p class="ds-note-text--strong">Orkestratie van providerreacties</p>
                 </div>
                 {% if provider_response_summary %}
                 <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -637,9 +659,9 @@
                             <div class="ds-row-title">{{ provider_response_summary.status_label }}</div>
                             <div class="mt-1 flex flex-wrap items-center gap-2 text-xs ds-text-secondary">
                                 <span class="inline-flex rounded-full px-2 py-0.5 font-semibold {% if provider_response_summary.sla_state == 'ON_TRACK' %}bg-emerald-100 text-emerald-700{% elif provider_response_summary.sla_state == 'AT_RISK' %}bg-amber-100 text-amber-700{% elif provider_response_summary.sla_state == 'OVERDUE' %}bg-red-100 text-red-700{% elif provider_response_summary.sla_state == 'ESCALATED' %}bg-rose-200 text-rose-900{% else %}bg-rose-900 text-white{% endif %}">SLA {{ provider_response_summary.sla_state }}</span>
-                                <span>Waiting: {{ provider_response_summary.sla_hours_waiting }} hours</span>
+                                <span>Wachtend: {{ provider_response_summary.sla_hours_waiting }} uur</span>
                                 {% if provider_response_summary.sla_escalates_in_hours > 0 %}
-                                <span>Escalates in {{ provider_response_summary.sla_escalates_in_hours }} hours</span>
+                                <span>Escaleert over {{ provider_response_summary.sla_escalates_in_hours }} uur</span>
                                 {% endif %}
                                 <span>Open sinds {{ provider_response_summary.age_days }} dagen</span>
                                 {% if provider_response_summary.deadline_at %}
@@ -657,12 +679,12 @@
 
                     <div class="mt-3 grid gap-2 sm:grid-cols-2">
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Action required by</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Vereist door</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_owner_label }}</div>
                             <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.ownership_reason }}</div>
                         </div>
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Recommended action</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Aanbevolen actie</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_action_label }}</div>
                             <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.action_deadline_label }}</div>
                         </div>
@@ -671,7 +693,7 @@
                         {% if provider_response_summary.action_deadline %}
                         <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 font-semibold">Deadline: {{ provider_response_summary.action_deadline|date:"d-m-Y H:i" }}</span>
                         {% endif %}
-                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 font-semibold">Escalation level: {{ provider_response_summary.escalation_level_label }}</span>
+                        <span class="inline-flex rounded-full bg-slate-100 px-2 py-0.5 font-semibold">Escalatieniveau: {{ provider_response_summary.escalation_level_label }}</span>
                     </div>
 
                     {% if provider_response_summary.sla_forced_action_required %}

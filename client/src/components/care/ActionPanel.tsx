@@ -188,7 +188,7 @@ export function ActionPanel({
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-base mt-0.5">•</span>
-            <span>Review alle documenten voor de intake</span>
+            <span>Beoordeel alle documenten voor de intake</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-blue-base mt-0.5">•</span>

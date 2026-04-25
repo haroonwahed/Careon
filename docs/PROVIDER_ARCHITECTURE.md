@@ -2,6 +2,13 @@
 
 # Provider Data Architecture — Zorg OS / ZorgBuddy
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+Provider architecture decisions should preserve the canonical case workflow and backend guardrails from these foundation documents.
+
 _Last updated: v2 (migration 0043)_
 
 ---

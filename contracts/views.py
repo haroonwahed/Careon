@@ -88,6 +88,16 @@ from .provider_matching_service import MatchContext, MatchEngine
 from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
+from .workflow_state_machine import (
+    WorkflowAction,
+    WorkflowRole,
+    WorkflowState,
+    derive_workflow_state,
+    evaluate_transition,
+    log_transition_event,
+    normalize_provider_rejection_states,
+    resolve_actor_role,
+)
 from config.feature_flags import is_feature_redesign_enabled
 
 logger = logging.getLogger(__name__)
@@ -1207,8 +1217,41 @@ def _matching_history_for_intake(intake, *, limit=10):
     return list(history_qs[:limit])
 
 
+def _intake_is_archived(intake):
+    if intake is None:
+        return False
+    if getattr(intake, 'status', None) == CaseIntakeProcess.ProcessStatus.ARCHIVED:
+        return True
+    case_record = getattr(intake, 'case_record', None)
+    return bool(case_record and getattr(case_record, 'lifecycle_stage', None) == 'ARCHIVED')
+
+
+def _active_case_intakes_queryset(org):
+    qs = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
+    if org:
+        return qs.exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
+    return qs.none()
+
+
+def _can_archive_intake(user, intake):
+    if intake is None or intake.organization is None:
+        return False
+    if intake.status != CaseIntakeProcess.ProcessStatus.COMPLETED:
+        return False
+    return can_manage_organization(user, intake.organization)
+
+
+def _redirect_if_archived_intake(request, intake, fallback_url):
+    if _intake_is_archived(intake):
+        messages.error(request, 'Deze casus is gearchiveerd en alleen-lezen.')
+        return _redirect_to_safe_next_or_default(request, fallback_url)
+    return None
+
+
 def _can_edit_intake(user, intake):
     if intake is None:
+        return False
+    if _intake_is_archived(intake):
         return False
 
     linked_case = intake.case_record
@@ -1219,6 +1262,14 @@ def _can_edit_intake(user, intake):
         return True
 
     return bool(intake.case_coordinator_id and intake.case_coordinator_id == user.id)
+
+
+def _require_workflow_actor_role(request, *, intake, allowed_roles: set[str], failure_message: str):
+    actor_role = resolve_actor_role(user=request.user, organization=getattr(intake, 'organization', None))
+    if actor_role not in allowed_roles:
+        messages.error(request, failure_message)
+        return actor_role, HttpResponseForbidden('Deze rol mag deze workflow-actie niet uitvoeren.')
+    return actor_role, None
 
 
 def _disable_response_caching(response):
@@ -1381,7 +1432,7 @@ def sync_case_phase_auto_tasks(case, user=None):
 def sync_automatic_deadlines_for_organization(org, user=None):
     if not org:
         return
-    for process in CaseIntakeProcess.objects.filter(organization=org).select_related('case_coordinator'):
+    for process in _active_case_intakes_queryset(org).select_related('case_coordinator'):
         sync_intake_auto_tasks(process, user=user)
     for case in CareCase.objects.filter(organization=org):
         sync_case_phase_auto_tasks(case, user=user)
@@ -3016,7 +3067,7 @@ def reports_dashboard(request):
     configurations_qs = scope_queryset_for_organization(CareConfiguration.objects.all(), org)
 
     if org:
-        cases_qs = CaseIntakeProcess.objects.filter(organization=org)
+        cases_qs = CaseIntakeProcess.objects.filter(organization=org).exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
         indications_qs = PlacementRequest.objects.for_organization(org)
         risks_qs = CareSignal.objects.for_organization(org)
         provider_profiles_qs = ProviderProfile.objects.filter(client__organization=org)
@@ -3438,7 +3489,7 @@ class BudgetCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
                 provider_profile__isnull=False,
                 status='ACTIVE',
             ).order_by('name')
-            form.fields['linked_cases'].queryset = CaseIntakeProcess.objects.filter(organization=org).order_by('-updated_at')
+            form.fields['linked_cases'].queryset = _active_case_intakes_queryset(org).order_by('-updated_at')
             form.fields['linked_placements'].queryset = PlacementRequest.objects.filter(
                 due_diligence_process__organization=org
             ).order_by('-updated_at')
@@ -3480,7 +3531,7 @@ class BudgetUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
                 provider_profile__isnull=False,
                 status='ACTIVE',
             ).order_by('name')
-            form.fields['linked_cases'].queryset = CaseIntakeProcess.objects.filter(organization=org).order_by('-updated_at')
+            form.fields['linked_cases'].queryset = _active_case_intakes_queryset(org).order_by('-updated_at')
             form.fields['linked_placements'].queryset = PlacementRequest.objects.filter(
                 due_diligence_process__organization=org
             ).order_by('-updated_at')
@@ -3945,6 +3996,13 @@ def case_communication_action(request, pk):
 
     if not _can_edit_intake(request.user, intake):
         return HttpResponseForbidden('Je hebt geen rechten om communicatie voor deze casus te wijzigen.')
+    archived_redirect = _redirect_if_archived_intake(
+        request,
+        intake,
+        f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie",
+    )
+    if archived_redirect:
+        return archived_redirect
 
     normalized_action = (request.POST.get('action') or '').strip().lower()
     next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=communicatie"
@@ -4255,7 +4313,10 @@ def build_provider_response_monitor(org, *, user=None, filters=None, next_url=No
         normalized_status = _normalize_provider_response_status_code(placement.provider_response_status)
         if normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
             continue
-        if intake.status == CaseIntakeProcess.ProcessStatus.COMPLETED:
+        if intake.status in {
+            CaseIntakeProcess.ProcessStatus.COMPLETED,
+            CaseIntakeProcess.ProcessStatus.ARCHIVED,
+        }:
             continue
 
         sla = calculate_provider_response_sla(placement, now=timezone.now())
@@ -4582,7 +4643,7 @@ def matching_dashboard(request):
         CaseAssessment.objects.filter(
             due_diligence_process__organization=org,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
-        )
+        ).exclude(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
         .select_related('due_diligence_process', 'due_diligence_process__care_category_main', 'assessed_by')
         .annotate(_wl_bucket=_urgency_bucket_expr)
         # Waitlist order: validated urgent (by urgency_granted_date) first,
@@ -4597,7 +4658,9 @@ def matching_dashboard(request):
     selected_intake = None
     selected_intake_raw = (request.GET.get('intake') or '').strip()
     if selected_intake_raw.isdigit():
-        selected_intake = CaseIntakeProcess.objects.filter(organization=org, pk=int(selected_intake_raw)).first()
+        selected_intake = CaseIntakeProcess.objects.filter(organization=org, pk=int(selected_intake_raw)).exclude(
+            status=CaseIntakeProcess.ProcessStatus.ARCHIVED
+        ).first()
         if selected_intake:
             approved_assessments_qs = approved_assessments_qs.filter(due_diligence_process=selected_intake)
         else:
@@ -4846,6 +4909,22 @@ def case_matching_action(request, pk):
 
     if not _can_edit_intake(request.user, intake):
         return HttpResponseForbidden('Je hebt geen rechten om matching voor deze casus bij te werken.')
+    archived_redirect = _redirect_if_archived_intake(
+        request,
+        intake,
+        f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=matching",
+    )
+    if archived_redirect:
+        return archived_redirect
+
+    actor_role, role_error_response = _require_workflow_actor_role(
+        request,
+        intake=intake,
+        allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN},
+        failure_message='Alleen gemeente of admin/regie kan matching doorzetten naar aanbiederbeoordeling.',
+    )
+    if role_error_response is not None:
+        return role_error_response
 
     action = (request.POST.get('action') or '').strip()
     phase = (request.POST.get('phase') or '').strip()
@@ -4874,6 +4953,24 @@ def case_matching_action(request, pk):
             messages.error(request, '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
+        previous_state = WorkflowState.MATCHING_READY
+        transition = evaluate_transition(
+            current_state=previous_state,
+            target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
+            actor_role=actor_role,
+            action=WorkflowAction.SEND_TO_PROVIDER,
+        )
+        if not transition.allowed:
+            messages.error(request, transition.reason)
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
+            intake.status = CaseIntakeProcess.ProcessStatus.DECISION
+            intake.save(update_fields=['status', 'updated_at'])
+        if intake.case_record is not None:
+            intake.case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+
         log_case_decision_event(
             case_id=intake.pk,
             placement_id=placement.pk,
@@ -4890,6 +4987,16 @@ def case_matching_action(request, pk):
                 'provider_id': provider.id,
                 'provider_name': provider.name,
             },
+        )
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=previous_state,
+            new_state=WorkflowState.PROVIDER_REVIEW_PENDING,
+            action=WorkflowAction.SEND_TO_PROVIDER,
+            placement=placement,
+            source='case_matching_action',
         )
         messages.success(request, f'Aanbieder {provider.name} gekoppeld aan casus "{intake.title}".')
         return _redirect_to_safe_next_or_default(request, next_fallback)
@@ -4934,6 +5041,13 @@ def case_provider_response_action(request, pk):
 
     if not _can_edit_intake(request.user, intake):
         return HttpResponseForbidden('Je hebt geen rechten om providerreacties voor deze casus te wijzigen.')
+    archived_redirect = _redirect_if_archived_intake(
+        request,
+        intake,
+        f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+    )
+    if archived_redirect:
+        return archived_redirect
 
     placement = PlacementRequest.objects.filter(
         due_diligence_process=intake,
@@ -4944,6 +5058,15 @@ def case_provider_response_action(request, pk):
     if not placement:
         messages.error(request, 'Nog geen plaatsing beschikbaar. Start eerst via matching.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    actor_role, role_error_response = _require_workflow_actor_role(
+        request,
+        intake=intake,
+        allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN},
+        failure_message='Alleen gemeente of admin/regie kan providerreactie-orchestratie uitvoeren.',
+    )
+    if role_error_response is not None:
+        return role_error_response
 
     normalized_action = (request.POST.get('action') or '').strip()
     normalized_action = {
@@ -5143,6 +5266,9 @@ def case_provider_response_action(request, pk):
         if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
             intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
             intake.save(update_fields=['status', 'updated_at'])
+        if intake.case_record is not None:
+            intake.case_record.case_phase = CareCase.CasePhase.MATCHING
+            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
         log_action(
             request.user,
             AuditLog.Action.UPDATE,
@@ -5171,6 +5297,16 @@ def case_provider_response_action(request, pk):
             adaptive_flags=adaptive_flags,
             sla_state=str(sla['sla_state']),
         )
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=WorkflowState.PROVIDER_REJECTED,
+            new_state=WorkflowState.MATCHING_READY,
+            action=WorkflowAction.REMATCH,
+            placement=placement,
+            source='case_provider_response_action',
+        )
         messages.success(request, 'Her-match geactiveerd. Casus staat weer in matchingfase.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
@@ -5189,6 +5325,13 @@ def case_outcome_action(request, pk):
 
     if not _can_edit_intake(request.user, intake):
         return HttpResponseForbidden('Je hebt geen rechten om uitkomstregistratie voor deze casus te wijzigen.')
+    archived_redirect = _redirect_if_archived_intake(
+        request,
+        intake,
+        f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+    )
+    if archived_redirect:
+        return archived_redirect
 
     placement = PlacementRequest.objects.filter(
         due_diligence_process=intake,
@@ -5198,6 +5341,15 @@ def case_outcome_action(request, pk):
     if not placement:
         messages.error(request, 'Nog geen plaatsing beschikbaar. Start eerst via matching.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    actor_role, role_error_response = _require_workflow_actor_role(
+        request,
+        intake=intake,
+        allowed_roles={WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN},
+        failure_message='Alleen een zorgaanbieder of admin/regie kan een aanbiederbeoordeling registreren.',
+    )
+    if role_error_response is not None:
+        return role_error_response
 
     outcome_type = str(request.POST.get('outcome_type') or '').strip().lower()
     now = timezone.now()
@@ -5214,8 +5366,32 @@ def case_outcome_action(request, pk):
         valid_reason_codes = {choice[0] for choice in OutcomeReasonCode.choices}
         if reason_code not in valid_reason_codes:
             reason_code = OutcomeReasonCode.NONE
+        if normalized_status == PlacementRequest.ProviderResponseStatus.REJECTED and reason_code == OutcomeReasonCode.NONE:
+            messages.error(request, 'Afwijzing vereist een reden.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
 
         notes = (request.POST.get('notes') or '').strip()
+        previous_state = derive_workflow_state(intake=intake, placement=placement)
+        if normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+            target_state = WorkflowState.PROVIDER_ACCEPTED
+            action_name = WorkflowAction.PROVIDER_ACCEPT
+        elif normalized_status in normalize_provider_rejection_states():
+            target_state = WorkflowState.PROVIDER_REJECTED
+            action_name = WorkflowAction.PROVIDER_REJECT
+        else:
+            target_state = WorkflowState.PROVIDER_REVIEW_PENDING
+            action_name = WorkflowAction.PROVIDER_REQUEST_INFO
+
+        transition = evaluate_transition(
+            current_state=previous_state,
+            target_state=target_state,
+            actor_role=actor_role,
+            action=action_name,
+        )
+        if not transition.allowed:
+            messages.error(request, transition.reason)
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
         placement.provider_response_status = normalized_status
         placement.provider_response_reason_code = reason_code
         placement.provider_response_notes = notes
@@ -5254,6 +5430,23 @@ def case_outcome_action(request, pk):
                 'source': 'case_detail',
             },
             request=request,
+        )
+
+        if intake.case_record is not None and normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+            intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
+            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+
+        new_state = derive_workflow_state(intake=intake, placement=placement)
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=previous_state,
+            new_state=new_state,
+            action=action_name,
+            placement=placement,
+            reason=notes,
+            source='case_outcome_action',
         )
         messages.success(request, 'Providerreactie-uitkomst opgeslagen.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
@@ -5357,6 +5550,13 @@ def case_placement_action(request, pk):
 
     if not _can_edit_intake(request.user, intake):
         return HttpResponseForbidden('Je hebt geen rechten om plaatsing voor deze casus te wijzigen.')
+    archived_redirect = _redirect_if_archived_intake(
+        request,
+        intake,
+        f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+    )
+    if archived_redirect:
+        return archived_redirect
 
     placement = PlacementRequest.objects.filter(
         due_diligence_process=intake,
@@ -5368,10 +5568,49 @@ def case_placement_action(request, pk):
         messages.error(request, 'Nog geen plaatsing beschikbaar. Start eerst via matching.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
+    actor_role, role_error_response = _require_workflow_actor_role(
+        request,
+        intake=intake,
+        allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN},
+        failure_message='Alleen gemeente of admin/regie kan een plaatsing bevestigen of terugzetten.',
+    )
+    if role_error_response is not None:
+        return role_error_response
+
     status = (request.POST.get('status') or '').strip()
     valid_statuses = {choice[0] for choice in PlacementRequest.Status.choices}
     if status not in valid_statuses:
         messages.error(request, 'Ongeldige plaatsingsstatus.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    previous_state = derive_workflow_state(intake=intake, placement=placement)
+    if status == PlacementRequest.Status.APPROVED:
+        allowed_for_status, status_blocker = placement.can_transition_to_status(PlacementRequest.Status.APPROVED)
+        if not allowed_for_status:
+            messages.error(request, status_blocker or 'Deze plaatsing kan nog niet naar de gevraagde status.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        target_state = WorkflowState.PLACEMENT_CONFIRMED
+        action_name = WorkflowAction.CONFIRM_PLACEMENT
+    elif status == PlacementRequest.Status.REJECTED:
+        target_state = WorkflowState.MATCHING_READY
+        action_name = WorkflowAction.REMATCH
+    else:
+        target_state = previous_state
+        action_name = WorkflowAction.CONFIRM_PLACEMENT
+
+    transition = evaluate_transition(
+        current_state=previous_state,
+        target_state=target_state,
+        actor_role=actor_role,
+        action=action_name,
+    )
+    if not transition.allowed:
+        messages.error(request, transition.reason)
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if status == PlacementRequest.Status.REJECTED and placement.provider_response_status not in normalize_provider_rejection_states():
+        messages.error(request, 'Rematch is alleen toegestaan na afwijzing, wachtlijst of geen capaciteit.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
     allowed, blocker = placement.can_transition_to_status(status)
@@ -5399,6 +5638,17 @@ def case_placement_action(request, pk):
         placement.start_date = start_date
         update_fields.append('start_date')
         changes['start_date'] = start_date.isoformat()
+
+    if status == PlacementRequest.Status.REJECTED and intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
+        intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
+        intake.save(update_fields=['status', 'updated_at'])
+        if intake.case_record is not None:
+            intake.case_record.case_phase = CareCase.CasePhase.MATCHING
+            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+
+    if status == PlacementRequest.Status.APPROVED and intake.case_record is not None:
+        intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
+        intake.case_record.save(update_fields=['case_phase', 'updated_at'])
 
     placement.save(update_fields=list(dict.fromkeys(update_fields)))
     log_action(
@@ -5436,7 +5686,99 @@ def case_placement_action(request, pk):
             },
             optional_reason=note or None,
         )
+
+    new_state = derive_workflow_state(intake=intake, placement=placement)
+    log_transition_event(
+        intake=intake,
+        actor_user=request.user,
+        actor_role=actor_role,
+        old_state=previous_state,
+        new_state=new_state,
+        action=action_name,
+        placement=placement,
+        reason=note,
+        source='case_placement_action',
+    )
     messages.success(request, 'Plaatsing bijgewerkt vanuit de casuswerkruimte.')
+    return _redirect_to_safe_next_or_default(request, next_fallback)
+
+
+@login_required
+@require_POST
+def case_archive_action(request, pk):
+    org = get_user_organization(request.user)
+    intake = get_object_or_404(
+        scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
+        pk=pk,
+    )
+
+    if not can_manage_organization(request.user, org):
+        return HttpResponseForbidden('Je hebt geen rechten om deze casus te archiveren.')
+
+    actor_role = resolve_actor_role(user=request.user, organization=org)
+
+    next_fallback = f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}"
+    if _intake_is_archived(intake):
+        messages.info(request, 'Deze casus is al gearchiveerd.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    if intake.status != CaseIntakeProcess.ProcessStatus.COMPLETED:
+        messages.error(request, 'Casus archiveren kan pas nadat de casus is afgerond.')
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    placement = (
+        PlacementRequest.objects
+        .filter(due_diligence_process=intake)
+        .order_by('-updated_at')
+        .first()
+    )
+    previous_state = derive_workflow_state(intake=intake, placement=placement)
+    transition = evaluate_transition(
+        current_state=previous_state,
+        target_state=WorkflowState.ARCHIVED,
+        actor_role=actor_role,
+        action=WorkflowAction.ARCHIVE_CASE,
+    )
+    if not transition.allowed:
+        messages.error(request, transition.reason)
+        return _redirect_to_safe_next_or_default(request, next_fallback)
+
+    case_record = intake.case_record
+    update_fields = ['status', 'updated_at']
+    intake.status = CaseIntakeProcess.ProcessStatus.ARCHIVED
+    intake.save(update_fields=update_fields)
+
+    if case_record is not None and case_record.lifecycle_stage != 'ARCHIVED':
+        case_record.lifecycle_stage = 'ARCHIVED'
+        case_record.save(update_fields=['lifecycle_stage', 'updated_at'])
+
+    log_action(
+        request.user,
+        AuditLog.Action.UPDATE,
+        'CaseIntakeProcess',
+        object_id=intake.id,
+        object_repr=str(intake),
+        changes={
+            'action': 'archive_case',
+            'intake_status': CaseIntakeProcess.ProcessStatus.ARCHIVED,
+            'case_lifecycle_stage': 'ARCHIVED' if case_record else None,
+        },
+        request=request,
+    )
+    log_transition_event(
+        intake=intake,
+        actor_user=request.user,
+        actor_role=actor_role,
+        old_state=previous_state,
+        new_state=WorkflowState.ARCHIVED,
+        action=WorkflowAction.ARCHIVE_CASE,
+        placement=placement,
+        source='case_archive_action',
+    )
+    messages.success(
+        request,
+        'Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.',
+    )
     return _redirect_to_safe_next_or_default(request, next_fallback)
 
 
@@ -5677,6 +6019,11 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             ).prefetch_related('risk_factors'),
             org,
         )
+        show_archived_requested = (self.request.GET.get('show_archived') or '').strip().lower() in {'1', 'true', 'yes', 'on'}
+        show_archived = bool(show_archived_requested and can_manage_organization(self.request.user, org))
+        if not show_archived:
+            qs = qs.exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
+        self._show_archived = show_archived
         today = date.today()
         waiting_threshold_days = 7
 
@@ -5759,10 +6106,12 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
 
         # Statistics
         org_intakes = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org)
+        archived_intakes = org_intakes.filter(status=CaseIntakeProcess.ProcessStatus.ARCHIVED).count()
         ctx.update({
             'total_intakes': org_intakes.count(),
-            'active_intakes': org_intakes.exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count(),
-            'urgent_intakes': org_intakes.filter(urgency__in=[CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS]).count(),
+            'active_intakes': org_intakes.exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED).exclude(status=CaseIntakeProcess.ProcessStatus.COMPLETED).count(),
+            'archived_intakes': archived_intakes,
+            'urgent_intakes': org_intakes.exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED).filter(urgency__in=[CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS]).count(),
             'search_query': self.request.GET.get('q', ''),
             'status_choices': CaseIntakeProcess.ProcessStatus.choices,
             'urgency_choices': CaseIntakeProcess.Urgency.choices,
@@ -5770,6 +6119,8 @@ class CaseIntakeListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView
             'selected_region_type': self.request.GET.get('region_type', ''),
             'selected_region': self.request.GET.get('region', ''),
             'region_choices': RegionalConfiguration.objects.filter(organization=org).order_by('region_name'),
+            'show_archived': getattr(self, '_show_archived', False),
+            'can_show_archived': can_manage_organization(self.request.user, org),
         })
 
         # Build intake rows for display using the shared operational decision contract.
@@ -5884,7 +6235,9 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         assessment = CaseAssessment.objects.filter(due_diligence_process=intake).select_related('assessed_by').first()
         placement = PlacementRequest.objects.filter(due_diligence_process=intake).select_related('selected_provider').order_by('-updated_at').first()
         case_record = intake.case_record
+        is_archived_case = _intake_is_archived(intake)
         can_edit_case = _can_edit_intake(self.request.user, intake)
+        can_archive_case = _can_archive_intake(self.request.user, intake)
 
         open_tasks = Deadline.objects.for_organization(self.get_organization()).filter(
             due_diligence_process=intake,
@@ -5919,7 +6272,13 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         else:
             placement_phase_label = 'Indicatie voorbereiding'
 
-        if not can_edit_case:
+        if is_archived_case:
+            next_action = {
+                'label': 'Gearchiveerde casus',
+                'href': reverse('careon:case_list'),
+                'help': 'Deze casus blijft bewaard, maar is alleen-lezen en verdwijnt uit actieve overzichten.',
+            }
+        elif not can_edit_case:
             next_action = {
                 'label': 'Alleen-lezen toegang',
                 'href': reverse('careon:case_list'),
@@ -6213,6 +6572,8 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
             'risk_factors_list': intake.risk_factors.all(),
             'case_record': case_record,
             'can_edit_case': can_edit_case,
+            'is_archived_case': is_archived_case,
+            'can_archive_case': can_archive_case,
             'matching_status_label': matching_status_label,
             'matching_href': matching_href,
             'placement_status_label': placement_status_label,
@@ -6583,9 +6944,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
         if intake_id:
             try:
                 org = self.get_organization()
-                intake = scope_queryset_for_organization(
-                    CaseIntakeProcess.objects.all(), org
-                ).get(pk=intake_id)
+                intake = _active_case_intakes_queryset(org).get(pk=intake_id)
                 initial['due_diligence_process'] = intake
             except CaseIntakeProcess.DoesNotExist:
                 pass
@@ -6845,7 +7204,7 @@ class CareSignalCreateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Create
         if intake_id:
             try:
                 org = self.get_organization()
-                intake = scope_queryset_for_organization(CaseIntakeProcess.objects.all(), org).get(pk=intake_id)
+                intake = _active_case_intakes_queryset(org).get(pk=intake_id)
                 initial['due_diligence_process'] = intake
             except CaseIntakeProcess.DoesNotExist:
                 pass

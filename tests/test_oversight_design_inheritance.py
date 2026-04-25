@@ -269,6 +269,7 @@ class OversightDesignInheritanceTests(TestCase):
         url = reverse("careon:municipality_detail", kwargs={"pk": self.municipality_a.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Regiekamer")
 
     def test_municipality_detail_view_has_oversight_summary_context(self):
         url = reverse("careon:municipality_detail", kwargs={"pk": self.municipality_a.pk})
@@ -289,6 +290,7 @@ class OversightDesignInheritanceTests(TestCase):
         url = reverse("careon:regional_detail", kwargs={"pk": self.region.pk})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Regiekamer")
 
     def test_regional_detail_view_has_oversight_summary_context(self):
         url = reverse("careon:regional_detail", kwargs={"pk": self.region.pk})

@@ -1,6 +1,7 @@
 import type { CasusAction, CasusSignal, CasusTimelineEvent, ComputedCaseState } from "./phaseEngine";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
+import { canRoleExecuteAction, type CanonicalWorkflowAction } from "./workflowStateMachine";
 
 export type WorkflowBoardColumn =
   | "casus"
@@ -590,19 +591,8 @@ export function buildWorkflowCases(spaCases: SpaCase[], providers: SpaProvider[]
 }
 
 function isRoleResponsible(party: CaseResponsibleParty, role: CaseDecisionRole): boolean {
-  if (role === "admin") {
-    return true;
-  }
-
-  if (party === "Gemeente") {
-    return role === "gemeente";
-  }
-
-  if (party === "Zorgaanbieder") {
-    return role === "zorgaanbieder";
-  }
-
-  return false;
+  const partyAction: CanonicalWorkflowAction = party === "Zorgaanbieder" ? "provider_request_info" : "complete_summary";
+  return canRoleExecuteAction(role, partyAction);
 }
 
 export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecisionRole): CaseDecisionState {
@@ -616,17 +606,20 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
     { label: "Documenten", route: "casussen" },
   ];
   let providerReviewActions: string[] = [];
+  let requiredAction: CanonicalWorkflowAction = "complete_summary";
 
   switch (item.boardColumn) {
     case "casus":
       responsibleParty = "Gemeente";
       nextActionLabel = item.missingDataItems.length > 0 ? "Vul casus aan" : "Genereer samenvatting";
       nextActionRoute = "casussen";
+      requiredAction = "complete_summary";
       break;
     case "samenvatting":
       responsibleParty = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Systeem" : "Gemeente";
       nextActionLabel = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Genereer samenvatting" : "Bevestig samenvatting";
       nextActionRoute = "casussen";
+      requiredAction = "complete_summary";
       break;
     case "matching":
       responsibleParty = "Gemeente";
@@ -637,6 +630,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
         { label: "Open matching", route: "matching" },
         { label: "Documenten", route: "casussen" },
       ];
+      requiredAction = item.recommendedProvidersCount > 0 ? "send_to_provider" : "start_matching";
       break;
     case "aanbieder-beoordeling":
       responsibleParty = "Zorgaanbieder";
@@ -654,6 +648,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
             { label: "Historie", route: "casussen" },
           ];
       providerReviewActions = userRole === "zorgaanbieder" ? ["Accepteren", "Afwijzen", "Meer informatie vragen"] : [];
+      requiredAction = "provider_request_info";
       break;
     case "plaatsing":
       responsibleParty = "Gemeente";
@@ -664,6 +659,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
         { label: "Open plaatsing", route: "plaatsingen" },
         { label: "Historie", route: "casussen" },
       ];
+      requiredAction = "confirm_placement";
       break;
     case "intake":
       responsibleParty = "Zorgaanbieder";
@@ -674,6 +670,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
         { label: "Open intake", route: "intake" },
         { label: "Historie", route: "casussen" },
       ];
+      requiredAction = "start_intake";
       break;
   }
 
@@ -698,7 +695,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
     primaryActionEnabled: item.primaryActionEnabled,
     blockedReason: item.blockReason,
     secondaryActions,
-    requiresCurrentUserAction: isRoleResponsible(responsibleParty, userRole),
+    requiresCurrentUserAction: isRoleResponsible(responsibleParty, userRole) && canRoleExecuteAction(userRole, requiredAction),
     providerReviewActions,
   };
 }

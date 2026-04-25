@@ -51,13 +51,17 @@ function responsiblePartyClasses(party: CaseDecisionState["responsibleParty"]): 
 }
 
 export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigate }: ActionCaseDecisionCardProps) {
-  const handlePrimaryAction = () => {
-    if (decision.nextActionRoute === "casussen") {
+  const handleRouteAction = (route: "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "intake") => {
+    if (route === "casussen") {
       onOpen(item.id);
       return;
     }
 
-    onNavigate(decision.nextActionRoute);
+    onNavigate(route);
+  };
+
+  const handlePrimaryAction = () => {
+    handleRouteAction(decision.nextActionRoute);
   };
 
   return (
@@ -121,7 +125,7 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
               <ArrowRight size={14} />
             </Button>
             {decision.nextActionRoute !== "casussen" && (
-              <Button variant="outline" size="sm" onClick={() => onNavigate(decision.nextActionRoute)}>
+              <Button variant="outline" size="sm" onClick={() => handleRouteAction(decision.nextActionRoute)}>
                 Open workflow
               </Button>
             )}
@@ -141,18 +145,17 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
       )}
 
       <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border pt-4">
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => onOpen(item.id)}>
-          <ShieldCheck size={14} />
-          Bekijk detail
-        </Button>
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => onOpen(item.id)}>
-          <History size={14} />
-          Historie
-        </Button>
-        <Button variant="ghost" size="sm" className="gap-1.5" onClick={() => onOpen(item.id)}>
-          <FileText size={14} />
-          Documenten
-        </Button>
+        {decision.secondaryActions.map((action) => {
+          const lowerLabel = action.label.toLowerCase();
+          const Icon = lowerLabel.includes("historie") ? History : lowerLabel.includes("document") ? FileText : ShieldCheck;
+
+          return (
+            <Button key={`${item.id}-${action.label}`} variant="ghost" size="sm" className="gap-1.5" onClick={() => handleRouteAction(action.route)}>
+              <Icon size={14} />
+              {action.label}
+            </Button>
+          );
+        })}
       </div>
 
       {item.isBlocked && (

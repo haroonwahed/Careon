@@ -1,5 +1,12 @@
 # CareOn Release Rollout Checklist
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+Use these as the source-of-truth contract for canonical workflow order, actor ownership, and backend-enforced gating during rollout validation.
+
 Use this for the staging-to-production handoff on a release that already has a green local validation set.
 
 For a concrete, dated example of how to fill this in, see:

@@ -1,5 +1,12 @@
 # Go-Live Plan
 
+Foundation reference:
+
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md`
+- `docs/FOUNDATION_LOCK.md`
+
+This go-live plan assumes and enforces the system-first workflow and backend source-of-truth constraints from these documents.
+
 Aanbieder Beoordeling date: 2026-04-24
 
 This plan turns the go-live matrix into a practical release order. It is based on the current repository state, the release docs, and the release validation runs from 2026-04-24.

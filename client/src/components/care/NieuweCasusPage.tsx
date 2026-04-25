@@ -879,7 +879,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle voor aanmaken</p>
-              <div className="grid gap-3 text-sm md:grid-cols-2">
+              <div className="grid gap-3 text-sm text-foreground md:grid-cols-2">
                 <p><span className="text-muted-foreground">Cliënt:</span> {formState.title || "-"}</p>
                 <p><span className="text-muted-foreground">Startdatum:</span> {formatDateDisplayValue(formState.start_date)}</p>
                 <p><span className="text-muted-foreground">Deadline matching:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>

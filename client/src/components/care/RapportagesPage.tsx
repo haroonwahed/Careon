@@ -203,6 +203,10 @@ export function RapportagesPage() {
         </p>
       </div>
 
+      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/6 px-4 py-3 text-sm text-foreground">
+        Interne rapportages. De exportvoorbeelden op deze pagina zijn voorlopig nog frontend-gegenereerd en niet de bron van waarheid voor operationele sturing.
+      </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="premium-card p-5">
           <div className="mb-2 flex items-center gap-2 text-muted-foreground">

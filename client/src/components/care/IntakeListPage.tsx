@@ -62,7 +62,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   const summary = requestBadge(view);
   const visibleCases = view === "requests" ? pendingRequests : intakeCases;
 
-  const handleDecision = async (caseId: string, status: "APPROVED" | "REJECTED") => {
+  const handleDecision = async (caseId: string, status: "ACCEPTED" | "REJECTED") => {
     if (submittingCaseId) {
       return;
     }
@@ -71,10 +71,10 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
     setFeedback(null);
 
     try {
-      await apiClient.post(`/care/api/cases/${caseId}/placement-action/`, { status });
+      await apiClient.post(`/care/api/cases/${caseId}/provider-decision/`, { status });
       refetch();
 
-      if (status === "APPROVED") {
+      if (status === "ACCEPTED") {
         setFeedback(`Casus ${caseId} is geaccepteerd en doorgestuurd naar intake.`);
         onRequestApproved?.(caseId);
       } else {
@@ -210,7 +210,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                           <XCircle size={16} className="mr-2" />
                           Afwijzen
                         </Button>
-                        <Button onClick={() => handleDecision(caseItem.id, "APPROVED")} disabled={isBusy}>
+                        <Button onClick={() => handleDecision(caseItem.id, "ACCEPTED")} disabled={isBusy}>
                           {isBusy ? <Loader2 size={16} className="mr-2 animate-spin" /> : <CheckCircle2 size={16} className="mr-2" />}
                           Accepteren
                         </Button>
