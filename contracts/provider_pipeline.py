@@ -520,8 +520,6 @@ class ProviderPipeline:
 
         required = (
             data.get("open_slots"),
-            data.get("waiting_list_size"),
-            data.get("avg_wait_days"),
             data.get("max_capacity"),
         )
         if any(value is None for value in required):

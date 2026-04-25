@@ -443,7 +443,7 @@ class SlaMonitorExposureTests(TestCase):
         response = self.client.get(reverse("careon:provider_response_monitor"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Provider Response Overview")
+        self.assertContains(response, "Providerreactie monitor")
         self.assertContains(response, "Open reacties")
         self.assertContains(response, "Recent geen capaciteit")
         self.assertContains(response, "SLA Provider")
