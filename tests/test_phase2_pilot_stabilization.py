@@ -239,10 +239,40 @@ class Phase2PilotStabilizationTests(TestCase):
     def test_archived_cases_are_hidden_and_read_only_for_workflow_actions(self):
         intake = self._create_intake_via_api(
             title='Pilot Archive Casus',
-            status=CaseIntakeProcess.ProcessStatus.COMPLETED,
         )
+        provider = self._create_provider('Archive Provider')
 
         self._login(self.admin)
+        self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps({'action': 'assign', 'provider_id': provider.pk}),
+            content_type='application/json',
+        )
+        self.client.post(
+            reverse('careon:case_outcome_action', kwargs={'pk': intake.pk}),
+            {
+                'outcome_type': 'provider_response',
+                'status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
+                'reason_code': OutcomeReasonCode.NONE,
+                'notes': 'Akkoord voor archieftest.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+        self.client.post(
+            reverse('careon:case_placement_action', kwargs={'pk': intake.pk}),
+            {
+                'status': PlacementRequest.Status.APPROVED,
+                'note': 'Plaatsing bevestigd voor archieftest.',
+                'next': f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing",
+            },
+            follow=True,
+        )
+        self.client.post(
+            reverse('careon:intake_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps({}),
+            content_type='application/json',
+        )
         archive_response = self.client.post(
             reverse('careon:case_archive_action', kwargs={'pk': intake.pk}),
             {'next': reverse('careon:case_detail', kwargs={'pk': intake.pk})},

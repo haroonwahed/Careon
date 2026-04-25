@@ -10,7 +10,7 @@ This codebase is a Dutch care-allocation workflow application, not a generic das
 
 The live product is usable for a constrained pilot or demo, and the core workflow gating is in place. It is not production-ready yet. The biggest gap is that the repository still contains a mix of live workflow code, legacy compatibility seams, and demo/example surfaces, so the product is not yet cleanly separable into "real customer path" versus "reference material."
 
-Phase 2 stabilization has now added safe casus archiving, hidden archived cases from default active lists, and labeled the remaining reporting surface as internal rather than customer-facing. Full browser automation is still not configured, so the pilot journey is currently proven by backend/integration tests plus manual smoke guidance.
+Phase 2 stabilization added safe casus archiving, hidden archived cases from default active lists, and labeled the remaining reporting surface as internal rather than customer-facing. Phase 3 now adds a browser smoke harness with Playwright and a seeded pilot journey that exercises login, dashboard, case detail, summary, matching, provider decisions, placement, intake, and archive. The browser proof is still release-oriented smoke coverage, not a full end-to-end automated product test suite.
 
 ### Readiness verdict
 
@@ -29,9 +29,11 @@ Phase 2 stabilization has now added safe casus archiving, hidden archived cases 
 - Provider rejection now requires a stored reason code.
 - Casussen can now be safely archived; archived cases disappear from default active queues and remain readable for authorized staff.
 - The reporting page is explicitly labeled internal instead of being implied as operational truth.
+- The provider-facing `ProviderIntakeDashboard` remains quarantined as demo-only and is not part of the live route map.
 - Several surfaces are still demo-only or partially wired, especially reporting and some provider-facing views.
 - There are still compatibility aliases, historical docs, and mock/demo artifacts in the repo.
 - Some actions are not implemented as full CRUD flows, especially delete/archive behavior.
+- The SPA bundle warning is still present and intentionally deferred until a low-risk split is justified.
 
 ## What Works
 
@@ -46,6 +48,7 @@ Phase 2 stabilization has now added safe casus archiving, hidden archived cases 
 - Tenant isolation and role/permission coverage in tests.
 - Audit trail, notifications, organizations, municipalities, regions, and core configuration pages.
 - API endpoints for cases, matching, assessments, placements, signals, tasks, documents, audit log, providers, municipalities, regions, and dashboard summary.
+- Browser smoke automation for the canonical pilot flow via Playwright + seeded release data.
 
 ## What Is Partially Done
 
@@ -53,6 +56,7 @@ Phase 2 stabilization has now added safe casus archiving, hidden archived cases 
 - Reporting exists, but part of the visible export behavior is still frontend-generated demo text and should stay internal until replaced.
 - Some pages show useful operational data, but they are not backed by fully real workflow actions yet.
 - Some provider-facing surfaces are present but not integrated into the live route map.
+- `ProviderIntakeDashboard` is intentionally quarantined as demo-only.
 - Some current page logic still leans on legacy adapter layers or mock-shaped data contracts.
 - The placement page still uses legacy adapters for part of its display model, even though the confirm step now respects the backend gate.
 
@@ -63,7 +67,9 @@ Phase 2 stabilization has now added safe casus archiving, hidden archived cases 
 - The repo still has archive and design-doc material that can be mistaken for current product guidance.
 - The `assessment` naming decision is still unresolved as a product/platform contract decision.
 - Mobile behavior and browser smoke coverage are not fully proven across all live surfaces.
+- The browser smoke harness covers the core pilot path, but it is still a smoke test, not a full production-grade browser suite.
 - At least one API path emits a pagination ordering warning during tests.
+- The SPA build still triggers Vite's large chunk warning; bundle splitting remains deferred.
 
 ## Known Risks
 

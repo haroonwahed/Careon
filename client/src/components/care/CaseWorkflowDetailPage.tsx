@@ -1,7 +1,9 @@
 import { ArrowLeft, ArrowRight, AlertTriangle, Building2, CalendarClock, CheckCircle2, Clock3, MapPin, ShieldAlert, Sparkles } from "lucide-react";
 import { Button } from "../ui/button";
+import { useEffect, useState } from "react";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { fetchCaseDecisionEvaluation, type DecisionEvaluation } from "../../lib/decisionEvaluation";
 import { buildWorkflowCase } from "../../lib/workflowUi";
 
 interface CaseWorkflowDetailPageProps {
@@ -53,6 +55,36 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
   const { providers } = useProviders({ q: "" });
   const spaCase = cases.find((item) => item.id === caseId);
   const workflowCase = spaCase ? buildWorkflowCase(spaCase, providers) : null;
+  const [decisionEvaluation, setDecisionEvaluation] = useState<DecisionEvaluation | null>(null);
+  const [decisionLoading, setDecisionLoading] = useState(false);
+  const [decisionError, setDecisionError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setDecisionLoading(true);
+    setDecisionError(null);
+
+    fetchCaseDecisionEvaluation(caseId)
+      .then((payload) => {
+        if (!cancelled) {
+          setDecisionEvaluation(payload);
+        }
+      })
+      .catch((evaluationError: Error) => {
+        if (!cancelled) {
+          setDecisionError(evaluationError.message || "Beslisinformatie kon niet worden geladen.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setDecisionLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
 
   if (loading) {
     return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casus laden…</div>;
@@ -246,6 +278,78 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
                   <span className="font-medium text-foreground">{workflowCase.intakeDateLabel ?? "Volgt na bevestiging"}</span>
                 </div>
               </div>
+            </section>
+
+            <section className="rounded-2xl border bg-card p-5">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-foreground">Beslismotor</h3>
+                <span className="rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground">
+                  Backend beslist
+                </span>
+              </div>
+              {decisionLoading && (
+                <p className="mt-4 text-sm text-muted-foreground">Beslisinformatie laden…</p>
+              )}
+              {!decisionLoading && decisionError && (
+                <p className="mt-4 text-sm text-amber-200">{decisionError}</p>
+              )}
+              {!decisionLoading && !decisionError && decisionEvaluation && (
+                <div className="mt-4 space-y-4 text-sm">
+                  <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende beste actie</p>
+                    <p className="mt-1 font-semibold text-foreground">
+                      {decisionEvaluation.next_best_action?.label ?? "Geen vervolgactie"}
+                    </p>
+                    <p className="mt-1 text-muted-foreground">
+                      {decisionEvaluation.next_best_action?.reason ?? "Deze casus is alleen-lezen of volledig afgerond."}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Blokkades</p>
+                    <div className="mt-2 space-y-2">
+                      {decisionEvaluation.blockers.length === 0 ? (
+                        <p className="text-muted-foreground">Geen actieve blokkades.</p>
+                      ) : (
+                        decisionEvaluation.blockers.map((blocker) => (
+                          <div key={blocker.code} className="rounded-xl border border-red-500/20 bg-red-500/6 px-3 py-2">
+                            <p className="font-medium text-foreground">{blocker.message}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Code: {blocker.code}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Risico's</p>
+                    <div className="mt-2 space-y-2">
+                      {decisionEvaluation.risks.length === 0 ? (
+                        <p className="text-muted-foreground">Geen opvallende risico's.</p>
+                      ) : (
+                        decisionEvaluation.risks.map((risk) => (
+                          <div key={risk.code} className="rounded-xl border border-amber-500/20 bg-amber-500/6 px-3 py-2">
+                            <p className="font-medium text-foreground">{risk.message}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Code: {risk.code}</p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Geweigerde acties</p>
+                    <div className="mt-2 space-y-2">
+                      {decisionEvaluation.blocked_actions.slice(0, 4).map((action) => (
+                        <div key={action.action} className="rounded-xl border border-border bg-muted/20 px-3 py-2">
+                          <p className="font-medium text-foreground">{action.label}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">{action.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           </div>
 

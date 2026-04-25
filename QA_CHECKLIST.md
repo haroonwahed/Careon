@@ -4,27 +4,27 @@ Date: 2026-04-25
 
 ## Smoke Test Checklist
 
-- [ ] Open the public landing page at `/`
-- [ ] Log in successfully
-- [ ] Confirm the dashboard entry route works
-- [ ] Log out and return to the public landing page
-- [ ] Open the main case list
-- [ ] Verify archived cases are hidden from the default active case list
-- [ ] Verify admin/internal users can reveal archived casussen with the archived filter
-- [ ] Search for a case by ID and by client name
-- [ ] Open a case detail page
-- [ ] Confirm the case shows the next best action
-- [ ] Start matching from a case that is ready for matching
-- [ ] Review the top provider recommendations and explanation text
-- [ ] Confirm provider acceptance / rejection actions are visible and gated correctly
-- [ ] Confirm placement is blocked until provider acceptance is present
-- [ ] Confirm intake cannot start before placement
-- [ ] Open the signals page and confirm it shows actionable items
-- [ ] Open documents and verify document detail/upload flows
-- [ ] Open audit trail and confirm recent actions appear
-- [ ] Open reports and verify the page is clearly labeled internal/internal-use only or backed by real data
-- [ ] Switch organization / role context if available
-- [ ] Verify the app remains usable at tablet width
+| Role | URL / Page | Action | Expected result | Pass / Fail | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Guest | `/` | Open the public landing page | Public landing loads without errors and exposes the login/register entry points |  |  |
+| Guest | `/register/` | Load the registration form | Registration form fields are visible and the page is usable |  |  |
+| Guest | `/register/` | Submit a valid unique account | Registration completes and the account is created or the session transitions to the authenticated flow |  |  |
+| Guest | `/login/` | Load the login form | Login form is visible and ready for credentials |  |  |
+| Gemeente | `/login/` | Sign in with a valid pilot user | User lands in the authenticated workspace |  |  |
+| Gemeente | `/static/spa/?view=dashboard` | Open the dashboard entry route | Regiekamer dashboard loads |  |  |
+| Gemeente | `/static/spa/?view=dashboard` -> Casussen | Open the case list | Case list loads and active casussen are visible |  |  |
+| Gemeente | Casussen list | Search by case title or ID | Search narrows the list to the requested casus |  |  |
+| Gemeente | Casus detail overlay | Open a casus | Casus detail loads and shows the decision engine panel |  |  |
+| Gemeente | Casus detail overlay | Read the next-best-action panel | The backend decision engine is shown with blockers, risks, and blocked actions |  |  |
+| Gemeente | Casus detail / matching | Start matching for a ready casus | Matching becomes reachable only after summary readiness |  |  |
+| Gemeente | Casus detail / aanbieder beoordeling | Send to provider | Provider review becomes visible and the next owner is the aanbieder |  |  |
+| Gemeente | Casus detail / plaatsing | Attempt placement before acceptance | Placement is blocked with an explanatory message |  |  |
+| Zorgaanbieder | Casus detail / aanbieder beoordeling | Accept the casus | Acceptance is stored and placement becomes available |  |  |
+| Zorgaanbieder | Casus detail / aanbieder beoordeling | Reject the casus with a reason | Rejection is stored with a required reason code |  |  |
+| Gemeente | Casus detail / plaatsing | Confirm placement after acceptance | Placement completes successfully |  |  |
+| Zorgaanbieder | Casus detail / intake | Start intake after placement | Intake starts successfully |  |  |
+| Gemeente | Casus detail / archive | Archive a completed casus | Casus is archived, disappears from active lists, and remains read-only |  |  |
+| Any logged-in user | Header / account menu | Log out | Session ends and the user returns to the public or login page |  |  |
 
 ## Phase 2 Pilot Smoke Proof
 
@@ -38,7 +38,7 @@ Date: 2026-04-25
 - [ ] Backend integration test proves placement succeeds after acceptance
 - [ ] Backend integration test proves archived casussen are hidden from active lists
 - [ ] Backend integration test proves archived workflow actions fail closed
-- [ ] Manual browser smoke confirms dashboard, list, detail, placement, and logout still work
+- [ ] Playwright smoke confirms login, register, dashboard, list, detail, workflow gating, archive, and logout
 
 ## Manual Regression Checklist
 
@@ -50,6 +50,7 @@ Date: 2026-04-25
 - [ ] Intake cannot begin before provider acceptance and placement
 - [ ] Provider rejection reasons are saved structurally and rejections without a reason are blocked
 - [ ] Casus archiving only applies to completed records and removes them from active lists
+- [ ] Browser smoke harness is available and run before release
 - [ ] Audit trail captures state-changing actions
 - [ ] Notifications do not break authenticated navigation
 - [ ] Search, filters, and bulk actions still preserve the selected organization

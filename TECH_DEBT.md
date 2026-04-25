@@ -10,7 +10,7 @@ Date: 2026-04-25
 | Compatibility aliases still exist for old routes | They keep legacy paths alive and make the active surface harder to reason about | Medium | Keep only the aliases that are required by tests or external links |
 | `assessment` remains an internal contract name in several places | The business language is Dutch-first, but the technical contract is still mixed | Medium | Decide whether to keep it internal or plan a rename migration |
 | Frontend-only report exports | The user can download content that is not backed by a real report pipeline | High | Keep the page clearly internal until a real backend report pipeline exists |
-| `ProviderIntakeDashboard` is not wired to the live route map | The component exists but is not part of the current navigation contract | Medium | Either connect it to a real path or archive it |
+| `ProviderIntakeDashboard` is not wired to the live route map | The component exists but is not part of the current navigation contract | Low | Keep it quarantined as demo-only unless it is reworked against real backend data |
 | Mock data layer still exists in `client/src/lib/casesData.ts` | It is useful for examples, but it can be mistaken for live source of truth | Medium | Keep it as demo-only and stop referencing it from live documentation |
 
 ## Duplicates And Overlap
@@ -22,11 +22,11 @@ Date: 2026-04-25
 
 ## Dead Code Or Probably Dead Surfaces
 
-- `client/src/components/provider/ProviderIntakeDashboard.tsx` is currently unreferenced.
+- `client/src/components/provider/ProviderIntakeDashboard.tsx` is currently unreferenced and explicitly quarantined as demo-only.
 - `client/src/components/care/CasusControlCenter.tsx` appears to be a legacy workflow shell and should remain quarantined until it is either wired or archived.
 - `client/src/components/examples/*` are demo surfaces and should not be treated as active product code.
 - `client/src/components/legacy_archive/*` is historical reference material, not active workflow code.
-- `theme/templates/contracts/reports_dashboard.html` is intentionally labeled internal, but still needs a proper backend-backed reporting story if it ever becomes customer-facing.
+- `theme/templates/contracts/reports_dashboard.html` is intentionally labeled internal; keep it internal-only unless a real backend-backed reporting story is ready.
 - `contracts/management/commands/audit_null_organizations.py` describes itself as a compatibility audit placeholder.
 - `contracts/governance.py` and `contracts/operational_decision_contract.py` contain `pass` branches that should be revisited if they are still intended to execute.
 
@@ -46,8 +46,10 @@ Date: 2026-04-25
 - Pagination and ordering assumptions should be normalized before more list views are added.
 - Map integration adds an external dependency path that needs graceful fallback handling.
 - The current SPA build exceeds Vite's 500 kB chunk warning, which will hurt load time unless it is split up.
+- The SPA build still exceeds Vite's 500 kB chunk warning; the low-risk split has been deferred rather than forced.
 - Provider rejection now requires a reason code and placement approval is backend-gated, so those specific workflow risks have been reduced.
 - Casus archiving is now safe for completed records, but other core entities still need an explicit retention/archive policy.
+- A seeded Playwright smoke harness now exists, but it is a release smoke guard rather than a full browser test suite.
 
 ## Lower-Priority Cleanup
 

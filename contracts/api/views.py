@@ -18,6 +18,7 @@ from django.utils import timezone
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
 from contracts.forms import CaseIntakeProcessForm
 from contracts.middleware import log_action
+from contracts.decision_engine import evaluate_case
 from contracts.models import (
     CareCase, CaseAssessment, PlacementRequest, CareSignal, CareTask,
     Document, AuditLog, Client, ProviderProfile,
@@ -29,6 +30,7 @@ from contracts.tenancy import (
     scope_queryset_for_organization,
     set_organization_on_instance,
 )
+from contracts.permissions import CaseAction, can_access_case_action
 from contracts.provider_workspace import build_provider_workspace_summary
 from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
 from contracts.views import _assign_provider_to_intake
@@ -167,6 +169,7 @@ def _build_case_data(case):
     result['lifecycle_stage'] = getattr(case, 'lifecycle_stage', '') or ''
     return result
 
+
 @login_required
 @require_http_methods(["GET"])
 def contracts_api(request):
@@ -240,10 +243,24 @@ def case_detail_api(request, contract_id=None, case_id=None):
         organization = get_user_organization(request.user)
         case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=record_id)
 
-        return JsonResponse(_build_case_data(case))
+        payload = _build_case_data(case)
+        payload['decision_evaluation'] = evaluate_case(case, actor=request.user)
+        return JsonResponse(payload)
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@login_required
+@require_http_methods(["GET"])
+def case_decision_evaluation_api(request, case_id):
+    organization = get_user_organization(request.user)
+    case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+
+    if not can_access_case_action(request.user, case, CaseAction.VIEW):
+        return JsonResponse({'error': 'Je hebt geen rechten om deze casus te bekijken.'}, status=403)
+
+    return JsonResponse(evaluate_case(case, actor=request.user))
 
 @csrf_exempt
 @login_required

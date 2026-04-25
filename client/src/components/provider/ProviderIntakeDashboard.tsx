@@ -1,3 +1,4 @@
+// DEMO_ONLY: retained as historical provider-facing mock, not linked from the active route map.
 import { useState } from "react";
 import { Search, Filter, X, CheckCircle2, Target, Lightbulb } from "lucide-react";
 import { ProviderKPIStrip } from "./ProviderKPIStrip";

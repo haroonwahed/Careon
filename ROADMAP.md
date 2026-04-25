@@ -6,7 +6,8 @@ Date: 2026-04-25
 
 - Completed: safe casus archive/soft-delete, archived-case hiding in active lists, and internal labeling for the remaining reports surface.
 - Completed: backend/integration smoke coverage for the canonical pilot journey and archive/permission gates.
-- Still open: a real browser automation harness, full provider-facing wiring, and the remaining demo/internal quarantine sweep.
+- Completed: a seeded Playwright browser smoke harness for the canonical pilot journey.
+- Still open: the remaining provider-facing quarantine sweep, the long-term reporting decision if it ever becomes customer-facing, and the SPA bundle split if we decide to tackle it.
 
 ## Phase 1: Stabilize The App
 

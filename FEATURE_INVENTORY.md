@@ -14,7 +14,7 @@ Date: 2026-04-25
 | `/gebruikers` in the sidebar legacy path | `LEGACY` |
 | `client/src/components/examples/*` | `DEMO_ONLY` |
 | `client/src/components/care/CasusControlCenter.tsx` | `UNKNOWN` until it is wired or explicitly archived |
-| `client/src/components/provider/ProviderIntakeDashboard.tsx` | `UNKNOWN` until it is wired or explicitly archived |
+| `client/src/components/provider/ProviderIntakeDashboard.tsx` | `DEMO_ONLY` and intentionally quarantined |
 
 ### Public and platform routes
 
@@ -39,6 +39,7 @@ Date: 2026-04-25
 - `/care/api/cases/<int:case_id>/matching-candidates/`
 - `/care/api/cases/<int:case_id>/assessment-decision/`
 - `/care/api/cases/<int:case_id>/matching/action/`
+- `/care/api/cases/<int:case_id>/decision-evaluation/`
 - `/care/api/cases/<int:case_id>/placement-detail/`
 - `/care/api/cases/<int:case_id>/`
 - `/care/api/cases/<str:case_ref>/`
@@ -216,6 +217,7 @@ Date: 2026-04-25
 - `contracts/provider_pipeline_mapping.py` - provider sync mapping and validation
 - `contracts/provider_matching_service.py` - matching service
 - `contracts/provider_workspace.py` - provider-facing workspace assembly
+- `contracts/decision_engine.py` - canonical decision evaluation for blockers, risks, alerts, and next-best action
 - `contracts/provider_adapters.py` - provider integration adapters
 - `contracts/waitlist.py` - waitlist helpers
 - `contracts/navigation.py` - public and SPA route constants
@@ -339,8 +341,9 @@ Date: 2026-04-25
 | Placement gating | Prevent placement before acceptance | Done | Placement regression tests cover the contract | `tests/test_placements_operational_contract_regression.py`, `contracts/api/views.py` | Keep it from regressing during refactors | Critical |
 | Intake handoff | Start intake only after placement | Partially done | Intake flow exists and tests cover the canonical path | `client/src/components/care/IntakeListPage.tsx`, `contracts/api/views.py`, `tests/test_intake_assessment_matching_flow.py` | Add manual smoke coverage and clearer state labels | High |
 | Regiekamer | Prioritize urgent cases and bottlenecks | Done | Control center and priority action logic exist | `client/src/components/care/RegiekamerControlCenter.tsx`, `contracts/oversight_workspace.py` | Keep it action-oriented, not dashboard-like | High |
-| Provider workspace | Show inbound cases to providers | Partially done | Dedicated dashboard component exists, but it is not referenced from the live route map | `client/src/components/provider/ProviderIntakeDashboard.tsx` | Wire it to real navigation or retire it | Medium |
-| Reporting | Provide operational exports and summaries | Partially done | Frontend report exports exist, but content is generated client-side | `client/src/components/care/RapportagesPage.tsx`, `theme/templates/contracts/reports_dashboard.html` | Replace demo exports with real reporting or mark as demo-only | Medium |
+| Provider workspace | Show inbound cases to providers | Partially done | Dedicated dashboard component exists, but it is not referenced from the live route map and remains demo-only | `client/src/components/provider/ProviderIntakeDashboard.tsx` | Keep quarantined unless it is reworked against real backend data | Low |
+| Reporting | Provide operational exports and summaries | Partially done | Backend report page is intentionally internal-only; frontend export preview still reads as demo-like | `client/src/components/care/RapportagesPage.tsx`, `theme/templates/contracts/reports_dashboard.html` | Keep internal-only or replace with real backend reporting later | Medium |
+| Decision engine | Evaluate a casus and surface blockers, risks, alerts, and next best action | Done | Backend `evaluate_case()` now powers the case detail panel and API response contract | `contracts/decision_engine.py`, `contracts/api/views.py`, `client/src/components/care/CaseWorkflowDetailPage.tsx`, `client/src/lib/decisionEvaluation.ts` | Keep frontend consumption read-only | High |
 | Documents | Upload, list, and inspect case documents | Partially done | List/detail/form routes exist and case-scoped create routes exist | `contracts/urls.py`, `theme/templates/contracts/document_list.html`, `client/src/components/care/DocumentenPage.tsx` | Validate upload/save paths end to end | High |
 | Audit trail | Trace who changed what and when | Partially done | Audit log model, list API, and UI exist | `contracts/models.py`, `contracts/api/views.py`, `client/src/components/care/AudittrailPage.tsx` | Verify completeness of log coverage across actions | High |
 | Municipal / regional governance | Oversight of regions and municipalities | Partially done | Dedicated models, APIs, templates, and SPA pages exist | `contracts/models.py`, `contracts/api/views.py`, `client/src/components/care/GemeentenPage.tsx`, `client/src/components/care/RegiosPage.tsx` | Keep KPI surfaces consistent with live data | Medium |
