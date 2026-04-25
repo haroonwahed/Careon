@@ -12,15 +12,49 @@ services:
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py migrate --noinput --settings=config.settings
     startCommand: |
       if [ -z "$DATABASE_URL" ]; then
-        echo "ERROR: DATABASE_URL is required for production startup. Configure a PostgreSQL connection string in Render."
+        echo "ERROR: DATABASE_URL is missing from the Render runtime environment."
+        echo "Set it on the careon-web service, then redeploy."
         exit 1
-      elif ! echo "$DATABASE_URL" | grep -Eq '^postgres(ql)?://'; then
-        echo "ERROR: DATABASE_URL must start with postgresql:// or postgres://. Current value is not a valid PostgreSQL DSN."
-        exit 1
-      else
-        python manage.py migrate --noinput --settings=config.settings_production &&
-        gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
       fi
+      python - <<'PY'
+import os
+import sys
+from urllib.parse import urlparse
+
+url = os.environ.get("DATABASE_URL", "").strip()
+parsed = urlparse(url)
+
+if parsed.scheme not in {"postgres", "postgresql"}:
+    print(
+        "ERROR: DATABASE_URL must start with postgresql:// or postgres://.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+if not parsed.hostname:
+    print(
+        "ERROR: DATABASE_URL is missing a hostname. Check the part after '@'.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+if not parsed.path or parsed.path == "/":
+    print(
+        "ERROR: DATABASE_URL is missing a database name. Check the path after the host.",
+        file=sys.stderr,
+    )
+    sys.exit(1)
+
+print(
+    f"DATABASE_URL detected: scheme={parsed.scheme} host={parsed.hostname} "
+    f"port={parsed.port or 5432} database={parsed.path.lstrip('/')}"
+)
+PY
+      if [ $? -ne 0 ]; then
+        exit 1
+      fi
+      python manage.py migrate --noinput --settings=config.settings_production &&
+      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8

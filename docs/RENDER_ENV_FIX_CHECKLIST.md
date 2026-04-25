@@ -28,7 +28,7 @@ Fill these in on the Render service for `careon-web`.
 7. Set `DEFAULT_FROM_EMAIL` to the production sender address.
 8. Save the changes.
 9. Redeploy the service.
-10. Verify the startup log no longer shows the `DATABASE_URL` guard failure.
+10. Verify the startup log shows `DATABASE_URL detected: ...` and no longer shows the guard failure.
 
 ## Validation Commands
 
@@ -43,6 +43,7 @@ python manage.py showmigrations contracts
 If startup still fails:
 
 - confirm `DATABASE_URL` starts with `postgresql://` or `postgres://`
+- confirm the password portion is percent-encoded if it contains reserved characters like `,`, `@`, `:` or `*`
 - confirm the database host is reachable from Render
 - confirm `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` include the actual Render URL
 - confirm `DEFAULT_FROM_EMAIL` is not the local placeholder
