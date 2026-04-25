@@ -1,3 +1,5 @@
+import logging
+
 from django.conf import settings
 from django.db import DatabaseError
 from django.http import HttpResponse
@@ -8,6 +10,8 @@ from config.feature_flags import is_feature_redesign_enabled
 from .models import AuditLog
 from .models import OrganizationMembership
 from .tenancy import get_user_organization
+
+logger = logging.getLogger(__name__)
 
 
 def _disable_response_caching(response):
@@ -132,6 +136,45 @@ def _render_spa_shell_response(*, include_contract=False):
     return _disable_response_caching(response)
 
 
+def _render_shell_fallback_response():
+    response = HttpResponse(
+        (
+            '<!DOCTYPE html>'
+            '<html lang="en">'
+            '<head>'
+            '<meta charset="UTF-8" />'
+            '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
+            '<title>Careon</title>'
+            '<style>html, body { height: 100%; margin: 0; font-family: sans-serif; }'
+            'main { min-height: 100%; display: grid; place-items: center; padding: 24px; }'
+            '.fallback-shell { max-width: 720px; width: 100%; border: 1px solid #dbe1ea; border-radius: 20px; padding: 24px; }'
+            '.fallback-shell h1 { margin-top: 0; }'
+            '.fallback-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }'
+            '.fallback-links a { display: inline-block; padding: 10px 14px; border-radius: 999px; text-decoration: none; background: #1f5eff; color: #fff; }'
+            '.fallback-links a.secondary { background: #eef2f8; color: #1d2b4a; }'
+            '</style>'
+            '</head>'
+            '<body>'
+            '<main>'
+            '<section class="fallback-shell">'
+            '<h1>Careon</h1>'
+            '<p>De werkruimte laadt momenteel in een veilige fallback-modus. De kernroutes blijven beschikbaar.</p>'
+            '<div class="fallback-links">'
+            '<a href="/dashboard/">Regiekamer</a>'
+            '<a href="/care/casussen/" class="secondary">Casussen</a>'
+            '<a href="/care/matching/" class="secondary">Matching</a>'
+            '</div>'
+            '</section>'
+            '</main>'
+            '</body>'
+            '</html>'
+        ),
+        content_type='text/html',
+    )
+    response['X-Careon-Ui-Surface'] = 'spa-fallback'
+    return _disable_response_caching(response)
+
+
 class AuditLogMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -185,7 +228,10 @@ class SpaShellMigrationMiddleware:
         '/care/casussen/',
         '/care/budgetten/',
         '/care/budgets/',
+        '/care/beoordelingen/',
+        '/care/matching/',
         '/care/plaatsingen/',
+        '/care/signalen/',
         '/care/gemeenten/',
     }
 
@@ -213,9 +259,25 @@ class SpaShellMigrationMiddleware:
             and getattr(user, 'is_authenticated', False)
             and not self._is_excluded(request.path)
         ):
-            return _render_spa_shell_response(include_contract=True)
+            try:
+                return _render_spa_shell_response(include_contract=True)
+            except Exception:
+                logger.exception('Failed to render SPA shell for path=%s', request.path)
+                return _render_shell_fallback_response()
 
-        return self.get_response(request)
+        try:
+            return self.get_response(request)
+        except Exception:
+            if (
+                request.method == 'GET'
+                and user is not None
+                and getattr(user, 'is_authenticated', False)
+                and request.path in self.SHELL_PATHS
+                and not self._is_excluded(request.path)
+            ):
+                logger.exception('Downstream failure on SPA shell path=%s', request.path)
+                return _render_shell_fallback_response()
+            raise
 
 
 def log_action(user, action, model_name, object_id=None, object_repr='', changes=None, request=None):
