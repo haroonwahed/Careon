@@ -334,6 +334,8 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+QUIET_TEST_LOGS = os.getenv('DJANGO_TEST_LOG_LEVEL', '').strip().upper()
+
 # Logging — pilot warning events go to logs/pilot.log so scripts/pilot_log_summary.py
 # can parse them. All loggers also emit to the console (default Django behaviour).
 LOGGING = {
@@ -370,3 +372,15 @@ LOGGING = {
         'level': 'INFO',
     },
 }
+
+if QUIET_TEST_LOGS in {'ERROR', 'CRITICAL'}:
+    LOGGING['root']['level'] = QUIET_TEST_LOGS
+    for logger_name in (
+        'django.request',
+        'contracts.views',
+        'contracts.decision_quality',
+        'contracts.governance',
+        'contracts.provider_pipeline',
+    ):
+        logger_config = LOGGING['loggers'].setdefault(logger_name, {})
+        logger_config['level'] = QUIET_TEST_LOGS

@@ -5,7 +5,7 @@ services:
     plan: free
     buildCommand: |
       pip install -r requirements/runtime.txt
-      DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py test tests --verbosity=1 --settings=config.settings
+      DJANGO_TEST_LOG_LEVEL=ERROR DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py test tests --verbosity=1 --settings=config.settings
       npm ci --prefix client
       npm run build --prefix client
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py collectstatic --noinput --settings=config.settings
