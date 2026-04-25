@@ -1506,6 +1506,7 @@ class CareSignal(models.Model):
         db_table = 'contracts_caresignal'
         verbose_name = 'Signaal'
         verbose_name_plural = 'Signalen'
+        ordering = ['-created_at', '-id']
 
     def __str__(self):
         if self.title:
