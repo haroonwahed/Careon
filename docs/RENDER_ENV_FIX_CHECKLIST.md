@@ -28,7 +28,7 @@ Fill these in on the Render service for `careon-web`.
 7. Set `DEFAULT_FROM_EMAIL` to the production sender address.
 8. Save the changes.
 9. Redeploy the service.
-10. Verify the startup log shows `DATABASE_URL detected: ...` and no longer shows the guard failure.
+10. Verify the startup log shows `Starting careon-web revision=...` followed by `DATABASE_URL detected: ...` and no longer shows the guard failure.
 
 ## Validation Commands
 

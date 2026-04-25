@@ -11,6 +11,14 @@ services:
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py collectstatic --noinput --settings=config.settings
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py migrate --noinput --settings=config.settings
     startCommand: |
+      REVISION="${RENDER_GIT_COMMIT:-${GIT_COMMIT:-}}"
+      if [ -z "$REVISION" ] && command -v git >/dev/null 2>&1; then
+        REVISION="$(git rev-parse --short HEAD 2>/dev/null || true)"
+      fi
+      if [ -z "$REVISION" ]; then
+        REVISION="unknown"
+      fi
+      echo "Starting careon-web revision=${REVISION}"
       if [ -z "$DATABASE_URL" ]; then
         echo "ERROR: DATABASE_URL is missing from the Render runtime environment."
         echo "Set it on the careon-web service, then redeploy."
