@@ -6703,8 +6703,8 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     def get_success_url(self):
         case_record = getattr(self.object, 'contract', None)
         if case_record:
-            return f"/static/spa/?view=dashboard&page=casussen&case={case_record.pk}"
-        return "/static/spa/?view=dashboard&page=casussen"
+            return f"/dashboard/?view=dashboard&page=casussen&case={case_record.pk}"
+        return "/dashboard/?view=dashboard&page=casussen"
 
 
 class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):

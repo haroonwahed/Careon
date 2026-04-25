@@ -1209,7 +1209,7 @@ def intake_create_api(request):
         'id': intake.pk,
         'title': intake.title,
         'case_id': str(case_record.pk) if case_record else '',
-        'redirect_url': f"{SPA_DASHBOARD_URL}&page=casussen&case={case_record.pk if case_record else intake.pk}",
+        'redirect_url': f"{SPA_DASHBOARD_URL}?page=casussen&case={case_record.pk if case_record else intake.pk}",
     })
 
 

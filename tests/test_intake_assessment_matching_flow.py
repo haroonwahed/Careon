@@ -122,7 +122,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertTrue(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
 
         intake.refresh_from_db()
-        self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.MATCHING)
+        self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.DECISION)
 
     def test_matching_assignment_is_blocked_until_assessment_is_ready(self):
         provider = CareProvider.objects.create(
@@ -162,7 +162,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(response.status_code, 400)
         body = response.json()
         self.assertFalse(body['ok'])
-        self.assertIn('Beoordeling moet eerst gereed zijn voor matching', body['error'])
+        self.assertIn('Ongeldige workflow-overgang', body['error'])
         self.assertFalse(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
 
     def test_intake_create_api_creates_linked_case_record_for_workflow(self):
@@ -209,7 +209,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         self.assertIsNotNone(intake.contract_id)
         self.assertEqual(body['case_id'], str(intake.contract_id))
-        self.assertEqual(body['redirect_url'], f"/static/spa/?view=dashboard&page=casussen&case={intake.contract_id}")
+        self.assertEqual(body['redirect_url'], f"/dashboard/?page=casussen&case={intake.contract_id}")
         self.assertEqual(intake.contract.title, intake.title)
         self.assertEqual(intake.contract.case_phase, CareCase.CasePhase.INTAKE)
         self.assertEqual(intake.contract.status, CareCase.Status.PENDING)

@@ -467,7 +467,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         onCreated?.(createdCaseId);
         return;
       }
-      window.location.href = payload.redirect_url || `${SPA_DASHBOARD_URL}&page=casussen`;
+      window.location.href = payload.redirect_url || `${SPA_DASHBOARD_URL}?page=casussen`;
     } catch (error) {
       const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
       const match = responseText.match(/API fout 400: (.*)$/);

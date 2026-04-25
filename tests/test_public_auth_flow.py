@@ -33,7 +33,7 @@ class PublicAuthFlowTests(TestCase):
         response = self.client.get(reverse('careon:home'), follow=False)
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/static/spa/')
+        self.assertEqual(response['Location'], '/')
 
     def test_login_redirects_to_spa_dashboard(self):
         response = self.client.get(reverse('login'))
@@ -50,7 +50,7 @@ class PublicAuthFlowTests(TestCase):
         )
 
         self.assertEqual(login_response.status_code, 302)
-        self.assertEqual(login_response['Location'], '/static/spa/?view=dashboard')
+        self.assertEqual(login_response['Location'], '/dashboard/')
 
     def test_logout_returns_to_public_landing(self):
         self.client.force_login(self.user)
@@ -58,7 +58,7 @@ class PublicAuthFlowTests(TestCase):
         response = self.client.post(reverse('logout'), follow=False)
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], '/static/spa/')
+        self.assertEqual(response['Location'], '/')
 
     def test_public_flow_round_trip_keeps_the_expected_entry_points(self):
         login_page = self.client.get(reverse('login'))
@@ -74,7 +74,7 @@ class PublicAuthFlowTests(TestCase):
             follow=False,
         )
         self.assertEqual(login_response.status_code, 302)
-        self.assertEqual(login_response['Location'], '/static/spa/?view=dashboard')
+        self.assertEqual(login_response['Location'], '/dashboard/')
 
         dashboard_response = self.client.get(reverse('dashboard'))
         self.assertEqual(dashboard_response.status_code, 200)
@@ -82,7 +82,7 @@ class PublicAuthFlowTests(TestCase):
 
         logout_response = self.client.post(reverse('logout'), follow=False)
         self.assertEqual(logout_response.status_code, 302)
-        self.assertEqual(logout_response['Location'], '/static/spa/')
+        self.assertEqual(logout_response['Location'], '/')
 
         landing_response = self.client.get(reverse('index'))
         self.assertEqual(landing_response.status_code, 200)

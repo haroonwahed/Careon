@@ -21,7 +21,7 @@ export default function App() {
     return prefersDark ? "dark" : "light";
   });
   const [isDashboardView] = useState(() => new URLSearchParams(window.location.search).get("view") === "dashboard");
-  const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL || window.location.pathname.startsWith("/static/spa/"));
+  const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL);
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);
