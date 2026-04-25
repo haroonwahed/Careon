@@ -170,12 +170,6 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     setSelectedCase(null);
   };
 
-  const handleStartMatching = (caseId: string) => {
-    void caseId;
-    setSelectedCase(null);
-    setCurrentPage("matching");
-  };
-
   const handleProviderSelect = (providerId: string) => {
     void providerId;
   };
@@ -467,12 +461,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
             <div className="p-6 max-w-[1400px] mx-auto">
               <CaseWorkflowDetailPage
                 caseId={selectedCase}
+                role={currentContext.type}
                 onBack={handleCloseCaseDetail}
-                onStartMatching={handleStartMatching}
-                onOpenWorkflow={(page) => {
-                  setSelectedCase(null);
-                  setCurrentPage(page as Page);
-                }}
               />
             </div>
           </div>

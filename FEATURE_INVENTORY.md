@@ -10,11 +10,11 @@ Date: 2026-04-25
 | --- | --- |
 | `/regiekamer`, `/casussen`, `/matching`, `/beoordelingen`, `/plaatsingen`, `/intake`, `/mijn-casussen`, `/zorgaanbieders`, `/gemeenten`, `/regios`, `/signalen` | `ACTIVE_PRODUCT` |
 | `/documenten`, `/audittrail`, `/instellingen`, `/care/casussen/<int:pk>/archive/` | `SUPPORTING_INTERNAL` |
-| `/rapportages` and the `RapportagesPage` export preview | `SUPPORTING_INTERNAL` / internal-only |
+| `/rapportages` and the `RapportagesPage` export preview | `SUPPORTING_INTERNAL` / internal-only; keep the label explicit in the UI |
 | `/gebruikers` in the sidebar legacy path | `LEGACY` |
 | `client/src/components/examples/*` | `DEMO_ONLY` |
 | `client/src/components/care/CasusControlCenter.tsx` | `UNKNOWN` until it is wired or explicitly archived |
-| `client/src/components/provider/ProviderIntakeDashboard.tsx` | `DEMO_ONLY` and intentionally quarantined |
+| `client/src/components/provider/ProviderIntakeDashboard.tsx` | `DEMO_ONLY` and intentionally quarantined; not linked from the live route map |
 
 ### Public and platform routes
 

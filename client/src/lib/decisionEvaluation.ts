@@ -1,6 +1,7 @@
 import { apiClient } from "./apiClient";
 
 export type DecisionPriority = "low" | "medium" | "high" | "critical";
+export type CaseDecisionRole = "gemeente" | "zorgaanbieder" | "admin";
 
 export interface NextBestAction {
   action: string;
@@ -60,6 +61,8 @@ export interface DecisionEvaluationContext {
   hours_in_current_state: number | null;
   urgency: string;
   capacity_signals: Array<Record<string, unknown>>;
+  selected_provider_id?: string | null;
+  selected_provider_name?: string | null;
 }
 
 export interface DecisionTimelineSignals {

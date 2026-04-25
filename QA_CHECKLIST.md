@@ -28,6 +28,7 @@ Date: 2026-04-25
 
 ## Phase 2 Pilot Smoke Proof
 
+- Status: `./scripts/verify_ui.sh` currently passes with the seeded Playwright browser smoke.
 - [ ] `python3 manage.py check` passes
 - [ ] Backend integration test proves case creation
 - [ ] Backend integration test proves summary/assessment is reachable before matching

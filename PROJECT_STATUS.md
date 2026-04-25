@@ -10,7 +10,7 @@ This codebase is a Dutch care-allocation workflow application, not a generic das
 
 The live product is usable for a constrained pilot or demo, and the core workflow gating is in place. It is not production-ready yet. The biggest gap is that the repository still contains a mix of live workflow code, legacy compatibility seams, and demo/example surfaces, so the product is not yet cleanly separable into "real customer path" versus "reference material."
 
-Phase 2 stabilization added safe casus archiving, hidden archived cases from default active lists, and labeled the remaining reporting surface as internal rather than customer-facing. Phase 3 now adds a browser smoke harness with Playwright and a seeded pilot journey that exercises login, dashboard, case detail, summary, matching, provider decisions, placement, intake, and archive. The browser proof is still release-oriented smoke coverage, not a full end-to-end automated product test suite.
+Phase 2 stabilization added safe casus archiving, hidden archived cases from default active lists, and labeled the remaining reporting surface as internal rather than customer-facing. Phase 3 now adds a passing Playwright browser smoke harness with a seeded pilot journey that exercises login, dashboard, case detail, summary, matching, provider decisions, placement, intake, archive, and logout. The browser proof is still release-oriented smoke coverage, not a full end-to-end automated product test suite.
 
 ### Readiness verdict
 
@@ -48,7 +48,7 @@ Phase 2 stabilization added safe casus archiving, hidden archived cases from def
 - Tenant isolation and role/permission coverage in tests.
 - Audit trail, notifications, organizations, municipalities, regions, and core configuration pages.
 - API endpoints for cases, matching, assessments, placements, signals, tasks, documents, audit log, providers, municipalities, regions, and dashboard summary.
-- Browser smoke automation for the canonical pilot flow via Playwright + seeded release data.
+- Browser smoke automation for the canonical pilot flow via Playwright + seeded release data, now passing in `./scripts/verify_ui.sh`.
 
 ## What Is Partially Done
 
@@ -77,7 +77,7 @@ Phase 2 stabilization added safe casus archiving, hidden archived cases from def
 - Demo/example components still exist alongside live workflow components, which makes it easy to misread scope.
 - The SPA shell migration is feature-flagged and can hide differences between the server-rendered and SPA-backed paths.
 - Some workflow state is expressed through internal naming that still does not perfectly match the Dutch product vocabulary.
-- Several areas are functionally correct in tests but not yet validated with a full manual smoke pass.
+- Several areas are functionally correct in tests but not yet validated with a full manual smoke suite beyond the release smoke path.
 
 ## Verification
 
@@ -87,6 +87,7 @@ The following checks passed in the bundled project runtime:
 - `python3 manage.py test tests.test_public_auth_flow tests.test_dashboard_shell tests.test_intake_assessment_matching_flow tests.test_placements_operational_contract_regression tests.test_provider_response_orchestration tests.test_phase2_pilot_stabilization -v 2`
 - earlier targeted workflow and terminology tests for matching, provider response monitoring, and oversight behavior
 - `npm --prefix client run build`
+- `./scripts/verify_ui.sh`
 
 ## Next Recommended Actions
 

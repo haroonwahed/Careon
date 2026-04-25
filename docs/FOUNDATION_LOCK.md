@@ -154,3 +154,23 @@ The endpoint requires authentication, respects case visibility permissions, and 
 - The frontend may display decision evaluation output.
 - The frontend may not reimplement decision authority.
 - The frontend must treat the backend decision engine as the source of truth for blockers, next-best action, and blocked-action reasons.
+
+## Casus Detail Surface
+
+The active casus detail page is the operational command surface for one casus.
+
+It must render backend decision evaluation directly and show:
+
+- current phase and status
+- next-best action
+- blockers, risks, and alerts
+- allowed and blocked actions for the current role
+- decision context for transparency
+- recent timeline signals when available
+
+### UI Rules
+
+- CTA visibility comes from `evaluate_case`.
+- Blocked action reasons come from `evaluate_case`.
+- The frontend may call mutation endpoints, but it must refetch decision evaluation after every successful action.
+- The frontend may not infer workflow transitions from local status checks on this page.

@@ -988,6 +988,20 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "hours_in_current_state": hours_in_current_state,
         "urgency": urgency,
         "capacity_signals": capacity_signals,
+        "selected_provider_id": (
+            str(placement.selected_provider_id)
+            if placement and placement.selected_provider_id
+            else str(match_result.zorgaanbieder_id)
+            if match_result and getattr(match_result, "zorgaanbieder_id", None)
+            else None
+        ),
+        "selected_provider_name": (
+            placement.selected_provider.name
+            if placement and placement.selected_provider
+            else match_result.zorgaanbieder.name
+            if match_result and getattr(match_result, "zorgaanbieder", None)
+            else None
+        ),
     }
 
     return {

@@ -107,15 +107,17 @@ provider_client, _ = Client.objects.get_or_create(
     organization=org,
     name=provider_name,
     defaults={
+        'client_type': Client.ClientType.CORPORATION,
         'status': Client.Status.ACTIVE,
         'created_by': user,
         'city': 'Utrecht',
     },
 )
+provider_client.client_type = Client.ClientType.CORPORATION
 provider_client.status = Client.Status.ACTIVE
 provider_client.created_by = provider_client.created_by or user
 provider_client.city = 'Utrecht'
-provider_client.save(update_fields=['status', 'created_by', 'city', 'updated_at'])
+provider_client.save(update_fields=['client_type', 'status', 'created_by', 'city', 'updated_at'])
 
 zorgaanbieder, _ = Zorgaanbieder.objects.get_or_create(
     name=provider_name,

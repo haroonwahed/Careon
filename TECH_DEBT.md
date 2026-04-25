@@ -49,7 +49,7 @@ Date: 2026-04-25
 - The SPA build still exceeds Vite's 500 kB chunk warning; the low-risk split has been deferred rather than forced.
 - Provider rejection now requires a reason code and placement approval is backend-gated, so those specific workflow risks have been reduced.
 - Casus archiving is now safe for completed records, but other core entities still need an explicit retention/archive policy.
-- A seeded Playwright smoke harness now exists, but it is a release smoke guard rather than a full browser test suite.
+- A seeded Playwright smoke harness now exists and passes in the release smoke path, but it is still a smoke guard rather than a full browser test suite.
 
 ## Lower-Priority Cleanup
 
