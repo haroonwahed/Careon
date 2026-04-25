@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% block title %}{% if form.instance.pk %}Aanbieder Beoordeling bewerken{% else %}Nieuwe Aanbieder Beoordeling{% endif %} - Careon{% endblock %}
+{% block title %}{% if form.instance.pk %}Beoordeling door aanbieder bewerken{% else %}Nieuwe beoordeling door aanbieder{% endif %} - Careon{% endblock %}
 {% block content %}
 
 <div class="page-wrap page-stack">
     <div class="page-header">
         <div>
-            <h1 class="page-title">{% if form.instance.pk %}Aanbieder Beoordeling bewerken{% else %}Aanbieder Beoordeling invullen{% endif %}</h1>
+            <h1 class="page-title">{% if form.instance.pk %}Beoordeling door aanbieder bewerken{% else %}Beoordeling door aanbieder invullen{% endif %}</h1>
             </div>
     </div>
 
@@ -15,10 +15,10 @@
         {% if form.instance.pk and form.instance.intake %}
         <a class="" href="{% url 'careon:case_detail' form.instance.intake.pk %}">{{ form.instance.intake.title }}</a>
         <span class="mx-2">/</span>
-        <a class="" href="{% url 'careon:assessment_detail' form.instance.pk %}">Aanbieder Beoordeling</a>
+        <a class="" href="{% url 'careon:assessment_detail' form.instance.pk %}">Beoordeling door aanbieder</a>
         <span class="mx-2">/</span>
         {% else %}
-        <a class="" href="{% url 'careon:assessment_list' %}">Aanbieder Beoordeling</a>
+        <a class="" href="{% url 'careon:assessment_list' %}">Beoordeling door aanbieder</a>
         <span class="mx-2">/</span>
         {% endif %}
         <span class="">{% if form.instance.pk %}Wijzigen{% else %}Nieuw{% endif %}</span>
@@ -97,7 +97,7 @@
         <div class="ds-card action-card">
             <a href="{% url 'careon:assessment_list' %}" class="btn btn-secondary">Annuleren</a>
             <button type="submit" class="btn btn-primary">
-                {% if form.instance.pk %}Wijzigingen opslaan{% else %}Aanbieder Beoordeling aanmaken{% endif %}
+                {% if form.instance.pk %}Wijzigingen opslaan{% else %}Beoordeling door aanbieder aanmaken{% endif %}
             </button>
         </div>
     </form>

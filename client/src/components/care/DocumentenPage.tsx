@@ -57,7 +57,7 @@ const documentTypeConfig: Record<DocumentType, { label: string; color: string; i
   intake: { label: "Intake", color: "text-purple-500", icon: FileText },
   contract: { label: "Contract", color: "text-blue-500", icon: FileCheck },
   rapport: { label: "Rapport", color: "text-amber-500", icon: File },
-  beoordeling: { label: "Aanbieder Beoordeling", color: "text-green-500", icon: FileText },
+  beoordeling: { label: "Beoordeling door aanbieder", color: "text-green-500", icon: FileText },
   overig: { label: "Overig", color: "text-muted-foreground", icon: File }
 };
 
@@ -239,7 +239,7 @@ export function DocumentenPage() {
                 <option value="intake">Intake</option>
                 <option value="contract">Contract</option>
                 <option value="rapport">Rapport</option>
-                <option value="beoordeling">Aanbieder Beoordeling</option>
+                <option value="beoordeling">Beoordeling door aanbieder</option>
                 <option value="overig">Overig</option>
               </select>
             </div>

@@ -118,7 +118,7 @@ function boardColumnLabel(column: WorkflowBoardColumn): string {
     case "matching":
       return "Matching";
     case "aanbieder-beoordeling":
-      return "Aanbieder Beoordeling";
+      return "Beoordeling door aanbieder";
     case "plaatsing":
       return "Plaatsing";
     case "intake":

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Aanbieder Beoordeling - {{ intake.title }} - Careon{% endblock %}
+{% block title %}Beoordeling door aanbieder - {{ intake.title }} - Careon{% endblock %}
 {% block content %}
 <div class="page-wrap page-stack">
 
@@ -10,12 +10,12 @@
     <span class="mx-2">/</span>
     <a href="{% url 'careon:case_detail' intake.pk %}" class="ds-breadcrumb-link">{{ intake.title }}</a>
     <span class="mx-2">/</span>
-    <span class="ds-breadcrumb-current">Aanbieder Beoordeling</span>
+    <span class="ds-breadcrumb-current">Beoordeling door aanbieder</span>
 </nav>
 
 <div class="flex items-center justify-between mb-6">
     <div>
-        <h1 class="page-title">Aanbieder Beoordeling</h1>
+        <h1 class="page-title">Beoordeling door aanbieder</h1>
         <p class="page-subtitle">
             Casus: {{ intake.title }}
             &middot;
@@ -39,7 +39,7 @@
 
 <div class="dash-grid dash-grid-3 mb-6">
     <div class="panel panel-inner">
-        <p class="metric-label">Status Aanbieder Beoordeling</p>
+        <p class="metric-label">Status beoordeling door aanbieder</p>
         <span class="badge-sm mt-1
             {% if assessment.assessment_status == 'APPROVED_FOR_MATCHING' %}badge-green
             {% elif assessment.assessment_status == 'DRAFT' %}badge-yellow
@@ -63,7 +63,7 @@
         <div class="panel">
             <div class="panel-head">
                 <div class="panel-head-inner">
-                    <h2 class="panel-title">Aanbieder Beoordeling gegevens</h2>
+                    <h2 class="panel-title">Gegevens beoordeling door aanbieder</h2>
                 </div>
             </div>
             <div class="panel-inner space-y-4">
@@ -149,7 +149,7 @@
                 </a>
                 <p class="text-xs ds-text-muted">Nog niet gereed: {{ matching_missing|join:", " }}.</p>
                 {% if can_edit_assessment %}
-                <a href="{% url 'careon:assessment_update' assessment.pk %}" class="btn btn-ghost ds-btn-block">Aanbieder Beoordeling bijwerken</a>
+                <a href="{% url 'careon:assessment_update' assessment.pk %}" class="btn btn-ghost ds-btn-block">Beoordeling door aanbieder bijwerken</a>
                 {% endif %}
                 {% endif %}
             </div>

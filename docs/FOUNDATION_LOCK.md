@@ -146,8 +146,18 @@ The payload is JSON-serializable and includes:
 ### API Endpoint
 
 - `GET /care/api/cases/<id>/decision-evaluation/`
+- `GET /care/api/regiekamer/decision-overview/`
 
-The endpoint requires authentication, respects case visibility permissions, and is read-only. It does not mutate data or create audit events.
+Both endpoints require authentication, respect case visibility permissions, and are read-only. They do not mutate data or create audit events.
+
+### Regiekamer Lite Overview
+
+`GET /care/api/regiekamer/decision-overview/` powers the live Regiekamer Lite triage surface.
+
+- It is derived from `evaluate_case()` and reuses the backend decision contract.
+- It returns active casussen only and excludes archived cases.
+- It exposes totals, priority ordering, top blocker/risk/alert summaries, and next-best-action hints for rendering only.
+- It does not own workflow authority and the frontend must not infer blockers or next actions on its own.
 
 ### Frontend Consumption Rule
 

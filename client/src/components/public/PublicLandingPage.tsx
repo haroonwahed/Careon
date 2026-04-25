@@ -26,7 +26,7 @@ const featureCards = [
   },
   {
     icon: Users,
-    title: "Aanbieder Beoordeling",
+    title: "Beoordeling door aanbieder",
     copy: "Zorgaanbieders beslissen over fit, capaciteit en risico, met redencodes vastgelegd.",
   },
   {
@@ -109,7 +109,7 @@ export function PublicLandingPage({
             <h1 className="max-w-xl text-5xl font-semibold tracking-tight lg:text-6xl">Careon</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground lg:text-xl">
               Het publieke startpunt voor zorgregie. Van Casus tot Intake met een duidelijke volgende beste actie,
-              verklaarbare matching en een strak pad naar Aanbieder Beoordeling.
+              verklaarbare matching en een strak pad naar beoordeling door aanbieder.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -155,7 +155,7 @@ export function PublicLandingPage({
                     { step: "1", title: "Casus", copy: "Minimale intake en bron van waarheid." },
                     { step: "2", title: "Samenvatting", copy: "Context, urgentie en hiaten zichtbaar." },
                     { step: "3", title: "Matching", copy: "Verklaarbare aanbevelingen per aanbieder." },
-                    { step: "4", title: "Aanbieder Beoordeling", copy: "Fit, capaciteit en risico worden bevestigd." },
+                    { step: "4", title: "Beoordeling door aanbieder", copy: "Fit, capaciteit en risico worden bevestigd." },
                     { step: "5", title: "Plaatsing", copy: "Pas na acceptatie en bevestigde handoff." },
                     { step: "6", title: "Intake", copy: "Start van de zorgtraject na plaatsing." },
                   ].map((item) => (
@@ -217,7 +217,7 @@ export function PublicLandingPage({
               {[
                 { title: "Casussen", copy: "Eerste intake en dossierbron." },
                 { title: "Matching", copy: "Explainable aanbevelingen per aanbieder." },
-                { title: "Aanbieder Beoordeling", copy: "Acceptatie, afwijzing en redencodes." },
+                { title: "Beoordeling door aanbieder", copy: "Acceptatie, afwijzing en redencodes." },
                 { title: "Plaatsing & Intake", copy: "Pas na acceptatie en handover." },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-border bg-muted/30 p-4">

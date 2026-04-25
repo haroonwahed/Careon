@@ -79,7 +79,7 @@
                 </a>
                 <a href="{% url 'careon:assessment_list' %}" class="nav-link {% if request.resolver_match.url_name == 'assessment_list' or request.resolver_match.url_name == 'assessment_create' or request.resolver_match.url_name == 'assessment_detail' or request.resolver_match.url_name == 'assessment_update' %}active{% endif %}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2-10H7m10 14H7a2 2 0 01-2-2V6a2 2 0 012-2h8l4 4v10a2 2 0 01-2 2z"></path></svg>
-                    Aanbieder Beoordeling
+                    Beoordeling door aanbieder
                 </a>
                 <a href="{% url 'careon:matching_dashboard' %}" class="nav-link {% if 'workflow' in request.resolver_match.url_name or request.resolver_match.url_name == 'matching_dashboard' %}active{% endif %}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>

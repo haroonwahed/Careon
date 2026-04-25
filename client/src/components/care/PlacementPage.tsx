@@ -116,7 +116,7 @@ export function PlacementPage({
   const validationItems = [
     {
       id: "provider-response",
-      label: providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op aanbiederbeoordeling",
+      label: providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op beoordeling door aanbieder",
       status: providerAccepted ? "complete" as const : "error" as const,
       description: providerAccepted
         ? "De aanbieder heeft de casus bevestigd."
@@ -291,7 +291,7 @@ export function PlacementPage({
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
-                {providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op aanbiederbeoordeling"}
+                {providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op beoordeling door aanbieder"}
               </span>
             </div>
 
@@ -306,7 +306,7 @@ export function PlacementPage({
                 </>
               ) : (
                 <>
-                  Wacht op aanbiederbeoordeling voor <strong className="text-foreground">{provider.name}</strong>
+                  Wacht op beoordeling door aanbieder voor <strong className="text-foreground">{provider.name}</strong>
                 </>
               )}
             </p>
@@ -319,7 +319,7 @@ export function PlacementPage({
                   <AlertTriangle size={16} className="text-yellow-base" />
                 )}
                 <span className="text-muted-foreground">
-                  {providerAccepted ? "Aanbieder heeft geaccepteerd" : "Wacht op aanbiederbeoordeling"}
+                  {providerAccepted ? "Aanbieder heeft geaccepteerd" : "Wacht op beoordeling door aanbieder"}
                 </span>
               </div>
               <div className="flex items-center gap-2">

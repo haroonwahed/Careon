@@ -60,7 +60,7 @@ interface AuditEntry {
 
 const entityTypeConfig: Record<EntityType, { label: string; icon: any; color: string }> = {
   casus: { label: "Casus", icon: FileText, color: "text-purple-500" },
-  beoordeling: { label: "Aanbieder Beoordeling", icon: FileText, color: "text-blue-500" },
+  beoordeling: { label: "Beoordeling door aanbieder", icon: FileText, color: "text-blue-500" },
   matching: { label: "Matching", icon: CheckCircle2, color: "text-green-500" },
   plaatsing: { label: "Plaatsing", icon: CheckCircle2, color: "text-emerald-500" },
   intake: { label: "Intake", icon: FileText, color: "text-amber-500" },
@@ -225,7 +225,7 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
               >
                 <option value="all">Alle types</option>
                 <option value="casus">Casus</option>
-                <option value="beoordeling">Aanbieder Beoordeling</option>
+                <option value="beoordeling">Beoordeling door aanbieder</option>
                 <option value="matching">Matching</option>
                 <option value="plaatsing">Plaatsing</option>
                 <option value="intake">Intake</option>

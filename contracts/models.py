@@ -848,7 +848,7 @@ class CaseAssessment(models.Model):
     
     class AssessmentStatus(models.TextChoices):
         DRAFT = 'DRAFT', 'Concept'
-        UNDER_REVIEW = 'UNDER_REVIEW', 'In beoordeling'
+        UNDER_REVIEW = 'UNDER_REVIEW', 'In beoordeling door aanbieder'
         APPROVED_FOR_MATCHING = 'APPROVED_FOR_MATCHING', 'Goedgekeurd voor matching'
         NEEDS_INFO = 'NEEDS_INFO', 'Aanvullende info nodig'
 
@@ -871,7 +871,7 @@ class CaseAssessment(models.Model):
         max_length=32,
         choices=AssessmentStatus.choices,
         default=AssessmentStatus.DRAFT,
-        verbose_name='Beoordeling status'
+        verbose_name='Beoordeling door aanbieder status'
     )
 
     # Signals (multi-select via CharField with comma-separated values or use JSONField)
@@ -941,19 +941,19 @@ class CaseAssessment(models.Model):
 
         if self.assessment_status == self.AssessmentStatus.APPROVED_FOR_MATCHING and not self.matching_ready:
             raise ValidationError({
-                'matching_ready': 'Een beoordeling kan pas gereed voor matching zijn als matching_ready aan staat.',
+                'matching_ready': 'Een beoordeling door aanbieder kan pas gereed voor matching zijn als matching_ready aan staat.',
             })
 
         if self.matching_ready and self.assessment_status != self.AssessmentStatus.APPROVED_FOR_MATCHING:
             raise ValidationError({
-                'assessment_status': 'Alleen een goedgekeurde beoordeling mag matching_ready zijn.',
+                'assessment_status': 'Alleen een goedgekeurde beoordeling door aanbieder mag matching_ready zijn.',
             })
 
     def can_mark_ready_for_matching(self) -> tuple[bool, str]:
         if self.assessment_status != self.AssessmentStatus.APPROVED_FOR_MATCHING:
-            return False, 'Beoordeling moet eerst goedgekeurd zijn voor matching.'
+            return False, 'Beoordeling door aanbieder moet eerst goedgekeurd zijn voor matching.'
         if not self.matching_ready:
-            return False, 'Beoordeling staat nog niet op gereed voor matching.'
+            return False, 'Beoordeling door aanbieder staat nog niet op gereed voor matching.'
         return True, ''
 
 

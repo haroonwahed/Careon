@@ -54,6 +54,275 @@ _STATE_PRIORITY = {
     WorkflowState.ARCHIVED: ("low", "archief"),
 }
 
+_SEVERITY_ORDER = {
+    "critical": 4,
+    "high": 3,
+    "warning": 3,
+    "medium": 2,
+    "info": 1,
+    "low": 0,
+}
+
+_ACTION_OWNER_ROLE = {
+    "COMPLETE_CASE_DATA": WorkflowRole.GEMEENTE,
+    "GENERATE_SUMMARY": WorkflowRole.GEMEENTE,
+    "START_MATCHING": WorkflowRole.GEMEENTE,
+    "SEND_TO_PROVIDER": WorkflowRole.GEMEENTE,
+    "CONFIRM_PLACEMENT": WorkflowRole.GEMEENTE,
+    "REMATCH_CASE": WorkflowRole.GEMEENTE,
+    "ARCHIVE_CASE": WorkflowRole.GEMEENTE,
+    "PROVIDER_ACCEPT": WorkflowRole.ZORGAANBIEDER,
+    "PROVIDER_REJECT": WorkflowRole.ZORGAANBIEDER,
+    "PROVIDER_REQUEST_INFO": WorkflowRole.ZORGAANBIEDER,
+    "START_INTAKE": WorkflowRole.ZORGAANBIEDER,
+    "FOLLOW_UP_PROVIDER": "regie",
+    "WAIT_PROVIDER_RESPONSE": "regie",
+    "MONITOR_CASE": "regie",
+}
+
+_REJECTION_CODES = {"PROVIDER_REJECTED_CASE", "REPEATED_PROVIDER_REJECTIONS"}
+_INTAKE_DELAY_CODES = {"INTAKE_DELAYED", "INTAKE_NOT_STARTED"}
+
+
+def _highest_severity(items: Iterable[dict[str, Any]]) -> dict[str, Any] | None:
+    best_item: dict[str, Any] | None = None
+    best_score = -1
+    for item in items:
+        severity = str(item.get("severity") or "").lower()
+        score = _SEVERITY_ORDER.get(severity, 0)
+        if score > best_score:
+            best_item = item
+            best_score = score
+    return best_item
+
+
+def _has_item_code(items: Iterable[dict[str, Any]], codes: set[str]) -> bool:
+    return any(str(item.get("code") or "") in codes for item in items)
+
+
+def _has_any_alert_severity(alerts: Iterable[dict[str, Any]], severities: set[str]) -> bool:
+    return any(str(item.get("severity") or "").lower() in severities for item in alerts)
+
+
+def _derive_issue_tags(
+    *,
+    blockers: list[dict[str, Any]],
+    risks: list[dict[str, Any]],
+    alerts: list[dict[str, Any]],
+    next_best_action: dict[str, Any] | None,
+) -> list[str]:
+    tags: list[str] = []
+
+    def add(tag: str) -> None:
+        if tag not in tags:
+            tags.append(tag)
+
+    if blockers:
+        add("blockers")
+    if risks:
+        add("risks")
+    if alerts:
+        add("alerts")
+    if _has_item_code(alerts, {"PROVIDER_REVIEW_PENDING_SLA"}):
+        add("SLA")
+    if _has_item_code(alerts, _REJECTION_CODES) or _has_item_code(risks, {"REPEATED_PROVIDER_REJECTIONS"}):
+        add("rejection")
+    if _has_item_code(alerts, _INTAKE_DELAY_CODES) or _has_item_code(risks, {"INTAKE_DELAYED"}):
+        add("intake")
+    if next_best_action and str(next_best_action.get("action") or "") == "FOLLOW_UP_PROVIDER":
+        add("SLA")
+    if next_best_action and str(next_best_action.get("action") or "") == "START_INTAKE":
+        add("intake")
+
+    return tags
+
+
+def _responsible_role_for_item(next_best_action: dict[str, Any] | None) -> str:
+    if not next_best_action:
+        return "regie"
+    return str(_ACTION_OWNER_ROLE.get(str(next_best_action.get("action") or ""), "regie"))
+
+
+def _priority_score(
+    *,
+    blockers: list[dict[str, Any]],
+    risks: list[dict[str, Any]],
+    alerts: list[dict[str, Any]],
+    next_best_action: dict[str, Any] | None,
+    urgency: str,
+    hours_in_current_state: float | None,
+) -> int:
+    score = 0
+
+    if any(str(item.get("severity") or "").lower() == "critical" for item in blockers):
+        score += 300
+
+    if _has_any_alert_severity(alerts, {"high", "critical"}):
+        score += 70
+
+    if risks:
+        score += 30
+
+    if urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}:
+        score += 40
+
+    if _has_item_code(alerts, {"PROVIDER_REVIEW_PENDING_SLA"}) or (
+        next_best_action and str(next_best_action.get("action") or "") == "FOLLOW_UP_PROVIDER"
+    ):
+        score += 50
+
+    if _has_item_code(alerts, _REJECTION_CODES) or _has_item_code(risks, {"REPEATED_PROVIDER_REJECTIONS"}):
+        score += 45
+
+    if _has_item_code(alerts, _INTAKE_DELAY_CODES) or _has_item_code(risks, {"INTAKE_DELAYED"}):
+        score += 50
+
+    if hours_in_current_state is not None and hours_in_current_state >= 48:
+        score += 20
+
+    return score
+
+
+def _build_regiekamer_overview_item(*, case: CareCase, evaluation: dict[str, Any]) -> dict[str, Any]:
+    blockers = list(evaluation.get("blockers") or [])
+    risks = list(evaluation.get("risks") or [])
+    alerts = list(evaluation.get("alerts") or [])
+    decision_context = dict(evaluation.get("decision_context") or {})
+    next_best_action = evaluation.get("next_best_action")
+
+    top_blocker = _highest_severity(blockers)
+    top_risk = _highest_severity(risks)
+    top_alert = _highest_severity(alerts)
+
+    urgency = _clean(decision_context.get("urgency") or "")
+    hours_in_current_state = decision_context.get("hours_in_current_state")
+    try:
+        hours_in_current_state = float(hours_in_current_state) if hours_in_current_state is not None else None
+    except (TypeError, ValueError):
+        hours_in_current_state = None
+
+    item = {
+        "case_id": case.pk,
+        "case_reference": f"#{case.pk}",
+        "title": case.title,
+        "current_state": evaluation.get("current_state") or "",
+        "phase": evaluation.get("phase") or "",
+        "urgency": urgency,
+        "assigned_provider": decision_context.get("selected_provider_name") or "",
+        "next_best_action": next_best_action or None,
+        "top_blocker": top_blocker,
+        "top_risk": top_risk,
+        "top_alert": top_alert,
+        "blocker_count": len(blockers),
+        "risk_count": len(risks),
+        "alert_count": len(alerts),
+        "priority_score": _priority_score(
+            blockers=blockers,
+            risks=risks,
+            alerts=alerts,
+            next_best_action=next_best_action,
+            urgency=urgency,
+            hours_in_current_state=hours_in_current_state,
+        ),
+        "age_hours": decision_context.get("case_age_hours"),
+        "hours_in_current_state": hours_in_current_state,
+        "issue_tags": _derive_issue_tags(
+            blockers=blockers,
+            risks=risks,
+            alerts=alerts,
+            next_best_action=next_best_action,
+        ),
+        "responsible_role": _responsible_role_for_item(next_best_action),
+    }
+
+    try:
+        item["age_hours"] = float(item["age_hours"]) if item["age_hours"] is not None else None
+    except (TypeError, ValueError):
+        item["age_hours"] = None
+
+    return item
+
+
+def build_regiekamer_decision_overview(
+    cases: Iterable[CareCase],
+    *,
+    actor: Any | None = None,
+    actor_role: str | None = None,
+    organization: Any | None = None,
+) -> dict[str, Any]:
+    if actor_role is None and actor is not None:
+        actor_role = resolve_actor_role(user=actor, organization=organization)
+    actor_role = actor_role or WorkflowRole.GEMEENTE
+
+    provider_client_ids: set[int] = set()
+    provider_client_names: set[str] = set()
+    if actor_role == WorkflowRole.ZORGAANBIEDER and organization is not None:
+        from contracts.models import Client
+
+        provider_clients = Client.objects.filter(
+            organization=organization,
+            client_type='CORPORATION',
+        ).values("id", "name")
+        provider_client_ids = {int(row["id"]) for row in provider_clients}
+        provider_client_names = {str(row["name"]).strip().casefold() for row in provider_clients if row.get("name")}
+
+    totals = {
+        "active_cases": 0,
+        "critical_blockers": 0,
+        "high_priority_alerts": 0,
+        "provider_sla_breaches": 0,
+        "repeated_rejections": 0,
+        "intake_delays": 0,
+    }
+    items: list[dict[str, Any]] = []
+
+    for case in cases:
+        evaluation = evaluate_case(case, actor=actor, actor_role=actor_role)
+        if provider_client_ids:
+            selected_provider_id = evaluation.get("decision_context", {}).get("selected_provider_id")
+            selected_provider_name = evaluation.get("decision_context", {}).get("selected_provider_name")
+            try:
+                selected_provider_id_int = int(selected_provider_id) if selected_provider_id is not None else None
+            except (TypeError, ValueError):
+                selected_provider_id_int = None
+            provider_name_matches = (
+                bool(selected_provider_name)
+                and str(selected_provider_name).strip().casefold() in provider_client_names
+            )
+            if selected_provider_id_int not in provider_client_ids and not provider_name_matches:
+                continue
+
+        item = _build_regiekamer_overview_item(case=case, evaluation=evaluation)
+        items.append(item)
+
+        totals["active_cases"] += 1
+        totals["critical_blockers"] += int(any(str(blocker.get("severity") or "").lower() == "critical" for blocker in (evaluation.get("blockers") or [])))
+        totals["high_priority_alerts"] += int(_has_any_alert_severity(evaluation.get("alerts") or [], {"high", "critical"}))
+        totals["provider_sla_breaches"] += int(_has_item_code(evaluation.get("alerts") or [], {"PROVIDER_REVIEW_PENDING_SLA"}))
+        totals["repeated_rejections"] += int(
+            _has_item_code(evaluation.get("risks") or [], {"REPEATED_PROVIDER_REJECTIONS"})
+            or _has_item_code(evaluation.get("alerts") or [], _REJECTION_CODES)
+        )
+        totals["intake_delays"] += int(
+            _has_item_code(evaluation.get("alerts") or [], _INTAKE_DELAY_CODES)
+            or _has_item_code(evaluation.get("risks") or [], {"INTAKE_DELAYED"})
+        )
+
+    items.sort(
+        key=lambda item: (
+            item.get("priority_score", 0),
+            item.get("hours_in_current_state") or 0,
+            item.get("case_id") or 0,
+        ),
+        reverse=True,
+    )
+
+    return {
+        "generated_at": timezone.now().isoformat(),
+        "totals": totals,
+        "items": items,
+    }
+
 
 def _clean(value: Any) -> str:
     return str(value).strip() if value is not None else ""

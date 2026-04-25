@@ -108,7 +108,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
   };
 
   if (loading) {
-    return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Samenvatting laden…</div>;
+    return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Beoordeling door aanbieder laden…</div>;
   }
 
   if (error || !data || !formState) {
@@ -119,7 +119,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           Terug naar casussen
         </Button>
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Samenvatting niet beschikbaar</p>
+          <p className="text-lg font-semibold text-foreground">Beoordeling door aanbieder niet beschikbaar</p>
           <p className="text-sm text-muted-foreground">{error ?? 'Deze casus kon niet geladen worden.'}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
         </div>
@@ -140,8 +140,8 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Samenvatting</p>
-                <h1 className="mt-1.5 text-2xl font-semibold text-foreground">Doorzetten naar matching</h1>
-                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground">Controleer of deze casus klaar is voor matching. Vul alleen de informatie in die nodig is om die stap verantwoord te zetten.</p>
+                <h1 className="mt-1.5 text-2xl font-semibold text-foreground">Beoordeling door aanbieder</h1>
+                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground">Controleer of deze casus klaar is voor acceptatie of afwijzing. Vul alleen de informatie in die nodig is om die stap verantwoord te zetten.</p>
               </div>
               <div className="rounded-2xl border border-border bg-muted/20 px-3 py-2.5 text-right">
                 <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Casus</p>
@@ -182,7 +182,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
 
           <section className="rounded-3xl border border-border bg-card p-6">
             <div className="mb-5">
-              <h2 className="text-lg font-semibold text-foreground">Beslisinformatie</h2>
+              <h2 className="text-lg font-semibold text-foreground">Beoordelingsinformatie</h2>
               <p className="mt-1 text-sm text-muted-foreground">Compact invoeren, direct bruikbaar voor het besluit.</p>
             </div>
 

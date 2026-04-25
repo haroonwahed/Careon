@@ -113,7 +113,7 @@ export function CasussenWorkflowPage({
         key: "waiting-provider",
         severity: waitingProviderCount > 0 ? "warning" : "info",
         count: waitingProviderCount,
-        label: `${waitingProviderCount} casussen wachten langer dan 3 dagen op aanbiederbeoordeling`,
+        label: `${waitingProviderCount} casussen wachten langer dan 3 dagen op beoordeling door aanbieder`,
       },
       {
         key: "missing-summary",
@@ -232,7 +232,7 @@ export function CasussenWorkflowPage({
     { value: "casus", label: "Casus" },
     { value: "samenvatting", label: "Samenvatting" },
     { value: "matching", label: "Matching" },
-    { value: "aanbieder-beoordeling", label: "Aanbieder Beoordeling" },
+    { value: "aanbieder-beoordeling", label: "Beoordeling door aanbieder" },
     { value: "plaatsing", label: "Plaatsing" },
     { value: "intake", label: "Intake" },
   ];
@@ -375,8 +375,8 @@ export function CasussenWorkflowPage({
           )}
           {(focusChip === "waiting-provider" || activeAttention === "waiting-provider") && (
             <>
-              <p className="text-lg font-semibold text-foreground">Geen casussen wachten op aanbiederbeoordeling.</p>
-              <p className="text-sm text-muted-foreground">Er staan momenteel geen casussen langer dan 3 dagen in aanbiederbeoordeling.</p>
+              <p className="text-lg font-semibold text-foreground">Geen casussen wachten op beoordeling door aanbieder.</p>
+              <p className="text-sm text-muted-foreground">Er staan momenteel geen casussen langer dan 3 dagen in beoordeling door aanbieder.</p>
             </>
           )}
           {focusChip !== "my-actions" && focusChip !== "waiting-provider" && activeAttention !== "waiting-provider" && (

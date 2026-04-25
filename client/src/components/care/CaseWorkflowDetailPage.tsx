@@ -59,7 +59,7 @@ const FLOW_STEPS = [
   { id: "casus", label: "Casus", owner: "Gemeente" },
   { id: "samenvatting", label: "Samenvatting", owner: "Systeem" },
   { id: "matching", label: "Matching", owner: "Gemeente" },
-  { id: "aanbieder_beoordeling", label: "Aanbieder Beoordeling", owner: "Zorgaanbieder" },
+  { id: "aanbieder_beoordeling", label: "Beoordeling door aanbieder", owner: "Zorgaanbieder" },
   { id: "plaatsing", label: "Plaatsing", owner: "Gemeente" },
   { id: "intake", label: "Intake", owner: "Zorgaanbieder" },
 ] as const;
@@ -146,7 +146,7 @@ function stateLabel(currentState: string, isArchived: boolean) {
     case "PROVIDER_REVIEW_PENDING":
     case "PROVIDER_ACCEPTED":
     case "PROVIDER_REJECTED":
-      return "Aanbieder Beoordeling";
+      return "Beoordeling door aanbieder";
     case "PLACEMENT_CONFIRMED":
       return "Plaatsing";
     case "INTAKE_STARTED":
@@ -230,14 +230,14 @@ function requiredPreviousStep(action: string): string {
     case "PROVIDER_ACCEPT":
     case "PROVIDER_REJECT":
     case "PROVIDER_REQUEST_INFO":
-      return "Aanbieder Beoordeling";
+      return "Beoordeling door aanbieder";
     case "CONFIRM_PLACEMENT":
-      return "Aanbieder Beoordeling";
+      return "Beoordeling door aanbieder";
     case "START_INTAKE":
       return "Plaatsing";
     case "FOLLOW_UP_PROVIDER":
     case "REMATCH_CASE":
-      return "Aanbieder Beoordeling";
+      return "Beoordeling door aanbieder";
     case "ARCHIVE_CASE":
       return "Intake";
     default:

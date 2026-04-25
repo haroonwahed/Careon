@@ -71,13 +71,13 @@ function deriveStatusFromCase(caseItem: SpaCase): {
 } {
   switch (caseItem.status) {
     case "provider_beoordeling":
-      return { label: "Wacht op beoordeling", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Wacht op beoordeling door aanbieder", colorClass: "text-amber-400", icon: Clock };
     case "plaatsing":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     case "afgerond":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     default:
-      return { label: "Wacht op beoordeling", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Wacht op beoordeling door aanbieder", colorClass: "text-amber-400", icon: Clock };
   }
 }
 
@@ -317,9 +317,9 @@ function GemeenteView({
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Aanbieder Beoordeling</h1>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
         <p className="text-sm text-muted-foreground">
-          Volg de status van casussen die ter beoordeling zijn ingediend bij zorgaanbieders.
+          Volg de status van casussen die ter acceptatie / afwijzing zijn ingediend bij zorgaanbieders.
         </p>
       </div>
 
@@ -327,7 +327,7 @@ function GemeenteView({
       <div className="flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
         <Info size={16} className="text-blue-400 mt-0.5 shrink-0" />
         <p className="text-sm text-foreground">
-          De gemeente bewaakt de status van aanbiedersbeoordelingen. Acceptatie en afwijzing
+          De gemeente bewaakt de status van beoordeling door aanbieders. Acceptatie / afwijzing
           zijn voorbehouden aan de zorgaanbieder.
         </p>
       </div>
@@ -373,7 +373,7 @@ function GemeenteView({
 
       {!loading && !error && reviewCases.length === 0 && (
         <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen casussen in beoordeling</p>
+          <p className="text-lg font-semibold text-foreground">Geen casussen in beoordeling door aanbieder</p>
           <p className="text-sm text-muted-foreground">
             Casussen verschijnen hier nadat een match is geselecteerd en verstuurd naar een zorgaanbieder.
           </p>
@@ -476,8 +476,7 @@ function GemeenteView({
             <div>
               <p className="font-semibold text-foreground mb-1">Gemeente bewaakt — aanbieder beslist</p>
               <p className="text-sm text-muted-foreground">
-                De gemeente verstuurt de casus en volgt de beoordeling op. Acceptatie of
-                afwijzing is altijd de verantwoordelijkheid van de zorgaanbieder.
+                De gemeente verstuurt de casus en volgt de beoordeling op. Acceptatie / afwijzing is altijd de verantwoordelijkheid van de zorgaanbieder.
               </p>
             </div>
           </div>
@@ -562,9 +561,9 @@ function ProviderView({
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Aanbieder Beoordeling</h1>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
         <p className="text-sm text-muted-foreground">
-          Beoordeel inkomende casusverzoeken van gemeenten. Accepteer, wijs af of vraag meer informatie op.
+          Beoordeel inkomende casusverzoeken van gemeenten. Accepteer / wijs af of vraag meer informatie op.
         </p>
       </div>
 

@@ -643,6 +643,7 @@ def _build_case_intelligence_context(
         'has_assessment_summary': bool(intake.assessment_summary),
         'has_client_age_category': bool(intake.client_age_category),
         'assessment_status': assessment.assessment_status if assessment else None,
+        'assessment_status_label': assessment.get_assessment_status_display() if assessment else None,
         'assessment_matching_ready': assessment.matching_ready if assessment else None,
         'matching_updated_at': latest_assignment.updated_at if latest_assignment else None,
         'provider_response_status': getattr(placement, 'provider_response_status', None) if placement else None,
@@ -4921,7 +4922,7 @@ def case_matching_action(request, pk):
         request,
         intake=intake,
         allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN},
-        failure_message='Alleen gemeente of admin/regie kan matching doorzetten naar aanbiederbeoordeling.',
+        failure_message='Alleen gemeente of admin/regie kan matching doorzetten naar beoordeling door aanbieder.',
     )
     if role_error_response is not None:
         return role_error_response
@@ -5346,7 +5347,7 @@ def case_outcome_action(request, pk):
         request,
         intake=intake,
         allowed_roles={WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN},
-        failure_message='Alleen een zorgaanbieder of admin/regie kan een aanbiederbeoordeling registreren.',
+        failure_message='Alleen een zorgaanbieder of admin/regie kan een beoordeling door aanbieder registreren.',
     )
     if role_error_response is not None:
         return role_error_response
@@ -6250,7 +6251,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         documents = Document.objects.filter(contract=case_record).order_by('-created_at')[:5] if case_record else Document.objects.none()
 
         assessment_href = reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}) if assessment else f"{reverse('careon:assessment_create')}?intake={intake.pk}"
-        assessment_action_label = 'Open aanbieder beoordeling' if assessment else 'Aanbieder Beoordeling starten'
+        assessment_action_label = 'Open beoordeling door aanbieder' if assessment else 'Beoordeling door aanbieder starten'
         assessment_status_label = assessment.get_assessment_status_display() if assessment else 'Nog niet gestart'
 
         matching_href = f"{reverse('careon:matching_dashboard')}?intake={intake.pk}"
@@ -6306,7 +6307,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         matching_allowed, matching_blocker = intake.can_enter_matching()
         matching_requirements = [
             {
-        'label': 'Aanbieder Beoordeling gereed voor matching',
+            'label': 'Beoordeling door aanbieder gereed voor matching',
                 'ok': matching_allowed,
             },
         ]
@@ -6472,11 +6473,11 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         region_municipality_label = case_record.service_region if case_record and case_record.service_region else 'Niet ingevuld'
 
         if assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING:
-            assessment_interpretation = 'Aanbieder Beoordeling staat op gereed voor matching.'
+            assessment_interpretation = 'Beoordeling door aanbieder staat op gereed voor matching.'
         elif assessment and assessment.assessment_status == CaseAssessment.AssessmentStatus.NEEDS_INFO:
             assessment_interpretation = 'Aanvullende informatie nodig voordat matching kan starten.'
         elif assessment:
-            assessment_interpretation = 'Aanbieder Beoordeling loopt; werk status bij om volgende stap vrij te maken.'
+            assessment_interpretation = 'Beoordeling door aanbieder loopt; werk status bij om volgende stap vrij te maken.'
         else:
             assessment_interpretation = 'Start de beoordeling om door te gaan naar matching.'
 
@@ -6518,7 +6519,7 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
 
         flow_label_map = {
             'aanvraag': 'Aanvraag',
-            'beoordeling': 'Aanbieder Beoordeling',
+            'beoordeling': 'Beoordeling door aanbieder',
             'matching': 'Matching',
             'intake_aanbieder': 'Intake aanbieder',
             'plaatsing': 'Plaatsing',
@@ -6954,8 +6955,8 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': False,
-            'page_title': 'Nieuwe aanbieder beoordeling',
-            'button_text': 'Aanbieder Beoordeling aanmaken',
+            'page_title': 'Nieuwe beoordeling door aanbieder',
+            'button_text': 'Beoordeling door aanbieder aanmaken',
         })
         return ctx
 
@@ -6974,7 +6975,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
             form.instance.assessment_status = CaseAssessment.AssessmentStatus.DRAFT
         response = super().form_valid(form)
         log_action(self.request.user, 'CREATE', 'CaseAssessment', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, 'Aanbieder Beoordeling aangemaakt. Volgende stap: matching.')
+        messages.success(self.request, 'Beoordeling door aanbieder aangemaakt. Volgende stap: matching.')
         return response
 
     def get_success_url(self):
@@ -7006,7 +7007,7 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
         ctx = super().get_context_data(**kwargs)
         ctx.update({
             'is_edit': True,
-            'page_title': 'Aanbieder Beoordeling bewerken',
+            'page_title': 'Beoordeling door aanbieder bewerken',
             'button_text': 'Wijzigingen opslaan',
         })
         return ctx
@@ -7014,7 +7015,7 @@ class CaseAssessmentUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Up
     def form_valid(self, form):
         response = super().form_valid(form)
         log_action(self.request.user, 'UPDATE', 'CaseAssessment', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, 'Aanbieder Beoordeling bijgewerkt.')
+        messages.success(self.request, 'Beoordeling door aanbieder bijgewerkt.')
         return response
 
     def get_success_url(self):
@@ -7620,7 +7621,7 @@ class CaseScopedDocumentCreateView(_CaseScopedIntakeMixin, DocumentCreateView):
         event = (self.request.GET.get('event') or '').strip()
         phase_label = {
             'aanvraag': 'Aanvraag',
-            'beoordeling': 'Aanbieder Beoordeling',
+            'beoordeling': 'Beoordeling door aanbieder',
             'matching': 'Matching',
             'intake_aanbieder': 'Intake aanbieder',
             'plaatsing': 'Plaatsing',

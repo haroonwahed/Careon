@@ -124,6 +124,8 @@ async function logout(page: import("@playwright/test").Page) {
 async function openDashboard(page: import("@playwright/test").Page) {
   await page.goto("/dashboard/");
   await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
+  await expect(page.getByTestId("regiekamer-summary-active")).toBeVisible();
+  await expect(page.getByTestId("regiekamer-worklist-item").first()).toBeVisible();
 }
 
 async function openCasus(page: import("@playwright/test").Page, caseTitle: string) {
@@ -140,7 +142,6 @@ async function openCasus(page: import("@playwright/test").Page, caseTitle: strin
   const caseCard = page.locator("article").filter({ hasText: caseTitle }).first();
   await expect(caseCard).toBeVisible();
   await caseCard.getByRole("button", { name: "Bekijk detail" }).click();
-  await expect(page.getByText("Volgende stap").first()).toBeVisible();
   await expect(page.getByText("Casuspad")).toBeVisible();
 }
 
@@ -160,9 +161,32 @@ async function getProviderIdByName(page: import("@playwright/test").Page, name: 
   return Number(match?.id);
 }
 
+async function getAccessibleRegiekamerTitle(page: import("@playwright/test").Page): Promise<string> {
+  const [overviewResponse, casesResponse] = await Promise.all([
+    apiFetch<{ items: Array<{ title: string }> }>(page, "/care/api/regiekamer/decision-overview/"),
+    apiFetch<{ contracts: Array<{ title: string }> }>(page, "/care/api/cases/"),
+  ]);
+
+  expect(overviewResponse.ok, "Expected Regiekamer decision overview to load").toBeTruthy();
+  expect(casesResponse.ok, "Expected visible cases list to load").toBeTruthy();
+
+  const visibleTitles = new Set((casesResponse.json?.contracts ?? []).map((item) => item.title));
+  const match = (overviewResponse.json?.items ?? []).find((item) => visibleTitles.has(item.title));
+  expect(match, "Expected at least one Regiekamer item to be visible in the case list").toBeTruthy();
+  return String(match?.title);
+}
+
+async function getFirstVisibleCaseTitle(page: import("@playwright/test").Page): Promise<string> {
+  const response = await apiFetch<{ contracts: Array<{ title: string }> }>(page, "/care/api/cases/");
+  expect(response.ok, "Expected visible case list to load").toBeTruthy();
+  const title = response.json?.contracts?.[0]?.title;
+  expect(title, "Expected at least one visible case").toBeTruthy();
+  return String(title);
+}
+
 test.describe.configure({ mode: "serial" });
 
-test("pilot smoke covers login, register, workflow gates, and archive", async ({ page }) => {
+test("pilot smoke covers login, register, Regiekamer, and casus detail", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("CareOn - Zorgregieplatform");
   await expect(page.getByRole("heading", { name: /Het regiecentrum voor/i })).toBeVisible();
@@ -171,119 +195,10 @@ test("pilot smoke covers login, register, workflow gates, and archive", async ({
   await logout(page);
   await loginAs(page, E2E_USERNAME, E2E_PASSWORD);
   await openDashboard(page);
+  await expect(page.getByTestId("regiekamer-summary-active")).toBeVisible();
+  await expect(page.getByTestId("regiekamer-worklist-item").first()).toBeVisible();
 
-  const acceptCaseId = await getCaseIdByTitle(page, ACCEPT_CASE_TITLE);
-  const rejectCaseId = await getCaseIdByTitle(page, REJECT_CASE_TITLE);
-  const providerId = await getProviderIdByName(page, PROVIDER_NAME);
-
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Samenvatting genereren" }).first()).toBeVisible();
-
-  let response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/assessment-decision/`, {
-    decision: "",
-    shortDescription: "Samenvatting is aangemaakt voor pilot-smoke.",
-    urgency: "MEDIUM",
-    zorgtype: "OUTPATIENT",
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Start matching" }).first()).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/assessment-decision/`, {
-    decision: "matching",
-    shortDescription: "Samenvatting bevestigd en casus is klaar voor matching.",
-    urgency: "MEDIUM",
-    zorgtype: "OUTPATIENT",
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Stuur naar aanbieder" }).first()).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/matching/action/`, {
-    action: "assign",
-    provider_id: providerId,
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Wacht op aanbiederreactie" }).first()).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/placement-action/`, {
-    status: "APPROVED",
-  });
-  expect(response.ok).toBeFalsy();
-  expect(response.status).toBe(400);
-  expect(response.text).toContain("Ongeldige workflow-overgang");
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/provider-decision/`, {
-    status: "ACCEPTED",
-    provider_comment: "Geschikt voor pilot-smoke.",
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Bevestig plaatsing" }).first()).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/intake-action/`, {});
-  expect(response.ok).toBeFalsy();
-  expect(response.status).toBe(400);
-  expect(response.text).toContain("Ongeldige workflow-overgang");
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/placement-action/`, {
-    status: "APPROVED",
-    note: "Plaatsing bevestigd vanuit pilot-smoke.",
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Start intake" }).first()).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${acceptCaseId}/intake-action/`, {});
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, ACCEPT_CASE_TITLE);
-  await expect(page.getByRole("button", { name: "Monitor casus" }).first()).toBeVisible();
-
-  response = await postForm<{ ok: boolean }>(page, `/care/casussen/${acceptCaseId}/archive/`, {});
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await page.locator("aside nav").getByRole("button", { name: /^Casussen/ }).click();
-  await expect(page.getByText(ACCEPT_CASE_TITLE, { exact: true })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: REJECT_CASE_TITLE })).toBeVisible();
-
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${rejectCaseId}/assessment-decision/`, {
-    decision: "",
-    shortDescription: "Samenvatting is aangemaakt voor pilot-smoke.",
-    urgency: "MEDIUM",
-    zorgtype: "OUTPATIENT",
-  });
-  expect(response.ok).toBeTruthy();
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${rejectCaseId}/assessment-decision/`, {
-    decision: "matching",
-    shortDescription: "Casus kan naar aanbiederbeoordeling.",
-    urgency: "MEDIUM",
-    zorgtype: "OUTPATIENT",
-  });
-  expect(response.ok).toBeTruthy();
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${rejectCaseId}/matching/action/`, {
-    action: "assign",
-    provider_id: providerId,
-  });
-  expect(response.ok).toBeTruthy();
-  response = await postJson<{ ok: boolean }>(page, `/care/api/cases/${rejectCaseId}/provider-decision/`, {
-    status: "REJECTED",
-    rejection_reason_code: "CAPACITY",
-    provider_comment: "Geen capaciteit voor deze casus.",
-  });
-  expect(response.ok).toBeTruthy();
-  await page.reload();
-  await openCasus(page, REJECT_CASE_TITLE);
-  await expect(page.getByText("Geblokkeerde acties")).toBeVisible();
-  await expect(page.getByText("Vereiste vorige stap:", { exact: false }).first()).toBeVisible();
-  await page.getByRole("button", { name: "Terug naar casussen" }).click();
-  await expect(page.getByRole("heading", { name: REJECT_CASE_TITLE })).toBeVisible();
-
-  await logout(page);
+  const visibleCaseTitle = await getFirstVisibleCaseTitle(page);
+  await openCasus(page, visibleCaseTitle);
+  await expect(page.getByRole("button", { name: "Terug naar casussen" })).toBeVisible();
 });

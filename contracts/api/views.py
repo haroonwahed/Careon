@@ -18,7 +18,7 @@ from django.utils import timezone
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
 from contracts.forms import CaseIntakeProcessForm
 from contracts.middleware import log_action
-from contracts.decision_engine import evaluate_case
+from contracts.decision_engine import build_regiekamer_decision_overview, evaluate_case
 from contracts.models import (
     CareCase, CaseAssessment, PlacementRequest, CareSignal, CareTask,
     Document, AuditLog, Client, ProviderProfile,
@@ -261,6 +261,31 @@ def case_decision_evaluation_api(request, case_id):
         return JsonResponse({'error': 'Je hebt geen rechten om deze casus te bekijken.'}, status=403)
 
     return JsonResponse(evaluate_case(case, actor=request.user))
+
+
+@login_required
+@require_http_methods(["GET"])
+def regiekamer_decision_overview_api(request):
+    organization = get_user_organization(request.user)
+    try:
+        if organization is None:
+            return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
+
+        cases = scope_queryset_for_organization(
+            CareCase.objects.select_related('due_diligence_process'),
+            organization,
+        ).exclude(
+            Q(lifecycle_stage='ARCHIVED') | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
+        )
+
+        payload = build_regiekamer_decision_overview(
+            cases,
+            actor=request.user,
+            organization=organization,
+        )
+        return JsonResponse(payload)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @login_required

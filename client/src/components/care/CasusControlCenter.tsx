@@ -526,17 +526,17 @@ function AanbiederBeoordelingPanel({
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">
-              Aanbieder Beoordeling {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
+              Beoordeling door aanbieder {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">
-              Aanbiederbeoordelaar: {assessment.assessor} · Gepland: {assessment.scheduledDate}
+              Beoordelaar: {assessment.assessor} · Gepland: {assessment.scheduledDate}
             </p>
           </div>
         </div>
       )}
 
       <div className="premium-card p-5">
-        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Aanbieder Beoordeling" />
+        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Beoordeling door aanbieder" />
 
         <div className="space-y-4">
           <div>
@@ -607,7 +607,7 @@ function AanbiederBeoordelingPanel({
       <div className="space-y-2">
         {primaryAction && (
           <ActionButton
-            action={{ ...primaryAction, label: allFilled ? "Aanbieder Beoordeling afronden" : "Sla concept op" }}
+            action={{ ...primaryAction, label: allFilled ? "Beoordeling door aanbieder afronden" : "Sla concept op" }}
             onClick={() => onAction(allFilled ? "complete_beoordeling" : "save_concept")}
             fullWidth
           />
@@ -825,7 +825,7 @@ function PlaatsingPanel({
         <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Validatie checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
-            label="Aanbieder Beoordeling afgerond"
+            label="Beoordeling door aanbieder afgerond"
             checked={checklist.assessmentComplete}
             onChange={v => setChecklist(p => ({ ...p, assessmentComplete: v }))}
             disabled={!checklist.assessmentComplete}

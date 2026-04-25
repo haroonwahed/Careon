@@ -33,6 +33,7 @@ urlpatterns = [
     path('api/regions/', api_views.regions_api, name='regions_api'),
     path('api/regions/health/', api_views.regions_health_api, name='regions_health_api'),
     path('api/dashboard/', api_views.dashboard_summary_api, name='dashboard_summary_api'),
+    path('api/regiekamer/decision-overview/', api_views.regiekamer_decision_overview_api, name='regiekamer_decision_overview_api'),
 
     # Care core
     path('clients/', views.ClientListView.as_view(), name='client_list'),

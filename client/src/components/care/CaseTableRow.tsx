@@ -11,7 +11,7 @@ interface CaseTableRowProps {
 
 const PHASE_LABELS: Record<CasusPhase, string> = {
   intake_initial: "Casus",
-  beoordeling: "Aanbieder Beoordeling",
+  beoordeling: "Beoordeling door aanbieder",
   matching: "Matching",
   plaatsing: "Plaatsing",
   intake_provider: "Intake",
@@ -35,7 +35,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
       case "intake_initial":
         return { label: "Naar matching", color: "text-primary" };
       case "beoordeling":
-        return { label: "Aanbieder beoordelen", color: "text-primary" };
+        return { label: "Acceptatie / afwijzing", color: "text-primary" };
       case "matching":
         return { label: "Match", color: "text-primary" };
       case "geblokkeerd":

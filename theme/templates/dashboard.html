@@ -119,8 +119,8 @@
                             <dd>{{ active_case.region }}</dd>
                         </div>
                         <div class="ds-field-item">
-                            <dt>Aanbieder Beoordeling</dt>
-                            <dd>{{ active_case.assessment_status }}</dd>
+                            <dt>Beoordeling door aanbieder</dt>
+                            <dd>{{ active_case.assessment_status_label|default:active_case.assessment_status }}</dd>
                         </div>
                         <div class="ds-field-item">
                             <dt>Plaatsing</dt>

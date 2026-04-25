@@ -27,8 +27,8 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen voor matching</h1>
-        <p className="text-sm text-muted-foreground">Operationele wachtrij van casussen die klaar zijn om doorgezet te worden.</p>
+        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
+        <p className="text-sm text-muted-foreground">Operationele wachtrij van casussen die klaar zijn voor acceptatie / afwijzing door een zorgaanbieder.</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -56,8 +56,8 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
 
       {!loading && !error && queueCases.length === 0 && (
         <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen casussen klaar voor matching</p>
-          <p className="text-sm text-muted-foreground">Casussen verschijnen hier zodra de samenvatting compleet is en doorgezet kan worden.</p>
+          <p className="text-lg font-semibold text-foreground">Geen casussen klaar voor beoordeling door aanbieder</p>
+          <p className="text-sm text-muted-foreground">Casussen verschijnen hier zodra de samenvatting compleet is en naar de aanbiederbeoordeling kan worden doorgezet.</p>
           <Button onClick={() => onNavigateToCasussen?.()}>Ga naar casussen</Button>
         </div>
       )}

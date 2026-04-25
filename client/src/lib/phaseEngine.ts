@@ -239,7 +239,7 @@ export const ALL_PHASES: { id: CasusPhase; label: string; shortLabel: string }[]
   { id: "casus",               label: "Casus",                 shortLabel: "Casus"      },
   { id: "matching",            label: "Matching",              shortLabel: "Matching"   },
   { id: "aanbieder_selectie",  label: "Aanbieder selecteren",  shortLabel: "Selectie"   },
-  { id: "provider_beoordeling",label: "Aanbiederbeoordeling",  shortLabel: "Aanbieder Beoordeling"},
+  { id: "provider_beoordeling",label: "Beoordeling door aanbieder",  shortLabel: "Beoordeling door aanbieder"},
   { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: "Intake"     },
   { id: "afgerond",            label: "Afgerond",              shortLabel: "Afgerond"   },
 ];

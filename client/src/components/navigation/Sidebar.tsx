@@ -77,7 +77,7 @@ const gemeenteNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Aanbieder Beoordeling",
+        label: "Beoordeling door aanbieder",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -203,7 +203,7 @@ const zorgaanbiederNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Aanbieder Beoordeling",
+        label: "Beoordeling door aanbieder",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",

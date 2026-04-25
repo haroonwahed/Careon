@@ -70,6 +70,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "test:e2e": "playwright test tests/e2e/pilot-smoke.spec.ts"
+    "test:e2e": "playwright test tests/e2e/pilot-smoke.spec.ts",
+    "test:pilot-demo": "playwright test tests/e2e/pilot-demo.spec.ts"
   }
 }
