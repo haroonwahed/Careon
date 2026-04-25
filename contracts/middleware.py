@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db import DatabaseError
 from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 
@@ -147,18 +148,22 @@ class OrganizationMiddleware:
     def __call__(self, request):
         user = getattr(request, 'user', None)
         if user and getattr(user, 'is_authenticated', False):
-            request._had_existing_membership = OrganizationMembership.objects.filter(
-                user=user,
-                is_active=True,
-                organization__is_active=True,
-            ).exists()
-            preferred_org_id = request.session.get('active_organization_id')
-            if preferred_org_id:
-                user._active_organization_id = preferred_org_id
-            organization = get_user_organization(user)
-            request.organization = organization
-            if organization and request.session.get('active_organization_id') != organization.id:
-                request.session['active_organization_id'] = organization.id
+            try:
+                request._had_existing_membership = OrganizationMembership.objects.filter(
+                    user=user,
+                    is_active=True,
+                    organization__is_active=True,
+                ).exists()
+                preferred_org_id = request.session.get('active_organization_id')
+                if preferred_org_id:
+                    user._active_organization_id = preferred_org_id
+                organization = get_user_organization(user)
+                request.organization = organization
+                if organization and request.session.get('active_organization_id') != organization.id:
+                    request.session['active_organization_id'] = organization.id
+            except DatabaseError:
+                request._had_existing_membership = False
+                request.organization = None
         else:
             request.organization = None
         return self.get_response(request)

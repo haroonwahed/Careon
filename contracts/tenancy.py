@@ -1,6 +1,7 @@
 from typing import Optional
 
 from django.contrib.auth import get_user_model
+from django.db import DatabaseError
 from django.db.models import Model, QuerySet
 from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
@@ -14,14 +15,17 @@ def ensure_user_organization(user: Optional[User]) -> Optional[Organization]:
     if not user or not getattr(user, 'is_authenticated', False):
         return None
 
-    memberships = (
-        OrganizationMembership.objects
-        .filter(user=user, is_active=True, organization__is_active=True)
-        .select_related('organization')
-    )
-    existing = memberships.order_by('id').first()
-    if existing:
-        return existing.organization
+    try:
+        memberships = (
+            OrganizationMembership.objects
+            .filter(user=user, is_active=True, organization__is_active=True)
+            .select_related('organization')
+        )
+        existing = memberships.order_by('id').first()
+        if existing:
+            return existing.organization
+    except DatabaseError:
+        return None
 
     base_slug = slugify(getattr(user, 'username', '') or f'user-{user.id}') or f'user-{user.id}'
     org_slug = base_slug
@@ -42,25 +46,32 @@ def ensure_user_organization(user: Optional[User]) -> Optional[Organization]:
 
 
 def get_user_organization(user: Optional[User]) -> Optional[Organization]:
-    base_org = ensure_user_organization(user)
     if not user or not getattr(user, 'is_authenticated', False):
+        return None
+
+    try:
+        base_org = ensure_user_organization(user)
+    except DatabaseError:
         return None
 
     preferred_org_id = getattr(user, '_active_organization_id', None)
     if preferred_org_id:
-        selected = (
-            OrganizationMembership.objects
-            .filter(
-                user=user,
-                is_active=True,
-                organization__is_active=True,
-                organization_id=preferred_org_id,
+        try:
+            selected = (
+                OrganizationMembership.objects
+                .filter(
+                    user=user,
+                    is_active=True,
+                    organization__is_active=True,
+                    organization_id=preferred_org_id,
+                )
+                .select_related('organization')
+                .first()
             )
-            .select_related('organization')
-            .first()
-        )
-        if selected:
-            return selected.organization
+            if selected:
+                return selected.organization
+        except DatabaseError:
+            return base_org
 
     return base_org
 
