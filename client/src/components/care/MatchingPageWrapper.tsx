@@ -9,9 +9,10 @@ import { MatchingQueuePage } from "./MatchingQueuePage";
 
 interface MatchingPageWrapperProps {
   onNavigateToCasussen?: () => void;
+  onNavigateToBeoordelingen?: () => void;
 }
 
-export function MatchingPageWrapper({ onNavigateToCasussen }: MatchingPageWrapperProps) {
+export function MatchingPageWrapper({ onNavigateToCasussen, onNavigateToBeoordelingen }: MatchingPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [matchConfirmed, setMatchConfirmed] = useState(false);
 
@@ -24,12 +25,16 @@ export function MatchingPageWrapper({ onNavigateToCasussen }: MatchingPageWrappe
     setMatchConfirmed(false);
   };
 
-  const handleConfirmMatch = (providerId: string) => {
+  const handleConfirmMatch = (_providerId: string) => {
     setMatchConfirmed(true);
-    // Could show success message, then go back to list
+    // Case is sent to provider for beoordeling — navigate to beoordelingen page after short feedback delay
     setTimeout(() => {
-      handleBack();
-    }, 2000);
+      if (onNavigateToBeoordelingen) {
+        onNavigateToBeoordelingen();
+      } else {
+        handleBack();
+      }
+    }, 1500);
   };
 
   // If case is selected, show the full matching workflow

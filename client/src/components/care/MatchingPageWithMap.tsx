@@ -266,7 +266,7 @@ export function MatchingPageWithMap({
                       disabled={isSubmittingMatch}
                       className="bg-primary hover:bg-primary/90"
                     >
-                      {isSubmittingMatch ? "Bezig met plaatsen..." : "Plaats direct"}
+                      {isSubmittingMatch ? "Bezig met versturen..." : "Verstuur naar aanbieder voor beoordeling"}
                     </Button>
                     <Button variant="outline" onClick={() => handleSelectProvider(bestMatch.provider.id)}>
                       Focus op kaart
@@ -340,7 +340,7 @@ export function MatchingPageWithMap({
                           disabled={isSubmittingMatch}
                           className="bg-primary hover:bg-primary/90"
                         >
-                          {isSubmittingMatch ? "Bezig..." : "Plaats direct"}
+                          {isSubmittingMatch ? "Bezig..." : "Verstuur naar aanbieder"}
                         </Button>
                       ) : (
                         <Button

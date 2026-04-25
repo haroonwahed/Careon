@@ -1,119 +1,248 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, Plus, Search, Shuffle, UserCheck } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Plus, Search, ShieldAlert, Sparkles, UserCheck, Users } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
-import { buildWorkflowCases, type WorkflowBoardColumn, type WorkflowCaseView } from "../../lib/workflowUi";
+import {
+  buildWorkflowCases,
+  getCaseDecisionState,
+  type CaseDecisionRole,
+  type WorkflowBoardColumn,
+  type WorkflowCaseView,
+} from "../../lib/workflowUi";
+import { ActionCaseDecisionCard } from "./workflow/ActionCaseDecisionCard";
 
 interface CasussenWorkflowPageProps {
   onCaseClick: (caseId: string) => void;
   onCreateCase?: () => void;
   canCreateCase?: boolean;
+  role?: CaseDecisionRole;
+  onNavigateToWorkflow?: (page: "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "intake") => void;
 }
 
-type SmartFocus = "assessment" | "matching" | "placement" | "urgent" | null;
+type FocusChip = "all" | "my-actions" | "waiting-provider" | "blocked" | "ready-placement";
+type AttentionKey = "waiting-provider" | "missing-summary" | "rejected" | "ready-placement" | "info-requested";
 
-const BOARD_COLUMNS: Array<{ id: WorkflowBoardColumn; label: string }> = [
-  { id: "nieuw", label: "Casus" },
-  { id: "in-beoordeling", label: "Aanbieder Beoordeling" },
-  { id: "klaar-voor-matching", label: "Klaar voor matching" },
-  { id: "in-plaatsing", label: "Plaatsing" },
-  { id: "afgerond", label: "Afgerond" },
-];
+interface AttentionItem {
+  key: AttentionKey;
+  severity: "critical" | "warning" | "info" | "good";
+  label: string;
+  count: number;
+}
 
-function urgencyBadgeClasses(urgency: WorkflowCaseView["urgency"]) {
+function urgencyRank(urgency: WorkflowCaseView["urgency"]): number {
   switch (urgency) {
     case "critical":
-      return "bg-red-500/10 text-red-400 border-red-500/30";
+      return 4;
     case "warning":
-      return "bg-amber-500/10 text-amber-400 border-amber-500/30";
+      return 3;
     case "normal":
-      return "bg-blue-500/10 text-blue-400 border-blue-500/30";
+      return 2;
     default:
-      return "bg-muted/40 text-muted-foreground border-border";
+      return 1;
   }
 }
 
-function shortcutLabel(item: WorkflowCaseView) {
-  if (item.phase === "intake") return "Start matching";
-  if (item.phase === "provider_beoordeling") return "Open aanbiederbeoordeling";
-  if (item.phase === "matching") return "Start matching";
-  if (item.phase === "plaatsing") return "Open plaatsing";
-  return "Bekijk casus";
-}
-
-function workflowStepLabel(page: WorkflowCaseView["nextBestActionUrl"]) {
-  switch (page) {
-    case "beoordelingen":
-      return "Aanbieder Beoordeling";
-    case "matching":
-      return "Matching";
-    case "plaatsingen":
-      return "Plaatsing";
-    case "intake":
-      return "Intake";
+function severityClasses(severity: AttentionItem["severity"]): string {
+  switch (severity) {
+    case "critical":
+      return "border-red-500/35 bg-red-500/10 text-red-100";
+    case "warning":
+      return "border-amber-500/35 bg-amber-500/10 text-amber-100";
+    case "good":
+      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-100";
     default:
-      return "Casussen";
+      return "border-cyan-500/35 bg-cyan-500/10 text-cyan-100";
   }
 }
 
-export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase = false }: CasussenWorkflowPageProps) {
+function attentionPredicate(key: AttentionKey, item: WorkflowCaseView, decisionLabel: string, responsibleParty: string, blockedReason: string | null): boolean {
+  switch (key) {
+    case "missing-summary":
+      return decisionLabel.toLowerCase().includes("samenvatting");
+    case "waiting-provider":
+      return responsibleParty === "Zorgaanbieder" && item.boardColumn === "aanbieder-beoordeling" && item.daysInCurrentPhase > 3;
+    case "info-requested":
+      return decisionLabel.toLowerCase().includes("informatie") || (blockedReason ?? "").toLowerCase().includes("informatie");
+    case "rejected":
+      return (blockedReason ?? "").toLowerCase().includes("afgewezen") || decisionLabel.toLowerCase().includes("nieuwe match zoeken");
+    case "ready-placement":
+      return decisionLabel.toLowerCase().includes("plaatsing starten") || item.boardColumn === "plaatsing";
+  }
+}
+
+export function CasussenWorkflowPage({
+  onCaseClick,
+  onCreateCase,
+  canCreateCase = false,
+  role = "gemeente",
+  onNavigateToWorkflow,
+}: CasussenWorkflowPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState("all");
   const [selectedUrgency, setSelectedUrgency] = useState("all");
-  const [smartFocus, setSmartFocus] = useState<SmartFocus>(null);
+  const [selectedPhase, setSelectedPhase] = useState<"all" | WorkflowBoardColumn>("all");
+  const [selectedOwner, setSelectedOwner] = useState<"all" | "Gemeente" | "Zorgaanbieder" | "Systeem">("all");
+  const [focusChip, setFocusChip] = useState<FocusChip>("all");
+  const [activeAttention, setActiveAttention] = useState<AttentionKey | null>(null);
 
   const { cases, loading, error, refetch } = useCases({ q: searchQuery });
   const { providers } = useProviders({ q: "" });
 
   const workflowCases = useMemo(() => buildWorkflowCases(cases, providers), [cases, providers]);
-  const regions = useMemo(() => ["all", ...Array.from(new Set(workflowCases.map((item) => item.region)))], [workflowCases]);
 
-  const filteredCases = useMemo(() => {
-    return workflowCases.filter((item) => {
-      if (selectedRegion !== "all" && item.region !== selectedRegion) return false;
-      if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) return false;
-      if (smartFocus === "assessment" && !(item.phase === "intake" || item.phase === "provider_beoordeling")) return false;
-      if (smartFocus === "matching" && !item.readyForMatching) return false;
-      if (smartFocus === "placement" && !item.readyForPlacement) return false;
-      if (smartFocus === "urgent" && !(item.urgency === "critical" && item.isBlocked)) return false;
-      return true;
-    });
-  }, [workflowCases, selectedRegion, selectedUrgency, smartFocus]);
+  const decisionItems = useMemo(() => {
+    return workflowCases.map((item) => ({
+      item,
+      decision: getCaseDecisionState(item, role),
+    }));
+  }, [workflowCases, role]);
 
-  const stripMetrics = useMemo(() => ({
-    waitingAssessment: workflowCases.filter((item) => item.phase === "intake" || item.phase === "provider_beoordeling").length,
-    readyMatching: workflowCases.filter((item) => item.readyForMatching).length,
-    waitingPlacement: workflowCases.filter((item) => item.readyForPlacement).length,
-    urgentWithoutMatch: workflowCases.filter((item) => item.urgency === "critical" && item.isBlocked).length,
-  }), [workflowCases]);
+  const regions = useMemo(() => ["all", ...Array.from(new Set(decisionItems.map(({ item }) => item.region)))], [decisionItems]);
 
-  const groupedCases = useMemo(() => {
-    return BOARD_COLUMNS.reduce<Record<WorkflowBoardColumn, WorkflowCaseView[]>>((accumulator, column) => {
-      accumulator[column.id] = filteredCases
-        .filter((item) => item.boardColumn === column.id)
-        .sort((left, right) => right.daysInCurrentPhase - left.daysInCurrentPhase);
-      return accumulator;
-    }, {
-      nieuw: [],
-      "in-beoordeling": [],
-      "klaar-voor-matching": [],
-      "in-plaatsing": [],
-      afgerond: [],
-    });
-  }, [filteredCases]);
+  const attentionItems = useMemo<AttentionItem[]>(() => {
+    const waitingProviderCount = decisionItems.filter(({ item, decision }) => attentionPredicate("waiting-provider", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)).length;
+    const missingSummaryCount = decisionItems.filter(({ item, decision }) => attentionPredicate("missing-summary", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)).length;
+    const infoRequestedCount = decisionItems.filter(({ item, decision }) => attentionPredicate("info-requested", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)).length;
+    const rejectedCount = decisionItems.filter(({ item, decision }) => attentionPredicate("rejected", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)).length;
+    const readyPlacementCount = decisionItems.filter(({ item, decision }) => attentionPredicate("ready-placement", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)).length;
+
+    return [
+      {
+        key: "waiting-provider",
+        severity: waitingProviderCount > 0 ? "warning" : "info",
+        count: waitingProviderCount,
+        label: `${waitingProviderCount} casussen wachten langer dan 3 dagen op aanbiederbeoordeling`,
+      },
+      {
+        key: "missing-summary",
+        severity: missingSummaryCount > 0 ? "warning" : "info",
+        count: missingSummaryCount,
+        label: `${missingSummaryCount} casussen missen informatie voor samenvatting`,
+      },
+      {
+        key: "rejected",
+        severity: rejectedCount > 0 ? "critical" : "info",
+        count: rejectedCount,
+        label: `${rejectedCount} casussen zijn afgewezen en hebben een nieuwe match nodig`,
+      },
+      {
+        key: "ready-placement",
+        severity: readyPlacementCount > 0 ? "good" : "info",
+        count: readyPlacementCount,
+        label: `${readyPlacementCount} casussen zijn klaar voor plaatsing`,
+      },
+      {
+        key: "info-requested",
+        severity: infoRequestedCount > 0 ? "warning" : "info",
+        count: infoRequestedCount,
+        label: `${infoRequestedCount} casussen vragen aanvullende informatie`,
+      },
+    ];
+  }, [decisionItems]);
+
+  const filteredItems = useMemo(() => {
+    const searchLower = searchQuery.trim().toLowerCase();
+
+    return decisionItems
+      .filter(({ item, decision }) => {
+        if (searchLower.length > 0) {
+          const haystack = [item.id, item.clientLabel, item.region, item.careType, item.recommendedProviderName ?? "", ...item.tags]
+            .join(" ")
+            .toLowerCase();
+          if (!haystack.includes(searchLower)) {
+            return false;
+          }
+        }
+
+        if (selectedRegion !== "all" && item.region !== selectedRegion) {
+          return false;
+        }
+
+        if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) {
+          return false;
+        }
+
+        if (selectedPhase !== "all" && item.boardColumn !== selectedPhase) {
+          return false;
+        }
+
+        if (selectedOwner !== "all" && decision.responsibleParty !== selectedOwner) {
+          return false;
+        }
+
+        if (focusChip === "my-actions" && !decision.requiresCurrentUserAction) {
+          return false;
+        }
+
+        if (focusChip === "waiting-provider" && !attentionPredicate("waiting-provider", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)) {
+          return false;
+        }
+
+        if (focusChip === "blocked" && !item.isBlocked) {
+          return false;
+        }
+
+        if (focusChip === "ready-placement" && !attentionPredicate("ready-placement", item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)) {
+          return false;
+        }
+
+        if (activeAttention && !attentionPredicate(activeAttention, item, decision.nextActionLabel, decision.responsibleParty, decision.blockedReason)) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((left, right) => {
+        const urgencyDiff = urgencyRank(right.item.urgency) - urgencyRank(left.item.urgency);
+        if (urgencyDiff !== 0) return urgencyDiff;
+
+        const blockedDiff = Number(right.item.isBlocked) - Number(left.item.isBlocked);
+        if (blockedDiff !== 0) return blockedDiff;
+
+        const myActionDiff = Number(right.decision.requiresCurrentUserAction) - Number(left.decision.requiresCurrentUserAction);
+        if (myActionDiff !== 0) return myActionDiff;
+
+        const waitingDiff = right.item.daysInCurrentPhase - left.item.daysInCurrentPhase;
+        if (waitingDiff !== 0) return waitingDiff;
+
+        return left.item.id.localeCompare(right.item.id);
+      });
+  }, [
+    decisionItems,
+    searchQuery,
+    selectedRegion,
+    selectedUrgency,
+    selectedPhase,
+    selectedOwner,
+    focusChip,
+    activeAttention,
+  ]);
 
   const handleCreateCase = () => {
     onCreateCase?.();
   };
 
+  const handleNavigate = (page: "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "intake") => {
+    onNavigateToWorkflow?.(page);
+  };
+
+  const phaseOptions: Array<{ value: WorkflowBoardColumn; label: string }> = [
+    { value: "casus", label: "Casus" },
+    { value: "samenvatting", label: "Samenvatting" },
+    { value: "matching", label: "Matching" },
+    { value: "aanbieder-beoordeling", label: "Aanbieder Beoordeling" },
+    { value: "plaatsing", label: "Plaatsing" },
+    { value: "intake", label: "Intake" },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">Casussen</h1>
-          <p className="text-sm text-muted-foreground">Centrale pipeline van casus naar intake.</p>
+          <h1 className="text-3xl font-semibold text-foreground">Casussen</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Actiegerichte regie op casussen, van aanmelding tot intake.</p>
         </div>
         {canCreateCase && (
           <Button onClick={handleCreateCase}>
@@ -121,68 +250,104 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
             Nieuwe casus
           </Button>
         )}
-      </div>
+      </header>
 
-      <div className="rounded-2xl border border-border bg-card/45 p-3">
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Workflow</p>
-        <p className="mt-1 text-sm text-foreground">Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        <button type="button" onClick={() => setSmartFocus(smartFocus === "assessment" ? null : "assessment")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "assessment" ? "ring-2 ring-primary/35" : "border-border"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op aanbiederbeoordeling</span>
-            <UserCheck size={18} className="text-blue-400" />
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingAssessment}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Nieuwe of lopende aanbiederbeoordelingen</p>
-        </button>
-        <button type="button" onClick={() => setSmartFocus(smartFocus === "matching" ? null : "matching")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "matching" ? "ring-2 ring-primary/35" : "border-border"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Klaar voor matching</span>
-            <Shuffle size={18} className="text-amber-400" />
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.readyMatching}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Samenvatting gereed, klaar voor providerkeuze</p>
-        </button>
-        <button type="button" onClick={() => setSmartFocus(smartFocus === "placement" ? null : "placement")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "placement" ? "ring-2 ring-primary/35" : "border-border"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wacht op plaatsing</span>
-            <CheckCircle2 size={18} className="text-cyan-400" />
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.waitingPlacement}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Klaar om plaatsing te bevestigen en intake te plannen</p>
-        </button>
-        <button type="button" onClick={() => setSmartFocus(smartFocus === "urgent" ? null : "urgent")} className={`rounded-2xl border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm ${smartFocus === "urgent" ? "ring-2 ring-primary/35" : "border-border"}`}>
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgent zonder match</span>
-            <AlertTriangle size={18} className="text-red-400" />
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{stripMetrics.urgentWithoutMatch}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Kritieke casussen met blokkade of geen passend aanbod</p>
-        </button>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-          <Search className="text-muted-foreground flex-shrink-0" size={18} />
-          <Input type="text" placeholder="Zoek casussen, cliënten, regio's..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground" />
+      <section className="rounded-3xl border border-border bg-card/55 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Aandacht nu</h2>
+          {activeAttention && (
+            <Button size="sm" variant="ghost" onClick={() => setActiveAttention(null)}>
+              Filter wissen
+            </Button>
+          )}
         </div>
-        <select value={selectedRegion} onChange={(event) => setSelectedRegion(event.target.value)} className="w-44 px-3 py-3 pr-10 appearance-none bg-card border border-border rounded-2xl text-sm text-foreground">
-          {regions.map((region) => (
-            <option key={region} value={region}>{region === "all" ? "Alle regio's" : region}</option>
+        <div className="flex gap-3 overflow-x-auto pb-1">
+          {attentionItems.map((attention) => (
+            <button
+              key={attention.key}
+              type="button"
+              onClick={() => setActiveAttention((current) => (current === attention.key ? null : attention.key))}
+              className={`min-w-[290px] shrink-0 rounded-2xl border px-4 py-3 text-left transition-colors ${severityClasses(attention.severity)} ${activeAttention === attention.key ? "ring-2 ring-primary/35" : ""}`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs font-semibold uppercase tracking-[0.08em]">{attention.count}</span>
+                {attention.severity === "critical" && <ShieldAlert size={16} />}
+                {attention.severity === "warning" && <AlertTriangle size={16} />}
+                {attention.severity === "good" && <CheckCircle2 size={16} />}
+                {attention.severity === "info" && <Sparkles size={16} />}
+              </div>
+              <p className="mt-2 text-sm leading-5">{attention.label}</p>
+            </button>
           ))}
-        </select>
-        <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-40 px-3 py-3 pr-10 appearance-none bg-card border border-border rounded-2xl text-sm text-foreground">
-          <option value="all">Alle urgentie</option>
-          <option value="critical">Kritiek</option>
-          <option value="warning">Hoog</option>
-          <option value="normal">Normaal</option>
-          <option value="stable">Laag</option>
-        </select>
-      </div>
+        </div>
+      </section>
 
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
+      <section className="space-y-3 rounded-3xl border border-border bg-card/45 p-4">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
+          <div className="xl:col-span-2">
+            <div className="flex items-center gap-2 rounded-3xl border border-border bg-muted/35 px-3 py-2.5">
+              <Search className="shrink-0 text-muted-foreground" size={18} />
+              <Input
+                type="text"
+                placeholder="Zoek op cliënt, casus, regio of zorgvraag"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="h-8 border-0 bg-transparent p-0 text-sm text-foreground shadow-none focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
+          <select value={selectedPhase} onChange={(event) => setSelectedPhase(event.target.value as "all" | WorkflowBoardColumn)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+            <option value="all">Alle fases</option>
+            {phaseOptions.map((phase) => (
+              <option key={phase.value} value={phase.value}>{phase.label}</option>
+            ))}
+          </select>
+
+          <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+            <option value="all">Alle urgentie</option>
+            <option value="critical">Kritiek</option>
+            <option value="warning">Hoog</option>
+            <option value="normal">Normaal</option>
+            <option value="stable">Laag</option>
+          </select>
+
+          <select value={selectedRegion} onChange={(event) => setSelectedRegion(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+            {regions.map((region) => (
+              <option key={region} value={region}>{region === "all" ? "Alle regio's" : region}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[280px_1fr]">
+          <select value={selectedOwner} onChange={(event) => setSelectedOwner(event.target.value as "all" | "Gemeente" | "Zorgaanbieder" | "Systeem")} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+            <option value="all">Alle verantwoordelijken</option>
+            <option value="Gemeente">Gemeente</option>
+            <option value="Zorgaanbieder">Zorgaanbieder</option>
+            <option value="Systeem">Systeem</option>
+          </select>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant={focusChip === "all" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("all")}>
+              Alle casussen
+            </Button>
+            <Button variant={focusChip === "my-actions" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("my-actions")}>
+              <Users size={14} className="mr-1.5" />Mijn acties
+            </Button>
+            <Button variant={focusChip === "waiting-provider" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("waiting-provider")}>
+              <UserCheck size={14} className="mr-1.5" />Wacht op aanbieder
+            </Button>
+            <Button variant={focusChip === "blocked" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("blocked")}>
+              <AlertTriangle size={14} className="mr-1.5" />Geblokkeerd
+            </Button>
+            <Button variant={focusChip === "ready-placement" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("ready-placement")}>
+              <CheckCircle2 size={14} className="mr-1.5" />Klaar voor plaatsing
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden...</div>}
 
       {!loading && error && (
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
@@ -192,89 +357,50 @@ export function CasussenWorkflowPage({ onCaseClick, onCreateCase, canCreateCase 
         </div>
       )}
 
-      {!loading && !error && filteredCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Nog geen casussen in de pipeline</p>
-          <p className="text-sm text-muted-foreground">
-            {canCreateCase
-              ? "Start in de eerste workflowstap en voeg een nieuwe casus toe."
-              : "Nieuwe casussen verschijnen hier zodra ze aan jouw werkvoorraad zijn toegewezen."}
-          </p>
+      {!loading && !error && workflowCases.length === 0 && (
+        <div className="rounded-2xl border bg-card p-12 text-center space-y-2">
+          <p className="text-lg font-semibold text-foreground">Geen casussen gevonden.</p>
+          <p className="text-sm text-muted-foreground">Pas filters aan of maak een nieuwe casus aan.</p>
           {canCreateCase && <Button onClick={handleCreateCase}>Nieuwe casus</Button>}
         </div>
       )}
 
-      {!loading && !error && filteredCases.length > 0 && (
-        <div className="overflow-x-auto pb-2">
-          <div className="grid min-w-[1180px] grid-cols-5 gap-4">
-            {BOARD_COLUMNS.map((column) => (
-              <section key={column.id} className="rounded-2xl border border-border bg-card/55 p-4 space-y-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">{column.label}</h2>
-                  <p className="text-xs text-muted-foreground">{groupedCases[column.id].length} casussen</p>
-                </div>
-
-                <div className="space-y-3">
-                  {groupedCases[column.id].map((item) => (
-                    <button key={item.id} type="button" onClick={() => onCaseClick(item.id)} className="w-full rounded-2xl border border-border bg-card p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-sm">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">{item.id}</p>
-                          <p className="text-sm text-muted-foreground mt-1">{item.clientLabel}</p>
-                        </div>
-                        <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${urgencyBadgeClasses(item.urgency)}`}>
-                          {item.urgencyLabel}
-                        </span>
-                      </div>
-
-                      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-muted-foreground">
-                        <div>
-                          <p>Leeftijd</p>
-                          <p className="mt-1 text-sm font-medium text-foreground">{item.clientAge} jaar</p>
-                        </div>
-                        <div>
-                          <p>Regio</p>
-                          <p className="mt-1 text-sm font-medium text-foreground">{item.municipality}</p>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {item.tags.slice(0, 2).map((tag) => (
-                          <span key={tag} className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">{tag}</span>
-                        ))}
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between gap-3 border-t border-border pt-3">
-                        <div>
-                          <p className="text-xs text-muted-foreground">Fase</p>
-                          <p className="text-sm font-medium text-foreground">{item.phaseLabel}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Volgende stap</p>
-                          <p className="text-sm font-medium text-foreground">{workflowStepLabel(item.nextBestActionUrl)}</p>
-                        </div>
-                        <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={(event: React.MouseEvent<HTMLButtonElement>) => {
-                          event.stopPropagation();
-                          onCaseClick(item.id);
-                        }}>
-                          {shortcutLabel(item)}
-                          <ArrowRight size={14} />
-                        </Button>
-                      </div>
-                    </button>
-                  ))}
-
-                  {groupedCases[column.id].length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-border px-4 py-8 text-center">
-                      <p className="text-sm font-medium text-foreground">Geen casussen</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Deze kolom vult zich vanuit de vorige workflowstap.</p>
-                    </div>
-                  )}
-                </div>
-              </section>
-            ))}
-          </div>
+      {!loading && !error && workflowCases.length > 0 && filteredItems.length === 0 && (
+        <div className="rounded-2xl border bg-card p-12 text-center space-y-2">
+          {focusChip === "my-actions" && (
+            <>
+              <p className="text-lg font-semibold text-foreground">Geen open acties.</p>
+              <p className="text-sm text-muted-foreground">Alle casussen zijn momenteel in behandeling of wachten op een andere partij.</p>
+            </>
+          )}
+          {(focusChip === "waiting-provider" || activeAttention === "waiting-provider") && (
+            <>
+              <p className="text-lg font-semibold text-foreground">Geen casussen wachten op aanbiederbeoordeling.</p>
+              <p className="text-sm text-muted-foreground">Er staan momenteel geen casussen langer dan 3 dagen in aanbiederbeoordeling.</p>
+            </>
+          )}
+          {focusChip !== "my-actions" && focusChip !== "waiting-provider" && activeAttention !== "waiting-provider" && (
+            <>
+              <p className="text-lg font-semibold text-foreground">Geen casussen gevonden.</p>
+              <p className="text-sm text-muted-foreground">Pas filters aan of maak een nieuwe casus aan.</p>
+            </>
+          )}
         </div>
+      )}
+
+      {!loading && !error && filteredItems.length > 0 && (
+        <section className="space-y-4">
+          {filteredItems.map(({ item, decision }) => (
+            <ActionCaseDecisionCard
+              key={item.id}
+              item={item}
+              decision={decision}
+              role={role}
+              onOpen={onCaseClick}
+              onNavigate={handleNavigate}
+            />
+          ))}
+        </section>
       )}
     </div>
   );

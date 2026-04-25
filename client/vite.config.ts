@@ -16,9 +16,25 @@ function figmaAssetResolver() {
   }
 }
 
+function devFaviconFallback() {
+  return {
+    name: 'dev-favicon-fallback',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url === '/favicon.ico') {
+          res.statusCode = 204;
+          res.end();
+          return;
+        }
+        next();
+      });
+    },
+  };
+}
+
   export default defineConfig({
     base: '/static/spa/',
-    plugins: [react(), tailwindcss(), figmaAssetResolver()],
+    plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {
@@ -71,34 +87,44 @@ function figmaAssetResolver() {
       port: 3000,
       open: true,
       proxy: {
+        '/care/': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+        },
         '/static/css/': {
-          target: 'https://localhost:8000',
+          target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
         },
         '/static/js/': {
-          target: 'https://localhost:8000',
+          target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
         },
         '/logout/': {
-          target: 'https://localhost:8000',
+          target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'https://localhost:8000',
-            referer: 'https://localhost:8000/logout/',
+            origin: 'http://127.0.0.1:8000',
+            referer: 'http://127.0.0.1:8000/logout/',
           },
         },
         '/login/': {
-          target: 'https://localhost:8000',
+          target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'https://localhost:8000',
-            referer: 'https://localhost:8000/login/',
+            origin: 'http://127.0.0.1:8000',
+            referer: 'http://127.0.0.1:8000/login/',
           },
         },
       },
+    },
+    test: {
+      environment: 'jsdom',
+      setupFiles: './src/test/setup.ts',
+      globals: true,
     },
   });

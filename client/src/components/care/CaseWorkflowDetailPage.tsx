@@ -11,6 +11,15 @@ interface CaseWorkflowDetailPageProps {
   onOpenWorkflow: (page: "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "intake") => void;
 }
 
+const DETAIL_WORKFLOW_STEPS = [
+  { id: "casus", label: "Casus", owner: "Gemeente" },
+  { id: "samenvatting", label: "Samenvatting", owner: "Gemeente" },
+  { id: "matching", label: "Matching", owner: "Gemeente" },
+  { id: "aanbieder-beoordeling", label: "Aanbieder Beoordeling", owner: "Zorgaanbieder" },
+  { id: "plaatsing", label: "Plaatsing", owner: "Gemeente" },
+  { id: "intake", label: "Intake", owner: "Zorgaanbieder" },
+] as const;
+
 function urgencyClasses(urgency: "critical" | "warning" | "normal" | "stable") {
   switch (urgency) {
     case "critical":
@@ -27,17 +36,15 @@ function urgencyClasses(urgency: "critical" | "warning" | "normal" | "stable") {
 function primaryActionLabel(phase: string) {
   switch (phase) {
     case "intake":
-      return "Start matching";
-    case "beoordeling":
-      return "Start matching";
+      return "Naar matching";
     case "matching":
-      return "Start matching";
+      return "Naar matching";
+    case "provider_beoordeling":
+      return "Volg aanbieder beoordeling";
     case "plaatsing":
       return "Bevestig plaatsing";
-    case "provider_beoordeling":
-      return "Open plaatsing";
     default:
-      return "Bekijk intake";
+      return "Bekijk casus";
   }
 }
 
@@ -67,16 +74,22 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
   }
 
   const handlePrimaryAction = () => {
-    if (workflowCase.phase === "matching" || workflowCase.phase === "intake" || workflowCase.phase === "beoordeling") {
+    if (workflowCase.phase === "matching" || workflowCase.phase === "intake") {
       onStartMatching(workflowCase.id);
       return;
     }
-    if (workflowCase.phase === "plaatsing" || workflowCase.phase === "afgerond" || workflowCase.phase === "provider_beoordeling") {
+    if (workflowCase.phase === "provider_beoordeling") {
+      onOpenWorkflow("beoordelingen");
+      return;
+    }
+    if (workflowCase.phase === "plaatsing" || workflowCase.phase === "afgerond") {
       onOpenWorkflow("plaatsingen");
       return;
     }
     onOpenWorkflow("matching");
   };
+
+  const currentStepIndex = DETAIL_WORKFLOW_STEPS.findIndex((step) => step.id === workflowCase.boardColumn);
 
   return (
     <div className="space-y-6 pb-12">
@@ -102,6 +115,36 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
             </div>
           </div>
         </div>
+
+        <section className="rounded-2xl border bg-card p-5">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <h2 className="text-lg font-semibold text-foreground">Workflowpad</h2>
+            <p className="text-xs text-muted-foreground">Huidige eigenaar: {DETAIL_WORKFLOW_STEPS[currentStepIndex]?.owner ?? "Gemeente"}</p>
+          </div>
+          <div className="grid grid-cols-1 gap-2 lg:grid-cols-6">
+            {DETAIL_WORKFLOW_STEPS.map((step, index) => {
+              const isCurrent = index === currentStepIndex;
+              const isCompleted = currentStepIndex > index;
+              const isBlocked = isCurrent && Boolean(workflowCase.blockReason);
+
+              return (
+                <div
+                  key={step.id}
+                  className={`rounded-xl border px-3 py-2 text-xs ${
+                    isCurrent
+                      ? "border-primary/45 bg-primary/10 text-foreground"
+                      : isCompleted
+                        ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-100"
+                        : "border-border bg-background/40 text-muted-foreground"
+                  } ${isBlocked ? "border-red-500/40 bg-red-500/10 text-red-100" : ""}`}
+                >
+                  <p className="font-semibold">{step.label}</p>
+                  <p className="mt-1 opacity-80">{step.owner}</p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
 
         <div className="rounded-2xl border bg-card p-6">
           <div className="flex items-start justify-between gap-6">
@@ -168,7 +211,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
                   <span className="text-muted-foreground">Wachttijd</span>
                   <span className="font-medium text-foreground">{workflowCase.daysInCurrentPhase} dagen</span>
                 </div>
-                <p className="text-muted-foreground">De samenvatting stuurt door naar matching zodra de casus compleet is en de basisinformatie klopt.</p>
+                <p className="text-muted-foreground">De zorgaanbieder beoordeelt hier inhoudelijke fit, capaciteit en risico voordat plaatsing kan starten.</p>
               </div>
             </section>
 
@@ -176,7 +219,7 @@ export function CaseWorkflowDetailPage({ caseId, onBack, onStartMatching, onOpen
               <h3 className="text-lg font-semibold text-foreground mb-4">Matching</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Readiness</span>
+                  <span className="text-muted-foreground">Gereedheid</span>
                   <span className="font-medium text-foreground">{workflowCase.readyForMatching ? "Klaar" : "Nog niet klaar"}</span>
                 </div>
                 <div className="flex items-center justify-between">

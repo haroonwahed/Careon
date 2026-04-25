@@ -9,6 +9,7 @@ interface IntakeListPageProps {
   onCaseClick: (caseId: string) => void;
   view?: "requests" | "responses" | "intake";
   onRequestApproved?: (caseId: string) => void;
+  role?: "gemeente" | "zorgaanbieder" | "admin";
 }
 
 function matchesSearch(caseItem: SpaCase, query: string): boolean {
@@ -43,7 +44,7 @@ function requestBadge(view: IntakeListPageProps["view"]): { title: string; descr
   }
 }
 
-export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved }: IntakeListPageProps) {
+export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved, role = "zorgaanbieder" }: IntakeListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [submittingCaseId, setSubmittingCaseId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -199,7 +200,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                     <Button variant="outline" onClick={() => onCaseClick(caseItem.id)}>
                       Bekijk casus
                     </Button>
-                    {isPending && (
+                    {isPending && role === "zorgaanbieder" && (
                       <>
                         <Button
                           variant="outline"

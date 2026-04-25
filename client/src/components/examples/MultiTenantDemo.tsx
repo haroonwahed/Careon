@@ -14,6 +14,7 @@ import { Sidebar } from "../navigation/Sidebar";
 import { RegiekamerControlCenter } from "../care/RegiekamerControlCenter";
 import { RegiosPage } from "../care/RegiosPage";
 import { AssessmentQueuePage } from "../care/AssessmentQueuePage";
+import { AanbiederBeoordelingPage } from "../care/AanbiederBeoordelingPage";
 import { MatchingPageWrapper } from "../care/MatchingPageWrapper";
 import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
 import { IntakeListPage } from "../care/IntakeListPage";
@@ -132,7 +133,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   const workflowCases = buildWorkflowCases(cases, providers);
   const queueCounts = {
     casussen: workflowCases.filter((casus) => casus.phase !== "afgerond").length,
-    beoordelingen: workflowCases.filter((casus) => casus.phase === "intake" || casus.phase === "beoordeling").length,
+    beoordelingen: workflowCases.filter((casus) => casus.phase === "provider_beoordeling").length,
     matching: workflowCases.filter((casus) => casus.readyForMatching).length,
     plaatsingen: workflowCases.filter((casus) => casus.readyForPlacement).length,
     acties: workflowCases.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 10).length,
@@ -248,6 +249,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     onCaseClick={handleCaseClick}
                     onCreateCase={() => setCurrentPage("nieuwe-casus")}
                     canCreateCase
+                    role={currentContext.type}
+                    onNavigateToWorkflow={(page) => setCurrentPage(page)}
                   />
                 )}
 
@@ -259,11 +262,20 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "beoordelingen" && (
-                  <AssessmentQueuePage onCaseClick={handleCaseClick} onNavigateToCasussen={() => setCurrentPage("casussen")} />
+                  <AanbiederBeoordelingPage
+                    role="gemeente"
+                    onCaseClick={handleCaseClick}
+                    onNavigateToMatching={() => setCurrentPage("matching")}
+                    onNavigateToPlaatsingen={() => setCurrentPage("plaatsingen")}
+                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                  />
                 )}
 
                 {currentPage === "matching" && (
-                  <MatchingPageWrapper onNavigateToCasussen={() => setCurrentPage("casussen")} />
+                  <MatchingPageWrapper
+                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                    onNavigateToBeoordelingen={() => setCurrentPage("beoordelingen")}
+                  />
                 )}
 
                 {currentPage === "plaatsingen" && (
@@ -316,11 +328,24 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
             {currentContext.type === "zorgaanbieder" && (
               <>
                 {currentPage === "intake" && (
-                  <IntakeListPage onCaseClick={handleCaseClick} />
+                  <IntakeListPage onCaseClick={handleCaseClick} role={currentContext.type as "gemeente" | "zorgaanbieder" | "admin"} />
                 )}
 
                 {currentPage === "mijn-casussen" && (
-                  <CasussenWorkflowPage onCaseClick={handleCaseClick} />
+                  <CasussenWorkflowPage
+                    onCaseClick={handleCaseClick}
+                    role={currentContext.type}
+                    onNavigateToWorkflow={(page) => setCurrentPage(page)}
+                  />
+                )}
+
+                {currentPage === "beoordelingen" && (
+                  <AanbiederBeoordelingPage
+                    role="zorgaanbieder"
+                    onCaseClick={handleCaseClick}
+                    onNavigateToPlaatsingen={() => setCurrentPage("intake")}
+                    onNavigateToCasussen={() => setCurrentPage("mijn-casussen")}
+                  />
                 )}
 
                 {currentPage === "documenten" && (
@@ -385,7 +410,17 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {/* Other admin pages... */}
-                {(currentPage === "casussen" || currentPage === "beoordelingen" || currentPage === "matching" || currentPage === "plaatsingen" || currentPage === "acties" || currentPage === "signalen") && (
+                {currentPage === "beoordelingen" && (
+                  <AanbiederBeoordelingPage
+                    role="admin"
+                    onCaseClick={handleCaseClick}
+                    onNavigateToMatching={() => setCurrentPage("matching")}
+                    onNavigateToPlaatsingen={() => setCurrentPage("plaatsingen")}
+                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                  />
+                )}
+
+                {(currentPage === "casussen" || currentPage === "matching" || currentPage === "plaatsingen" || currentPage === "acties" || currentPage === "signalen") && (
                   <div className="space-y-6">
                     <div>
                       <h1 className="text-3xl font-bold text-foreground mb-2">
