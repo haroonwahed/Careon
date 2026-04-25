@@ -36,7 +36,7 @@ class RedesignComponentsTestCase(TestCase):
         response = self.client.get(reverse('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'CareOn')
-        self.assertContains(response, 'Regieplatform voor zorgorganisaties')
+        self.assertContains(response, 'Regieplatform voor gemeenten en zorgaanbieders')
         self.assertContains(response, 'public-shell')
 
     def test_case_list_alias_renders_configuration_components(self):

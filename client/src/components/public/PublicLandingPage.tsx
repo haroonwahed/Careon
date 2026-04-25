@@ -26,12 +26,12 @@ const featureCards = [
   },
   {
     icon: Users,
-    title: "Beoordeling door aanbieder",
-    copy: "Zorgaanbieders beslissen over fit, capaciteit en risico, met redencodes vastgelegd.",
+    title: "Aanbieder beoordeling",
+    copy: "Beoordeling door aanbieder op fit, capaciteit en risico, met redencodes vastgelegd.",
   },
   {
     icon: CheckCircle2,
-    title: "Plaatsing en Intake",
+    title: "Plaatsing en intake",
     copy: "Plaatsing en intake starten pas na acceptatie, zodat overdracht traceerbaar blijft.",
   },
 ];
@@ -56,7 +56,7 @@ export function PublicLandingPage({
             </div>
             <div>
               <div className="text-base font-semibold leading-tight">Careon</div>
-              <div className="text-sm text-muted-foreground">Zorgregieplatform</div>
+              <div className="text-sm text-muted-foreground">Regieplatform voor gemeenten en zorgaanbieders</div>
             </div>
           </a>
 
@@ -92,7 +92,7 @@ export function PublicLandingPage({
               onClick={onOpenDashboard}
               className="inline-flex h-11 items-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
             >
-              Open Regiekamer
+              Start direct
               <ArrowRight size={16} />
             </button>
           </div>
@@ -106,10 +106,9 @@ export function PublicLandingPage({
               <CircleAlert size={13} />
               Regieplatform voor gemeenten en zorgaanbieders
             </div>
-            <h1 className="max-w-xl text-5xl font-semibold tracking-tight lg:text-6xl">Careon</h1>
+            <h1 className="max-w-xl text-5xl font-semibold tracking-tight lg:text-6xl">Van casus tot intake in één regieomgeving</h1>
             <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground lg:text-xl">
-              Het publieke startpunt voor zorgregie. Van Casus tot Intake met een duidelijke volgende beste actie,
-              verklaarbare matching en een strak pad naar beoordeling door aanbieder.
+              Beheer casussen, samenvatting, matching, beoordeling door aanbieder, plaatsing en intake vanuit één centrale omgeving met één duidelijke volgende stap.
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
@@ -118,7 +117,7 @@ export function PublicLandingPage({
                 onClick={onOpenDashboard}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
               >
-                Open Regiekamer
+                Start direct
                 <ArrowRight size={16} />
               </button>
               <a
@@ -131,9 +130,9 @@ export function PublicLandingPage({
 
             <div className="mt-10 grid gap-3 sm:grid-cols-3">
               {[
-                ["Casus", "Dossierbron en intake"],
+                ["Casus", "Bron van waarheid"],
                 ["Samenvatting", "Kern, urgentie, hiaten"],
-                ["Matching", "Explainable voorstellen"],
+                ["Matching", "Verklaarbare voorstellen"],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-border bg-muted/40 p-4">
                   <div className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</div>
@@ -155,9 +154,9 @@ export function PublicLandingPage({
                     { step: "1", title: "Casus", copy: "Minimale intake en bron van waarheid." },
                     { step: "2", title: "Samenvatting", copy: "Context, urgentie en hiaten zichtbaar." },
                     { step: "3", title: "Matching", copy: "Verklaarbare aanbevelingen per aanbieder." },
-                    { step: "4", title: "Beoordeling door aanbieder", copy: "Fit, capaciteit en risico worden bevestigd." },
-                    { step: "5", title: "Plaatsing", copy: "Pas na acceptatie en bevestigde handoff." },
-                    { step: "6", title: "Intake", copy: "Start van de zorgtraject na plaatsing." },
+                    { step: "4", title: "Aanbieder beoordeling", copy: "Beoordeling door aanbieder op fit, capaciteit en risico." },
+                    { step: "5", title: "Plaatsing", copy: "Pas na acceptatie en bevestigde overdracht." },
+                    { step: "6", title: "Intake", copy: "Start van het zorgtraject na plaatsing." },
                   ].map((item) => (
                     <div key={item.step} className="flex items-start gap-3 rounded-2xl border border-border bg-card p-4">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
@@ -215,10 +214,10 @@ export function PublicLandingPage({
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Module-overzicht</p>
             <div className="mt-4 space-y-3">
               {[
-                { title: "Casussen", copy: "Eerste intake en dossierbron." },
-                { title: "Matching", copy: "Explainable aanbevelingen per aanbieder." },
-                { title: "Beoordeling door aanbieder", copy: "Acceptatie, afwijzing en redencodes." },
-                { title: "Plaatsing & Intake", copy: "Pas na acceptatie en handover." },
+                { title: "Casussen", copy: "Eerste intake en bron van waarheid." },
+                { title: "Matching", copy: "Verklaarbare aanbevelingen per aanbieder." },
+                { title: "Aanbieder beoordeling", copy: "Acceptatie / afwijzing en redencodes." },
+                { title: "Plaatsing & intake", copy: "Pas na acceptatie en bevestigde overdracht." },
               ].map((item) => (
                 <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-border bg-muted/30 p-4">
                   <div className="mt-0.5 rounded-full bg-primary/10 p-2 text-primary">
@@ -235,7 +234,7 @@ export function PublicLandingPage({
 
           <div id="trust" className="rounded-[26px] border border-border bg-card p-6 shadow-sm">
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Vertrouwen</p>
-            <h2 className="mt-3 text-2xl font-semibold">Zorgregie met controle op elk stapje</h2>
+            <h2 className="mt-3 text-2xl font-semibold">Zorgregie met controle op elke stap</h2>
             <p className="mt-2 text-sm text-muted-foreground">
               Alle kernacties zijn traceerbaar vanaf de casus. De publieke ervaring blijft rustig; de werkstroom
               verschijnt pas wanneer je de Regiekamer opent.
