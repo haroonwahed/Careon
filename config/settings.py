@@ -260,9 +260,10 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [
-    BASE_DIR / 'theme' / 'static',
-]
+# `theme` is an installed app, so its `static/` directory is already
+# discovered by Django's AppDirectoriesFinder. Keeping it in STATICFILES_DIRS
+# would duplicate every file during collectstatic.
+STATICFILES_DIRS = []
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
