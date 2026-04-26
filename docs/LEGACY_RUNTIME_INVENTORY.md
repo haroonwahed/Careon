@@ -2,7 +2,7 @@
 
 Purpose: make the boundary between active Careon runtime code, compatibility shims, and archive candidates explicit.
 
-This repository does **not** contain a separate CMS/CLM application. The only explicit CMS/CLM mention found in the runtime-facing tree is the terminology guard in `scripts/terminology_guard.py`, which blocks those words from user-facing text.
+This repository does **not** contain a separate external contract-management application. The only explicit legacy-language mention found in the runtime-facing tree is the terminology guard in `scripts/terminology_guard.py`, which blocks those words from user-facing text.
 
 ## Active runtime
 
@@ -12,7 +12,7 @@ These files are part of the Careon product runtime today:
 - `contracts/views.py`
 - `contracts/api/views.py`
 
-The matching engine itself is canonical Careon logic. It is not CMS/CLM code.
+The matching engine itself is canonical Careon logic. It is not legacy-contract-management code.
 
 ## Compatibility shim
 
@@ -51,7 +51,7 @@ These documents describe the migration and isolation rules around the legacy bou
 ## What the inventory is *not*
 
 - It is not a product backlog.
-- It is not a CMS/CLM cleanup plan.
+- It is not a legacy product cleanup plan.
 - It is not a request to rename or delete active runtime code today.
 
 ## Practical rule
