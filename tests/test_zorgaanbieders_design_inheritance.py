@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 
 from contracts.models import Client, Organization, ProviderProfile, RegionalConfiguration
 from contracts.provider_workspace import build_provider_workspace_summary, build_provider_workspace_rows
+from contracts.views import _provider_profile_match_surface
 
 
 User = get_user_model()
@@ -229,6 +230,15 @@ class ZorgaanbiedersDesignInheritanceTests(TestCase):
         self.assertIn('pressure_capacity_count', summary)
         self.assertIn('high_wait_count', summary)
         self.assertIn('regional_capacity_summary', summary)
+
+    def test_client_detail_view_exposes_match_surface_and_edit_action(self):
+        """Provider profile surface helper should expose the matching fields used by the detail page."""
+        surface = _provider_profile_match_surface(self.provider1.provider_profile)
+
+        self.assertEqual(surface['age_summary'], 'Leeftijd nog niet ingericht')
+        self.assertEqual(surface['care_form_summary'], 'Zorgvormen nog niet ingesteld')
+        self.assertEqual(surface['gender_summary'], 'Geen geslachtsbeperking opgegeven')
+        self.assertEqual(surface['specialization_summary'], 'Specialisaties nog niet ingesteld')
 
     def test_filtering_preserves_design_context(self):
         """Filters should work without breaking design context."""

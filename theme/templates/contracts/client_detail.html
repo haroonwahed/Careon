@@ -35,6 +35,7 @@
                 {% else %}
                 <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-secondary">Wijs toe</a>
                 {% endif %}
+                <a href="{% url 'careon:client_update' client.pk %}" class="btn btn-ghost">Bewerk profiel</a>
 
                 {% if client.email %}
                 <a href="mailto:{{ client.email }}" class="btn btn-ghost">Neem contact op</a>
@@ -94,6 +95,32 @@
                     <li>Vul het aanbiedersprofiel aan voor betere fit-inschatting.</li>
                     {% endfor %}
                 </ul>
+            </section>
+
+            <section class="ds-card">
+                <h2 class="ds-card-title">Matchingsignalen</h2>
+                <dl class="ds-field-list">
+                    <div class="ds-field-item">
+                        <dt>Leeftijd</dt>
+                        <dd>{{ provider_match_surface.age_summary }}</dd>
+                    </div>
+                    <div class="ds-field-item">
+                        <dt>Zorgvormen</dt>
+                        <dd>{{ provider_match_surface.care_form_summary }}</dd>
+                    </div>
+                    <div class="ds-field-item">
+                        <dt>Geslacht</dt>
+                        <dd>{{ provider_match_surface.gender_summary }}</dd>
+                    </div>
+                    <div class="ds-field-item">
+                        <dt>Specialisaties</dt>
+                        <dd>{{ provider_match_surface.specialization_summary }}</dd>
+                    </div>
+                    <div class="ds-field-item">
+                        <dt>Contra-indicaties</dt>
+                        <dd>{{ provider_match_surface.contra_summary }}</dd>
+                    </div>
+                </dl>
             </section>
 
             <section class="ds-card">

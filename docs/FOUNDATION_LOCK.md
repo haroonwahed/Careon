@@ -184,3 +184,19 @@ It must render backend decision evaluation directly and show:
 - Blocked action reasons come from `evaluate_case`.
 - The frontend may call mutation endpoints, but it must refetch decision evaluation after every successful action.
 - The frontend may not infer workflow transitions from local status checks on this page.
+
+## Deferred By Design
+
+Some capabilities are intentionally not productized yet. Treat them as explicit non-goals for the current live flow.
+
+### AI-based anonymization
+
+- Do not introduce a dedicated AI anonymization route, action, or UX surface unless there is a concrete product requirement and an approved implementation plan.
+- Deterministic display masking or truncation helpers may exist for safe rendering, but those are not a user-facing anonymization workflow.
+- If AI anonymization is ever added, define the route, permission, audit trail, and test coverage first.
+
+### Uitstroom
+
+- Do not create a separate first-class uitstroom model or surface unless discharge becomes a distinct product requirement.
+- Use the existing placement, intake, completion, and archive states as the current outcome layer.
+- Any future uitstroom product surface must be designed deliberately, not inferred from existing workflow shortcuts.

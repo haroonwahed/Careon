@@ -590,7 +590,7 @@ class Command(BaseCommand):
 				'age': 17,
 				'age_category': CaseIntakeProcess.AgeCategory.ADOLESCENT,
 				'family_situation': CaseIntakeProcess.FamilySituation.INSTITUTION,
-				'problematiek': ['woonvoorziening', 'trauma', 'uitstroom'],
+				'problematiek': ['woonvoorziening', 'trauma', 'nazorgafronding'],
 				'summary': 'Aanbieder heeft geaccepteerd, maar de intake-overdracht is nog niet gestart ondanks bevestigde plaatsing.',
 				'description': 'De casus wacht op de eerste intakeafspraak terwijl de plaatsing al is bevestigd.',
 				'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,

@@ -81,6 +81,22 @@
                 {% endfor %}
             </select>
         </div>
+        <div>
+            <label for="provider-care-form" class="ds-list-filter-label">Zorgvorm</label>
+            <select id="provider-care-form" name="care_form" onchange="this.form.submit()">
+                {% for value, label in care_form_choices %}
+                <option value="{{ value }}" {% if selected_care_form == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="provider-age-band" class="ds-list-filter-label">Leeftijdsgroep</label>
+            <select id="provider-age-band" name="age_band" onchange="this.form.submit()">
+                {% for value, label in age_band_choices %}
+                <option value="{{ value }}" {% if selected_age_band == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
         {% if selected_client_type %}
         <input type="hidden" name="type" value="{{ selected_client_type }}">
         {% endif %}

@@ -16,6 +16,12 @@ Date: 2026-04-25
 | `client/src/components/care/CasusControlCenter.tsx` | `UNKNOWN` until it is wired or explicitly archived |
 | `client/src/components/provider/ProviderIntakeDashboard.tsx` | `DEMO_ONLY` and intentionally quarantined; not linked from the live route map |
 
+### Deferred by design
+
+- `AI-based anonymization` is not an active surface. Deterministic masking/truncation helpers may exist, but there is no dedicated user-facing anonymization workflow.
+- `Uitstroom` is not an active surface. Outcome handling stays in the existing placement, intake, completion, and archive flow until it becomes a first-class product decision.
+- Any future surface for either item must be added deliberately with its own route, permission, audit, and tests.
+
 ### Public and platform routes
 
 - `/` - public landing page

@@ -33,6 +33,54 @@
     </div>
   </header>
 
+  {% if focus_row %}
+  <form method="get" class="mrd-filter-bar ds-card">
+    <input type="hidden" name="intake" value="{% if selected_intake %}{{ selected_intake.pk }}{% else %}{{ focus_row.intake.pk }}{% endif %}">
+    <div class="mrd-filter-bar__field">
+      <label for="provider_q" class="ds-list-filter-label">Zoek aanbieder</label>
+      <input id="provider_q" type="search" name="provider_q" value="{{ selected_provider_q }}" placeholder="Naam, specialisatie of regio">
+    </div>
+    <div class="mrd-filter-bar__field">
+      <label for="provider-care-form" class="ds-list-filter-label">Zorgvorm</label>
+      <select id="provider-care-form" name="provider_care_form" onchange="this.form.submit()">
+        {% for value, label in provider_care_form_choices %}
+        <option value="{{ value }}" {% if selected_provider_care_form == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mrd-filter-bar__field">
+      <label for="provider-age-band" class="ds-list-filter-label">Leeftijdsgroep</label>
+      <select id="provider-age-band" name="provider_age_band" onchange="this.form.submit()">
+        {% for value, label in provider_age_band_choices %}
+        <option value="{{ value }}" {% if selected_provider_age_band == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mrd-filter-bar__field">
+      <label for="provider-region-fit" class="ds-list-filter-label">Regio-fit</label>
+      <select id="provider-region-fit" name="provider_region_fit" onchange="this.form.submit()">
+        {% for value, label in provider_region_fit_choices %}
+        <option value="{{ value }}" {% if selected_provider_region_fit == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mrd-filter-bar__field">
+      <label for="provider-capacity" class="ds-list-filter-label">Capaciteit</label>
+      <select id="provider-capacity" name="provider_capacity" onchange="this.form.submit()">
+        {% for value, label in provider_capacity_choices %}
+        <option value="{{ value }}" {% if selected_provider_capacity == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="mrd-filter-bar__actions">
+      <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+      {% if has_provider_filters %}
+      <a href="{% url 'careon:matching_dashboard' %}?intake={% if selected_intake %}{{ selected_intake.pk }}{% else %}{{ focus_row.intake.pk }}{% endif %}" class="btn btn-ghost btn-sm">Filters wissen</a>
+      {% endif %}
+    </div>
+  </form>
+  {% endif %}
+
   {% if matching_operational_strip %}
   <div class="mrd-alert-bar {% if matching_operational_strip.severity == 'critical' %}mrd-alert-bar--critical{% else %}mrd-alert-bar--warning{% endif %}" role="alert">
     <svg class="mrd-alert-bar__icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" clip-rule="evenodd"/></svg>
@@ -73,6 +121,11 @@
             <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}% Matchscore</span>
           </div>
           <p class="mrd-card-status">Matchstatus: {{ suggestion.matching_status }}</p>
+          <div class="mrd-card-profile">
+            <p class="mrd-card-profile__label">Profielsignalering</p>
+            <p class="mrd-card-profile__text">Leeftijd: {{ suggestion.age_summary }} · Zorgvorm: {{ suggestion.care_form_summary }}</p>
+            <p class="mrd-card-profile__text">Regio: {{ suggestion.region_context }} · Geslacht: {{ suggestion.gender_summary }}</p>
+          </div>
           <div class="mrd-card-reason">
             <p class="mrd-card-reason__label">Waarom matching faalt</p>
             <p class="mrd-card-reason__text">{% firstof focus_row.primary_signal.label suggestion.failure_reason focus_row.failure_reason %}</p>
@@ -104,6 +157,7 @@
             {% endif %}
             {% if suggestion.provider_id %}
             <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="mrd-inline-link">Bekijk profiel</a>
+            <a href="{% url 'careon:client_update' suggestion.provider_id %}" class="mrd-inline-link">Bewerk profiel</a>
             {% endif %}
           </div>
         </article>
@@ -140,6 +194,24 @@
           <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost btn-sm">Open casus</a>
         </div>
       </section>
+
+      {% if focus_row.suggestions %}
+      <section class="mrd-panel-card ds-card">
+        <h3 class="mrd-panel-card__title">Providerprofiel</h3>
+        <dl class="mrd-field-list">
+          <div class="mrd-field-row"><dt>Leeftijd</dt><dd>{{ focus_row.suggestions.0.age_summary }}</dd></div>
+          <div class="mrd-field-row"><dt>Zorgvormen</dt><dd>{{ focus_row.suggestions.0.care_form_summary }}</dd></div>
+          <div class="mrd-field-row"><dt>Geslacht</dt><dd>{{ focus_row.suggestions.0.gender_summary }}</dd></div>
+          <div class="mrd-field-row"><dt>Specialisaties</dt><dd>{{ focus_row.suggestions.0.specialization_summary }}</dd></div>
+        </dl>
+        {% if focus_row.suggestions.0.provider_id %}
+        <div class="mrd-side-rail__actions">
+          <a href="{% url 'careon:client_detail' focus_row.suggestions.0.provider_id %}" class="btn btn-ghost btn-sm">Bekijk profiel</a>
+          <a href="{% url 'careon:client_update' focus_row.suggestions.0.provider_id %}" class="btn btn-ghost btn-sm">Bewerk profiel</a>
+        </div>
+        {% endif %}
+      </section>
+      {% endif %}
 
       <section class="mrd-panel-card mrd-map-card ds-card ds-sidebar-card matching-map-panel js-matching-map">
         {{ focus_row.matching_map|json_script:"matching-map-data" }}

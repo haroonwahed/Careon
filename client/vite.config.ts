@@ -32,8 +32,8 @@ function devFaviconFallback() {
   };
 }
 
-  export default defineConfig({
-    base: '/static/spa/',
+  export default defineConfig(({ command }) => ({
+    base: command === 'serve' ? '/' : '/static/spa/',
     plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
@@ -127,4 +127,4 @@ function devFaviconFallback() {
       setupFiles: './src/test/setup.ts',
       globals: true,
     },
-  });
+  }));

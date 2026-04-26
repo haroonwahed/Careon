@@ -165,7 +165,10 @@ class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
                 max_capacity=5,
                 average_wait_days=6,
                 waiting_list_length=1,
+                offers_crisis=True,
             )
+            profile.target_age_12_18 = True
+            profile.save(update_fields=["target_age_12_18"])
             profile.served_regions.set([self.region])
 
         response_page1 = self.client.get(
@@ -175,6 +178,8 @@ class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
                 "status": "ACTIVE",
                 "region_type": self.region.region_type,
                 "region": str(self.region.pk),
+                "care_form": "CRISIS",
+                "age_band": "12_18",
             },
         )
         response_page2 = self.client.get(
@@ -184,6 +189,8 @@ class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
                 "status": "ACTIVE",
                 "region_type": self.region.region_type,
                 "region": str(self.region.pk),
+                "care_form": "CRISIS",
+                "age_band": "12_18",
                 "page": "2",
             },
         )
@@ -192,14 +199,37 @@ class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
         self.assertEqual(response_page2.status_code, 200)
         self.assertEqual(
             response_page1.context["pagination_query"],
-            f"q=Filter+Provider&status=ACTIVE&region_type={self.region.region_type}&region={self.region.pk}",
+            f"q=Filter+Provider&status=ACTIVE&region_type={self.region.region_type}&region={self.region.pk}&care_form=CRISIS&age_band=12_18",
         )
         self.assertEqual(response_page1.context["search_query"], "Filter Provider")
         self.assertEqual(response_page1.context["selected_status"], "ACTIVE")
         self.assertEqual(response_page1.context["selected_region_type"], self.region.region_type)
         self.assertEqual(response_page1.context["selected_region"], str(self.region.pk))
+        self.assertEqual(response_page1.context["selected_care_form"], "CRISIS")
+        self.assertEqual(response_page1.context["selected_age_band"], "12_18")
         self.assertContains(
             response_page1,
-            f'?q=Filter+Provider&amp;status=ACTIVE&amp;region_type={self.region.region_type}&amp;region={self.region.pk}&amp;page=2',
+            f'?q=Filter+Provider&amp;status=ACTIVE&amp;region_type={self.region.region_type}&amp;region={self.region.pk}&amp;care_form=CRISIS&amp;age_band=12_18&amp;page=2',
             html=False,
         )
+
+    def test_client_detail_view_populates_edit_action_and_match_signals(self):
+        provider = self._create_provider("Signal Provider")
+        profile = self._create_profile(
+            provider,
+            current_capacity=2,
+            max_capacity=6,
+            average_wait_days=8,
+            waiting_list_length=2,
+            offers_outpatient=True,
+            offers_crisis=False,
+        )
+        profile.target_age_12_18 = True
+        profile.save(update_fields=["target_age_12_18"])
+
+        response = self.client.get(reverse("careon:client_detail", kwargs={"pk": provider.pk}))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, f'href="/care/clients/{provider.pk}/edit/"', html=False)
+        self.assertContains(response, "Matchingsignalen")
+        self.assertContains(response, "Zorgvormen")

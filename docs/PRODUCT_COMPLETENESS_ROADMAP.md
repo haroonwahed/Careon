@@ -148,3 +148,154 @@ This phase is done when:
 - the live workflow follows the canonical product language
 - the remaining references are either internal contract names or explicitly historical
 - the targeted tests and client build pass
+
+## Pilot Backlog
+
+This is the concrete follow-on backlog after the canonical workflow and the first live walkthrough are already working. The ordering is intentional: pilot value first, then UX clarity, then longer-term platform work.
+
+## Implementation Checklist
+
+### Task 1: Protect the pilot workflow
+
+Owner:
+- Backend shell and tenancy
+
+Files:
+- `contracts/middleware.py`
+- `contracts/tenancy.py`
+- `contracts/views.py`
+- `contracts/api/views.py`
+- `tests/test_spa_shell_middleware.py`
+- `tests/test_organization_middleware.py`
+- `tests/test_public_auth_flow.py`
+
+Exact first task:
+- Verify that authenticated requests to `/dashboard/`, `/care/casussen/`, `/care/matching/`, `/care/beoordelingen/`, `/care/plaatsingen/`, and `/care/signalen/` return a usable 200 response on the live Render service after login.
+
+Acceptance:
+- No authenticated shell route 500s.
+- The canonical walkthrough stays on the product surface instead of falling back to an error page.
+- Archived cases remain hidden from active views.
+
+Verification:
+- Verified on 2026-04-26 against the live Render service after login:
+  - `/dashboard/`
+  - `/care/casussen/`
+  - `/care/matching/`
+  - `/care/beoordelingen/`
+  - `/care/plaatsingen/`
+  - `/care/signalen/`
+  - All returned 200 responses.
+
+### Task 2: Tighten live filters and provider profile surfaces
+
+Owner:
+- Workflow and matching backend
+
+Files:
+- `contracts/views.py`
+- `contracts/forms.py`
+- `contracts/models.py`
+- `contracts/provider_matching_service.py`
+- `client/src/components/care/*.tsx`
+- `theme/templates/contracts/*.html`
+
+Acceptance:
+- Any explicit filters we expose are backed by real data fields.
+- Provider profile edits remain consistent with matching inputs.
+- Contra-indications are shown in a usable, operational way.
+
+Verification:
+- Completed against the live provider workspace and matching surfaces:
+  - `client_list` now filters on real provider fields for `care_form` and `age_band`
+  - `matching_dashboard` now exposes live provider filters for care form, age band, region-fit, and capacity
+  - provider profile surfaces now show matching inputs and clear edit actions
+  - targeted regression suites passed
+
+### Task 3: Defer AI and uitstroom work
+
+Owner:
+- Product architecture
+
+Files:
+- `contracts/models.py`
+- `contracts/views.py`
+- `contracts/provider_matching_service.py`
+- `client/src/components/care/*.tsx`
+
+Acceptance:
+- AI anonymization remains deferred by design and does not get a dedicated route, action, or UX surface unless the product explicitly requires it.
+- Deterministic masking or truncation helpers may exist, but they are not treated as an AI anonymization workflow.
+- A separate uitstroom model or surface is not created unless discharge becomes a first-class product surface.
+- Any future AI or uitstroom surface must define its route, permission, audit trail, and tests before launch.
+
+### 1. Must-have for pilot
+
+Goal:
+- Keep the operational care flow executable end to end.
+
+Tasks:
+- Confirm case creation and case opening stay on the canonical path.
+- Keep missing summary states visible until the summary is ready.
+- Keep matching, provider review, placement, and intake gated in the correct order.
+- Keep provider rejection, weak-match flagging, and rematch visible in the live flow.
+- Keep archived cases out of active lists and Regiekamer surfaces.
+- Keep document upload available on the case.
+- Keep provider capacity and wait-time data available for matching decisions.
+- Keep Regiekamer focused on blockers, weak matches, SLA delays, and next-best-action.
+
+Files likely touched:
+- `contracts/views.py`
+- `contracts/api/views.py`
+- `contracts/models.py`
+- `contracts/middleware.py`
+- `theme/templates/contracts/*.html`
+- `tests/test_intake_assessment_matching_flow.py`
+- `tests/test_regiekamer_decision_overview.py`
+
+### 2. Nice-to-have
+
+Goal:
+- Make the matching and intake experience more explicit without changing the underlying workflow authority.
+
+Tasks:
+- Add an explicit filter surface for leeftijd, diagnoses, afstand, and geslacht where the data supports it.
+- Make contra-indications easier to inspect in the active UI.
+- Give provider profile management a clearer operational home.
+- Add a clearer zorgvrager surface if the product needs one separate from municipality/case ownership.
+- Improve the instroom/wachtlijst view so available capacity is easier to read.
+
+Files likely touched:
+- `contracts/views.py`
+- `contracts/forms.py`
+- `contracts/models.py`
+- `contracts/provider_matching_service.py`
+- `client/src/components/care/*.tsx`
+- `theme/templates/contracts/*.html`
+
+### 3. Later / not needed for go-live
+
+Goal:
+- Keep future platform ideas clearly separated from the pilot scope.
+
+Tasks:
+- Add AI anonymization only if there is a real product requirement and a safe implementation plan.
+- Create a dedicated uitstroom model only if discharge becomes a first-class product surface.
+- Expand BI/reporting only if it serves an operational decision and not a passive dashboard.
+- Rework the provider domain model only if a real usage gap appears in matching or intake.
+
+Files likely touched:
+- `contracts/models.py`
+- `contracts/views.py`
+- `contracts/provider_matching_service.py`
+- `client/src/components/care/*.tsx`
+
+## Recommended Execution Order
+
+If we start implementation from this backlog, do it in this order:
+
+1. Protect the pilot workflow.
+2. Tighten the live filters and provider profile surfaces.
+3. Defer AI anonymization and uitstroom modeling until there is a concrete request for them.
+
+This keeps the product operational rather than turning it into a reporting or experimentation layer.

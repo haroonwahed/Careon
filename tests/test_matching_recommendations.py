@@ -33,7 +33,7 @@ class MatchingRecommendationsTests(TestCase):
             is_active=True,
         )
         self.client.login(username='match_user', password='testpass123')
-        os.environ['FEATURE_REDESIGN'] = 'true'
+        os.environ['FEATURE_REDESIGN'] = 'false'
 
     def tearDown(self):
         if 'FEATURE_REDESIGN' in os.environ:
@@ -136,6 +136,71 @@ class MatchingRecommendationsTests(TestCase):
         self.assertContains(response, 'ROAZ Noord')
         matching_map = response.context['rows'][0]['matching_map']
         self.assertEqual(matching_map['provider_markers'][0]['geo_fit_score'], 100)
+
+    def test_matching_panel_filters_candidate_profiles_by_live_fields(self):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Intake Live Filter Test',
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.RESIDENTIAL,
+            preferred_region_type='ROAZ',
+            start_date='2026-04-10',
+            target_completion_date='2026-04-20',
+            case_coordinator=self.user,
+        )
+        CaseAssessment.objects.create(
+            intake=intake,
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+            assessed_by=self.user,
+        )
+
+        matching_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Passende Residentiële Aanbieder',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.user,
+        )
+        ProviderProfile.objects.create(
+            client=matching_provider,
+            offers_residential=True,
+            handles_medium_urgency=True,
+            target_age_12_18=True,
+            current_capacity=1,
+            max_capacity=4,
+            average_wait_days=10,
+        )
+
+        other_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Niet Passende Aanbieder',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.user,
+        )
+        ProviderProfile.objects.create(
+            client=other_provider,
+            offers_outpatient=True,
+            handles_medium_urgency=True,
+            target_age_4_12=True,
+            current_capacity=1,
+            max_capacity=4,
+            average_wait_days=10,
+        )
+
+        response = self.client.get(
+            reverse('careon:matching_dashboard'),
+            {
+                'intake': intake.pk,
+                'provider_age_band': '12_18',
+                'provider_care_form': 'RESIDENTIAL',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Filters wissen')
+        self.assertEqual(len(response.context['rows'][0]['suggestions']), 1)
+        self.assertEqual(response.context['rows'][0]['suggestions'][0]['provider_name'], 'Passende Residentiële Aanbieder')
 
     def test_matching_panel_exposes_map_contract_and_empty_geo_state(self):
         provider = CareProvider.objects.create(
