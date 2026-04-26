@@ -101,6 +101,11 @@
             </div>
             <div class="ds-detail-grid-2 form-grid-2">
                 <div>
+                    <label for="{{ form.complexity.id_for_label }}" class="ds-detail-label field-label">{{ form.complexity.label }} {% if form.complexity.field.required %}*{% endif %}</label>
+                    {{ form.complexity }}
+                    {% if form.complexity.errors %}<div class="form-field-error">{{ form.complexity.errors.0 }}</div>{% endif %}
+                </div>
+                <div>
                     <label for="{{ form.urgency.id_for_label }}" class="ds-detail-label field-label">{{ form.urgency.label }} {% if form.urgency.field.required %}*{% endif %}</label>
                     {{ form.urgency }}
                     {% if form.urgency.errors %}<div class="form-field-error">{{ form.urgency.errors.0 }}</div>{% endif %}

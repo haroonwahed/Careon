@@ -230,6 +230,7 @@ class UIButtonAndFlowIntegrityTests(TestCase):
             response,
             'Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling door aanbieder en matching.',
         )
+        self.assertContains(response, 'Complexiteit')
         self.assertContains(response, 'Velden met <strong>*</strong> zijn verplicht.')
 
         # Legacy version should not reappear.
