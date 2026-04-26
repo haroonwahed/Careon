@@ -1,11 +1,12 @@
 # Legacy Backend Archive
 
-Purpose: isolate historical provider matching services that were moved out of main backend modules.
+Purpose: isolate historical provider matching/filtering services that were moved out of main backend modules.
 
 ## Archived Files
 
 | File | Category | Why Archived | Reusable Ideas | Deletion Candidate |
 | --- | --- | --- | --- | --- |
+| provider_filter_service.py | Backend legacy service | Consolidation and containment of older provider filtering API surface | Medium (filter vocabulary and canonical query patterns) | Maybe, after active replacement is verified |
 | provider_matching_service.py | Uncertain business logic | Historical deterministic matching engine with explainability fields and hard exclusions | High (eligibility gates, explainability, trade-off output) | No, currently blocked by active dependency |
 
 ## Runtime Status

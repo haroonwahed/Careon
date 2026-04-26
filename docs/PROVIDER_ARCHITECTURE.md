@@ -320,25 +320,30 @@ for r in results:
 
 ---
 
-## 8. Provider Search Support
+## 8. Filter Service
 
-Provider filtering is now handled in the active provider workspace and matching surfaces through canonical backend views and matching logic.
+`contracts/legacy_backend/provider_filter_service.py` provides two entry points for UI/API:
 
-The filters exposed to users remain explainable and care-domain driven:
+```python
+from contracts.legacy_backend.provider_filter_service import filter_zorgprofielen, filter_zorgaanbieders
 
-- naam
-- regio
-- gemeente
-- zorgvorm
-- leeftijdsrange
-- problematiek
-- specialisatie
-- contract actief
-- directe beschikbaarheid
-- wachttijd
-- crisis mogelijk
+# Profile search
+qs = filter_zorgprofielen(filters={
+    "zorgvorm": "ambulant",
+    "leeftijd_van": 10,
+    "regio": "NL-UT",
+    "autisme_geschikt": True,
+    "contract_actief": True,
+}, organization_id=org.id)
 
-Both the matching and provider workspace views still return Django querysets or serialized results, with pagination, permissions, and presentation handled by the caller.
+# Provider search
+qs = filter_zorgaanbieders(filters={
+    "naam": "Pluryn",
+    "gemeente": "Utrecht",
+})
+```
+
+Both functions return Django querysets. Pagination, serialization, and permissions are caller responsibility.
 
 ---
 

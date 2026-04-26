@@ -28,14 +28,15 @@ Status:
 
 ## Legacy-located archive candidate
 
-This legacy surface has been removed:
+This file is still present, but it is not treated as the primary active provider-filter surface:
 
-- `contracts/legacy_backend/provider_filter_service.py` removed
+- `contracts/legacy_backend/provider_filter_service.py`
 
 Status:
 
-- deleted from the repo
-- provider-filter vocabulary now documented on the active provider workspace and matching surfaces
+- legacy-located
+- compatibility/supporting role only
+- deletion candidate after any remaining caller is migrated to the canonical path
 
 ## Historical docs and conventions
 

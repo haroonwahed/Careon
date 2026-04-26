@@ -94,7 +94,7 @@ Score categories:
 
 ## 7. Provider Filtering Support
 
-Provider filtering now lives in the active provider workspace and matching surfaces. The supported filter vocabulary remains canonical and care-domain driven:
+`contracts/legacy_backend/provider_filter_service.py` supports canonical-only filtering on:
 
 - naam
 - regio
