@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 
+from contracts.models import Organization, OrganizationMembership
+
 
 class PublicAuthFlowTests(TestCase):
     def setUp(self):
@@ -87,3 +89,38 @@ class PublicAuthFlowTests(TestCase):
         landing_response = self.client.get(reverse('index'))
         self.assertEqual(landing_response.status_code, 200)
         self.assertContains(landing_response, 'public-shell')
+
+    def test_register_bootstraps_a_tenant(self):
+        register_page = self.client.get(reverse('register'))
+        csrf = self._extract_csrf(register_page)
+
+        username = 'signup-flow-user'
+        email = 'signup-flow-user@example.com'
+        password = 'testpass123'
+
+        response = self.client.post(
+            reverse('register'),
+            {
+                'csrfmiddlewaretoken': csrf,
+                'username': username,
+                'email': email,
+                'password1': password,
+                'password2': password,
+            },
+            follow=False,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], reverse('login'))
+
+        user = User.objects.get(username=username)
+        org_name = f"{user.get_full_name().strip() or user.username}'s Regie"
+        organization = Organization.objects.get(name=org_name)
+        self.assertTrue(
+            OrganizationMembership.objects.filter(
+                organization=organization,
+                user=user,
+                role=OrganizationMembership.Role.OWNER,
+                is_active=True,
+            ).exists()
+        )

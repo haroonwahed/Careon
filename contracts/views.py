@@ -87,7 +87,7 @@ from .navigation import SPA_DASHBOARD_URL
 from .provider_matching_service import MatchContext, MatchEngine
 from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
-from .tenancy import get_user_organization, scope_queryset_for_organization, set_organization_on_instance
+from .tenancy import ensure_user_organization, get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from .workflow_state_machine import (
     WorkflowAction,
     WorkflowRole,
@@ -119,9 +119,138 @@ AUTO_INTAKE_TASKS = {
     },
 }
 
+PROVIDER_AGE_BAND_FILTER_CHOICES = [
+    ('', 'Alle leeftijden'),
+    ('0_4', '0-4'),
+    ('4_12', '4-12'),
+    ('12_18', '12-18'),
+    ('18_PLUS', '18+'),
+]
+
+PROVIDER_CARE_FORM_FILTER_CHOICES = [
+    ('', 'Alle zorgvormen'),
+    (CaseIntakeProcess.CareForm.OUTPATIENT, 'Ambulant'),
+    (CaseIntakeProcess.CareForm.DAY_TREATMENT, 'Dagbehandeling'),
+    (CaseIntakeProcess.CareForm.RESIDENTIAL, 'Residentieel'),
+    (CaseIntakeProcess.CareForm.CRISIS, 'Crisisopvang'),
+]
+
 DESIGN_MODE_SESSION_KEY = 'careon_design_mode'
 DESIGN_MODE_SPA = 'spa'
 VALID_DESIGN_MODES = {DESIGN_MODE_SPA}
+
+
+def _provider_profile_age_bands(profile):
+    if not profile:
+        return []
+    bands = []
+    if profile.target_age_0_4:
+        bands.append('0_4')
+    if profile.target_age_4_12:
+        bands.append('4_12')
+    if profile.target_age_12_18:
+        bands.append('12_18')
+    if profile.target_age_18_plus:
+        bands.append('18_PLUS')
+    return bands
+
+
+def _provider_profile_care_forms(profile):
+    if not profile:
+        return []
+    forms = []
+    if profile.offers_outpatient:
+        forms.append(CaseIntakeProcess.CareForm.OUTPATIENT)
+    if profile.offers_day_treatment:
+        forms.append(CaseIntakeProcess.CareForm.DAY_TREATMENT)
+    if profile.offers_residential:
+        forms.append(CaseIntakeProcess.CareForm.RESIDENTIAL)
+    if profile.offers_crisis:
+        forms.append(CaseIntakeProcess.CareForm.CRISIS)
+    return forms
+
+
+def _provider_profile_match_surface(profile):
+    if not profile:
+        return {
+            'age_bands': [],
+            'age_summary': 'Leeftijd nog niet ingericht',
+            'care_forms': [],
+            'care_form_summary': 'Zorgvormen nog niet ingesteld',
+            'gender_restriction': '',
+            'gender_summary': 'Geen geslachtsbeperking opgegeven',
+            'specialization_summary': 'Specialisaties nog niet ingesteld',
+            'contra_summary': 'Geen contra-indicaties opgegeven',
+        }
+
+    age_bands = _provider_profile_age_bands(profile)
+    care_forms = _provider_profile_care_forms(profile)
+    specializations = [line.strip() for line in str(getattr(profile, 'specialisaties', '') or '').splitlines() if line.strip()]
+    contra = [line.strip() for line in str(getattr(profile, 'contra_indicaties', '') or '').split(',') if line.strip()]
+    gender_restriction = (getattr(profile, 'geslacht_beperking', '') or '').strip()
+
+    age_label_map = {
+        '0_4': '0-4',
+        '4_12': '4-12',
+        '12_18': '12-18',
+        '18_PLUS': '18+',
+    }
+    care_form_label_map = {
+        CaseIntakeProcess.CareForm.OUTPATIENT: 'Ambulant',
+        CaseIntakeProcess.CareForm.DAY_TREATMENT: 'Dagbehandeling',
+        CaseIntakeProcess.CareForm.RESIDENTIAL: 'Residentieel',
+        CaseIntakeProcess.CareForm.CRISIS: 'Crisisopvang',
+    }
+
+    return {
+        'age_bands': age_bands,
+        'age_summary': ', '.join(age_label_map[band] for band in age_bands) if age_bands else 'Leeftijd nog niet ingericht',
+        'care_forms': care_forms,
+        'care_form_summary': ', '.join(care_form_label_map[form] for form in care_forms) if care_forms else 'Zorgvormen nog niet ingesteld',
+        'gender_restriction': gender_restriction,
+        'gender_summary': gender_restriction or 'Geen geslachtsbeperking opgegeven',
+        'specialization_summary': ', '.join(specializations[:3]) if specializations else 'Specialisaties nog niet ingesteld',
+        'contra_summary': ', '.join(contra[:3]) if contra else 'Geen contra-indicaties opgegeven',
+        'profile_summary': {
+            'age_bands': age_bands,
+            'care_forms': care_forms,
+            'gender_restriction': gender_restriction,
+            'specializations': specializations,
+            'contra_indicaties': contra,
+        },
+    }
+
+
+def _provider_profile_supports_age_band(profile, age_band):
+    if not age_band:
+        return True
+    return age_band in _provider_profile_age_bands(profile)
+
+
+def _provider_profile_supports_care_form(profile, care_form):
+    if not care_form:
+        return True
+    return care_form in _provider_profile_care_forms(profile)
+
+
+def _provider_capacity_filter_key(suggestion):
+    free_slots = suggestion.get('free_slots')
+    avg_wait_days = suggestion.get('avg_wait_days')
+    if free_slots is None:
+        return 'unknown'
+    if free_slots <= 0:
+        return 'full'
+    if free_slots <= 2 or (avg_wait_days is not None and avg_wait_days > 21):
+        return 'limited'
+    return 'direct'
+
+
+def _provider_region_fit_key(suggestion):
+    if suggestion.get('region_match'):
+        return 'exact'
+    if suggestion.get('region_type_match'):
+        return 'compatible'
+    return 'review'
 
 
 def _resolve_deadline_case(deadline):
@@ -1089,6 +1218,7 @@ def _build_matching_suggestions_for_intake(intake, provider_profiles, *, limit=5
                 'urgency_match': urgency_match,
                 'care_form_match': care_form_match,
                 'region_match': region_match,
+                'region_type_match': region_type_match,
                 'free_slots': free_slots,
                 'avg_wait_days': profile.average_wait_days,
                 'reason': reasons[0] if reasons else 'Handmatige beoordeling nodig',
@@ -1701,6 +1831,8 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         client_type = self.request.GET.get('type')
         region_type = self.request.GET.get('region_type')
         region_id = self.request.GET.get('region')
+        care_form = self.request.GET.get('care_form')
+        age_band = self.request.GET.get('age_band')
         if q:
             qs = qs.filter(Q(name__icontains=q) | Q(email__icontains=q) | Q(industry__icontains=q))
         if status:
@@ -1714,6 +1846,22 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
             qs = qs.filter(provider_profile__served_regions__region_type=region_type)
         if region_id and region_id.isdigit():
             qs = qs.filter(provider_profile__served_regions__id=int(region_id))
+        if care_form == CaseIntakeProcess.CareForm.OUTPATIENT:
+            qs = qs.filter(provider_profile__offers_outpatient=True)
+        elif care_form == CaseIntakeProcess.CareForm.DAY_TREATMENT:
+            qs = qs.filter(provider_profile__offers_day_treatment=True)
+        elif care_form == CaseIntakeProcess.CareForm.RESIDENTIAL:
+            qs = qs.filter(provider_profile__offers_residential=True)
+        elif care_form == CaseIntakeProcess.CareForm.CRISIS:
+            qs = qs.filter(provider_profile__offers_crisis=True)
+        if age_band == '0_4':
+            qs = qs.filter(provider_profile__target_age_0_4=True)
+        elif age_band == '4_12':
+            qs = qs.filter(provider_profile__target_age_4_12=True)
+        elif age_band == '12_18':
+            qs = qs.filter(provider_profile__target_age_12_18=True)
+        elif age_band == '18_PLUS':
+            qs = qs.filter(provider_profile__target_age_18_plus=True)
         return qs.distinct().order_by('name')
 
     def get_context_data(self, **kwargs):
@@ -1732,11 +1880,15 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx['search_query'] = self.request.GET.get('q', '')
         ctx['selected_status'] = self.request.GET.get('status', '')
         ctx['selected_client_type'] = self.request.GET.get('type', '')
+        ctx['selected_care_form'] = self.request.GET.get('care_form', '')
+        ctx['selected_age_band'] = self.request.GET.get('age_band', '')
         selected_region_type = self.request.GET.get('region_type', '')
         region_qs = RegionalConfiguration.objects.filter(organization=org)
         if selected_region_type:
             region_qs = region_qs.filter(region_type=selected_region_type)
         ctx['region_type_choices'] = RegionalConfiguration._meta.get_field('region_type').choices
+        ctx['care_form_choices'] = PROVIDER_CARE_FORM_FILTER_CHOICES
+        ctx['age_band_choices'] = PROVIDER_AGE_BAND_FILTER_CHOICES
         ctx['selected_region_type'] = selected_region_type
         ctx['selected_region'] = self.request.GET.get('region', '')
         ctx['region_choices'] = region_qs.order_by('region_name')
@@ -1745,7 +1897,7 @@ class ClientListView(TenantScopedQuerysetMixin, LoginRequiredMixin, ListView):
         ctx['pagination_query'] = query_params.urlencode()
         ctx['has_active_filters'] = any(
             self.request.GET.get(key)
-            for key in ('q', 'status', 'type', 'region_type', 'region')
+            for key in ('q', 'status', 'type', 'region_type', 'region', 'care_form', 'age_band')
         )
         return ctx
 
@@ -1942,6 +2094,8 @@ class ClientDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
         ctx['selected_intake'] = selected_intake
         ctx['case_fit_summary'] = case_fit_summary
         ctx['provider_track_record'] = track_record
+        ctx['provider_edit_url'] = reverse('careon:client_update', kwargs={'pk': self.object.pk})
+        ctx['provider_match_surface'] = _provider_profile_match_surface(profile)
         return ctx
 
 
@@ -3547,23 +3701,7 @@ class SignUpView(CreateView):
     def form_valid(self, form):
         response = super().form_valid(form)
         UserProfile.objects.get_or_create(user=self.object)
-
-        # Bootstrap a tenant for each newly registered account.
-        base_slug = slugify(self.object.username) or f'user-{self.object.id}'
-        org_slug = base_slug
-        n = 2
-        while Organization.objects.filter(slug=org_slug).exists():
-            org_slug = f'{base_slug}-{n}'
-            n += 1
-
-        org_name = f"{self.object.get_full_name().strip() or self.object.username}'s Regie"
-        organization = Organization.objects.create(name=org_name, slug=org_slug)
-        OrganizationMembership.objects.create(
-            organization=organization,
-            user=self.object,
-            role=OrganizationMembership.Role.OWNER,
-            is_active=True,
-        )
+        ensure_user_organization(self.object)
 
         login(self.request, self.object, backend='django.contrib.auth.backends.ModelBackend')
         return response
@@ -4686,11 +4824,17 @@ def matching_dashboard(request):
         messages.info(request, 'Toewijzen verloopt vanuit de casuswerkruimte.')
         return redirect(f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=matching")
 
-    provider_profiles = (
+    provider_profiles = list(
         ProviderProfile.objects.filter(client__organization=org, client__status='ACTIVE')
         .select_related('client')
         .prefetch_related('target_care_categories', 'served_regions')
     )
+    provider_profiles_by_id = {profile.client_id: profile for profile in provider_profiles}
+    provider_query = (request.GET.get('provider_q') or '').strip().lower()
+    provider_age_band = (request.GET.get('provider_age_band') or '').strip()
+    provider_care_form = (request.GET.get('provider_care_form') or '').strip()
+    provider_region_fit = (request.GET.get('provider_region_fit') or '').strip().lower()
+    provider_capacity = (request.GET.get('provider_capacity') or '').strip().lower()
 
     assessments = list(approved_assessments_qs)
     assessments_by_intake = {assessment.due_diligence_process_id: assessment for assessment in assessments}
@@ -4740,9 +4884,6 @@ def matching_dashboard(request):
             fallback_reason=failure_reason,
         )
 
-        if not suggestions:
-            no_match_count += 1
-
         normalized_suggestions = []
         pressure_context = _region_pressure_summary(
             intake=intake,
@@ -4750,12 +4891,17 @@ def matching_dashboard(request):
             region_id=(intake.regio_id or intake.preferred_region_id),
         )
         for suggestion in suggestions[:5]:
+            provider_profile = provider_profiles_by_id.get(suggestion.get('provider_id'))
+            provider_surface = _provider_profile_match_surface(provider_profile)
             provider_name = suggestion.get('provider_name') or 'Onbekende aanbieder'
             free_slots_raw = suggestion.get('free_slots')
             wait_days_raw = suggestion.get('avg_wait_days')
             free_slots = free_slots_raw if isinstance(free_slots_raw, (int, float)) else None
             wait_days = wait_days_raw if isinstance(wait_days_raw, (int, float)) else None
             region_match = suggestion.get('region_match')
+            region_type_match = bool(suggestion.get('region_type_match'))
+            capacity_filter_key = _provider_capacity_filter_key({'free_slots': free_slots, 'avg_wait_days': wait_days})
+            region_fit_key = _provider_region_fit_key({'region_match': region_match, 'region_type_match': region_type_match})
 
             if free_slots is not None and free_slots <= 0:
                 matching_status = 'Geen directe capaciteit'
@@ -4793,6 +4939,18 @@ def matching_dashboard(request):
             if any(signal['label'] in ['Geen capaciteit', 'Wachtlijst'] for signal in operational_signals):
                 capacity_pressure_count += 1
 
+            search_blob = ' '.join(
+                part for part in [
+                    provider_name,
+                    suggestion.get('specialization_summary') or '',
+                    provider_surface['age_summary'],
+                    provider_surface['care_form_summary'],
+                    provider_surface['gender_summary'],
+                    suggestion.get('region_context') or '',
+                ]
+                if part
+            ).lower()
+
             normalized_suggestion = dict(suggestion)
             normalized_suggestion.update({
                 'provider_name': provider_name,
@@ -4803,6 +4961,19 @@ def matching_dashboard(request):
                 'operational_signals': operational_signals[:2],
                 'matching_status': matching_status,
                 'failure_reason': local_failure_reason,
+                'region_type_match': region_type_match,
+                'capacity_filter_key': capacity_filter_key,
+                'region_fit_key': region_fit_key,
+                'age_bands': provider_surface['age_bands'],
+                'age_summary': provider_surface['age_summary'],
+                'care_forms': provider_surface['care_forms'],
+                'care_form_summary': provider_surface['care_form_summary'],
+                'gender_restriction': provider_surface['gender_restriction'],
+                'gender_summary': provider_surface['gender_summary'],
+                'specialization_summary': provider_surface['specialization_summary'],
+                'contra_summary': provider_surface['contra_summary'],
+                'profile_summary': provider_surface['profile_summary'],
+                'provider_search_blob': search_blob,
                 'capacity_context': (
                     'Capaciteit onbekend'
                     if free_slots is None
@@ -4824,6 +4995,47 @@ def matching_dashboard(request):
                 ),
             })
             normalized_suggestions.append(normalized_suggestion)
+
+        if provider_query or provider_age_band or provider_care_form or provider_region_fit or provider_capacity:
+            normalized_suggestions = [
+                suggestion
+                for suggestion in normalized_suggestions
+                if (
+                    (not provider_query or provider_query in suggestion['provider_search_blob'])
+                    and (not provider_age_band or provider_age_band in suggestion['age_bands'])
+                    and (not provider_care_form or provider_care_form in suggestion['care_forms'])
+                    and (
+                        not provider_region_fit
+                        or (
+                            provider_region_fit == 'exact' and suggestion['region_fit_key'] == 'exact'
+                        )
+                        or (
+                            provider_region_fit == 'compatible' and suggestion['region_fit_key'] in {'exact', 'compatible'}
+                        )
+                        or (
+                            provider_region_fit == 'review' and suggestion['region_fit_key'] == 'review'
+                        )
+                    )
+                    and (
+                        not provider_capacity
+                        or (
+                            provider_capacity == 'direct' and suggestion['capacity_filter_key'] == 'direct'
+                        )
+                        or (
+                            provider_capacity == 'limited' and suggestion['capacity_filter_key'] == 'limited'
+                        )
+                        or (
+                            provider_capacity == 'full' and suggestion['capacity_filter_key'] == 'full'
+                        )
+                        or (
+                            provider_capacity == 'unknown' and suggestion['capacity_filter_key'] == 'unknown'
+                        )
+                    )
+                )
+            ]
+
+        if not normalized_suggestions:
+            no_match_count += 1
 
         _assignment = assigned_by_intake.get(intake.id)
         selected_provider_id = _assignment.selected_provider_id if _assignment else (normalized_suggestions[0].get('provider_id') if normalized_suggestions else None)
@@ -4859,6 +5071,14 @@ def matching_dashboard(request):
                 'assigned_provider': _assignment.selected_provider if _assignment else None,
                 'placement_pk': _assignment.pk if _assignment else None,
                 'suggestions': normalized_suggestions,
+                'has_provider_filters': bool(provider_query or provider_age_band or provider_care_form or provider_region_fit or provider_capacity),
+                'active_provider_filters': {
+                    'provider_q': provider_query,
+                    'provider_age_band': provider_age_band,
+                    'provider_care_form': provider_care_form,
+                    'provider_region_fit': provider_region_fit,
+                    'provider_capacity': provider_capacity,
+                },
                 'matching_map': _build_matching_map_context(intake, normalized_suggestions, selected_provider_id=selected_provider_id),
                 'matching_status': 'Toegewezen' if _assignment else ('Geen passende aanbieder' if not normalized_suggestions else 'Matchkandidaten beschikbaar'),
                 'failure_reason': failure_reason,
@@ -4895,6 +5115,27 @@ def matching_dashboard(request):
         'selected_intake': selected_intake,
         'matching_operational_strip': matching_operational_strip,
         'decision_data_integrity_ok': all(row['decision_data_integrity_ok'] for row in rows),
+        'has_provider_filters': bool(provider_query or provider_age_band or provider_care_form or provider_region_fit or provider_capacity),
+        'selected_provider_q': provider_query,
+        'selected_provider_age_band': provider_age_band,
+        'selected_provider_care_form': provider_care_form,
+        'selected_provider_region_fit': provider_region_fit,
+        'selected_provider_capacity': provider_capacity,
+        'provider_age_band_choices': PROVIDER_AGE_BAND_FILTER_CHOICES,
+        'provider_care_form_choices': PROVIDER_CARE_FORM_FILTER_CHOICES,
+        'provider_region_fit_choices': [
+            ('', 'Alle regio-fit'),
+            ('exact', 'Exacte regio'),
+            ('compatible', 'Compatibel'),
+            ('review', 'Te verifiëren'),
+        ],
+        'provider_capacity_choices': [
+            ('', 'Alle capaciteit'),
+            ('direct', 'Direct inzetbaar'),
+            ('limited', 'Beperkt'),
+            ('full', 'Vol'),
+            ('unknown', 'Onbekend'),
+        ],
     }
     return render(request, 'contracts/matching_dashboard.html', context)
 
