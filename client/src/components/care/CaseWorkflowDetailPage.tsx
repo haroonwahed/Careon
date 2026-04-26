@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Building2,
   ChevronDown,
+  FileText,
   Loader2,
   Sparkles,
 } from "lucide-react";
@@ -30,6 +31,7 @@ import {
 } from "../ui/alert-dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
 import { Textarea } from "../ui/textarea";
+import { CareEmptyState, CareInsightBanner, CarePageHeader, CareSectionCard } from "./CareSurface";
 import { useCases } from "../../hooks/useCases";
 import {
   INFO_REQUEST_TYPE_LABELS,
@@ -529,356 +531,320 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
         Terug naar casussen
       </Button>
 
-      <div className="space-y-6">
-        <div className="rounded-2xl border bg-card p-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-semibold text-foreground">{spaCase.title}</h1>
-                <Badge variant="outline">{stateLabel(currentState, isArchived)}</Badge>
-                <Badge variant="outline" className={urgencyBadgeClasses(spaCase.urgency)}>
-                  {spaCase.urgency === "critical" ? "Kritiek" : spaCase.urgency === "warning" ? "Hoog" : spaCase.urgency === "normal" ? "Normaal" : "Laag"}
-                </Badge>
-                {selectedProviderName && (
-                  <Badge variant="secondary" className="gap-1.5">
-                    <Building2 size={12} />
-                    {selectedProviderName}
-                  </Badge>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {spaCase.id} · {spaCase.regio} · {spaCase.zorgtype}
-              </p>
-              <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                Rol: {roleLabel(role)}
-              </p>
-            </div>
-
-            <div className="text-right">
-              <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Huidige staat</p>
-              <p className="mt-1 text-sm font-medium text-foreground">{stateLabel(currentState, isArchived)}</p>
-            </div>
+      <CarePageHeader
+        eyebrow={<><FileText size={16} className="text-primary" /><span>Casus</span></>}
+        title={spaCase.title}
+        subtitle={`${spaCase.id} · ${spaCase.regio} · ${spaCase.zorgtype}`}
+        meta={
+          <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.08em] text-muted-foreground">
+            <span>Rol: {roleLabel(role)}</span>
+            <span>•</span>
+            <span>Huidige staat: {stateLabel(currentState, isArchived)}</span>
           </div>
+        }
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">{stateLabel(currentState, isArchived)}</Badge>
+            <Badge variant="outline" className={urgencyBadgeClasses(spaCase.urgency)}>
+              {spaCase.urgency === "critical" ? "Kritiek" : spaCase.urgency === "warning" ? "Hoog" : spaCase.urgency === "normal" ? "Normaal" : "Laag"}
+            </Badge>
+            {selectedProviderName && (
+              <Badge variant="secondary" className="gap-1.5">
+                <Building2 size={12} />
+                {selectedProviderName}
+              </Badge>
+            )}
+          </div>
+        }
+      />
+
+      <CareInsightBanner
+        tone="primary"
+        title={decisionPanelMessage ?? bannerActionLabel}
+        copy={decisionPanelMessage ?? bannerActionMessage}
+        action={(
+          <div className="space-y-2">
+            <Button
+              onClick={handlePrimaryAction}
+              disabled={decisionLoading || !nextBestAction || !nextActionAllowed || Boolean(nextActionBlocked?.reason) || (nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId)}
+              className="gap-2"
+            >
+              {nextBestAction?.label ?? "Geen vervolgactie"}
+              <ArrowRight size={16} />
+            </Button>
+            {!nextActionAllowed && nextActionBlocked && (
+              <p className="max-w-xs text-xs text-muted-foreground">{bannerActionDisabledReason}</p>
+            )}
+            {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
+              <p className="max-w-xs text-xs text-muted-foreground">Er is nog geen geselecteerde aanbieder beschikbaar om te versturen.</p>
+            )}
+          </div>
+        )}
+      />
+
+      <CareSectionCard
+        title="Casuspad"
+        subtitle={`Huidige stap: ${stateLabel(currentState, isArchived)}`}
+        className="p-5"
+      >
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
+          {timeline.map((step, index) => (
+            <div key={step.id} className={`rounded-2xl border px-3 py-3 text-xs ${stepStatusClasses(step.status)}`}>
+              <div className="flex items-center justify-between gap-2">
+                <p className="font-semibold">{step.label}</p>
+                <span className="text-[11px] uppercase tracking-[0.08em] opacity-80">{index + 1}</span>
+              </div>
+              <p className="mt-1 opacity-80">{step.owner}</p>
+              <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em]">
+                {step.status === "completed"
+                  ? "Voltooid"
+                  : step.status === "current"
+                    ? "Huidig"
+                    : step.status === "blocked"
+                      ? "Geblokkeerd"
+                      : "Komt later"}
+              </p>
+            </div>
+          ))}
         </div>
+      </CareSectionCard>
 
-        <section className="rounded-2xl border border-primary/25 bg-primary/5 p-5">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="max-w-3xl space-y-3">
-              <div className="flex items-center gap-2">
-                <Sparkles size={18} className="text-primary" />
-                <p className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende stap</p>
-              </div>
-              <h2 className="text-2xl font-semibold text-foreground">{decisionPanelMessage ?? bannerActionLabel}</h2>
-              <p className="text-sm text-muted-foreground">{decisionPanelMessage ?? bannerActionMessage}</p>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="outline" className={priorityClasses(bannerActionPriority)}>
-                  Prioriteit: {priorityLabel(bannerActionPriority)}
-                </Badge>
-                <Badge variant="outline">{bannerActionDescription}</Badge>
-              </div>
-              {!decisionPanelMessage && nextBestAction && (
-                <p className="text-sm text-muted-foreground">{nextBestAction.reason}</p>
-              )}
-            </div>
-            <div className="shrink-0 space-y-2">
-              <Button
-                onClick={handlePrimaryAction}
-                disabled={decisionLoading || !nextBestAction || !nextActionAllowed || Boolean(nextActionBlocked?.reason) || (nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId)}
-                className="gap-2"
-              >
-                {nextBestAction?.label ?? "Geen vervolgactie"}
-                <ArrowRight size={16} />
-              </Button>
-              {!nextActionAllowed && nextActionBlocked && (
-                <p className="max-w-xs text-xs text-muted-foreground">{bannerActionDisabledReason}</p>
-              )}
-              {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
-                <p className="max-w-xs text-xs text-muted-foreground">Er is nog geen geselecteerde aanbieder beschikbaar om te versturen.</p>
-              )}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border bg-card p-5">
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <h2 className="text-lg font-semibold text-foreground">Casuspad</h2>
-            <p className="text-xs text-muted-foreground">Huidige stap: {stateLabel(currentState, isArchived)}</p>
-          </div>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
-            {timeline.map((step, index) => (
-              <div key={step.id} className={`rounded-xl border px-3 py-3 text-xs ${stepStatusClasses(step.status)}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{step.label}</p>
-                  <span className="text-[11px] uppercase tracking-[0.08em] opacity-80">{index + 1}</span>
-                </div>
-                <p className="mt-1 opacity-80">{step.owner}</p>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.08em]">
-                  {step.status === "completed"
-                    ? "Voltooid"
-                    : step.status === "current"
-                      ? "Huidig"
-                      : step.status === "blocked"
-                        ? "Geblokkeerd"
-                        : "Komt later"}
-                </p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] gap-6">
-          <div className="space-y-6">
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Blokkades</h3>
-              {decisionEvaluation?.blockers?.length ? (
-                <div className="space-y-3">
-                  {decisionEvaluation.blockers.map((blocker) => (
-                    <div key={blocker.code} className="rounded-2xl border border-red-500/20 bg-red-500/6 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-red-200">
-                          {blocker.severity}
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] gap-6">
+        <div className="space-y-6">
+          <CareSectionCard title="Blokkades" subtitle="Waarom de casus hier vastloopt en wat dit blokkeert.">
+            {decisionEvaluation?.blockers?.length ? (
+              <div className="space-y-3">
+                {decisionEvaluation.blockers.map((blocker) => (
+                  <div key={blocker.code} className="rounded-[24px] border border-red-500/20 bg-red-500/6 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-red-200">
+                        {blocker.severity}
+                      </Badge>
+                      <p className="font-semibold text-foreground">{blocker.message}</p>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {blocker.blocking_actions.map((action) => (
+                        <Badge key={`${blocker.code}-${action}`} variant="secondary">
+                          Blokkeert: {STEP_ACTION_HINTS[action] ?? action}
                         </Badge>
-                        <p className="font-semibold text-foreground">{blocker.message}</p>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {blocker.blocking_actions.map((action) => (
-                          <Badge key={`${blocker.code}-${action}`} variant="secondary">
-                            Blokkeert: {STEP_ACTION_HINTS[action] ?? action}
-                          </Badge>
-                        ))}
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground">
-                  Geen blokkades.
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Risico's</h3>
-              {decisionEvaluation?.risks?.length ? (
-                <div className="space-y-3">
-                  {decisionEvaluation.risks.map((risk) => (
-                    <ActionCard
-                      key={risk.code}
-                      label={risk.message}
-                      message={risk.message}
-                      detail={risk.severity}
-                      severity={risk.severity}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground">
-                  Geen opvallende risico's.
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Alerts</h3>
-              {decisionEvaluation?.alerts?.length ? (
-                <div className="space-y-3">
-                  {decisionEvaluation.alerts.map((alert) => (
-                    <div key={alert.code} className="rounded-2xl border border-border bg-muted/20 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline" className={priorityClasses(alert.severity as DecisionPriority)}>
-                          {alert.severity}
-                        </Badge>
-                        <p className="font-semibold text-foreground">{alert.title}</p>
-                      </div>
-                      <p className="mt-2 text-sm text-muted-foreground">{alert.message}</p>
-                      <p className="mt-2 text-xs text-foreground/80">Aanbevolen actie: {STEP_ACTION_HINTS[alert.recommended_action] ?? alert.recommended_action}</p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground">
-                  Geen actieve alerts.
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-lg font-semibold text-foreground">Beschikbare acties</h3>
-                <Badge variant="outline">{roleLabel(role)}</Badge>
-              </div>
-
-              {allowedActions.length > 0 ? (
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {allowedActions.map((action) => {
-                    const isLoading = pendingAction === action.action;
-                    const disabled = !action.allowed || isLoading || (action.action === "SEND_TO_PROVIDER" && !selectedProviderId);
-                    const variant = action.action === "ARCHIVE_CASE" || action.action === "PROVIDER_REJECT"
-                      ? "destructive"
-                      : action.action === "PROVIDER_REQUEST_INFO" || action.action === "WAIT_PROVIDER_RESPONSE" || action.action === "MONITOR_CASE"
-                        ? "outline"
-                        : "default";
-
-                    const onClick = async () => {
-                      if (action.action === "PROVIDER_REJECT") {
-                        setProviderDialog("reject");
-                        return;
-                      }
-                      if (action.action === "PROVIDER_REQUEST_INFO") {
-                        setProviderDialog("info");
-                        return;
-                      }
-                      if (action.action === "ARCHIVE_CASE") {
-                        setArchiveOpen(true);
-                        return;
-                      }
-                      await handleAction(action.action as CaseDecisionActionCode);
-                    };
-
-                    return (
-                      <Button
-                        key={action.action}
-                        size="sm"
-                        variant={variant as "default" | "outline" | "destructive"}
-                        disabled={disabled}
-                        onClick={onClick}
-                        className="gap-2"
-                      >
-                        {isLoading && <Loader2 size={14} className="animate-spin" />}
-                        {action.label}
-                      </Button>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="mt-4 rounded-2xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground">
-                  Geen beschikbare acties voor deze rol.
-                </div>
-              )}
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Geblokkeerde acties</h3>
-              {decisionEvaluation?.blocked_actions?.length ? (
-                <div className="space-y-3">
-                  {decisionEvaluation.blocked_actions.map((action) => (
-                    <div key={action.action} className="rounded-2xl border border-border bg-muted/15 p-4">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge variant="outline">Geblokkeerd</Badge>
-                        <p className="font-semibold text-foreground">{action.label}</p>
-                      </div>
-                      <p className="mt-2 text-sm text-muted-foreground">{action.reason}</p>
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        Vereiste vorige stap: {requiredPreviousStep(action.action)}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-2xl border border-border bg-muted/15 p-4 text-sm text-muted-foreground">
-                  Geen geweigerde acties.
-                </div>
-              )}
-            </section>
-          </div>
-
-          <div className="space-y-6">
-            <section className="rounded-2xl border bg-card p-5">
-              <Collapsible defaultOpen={false}>
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-lg font-semibold text-foreground">Beslissingscontext</h3>
-                  <CollapsibleTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2">
-                      Toon details
-                      <ChevronDown size={14} />
-                    </Button>
-                  </CollapsibleTrigger>
-                </div>
-                <CollapsibleContent className="mt-4">
-                  {decisionLoading && (
-                    <div className="mb-4 rounded-xl border border-border bg-muted/15 p-3 text-sm text-muted-foreground">
-                      Beslissingsinformatie wordt geladen.
-                    </div>
-                  )}
-                  {decisionError && (
-                    <div className="mb-4 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-100">
-                      {decisionError}
-                    </div>
-                  )}
-                  <div className="grid grid-cols-1 gap-3 text-sm">
-                    {[
-                      ["required_data_complete", String(decisionEvaluation?.decision_context.required_data_complete ?? false)],
-                      ["has_summary", String(decisionEvaluation?.decision_context.has_summary ?? false)],
-                      ["has_matching_result", String(decisionEvaluation?.decision_context.has_matching_result ?? false)],
-                      ["latest_match_confidence", decisionEvaluation?.decision_context.latest_match_confidence ?? "null"],
-                      ["provider_review_status", decisionEvaluation?.decision_context.provider_review_status ?? ""],
-                      ["provider_rejection_count", decisionEvaluation?.decision_context.provider_rejection_count ?? 0],
-                      ["latest_rejection_reason", decisionEvaluation?.decision_context.latest_rejection_reason ?? ""],
-                      ["placement_confirmed", String(decisionEvaluation?.decision_context.placement_confirmed ?? false)],
-                      ["intake_started", String(decisionEvaluation?.decision_context.intake_started ?? false)],
-                      ["case_age_hours", decisionEvaluation?.decision_context.case_age_hours ?? "null"],
-                      ["hours_in_current_state", decisionEvaluation?.decision_context.hours_in_current_state ?? "null"],
-                      ["urgency", decisionEvaluation?.decision_context.urgency ?? ""],
-                      ["capacity_signals", decisionEvaluation?.decision_context.capacity_signals?.length ?? 0],
-                    ].map(([label, value]) => (
-                      <div key={label as string} className="flex items-center justify-between gap-4 rounded-xl border border-border bg-muted/10 px-3 py-2">
-                        <span className="text-muted-foreground">{label}</span>
-                        <span className="font-medium text-foreground">{String(value)}</span>
-                      </div>
-                    ))}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Laatste gebeurtenissen</h3>
-              {decisionEvaluation?.timeline_signals?.recent_events?.length ? (
-                <div className="space-y-3">
-                  {decisionEvaluation.timeline_signals.recent_events.slice(0, 5).map((event) => (
-                    <div key={`${event.timestamp}-${event.event_type}-${event.user_action}`} className="flex items-start gap-3">
-                      <div className="mt-1 h-2.5 w-2.5 rounded-full bg-primary/70" />
-                      <div>
-                        <p className="text-sm font-medium text-foreground">{event.user_action || event.event_type}</p>
-                        <p className="text-xs text-muted-foreground">{event.timestamp} · {event.action_source}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">Geen recente gebeurtenissen beschikbaar.</p>
-              )}
-            </section>
-
-            <section className="rounded-2xl border bg-card p-5">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Casus samenvatting</h3>
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-muted-foreground">Casus</p>
-                  <p className="mt-1 font-medium text-foreground">{spaCase.title}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Regio</p>
-                  <p className="mt-1 font-medium text-foreground">{spaCase.regio}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Zorgvraag</p>
-                  <p className="mt-1 font-medium text-foreground">{spaCase.zorgtype}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">Leeftijdsschatting</p>
-                  <p className="mt-1 font-medium text-foreground">{spaCase.wachttijd} dagen wachtduur</p>
-                </div>
-              </div>
-              <div className="mt-4 flex flex-wrap gap-2">
-                {spaCase.problems.map((problem) => (
-                  <Badge key={problem.label} variant="outline">
-                    {problem.label}
-                  </Badge>
                 ))}
               </div>
-            </section>
-          </div>
+            ) : (
+              <CareEmptyState title="Geen blokkades." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+
+          <CareSectionCard title="Risico's" subtitle="Vroege signalen die opvolging verdienen.">
+            {decisionEvaluation?.risks?.length ? (
+              <div className="space-y-3">
+                {decisionEvaluation.risks.map((risk) => (
+                  <ActionCard
+                    key={risk.code}
+                    label={risk.message}
+                    message={risk.message}
+                    detail={risk.severity}
+                    severity={risk.severity}
+                  />
+                ))}
+              </div>
+            ) : (
+              <CareEmptyState title="Geen opvallende risico's." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+
+          <CareSectionCard title="Alerts" subtitle="Signalen die de volgende beslissing sturen.">
+            {decisionEvaluation?.alerts?.length ? (
+              <div className="space-y-3">
+                {decisionEvaluation.alerts.map((alert) => (
+                  <div key={alert.code} className="rounded-[24px] border border-border bg-muted/20 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className={priorityClasses(alert.severity as DecisionPriority)}>
+                        {alert.severity}
+                      </Badge>
+                      <p className="font-semibold text-foreground">{alert.title}</p>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">{alert.message}</p>
+                    <p className="mt-2 text-xs text-foreground/80">Aanbevolen actie: {STEP_ACTION_HINTS[alert.recommended_action] ?? alert.recommended_action}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CareEmptyState title="Geen actieve alerts." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+
+          <CareSectionCard title="Beschikbare acties" subtitle="Alle acties blijven gekoppeld aan de huidige rol en status.">
+            <div className="flex items-center justify-between gap-3">
+              <Badge variant="outline">{roleLabel(role)}</Badge>
+              <p className="text-xs text-muted-foreground">Beschikbare route-acties</p>
+            </div>
+
+            {allowedActions.length > 0 ? (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {allowedActions.map((action) => {
+                  const isLoading = pendingAction === action.action;
+                  const disabled = !action.allowed || isLoading || (action.action === "SEND_TO_PROVIDER" && !selectedProviderId);
+                  const variant = action.action === "ARCHIVE_CASE" || action.action === "PROVIDER_REJECT"
+                    ? "destructive"
+                    : action.action === "PROVIDER_REQUEST_INFO" || action.action === "WAIT_PROVIDER_RESPONSE" || action.action === "MONITOR_CASE"
+                      ? "outline"
+                      : "default";
+
+                  const onClick = async () => {
+                    if (action.action === "PROVIDER_REJECT") {
+                      setProviderDialog("reject");
+                      return;
+                    }
+                    if (action.action === "PROVIDER_REQUEST_INFO") {
+                      setProviderDialog("info");
+                      return;
+                    }
+                    if (action.action === "ARCHIVE_CASE") {
+                      setArchiveOpen(true);
+                      return;
+                    }
+                    await handleAction(action.action as CaseDecisionActionCode);
+                  };
+
+                  return (
+                    <Button
+                      key={action.action}
+                      size="sm"
+                      variant={variant as "default" | "outline" | "destructive"}
+                      disabled={disabled}
+                      onClick={onClick}
+                      className="gap-2"
+                    >
+                      {isLoading && <Loader2 size={14} className="animate-spin" />}
+                      {action.label}
+                    </Button>
+                  );
+                })}
+              </div>
+            ) : (
+              <CareEmptyState title="Geen beschikbare acties voor deze rol." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+
+          <CareSectionCard title="Geblokkeerde acties" subtitle="Deze acties blijven zichtbaar zodat de blokkade uitlegbaar is.">
+            {decisionEvaluation?.blocked_actions?.length ? (
+              <div className="space-y-3">
+                {decisionEvaluation.blocked_actions.map((action) => (
+                  <div key={action.action} className="rounded-[24px] border border-border bg-muted/15 p-4">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline">Geblokkeerd</Badge>
+                      <p className="font-semibold text-foreground">{action.label}</p>
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">{action.reason}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      Vereiste vorige stap: {requiredPreviousStep(action.action)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CareEmptyState title="Geen geweigerde acties." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+        </div>
+
+        <div className="space-y-6">
+          <CareSectionCard title="Beslissingscontext" subtitle="Technische context voor de beslisengine en audittrail.">
+            <Collapsible defaultOpen={false}>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-medium text-foreground">Toon details</p>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    Toon details
+                    <ChevronDown size={14} />
+                  </Button>
+                </CollapsibleTrigger>
+              </div>
+              <CollapsibleContent className="mt-4">
+                {decisionLoading && (
+                  <div className="mb-4 rounded-2xl border border-border bg-muted/15 p-3 text-sm text-muted-foreground">
+                    Beslissingsinformatie wordt geladen.
+                  </div>
+                )}
+                {decisionError && (
+                  <div className="mb-4 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-3 text-sm text-amber-100">
+                    {decisionError}
+                  </div>
+                )}
+                <div className="grid grid-cols-1 gap-3 text-sm">
+                  {[
+                    ["required_data_complete", String(decisionEvaluation?.decision_context.required_data_complete ?? false)],
+                    ["has_summary", String(decisionEvaluation?.decision_context.has_summary ?? false)],
+                    ["has_matching_result", String(decisionEvaluation?.decision_context.has_matching_result ?? false)],
+                    ["latest_match_confidence", decisionEvaluation?.decision_context.latest_match_confidence ?? "null"],
+                    ["provider_review_status", decisionEvaluation?.decision_context.provider_review_status ?? ""],
+                    ["provider_rejection_count", decisionEvaluation?.decision_context.provider_rejection_count ?? 0],
+                    ["latest_rejection_reason", decisionEvaluation?.decision_context.latest_rejection_reason ?? ""],
+                    ["placement_confirmed", String(decisionEvaluation?.decision_context.placement_confirmed ?? false)],
+                    ["intake_started", String(decisionEvaluation?.decision_context.intake_started ?? false)],
+                    ["case_age_hours", decisionEvaluation?.decision_context.case_age_hours ?? "null"],
+                    ["hours_in_current_state", decisionEvaluation?.decision_context.hours_in_current_state ?? "null"],
+                    ["urgency", decisionEvaluation?.decision_context.urgency ?? ""],
+                    ["capacity_signals", decisionEvaluation?.decision_context.capacity_signals?.length ?? 0],
+                  ].map(([label, value]) => (
+                    <div key={label as string} className="flex items-center justify-between gap-4 rounded-2xl border border-border bg-muted/10 px-3 py-2">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-medium text-foreground">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </CareSectionCard>
+
+          <CareSectionCard title="Laatste gebeurtenissen" subtitle="Recente acties en statuswijzigingen die het verloop verklaren.">
+            {decisionEvaluation?.timeline_signals?.recent_events?.length ? (
+              <div className="space-y-3">
+                {decisionEvaluation.timeline_signals.recent_events.slice(0, 5).map((event) => (
+                  <div key={`${event.timestamp}-${event.event_type}-${event.user_action}`} className="flex items-start gap-3 rounded-2xl border border-border bg-background/40 p-3">
+                    <div className="mt-1 h-2.5 w-2.5 rounded-full bg-primary/70" />
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{event.user_action || event.event_type}</p>
+                      <p className="text-xs text-muted-foreground">{event.timestamp} · {event.action_source}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <CareEmptyState title="Geen recente gebeurtenissen beschikbaar." className="border-0 bg-transparent p-0 text-left shadow-none" />
+            )}
+          </CareSectionCard>
+
+          <CareSectionCard title="Casus samenvatting" subtitle="Kerngegevens en context voor deze casus.">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-muted-foreground">Casus</p>
+                <p className="mt-1 font-medium text-foreground">{spaCase.title}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Regio</p>
+                <p className="mt-1 font-medium text-foreground">{spaCase.regio}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Zorgvraag</p>
+                <p className="mt-1 font-medium text-foreground">{spaCase.zorgtype}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Leeftijdsschatting</p>
+                <p className="mt-1 font-medium text-foreground">{spaCase.wachttijd} dagen wachtduur</p>
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {spaCase.problems.map((problem) => (
+                <Badge key={problem.label} variant="outline">
+                  {problem.label}
+                </Badge>
+              ))}
+            </div>
+          </CareSectionCard>
         </div>
       </div>
 

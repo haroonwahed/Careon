@@ -268,7 +268,8 @@ describe("RegiekamerControlCenter", () => {
 
     render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByText("Geen vastgelopen casussen. De actieve keten loopt momenteel zonder kritieke signalen.")).toBeInTheDocument();
+    expect(screen.getByText("Geen vastgelopen casussen.")).toBeInTheDocument();
+    expect(screen.getByText("De actieve keten loopt momenteel zonder kritieke signalen.")).toBeInTheDocument();
   });
 
   it("opens the existing case detail overlay by notifying the parent", () => {

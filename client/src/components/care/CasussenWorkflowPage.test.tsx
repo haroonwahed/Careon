@@ -118,9 +118,9 @@ describe("CasussenWorkflowPage", () => {
     render(<CasussenWorkflowPage onCaseClick={vi.fn()} role="zorgaanbieder" />);
 
     expect(screen.getByRole("button", { name: "Beoordeling uitvoeren" })).toBeInTheDocument();
-    expect(screen.getByText("Accepteren")).toBeInTheDocument();
-    expect(screen.getByText("Afwijzen")).toBeInTheDocument();
-    expect(screen.getByText("Meer informatie vragen")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Accepteren" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Afwijzen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Meer informatie vragen" })).toBeInTheDocument();
   });
 
   it("filters list when attention item is clicked", () => {
@@ -132,7 +132,7 @@ describe("CasussenWorkflowPage", () => {
 
     render(<CasussenWorkflowPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByText("1 casussen wachten langer dan 3 dagen op aanbiederbeoordeling"));
+    fireEvent.click(screen.getByText("1 casussen wachten langer dan 3 dagen op beoordeling door aanbieder"));
 
     expect(screen.getByText("Lang wachtend")).toBeInTheDocument();
     expect(screen.queryByText("Kort wachtend")).not.toBeInTheDocument();

@@ -1,5 +1,6 @@
 import { AlertTriangle, ArrowRight, Building2, CalendarClock, Clock3, FileText, History, MapPin, ShieldCheck } from "lucide-react";
 import { Button } from "../../ui/button";
+import { cn } from "../../ui/utils";
 import type { CaseDecisionRole, CaseDecisionState, WorkflowCaseView } from "../../../lib/workflowUi";
 
 interface ActionCaseDecisionCardProps {
@@ -65,11 +66,21 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
   };
 
   return (
-    <article className={`rounded-3xl border p-5 transition-colors ${item.isBlocked ? "border-red-500/30 bg-red-500/5" : "border-border bg-card/70"}`}>
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+    <article
+      className={cn(
+        "rounded-[28px] border p-5 shadow-sm transition-all duration-200",
+        item.isBlocked
+          ? "border-red-500/30 bg-gradient-to-br from-red-500/8 via-card/80 to-card"
+          : "border-border bg-card/75 hover:border-primary/30 hover:shadow-md",
+      )}
+    >
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-border bg-background/65 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.id}</span>
+            <span className="rounded-full border border-border bg-background/65 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.phaseLabel}</span>
+          </div>
           <h3 className="text-lg font-semibold text-foreground">{item.clientLabel}</h3>
-          <p className="text-xs text-muted-foreground">{item.id}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${urgencyBadgeClasses(item.urgency)}`}>{item.urgencyLabel}</span>
