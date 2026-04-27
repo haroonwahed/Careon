@@ -20,6 +20,7 @@ import { Button } from "../ui/button";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 
 interface MatchingPageWithMapProps {
   caseId: string;
@@ -201,7 +202,7 @@ export function MatchingPageWithMap({
               {caseData.id} · {caseData.clientName}
             </span>
             <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
-              Klaar voor matching
+              Matching controleren
             </span>
           </div>
         </div>
@@ -228,17 +229,13 @@ export function MatchingPageWithMap({
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-primary mb-1">Aanbevolen aanbieder</p>
                     <h2 className="text-2xl font-bold text-foreground">{bestMatch.provider.name}</h2>
-                    <p className="text-sm text-muted-foreground mt-1">{bestMatch.provider.type}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{bestMatch.provider.type} · {bestMatch.provider.region}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">Matchscore</p>
                     <p className="text-3xl font-bold text-green-base">{bestMatch.score}%</p>
                   </div>
                 </div>
-
-                <p className="text-sm text-muted-foreground">
-                  Beste match op basis van specialisatie-fit, verwachte uitkomstkans en operationele haalbaarheid voor deze casus.
-                </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                   <div className="rounded-xl border border-border p-3">
@@ -257,6 +254,15 @@ export function MatchingPageWithMap({
                   </div>
                 </div>
 
+                <div className="flex flex-wrap gap-2">
+                  <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">
+                    {bestMatch.confidenceLabel}
+                  </span>
+                  <span className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-muted-foreground">
+                    {bestMatch.provider.availableSpots > 0 ? "Capaciteit" : "Geen capaciteit"}
+                  </span>
+                </div>
+
                 {hasDirectCapacity ? (
                   <div className="flex items-center gap-3">
                     <Button
@@ -266,42 +272,62 @@ export function MatchingPageWithMap({
                       disabled={isSubmittingMatch}
                       className="bg-primary hover:bg-primary/90"
                     >
-                      {isSubmittingMatch ? "Bezig met versturen..." : "Verstuur naar aanbieder voor beoordeling"}
+                      {isSubmittingMatch ? "Doorsturen..." : "Stuur door naar aanbiederbeoordeling"}
                     </Button>
                     <Button variant="outline" onClick={() => handleSelectProvider(bestMatch.provider.id)}>
-                      Focus op kaart
+                      Op kaart
                     </Button>
                   </div>
                 ) : (
                   <div className="space-y-3">
                     <div className="rounded-xl border border-yellow-500/35 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-100">
-                      Geen directe capaciteit binnen geselecteerde radius
+                      Geen directe capaciteit.
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <Button variant="outline" onClick={handleScenarioWaitlist}>
-                        Plaats op wachtlijst
+                        Vraag heroverweging aan
                       </Button>
                       <Button variant="outline" onClick={handleScenarioExpandRadius}>
                         Vergroot zoekgebied
                       </Button>
                       <Button variant="outline" onClick={handleScenarioShowAlternatives}>
-                        Toon alternatieven
+                        Bekijk alternatieven
                       </Button>
                     </div>
                   </div>
                 )}
+
+                <details className="rounded-2xl border border-border/80 bg-background/60 px-4 py-3 text-sm">
+                  <summary className="cursor-pointer list-none font-medium text-foreground">Details</summary>
+                  <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">Sterk</p>
+                      <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+                        {bestMatch.strongPoints.slice(0, 2).map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">Trade-offs</p>
+                      <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+                        {bestMatch.tradeOffs.slice(0, 2).map((tradeoff) => (
+                          <li key={tradeoff}>{tradeoff}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </details>
               </section>
             )}
 
             <section ref={alternativesRef} className="space-y-3">
               <div>
                 <h3 className="text-lg font-bold text-foreground">Alternatieven</h3>
-                <p className="text-sm text-muted-foreground">Top 3 totaal: aanbevolen aanbieder plus alternatieve opties.</p>
+                <p className="text-sm text-muted-foreground">Controleer alternatieven voor gemeentelijke validatie.</p>
               </div>
 
-              {alternatives.length === 0 && (
-                <div className="premium-card p-4 text-sm text-muted-foreground">Geen alternatieve aanbieders beschikbaar.</div>
-              )}
+              {alternatives.length === 0 && <div className="premium-card p-4 text-sm text-muted-foreground">Geen alternatieven.</div>}
 
               {alternatives.map((item) => {
                 const isSelected = selectedProviderId === item.provider.id;
@@ -316,7 +342,7 @@ export function MatchingPageWithMap({
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <h4 className="text-base font-semibold text-foreground">{item.provider.name}</h4>
-                        <p className="text-sm text-muted-foreground">{item.provider.type}</p>
+                        <p className="text-sm text-muted-foreground">{item.provider.type} · {item.provider.region}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-xs text-muted-foreground">Matchscore</p>
@@ -324,11 +350,7 @@ export function MatchingPageWithMap({
                       </div>
                     </div>
 
-                    <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
-                      {item.alternativeReasons.slice(0, 2).map((reason) => (
-                        <li key={reason}>{reason}</li>
-                      ))}
-                    </ul>
+                    <p className="mt-3 text-sm text-muted-foreground">{getShortReasonLabel(item.alternativeReasons[0] ?? "Alternatief")}</p>
 
                     <div className="mt-4 flex items-center gap-3">
                       {item.provider.availableSpots > 0 ? (
@@ -340,7 +362,7 @@ export function MatchingPageWithMap({
                           disabled={isSubmittingMatch}
                           className="bg-primary hover:bg-primary/90"
                         >
-                          {isSubmittingMatch ? "Bezig..." : "Verstuur naar aanbieder"}
+                          {isSubmittingMatch ? "Doorsturen..." : "Stuur door naar aanbiederbeoordeling"}
                         </Button>
                       ) : (
                         <Button
@@ -351,7 +373,7 @@ export function MatchingPageWithMap({
                             setScenarioMessage(`Geen directe capaciteit bij ${item.provider.name}; overweeg wachtlijst.`);
                           }}
                         >
-                          Plaats op wachtlijst
+                          Vraag heroverweging aan
                         </Button>
                       )}
 
@@ -362,9 +384,31 @@ export function MatchingPageWithMap({
                           handleSelectProvider(item.provider.id);
                         }}
                       >
-                        Bekijk op kaart
+                        Op kaart
                       </Button>
                     </div>
+
+                    <details className="mt-4 rounded-xl border border-border/80 bg-background/60 px-3 py-3 text-sm">
+                      <summary className="cursor-pointer list-none font-medium text-foreground">Details</summary>
+                      <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Sterk</p>
+                          <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                            {item.strongPoints.slice(0, 2).map((point) => (
+                              <li key={point}>{point}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Trade-offs</p>
+                          <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                            {item.tradeOffs.slice(0, 2).map((tradeoff) => (
+                              <li key={tradeoff}>{tradeoff}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </details>
                   </article>
                 );
               })}
@@ -378,26 +422,28 @@ export function MatchingPageWithMap({
                     {selectedMatch.confidenceLabel}
                   </span>
                 </div>
+                <details className="rounded-2xl border border-border/80 bg-background/60 px-4 py-3 text-sm">
+                  <summary className="cursor-pointer list-none font-medium text-foreground">Toelichting</summary>
+                  <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2">Sterk</p>
+                      <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+                        {selectedMatch.strongPoints.map((point) => (
+                          <li key={point}>{point}</li>
+                        ))}
+                      </ul>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground mb-2">Sterke punten</p>
-                    <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
-                      {selectedMatch.strongPoints.map((point) => (
-                        <li key={point}>{point}</li>
-                      ))}
-                    </ul>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground mb-2">Trade-offs</p>
+                      <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+                        {selectedMatch.tradeOffs.map((tradeoff) => (
+                          <li key={tradeoff}>{tradeoff}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-
-                  <div>
-                    <p className="text-sm font-semibold text-foreground mb-2">Trade-offs</p>
-                    <ul className="space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
-                      {selectedMatch.tradeOffs.map((tradeoff) => (
-                        <li key={tradeoff}>{tradeoff}</li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
+                </details>
               </section>
             )}
 
@@ -405,17 +451,21 @@ export function MatchingPageWithMap({
               <h3 className="text-lg font-bold text-foreground">Waarom niet andere aanbieders?</h3>
 
               {alternatives.length === 0 && (
-                <p className="text-sm text-muted-foreground">Er zijn momenteel geen concurrerende alternatieven binnen de selectie.</p>
+                <p className="text-sm text-muted-foreground">Geen concurrerende alternatieven.</p>
               )}
 
               {alternatives.map((item) => (
                 <div key={`why-not-${item.provider.id}`} className="rounded-xl border border-border p-4">
                   <p className="text-sm font-semibold text-foreground">{item.provider.name}</p>
-                  <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
-                    {item.alternativeReasons.slice(0, 2).map((reason) => (
-                      <li key={reason}>{reason}</li>
-                    ))}
-                  </ul>
+                  <p className="mt-2 text-sm text-muted-foreground">{getShortReasonLabel(item.alternativeReasons[0] ?? "Alternatief")}</p>
+                  <details className="mt-3 rounded-xl border border-border/80 bg-background/60 px-3 py-3 text-sm">
+                    <summary className="cursor-pointer list-none font-medium text-foreground">Details</summary>
+                    <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground list-disc pl-5">
+                      {item.alternativeReasons.slice(0, 2).map((reason) => (
+                        <li key={reason}>{reason}</li>
+                      ))}
+                    </ul>
+                  </details>
                 </div>
               ))}
             </section>
@@ -423,8 +473,8 @@ export function MatchingPageWithMap({
             {rankedMatches.length === 0 && (
               <div className="premium-card p-8 text-center">
                 <AlertTriangle size={42} className="mx-auto mb-3 text-yellow-base" />
-                <h3 className="text-lg font-bold text-foreground mb-2">Geen aanbieders gevonden</h3>
-                <p className="text-sm text-muted-foreground">Geen geschikte aanbieders binnen de huidige selectie.</p>
+                <h3 className="text-lg font-bold text-foreground mb-2">Geen aanbieders</h3>
+                <p className="text-sm text-muted-foreground">Geen geschikte aanbieders binnen de selectie.</p>
               </div>
             )}
           </div>
@@ -487,7 +537,7 @@ export function MatchingPageWithMap({
           </div>
 
           <div className="absolute left-4 top-4 z-10 rounded-xl border border-border bg-card/95 px-3 py-2 backdrop-blur">
-            <p className="text-xs font-semibold text-foreground">Google Maps</p>
+            <p className="text-xs font-semibold text-foreground">Kaart</p>
             <p className="text-[11px] text-muted-foreground">
               Focus: {focusedMatch ? focusedMatch.provider.name : caseData.region}
             </p>
@@ -522,7 +572,7 @@ export function MatchingPageWithMap({
                 <div>
                   <p className="text-sm font-semibold text-foreground">{focusedMatch.provider.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {focusedMatch.distance}km · Match {focusedMatch.score}% · Capaciteit {focusedMatch.provider.availableSpots}/{focusedMatch.provider.capacity}
+                    {focusedMatch.distance} km · Score {focusedMatch.score}% · {focusedMatch.provider.availableSpots}/{focusedMatch.provider.capacity}
                   </p>
                 </div>
 
@@ -534,7 +584,7 @@ export function MatchingPageWithMap({
                     }}
                     disabled={isSubmittingMatch}
                   >
-                    {isSubmittingMatch ? "Bezig..." : "Plaats direct"}
+                    {isSubmittingMatch ? "Bezig..." : "Stuur door naar aanbiederbeoordeling"}
                   </Button>
                 ) : (
                   <Button size="sm" variant="outline" onClick={handleScenarioWaitlist}>

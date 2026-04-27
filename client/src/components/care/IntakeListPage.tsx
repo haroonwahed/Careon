@@ -29,17 +29,17 @@ function requestBadge(view: IntakeListPageProps["view"]): { title: string; descr
     case "intake":
       return {
         title: "Intake en plaatsing",
-        description: "Geaccepteerde casussen die nu in plaatsing of intake zitten.",
+        description: "Geaccepteerde casussen in plaatsing of intake.",
       };
     case "responses":
       return {
         title: "Plaatsingsreacties",
-        description: "Overzicht van casussen die al zijn geaccepteerd en zijn doorgestroomd naar intake.",
+        description: "Casussen die zijn geaccepteerd en doorgestroomd.",
       };
     default:
       return {
         title: "Nieuwe aanvragen",
-        description: "Beoordeel nieuwe verzoeken van gemeenten en accepteer of wijs af.",
+        description: "Beoordeel nieuwe verzoeken.",
       };
   }
 }
@@ -156,8 +156,8 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
       {!loading && !error && visibleCases.length === 0 && (
         <div className="premium-card p-8 text-center text-sm text-muted-foreground">
           {view === "requests"
-            ? "Er staan momenteel geen open aanbiedersverzoeken klaar."
-            : "Er zijn nog geen casussen in deze fase."}
+            ? "Geen open verzoeken."
+            : "Geen casussen."}
         </div>
       )}
 
@@ -187,12 +187,12 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                     </p>
 
                     <p className="max-w-3xl text-sm text-foreground/85">
-                      {caseItem.systemInsight || "Geen aanvullende toelichting beschikbaar."}
+                      {caseItem.systemInsight || "Geen toelichting."}
                     </p>
 
                     <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="rounded-full bg-muted px-2.5 py-1">Wachttijd: {caseItem.wachttijd} dagen</span>
-                      <span className="rounded-full bg-muted px-2.5 py-1">Volgende stap: {caseItem.recommendedAction}</span>
+                      <span className="rounded-full bg-muted px-2.5 py-1">Actie: {caseItem.recommendedAction}</span>
                     </div>
                   </div>
 
@@ -232,7 +232,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
           <div>
             <p className="font-semibold text-foreground mb-1">Workflow</p>
             <p className="text-sm text-muted-foreground">
-              Accepteren zet de casus door naar plaatsing en intake. Afwijzen stuurt de casus terug naar matching zodat de gemeente een andere aanbieder kan kiezen.
+              Accepteren zet door naar plaatsing en intake. Afwijzen stuurt terug naar matching.
             </p>
           </div>
         </div>

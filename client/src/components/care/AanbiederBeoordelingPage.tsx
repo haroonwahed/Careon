@@ -10,7 +10,7 @@
  * ZORGAANBIEDER VIEW (decision):
  *   - Shows incoming review queue from municipalities.
  *   - Full case context: summary, match explanation, risk signals.
- *   - CTAs: "Accepteren" / "Afwijzen" / "Meer informatie vragen".
+ *   - CTAs: "Accepteren" / "Afwijzen" / "Meer info".
  *   - Rejection requires reason code + comment.
  *   - Info request requires type + question.
  */
@@ -71,13 +71,13 @@ function deriveStatusFromCase(caseItem: SpaCase): {
 } {
   switch (caseItem.status) {
     case "provider_beoordeling":
-      return { label: "Wacht op beoordeling door aanbieder", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Wacht op aanbieder", colorClass: "text-amber-400", icon: Clock };
     case "plaatsing":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     case "afgerond":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     default:
-      return { label: "Wacht op beoordeling door aanbieder", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Wacht op aanbieder", colorClass: "text-amber-400", icon: Clock };
   }
 }
 
@@ -146,7 +146,7 @@ function RejectionModal({ caseId, onClose, onConfirm, submitting }: RejectionMod
               onChange={(e) => setReasonCode(e.target.value as RejectionReasonCode)}
               className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
             >
-              <option value="">Kies een reden...</option>
+              <option value="">Kies reden...</option>
               {Object.entries(REJECTION_REASON_LABELS).map(([code, label]) => (
                 <option key={code} value={code}>{label}</option>
               ))}
@@ -218,7 +218,7 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
             <FileQuestion className="text-blue-400" size={20} />
           </div>
           <div>
-            <p className="font-semibold text-foreground">Meer informatie vragen</p>
+            <p className="font-semibold text-foreground">Meer info</p>
             <p className="text-sm text-muted-foreground mt-0.5">Casus <span className="font-medium text-foreground">{caseId}</span></p>
           </div>
         </div>
@@ -233,7 +233,7 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
               onChange={(e) => setInfoType(e.target.value as InfoRequestType)}
               className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
             >
-              <option value="">Kies het type...</option>
+              <option value="">Kies type...</option>
               {Object.entries(INFO_REQUEST_TYPE_LABELS).map(([code, label]) => (
                 <option key={code} value={code}>{label}</option>
               ))}
@@ -743,7 +743,7 @@ function ProviderView({
                       disabled={submitting}
                     >
                       <MessageSquare size={13} />
-                      Meer informatie vragen
+                      Meer info
                     </Button>
                     <Button
                       size="sm"

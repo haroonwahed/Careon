@@ -4,6 +4,7 @@ export type CanonicalWorkflowState =
   | "DRAFT_CASE"
   | "SUMMARY_READY"
   | "MATCHING_READY"
+  | "GEMEENTE_VALIDATED"
   | "PROVIDER_REVIEW_PENDING"
   | "PROVIDER_ACCEPTED"
   | "PROVIDER_REJECTED"
@@ -15,6 +16,7 @@ export type CanonicalWorkflowAction =
   | "create_case"
   | "complete_summary"
   | "start_matching"
+  | "validate_matching"
   | "send_to_provider"
   | "provider_accept"
   | "provider_reject"
@@ -29,6 +31,7 @@ const roleActions: Record<CanonicalWorkflowRole, Set<CanonicalWorkflowAction>> =
     "create_case",
     "complete_summary",
     "start_matching",
+    "validate_matching",
     "send_to_provider",
     "confirm_placement",
     "archive_case",
@@ -44,6 +47,7 @@ const roleActions: Record<CanonicalWorkflowRole, Set<CanonicalWorkflowAction>> =
     "create_case",
     "complete_summary",
     "start_matching",
+    "validate_matching",
     "send_to_provider",
     "provider_accept",
     "provider_reject",
@@ -58,7 +62,8 @@ const roleActions: Record<CanonicalWorkflowRole, Set<CanonicalWorkflowAction>> =
 const transitions: Record<CanonicalWorkflowState, Set<CanonicalWorkflowState>> = {
   DRAFT_CASE: new Set(["SUMMARY_READY"]),
   SUMMARY_READY: new Set(["MATCHING_READY"]),
-  MATCHING_READY: new Set(["PROVIDER_REVIEW_PENDING"]),
+  MATCHING_READY: new Set(["GEMEENTE_VALIDATED"]),
+  GEMEENTE_VALIDATED: new Set(["PROVIDER_REVIEW_PENDING"]),
   PROVIDER_REVIEW_PENDING: new Set(["PROVIDER_ACCEPTED", "PROVIDER_REJECTED", "MATCHING_READY"]),
   PROVIDER_ACCEPTED: new Set(["PLACEMENT_CONFIRMED"]),
   PROVIDER_REJECTED: new Set(["MATCHING_READY"]),

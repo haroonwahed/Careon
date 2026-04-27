@@ -50,6 +50,7 @@ import {
   type DecisionEvaluation,
   type DecisionPriority,
 } from "../../lib/decisionEvaluation";
+import { getShortActionLabel, getShortReasonLabel } from "../../lib/uxCopy";
 
 interface CaseWorkflowDetailPageProps {
   caseId: string;
@@ -86,12 +87,12 @@ const STEP_ACTION_HINTS: Record<string, string> = {
 };
 
 const STEP_REQUIREMENTS: Record<FlowStepId, string> = {
-  casus: "Casusgegevens moeten compleet zijn.",
-  samenvatting: "Samenvatting of casuscontrole moet beschikbaar zijn.",
-  matching: "De samenvatting moet compleet zijn voordat matching start.",
-  aanbieder_beoordeling: "Een geselecteerde match moet naar de aanbieder zijn verstuurd.",
-  plaatsing: "De aanbieder moet de casus eerst accepteren.",
-  intake: "Plaatsing moet bevestigd zijn.",
+  casus: "Casus compleet.",
+  samenvatting: "Samenvatting beschikbaar.",
+  matching: "Samenvatting eerst.",
+  aanbieder_beoordeling: "Match verstuurd.",
+  plaatsing: "Aanbieder akkoord.",
+  intake: "Plaatsing bevestigd.",
 };
 
 function urgencyBadgeClasses(urgency: string) {
@@ -560,8 +561,8 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
 
       <CareInsightBanner
         tone="primary"
-        title={decisionPanelMessage ?? bannerActionLabel}
-        copy={decisionPanelMessage ?? bannerActionMessage}
+        title={getShortActionLabel(decisionPanelMessage ?? bannerActionLabel)}
+        copy={getShortReasonLabel(decisionPanelMessage ?? bannerActionMessage, 96)}
         action={(
           <div className="space-y-2">
             <Button
@@ -569,14 +570,14 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
               disabled={decisionLoading || !nextBestAction || !nextActionAllowed || Boolean(nextActionBlocked?.reason) || (nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId)}
               className="gap-2"
             >
-              {nextBestAction?.label ?? "Geen vervolgactie"}
+              {getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie")}
               <ArrowRight size={16} />
             </Button>
             {!nextActionAllowed && nextActionBlocked && (
-              <p className="max-w-xs text-xs text-muted-foreground">{bannerActionDisabledReason}</p>
+              <p className="max-w-xs text-xs text-muted-foreground">{getShortReasonLabel(bannerActionDisabledReason, 80)}</p>
             )}
             {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
-              <p className="max-w-xs text-xs text-muted-foreground">Er is nog geen geselecteerde aanbieder beschikbaar om te versturen.</p>
+              <p className="max-w-xs text-xs text-muted-foreground">Nog geen geselecteerde aanbieder.</p>
             )}
           </div>
         )}
@@ -584,7 +585,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
 
       <CareSectionCard
         title="Casuspad"
-        subtitle={`Huidige stap: ${stateLabel(currentState, isArchived)}`}
+        subtitle={stateLabel(currentState, isArchived)}
         className="p-5"
       >
         <div className="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-6">
@@ -611,7 +612,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(360px,1fr)] gap-6">
         <div className="space-y-6">
-          <CareSectionCard title="Blokkades" subtitle="Waarom de casus hier vastloopt en wat dit blokkeert.">
+          <CareSectionCard title="Blokkades" subtitle="Wat blokkeert.">
             {decisionEvaluation?.blockers?.length ? (
               <div className="space-y-3">
                 {decisionEvaluation.blockers.map((blocker) => (
@@ -620,7 +621,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                       <Badge variant="outline" className="border-red-500/30 bg-red-500/10 text-red-200">
                         {blocker.severity}
                       </Badge>
-                      <p className="font-semibold text-foreground">{blocker.message}</p>
+                      <p className="font-semibold text-foreground">{getShortReasonLabel(blocker.message, 88)}</p>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {blocker.blocking_actions.map((action) => (
@@ -637,7 +638,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
           </CareSectionCard>
 
-          <CareSectionCard title="Risico's" subtitle="Vroege signalen die opvolging verdienen.">
+          <CareSectionCard title="Risico's" subtitle="Signalen voor opvolging.">
             {decisionEvaluation?.risks?.length ? (
               <div className="space-y-3">
                 {decisionEvaluation.risks.map((risk) => (
@@ -655,7 +656,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
           </CareSectionCard>
 
-          <CareSectionCard title="Alerts" subtitle="Signalen die de volgende beslissing sturen.">
+          <CareSectionCard title="Alerts" subtitle="Volgende signalen.">
             {decisionEvaluation?.alerts?.length ? (
               <div className="space-y-3">
                 {decisionEvaluation.alerts.map((alert) => (
@@ -666,8 +667,8 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                       </Badge>
                       <p className="font-semibold text-foreground">{alert.title}</p>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{alert.message}</p>
-                    <p className="mt-2 text-xs text-foreground/80">Aanbevolen actie: {STEP_ACTION_HINTS[alert.recommended_action] ?? alert.recommended_action}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{getShortReasonLabel(alert.message, 88)}</p>
+                    <p className="mt-2 text-xs text-foreground/80">Actie: {STEP_ACTION_HINTS[alert.recommended_action] ?? alert.recommended_action}</p>
                   </div>
                 ))}
               </div>
@@ -676,10 +677,10 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
           </CareSectionCard>
 
-          <CareSectionCard title="Beschikbare acties" subtitle="Alle acties blijven gekoppeld aan de huidige rol en status.">
+          <CareSectionCard title="Beschikbare acties" subtitle="Alleen acties voor deze rol.">
             <div className="flex items-center justify-between gap-3">
               <Badge variant="outline">{roleLabel(role)}</Badge>
-              <p className="text-xs text-muted-foreground">Beschikbare route-acties</p>
+              <p className="text-xs text-muted-foreground">Route-acties</p>
             </div>
 
             {allowedActions.length > 0 ? (
@@ -710,16 +711,16 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                   };
 
                   return (
-                    <Button
-                      key={action.action}
-                      size="sm"
-                      variant={variant as "default" | "outline" | "destructive"}
+                      <Button
+                        key={action.action}
+                        size="sm"
+                        variant={variant as "default" | "outline" | "destructive"}
                       disabled={disabled}
                       onClick={onClick}
                       className="gap-2"
                     >
                       {isLoading && <Loader2 size={14} className="animate-spin" />}
-                      {action.label}
+                      {getShortActionLabel(action.label)}
                     </Button>
                   );
                 })}
@@ -729,7 +730,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
           </CareSectionCard>
 
-          <CareSectionCard title="Geblokkeerde acties" subtitle="Deze acties blijven zichtbaar zodat de blokkade uitlegbaar is.">
+          <CareSectionCard title="Geblokkeerd" subtitle="Zichtbaar voor uitleg.">
             {decisionEvaluation?.blocked_actions?.length ? (
               <div className="space-y-3">
                 {decisionEvaluation.blocked_actions.map((action) => (
@@ -738,9 +739,9 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                       <Badge variant="outline">Geblokkeerd</Badge>
                       <p className="font-semibold text-foreground">{action.label}</p>
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{action.reason}</p>
+                    <p className="mt-2 text-sm text-muted-foreground">{getShortReasonLabel(action.reason, 88)}</p>
                     <p className="mt-2 text-xs text-muted-foreground">
-                      Vereiste vorige stap: {requiredPreviousStep(action.action)}
+                      Vorige stap: {requiredPreviousStep(action.action)}
                     </p>
                   </div>
                 ))}
@@ -752,7 +753,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
         </div>
 
         <div className="space-y-6">
-          <CareSectionCard title="Beslissingscontext" subtitle="Technische context voor de beslisengine en audittrail.">
+          <CareSectionCard title="Beslissingscontext" subtitle="Technische details.">
             <Collapsible defaultOpen={false}>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-sm font-medium text-foreground">Toon details</p>
@@ -800,7 +801,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             </Collapsible>
           </CareSectionCard>
 
-          <CareSectionCard title="Laatste gebeurtenissen" subtitle="Recente acties en statuswijzigingen die het verloop verklaren.">
+          <CareSectionCard title="Laatste gebeurtenissen" subtitle="Recente statuswijzigingen.">
             {decisionEvaluation?.timeline_signals?.recent_events?.length ? (
               <div className="space-y-3">
                 {decisionEvaluation.timeline_signals.recent_events.slice(0, 5).map((event) => (
@@ -818,7 +819,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
           </CareSectionCard>
 
-          <CareSectionCard title="Casus samenvatting" subtitle="Kerngegevens en context voor deze casus.">
+          <CareSectionCard title="Casus samenvatting" subtitle="Kerngegevens.">
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="text-muted-foreground">Casus</p>
@@ -833,8 +834,8 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                 <p className="mt-1 font-medium text-foreground">{spaCase.zorgtype}</p>
               </div>
               <div>
-                <p className="text-muted-foreground">Leeftijdsschatting</p>
-                <p className="mt-1 font-medium text-foreground">{spaCase.wachttijd} dagen wachtduur</p>
+                <p className="text-muted-foreground">Wachttijd</p>
+                <p className="mt-1 font-medium text-foreground">{spaCase.wachttijd} dagen</p>
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">

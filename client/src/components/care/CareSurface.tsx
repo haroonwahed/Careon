@@ -52,7 +52,7 @@ export function CarePageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("rounded-[32px] border border-border/80 bg-card/80 p-6 shadow-sm backdrop-blur", className)}>
+    <header className={cn("rounded-[24px] border border-border/80 bg-card/80 p-5 shadow-sm backdrop-blur", className)}>
       <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-3">
           {eyebrow && (
@@ -77,12 +77,14 @@ export function CareInsightBanner({
   copy,
   action,
   tone = "primary",
+  compact = false,
   className,
 }: {
   title: ReactNode;
   copy?: ReactNode;
   action?: ReactNode;
   tone?: CareTone;
+  compact?: boolean;
   className?: string;
 }) {
   const styles = TONE_STYLES[tone];
@@ -90,16 +92,16 @@ export function CareInsightBanner({
   return (
     <section
       className={cn(
-        "rounded-2xl border-l-4 p-5",
+        compact ? "rounded-2xl border-l-4 px-4 py-3" : "rounded-2xl border-l-4 p-5",
         styles.shell,
         className,
       )}
     >
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+      <div className={cn("flex flex-col gap-4 md:justify-between", compact ? "md:flex-row md:items-center" : "md:flex-row md:items-center")}>
         <div className="space-y-1.5">
-          <p className={cn("text-sm font-semibold uppercase tracking-[0.12em]", styles.note)}>Operatieve aandacht</p>
-          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-          {copy && <p className="max-w-4xl text-sm leading-6 text-muted-foreground">{copy}</p>}
+          <p className={cn(compact ? "text-xs font-semibold uppercase tracking-[0.12em]" : "text-sm font-semibold uppercase tracking-[0.12em]", styles.note)}>Operatieve aandacht</p>
+          <h2 className={cn(compact ? "text-base font-semibold text-foreground" : "text-lg font-semibold text-foreground")}>{title}</h2>
+          {copy && <p className={cn("max-w-4xl leading-6 text-muted-foreground", compact ? "text-xs" : "text-sm")}>{copy}</p>}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
@@ -137,7 +139,7 @@ export function CareMetricCard({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "group relative flex min-h-[140px] flex-col justify-between rounded-[24px] border p-4 text-left transition-all duration-200",
+        "group relative flex min-h-[140px] flex-col justify-between rounded-[16px] border p-4 text-left transition-all duration-200",
         styles.shell,
         onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg",
         active && "ring-2 ring-primary/35 shadow-[0_10px_28px_rgba(139,92,246,0.18)]",
@@ -177,7 +179,7 @@ export function CareSectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-[28px] border border-border bg-card/72 p-5 shadow-sm backdrop-blur", className)}>
+    <section className={cn("rounded-[20px] border border-border bg-card/72 p-5 shadow-sm backdrop-blur", className)}>
       {(title || subtitle || actions) && (
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1">
@@ -204,7 +206,7 @@ export function CareEmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-[28px] border border-border bg-card/75 p-10 text-center shadow-sm", className)}>
+    <div className={cn("rounded-[20px] border border-border bg-card/75 p-10 text-center shadow-sm", className)}>
       <div className="mx-auto max-w-xl space-y-3">
         <p className="text-lg font-semibold text-foreground">{title}</p>
         {copy && <p className="text-sm leading-6 text-muted-foreground">{copy}</p>}

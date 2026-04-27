@@ -227,7 +227,7 @@ describe("RegiekamerControlCenter", () => {
 
     render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByText("Er zijn nog geen actieve casussen om te beoordelen.")).toBeInTheDocument();
+    expect(screen.getByText("Geen actieve casussen.")).toBeInTheDocument();
   });
 
   it("renders the no-issues empty state", () => {
@@ -268,8 +268,8 @@ describe("RegiekamerControlCenter", () => {
 
     render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByText("Geen vastgelopen casussen.")).toBeInTheDocument();
-    expect(screen.getByText("De actieve keten loopt momenteel zonder kritieke signalen.")).toBeInTheDocument();
+    expect(screen.getByText("Geen signalen.")).toBeInTheDocument();
+    expect(screen.getByText("De keten loopt zonder blokkades.")).toBeInTheDocument();
   });
 
   it("opens the existing case detail overlay by notifying the parent", () => {

@@ -463,11 +463,6 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
                         <span className={isActive ? "text-primary" : ""}>
                           {item.label}
                         </span>
-                        {isSupportingInternal && (
-                          <span className="rounded-full border border-border bg-muted/40 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                            Intern
-                          </span>
-                        )}
                       </span>
                     )}
 

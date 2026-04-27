@@ -12,13 +12,14 @@ The backend owns workflow truth. UI and API consumers are adapters, not policy o
 
 ## 2. Core Workflow (Non-Negotiable)
 
-Casus -> Samenvatting -> Matching -> Aanbieder Beoordeling -> Plaatsing -> Intake
+Casus -> Samenvatting -> Matching -> Gemeente Validatie -> Aanbieder Beoordeling -> Plaatsing -> Intake
 
 Rules:
 
 - Casus is created by gemeente and acts as anchor entity.
 - Samenvatting clarifies context and missing information, but is not a final decision.
 - Matching proposes explainable candidates and does not assign final ownership.
+- Gemeente Validatie confirms or adjusts matching before provider review starts.
 - Aanbieder Beoordeling is the substantive accept or reject decision by zorgaanbieder.
 - Plaatsing is only valid after provider acceptance.
 - Intake only starts after placement confirmation.
@@ -49,6 +50,7 @@ Canonical workflow states:
 - DRAFT_CASE
 - SUMMARY_READY
 - MATCHING_READY
+- GEMEENTE_VALIDATED
 - PROVIDER_REVIEW_PENDING
 - PROVIDER_ACCEPTED
 - PROVIDER_REJECTED
@@ -61,6 +63,7 @@ Canonical actions:
 - create_case
 - complete_summary
 - start_matching
+- validate_matching
 - send_to_provider
 - provider_accept
 - provider_reject
@@ -72,7 +75,7 @@ Canonical actions:
 
 Role ownership policy:
 
-- gemeente: create_case, complete_summary, start_matching, send_to_provider, confirm_placement, archive_case, rematch
+- gemeente: create_case, complete_summary, start_matching, validate_matching, send_to_provider, confirm_placement, archive_case, rematch
 - zorgaanbieder: provider_accept, provider_reject, provider_request_info, start_intake
 - admin/regie: all actions
 

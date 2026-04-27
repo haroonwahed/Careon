@@ -3,6 +3,7 @@ import { AlertTriangle, ArrowRight, Building2, MapPin } from "lucide-react";
 import { Button } from "../../ui/button";
 import type { WorkflowCaseView } from "../../../lib/workflowUi";
 import { DecisionBadge } from "./DecisionBadge";
+import { getShortActionLabel, getShortReasonLabel, getShortStatusLabel } from "../../../lib/uxCopy";
 
 interface WorkflowCaseCardProps {
   item: WorkflowCaseView;
@@ -64,15 +65,15 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
         <span>{item.daysInCurrentPhase} dagen in stap</span>
       </div>
 
-      <p className="mt-4 text-sm leading-6 text-foreground/85">{item.summarySnippet}</p>
+      <p className="mt-4 text-sm leading-6 text-foreground/85">{getShortReasonLabel(item.summarySnippet, 72)}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-muted/20 p-3 text-xs">
         <div>
-          <p className="text-muted-foreground">Waarom hier</p>
-          <p className="mt-1 text-sm font-medium text-foreground">{item.currentPhaseLabel}</p>
+          <p className="text-muted-foreground">Stap</p>
+          <p className="mt-1 text-sm font-medium text-foreground">{getShortStatusLabel(item.currentPhaseLabel)}</p>
         </div>
         <div>
-          <p className="text-muted-foreground">Verantwoordelijk</p>
+          <p className="text-muted-foreground">Eigenaar</p>
           <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
             <Building2 size={12} />
             {item.responsibleParty}
@@ -80,9 +81,11 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
         </div>
       </div>
 
-      <p className="mt-4 rounded-2xl border border-border/80 bg-background/60 px-3 py-3 text-xs leading-5 text-muted-foreground">
-        {item.whyInThisStep}
-      </p>
+      <details className="mt-4 rounded-2xl border border-border/80 bg-background/60 px-3 py-3 text-xs leading-5 text-muted-foreground">
+        <summary className="cursor-pointer list-none font-medium text-foreground">Meer details</summary>
+        <p className="mt-2 text-muted-foreground">{getShortReasonLabel(item.whyInThisStep, 120)}</p>
+        {item.blockReason && <p className="mt-2 text-red-200/85">Blokkade: {getShortReasonLabel(item.blockReason, 80)}</p>}
+      </details>
 
       {item.decisionBadges.length > 0 && (
         <div className="mt-4 flex flex-wrap gap-2">
@@ -125,10 +128,10 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
 
       <div className="mt-5 flex items-center justify-between gap-3 border-t border-border pt-4">
         <div>
-          <p className="text-xs text-muted-foreground">Volgende stap</p>
+          <p className="text-xs text-muted-foreground">Actie</p>
           <p className="mt-1 text-sm font-medium text-foreground">{item.primaryActionLabel}</p>
         </div>
-        <Button
+          <Button
           size="sm"
           variant={item.primaryActionEnabled ? "default" : "outline"}
           disabled={!item.primaryActionEnabled}
@@ -136,7 +139,7 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
           className="gap-2"
           title={item.primaryActionReason ?? undefined}
         >
-          {item.primaryActionLabel}
+          {getShortActionLabel(item.primaryActionLabel)}
           <ArrowRight size={14} />
         </Button>
       </div>

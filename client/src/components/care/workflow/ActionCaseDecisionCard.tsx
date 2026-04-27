@@ -2,6 +2,7 @@ import { AlertTriangle, ArrowRight, Building2, CalendarClock, Clock3, FileText, 
 import { Button } from "../../ui/button";
 import { cn } from "../../ui/utils";
 import type { CaseDecisionRole, CaseDecisionState, WorkflowCaseView } from "../../../lib/workflowUi";
+import { getShortActionLabel, getShortReasonLabel } from "../../../lib/uxCopy";
 
 interface ActionCaseDecisionCardProps {
   item: WorkflowCaseView;
@@ -121,23 +122,23 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <section className="rounded-2xl border border-border/70 bg-background/40 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Waarom hier</p>
-          <p className="mt-2 text-sm text-foreground/90">{decision.whyHere}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Reden</p>
+          <p className="mt-2 text-sm text-foreground/90">{getShortReasonLabel(decision.whyHere, 90)}</p>
         </section>
         <section className="rounded-2xl border border-primary/25 bg-primary/5 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende stap</p>
-          <p className="mt-2 text-sm font-medium text-foreground">{decision.nextActionLabel}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actie</p>
+          <p className="mt-2 text-sm font-medium text-foreground">{getShortActionLabel(decision.nextActionLabel)}</p>
           {decision.blockedReason && (
-            <p className="mt-2 text-xs text-red-200/90">Blokkade: {decision.blockedReason}</p>
+            <p className="mt-2 text-xs text-red-200/90">Blokkade: {getShortReasonLabel(decision.blockedReason, 70)}</p>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <Button onClick={handlePrimaryAction} disabled={!decision.primaryActionEnabled} className="gap-2" size="sm">
-              {decision.nextActionLabel}
+              {getShortActionLabel(decision.nextActionLabel)}
               <ArrowRight size={14} />
             </Button>
             {decision.nextActionRoute !== "casussen" && (
               <Button variant="outline" size="sm" onClick={() => handleRouteAction(decision.nextActionRoute)}>
-                Open workflow
+                Open
               </Button>
             )}
           </div>

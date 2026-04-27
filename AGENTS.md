@@ -1,319 +1,384 @@
+---
+description: 
+alwaysApply: true
+---
+
 # AGENTS.md
 
 ## Project Identity
 
-This repository implements **Zorg OS**, a Dutch care-allocation decision system for municipalities and care providers.
+This repository implements **Zorg OS**, a workflow-first Dutch care allocation system.
 
-The product is workflow-first and case-centric. It should guide the right actor to the next correct action, not behave like a passive dashboard.
+Zorg OS is a **decision system**, not a dashboard.
 
-## Canonical Flow
+The system enforces:
+- correct sequencing of actions
+- correct ownership of decisions
+- full traceability of every step
 
-Treat this sequence as the source of truth for code, UI, copy, database behavior, tests, and docs:
+The system must always guide the correct actor to the **next best action**.
 
-**Casus -> Samenvatting -> Matching -> Aanbieder Beoordeling -> Plaatsing -> Intake**
+---
 
-### Step Meaning
+## Canonical Flow (Source of Truth)
 
-1. **Casus**
-   - Municipality creates the case.
-   - Capture the minimum valid intake data.
-   - The case is the source of truth.
+**Casus → Samenvatting → Matching → Gemeente Validatie → Aanbieder Beoordeling → Plaatsing → Intake**
 
-2. **Samenvatting**
-   - The system creates a concise summary.
-   - It clarifies context, urgency, and missing information.
-   - It is not provider review or final decision-making.
+This flow governs:
 
-3. **Matching**
-   - The system proposes best-fit providers.
-   - Matching must be explainable.
-   - Municipality uses this to route the case for provider review.
+- code
+- UI
+- data
+- API behavior
+- tests
+- documentation
 
-4. **Aanbieder Beoordeling**
-   - The provider validates fit, capacity, risks, and suitability.
-   - The provider accepts or rejects with reason.
-   - Substantive review authority belongs here.
+This flow is **non-negotiable**.
 
-5. **Plaatsing**
-   - Placement happens only after provider acceptance.
-   - It confirms assignment and handoff readiness.
+---
 
-6. **Intake**
-   - Intake starts only after acceptance and placement.
-   - It marks the start of the care trajectory.
+## Core Principle
+
+The backend is the source of truth.
+
+- All workflow rules must be enforced in the backend
+- UI may guide but must never enforce logic
+- Invalid transitions must be rejected at API level
+
+---
+
+## Decision Ownership (CRITICAL)
+
+### Gemeente
+- Creates casus
+- Reviews AI output (summary + matching)
+- Validates or adjusts matching
+- Decides which provider receives the case
+
+### Zorgaanbieder
+- Performs beoordeling (accept/reject)
+- Provides structured rejection reasons
+- Executes placement
+- Initiates intake
+
+### System (AI)
+- Generates summary
+- Performs matching
+- Suggests next-best-action
+- NEVER makes final decisions
+
+---
 
 ## Non-Negotiable Rules
 
-When modifying code, never violate these rules:
+Never violate:
 
-1. Do not restore the old flow where municipality performs substantive beoordeling before provider review.
-2. Do not allow intake before provider acceptance and placement.
-3. Do not allow placement for rejected or unreviewed provider requests.
-4. Do not treat matching as final assignment.
-5. Keep every major action traceable from the case.
-6. Do not turn the product into a reporting dashboard without next-best action.
-7. Use Dutch product terminology in user-facing UX where canonical Dutch terms exist.
+1. No intake before placement
+2. No placement before provider acceptance
+3. No provider beoordeling before gemeente validatie
+4. Municipality cannot perform provider-level decisions
+5. Matching is advisory only (never assignment)
+6. Workflow steps may not be skipped or reordered
+7. Every state transition must be auditable
+8. UX must show next-best action + actor + reason
 
-## Terminology
+---
 
-Use these terms consistently in code, labels, docs, and tests when they are part of the product surface:
+## State Machine (STRICT)
 
-- Casus
-- Samenvatting
-- Matching
-- Aanbieder Beoordeling
-- Plaatsing
-- Intake
-- Intake-overdracht
-- Zorgaanbieder
-- Gemeente
-- Regiekamer
-- Signalen
-- Volgende beste actie
+Allowed transitions:
 
-Avoid or replace:
+DRAFT → SUMMARY_READY  
+SUMMARY_READY → MATCHING_READY  
+MATCHING_READY → GEMEENTE_VALIDATED  
+GEMEENTE_VALIDATED → PROVIDER_REVIEW  
+PROVIDER_REVIEW → ACCEPTED  
+PROVIDER_REVIEW → REJECTED  
+ACCEPTED → PLACED  
+PLACED → INTAKE  
+INTAKE → DONE  
 
-- "Assessment" when **Beoordeling** is intended in Dutch UX
-- Municipality-led substantive beoordeling as a business step
-- Ambiguous "overdracht" when **intake-overdracht** is meant
-- Generic status-dashboard language that hides the next action
+REJECTED → MATCHING_READY (retry flow)
 
-## Product And UX Principles
+Rules:
+- No skipping states
+- No reordering
+- All transitions must include:
+  - actor (who)
+  - timestamp (when)
+  - reason (why)
 
-### Workflow-First
+---
 
-The UI should guide operational sequence, not expose disconnected records or generic CRUD screens.
+## Product Principles
 
-### Every Page Answers One Question
+### Workflow First
+UI must guide progression, not display static data.
 
-Each page should make clear:
-
-- where the case is now
-- why it is here
-- what blocks progress
-- what the next action is
-- who owns that action
+### Every Page Must Show
+- current state
+- why this state exists
+- blocker (if any)
+- responsible actor
+- next-best action
 
 ### Action Over Decoration
-
 Prefer:
-
-- clear CTA banners
-- progression states
+- CTA banners
+- blockers
 - reason codes
-- evidence panels
-- blocking validation
-- next-best-action patterns
+- evidence
 
 Avoid:
-
+- passive dashboards
 - dead-end pages
-- decorative widgets with no operational value
-- status-only cards with no outcome
-- vague labels like "open" or "pending" without context
+- cosmetic metrics
 
-### Calm Professional Tone
-
-Visual tone should feel trustworthy, modern, calm, operational, and high signal.
-
-## Architecture Guidance
-
-Assume these conceptual layers:
-
-- Case layer as the anchor entity
-- Workflow/view layer for orchestration
-- Intelligence layer for summary, missing info, risk signals, and next-best action
-- Matching engine for provider recommendations and explainability
-- Provider evaluation layer for accept/reject and feedback
-- Outcome layer for placement, intake progress, and learning loops
+---
 
 ## Matching Rules
 
-When touching matching logic or UI:
+Matching must:
 
-- Keep recommendations explainable.
-- Show why a provider is suggested.
-- Preserve factor breakdowns where available.
-- Preserve or improve confidence calibration.
-- Capture provider rejection reasons structurally.
-- Use real domain factors such as care type, urgency, region, capacity, specialization, complexity, and special needs.
+- produce top candidates
+- include fit score (0–100)
+- include confidence level
+- include factor breakdown:
+  - specialization
+  - capacity
+  - region
+  - urgency
+  - complexity
 
-Do not:
+- explain trade-offs
+- provide verification guidance
 
-- rank providers with opaque labels only
-- hide trade-offs
-- claim certainty when the data is weak
-- drop auditability for "smart" UX shortcuts
+Matching must NOT:
+
+- assign providers automatically
+- hide uncertainty
+- skip municipality validation
+
+---
+
+## Gemeente Validatie Rules
+
+This is a mandatory decision gate.
+
+Must allow:
+- approve matching
+- adjust selection
+- request re-matching
+
+Must NOT allow:
+- provider-level acceptance/rejection
+- bypass of provider beoordeling
+
+---
 
 ## Regiekamer Rules
 
-The Regiekamer is an intervention layer.
+Each signal must show:
 
-It should emphasize:
+- problem
+- impact
+- owner
+- required action
 
-- missing critical information
-- absent summary
-- no viable match
-- weak match needing verification
-- provider rejection
-- pending provider review beyond SLA
-- capacity risk
-- delayed placement or intake follow-up
+System must detect:
+- missing data
+- weak matches
+- delays
+- repeated rejections
+- capacity risks
 
-It should not become:
+Regiekamer is:
+→ a control tower, not a dashboard
 
-- a generic analytics homepage
-- a dumping ground for every metric
-- a page with alerts that have no actionable owner
+---
 
-Every signal should answer:
+## Execution Model (MANDATORY)
 
-- what is wrong
-- why it matters
-- who should act
-- what action is expected now
+### Step 1 — Task Classification
 
-## Data And Model Expectations
+Classify tasks as:
 
-Expected domain objects include concepts like:
+- Frontend UX
+- Backend Workflow
+- Matching
+- Regiekamer
+- Test/QA
 
-- Case
-- Case summary / intelligence output
-- Matching result / recommendation
-- Provider evaluation
-- Placement
-- Intake / intake-overdracht state
-- Timeline events / audit log
+---
 
-When evolving schema:
+### Step 2 — Skill Routing
 
-- prefer additive, auditable changes
-- avoid breaking historical traceability
-- keep reason codes structured where possible
-- favor explicit workflow states over vague booleans
+Infer automatically:
 
-## Guardrails For Code Changes
+- UI / layout → Frontend
+- API / models → Backend
+- scoring → Matching
+- alerts → Regiekamer
+- validation → Test/QA
 
-Before changing code, inspect existing patterns and preserve what is canonical.
+If multi-domain:
+- split into steps
+- execute sequentially
 
-### You Must Not
+---
 
-- rename domain concepts casually
-- move business authority to the wrong actor
-- collapse distinct workflow phases into one
-- break route names, templates, or labels that are already canonical without a strong reason
-- introduce mock data into production paths unless explicitly requested
-- replace Dutch domain copy with generic English copy in user-facing areas
+### Step 3 — Scope Control
 
-### You Should
+- Only inspect necessary files
+- Never scan full repo unless required
+- If unclear → ASK
 
-- make minimal, coherent changes
-- preserve backward-compatible behavior where reasonable
-- keep copy, statuses, routes, and templates aligned
-- update tests and docs when behavior changes
-- prefer fixing root causes over patch stacking
+---
 
-## Working Style
+### Step 4 — Structured Execution
 
-### Before Coding
+Internally define:
 
-1. Read the relevant files end to end.
-2. Trace the workflow impact across UI, backend, templates, tests, and docs.
-3. Identify whether the change affects business flow, terminology, state transitions, permissions, matching logic, or reporting/regiekamer logic.
-4. Then implement.
+TASK TYPE  
+GOAL  
+SCOPE  
+CONSTRAINTS  
+VERIFY  
 
-### While Coding
+---
 
-- Make changes that are narrow but complete.
-- Update all affected layers, not just one file.
-- Keep names consistent across models, views, templates, and tests.
-- Prefer explicitness over magic.
+### Step 5 — Implementation Rules
 
-### Default Execution Protocol
+- Minimal but complete changes
+- Fix root cause only
+- No unnecessary rewrites
+- Keep naming consistent
 
-When a task is framed as "carry it out" or a follow-on cleanup/hardening pass, work in this order:
+---
 
-1. Inspect the live user-facing path first and treat it as the primary scope.
-2. Fix the root cause in shared helpers or source-of-truth layers before patching individual screens.
-3. Sweep adjacent legacy or example surfaces only if they still leak into the active product, terminology, or user flow.
-4. Keep the change set cohesive and avoid unrelated refactors unless they unblock the requested work.
-5. Verify with the smallest meaningful test set plus a build/smoke check for touched client surfaces.
-6. Report any remaining legacy-only leftovers separately instead of mixing them into the active path.
+### Step 6 — Simplicity Rule
 
-### Terminology Sweep Rule
+Prefer:
+- simple solutions
+- no speculative abstractions
+- no unrelated refactors
 
-If a change updates the canonical workflow or product terminology, propagate the new wording through:
+---
 
-- shared route or workflow helpers
-- live pages in the active app path
-- validation and signal components
-- legacy surfaces only when they are rendered or linked from the active app
+### Step 7 — Output Requirements
 
-Do not spend time rewriting docs/examples/tests that are not part of the user-facing flow unless the task explicitly asks for it.
+Always return:
 
-### After Coding
+- changed files
+- explanation
+- verification result
+- remaining risks
 
-Run the most relevant checks available, such as:
+---
 
-- targeted tests for the changed area
-- linting or formatting if configured
-- framework validation commands
-- manual smoke checks for touched routes or templates
+## Risk Classification
 
-At minimum, verify:
+### LOW RISK
+- UI changes
+- copy updates
 
-- no broken workflow transitions
-- no template errors
-- no dead links or buttons
-- no login loops or 500s on touched routes
+→ execute immediately
 
-## Documentation Rules
+---
 
-If you change the core flow, update affected:
+### MEDIUM RISK
+- API changes
+- model updates
 
-- blueprint docs
-- executive summary docs
-- design strategy docs
-- system bible docs
-- inline comments that describe workflow
-- user-facing labels and helper text
+→ verify affected flows
 
-Documentation must reflect the canonical flow, not historical leftovers.
+---
 
-## Testing Expectations
+### HIGH RISK
+- workflow transitions
+- matching logic
+- provider beoordeling
+- placement/intake logic
 
-For workflow-sensitive changes, cover at least:
+→ STOP
 
-- case creation
-- summary availability and missing information handling
-- matching generation and explanation
-- provider acceptance and rejection
-- placement gating
-- intake gating
-- regiekamer signal behavior when relevant
+Must:
+1. explain impact
+2. list affected flows
+3. describe risks
+4. wait for confirmation
 
-Prefer tests that validate business rules, not just rendering.
+---
 
-## Copy And UI Writing Rules
+## Verification Rules
 
-Write user-facing copy that is concise, operational, calm, specific, and Dutch-first where the product is Dutch-facing.
+### LOW
+- UI renders correctly
 
-Good copy tells the user what happened and what to do next.
-Bad copy is vague, generic, or purely technical.
+### MEDIUM
+- run tests
+- validate logic
 
-## Conflict Resolution
+### HIGH
+Must verify:
 
-If implementation evidence conflicts with older docs or leftover code, prefer the canonical flow above and align the codebase toward it.
+- no intake before placement
+- no placement before acceptance
+- no provider beoordeling before gemeente validation
+- matching remains advisory
 
-This file takes precedence over stale handover notes and outdated comments. Legal, security, and platform constraints still override this file.
+---
 
-## Definition Of Done
+## Data Rules
 
-A task is done only when:
+- prefer additive changes
+- preserve history
+- use structured reason codes
+- no vague booleans
 
-- the requested change works
-- the canonical workflow is intact
-- terminology is consistent
-- touched tests pass or are updated appropriately
-- affected docs or labels are aligned
-- no obvious regressions remain in the touched flow
+---
+
+## Audit Rules
+
+Every action must log:
+
+- actor
+- action
+- timestamp
+- reason
+
+Audit trail must be immutable.
+
+---
+
+## Safety Rule
+
+If uncertain about:
+
+- workflow
+- decision ownership
+- actor responsibility
+
+→ STOP and ask
+
+Never guess.
+
+---
+
+## Definition of Done
+
+A task is complete only when:
+
+- functionality works
+- canonical flow is intact
+- decision ownership is respected
+- verification matches risk level
+- no regressions exist
+
+---
+
+## Final Rule
+
+If anything conflicts:
+
+→ Canonical Flow wins

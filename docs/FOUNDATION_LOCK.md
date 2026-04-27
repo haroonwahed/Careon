@@ -4,7 +4,7 @@ Primary reference: see docs/ZORG_OS_FOUNDATION_APPROACH.md for the system-first 
 
 ## Canonical Workflow
 
-Casus -> Samenvatting -> Matching -> Aanbieder Beoordeling -> Plaatsing -> Intake
+Casus -> Samenvatting -> Matching -> Gemeente Validatie -> Aanbieder Beoordeling -> Plaatsing -> Intake
 
 The backend is the source of truth for transitions and actor ownership.
 
@@ -13,6 +13,7 @@ The backend is the source of truth for transitions and actor ownership.
 - DRAFT_CASE
 - SUMMARY_READY
 - MATCHING_READY
+- GEMEENTE_VALIDATED
 - PROVIDER_REVIEW_PENDING
 - PROVIDER_ACCEPTED
 - PROVIDER_REJECTED
@@ -26,6 +27,7 @@ The backend is the source of truth for transitions and actor ownership.
   - create_case
   - complete_summary
   - start_matching
+  - validate_matching
   - send_to_provider
   - confirm_placement
   - archive_case

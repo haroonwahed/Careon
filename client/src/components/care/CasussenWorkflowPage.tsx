@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { CareEmptyState, CareFilterLabel, CareInsightBanner, CarePageHeader, CareSectionCard } from "./CareSurface";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
   buildWorkflowCases,
   getCaseDecisionState,
@@ -114,31 +115,31 @@ export function CasussenWorkflowPage({
         key: "waiting-provider",
         severity: waitingProviderCount > 0 ? "warning" : "info",
         count: waitingProviderCount,
-        label: `${waitingProviderCount} casussen wachten langer dan 3 dagen op beoordeling door aanbieder`,
+        label: `${waitingProviderCount} wachten op aanbieder`,
       },
       {
         key: "missing-summary",
         severity: missingSummaryCount > 0 ? "warning" : "info",
         count: missingSummaryCount,
-        label: `${missingSummaryCount} casussen missen informatie voor samenvatting`,
+        label: `${missingSummaryCount} missen samenvatting`,
       },
       {
         key: "rejected",
         severity: rejectedCount > 0 ? "critical" : "info",
         count: rejectedCount,
-        label: `${rejectedCount} casussen zijn afgewezen en hebben een nieuwe match nodig`,
+        label: `${rejectedCount} vragen nieuwe match`,
       },
       {
         key: "ready-placement",
         severity: readyPlacementCount > 0 ? "good" : "info",
         count: readyPlacementCount,
-        label: `${readyPlacementCount} casussen zijn klaar voor plaatsing`,
+        label: `${readyPlacementCount} klaar voor plaatsing`,
       },
       {
         key: "info-requested",
         severity: infoRequestedCount > 0 ? "warning" : "info",
         count: infoRequestedCount,
-        label: `${infoRequestedCount} casussen vragen aanvullende informatie`,
+        label: `${infoRequestedCount} vragen info`,
       },
     ];
   }, [decisionItems]);
@@ -246,21 +247,21 @@ export function CasussenWorkflowPage({
       <CarePageHeader
         eyebrow={<><Users size={16} className="text-primary" /><span>Casussen</span></>}
         title="Casussen"
-        subtitle={`Overzicht en triage van alle casussen · ${workflowCases.length} actief · ${attentionItems.reduce((sum, item) => sum + item.count, 0)} aandacht nodig`}
+        subtitle={`${workflowCases.length} actief · ${attentionItems.reduce((sum, item) => sum + item.count, 0)} aandacht`}
         actions={canCreateCase ? <Button onClick={handleCreateCase}><Plus size={16} className="mr-2" />Nieuwe casus</Button> : undefined}
       />
 
       <CareInsightBanner
         tone="warning"
         title={`${attentionItems[0]?.count ?? 0} casussen vragen directe opvolging`}
-        copy="Gebruik deze pagina als triage laag. Elk filter is gericht op de volgende actie, niet op statische rapportage."
-        action={<Button variant="outline" onClick={() => handleNavigate("matching")} className="gap-2"><Sparkles size={14} />Naar matching</Button>}
+        copy="Triage op de volgende actie."
+        action={<Button variant="outline" onClick={() => handleNavigate("matching")} className="gap-2"><Sparkles size={14} />Matching</Button>}
       />
 
       <CareSectionCard
         title="Aandacht nu"
-        subtitle="Snelle focus op de meest voorkomende urgente situaties."
-        actions={activeAttention ? <Button size="sm" variant="ghost" onClick={() => setActiveAttention(null)}>Filter wissen</Button> : undefined}
+        subtitle="Snelle focus op urgente signalen."
+        actions={activeAttention ? <Button size="sm" variant="ghost" onClick={() => setActiveAttention(null)}>Wis</Button> : undefined}
       >
         <div className="flex gap-3 overflow-x-auto pb-1">
           {attentionItems.map((attention) => (
@@ -283,7 +284,7 @@ export function CasussenWorkflowPage({
         </div>
       </CareSectionCard>
 
-      <CareSectionCard title="Filters" subtitle="Zoek en filter zonder de workflowlogica te veranderen.">
+      <CareSectionCard title="Filters" subtitle="Zoek en filter de werkvoorraad.">
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
             <div className="xl:col-span-2">
@@ -361,25 +362,25 @@ export function CasussenWorkflowPage({
       {loading && <CareEmptyState title="Casussen laden…" copy="De triageweergave wordt opgebouwd." />}
 
       {!loading && error && (
-        <CareEmptyState title="Casussen konden niet geladen worden" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>} />
+        <CareEmptyState title="Casussen laden mislukt" copy={getShortReasonLabel(error, 100)} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && workflowCases.length === 0 && (
         <CareEmptyState
-          title="Geen casussen gevonden."
-          copy="Pas filters aan of maak een nieuwe casus aan."
+          title="Geen casussen."
+          copy="Pas filters aan."
           action={canCreateCase ? <Button onClick={handleCreateCase}>Nieuwe casus</Button> : undefined}
         />
       )}
 
       {!loading && !error && workflowCases.length > 0 && filteredItems.length === 0 && (
         <CareEmptyState
-          title={focusChip === "my-actions" ? "Geen open acties." : "Geen casussen gevonden."}
+          title={focusChip === "my-actions" ? "Geen open acties." : "Geen casussen."}
           copy={focusChip === "my-actions"
-            ? "Alle casussen zijn momenteel in behandeling of wachten op een andere partij."
+            ? "Alles ligt bij andere partijen."
             : focusChip === "waiting-provider" || activeAttention === "waiting-provider"
-              ? "Er staan momenteel geen casussen langer dan 3 dagen in beoordeling door aanbieder."
-              : "Pas filters aan of maak een nieuwe casus aan."}
+              ? "Geen casussen wachten langer dan 3 dagen."
+              : "Pas filters aan."}
         />
       )}
 

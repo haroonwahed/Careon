@@ -2,11 +2,13 @@ import type { CasusAction, CasusSignal, CasusTimelineEvent, ComputedCaseState } 
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
 import { canRoleExecuteAction, type CanonicalWorkflowAction } from "./workflowStateMachine";
+import { getShortReasonLabel } from "./uxCopy";
 
 export type WorkflowBoardColumn =
   | "casus"
   | "samenvatting"
   | "matching"
+  | "gemeente-validatie"
   | "aanbieder-beoordeling"
   | "plaatsing"
   | "intake";
@@ -117,6 +119,8 @@ function boardColumnLabel(column: WorkflowBoardColumn): string {
       return "Samenvatting";
     case "matching":
       return "Matching";
+    case "gemeente-validatie":
+      return "Gemeente Validatie";
     case "aanbieder-beoordeling":
       return "Beoordeling door aanbieder";
     case "plaatsing":
@@ -129,6 +133,7 @@ function boardColumnLabel(column: WorkflowBoardColumn): string {
 function nextActionTarget(column: WorkflowBoardColumn): WorkflowCaseView["nextBestActionUrl"] {
   switch (column) {
     case "matching":
+    case "gemeente-validatie":
       return "matching";
     case "aanbieder-beoordeling":
       return "beoordelingen";
@@ -171,15 +176,15 @@ function buildSummarySnippet(spaCase: SpaCase, missingDataItems: string[]): stri
   const insight = spaCase.systemInsight.trim();
 
   if (insight) {
-    return insight.length > 180 ? `${insight.slice(0, 177).trim()}...` : insight;
+    return insight.length > 120 ? `${insight.slice(0, 117).trim()}...` : insight;
   }
 
   const parts = [
-    `${spaCase.zorgtype || "Zorgvraag"} in ${spaCase.regio || "onbekende regio"}.`,
+    `${spaCase.zorgtype || "Zorgvraag"} · ${spaCase.regio || "Onbekende regio"}.`,
     `Urgentie: ${urgencyLabel(spaCase.urgency).toLowerCase()}.`,
     missingDataItems.length > 0
-      ? `Nog ${missingDataItems.length} invoerpunt${missingDataItems.length === 1 ? "" : "en"} afronden voor matching.`
-      : "Klaar om samenvatting te bevestigen en door te zetten naar matching.",
+      ? `Nog ${missingDataItems.length} punt${missingDataItems.length === 1 ? "" : "en"} nodig.`
+      : "Klaar voor matching.",
   ];
 
   return parts.join(" ");
@@ -204,28 +209,28 @@ function buildRegionalMatches(spaCase: SpaCase, providers: SpaProvider[]): SpaPr
 
 function buildMatchConfidence(providerCount: number, urgency: SpaCase["urgency"]): { label: string; score: number; tone: WorkflowDecisionBadgeTone } | null {
   if (providerCount <= 0) {
-    return { label: "Match confidence laag", score: 22, tone: "critical" };
+    return { label: "Fit laag", score: 22, tone: "critical" };
   }
 
   if (providerCount === 1) {
     return {
-      label: urgency === "critical" ? "Match confidence kwetsbaar" : "Match confidence middel",
+      label: urgency === "critical" ? "Fit kwetsbaar" : "Fit middel",
       score: 58,
       tone: urgency === "critical" ? "warning" : "info",
     };
   }
 
   if (providerCount === 2) {
-    return { label: "Match confidence middel", score: 73, tone: "info" };
+    return { label: "Fit middel", score: 73, tone: "info" };
   }
 
-  return { label: "Match confidence sterk", score: 89, tone: "good" };
+  return { label: "Fit sterk", score: 89, tone: "good" };
 }
 
 function resolveBoardColumn(spaCase: SpaCase, missingDataItems: string[]): WorkflowBoardColumn {
   switch (spaCase.status) {
     case "matching":
-      return "matching";
+      return spaCase.urgencyValidated ? "gemeente-validatie" : "matching";
     case "provider_beoordeling":
       return "aanbieder-beoordeling";
     case "plaatsing":
@@ -240,18 +245,20 @@ function resolveBoardColumn(spaCase: SpaCase, missingDataItems: string[]): Workf
 
 function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn, summaryAvailable: boolean): string {
   if (column === "samenvatting") {
-    return summaryAvailable ? "Samenvatting gereed voor bevestiging" : "Samenvatting nog genereren";
+    return summaryAvailable ? "Samenvatting klaar" : "Samenvatting nodig";
   }
 
   switch (column) {
     case "casus":
-      return "Basisgegevens voorbereiden";
+      return "Basisgegevens";
     case "matching":
-      return "Matchopties beoordelen";
+      return "Matchopties";
+    case "gemeente-validatie":
+      return "Gemeente validatie";
     case "aanbieder-beoordeling":
-      return "Aanbieder valideert casus";
+      return "Aanbieder beoordeelt";
     case "plaatsing":
-      return "Plaatsing bevestigen";
+      return "Plaatsing";
     case "intake":
       return spaCase.status === "afgerond" ? "Intake afgerond" : "Intake uitvoeren";
   }
@@ -262,6 +269,8 @@ function resolveResponsibility(column: WorkflowBoardColumn): string {
     case "aanbieder-beoordeling":
     case "intake":
       return "Zorgaanbieder";
+    case "gemeente-validatie":
+      return "Gemeente";
     default:
       return "Gemeente";
   }
@@ -270,10 +279,10 @@ function resolveResponsibility(column: WorkflowBoardColumn): string {
 function resolveProviderStatusLabel(column: WorkflowBoardColumn, providerName: string | null): { label: string | null; tone: WorkflowDecisionBadgeTone | null } {
   switch (column) {
     case "aanbieder-beoordeling":
-      return { label: providerName ? "Pending" : "Nog niet verstuurd", tone: providerName ? "warning" : "neutral" };
+      return { label: providerName ? "Verstuurd" : "Nog niet verstuurd", tone: providerName ? "warning" : "neutral" };
     case "plaatsing":
     case "intake":
-      return { label: "Accepted", tone: "good" };
+      return { label: "Geaccepteerd", tone: "good" };
     default:
       return { label: null, tone: null };
   }
@@ -289,24 +298,28 @@ function resolveWhyInThisStep(
   switch (column) {
     case "casus":
       return missingDataItems.length > 0
-        ? `Deze casus staat nog in de eerste stap omdat ${missingDataItems[0].toLowerCase()}.`
-        : "Deze casus wacht nog op basisverrijking voordat de AI-samenvatting kan starten.";
+        ? getShortReasonLabel(missingDataItems[0])
+        : "Klaar voor samenvatting";
     case "samenvatting":
       return summaryAvailable
-        ? "De AI-samenvatting is beschikbaar en moet bevestigd worden voordat matching kan starten."
-        : "Deze casus wacht op AI-interpretatie zodat matching inhoudelijk onderbouwd kan starten.";
+        ? "Samenvatting klaar"
+        : "Wacht op samenvatting";
     case "matching":
       return providerCount > 0
-        ? `De samenvatting is bevestigd. Er zijn ${providerCount} passende aanbieder${providerCount === 1 ? "" : "s"} om te beoordelen.`
-        : "De samenvatting is bevestigd, maar er is nog geen passend aanbod gevonden voor deze casus.";
+        ? `${providerCount} aanbieder${providerCount === 1 ? "" : "s"} klaar`
+        : "Nog geen aanbod";
+    case "gemeente-validatie":
+      return providerCount > 0
+        ? "Matchvoorstel wacht op validatie"
+        : "Wacht op matchvoorstel";
     case "aanbieder-beoordeling":
-      return "De gemeente heeft een voorstel gestuurd. De aanbieder moet nu inhoudelijk valideren of plaatsing haalbaar is.";
+      return "Wacht op beoordeling";
     case "plaatsing":
-      return "De aanbieder heeft positief gereageerd. Plaatsing en overdracht moeten nu formeel bevestigd worden.";
+      return "Wacht op bevestiging";
     case "intake":
       return spaCase.status === "afgerond"
-        ? "Plaatsing is bevestigd en de casus bevindt zich in intake of nazorg-afronding."
-        : "De intake is de laatste stap voordat uitvoering of afronding zichtbaar wordt.";
+        ? "Intake afgerond"
+        : "Intake volgt";
   }
 }
 
@@ -317,19 +330,23 @@ function resolvePrimaryAction(
 ): { label: string; enabled: boolean; reason: string | null } {
   switch (column) {
     case "casus":
-      return { label: "Vul casus aan", enabled: true, reason: null };
+      return { label: "Vul aan", enabled: true, reason: null };
     case "samenvatting":
       return summaryAvailable
-        ? { label: "Bekijk & bevestig", enabled: true, reason: null }
-        : { label: "Genereer samenvatting", enabled: true, reason: null };
+        ? { label: "Bevestig", enabled: true, reason: null }
+        : { label: "Genereer", enabled: true, reason: null };
     case "matching":
       return providerCount > 0
-        ? { label: "Start matching", enabled: true, reason: null }
-        : { label: "Start matching", enabled: false, reason: "Geen passend aanbod beschikbaar" };
+        ? { label: "Controleer matching", enabled: true, reason: null }
+        : { label: "Match", enabled: false, reason: "Geen passend aanbod" };
+    case "gemeente-validatie":
+      return providerCount > 0
+        ? { label: "Valideer en stuur door", enabled: true, reason: null }
+        : { label: "Valideer en stuur door", enabled: false, reason: "Geen voorstel om te valideren" };
     case "aanbieder-beoordeling":
-      return { label: "Volg beoordeling op", enabled: true, reason: null };
+      return { label: "Opvolgen", enabled: true, reason: null };
     case "plaatsing":
-      return { label: "Bevestig plaatsing", enabled: true, reason: null };
+      return { label: "Bevestig", enabled: true, reason: null };
     case "intake":
       return { label: "Open intake", enabled: true, reason: null };
   }
@@ -347,18 +364,18 @@ function buildDecisionBadges(
 
   if (column === "samenvatting") {
     if (missingDataItems.length > 0) {
-      badges.push({ label: "Missing info", tone: spaCase.urgency === "critical" ? "critical" : "warning" });
+      badges.push({ label: "Info ontbreekt", tone: spaCase.urgency === "critical" ? "critical" : "warning" });
     }
     if (spaCase.urgency === "critical" || spaCase.urgency === "warning") {
       badges.push({ label: "Risico", tone: spaCase.urgency === "critical" ? "critical" : "warning" });
     }
     if (summaryAvailable && missingDataItems.length === 0) {
-      badges.push({ label: "Klaar voor matching", tone: "good" });
+      badges.push({ label: "Klaar", tone: "good" });
     }
   }
 
   if (column === "casus" && missingDataItems.length > 0) {
-    badges.push({ label: `${missingDataItems.length} ontbrekend`, tone: "warning" });
+    badges.push({ label: `${missingDataItems.length} open`, tone: "warning" });
   }
 
   if (column === "matching" && matchConfidence) {
@@ -387,8 +404,8 @@ function buildSignals(
       id: `${item.id}-missing-data`,
       type: "risico",
       severity: "warning",
-      title: "Ontbrekende gegevens",
-      description: item.missingDataItems.join(", "),
+      title: "Info ontbreekt",
+      description: item.missingDataItems.slice(0, 2).map((value) => getShortReasonLabel(value)).join(" · "),
       isResolved: false,
     });
   }
@@ -399,18 +416,18 @@ function buildSignals(
       type: "matching",
       severity: item.matchConfidenceLabel.includes("laag") ? "critical" : item.matchConfidenceLabel.includes("middel") ? "warning" : "info",
       title: item.matchConfidenceLabel,
-      description: "Gebruik dit signaal om te bepalen of de gemeente direct kan matchen of eerst moet escaleren.",
+      description: "Volgende stap.",
       isResolved: false,
     });
   }
 
-  if (item.providerStatusLabel === "Pending") {
+  if (item.providerStatusLabel === "Verstuurd") {
     signals.push({
       id: `${item.id}-provider-pending`,
       type: "aanbieder",
       severity: item.daysInCurrentPhase > 7 ? "warning" : "info",
-      title: "Aanbiederreactie open",
-      description: "De aanbieder moet de casus nog accepteren, afwijzen of aanvullende informatie vragen.",
+      title: "Reactie open",
+      description: "Wacht op reactie.",
       isResolved: false,
     });
   }
@@ -420,8 +437,8 @@ function buildSignals(
       id: `${item.id}-blocked`,
       type: "matching",
       severity: "critical",
-      title: "Workflow geblokkeerd",
-      description: item.blockReason,
+      title: "Geblokkeerd",
+      description: getShortReasonLabel(item.blockReason),
       isResolved: false,
     });
   }
@@ -432,7 +449,7 @@ function buildSignals(
       type: "wachttijd",
       severity: spaCase.urgency === "critical" ? "critical" : "warning",
       title: "Wachttijd loopt op",
-      description: `Casus staat al ${spaCase.wachttijd} dagen open in de huidige stap.`,
+      description: `Al ${spaCase.wachttijd} dagen vast.`,
       isResolved: false,
     });
   }
@@ -447,23 +464,23 @@ function buildTimeline(
     {
       id: `${item.id}-created`,
       type: "created",
-      label: "Casus aangemaakt",
+      label: "Aangemaakt",
       actorName: "Gemeente",
       actorRole: "gemeente",
-      date: `${Math.max(item.daysInCurrentPhase, 1)} dagen geleden`,
+      date: `${Math.max(item.daysInCurrentPhase, 1)} d geleden`,
     },
     {
       id: `${item.id}-stage`,
       type: "phase_change",
-      label: `Workflowstap: ${item.boardColumnLabel}`,
+      label: item.boardColumnLabel,
       actorName: item.responsibleParty,
       actorRole: item.responsibleParty === "Zorgaanbieder" ? "zorgaanbieder" : "gemeente",
-      date: `Actief gedurende ${item.daysInCurrentPhase} dagen`,
+      date: `${item.daysInCurrentPhase} d actief`,
     },
     {
       id: `${item.id}-action`,
       type: "action",
-      label: `Volgende actie: ${item.primaryActionLabel}`,
+      label: item.primaryActionLabel,
       actorName: item.responsibleParty,
       actorRole: item.responsibleParty === "Zorgaanbieder" ? "zorgaanbieder" : "gemeente",
       date: "Nu",
@@ -611,63 +628,74 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
   switch (item.boardColumn) {
     case "casus":
       responsibleParty = "Gemeente";
-      nextActionLabel = item.missingDataItems.length > 0 ? "Vul casus aan" : "Genereer samenvatting";
+      nextActionLabel = item.missingDataItems.length > 0 ? "Vul aan" : "Genereer";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;
     case "samenvatting":
       responsibleParty = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Systeem" : "Gemeente";
-      nextActionLabel = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Genereer samenvatting" : "Bevestig samenvatting";
+      nextActionLabel = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Genereer" : "Bevestig";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;
     case "matching":
       responsibleParty = "Gemeente";
-      nextActionLabel = item.recommendedProvidersCount > 0 ? "Bekijk matchvoorstel" : "Start matching";
+      nextActionLabel = item.recommendedProvidersCount > 0 ? "Bekijk match" : "Start match";
       nextActionRoute = "matching";
       secondaryActions = [
-        { label: "Bekijk detail", route: "casussen" },
-        { label: "Open matching", route: "matching" },
-        { label: "Documenten", route: "casussen" },
+        { label: "Detail", route: "casussen" },
+        { label: "Matching", route: "matching" },
+        { label: "Docs", route: "casussen" },
       ];
       requiredAction = item.recommendedProvidersCount > 0 ? "send_to_provider" : "start_matching";
       break;
+    case "gemeente-validatie":
+      responsibleParty = "Gemeente";
+      nextActionLabel = "Valideer voorstel";
+      nextActionRoute = "matching";
+      secondaryActions = [
+        { label: "Controleer factoren", route: "matching" },
+        { label: "Pas voorstel aan", route: "matching" },
+        { label: "Start rematch", route: "matching" },
+      ];
+      requiredAction = "validate_matching";
+      break;
     case "aanbieder-beoordeling":
       responsibleParty = "Zorgaanbieder";
-      nextActionLabel = userRole === "zorgaanbieder" ? "Beoordeling uitvoeren" : "Bekijk aanbiederreactie";
+      nextActionLabel = userRole === "zorgaanbieder" ? "Beoordeel" : "Bekijk reactie";
       nextActionRoute = "beoordelingen";
       secondaryActions = userRole === "zorgaanbieder"
         ? [
             { label: "Accepteren", route: "beoordelingen" },
             { label: "Afwijzen", route: "beoordelingen" },
-            { label: "Meer informatie vragen", route: "beoordelingen" },
+            { label: "Meer info", route: "beoordelingen" },
           ]
         : [
-            { label: "Bekijk detail", route: "casussen" },
-            { label: "Bekijk status", route: "beoordelingen" },
+            { label: "Detail", route: "casussen" },
+            { label: "Status", route: "beoordelingen" },
             { label: "Historie", route: "casussen" },
           ];
-      providerReviewActions = userRole === "zorgaanbieder" ? ["Accepteren", "Afwijzen", "Meer informatie vragen"] : [];
+      providerReviewActions = userRole === "zorgaanbieder" ? ["Accepteren", "Afwijzen", "Meer info"] : [];
       requiredAction = "provider_request_info";
       break;
     case "plaatsing":
       responsibleParty = "Gemeente";
-      nextActionLabel = "Plaatsing starten";
+      nextActionLabel = "Start plaatsing";
       nextActionRoute = "plaatsingen";
       secondaryActions = [
-        { label: "Bekijk detail", route: "casussen" },
-        { label: "Open plaatsing", route: "plaatsingen" },
+        { label: "Detail", route: "casussen" },
+        { label: "Plaatsing", route: "plaatsingen" },
         { label: "Historie", route: "casussen" },
       ];
       requiredAction = "confirm_placement";
       break;
     case "intake":
       responsibleParty = "Zorgaanbieder";
-      nextActionLabel = userRole === "zorgaanbieder" ? "Intake voorbereiden" : "Bekijk intake";
+      nextActionLabel = userRole === "zorgaanbieder" ? "Bereid intake" : "Bekijk intake";
       nextActionRoute = "intake";
       secondaryActions = [
-        { label: "Bekijk detail", route: "casussen" },
-        { label: "Open intake", route: "intake" },
+        { label: "Detail", route: "casussen" },
+        { label: "Intake", route: "intake" },
         { label: "Historie", route: "casussen" },
       ];
       requiredAction = "start_intake";

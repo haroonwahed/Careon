@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, Building2, Clock3, Download, Filter, Loader2, RefreshCw, ShieldAlert, Siren } from "lucide-react";
+import { AlertTriangle, ArrowRight, Building2, Clock3, Filter, Loader2, RefreshCw, Search, ShieldAlert, Siren } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import { CareEmptyState, CareFilterLabel, CareInsightBanner, CareMetricCard, CarePageHeader, CareSectionCard } from "./CareSurface";
 import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 import type {
   RegiekamerDecisionOverviewItem,
   RegiekamerOwnershipRole,
@@ -194,8 +195,27 @@ function filterLabelFromItem(item: RegiekamerDecisionOverviewItem) {
   return `${OWNERSHIP_LABELS[responsibleRole]} · ${nextAction}`;
 }
 
+function searchText(item: RegiekamerDecisionOverviewItem) {
+  return [
+    item.case_reference,
+    item.title,
+    item.current_state,
+    item.phase,
+    item.assigned_provider,
+    item.next_best_action?.label,
+    item.next_best_action?.reason,
+    item.top_blocker?.message,
+    item.top_risk?.message,
+    item.top_alert?.message,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
 export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenterProps) {
   const { data, loading, error, refetch } = useRegiekamerDecisionOverview();
+  const [searchQuery, setSearchQuery] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [issueFilter, setIssueFilter] = useState<IssueFilter>("all");
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>("all");
@@ -203,9 +223,13 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
 
   const visibleItems = useMemo(() => {
     const items = data?.items ?? [];
+    const normalizedQuery = searchQuery.trim().toLowerCase();
 
     return items
       .filter((item) => {
+        if (normalizedQuery && !searchText(item).includes(normalizedQuery)) {
+          return false;
+        }
         if (priorityFilter !== "all" && priorityBand(item.priority_score) !== priorityFilter) {
           return false;
         }
@@ -229,7 +253,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         const leftHours = left.hours_in_current_state ?? 0;
         return rightHours - leftHours;
       });
-  }, [data?.items, issueFilter, ownershipFilter, phaseFilter, priorityFilter]);
+  }, [data?.items, issueFilter, ownershipFilter, phaseFilter, priorityFilter, searchQuery]);
 
   const generatedAtLabel = useMemo(() => {
     if (!data?.generated_at) {
@@ -249,14 +273,22 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
 
   const hasAnySignals = Boolean(data?.items?.some((item) => item.priority_score > 0));
   const hasActiveData = (data?.totals.active_cases ?? 0) > 0;
-  const filtersActive = priorityFilter !== "all" || issueFilter !== "all" || phaseFilter !== "all" || ownershipFilter !== "all";
+  const filtersActive =
+    searchQuery.trim() !== "" ||
+    priorityFilter !== "all" ||
+    issueFilter !== "all" ||
+    phaseFilter !== "all" ||
+    ownershipFilter !== "all";
   const urgentItems = visibleItems.filter((item) => item.urgency === "critical" || item.urgency === "warning");
   const calmerItems = visibleItems.filter((item) => item.urgency !== "critical" && item.urgency !== "warning");
   const criticalBlockers = data?.totals.critical_blockers ?? 0;
   const highPriorityAlerts = data?.totals.high_priority_alerts ?? 0;
   const providerSlaBreaches = data?.totals.provider_sla_breaches ?? 0;
+  const overdueActionCount = visibleItems.filter((item) => (item.hours_in_current_state ?? 0) >= 168).length;
+  const noProviderCount = visibleItems.filter((item) => !item.assigned_provider || item.assigned_provider === "Nog geen toegewezen aanbieder").length;
 
   const clearFilters = () => {
+    setSearchQuery("");
     setPriorityFilter("all");
     setIssueFilter("all");
     setPhaseFilter("all");
@@ -268,7 +300,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
       <CarePageHeader
         eyebrow={<><Siren size={16} className="text-primary" /><span>Regiekamer</span></>}
         title="Regiekamer"
-        subtitle="Operationele sturing op vastgelopen casussen, risico's en vervolgstappen. Elke kaart vertelt direct wat er misloopt en wat nu nodig is."
+        subtitle="Sturing op casussen, risico's en volgende acties."
         meta={generatedAtLabel ? <p className="text-xs text-muted-foreground">Bijgewerkt op {generatedAtLabel}</p> : null}
         actions={(
           <>
@@ -276,33 +308,12 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
               <RefreshCw size={14} />
               Ververs
             </Button>
-            <Button variant="outline" className="gap-2">
-              <Download size={14} />
-              Exporteer rapport
-            </Button>
             {filtersActive && (
               <Button variant="ghost" onClick={clearFilters} className="gap-2">
                 Filters wissen
               </Button>
             )}
           </>
-        )}
-      />
-
-      <CareInsightBanner
-        tone="primary"
-        title={`${criticalBlockers} kritieke blokkades • ${highPriorityAlerts} hoge prioriteit alerts • ${providerSlaBreaches} SLA-overschrijdingen`}
-        copy="Regiekamer is een operationele cockpit: het laat alleen zien wat aandacht vraagt, waarom het vastloopt en welke partij nu moet handelen."
-        action={(
-          <Button
-            onClick={() => setPriorityFilter("critical")}
-            className="gap-2"
-            variant="destructive"
-            disabled={loading || !hasActiveData}
-          >
-            Bekijk urgente casussen
-            <ArrowRight size={14} />
-          </Button>
         )}
       />
 
@@ -355,66 +366,143 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         />
       </div>
 
+      <CareInsightBanner
+        compact
+        tone="warning"
+        title={`${Math.max(overdueActionCount, criticalBlockers)} casussen wachten langer dan 7 dagen`}
+        copy="Hoge urgentie of blokkade vraagt nu actie."
+        action={(
+          <Button
+            onClick={() => setPriorityFilter("high")}
+            className="gap-2"
+            variant="outline"
+            disabled={loading || !hasActiveData}
+          >
+            Lang wachten
+            <ArrowRight size={14} />
+          </Button>
+        )}
+      />
+
+      <CareInsightBanner
+        compact
+        tone="info"
+        title={`${Math.max(noProviderCount, providerSlaBreaches)} casussen zonder beschikbare aanbieder binnen 48 uur`}
+        copy="Capaciteit raakt op. Herplan of volg op."
+        action={(
+          <Button
+            onClick={() => setIssueFilter("alerts")}
+            className="gap-2"
+            variant="outline"
+            disabled={loading || !hasActiveData}
+          >
+            Bekijk tekort
+            <ArrowRight size={14} />
+          </Button>
+        )}
+      />
+
       <CareSectionCard
         title="Filters"
-        subtitle="Gebruik de live signalen om de lijst te beperken zonder de onderliggende workflow te wijzigen."
-        actions={<div className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldAlert size={14} /><span>Alleen backend-overzicht, geen lokale workflowlogica.</span></div>}
+        subtitle="Beperk de lijst met live signalen."
+        actions={<div className="flex items-center gap-2 text-xs text-muted-foreground"><ShieldAlert size={14} /><span>Alleen overzicht.</span></div>}
         className="p-5"
       >
-        <div className="grid gap-4 xl:grid-cols-4">
-          <CareFilterLabel label="Prioriteit">
-            <select
-              value={priorityFilter}
-              onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-              className="min-w-36 rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
-            >
-              {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </CareFilterLabel>
+        <div className="space-y-4">
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_repeat(3,minmax(0,180px))]">
+            <label className="space-y-2">
+              <span className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">Zoeken</span>
+              <div className="flex h-12 items-center gap-3 rounded-2xl border border-border bg-background/70 px-4 text-sm text-foreground">
+                <Search size={18} className="text-muted-foreground" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Zoek op casus ID, naam of type..."
+                  className="w-full bg-transparent outline-none placeholder:text-muted-foreground"
+                />
+              </div>
+            </label>
 
-          <CareFilterLabel label="Issue type">
-            <select
-              value={issueFilter}
-              onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
-              className="min-w-36 rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
-            >
-              {Object.entries(ISSUE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </CareFilterLabel>
+            <CareFilterLabel label="Prioriteit">
+              <select
+                value={priorityFilter}
+                onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
+                className="h-12 w-full rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              >
+                {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
 
-          <CareFilterLabel label="Fase">
-            <select
-              value={phaseFilter}
-              onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
-              className="min-w-44 rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
-            >
-              <option value="all">Alles</option>
-              {Object.entries(PHASE_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </CareFilterLabel>
+            <CareFilterLabel label="Issue type">
+              <select
+                value={issueFilter}
+                onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
+                className="h-12 w-full rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              >
+                {Object.entries(ISSUE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
 
-          <CareFilterLabel label="Rol ownership">
-            <select
-              value={ownershipFilter}
-              onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
-              className="min-w-40 rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
-            >
-              {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
-                <option key={key} value={key}>{label}</option>
-              ))}
-            </select>
-          </CareFilterLabel>
+            <CareFilterLabel label="Fase">
+              <select
+                value={phaseFilter}
+                onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
+                className="h-12 w-full rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              >
+                <option value="all">Alles</option>
+                {Object.entries(PHASE_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
+
+            <CareFilterLabel label="Rol ownership">
+              <select
+                value={ownershipFilter}
+                onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
+                className="h-12 w-full rounded-2xl border border-border bg-background/70 px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
+              >
+                {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
+                  <option key={key} value={key}>{label}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
+          </div>
+
+          {filtersActive && (
+            <div className="flex flex-wrap items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Filter size={14} />
+                <span>Filters</span>
+              </div>
+              {searchQuery.trim() && (
+                <span className="rounded-md border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Zoek: {searchQuery.trim()}</span>
+              )}
+              {priorityFilter !== "all" && (
+                <span className="rounded-md border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Prioriteit: {PRIORITY_LABELS[priorityFilter]}</span>
+              )}
+              {issueFilter !== "all" && (
+                <span className="rounded-md border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Issue: {ISSUE_LABELS[issueFilter]}</span>
+              )}
+              {phaseFilter !== "all" && (
+                <span className="rounded-md border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Fase: {phaseLabel(phaseFilter)}</span>
+              )}
+              {ownershipFilter !== "all" && (
+                <span className="rounded-md border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">Rol: {OWNERSHIP_LABELS[ownershipFilter]}</span>
+              )}
+              <button type="button" onClick={clearFilters} className="text-xs font-semibold text-primary hover:underline">Wis</button>
+            </div>
+          )}
         </div>
       </CareSectionCard>
 
       {loading && (
-        <CareEmptyState title="Regiekamer-overzicht laden…" copy="De beslissingsengine bereidt de huidige triage-stand voor." />
+        <CareEmptyState title="Regiekamer laden…" copy="Overzicht wordt opgebouwd." />
       )}
 
       {!loading && error && (
@@ -426,17 +514,17 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
       )}
 
       {!loading && !error && !hasActiveData && (
-        <CareEmptyState title="Er zijn nog geen actieve casussen om te beoordelen." />
+        <CareEmptyState title="Geen actieve casussen." />
       )}
 
       {!loading && !error && hasActiveData && !hasAnySignals && (
-        <CareEmptyState title="Geen vastgelopen casussen." copy="De actieve keten loopt momenteel zonder kritieke signalen." />
+        <CareEmptyState title="Geen signalen." copy="De keten loopt zonder blokkades." />
       )}
 
       {!loading && !error && hasActiveData && hasAnySignals && visibleItems.length === 0 && (
         <CareEmptyState
-          title="Geen casussen binnen de huidige filters."
-          copy="Pas de selectie aan om meer casussen te tonen."
+          title="Geen casussen."
+          copy="Pas filters aan."
           action={<Button variant="outline" onClick={clearFilters}>Filters wissen</Button>}
         />
       )}
@@ -445,8 +533,8 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
         <div className="space-y-5">
           {urgentItems.length > 0 && (
             <CareSectionCard
-              title="Casussen die aandacht nodig hebben"
-              subtitle={`${urgentItems.length} urgente casussen`}
+              title="Aandacht nu"
+              subtitle={`${urgentItems.length} urgent`}
             >
               <div className="space-y-3">
                 {urgentItems.map((item) => (
@@ -459,7 +547,7 @@ export function RegiekamerControlCenter({ onCaseClick }: RegiekamerControlCenter
           {calmerItems.length > 0 && (
             <CareSectionCard
               title="Overige casussen"
-              subtitle={`${calmerItems.length} stabiele of normale casussen`}
+              subtitle={`${calmerItems.length} stabiel`}
             >
               <div className="space-y-3">
                 {calmerItems.map((item) => (
@@ -487,59 +575,58 @@ function RegiekamerWorkItemCard({
     <article
       data-testid="regiekamer-worklist-item"
       className={cn(
-        "rounded-[28px] border p-5 shadow-sm transition-all duration-200",
+        "rounded-[20px] border p-4 shadow-sm transition-all duration-200",
         urgent
           ? "border-red-500/25 bg-gradient-to-br from-red-500/8 via-card/80 to-card"
           : "border-border bg-card/75",
       )}
     >
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
-        <div className="space-y-4">
+      <div className="grid gap-4 xl:grid-cols-12 xl:gap-6">
+        <div className="space-y-4 xl:col-span-5">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className={priorityBadgeClasses(item.priority_score)}>
               {priorityLabel(item.priority_score)}
             </Badge>
             <Badge variant="outline" className={urgencyBadgeClasses(item.urgency)}>
-              Urgentie: {item.urgency || "onbekend"}
+              Urgentie: {item.urgency ? item.urgency.toUpperCase() : "ONBEKEND"}
             </Badge>
             <Badge variant="outline">{phaseLabel(item.phase)}</Badge>
-            <Badge variant="outline">{filterLabelFromItem(item)}</Badge>
           </div>
 
           <div className="space-y-1">
             <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">{item.case_reference}</p>
-            <h3 className="text-xl font-semibold text-foreground">{item.title}</h3>
+            <h3 className="text-[1.5rem] font-semibold leading-tight text-foreground">{item.title}</h3>
             <p className="text-sm text-muted-foreground">
-              {item.current_state} · {item.assigned_provider || "Nog geen toegewezen aanbieder"}
+              {item.current_state} · {item.assigned_provider || "Nog geen aanbieder"}
             </p>
-          </div>
-
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                <AlertTriangle size={12} />
-                Blokkade
-              </div>
-              <p className="mt-2 text-sm leading-6 text-foreground">{item.top_blocker?.message ?? "Geen blokkade"}</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                <Clock3 size={12} />
-                Risico
-              </div>
-              <p className="mt-2 text-sm leading-6 text-foreground">{item.top_risk?.message ?? "Geen zichtbaar risico"}</p>
-            </div>
-            <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                <Building2 size={12} />
-                Alert
-              </div>
-              <p className="mt-2 text-sm leading-6 text-foreground">{item.top_alert?.message ?? "Geen actieve alert"}</p>
-            </div>
           </div>
         </div>
 
-        <div className="space-y-4 xl:min-w-[280px] xl:text-right">
+        <div className="grid gap-3 md:grid-cols-3 xl:col-span-5">
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <AlertTriangle size={12} />
+              Blokkade
+            </div>
+            <p className="mt-2 text-sm leading-6 text-foreground">{getShortReasonLabel(item.top_blocker?.message ?? "Geen blokkade")}</p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <Clock3 size={12} />
+              Risico
+            </div>
+            <p className="mt-2 text-sm leading-6 text-foreground">{getShortReasonLabel(item.top_risk?.message ?? "Geen zichtbaar risico")}</p>
+          </div>
+          <div className="rounded-2xl border border-border/70 bg-background/40 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              <Building2 size={12} />
+              Alert
+            </div>
+            <p className="mt-2 text-sm leading-6 text-foreground">{getShortReasonLabel(item.top_alert?.message ?? "Geen actieve alert")}</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 xl:col-span-2 xl:text-right">
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Tijd in huidige staat</p>
             <p className="text-sm font-medium text-foreground">{formatHours(item.hours_in_current_state)}</p>
@@ -555,7 +642,7 @@ function RegiekamerWorkItemCard({
           <div className="flex flex-wrap justify-start gap-2 pt-1 xl:justify-end">
             {item.next_best_action?.label && (
               <Badge variant="outline" className="border-primary/20 bg-primary/5 text-foreground">
-                Volgende actie: {item.next_best_action.label}
+                Volgende: {item.next_best_action.label}
               </Badge>
             )}
           </div>

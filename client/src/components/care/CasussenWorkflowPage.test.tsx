@@ -94,8 +94,8 @@ describe("CasussenWorkflowPage", () => {
 
     expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
     expect(screen.queryByText("Casus → Samenvatting → Matching → Aanbieder Beoordeling → Plaatsing → Intake")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Waarom hier").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Volgende stap").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Reden").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Actie").length).toBeGreaterThan(0);
   });
 
   it("does not show provider accept/reject actions for gemeente", () => {
@@ -107,7 +107,7 @@ describe("CasussenWorkflowPage", () => {
 
     expect(screen.queryByText("Accepteren")).not.toBeInTheDocument();
     expect(screen.queryByText("Afwijzen")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk aanbiederreactie" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk reactie" })).toBeInTheDocument();
   });
 
   it("shows provider review actions for zorgaanbieder", () => {
@@ -117,10 +117,10 @@ describe("CasussenWorkflowPage", () => {
 
     render(<CasussenWorkflowPage onCaseClick={vi.fn()} role="zorgaanbieder" />);
 
-    expect(screen.getByRole("button", { name: "Beoordeling uitvoeren" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Beoordeel" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Accepteren" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Afwijzen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Meer informatie vragen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Meer info" })).toBeInTheDocument();
   });
 
   it("filters list when attention item is clicked", () => {
@@ -132,7 +132,7 @@ describe("CasussenWorkflowPage", () => {
 
     render(<CasussenWorkflowPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByText("1 casussen wachten langer dan 3 dagen op beoordeling door aanbieder"));
+    fireEvent.click(screen.getByText("1 wachten op aanbieder"));
 
     expect(screen.getByText("Lang wachtend")).toBeInTheDocument();
     expect(screen.queryByText("Kort wachtend")).not.toBeInTheDocument();

@@ -28,7 +28,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
-        <p className="text-sm text-muted-foreground">Operationele wachtrij van casussen die klaar zijn voor acceptatie / afwijzing door een zorgaanbieder.</p>
+        <p className="text-sm text-muted-foreground">Wachtrij voor acceptatie, afwijzing of info.</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -48,16 +48,16 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
       {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
       {!loading && error && (
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Casussen konden niet geladen worden</p>
+          <p className="text-base font-semibold text-foreground">Laden mislukt</p>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
+          <Button variant="outline" onClick={refetch}>Opnieuw</Button>
         </div>
       )}
 
       {!loading && !error && queueCases.length === 0 && (
         <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen casussen klaar voor beoordeling door aanbieder</p>
-          <p className="text-sm text-muted-foreground">Casussen verschijnen hier zodra de samenvatting compleet is en naar de aanbiederbeoordeling kan worden doorgezet.</p>
+          <p className="text-lg font-semibold text-foreground">Geen open beoordelingen</p>
+          <p className="text-sm text-muted-foreground">Verschijnt zodra samenvatting klaar is.</p>
           <Button onClick={() => onNavigateToCasussen?.()}>Ga naar casussen</Button>
         </div>
       )}
@@ -100,17 +100,17 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         </div>
       )}
 
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-start gap-4">
-          <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
-            <ClipboardCheck className="text-primary" size={20} />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground mb-1">Werk vanuit de casus</p>
-            <p className="text-sm text-muted-foreground">Elke stap is onderdeel van dezelfde casusworkflow en niet een los object.</p>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-start gap-4">
+            <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
+              <ClipboardCheck className="text-primary" size={20} />
+            </div>
+            <div>
+            <p className="font-semibold text-foreground mb-1">Zelfde casusflow</p>
+            <p className="text-sm text-muted-foreground">Beoordeling blijft gekoppeld aan de casus.</p>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }
