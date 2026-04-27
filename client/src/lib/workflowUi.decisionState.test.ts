@@ -83,8 +83,8 @@ describe("getCaseDecisionState", () => {
     const reviewState = getCaseDecisionState(reviewItem, "gemeente");
     const placementState = getCaseDecisionState(placementItem, "gemeente");
 
-    expect(reviewState.nextActionLabel).not.toBe("Plaatsing starten");
-    expect(placementState.nextActionLabel).toBe("Plaatsing starten");
+    expect(reviewState.nextActionLabel).not.toBe("Bevestig plaatsing");
+    expect(placementState.nextActionLabel).toBe("Bevestig plaatsing");
   });
 
   it("maps incomplete intake to casus completion", () => {
@@ -98,7 +98,7 @@ describe("getCaseDecisionState", () => {
     );
     const state = getCaseDecisionState(item, "gemeente");
 
-    expect(state.nextActionLabel).toBe("Vul casus aan");
+    expect(state.nextActionLabel).toBe("Vul aan");
     expect(state.responsibleParty).toBe("Gemeente");
   });
 });

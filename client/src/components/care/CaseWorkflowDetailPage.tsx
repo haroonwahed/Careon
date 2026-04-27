@@ -62,6 +62,7 @@ const FLOW_STEPS = [
   { id: "casus", label: "Casus", owner: "Gemeente" },
   { id: "samenvatting", label: "Samenvatting", owner: "Systeem" },
   { id: "matching", label: "Matching", owner: "Gemeente" },
+  { id: "gemeente_validatie", label: "Gemeente Validatie", owner: "Gemeente" },
   { id: "aanbieder_beoordeling", label: "Beoordeling door aanbieder", owner: "Zorgaanbieder" },
   { id: "plaatsing", label: "Plaatsing", owner: "Gemeente" },
   { id: "intake", label: "Intake", owner: "Zorgaanbieder" },
@@ -89,8 +90,9 @@ const STEP_ACTION_HINTS: Record<string, string> = {
 const STEP_REQUIREMENTS: Record<FlowStepId, string> = {
   casus: "Casus compleet.",
   samenvatting: "Samenvatting beschikbaar.",
-  matching: "Samenvatting eerst.",
-  aanbieder_beoordeling: "Match verstuurd.",
+  matching: "Samenvatting bevestigd.",
+  gemeente_validatie: "Matchadvies beschikbaar.",
+  aanbieder_beoordeling: "Gemeente validatie afgerond.",
   plaatsing: "Aanbieder akkoord.",
   intake: "Plaatsing bevestigd.",
 };
@@ -146,6 +148,8 @@ function stateLabel(currentState: string, isArchived: boolean) {
       return "Samenvatting";
     case "MATCHING_READY":
       return "Matching";
+    case "GEMEENTE_VALIDATED":
+      return "Gemeente Validatie";
     case "PROVIDER_REVIEW_PENDING":
     case "PROVIDER_ACCEPTED":
     case "PROVIDER_REJECTED":
@@ -171,14 +175,16 @@ function stateIndex(currentState: string, isArchived: boolean) {
       return 1;
     case "MATCHING_READY":
       return 2;
+    case "GEMEENTE_VALIDATED":
+      return 3;
     case "PROVIDER_REVIEW_PENDING":
     case "PROVIDER_ACCEPTED":
     case "PROVIDER_REJECTED":
-      return 3;
-    case "PLACEMENT_CONFIRMED":
       return 4;
-    case "INTAKE_STARTED":
+    case "PLACEMENT_CONFIRMED":
       return 5;
+    case "INTAKE_STARTED":
+      return 6;
     default:
       return 0;
   }
@@ -228,8 +234,9 @@ function requiredPreviousStep(action: string): string {
     case "GENERATE_SUMMARY":
       return "Casus";
     case "START_MATCHING":
-    case "SEND_TO_PROVIDER":
       return "Samenvatting";
+    case "SEND_TO_PROVIDER":
+      return "Gemeente Validatie";
     case "PROVIDER_ACCEPT":
     case "PROVIDER_REJECT":
     case "PROVIDER_REQUEST_INFO":

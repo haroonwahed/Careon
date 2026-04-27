@@ -306,11 +306,11 @@ function resolveWhyInThisStep(
         : "Wacht op samenvatting";
     case "matching":
       return providerCount > 0
-        ? `${providerCount} aanbieder${providerCount === 1 ? "" : "s"} klaar`
-        : "Nog geen aanbod";
+        ? `${providerCount} matchvoorstel${providerCount === 1 ? "" : "len"} klaar voor validatie`
+        : "Nog geen matchvoorstel";
     case "gemeente-validatie":
       return providerCount > 0
-        ? "Matchvoorstel wacht op validatie"
+        ? "Gemeente moet matchvoorstel valideren"
         : "Wacht op matchvoorstel";
     case "aanbieder-beoordeling":
       return "Wacht op beoordeling";
@@ -337,11 +337,11 @@ function resolvePrimaryAction(
         : { label: "Genereer", enabled: true, reason: null };
     case "matching":
       return providerCount > 0
-        ? { label: "Controleer matching", enabled: true, reason: null }
-        : { label: "Match", enabled: false, reason: "Geen passend aanbod" };
+        ? { label: "Controleer matchadvies", enabled: true, reason: null }
+        : { label: "Start matching", enabled: false, reason: "Geen passend aanbod voor advies" };
     case "gemeente-validatie":
       return providerCount > 0
-        ? { label: "Valideer en stuur door", enabled: true, reason: null }
+        ? { label: "Valideer match en stuur door", enabled: true, reason: null }
         : { label: "Valideer en stuur door", enabled: false, reason: "Geen voorstel om te valideren" };
     case "aanbieder-beoordeling":
       return { label: "Opvolgen", enabled: true, reason: null };
@@ -416,7 +416,7 @@ function buildSignals(
       type: "matching",
       severity: item.matchConfidenceLabel.includes("laag") ? "critical" : item.matchConfidenceLabel.includes("middel") ? "warning" : "info",
       title: item.matchConfidenceLabel,
-      description: "Volgende stap.",
+      description: "Advies controleren en voorbereiden voor gemeentevalidatie.",
       isResolved: false,
     });
   }
@@ -499,6 +499,8 @@ function buildWorkflowState(
       id: `${item.id}-primary-action`,
       type: item.boardColumn === "matching"
         ? "start_matching"
+        : item.boardColumn === "gemeente-validatie"
+          ? "review_matching"
         : item.boardColumn === "aanbieder-beoordeling"
           ? "follow_up_provider"
           : item.boardColumn === "plaatsing"
@@ -640,18 +642,18 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
       break;
     case "matching":
       responsibleParty = "Gemeente";
-      nextActionLabel = item.recommendedProvidersCount > 0 ? "Bekijk match" : "Start match";
+      nextActionLabel = item.recommendedProvidersCount > 0 ? "Controleer matchadvies" : "Start matching";
       nextActionRoute = "matching";
       secondaryActions = [
         { label: "Detail", route: "casussen" },
         { label: "Matching", route: "matching" },
         { label: "Docs", route: "casussen" },
       ];
-      requiredAction = item.recommendedProvidersCount > 0 ? "send_to_provider" : "start_matching";
+      requiredAction = "start_matching";
       break;
     case "gemeente-validatie":
       responsibleParty = "Gemeente";
-      nextActionLabel = "Valideer voorstel";
+      nextActionLabel = "Valideer matching";
       nextActionRoute = "matching";
       secondaryActions = [
         { label: "Controleer factoren", route: "matching" },
@@ -662,7 +664,7 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
       break;
     case "aanbieder-beoordeling":
       responsibleParty = "Zorgaanbieder";
-      nextActionLabel = userRole === "zorgaanbieder" ? "Beoordeel" : "Bekijk reactie";
+      nextActionLabel = userRole === "zorgaanbieder" ? "Beoordeling uitvoeren" : "Bekijk aanbiederreactie";
       nextActionRoute = "beoordelingen";
       secondaryActions = userRole === "zorgaanbieder"
         ? [
@@ -675,12 +677,12 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
             { label: "Status", route: "beoordelingen" },
             { label: "Historie", route: "casussen" },
           ];
-      providerReviewActions = userRole === "zorgaanbieder" ? ["Accepteren", "Afwijzen", "Meer info"] : [];
+      providerReviewActions = userRole === "zorgaanbieder" ? ["Accepteren", "Afwijzen", "Meer informatie vragen"] : [];
       requiredAction = "provider_request_info";
       break;
     case "plaatsing":
       responsibleParty = "Gemeente";
-      nextActionLabel = "Start plaatsing";
+      nextActionLabel = "Bevestig plaatsing";
       nextActionRoute = "plaatsingen";
       secondaryActions = [
         { label: "Detail", route: "casussen" },

@@ -70,7 +70,7 @@ function attentionPredicate(key: AttentionKey, item: WorkflowCaseView, decisionL
     case "rejected":
       return (blockedReason ?? "").toLowerCase().includes("afgewezen") || decisionLabel.toLowerCase().includes("nieuwe match zoeken");
     case "ready-placement":
-      return decisionLabel.toLowerCase().includes("plaatsing starten") || item.boardColumn === "plaatsing";
+      return decisionLabel.toLowerCase().includes("bevestig plaatsing") || item.boardColumn === "plaatsing";
   }
 }
 
@@ -237,6 +237,7 @@ export function CasussenWorkflowPage({
     { value: "casus", label: "Casus" },
     { value: "samenvatting", label: "Samenvatting" },
     { value: "matching", label: "Matching" },
+    { value: "gemeente-validatie", label: "Gemeente Validatie" },
     { value: "aanbieder-beoordeling", label: "Beoordeling door aanbieder" },
     { value: "plaatsing", label: "Plaatsing" },
     { value: "intake", label: "Intake" },

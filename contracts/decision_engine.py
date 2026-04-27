@@ -34,6 +34,7 @@ _STATE_PHASE_MAP = {
     WorkflowState.DRAFT_CASE: "casus",
     WorkflowState.SUMMARY_READY: "samenvatting",
     WorkflowState.MATCHING_READY: "matching",
+    WorkflowState.GEMEENTE_VALIDATED: "gemeente_validatie",
     WorkflowState.PROVIDER_REVIEW_PENDING: "aanbieder_beoordeling",
     WorkflowState.PROVIDER_ACCEPTED: "aanbieder_beoordeling",
     WorkflowState.PROVIDER_REJECTED: "aanbieder_beoordeling",
@@ -45,7 +46,8 @@ _STATE_PHASE_MAP = {
 _STATE_PRIORITY = {
     WorkflowState.DRAFT_CASE: ("high", "casusgegevens aanvullen"),
     WorkflowState.SUMMARY_READY: ("high", "samenvatting genereren of controleren"),
-    WorkflowState.MATCHING_READY: ("high", "start matching"),
+    WorkflowState.MATCHING_READY: ("high", "gemeente validatie van matchadvies"),
+    WorkflowState.GEMEENTE_VALIDATED: ("high", "stuur gevalideerde matching naar aanbieder"),
     WorkflowState.PROVIDER_REVIEW_PENDING: ("high", "volg aanbieder beoordeling op"),
     WorkflowState.PROVIDER_ACCEPTED: ("high", "bevestig plaatsing"),
     WorkflowState.PROVIDER_REJECTED: ("high", "hermatch de casus"),
@@ -67,6 +69,7 @@ _ACTION_OWNER_ROLE = {
     "COMPLETE_CASE_DATA": WorkflowRole.GEMEENTE,
     "GENERATE_SUMMARY": WorkflowRole.GEMEENTE,
     "START_MATCHING": WorkflowRole.GEMEENTE,
+    "VALIDATE_MATCHING": WorkflowRole.GEMEENTE,
     "SEND_TO_PROVIDER": WorkflowRole.GEMEENTE,
     "CONFIRM_PLACEMENT": WorkflowRole.GEMEENTE,
     "REMATCH_CASE": WorkflowRole.GEMEENTE,
@@ -628,8 +631,15 @@ def _evaluate_action_policy(
     if action_code == "SEND_TO_PROVIDER":
         if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
             return False, "Alleen gemeente of admin kan een casus naar de aanbieder sturen."
+        if current_state != WorkflowState.GEMEENTE_VALIDATED:
+            return False, "Gemeentevalidatie is vereist voordat de casus naar de aanbieder gaat."
+        return True, ""
+
+    if action_code == "VALIDATE_MATCHING":
+        if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
+            return False, "Alleen gemeente of admin kan matching valideren."
         if current_state != WorkflowState.MATCHING_READY:
-            return False, "Matching is nog niet gereed voor aanbiederbeoordeling."
+            return False, "Valideren kan alleen vanuit de matchingfase."
         return True, ""
 
     if action_code == "WAIT_PROVIDER_RESPONSE":
@@ -664,8 +674,8 @@ def _evaluate_action_policy(
         return allowed, reason
 
     if action_code == "START_INTAKE":
-        if actor_role not in {WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN}:
-            return False, "Deze rol kan intake niet starten."
+        if actor_role != WorkflowRole.ZORGAANBIEDER:
+            return False, "Alleen de zorgaanbieder kan intake starten."
         if current_state != WorkflowState.PLACEMENT_CONFIRMED:
             return False, "Intake kan pas starten na bevestigde plaatsing."
         if placement is None or placement.status != PlacementRequest.Status.APPROVED:
@@ -680,21 +690,21 @@ def _evaluate_action_policy(
         return True, ""
 
     if action_code == "PROVIDER_ACCEPT":
-        if actor_role not in {WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN}:
+        if actor_role != WorkflowRole.ZORGAANBIEDER:
             return False, "Alleen de aanbieder kan accepteren."
         if current_state != WorkflowState.PROVIDER_REVIEW_PENDING:
             return False, "Accepteren kan pas tijdens actieve aanbiederbeoordeling."
         return True, ""
 
     if action_code == "PROVIDER_REJECT":
-        if actor_role not in {WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN}:
+        if actor_role != WorkflowRole.ZORGAANBIEDER:
             return False, "Alleen de aanbieder kan afwijzen."
         if current_state != WorkflowState.PROVIDER_REVIEW_PENDING:
             return False, "Afwijzen kan pas tijdens actieve aanbiederbeoordeling."
         return True, ""
 
     if action_code == "PROVIDER_REQUEST_INFO":
-        if actor_role not in {WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN}:
+        if actor_role != WorkflowRole.ZORGAANBIEDER:
             return False, "Alleen de aanbieder kan aanvullende informatie opvragen."
         if current_state != WorkflowState.PROVIDER_REVIEW_PENDING:
             return False, "Aanvullende informatie opvragen kan pas tijdens aanbiederbeoordeling."
@@ -816,7 +826,7 @@ def _build_blockers_and_alerts(
                 "MATCHING_NOT_READY",
                 "high",
                 "Matching is nog niet gestart of nog niet gereed.",
-                ["SEND_TO_PROVIDER", "PROVIDER_ACCEPT", "PROVIDER_REJECT"],
+                ["VALIDATE_MATCHING", "SEND_TO_PROVIDER", "PROVIDER_ACCEPT", "PROVIDER_REJECT"],
             )
         )
         add_alert(
@@ -824,9 +834,21 @@ def _build_blockers_and_alerts(
                 "NO_MATCH_AVAILABLE",
                 "high",
                 "Nog geen matchingresultaat",
-                "Start matching of kies een geschikte aanbieder voordat de provider kan beoordelen.",
+                "Werk het matchadvies uit voordat gemeentevalidatie en aanbiederbeoordeling mogelijk zijn.",
                 "START_MATCHING",
                 {"has_matching_result": False},
+            )
+        )
+
+    if current_state == WorkflowState.MATCHING_READY and has_matching_result:
+        add_alert(
+            _serialize_alert(
+                "GEMEENTE_VALIDATION_REQUIRED",
+                "high",
+                "Gemeente validatie vereist",
+                "Controleer en valideer het matchadvies voordat de casus naar de aanbieder gaat.",
+                "VALIDATE_MATCHING",
+                {"state": current_state},
             )
         )
 
@@ -1018,9 +1040,13 @@ def _next_best_action(
         priority = "high"
         reason = "Samenvatting is compleet; start matching."
     elif current_state == WorkflowState.MATCHING_READY:
+        action = "VALIDATE_MATCHING"
+        priority = "high"
+        reason = "Gemeentevalidatie is verplicht vóór versturen naar aanbieder."
+    elif current_state == WorkflowState.GEMEENTE_VALIDATED:
         action = "SEND_TO_PROVIDER"
         priority = "high"
-        reason = "Selecteer en stuur een aanbieder aan voor beoordeling."
+        reason = "Validatie is afgerond; stuur de casus naar aanbiederbeoordeling."
     elif current_state == WorkflowState.PROVIDER_REVIEW_PENDING:
         if provider_pending_sla_breached:
             action = "FOLLOW_UP_PROVIDER"
@@ -1058,6 +1084,7 @@ def _next_best_action(
             "COMPLETE_CASE_DATA": "Casusgegevens aanvullen",
             "GENERATE_SUMMARY": "Samenvatting genereren",
             "START_MATCHING": "Start matching",
+            "VALIDATE_MATCHING": "Valideer matching",
             "SEND_TO_PROVIDER": "Stuur naar aanbieder",
             "WAIT_PROVIDER_RESPONSE": "Wacht op aanbiederreactie",
             "FOLLOW_UP_PROVIDER": "Volg aanbieder op",
@@ -1194,6 +1221,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         ("COMPLETE_CASE_DATA", "Casusgegevens aanvullen"),
         ("GENERATE_SUMMARY", "Samenvatting genereren"),
         ("START_MATCHING", "Start matching"),
+        ("VALIDATE_MATCHING", "Valideer matching"),
         ("SEND_TO_PROVIDER", "Stuur naar aanbieder"),
         ("WAIT_PROVIDER_RESPONSE", "Wacht op aanbiederreactie"),
         ("FOLLOW_UP_PROVIDER", "Volg aanbieder op"),
