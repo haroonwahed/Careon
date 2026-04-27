@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/apiClient';
+import { isCanonicalWorkflowState, type CanonicalWorkflowState } from '../lib/workflowStateMachine';
 
 // ---- API response types ------------------------------------------------
 
@@ -32,6 +33,7 @@ interface ApiCase {
   arrangement_type_code?: string;
   arrangement_provider?: string;
   arrangement_end_date?: string | null;
+  workflow_state?: string;
 }
 
 interface ApiListResponse {
@@ -68,6 +70,7 @@ export interface SpaCase {
   arrangementTypeCode: string;
   arrangementProvider: string;
   arrangementEndDate: string | null;
+  workflowState?: CanonicalWorkflowState;
 }
 
 // ---- Mapping helpers ---------------------------------------------------
@@ -142,6 +145,8 @@ function mapApiCase(c: ApiCase): SpaCase {
   const urgency = mapUrgency(c.risk_level);
   const wachttijd = daysAgo(c.created_at);
 
+  const workflowState = isCanonicalWorkflowState(c.workflow_state) ? c.workflow_state : undefined;
+
   return {
     id: c.id,
     title: c.title,
@@ -163,6 +168,7 @@ function mapApiCase(c: ApiCase): SpaCase {
     arrangementTypeCode: c.arrangement_type_code ?? '',
     arrangementProvider: c.arrangement_provider ?? '',
     arrangementEndDate: c.arrangement_end_date ?? null,
+    workflowState,
   };
 }
 

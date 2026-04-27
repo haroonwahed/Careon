@@ -12,6 +12,19 @@ export type CanonicalWorkflowState =
   | "INTAKE_STARTED"
   | "ARCHIVED";
 
+const canonicalWorkflowStates = new Set<CanonicalWorkflowState>([
+  "DRAFT_CASE",
+  "SUMMARY_READY",
+  "MATCHING_READY",
+  "GEMEENTE_VALIDATED",
+  "PROVIDER_REVIEW_PENDING",
+  "PROVIDER_ACCEPTED",
+  "PROVIDER_REJECTED",
+  "PLACEMENT_CONFIRMED",
+  "INTAKE_STARTED",
+  "ARCHIVED",
+]);
+
 export type CanonicalWorkflowAction =
   | "create_case"
   | "complete_summary"
@@ -75,4 +88,8 @@ export function canRoleExecuteAction(role: CanonicalWorkflowRole, action: Canoni
 export function canTransitionWorkflowState(from: CanonicalWorkflowState, to: CanonicalWorkflowState): boolean {
   if (from === to) return true;
   return transitions[from].has(to);
+}
+
+export function isCanonicalWorkflowState(value: string | null | undefined): value is CanonicalWorkflowState {
+  return Boolean(value) && canonicalWorkflowStates.has(value as CanonicalWorkflowState);
 }

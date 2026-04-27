@@ -23,6 +23,7 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
     arrangementTypeCode: "",
     arrangementProvider: "",
     arrangementEndDate: null,
+    workflowState: undefined,
     ...overrides,
   };
 }
@@ -59,6 +60,33 @@ function makeProvider(): SpaProvider {
 }
 
 describe("getCaseDecisionState", () => {
+  it("uses workflow_state as source of truth for gemeente validatie step", () => {
+    const item = buildWorkflowCase(
+      makeCase({
+        status: "matching",
+        urgencyValidated: true,
+        workflowState: "MATCHING_READY",
+      }),
+      [makeProvider()],
+    );
+
+    expect(item.boardColumn).toBe("matching");
+    expect(item.currentPhaseLabel).toBe("Matchopties");
+  });
+
+  it("keeps explicit fallback when workflow_state is unavailable", () => {
+    const item = buildWorkflowCase(
+      makeCase({
+        status: "matching",
+        urgencyValidated: true,
+        workflowState: undefined,
+      }),
+      [makeProvider()],
+    );
+
+    expect(item.boardColumn).toBe("gemeente-validatie");
+  });
+
   it("returns gemeente-safe action for provider review", () => {
     const item = buildWorkflowCase(makeCase({ status: "provider_beoordeling", wachttijd: 5 }), [makeProvider()]);
     const state = getCaseDecisionState(item, "gemeente");

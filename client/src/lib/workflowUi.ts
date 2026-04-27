@@ -1,7 +1,12 @@
 import type { CasusAction, CasusSignal, CasusTimelineEvent, ComputedCaseState } from "./phaseEngine";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
-import { canRoleExecuteAction, type CanonicalWorkflowAction } from "./workflowStateMachine";
+import {
+  canRoleExecuteAction,
+  isCanonicalWorkflowState,
+  type CanonicalWorkflowAction,
+  type CanonicalWorkflowState,
+} from "./workflowStateMachine";
 import { getShortReasonLabel } from "./uxCopy";
 
 export type WorkflowBoardColumn =
@@ -227,7 +232,36 @@ function buildMatchConfidence(providerCount: number, urgency: SpaCase["urgency"]
   return { label: "Fit sterk", score: 89, tone: "good" };
 }
 
-function resolveBoardColumn(spaCase: SpaCase, missingDataItems: string[]): WorkflowBoardColumn {
+function boardColumnFromWorkflowState(workflowState: CanonicalWorkflowState): WorkflowBoardColumn {
+  switch (workflowState) {
+    case "DRAFT_CASE":
+      return "casus";
+    case "SUMMARY_READY":
+      return "samenvatting";
+    case "MATCHING_READY":
+      return "matching";
+    case "GEMEENTE_VALIDATED":
+      return "gemeente-validatie";
+    case "PROVIDER_REVIEW_PENDING":
+      return "aanbieder-beoordeling";
+    case "PROVIDER_ACCEPTED":
+    case "PLACEMENT_CONFIRMED":
+      return "plaatsing";
+    case "INTAKE_STARTED":
+    case "ARCHIVED":
+      return "intake";
+    case "PROVIDER_REJECTED":
+      return "matching";
+  }
+}
+
+function resolveBoardColumnWithFallback(spaCase: SpaCase, missingDataItems: string[]): WorkflowBoardColumn {
+  // Temporary fallback for legacy/mock payloads that still lack workflow_state.
+  if (spaCase.workflowState && isCanonicalWorkflowState(spaCase.workflowState)) {
+    return boardColumnFromWorkflowState(spaCase.workflowState);
+  }
+
+  // Legacy heuristic path (kept explicit until all clients/mock data include workflow_state).
   switch (spaCase.status) {
     case "matching":
       return spaCase.urgencyValidated ? "gemeente-validatie" : "matching";
@@ -532,7 +566,7 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
   const firstProvider = regionalMatches[0] ?? null;
   const missingDataItems = buildMissingDataItems(spaCase);
   const summaryAvailable = Boolean(spaCase.systemInsight.trim());
-  const boardColumn = resolveBoardColumn(spaCase, missingDataItems);
+  const boardColumn = resolveBoardColumnWithFallback(spaCase, missingDataItems);
   const label = boardColumnLabel(boardColumn);
   const matchConfidence = boardColumn === "matching" ? buildMatchConfidence(regionalMatches.length, spaCase.urgency) : null;
   const providerStatus = resolveProviderStatusLabel(boardColumn, firstProvider?.name ?? null);
