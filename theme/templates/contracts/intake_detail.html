@@ -17,7 +17,7 @@
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">Gearchiveerd</p>
-                    <p class="text-sm text-slate-700">Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.</p>
+                    <p class="text-sm text-slate-700">Casus blijft bewaard.</p>
                 </div>
                 <span class="ds-badge badge-low">Alleen-lezen</span>
             </div>
@@ -67,7 +67,7 @@
                 </div>
                 {% endif %}
                 {% if can_archive_case %}
-                <form method="post" action="{% url 'careon:case_archive_action' intake.pk %}" onsubmit="return confirm('Casus archiveren? Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.');">
+                <form method="post" action="{% url 'careon:case_archive_action' intake.pk %}" onsubmit="return confirm('Casus archiveren?');">
                     {% csrf_token %}
                     <button type="submit" class="btn btn-ghost">Casus archiveren</button>
                 </form>
@@ -79,7 +79,7 @@
                     <a href="{{ placement_href }}" class="ds-link">{{ placement_action_label }}</a>
                 </div>
                 {% else %}
-                <p class="text-xs font-medium ds-text-secondary">Casus is gearchiveerd; workflow-acties zijn uitgeschakeld.</p>
+                <p class="text-xs font-medium ds-text-secondary">Gearchiveerd; acties uit.</p>
                 {% endif %}
             </div>
         </div>
@@ -136,7 +136,7 @@
                         <input type="hidden" name="provider_id" value="{{ top_candidate.provider_id }}">
                         <input type="hidden" name="phase" value="{{ active_flow_stage }}">
                         <input type="hidden" name="next" value="{% url 'careon:case_detail' intake.pk %}?tab=matching&amp;phase={{ active_flow_stage }}">
-                        <button type="submit" class="btn btn-primary">Start plaatsing bij {{ top_candidate.provider_name }}</button>
+                        <button type="submit" class="btn btn-primary">Stuur naar aanbiederbeoordeling: {{ top_candidate.provider_name }}</button>
                     </form>
                     {% else %}
                     <a href="{{ matching_href }}" class="btn btn-primary">Open matchingbesluit</a>
@@ -145,8 +145,8 @@
                     <a href="{{ placement_href }}" class="btn btn-ghost">Opnieuw beoordelen</a>
                 </div>
                 {% else %}
-                <h3 class="mt-1 text-xl font-semibold ds-text-strong">Nog geen aanbeveling beschikbaar</h3>
-                <p class="mt-2 text-sm ds-text-secondary">Voltooi eerst de beoordeling door aanbieder zodat matching een aanbevolen aanbieder kan tonen.</p>
+                <h3 class="mt-1 text-xl font-semibold ds-text-strong">Nog geen match</h3>
+                <p class="mt-2 text-sm ds-text-secondary">Werk beoordeling af.</p>
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     <a href="{{ assessment_href }}" class="btn btn-primary">{{ assessment_action_label }}</a>
                     <a href="{{ matching_href }}" class="btn btn-secondary">Open matching</a>
@@ -173,21 +173,21 @@
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
                     <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Provider status</p>
                     <p class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.status_label }}</p>
-                    <p class="mt-1 text-xs ds-text-secondary">Laatste actie: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie vastgelegd" }}</p>
+                    <p class="mt-1 text-xs ds-text-secondary">Laatste: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie" }}</p>
                     {% if provider_response_summary.action_deadline %}
-                    <p class="mt-1 text-xs ds-text-secondary">Tijdsdruk: {{ provider_response_summary.action_deadline|date:"d-m-Y H:i" }}</p>
+                    <p class="mt-1 text-xs ds-text-secondary">Deadline: {{ provider_response_summary.action_deadline|date:"d-m-Y H:i" }}</p>
                     {% endif %}
                 </div>
                 {% else %}
                 <div class="ds-summary-strip">
                     <div class="ds-summary-item {% if not safe_to_proceed %}ds-summary-item--risk{% endif %}">
                         <p class="ds-summary-label">SLA urgentie</p>
-                        <p class="mt-1 text-sm font-semibold ds-text-strong">{% if safe_to_proceed %}STABLE - klaar voor vervolgstap{% else %}AT_RISK - eerst blokkades oplossen{% endif %}</p>
+                        <p class="mt-1 text-sm font-semibold ds-text-strong">{% if safe_to_proceed %}Klaar{% else %}Blokkade{% endif %}</p>
                     </div>
                 </div>
                 {% endif %}
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Volgende stap</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Actie</p>
                     <p class="mt-1 text-sm font-semibold ds-text-strong">{{ next_action.label }}</p>
                     <p class="mt-1 text-xs ds-text-secondary">{{ next_action.help }}</p>
                 </div>
@@ -207,10 +207,10 @@
                 <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Providerreactie status</p>
                 {% if provider_response_summary %}
                 <p class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.status_label }}</p>
-                <p class="mt-1 text-xs ds-text-secondary">SLA {{ provider_response_summary.sla_state }} · Waiting {{ provider_response_summary.sla_hours_waiting }} uur</p>
-                <p class="mt-1 text-xs ds-text-secondary">Laatste actie: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie" }}</p>
+                <p class="mt-1 text-xs ds-text-secondary">SLA {{ provider_response_summary.sla_state }} · Wacht {{ provider_response_summary.sla_hours_waiting }}u</p>
+                <p class="mt-1 text-xs ds-text-secondary">Laatste: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie" }}</p>
                 {% else %}
-                <p class="mt-1 text-sm ds-text-secondary">Nog geen providerreactie beschikbaar voor deze casus.</p>
+                <p class="mt-1 text-sm ds-text-secondary">Nog geen reactie.</p>
                 {% endif %}
 
                 {% if provider_response_actions and can_edit_case %}
@@ -436,7 +436,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="ds-empty-state">Geen open taken voor deze casus.</div>
+                <div class="ds-empty-state">Geen taken.</div>
                 {% endif %}
                 {% elif selected_tab == 'signalen' %}
                 <div class="ds-detail-header">
@@ -482,7 +482,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="ds-empty-state">Geen open signalen voor deze casus.</div>
+                <div class="ds-empty-state">Geen signalen.</div>
                 {% endif %}
                 {% else %}
                 {% if selected_tab == 'matching' %}
@@ -490,7 +490,7 @@
                     <p class="ds-note-text--strong">Matching in deze casus</p>
                     <a href="{{ matching_archive_href }}" class="btn btn-ghost">Matchingoverzicht</a>
                 </div>
-                <p class="ds-note-text">Werk matching primair in deze casus. Het matchingoverzicht blijft beschikbaar voor cross-casus monitoring.</p>
+                <p class="ds-note-text">Matching hoort hier.</p>
 
                 {% if latest_assignment %}
                 <div class="ds-info-card mb-3">
@@ -566,11 +566,11 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Nog geen matchinghistorie voor deze casus.</p>
+                <p class="ds-note-text">Geen matchinghistorie.</p>
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Afgewezen opties</p>
+                    <p class="ds-note-text--strong">Afgewezen</p>
                 </div>
                 {% if rejected_options %}
                 <div class="space-y-2">
@@ -593,7 +593,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Nog geen afgewezen aanbieders geregistreerd.</p>
+                <p class="ds-note-text">Geen afgewezen aanbieders.</p>
                 {% endif %}
 
                 {% else %}
@@ -611,10 +611,10 @@
                     <span class="ds-info-label">Geselecteerde aanbieder</span>
                     {% if placement_selected_provider %}
                     <strong>{{ placement_selected_provider.name }}</strong>
-                    <p class="text-xs ds-text-secondary">Deze plaatsing volgt op matching binnen dezelfde casus.</p>
+                    <p class="text-xs ds-text-secondary">Volgt op matching.</p>
                     {% else %}
                     <strong>Nog niet geselecteerd</strong>
-                    <p class="text-xs ds-text-secondary">Start eerst vanuit matching om een aanbieder te koppelen.</p>
+                    <p class="text-xs ds-text-secondary">Koppel eerst via matching.</p>
                     {% endif %}
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
@@ -626,7 +626,7 @@
                 </div>
 
                 {% if has_placement and can_edit_case and not safe_to_proceed %}
-                <div class="ds-empty-state mt-3">Statuswijzigingen voor plaatsing zijn tijdelijk geblokkeerd totdat kritieke acties zijn uitgevoerd.</div>
+                <div class="ds-empty-state mt-3">Plaatsing is geblokkeerd.</div>
                 {% elif has_placement and can_edit_case and placement_status_actions %}
                 <div class="mt-3 ds-list-container">
                     {% for action in placement_status_actions %}
@@ -646,11 +646,11 @@
                     {% endfor %}
                 </div>
                 {% elif not has_placement %}
-                <div class="ds-empty-state mt-3">Plaatsing is downstream van matching: koppel eerst een aanbieder in matching.</div>
+                <div class="ds-empty-state mt-3">Koppel eerst een aanbieder.</div>
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Orkestratie van providerreacties</p>
+                    <p class="ds-note-text--strong">Providerreacties</p>
                 </div>
                 {% if provider_response_summary %}
                 <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -679,12 +679,12 @@
 
                     <div class="mt-3 grid gap-2 sm:grid-cols-2">
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Vereist door</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Eigenaar</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_owner_label }}</div>
                             <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.ownership_reason }}</div>
                         </div>
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
-                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Aanbevolen actie</div>
+                            <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Actie</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_action_label }}</div>
                             <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.action_deadline_label }}</div>
                         </div>
@@ -698,8 +698,8 @@
 
                     {% if provider_response_summary.sla_forced_action_required %}
                     <div class="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2">
-                        <div class="text-sm font-semibold text-red-800">Kritiek: SLA FORCED_ACTION bereikt</div>
-                        <div class="mt-1 text-xs text-red-700">Passief wachten is geen normale route meer. Kies direct voor her-match of leg expliciet vast waarom je alsnog blijft wachten.</div>
+                        <div class="text-sm font-semibold text-red-800">Kritiek: FORCED_ACTION</div>
+                        <div class="mt-1 text-xs text-red-700">Her-match of leg vast.</div>
                     </div>
                     {% endif %}
 
@@ -724,19 +724,19 @@
                         {% endfor %}
                     </div>
                     {% elif not can_edit_case %}
-                    <p class="mt-2 text-xs ds-text-secondary">Geen bewerkrechten voor providerreactie-acties.</p>
+                    <p class="mt-2 text-xs ds-text-secondary">Geen bewerkrechten.</p>
                     {% else %}
-                    <p class="mt-2 text-xs ds-text-secondary">Geen aanvullende providerreactie-acties nodig.</p>
+                    <p class="mt-2 text-xs ds-text-secondary">Geen extra acties.</p>
                     {% endif %}
                 </div>
                 {% else %}
-                <p class="text-xs ds-text-secondary">Providerreactie wordt zichtbaar zodra een plaatsing aan deze casus is gekoppeld.</p>
+                <p class="text-xs ds-text-secondary">Zichtbaar na plaatsing.</p>
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Uitkomst en opvolging</p>
+                    <p class="ds-note-text--strong">Uitkomst</p>
                 </div>
-                <p class="text-xs ds-text-secondary">Leg uitkomsten direct vast zodat de volgende casusstap en tijdlijn actueel blijven.</p>
+                <p class="text-xs ds-text-secondary">Werk uitkomsten hier bij.</p>
                 <div class="space-y-3">
                     {% for section in outcome_sections %}
                     <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -760,7 +760,7 @@
                         {% if section.recorded_at %}
                         <div class="mt-2 text-xs ds-text-secondary">{{ section.recorded_at|date:"d-m-Y H:i" }}{% if section.recorded_by %} · {{ section.recorded_by.get_full_name|default:section.recorded_by.username }}{% endif %}</div>
                         {% else %}
-                        <div class="mt-2 text-xs ds-text-secondary">Nog niet vastgelegd.</div>
+                        <div class="mt-2 text-xs ds-text-secondary">Nog niet.</div>
                         {% endif %}
                         {% if can_edit_case and section.form %}
                         <details class="mt-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
@@ -791,20 +791,20 @@
                     {% endfor %}
                 </div>
                 {% if not has_placement %}
-                <p class="mt-3 text-xs ds-text-secondary">Reactie aanbieder en plaatsingskwaliteit worden beschikbaar zodra een plaatsing is gekoppeld.</p>
+                    <p class="mt-3 text-xs ds-text-secondary">Reactie en kwaliteit volgen na plaatsing.</p>
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Overdracht & notificatie</p>
+                    <p class="ds-note-text--strong">Overdracht</p>
                 </div>
                 <div class="ds-info-grid sm:grid-cols-2">
                     <div class="ds-info-card">
                         <span class="ds-info-label">Overdrachtstatus</span>
                         <strong>{% if placement_handoff_docs_count %}Gedocumenteerd{% else %}Nog niet geregistreerd{% endif %}</strong>
                         {% if latest_handoff_doc %}
-                        <p class="text-xs ds-text-secondary">Laatste overdrachtsdocument: {{ latest_handoff_doc.title }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
+                        <p class="text-xs ds-text-secondary">Laatste: {{ latest_handoff_doc.title }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
                         {% else %}
-                        <p class="text-xs ds-text-secondary">Voeg document toe met event provider_handoff voor overdrachtsdossier.</p>
+                        <p class="text-xs ds-text-secondary">Voeg handoff toe.</p>
                         {% endif %}
                     </div>
                     <div class="ds-info-card">
@@ -813,7 +813,7 @@
                         {% if latest_placement_notification %}
                         <p class="text-xs ds-text-secondary">Laatste: {{ latest_placement_notification.title }} ({{ latest_placement_notification.created_at|date:"d-m-Y H:i" }})</p>
                         {% else %}
-                        <p class="text-xs ds-text-secondary">Status blijft zichtbaar zodra notificaties worden geregistreerd.</p>
+                        <p class="text-xs ds-text-secondary">Status volgt na notificaties.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -854,7 +854,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Geen open taken</p>
+                <p class="ds-note-text">Geen taken.</p>
                 {% endif %}
             </section>
 
@@ -873,7 +873,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Geen open signalen</p>
+                <p class="ds-note-text">Geen signalen.</p>
                 {% endif %}
             </section>
 

@@ -21,6 +21,7 @@ class WorkflowState:
     DRAFT_CASE = 'DRAFT_CASE'
     SUMMARY_READY = 'SUMMARY_READY'
     MATCHING_READY = 'MATCHING_READY'
+    GEMEENTE_VALIDATED = 'GEMEENTE_VALIDATED'
     PROVIDER_REVIEW_PENDING = 'PROVIDER_REVIEW_PENDING'
     PROVIDER_ACCEPTED = 'PROVIDER_ACCEPTED'
     PROVIDER_REJECTED = 'PROVIDER_REJECTED'
@@ -33,6 +34,7 @@ class WorkflowAction:
     CREATE_CASE = 'create_case'
     COMPLETE_SUMMARY = 'complete_summary'
     START_MATCHING = 'start_matching'
+    VALIDATE_MATCHING = 'validate_matching'
     SEND_TO_PROVIDER = 'send_to_provider'
     PROVIDER_ACCEPT = 'provider_accept'
     PROVIDER_REJECT = 'provider_reject'
@@ -46,7 +48,8 @@ class WorkflowAction:
 _ALLOWED_TRANSITIONS: dict[str, set[str]] = {
     WorkflowState.DRAFT_CASE: {WorkflowState.SUMMARY_READY},
     WorkflowState.SUMMARY_READY: {WorkflowState.MATCHING_READY},
-    WorkflowState.MATCHING_READY: {WorkflowState.PROVIDER_REVIEW_PENDING},
+    WorkflowState.MATCHING_READY: {WorkflowState.GEMEENTE_VALIDATED},
+    WorkflowState.GEMEENTE_VALIDATED: {WorkflowState.PROVIDER_REVIEW_PENDING},
     WorkflowState.PROVIDER_REVIEW_PENDING: {
         WorkflowState.PROVIDER_ACCEPTED,
         WorkflowState.PROVIDER_REJECTED,
@@ -63,6 +66,7 @@ _ROLE_ACTIONS: dict[str, set[str]] = {
         WorkflowAction.CREATE_CASE,
         WorkflowAction.COMPLETE_SUMMARY,
         WorkflowAction.START_MATCHING,
+        WorkflowAction.VALIDATE_MATCHING,
         WorkflowAction.SEND_TO_PROVIDER,
         WorkflowAction.CONFIRM_PLACEMENT,
         WorkflowAction.ARCHIVE_CASE,
@@ -78,6 +82,7 @@ _ROLE_ACTIONS: dict[str, set[str]] = {
         WorkflowAction.CREATE_CASE,
         WorkflowAction.COMPLETE_SUMMARY,
         WorkflowAction.START_MATCHING,
+        WorkflowAction.VALIDATE_MATCHING,
         WorkflowAction.SEND_TO_PROVIDER,
         WorkflowAction.PROVIDER_ACCEPT,
         WorkflowAction.PROVIDER_REJECT,
@@ -154,6 +159,21 @@ def evaluate_transition(*, current_state: str, target_state: str, actor_role: st
 def derive_workflow_state(*, intake: CaseIntakeProcess, assessment: CaseAssessment | None = None, placement: PlacementRequest | None = None) -> str:
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return WorkflowState.ARCHIVED
+
+    persisted_state = str(getattr(intake, 'workflow_state', '') or '').strip()
+    if persisted_state in {
+        WorkflowState.DRAFT_CASE,
+        WorkflowState.SUMMARY_READY,
+        WorkflowState.MATCHING_READY,
+        WorkflowState.GEMEENTE_VALIDATED,
+        WorkflowState.PROVIDER_REVIEW_PENDING,
+        WorkflowState.PROVIDER_ACCEPTED,
+        WorkflowState.PROVIDER_REJECTED,
+        WorkflowState.PLACEMENT_CONFIRMED,
+        WorkflowState.INTAKE_STARTED,
+        WorkflowState.ARCHIVED,
+    } and persisted_state != WorkflowState.DRAFT_CASE:
+        return persisted_state
 
     if assessment is None:
         assessment = getattr(intake, 'case_assessment', None)

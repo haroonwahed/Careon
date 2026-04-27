@@ -148,8 +148,8 @@ describe("CaseWorkflowDetailPage", () => {
     expect(screen.getByText("Blokkades")).toBeInTheDocument();
     expect(screen.getByText("Risico's")).toBeInTheDocument();
     expect(screen.getByText("Alerts")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Plaatsing bevestigen" })).toBeInTheDocument();
-    expect(screen.getByText("Vereiste vorige stap: Plaatsing")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bevestig" })).toBeInTheDocument();
+    expect(screen.getByText("Vorige stap: Plaatsing")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Accepteren" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Afwijzen" })).not.toBeInTheDocument();
   });
@@ -186,7 +186,7 @@ describe("CaseWorkflowDetailPage", () => {
 
     render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
 
-    expect(await screen.findByText("Samenvatting ontbreekt. Matching kan nog niet starten.")).toBeInTheDocument();
+    expect(await screen.findByText("Samenvatting ontbreekt")).toBeInTheDocument();
     expect(screen.getAllByText("Match confidence is laag. Controleer match onderbouwing.").length).toBeGreaterThan(0);
     expect(screen.getByText("Aanbieder beoordeling wacht te lang")).toBeInTheDocument();
     expect(screen.getByText("Blokkeert: Matching starten")).toBeInTheDocument();
@@ -208,7 +208,7 @@ describe("CaseWorkflowDetailPage", () => {
           },
           {
             action: "PROVIDER_REQUEST_INFO",
-            label: "Meer informatie vragen",
+            label: "Meer info",
             allowed: true,
           },
         ],
@@ -225,7 +225,7 @@ describe("CaseWorkflowDetailPage", () => {
 
     expect(await screen.findByRole("button", { name: "Accepteren" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Afwijzen" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Plaatsing bevestigen" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bevestig" })).not.toBeInTheDocument();
   });
 
   it("refetches decision evaluation after a successful action", async () => {

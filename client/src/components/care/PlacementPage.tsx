@@ -220,7 +220,7 @@ export function PlacementPage({
             </div>
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Aanbieder</p>
-              <p className="text-lg font-bold text-foreground">{provider.name}</p>
+          <p className="text-lg font-bold text-foreground">{provider.name}</p>
             </div>
             <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Status</p>
@@ -236,19 +236,19 @@ export function PlacementPage({
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde plaatsing en intakeplanning
+                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde planning
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Dossier</strong> blijft beschikbaar voor intakevoorbereiding en overdracht
+                  <strong className="text-foreground">Dossier</strong> blijft beschikbaar voor intake
                 </p>
               </div>
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-green-base flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Intake</strong> wordt nu gepland met de aanbieder
+                  <strong className="text-foreground">Intake</strong> wordt nu gepland
                 </p>
               </div>
             </div>

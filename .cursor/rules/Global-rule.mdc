@@ -1,0 +1,24 @@
+---
+alwaysApply: true
+---
+
+You are working in a production-grade codebase.
+
+Rules:
+- NEVER break existing functionality
+- ONLY modify files explicitly mentioned
+- KEEP changes minimal and scoped
+- DO NOT rewrite entire files unless explicitly asked
+- ALWAYS explain what you changed and why (briefly)
+- ASK for clarification if requirements are unclear
+- PREFER small iterative steps over large changes
+
+When editing code:
+1. Identify the exact files involved
+2. Make minimal changes
+3. Ensure imports, types, and dependencies remain valid
+4. Do not introduce unnecessary abstractions
+
+If task is large:
+- Break it into steps
+- Ask before proceeding to next step

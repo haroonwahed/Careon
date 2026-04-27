@@ -45,7 +45,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-semibold text-foreground mb-2">Plaatsingen</h1>
-        <p className="text-sm text-muted-foreground">Volg de plaatsingsstap van bevestiging tot overdracht.</p>
+        <p className="text-sm text-muted-foreground">Volg bevestiging tot overdracht.</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -66,15 +66,15 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
       {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Plaatsingen laden…</div>}
       {!loading && error && (
         <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Plaatsingen konden niet geladen worden</p>
+          <p className="text-base font-semibold text-foreground">Laden mislukt</p>
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
+          <Button variant="outline" onClick={refetch}>Opnieuw</Button>
         </div>
       )}
 
       {!loading && !error && visibleCases.length === 0 && (
         <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen plaatsingen gevonden</p>
+          <p className="text-lg font-semibold text-foreground">Geen plaatsingen</p>
           <p className="text-sm text-muted-foreground">{emptyCopy[activeTab]}</p>
           <Button onClick={() => onNavigateToMatching?.()}>Ga naar matching</Button>
         </div>
@@ -101,7 +101,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
                 <p className="text-sm text-foreground">{item.recommendedProviderName ?? "Nog niet gekozen"}</p>
                 <p className="text-sm text-foreground">{item.region}</p>
                 <p className="text-sm text-foreground">{activeTab === "te-bevestigen" ? "Te bevestigen" : activeTab === "lopend" ? "Lopend" : "Afgerond"}</p>
-                <p className="text-sm text-foreground">{activeTab === "te-bevestigen" ? "Pending" : item.intakeDateLabel ?? "Volgt"}</p>
+                <p className="text-sm text-foreground">{activeTab === "te-bevestigen" ? "Wacht" : item.intakeDateLabel ?? "Volgt"}</p>
                 <p className="text-sm text-foreground">{item.daysInCurrentPhase} dagen</p>
                 <div className="text-right">
                   <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={() => onCaseClick(item.id)}>
@@ -115,17 +115,17 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
         </div>
       )}
 
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-start gap-4">
-          <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
-            <CheckCircle2 className="text-primary" size={20} />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground mb-1">Plaatsingen volgen uit matching</p>
-            <p className="text-sm text-muted-foreground">Bevestiging, intakeplanning en afronding blijven onderdeel van dezelfde casusworkflow.</p>
+        <div className="rounded-2xl border border-border bg-card p-5">
+          <div className="flex items-start gap-4">
+            <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
+              <CheckCircle2 className="text-primary" size={20} />
+            </div>
+            <div>
+            <p className="font-semibold text-foreground mb-1">Volgt uit matching</p>
+            <p className="text-sm text-muted-foreground">Bevestiging en intake blijven in dezelfde casusflow.</p>
+            </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

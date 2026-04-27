@@ -273,7 +273,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         response = self._post_action('rematch', follow=True)
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
+        self.assertContains(response, 'Her-match alleen na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
         self.placement.refresh_from_db()
         self.assertEqual(self.placement.status, before_status)
 
@@ -382,7 +382,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Orkestratie van providerreacties')
+        self.assertContains(response, 'Providerreacties')
         self.assertContains(response, 'Afgewezen')
 
     def test_case_detail_provider_response_block_renders_sla_badge_waiting_and_countdown(self):
@@ -401,7 +401,7 @@ class ProviderResponseOrchestrationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SLA AT_RISK')
-        self.assertContains(response, 'Waiting 50 uur')
+        self.assertContains(response, 'Wachtend: 50 uur')
         self.assertContains(response, 'Provider status')
         self.assertContains(response, 'Regievoerder')
         self.assertContains(response, 'Stuur herinnering')
@@ -422,7 +422,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kritiek: SLA FORCED_ACTION bereikt')
+        self.assertContains(response, 'Kritiek: FORCED_ACTION')
         actions = response.context['provider_response_actions']
         self.assertGreaterEqual(len(actions), 2)
         self.assertEqual(actions[0]['action'], 'trigger_rematch')
@@ -468,7 +468,7 @@ class ProviderResponseOrchestrationTests(TestCase):
             follow=True,
         )
         self.assertEqual(no_confirm_response.status_code, 200)
-        self.assertContains(no_confirm_response, 'Bevestig expliciet dat je blijft wachten ondanks SLA FORCED_ACTION.')
+        self.assertContains(no_confirm_response, 'Bevestig wachten ondanks SLA FORCED_ACTION.')
         self.assertFalse(
             AuditLog.objects.filter(
                 model_name='PlacementRequest',
@@ -488,7 +488,7 @@ class ProviderResponseOrchestrationTests(TestCase):
             follow=True,
         )
         self.assertEqual(confirmed_response.status_code, 200)
-        self.assertContains(confirmed_response, 'Je hebt expliciet gekozen om te blijven wachten ondanks SLA FORCED_ACTION. Deze keuze is gelogd.')
+        self.assertContains(confirmed_response, 'Wachten ondanks SLA FORCED_ACTION is gelogd.')
         self.assertTrue(
             AuditLog.objects.filter(
                 model_name='PlacementRequest',
@@ -517,7 +517,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Doorgaan met wachten is alleen beschikbaar bij open providerreacties met SLA FORCED_ACTION.')
+        self.assertContains(response, 'Alleen beschikbaar bij open reacties met SLA FORCED_ACTION.')
 
     def test_endpoint_actions_work_when_legacy_alias_is_stored(self):
         self._login_owner()

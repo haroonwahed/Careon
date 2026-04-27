@@ -1,0 +1,26 @@
+# Zorg OS Aider config
+
+model: openrouter/deepseek/deepseek-chat
+weak-model: openrouter/google/gemini-2.5-flash
+editor-model: openrouter/google/gemini-2.5-flash
+
+read:
+  - AGENTS.md
+  - CONVENTIONS.md
+
+auto-commits: false
+dirty-commits: false
+attribute-author: false
+attribute-committer: false
+
+gitignore: true
+watch-files: false
+
+pretty: true
+stream: true
+dark-mode: true
+
+show-diffs: true
+check-update: false
+
+yes-always: false

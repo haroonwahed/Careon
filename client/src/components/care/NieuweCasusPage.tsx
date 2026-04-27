@@ -382,28 +382,28 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (score >= 9) {
-      return { label: "Difficult", tone: "critical" as const, score, detail: "Hoge complexiteit en beperkte speelruimte maken snelle matching onwaarschijnlijk zonder bijsturing." };
+      return { label: "Difficult", tone: "critical" as const, score, detail: "Hoge complexiteit. Match lastig." };
     }
     if (score >= 5) {
-      return { label: "Medium", tone: "warning" as const, score, detail: "Matchbaar, maar vraagt strakke regie op urgentie, regio en constraints." };
+      return { label: "Medium", tone: "warning" as const, score, detail: "Matchbaar, maar strak sturen." };
     }
-    return { label: "Good", tone: "good" as const, score, detail: "Goede uitgangspositie met brede kans op snelle matching." };
+    return { label: "Good", tone: "good" as const, score, detail: "Goede uitgangspositie." };
   }, [deadlineDays, formState, searchRadiusKm]);
 
   const urgencyHint = useMemo(() => {
     if (!formState) {
-      return "Kies een urgentie op basis van risico op uitval of veiligheidsimpact.";
+      return "Kies urgentie op risico.";
     }
 
     const complexity = formState.complexity.toLowerCase();
     const urgency = formState.urgency.toLowerCase();
     if (complexity.includes("high") && !(urgency.includes("high") || urgency.includes("critical"))) {
-      return "Suggestie: overweeg hogere urgentie bij hoge complexiteit.";
+      return "Overweeg hogere urgentie.";
     }
     if ((deadlineDays ?? 7) <= 3 && !urgency.includes("critical")) {
-      return "Korte deadline: check of urgentie voldoende hoog is ingesteld.";
+      return "Korte deadline: check urgentie.";
     }
-    return "Urgentie lijkt consistent met de huidige intake.";
+    return "Urgentie past bij de intake.";
   }, [deadlineDays, formState]);
 
   const regionCapacityHint = useMemo(() => {
@@ -411,15 +411,15 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       return "";
     }
     if (!formState.preferred_region && !formState.regio) {
-      return "Kies een regio om capaciteitsinschatting te verbeteren.";
+      return "Kies een regio.";
     }
     if (searchRadiusKm <= 10) {
-      return "Waarschuwing: kleine zoekradius verhoogt kans op capaciteitskrapte.";
+      return "Kleine radius geeft krapte.";
     }
     if (matchingPreview.tone === "critical") {
-      return "Capaciteitswaarschuwing: verwacht beperkte beschikbaarheid, overweeg ruimere regio-instelling.";
+      return "Capaciteit krap. Vergroot regio.";
     }
-    return "Regionale instellingen ondersteunen een stabiele matchingroute.";
+    return "Regio ondersteunt matching.";
   }, [formState, matchingPreview.tone, searchRadiusKm]);
 
   const updateField = <K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) => {
@@ -600,8 +600,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
       {showPageGuidance && (
         <div className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-          <p>Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling en matching.</p>
-          <p>Velden met * zijn verplicht. Houd de intake kort en besluitgericht; aanvullende context kan later in het dossier.</p>
+          <p>Vul de kern in. Daarna gaat de casus door naar matching.</p>
+          <p>Velden met * zijn verplicht.</p>
         </div>
       )}
 
@@ -661,7 +661,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         {currentStep === 1 && (
           <div className="space-y-4">
-            <SectionHeader step="1" title="Basisinformatie" copy="Leg de basis vast zodat de casus direct met de juiste planning de intakeflow in gaat." />
+            <SectionHeader step="1" title="Basisinformatie" copy="Leg de kern vast." />
 
             <div>
               <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliënt *</label>
@@ -708,7 +708,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         {currentStep === 2 && (
           <div className="space-y-4">
-            <SectionHeader step="2" title="Zorgvraag" copy="Maak de zorgvraag zo concreet mogelijk om de kans op een snelle en passende match te verhogen." />
+            <SectionHeader step="2" title="Zorgvraag" copy="Maak de vraag concreet." />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -807,7 +807,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         {currentStep === 3 && (
           <div className="space-y-5">
-            <SectionHeader step="3" title="Randvoorwaarden" copy="Definieer de zoekruimte en harde voorwaarden zodat het systeem een realistische matchingverwachting kan tonen." />
+            <SectionHeader step="3" title="Randvoorwaarden" copy="Bepaal de zoekruimte." />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -848,7 +848,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Constraints</p>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Beperkingen</p>
               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {options.diagnostiek.map((option) => {
                   const active = formState.diagnostiek.includes(option.value);
@@ -867,7 +867,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div className="rounded-2xl border border-border bg-muted/15 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Verwachting matching</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matchverwachting</p>
               <div className="mt-2 flex items-center gap-2">
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${matchingPreview.tone === "good" ? "bg-green-500/15 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/15 text-yellow-300" : "bg-red-500/15 text-red-300"}`}>
                   {matchingPreview.label}
@@ -878,18 +878,18 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle voor aanmaken</p>
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
               <div className="grid gap-3 text-sm text-foreground md:grid-cols-2">
                 <p><span className="text-muted-foreground">Cliënt:</span> {formState.title || "-"}</p>
-                <p><span className="text-muted-foreground">Startdatum:</span> {formatDateDisplayValue(formState.start_date)}</p>
-                <p><span className="text-muted-foreground">Deadline matching:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
-                <p><span className="text-muted-foreground">Hoofdcategorie:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Subcategorie:</span> {visibleSubcategories.find((o) => o.value === formState.care_category_sub)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Complexiteit:</span> {options.complexity.find((o) => o.value === formState.complexity)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Start:</span> {formatDateDisplayValue(formState.start_date)}</p>
+                <p><span className="text-muted-foreground">Deadline:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
+                <p><span className="text-muted-foreground">Hoofd:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Sub:</span> {visibleSubcategories.find((o) => o.value === formState.care_category_sub)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">Complex:</span> {options.complexity.find((o) => o.value === formState.complexity)?.label ?? "-"}</p>
                 <p><span className="text-muted-foreground">Urgentie:</span> {options.urgency.find((o) => o.value === formState.urgency)?.label ?? "-"}</p>
                 <p><span className="text-muted-foreground">Regio:</span> {(options.regio.find((o) => o.value === formState.regio)?.label ?? formState.regio) || "-"}</p>
-                <p><span className="text-muted-foreground">Zoekradius:</span> {searchRadiusKm} km</p>
-                <p className="md:col-span-2"><span className="text-muted-foreground">Constraints:</span> {formState.diagnostiek.length > 0 ? formState.diagnostiek.map((value) => options.diagnostiek.find((o) => o.value === value)?.label ?? value).join(", ") : "Geen"}</p>
+                <p><span className="text-muted-foreground">Radius:</span> {searchRadiusKm} km</p>
+                <p className="md:col-span-2"><span className="text-muted-foreground">Beperkingen:</span> {formState.diagnostiek.length > 0 ? formState.diagnostiek.map((value) => options.diagnostiek.find((o) => o.value === value)?.label ?? value).join(", ") : "Geen"}</p>
               </div>
             </div>
           </div>

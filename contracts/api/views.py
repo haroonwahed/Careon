@@ -297,6 +297,23 @@ def cases_bulk_update_api(request):
         case_ids = data.get('case_ids', data.get('contract_ids', []))
         updates = data.get('updates', {})
 
+        disallowed_workflow_fields = {
+            'status',
+            'case_phase',
+            'lifecycle_stage',
+            'phase_entered_at',
+        }
+        blocked_fields = sorted(field for field in updates.keys() if field in disallowed_workflow_fields)
+        if blocked_fields:
+            return JsonResponse(
+                {
+                    'success': False,
+                    'error': 'Workflowvelden zijn niet toegestaan in bulk updates.',
+                    'blocked_fields': blocked_fields,
+                },
+                status=400,
+            )
+
         organization = get_user_organization(request.user)
         queryset = scope_queryset_for_organization(
             CareCase.objects.filter(id__in=case_ids).exclude(lifecycle_stage='ARCHIVED'),
@@ -680,12 +697,13 @@ def assessment_decision_api(request, case_id):
         intake.status = CaseIntakeProcess.ProcessStatus.INTAKE
         case_record.case_phase = CareCase.CasePhase.INTAKE
 
-    intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'updated_at'])
+    intake.workflow_state = WorkflowState.MATCHING_READY if decision == 'matching' else WorkflowState.SUMMARY_READY
+    intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'workflow_state', 'updated_at'])
     case_record.save(update_fields=['case_phase', 'updated_at'])
     assessment.assessed_by = request.user
     assessment.save()
 
-    new_state = derive_workflow_state(intake=intake, assessment=assessment)
+    new_state = WorkflowState.MATCHING_READY if decision == 'matching' else WorkflowState.SUMMARY_READY
     action = WorkflowAction.START_MATCHING if decision == 'matching' else WorkflowAction.COMPLETE_SUMMARY
     log_transition_event(
         intake=intake,
@@ -742,14 +760,27 @@ def matching_action_api(request, case_id):
 
     assessment = getattr(intake, 'case_assessment', None)
     previous_state = derive_workflow_state(intake=intake, assessment=assessment)
-    transition = evaluate_transition(
+    validation_transition = evaluate_transition(
         current_state=previous_state,
+        target_state=WorkflowState.GEMEENTE_VALIDATED,
+        actor_role=actor_role,
+        action=WorkflowAction.VALIDATE_MATCHING,
+    )
+    if not validation_transition.allowed:
+        return JsonResponse({'ok': False, 'error': validation_transition.reason}, status=400)
+
+    send_to_provider_transition = evaluate_transition(
+        current_state=WorkflowState.GEMEENTE_VALIDATED,
         target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
         actor_role=actor_role,
         action=WorkflowAction.SEND_TO_PROVIDER,
     )
-    if not transition.allowed:
-        return JsonResponse({'ok': False, 'error': transition.reason}, status=400)
+    if not send_to_provider_transition.allowed:
+        return JsonResponse({'ok': False, 'error': send_to_provider_transition.reason}, status=400)
+
+    if intake.workflow_state != WorkflowState.GEMEENTE_VALIDATED:
+        intake.workflow_state = WorkflowState.GEMEENTE_VALIDATED
+        intake.save(update_fields=['workflow_state', 'updated_at'])
 
     try:
         placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='matching_api')
@@ -760,19 +791,31 @@ def matching_action_api(request, case_id):
     if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
         intake.status = CaseIntakeProcess.ProcessStatus.DECISION
         update_fields.append('status')
+    if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
+        intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+        update_fields.append('workflow_state')
 
     case_record = intake.case_record
     if case_record is not None and case_record.case_phase != CareCase.CasePhase.PROVIDER_BEOORDELING:
         case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
         case_record.save(update_fields=['case_phase', 'updated_at'])
 
-    intake.save(update_fields=update_fields)
+    intake.save(update_fields=list(dict.fromkeys(update_fields)))
     new_state = derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
     log_transition_event(
         intake=intake,
         actor_user=request.user,
         actor_role=actor_role,
         old_state=previous_state,
+        new_state=WorkflowState.GEMEENTE_VALIDATED,
+        action=WorkflowAction.VALIDATE_MATCHING,
+        source='matching_action_api',
+    )
+    log_transition_event(
+        intake=intake,
+        actor_user=request.user,
+        actor_role=actor_role,
+        old_state=WorkflowState.GEMEENTE_VALIDATED,
         new_state=new_state,
         action=WorkflowAction.SEND_TO_PROVIDER,
         placement=placement,
@@ -893,7 +936,10 @@ def provider_decision_api(request, case_id):
             intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
 
-        new_state = derive_workflow_state(intake=intake, placement=placement)
+        new_state = WorkflowState.PROVIDER_ACCEPTED
+        if intake.workflow_state != new_state:
+            intake.workflow_state = new_state
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         log_transition_event(
             intake=intake,
             actor_user=request.user,
@@ -935,7 +981,10 @@ def provider_decision_api(request, case_id):
             'updated_at',
         ])
 
-        new_state = derive_workflow_state(intake=intake, placement=placement)
+        new_state = WorkflowState.PROVIDER_REJECTED
+        if intake.workflow_state != new_state:
+            intake.workflow_state = new_state
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         log_transition_event(
             intake=intake,
             actor_user=request.user,
@@ -970,6 +1019,9 @@ def provider_decision_api(request, case_id):
             'provider_response_recorded_by',
             'updated_at',
         ])
+        if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
+            intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         return JsonResponse({'ok': True, 'nextPage': 'beoordelingen', 'caseId': str(intake.pk)})
 
     return JsonResponse({'ok': False, 'error': 'Ongeldige providerbeslissing.'}, status=400)
@@ -1041,7 +1093,10 @@ def placement_action_api(request, case_id):
             intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
 
-        new_state = derive_workflow_state(intake=intake, placement=placement)
+        new_state = WorkflowState.PLACEMENT_CONFIRMED
+        if intake.workflow_state != new_state:
+            intake.workflow_state = new_state
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         log_transition_event(
             intake=intake,
             actor_user=request.user,
@@ -1070,7 +1125,8 @@ def placement_action_api(request, case_id):
         placement.status = PlacementRequest.Status.REJECTED
         placement.save(update_fields=['status', 'updated_at'])
         intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
-        intake.save(update_fields=['status', 'updated_at'])
+        intake.workflow_state = WorkflowState.MATCHING_READY
+        intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
         if intake.case_record is not None and intake.case_record.case_phase != CareCase.CasePhase.MATCHING:
             intake.case_record.case_phase = CareCase.CasePhase.MATCHING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
@@ -1131,12 +1187,13 @@ def intake_action_api(request, case_id):
         return JsonResponse({'ok': False, 'error': transition.reason}, status=400)
 
     intake.status = CaseIntakeProcess.ProcessStatus.COMPLETED
-    intake.save(update_fields=['status', 'updated_at'])
+    intake.workflow_state = WorkflowState.INTAKE_STARTED
+    intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
     if intake.case_record is not None and intake.case_record.case_phase != CareCase.CasePhase.ACTIEF:
         intake.case_record.case_phase = CareCase.CasePhase.ACTIEF
         intake.case_record.save(update_fields=['case_phase', 'updated_at'])
 
-    new_state = derive_workflow_state(intake=intake, placement=placement)
+    new_state = WorkflowState.INTAKE_STARTED
     log_transition_event(
         intake=intake,
         actor_user=request.user,
@@ -1183,6 +1240,7 @@ def intake_create_api(request):
     set_organization_on_instance(form.instance, organization)
     if not form.instance.start_date:
         form.instance.start_date = date.today()
+    form.instance.workflow_state = WorkflowState.DRAFT_CASE
 
     intake = form.save()
     case_record = intake.ensure_case_record(created_by=request.user)

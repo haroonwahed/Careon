@@ -10,9 +10,9 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
     </div>
     <h2 class="mrd-empty__title">Geen casussen gereed voor matching</h2>
-    <p class="mrd-empty__body">Er zijn momenteel geen beoordelingen door aanbieders met status "Goedgekeurd voor matching".</p>
-    <p class="casus-impact-summary">Werk beoordelingen door aanbieders af om matching weer mogelijk te maken.</p>
-    <a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open beoordeling door aanbieder</a>
+    <p class="mrd-empty__body">Geen casussen klaar voor gemeentelijke validatie.</p>
+    <p class="casus-impact-summary">Werk samenvatting en matching af om validatie te starten.</p>
+    <a href="{% url 'careon:assessment_list' %}" class="btn btn-primary">Open samenvatting</a>
   </div>
   {% else %}
 
@@ -20,7 +20,7 @@
   <header class="mrd-page-header ds-card">
     <div>
       <h1 class="mrd-page-header__title">Matching</h1>
-      <p class="mrd-page-header__subtitle">Los matchproblemen op door capaciteit, fit en ontbrekende randvoorwaarden zichtbaar te maken.</p>
+      <p class="mrd-page-header__subtitle">Toon fit, capaciteit en blokkades.</p>
     </div>
     <div class="mrd-page-header__controls">
       <span class="ds-note-text">{{ total_ready }} casussen gereed voor matching</span>
@@ -86,7 +86,7 @@
     <svg class="mrd-alert-bar__icon" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2z" clip-rule="evenodd"/></svg>
     <span class="mrd-alert-bar__text">{{ matching_operational_strip.message }}</span>
     <div class="mrd-alert-bar__actions">
-      <a href="{{ focus_row.recommended_action.url }}" class="btn btn-sm mrd-alert-btn-primary">Bekijk matchingproblemen</a>
+      <a href="{{ focus_row.recommended_action.url }}" class="btn btn-sm mrd-alert-btn-primary">Bekijk</a>
     </div>
   </div>
   {% endif %}
@@ -108,8 +108,8 @@
 
       {% if focus_row.suggestions %}
       <div class="mrd-center__header">
-        <h2 class="mrd-center__title">Aanbieders voor deze casus</h2>
-        <span class="mrd-center__sub">Elke kaart toont probleem, actie en impact.</span>
+        <h2 class="mrd-center__title">Aanbieders</h2>
+        <span class="mrd-center__sub">Kaarten tonen fit, blokkade en actie.</span>
       </div>
       <div class="mrd-cards">
         {% for suggestion in focus_row.suggestions|slice:":3" %}
@@ -120,14 +120,14 @@
             <h3 class="mrd-match-card__name">{{ suggestion.provider_name }}</h3>
             <span class="mrd-match-score {% if suggestion.match_score >= 80 %}mrd-match-score--high{% elif suggestion.match_score >= 60 %}mrd-match-score--mid{% else %}mrd-match-score--low{% endif %}">{{ suggestion.match_score }}% Matchscore</span>
           </div>
-          <p class="mrd-card-status">Matchstatus: {{ suggestion.matching_status }}</p>
+          <p class="mrd-card-status">Status: {{ suggestion.matching_status }}</p>
           <div class="mrd-card-profile">
-            <p class="mrd-card-profile__label">Profielsignalering</p>
+            <p class="mrd-card-profile__label">Profiel</p>
             <p class="mrd-card-profile__text">Leeftijd: {{ suggestion.age_summary }} · Zorgvorm: {{ suggestion.care_form_summary }}</p>
             <p class="mrd-card-profile__text">Regio: {{ suggestion.region_context }} · Geslacht: {{ suggestion.gender_summary }}</p>
           </div>
           <div class="mrd-card-reason">
-            <p class="mrd-card-reason__label">Waarom matching faalt</p>
+            <p class="mrd-card-reason__label">Blokkade</p>
             <p class="mrd-card-reason__text">{% firstof focus_row.primary_signal.label suggestion.failure_reason focus_row.failure_reason %}</p>
           </div>
           <div class="mrd-match-card__chips">
@@ -142,18 +142,17 @@
           {% if suggestion.behavior_labels %}{% include "contracts/_behavior_signals.html" with labels=suggestion.behavior_labels %}{% endif %}
           {% include "contracts/_behavior_influence.html" with influence=suggestion.explanation.behavior_influence consideration=suggestion.explanation.behavior_consideration %}
           <div class="mrd-card-action-block">
-            <p class="mrd-card-action-block__label">Aanbevolen actie</p>
+            <p class="mrd-card-action-block__label">Actie</p>
             <p class="mrd-card-action-block__title">{{ focus_row.recommended_action.label }}</p>
-            <p class="mrd-card-action-block__reason">{% firstof focus_row.recommended_action.reason "Voer aanbevolen actie uit" %}</p>
-            <p class="mrd-card-action-block__reason">Voer aanbevolen actie uit om matching te verbeteren.</p>
+            <p class="mrd-card-action-block__reason">{% firstof focus_row.recommended_action.reason "Volg de actie" %}</p>
             <p class="mrd-card-action-block__impact">{{ focus_row.impact_summary.text }}</p>
             {% if focus_row.can_assign %}
             <a href="{% url 'careon:case_detail' focus_row.intake.pk %}?tab=matching"
                class="btn btn-primary">
-              Plaats direct
+              Stuur door naar aanbiederbeoordeling
             </a>
             {% else %}
-            <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">Voer aanbevolen actie uit</a>
+            <a href="{{ focus_row.recommended_action.url }}" class="btn btn-primary">Volg actie</a>
             {% endif %}
             {% if suggestion.provider_id %}
             <a href="{% url 'careon:client_detail' suggestion.provider_id %}" class="mrd-inline-link">Bekijk profiel</a>
@@ -166,9 +165,9 @@
 
       {% else %}
       <div class="mrd-suggestions-empty">
-        <p class="mrd-card-reason__label">Waarom matching faalt</p>
+        <p class="mrd-card-reason__label">Blokkade</p>
         <p>{{ focus_row.failure_reason }}</p>
-        <p class="ds-note-text">Aanbevolen actie: {{ focus_row.recommended_action.label }}</p>
+        <p class="ds-note-text">Actie: {{ focus_row.recommended_action.label }}</p>
         <p class="ds-note-text">{{ focus_row.recommended_action.reason }}</p>
         <p class="casus-impact-summary">{{ focus_row.impact_summary.text }}</p>
         <div class="mrd-suggestions-empty__actions">
@@ -180,24 +179,24 @@
 
     <aside class="mrd-side-rail">
       <section class="mrd-panel-card ds-card">
-        <h3 class="mrd-panel-card__title">Casuscontext</h3>
+        <h3 class="mrd-panel-card__title">Casus</h3>
         <dl class="mrd-field-list">
           <div class="mrd-field-row"><dt>Urgentie</dt><dd>{{ focus_row.intake.get_urgency_display }}</dd></div>
-          <div class="mrd-field-row"><dt>Beoordeling door aanbieder</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
+          <div class="mrd-field-row"><dt>Beoordeling</dt><dd>{{ focus_row.assessment.get_assessment_status_display }}</dd></div>
           <div class="mrd-field-row"><dt>Categorie</dt><dd>{{ focus_row.intake.care_category_main.name|default:"Onbekend" }}</dd></div>
           <div class="mrd-field-row"><dt>Regio</dt><dd>{% firstof focus_row.intake.preferred_region.region_name focus_row.intake.region focus_row.intake.region_name "Niet opgegeven" %}</dd></div>
           <div class="mrd-field-row"><dt>Wachttijd</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.avg_wait_days != None %}{{ focus_row.suggestions.0.avg_wait_days }} d{% else %}Onbekend{% endif %}</dd></div>
           <div class="mrd-field-row"><dt>Capaciteit</dt><dd>{% if focus_row.suggestions and focus_row.suggestions.0.free_slots != None %}{{ focus_row.suggestions.0.free_slots }} vrije plekken{% else %}Onbekend{% endif %}</dd></div>
         </dl>
         <div class="mrd-side-rail__actions">
-          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-ghost btn-sm">Open beoordeling door aanbieder</a>
+          <a href="{% url 'careon:assessment_detail' focus_row.assessment.pk %}" class="btn btn-ghost btn-sm">Open beoordeling</a>
           <a href="{% url 'careon:case_detail' focus_row.intake.pk %}" class="btn btn-ghost btn-sm">Open casus</a>
         </div>
       </section>
 
       {% if focus_row.suggestions %}
       <section class="mrd-panel-card ds-card">
-        <h3 class="mrd-panel-card__title">Providerprofiel</h3>
+        <h3 class="mrd-panel-card__title">Profiel</h3>
         <dl class="mrd-field-list">
           <div class="mrd-field-row"><dt>Leeftijd</dt><dd>{{ focus_row.suggestions.0.age_summary }}</dd></div>
           <div class="mrd-field-row"><dt>Zorgvormen</dt><dd>{{ focus_row.suggestions.0.care_form_summary }}</dd></div>
@@ -217,8 +216,8 @@
         {{ focus_row.matching_map|json_script:"matching-map-data" }}
         <div class="matching-map-panel__head">
           <div>
-            <h3 class="mrd-panel-card__title">Geografische context</h3>
-            <p class="mrd-map-note">Kaartcontext ondersteunt de aanbeveling, maar vervangt die niet.</p>
+            <h3 class="mrd-panel-card__title">Kaartcontext</h3>
+            <p class="mrd-map-note">Kaart helpt, niet leidend.</p>
           </div>
           <span class="ds-badge badge-gray">{{ focus_row.matching_map.summary.candidate_count }} kandidaten</span>
         </div>
@@ -232,7 +231,7 @@
             <div>
               <span class="matching-map-shell__label">Aanbieders met coordinaten</span>
               <strong>{{ focus_row.matching_map.summary.providers_with_coordinates }} / {{ focus_row.matching_map.summary.candidate_count }}</strong>
-              <span>{% if focus_row.matching_map.summary.can_render_map %}Kaartplot gereed{% elif focus_row.matching_map.summary.has_partial_geo %}Gedeeltelijke geo-context{% else %}Alleen shell beschikbaar{% endif %}</span>
+              <span>{% if focus_row.matching_map.summary.can_render_map %}Kaart gereed{% elif focus_row.matching_map.summary.has_partial_geo %}Gedeeltelijke geo{% else %}Alleen shell{% endif %}</span>
             </div>
           </div>
           {% if focus_row.matching_map.summary.can_render_map %}
@@ -244,7 +243,7 @@
         {% if focus_row.matching_map.provider_markers %}
         <div class="matching-map-legend">
           <div class="matching-map-legend__section">
-            <span class="matching-map-legend__label">Top kandidaten</span>
+            <span class="matching-map-legend__label">Kandidaten</span>
             <div class="matching-map-legend__list">
               {% for marker in focus_row.matching_map.provider_markers|slice:":3" %}
               <button type="button"
@@ -270,7 +269,7 @@
 
       {% if focus_row.capacity_failure_signals %}
       <section class="mrd-panel-card ds-card">
-        <h3 class="mrd-panel-card__title">Capaciteitssignalen</h3>
+        <h3 class="mrd-panel-card__title">Capaciteit</h3>
         <ul class="mrd-risk-list">
           {% for failure_signal in focus_row.capacity_failure_signals|slice:":2" %}
           <li class="mrd-risk-item mrd-risk-item--amber"><span class="mrd-risk-dot mrd-risk-dot--amber"></span>{{ failure_signal }}</li>
@@ -281,7 +280,7 @@
 
       {% if not selected_intake and rows|length > 1 %}
       <section class="mrd-panel-card ds-card">
-        <h3 class="mrd-panel-card__title">Andere casussen gereed voor matching</h3>
+        <h3 class="mrd-panel-card__title">Andere casussen</h3>
         <div class="mrd-other-cases__list">
           {% for row in rows|slice:"1:6" %}
           <a href="{% url 'careon:matching_dashboard' %}?intake={{ row.intake.pk }}" class="mrd-other-case-item">

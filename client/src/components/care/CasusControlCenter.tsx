@@ -526,7 +526,7 @@ function AanbiederBeoordelingPanel({
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
           <div>
             <p className="font-semibold text-amber-700 dark:text-amber-400">
-              Beoordeling door aanbieder {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
+              Beoordeling {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">
               Beoordelaar: {assessment.assessor} · Gepland: {assessment.scheduledDate}
@@ -536,7 +536,7 @@ function AanbiederBeoordelingPanel({
       )}
 
       <div className="premium-card p-5">
-        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Beoordeling door aanbieder" />
+        <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Beoordeling" />
 
         <div className="space-y-4">
           <div>
@@ -546,7 +546,7 @@ function AanbiederBeoordelingPanel({
               onChange={e => setUrgency(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Selecteer urgentie</option>
+              <option value="">Kies urgentie</option>
               <option value="critical">Kritiek</option>
               <option value="high">Hoog</option>
               <option value="medium">Gemiddeld</option>
@@ -561,7 +561,7 @@ function AanbiederBeoordelingPanel({
               onChange={e => setComplexity(e.target.value)}
               className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Selecteer complexiteit</option>
+              <option value="">Kies complexiteit</option>
               <option value="high">Hoog</option>
               <option value="medium">Gemiddeld</option>
               <option value="low">Laag</option>
@@ -573,7 +573,7 @@ function AanbiederBeoordelingPanel({
             <Input
               value={careType}
               onChange={e => setCareType(e.target.value)}
-              placeholder="Bijv. Residentiële zorg, Ambulante begeleiding..."
+              placeholder="Bijv. Residentieel, ambulant..."
               className="text-sm"
             />
           </div>
@@ -583,7 +583,7 @@ function AanbiederBeoordelingPanel({
             <Textarea
               value={note}
               onChange={e => setNote(e.target.value)}
-              placeholder="Beschrijf de situatie, eerdere trajecten, bijzonderheden..."
+              placeholder="Korte toelichting..."
               rows={4}
               className="text-sm"
             />
@@ -591,7 +591,7 @@ function AanbiederBeoordelingPanel({
 
           {assessment.missingFields.length > 0 && (
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1.5">Nog in te vullen:</p>
+              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1.5">Ontbreekt:</p>
               <div className="flex flex-wrap gap-1.5">
                 {assessment.missingFields.map(f => (
                   <span key={f} className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full">
@@ -607,7 +607,7 @@ function AanbiederBeoordelingPanel({
       <div className="space-y-2">
         {primaryAction && (
           <ActionButton
-            action={{ ...primaryAction, label: allFilled ? "Beoordeling door aanbieder afronden" : "Sla concept op" }}
+            action={{ ...primaryAction, label: allFilled ? "Afronden" : "Concept opslaan" }}
             onClick={() => onAction(allFilled ? "complete_beoordeling" : "save_concept")}
             fullWidth
           />
@@ -644,10 +644,8 @@ function MatchingPanel({
           <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-4">
             <XCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-semibold text-red-600 dark:text-red-400">Geen aanbieder beschikbaar</p>
-              <p className="text-muted-foreground text-xs mt-0.5">
-                Er zijn geen passende aanbieders gevonden in de huidige regio en met de huidige criteria.
-              </p>
+              <p className="font-semibold text-red-600 dark:text-red-400">Geen aanbieder</p>
+              <p className="text-muted-foreground text-xs mt-0.5">Geen match binnen de huidige criteria.</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -667,7 +665,7 @@ function MatchingPanel({
         <div className="premium-card p-5">
           <SectionHeader
             icon={<TrendingUp size={16} className="text-primary" />}
-            title="Passende aanbieders"
+            title="Aanbieders"
             badge={`${matchResults.length} gevonden`}
           />
 
@@ -689,15 +687,15 @@ function MatchingPanel({
               onClick={() => onAction("select_provider")}
             >
               <UserCheck size={15} className="mr-2" />
-              {selected ? "Bevestig selectie" : "Selecteer een aanbieder"}
+              {selected ? "Bevestig" : "Selecteer"}
             </Button>
             <div className="grid grid-cols-2 gap-2">
               <ActionButton
-                action={{ id: "act-rerun", type: "rerun_matching", label: "Herstart matching", priority: "secondary", assignedTo: null, dueAt: null }}
+                action={{ id: "act-rerun", type: "rerun_matching", label: "Herstart", priority: "secondary", assignedTo: null, dueAt: null }}
                 onClick={() => onAction("rerun_matching")}
               />
               <ActionButton
-                action={{ id: "act-expand", type: "expand_radius", label: "Vergroot gebied", priority: "secondary", assignedTo: null, dueAt: null }}
+                action={{ id: "act-expand", type: "expand_radius", label: "Vergroot", priority: "secondary", assignedTo: null, dueAt: null }}
                 onClick={() => onAction("expand_radius")}
               />
             </div>
@@ -825,7 +823,7 @@ function PlaatsingPanel({
         <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Validatie checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
-            label="Beoordeling door aanbieder afgerond"
+            label="Beoordeling afgerond"
             checked={checklist.assessmentComplete}
             onChange={v => setChecklist(p => ({ ...p, assessmentComplete: v }))}
             disabled={!checklist.assessmentComplete}
@@ -996,7 +994,7 @@ function AfgerondPanel({ casus }: { casus: Casus }) {
           onClick={() => {}}
         />
         <ActionButton
-          action={{ id: "act-review", type: "review_outcome", label: "Bekijk uitkomst", priority: "secondary", assignedTo: null, dueAt: null }}
+          action={{ id: "act-review", type: "review_outcome", label: "Uitkomst", priority: "secondary", assignedTo: null, dueAt: null }}
           onClick={() => {}}
         />
       </div>
@@ -1037,11 +1035,11 @@ function GeblokkerdPanel({
       <div className="premium-card p-5">
         <SectionHeader icon={<ShieldAlert size={16} className="text-red-500" />} title="Escalatie" />
         <div className="space-y-3">
-          <label className="text-sm font-medium mb-1 block">Escalatie notitie</label>
+          <label className="text-sm font-medium mb-1 block">Notitie</label>
           <Textarea
             value={escalationNote}
             onChange={e => setEscalationNote(e.target.value)}
-            placeholder="Beschrijf de situatie, betrokken partijen, reeds ondernomen acties..."
+            placeholder="Korte toelichting..."
             rows={4}
             className="text-sm"
           />
@@ -1115,7 +1113,7 @@ function IntelligencePanel({
                     {phase.label}
                   </p>
                   {isCurrent && !isBlocked && (
-                    <p className="text-xs text-primary/60 mt-0.5">Huidige fase</p>
+                    <p className="text-xs text-primary/60 mt-0.5">Nu</p>
                   )}
                 </div>
               </div>
@@ -1141,7 +1139,7 @@ function IntelligencePanel({
           )}
         </p>
         {state.signals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Geen actieve signalen</p>
+          <p className="text-sm text-muted-foreground">Geen signalen</p>
         ) : (
           <div className="space-y-2">
             {state.signals.map(sig => (

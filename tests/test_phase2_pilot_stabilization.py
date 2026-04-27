@@ -182,7 +182,7 @@ class Phase2PilotStabilizationTests(TestCase):
 
         detail_response = self.client.get(f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing")
         self.assertEqual(detail_response.status_code, 200)
-        self.assertContains(detail_response, 'Overdracht & notificatie')
+        self.assertContains(detail_response, 'Overdracht')
 
     def test_rejection_path_requires_reason_and_can_reroute_back_to_matching(self):
         intake = self._create_intake_via_api(title='Pilot Reject Casus')
@@ -279,7 +279,7 @@ class Phase2PilotStabilizationTests(TestCase):
             follow=True,
         )
         self.assertEqual(archive_response.status_code, 200)
-        self.assertContains(archive_response, 'Deze casus blijft bewaard, maar verdwijnt uit actieve overzichten.')
+        self.assertContains(archive_response, 'Casus blijft bewaard.')
 
         intake.refresh_from_db()
         self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.ARCHIVED)

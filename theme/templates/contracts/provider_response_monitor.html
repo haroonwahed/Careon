@@ -5,7 +5,7 @@
     <header class="ds-list-header">
         <div>
             <h1 class="page-title">Providerreactie monitor</h1>
-            <p class="page-subtitle">Operationeel overzicht van providerreacties die intake-voortgang blokkeren</p>
+            <p class="page-subtitle">Wachtrij voor reacties en blokkades.</p>
         </div>
         <div class="ds-list-actions">
             <a href="{% url 'dashboard' %}" class="btn btn-secondary">Terug naar regiekamer</a>
@@ -28,8 +28,8 @@
             <div class="ds-list-filter-group">
                 <label for="provider-response-priority-mode" class="ds-list-filter-label">Wachtrijmodus</label>
                 <select id="provider-response-priority-mode" name="priority_mode" onchange="this.form.submit()">
-                    <option value="0" {% if not monitor_filters.priority_mode %}selected{% endif %}>Standaard wachtrij</option>
-                    <option value="1" {% if monitor_filters.priority_mode %}selected{% endif %}>Prioriteitsstand</option>
+                    <option value="0" {% if not monitor_filters.priority_mode %}selected{% endif %}>Standaard</option>
+                    <option value="1" {% if monitor_filters.priority_mode %}selected{% endif %}>Prioriteit</option>
                 </select>
             </div>
             <div class="ds-list-filter-group">
@@ -49,7 +49,7 @@
             <div class="ds-list-filter-group">
                 <label for="provider-response-status" class="ds-list-filter-label">Providerreactie</label>
                 <select id="provider-response-status" name="provider_response_status" onchange="this.form.submit()">
-                    <option value="">Alle open statussen</option>
+                    <option value="">Alle statussen</option>
                     {% for value, label in monitor_status_choices %}
                     <option value="{{ value }}" {% if monitor_filters.provider_response_status == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -68,14 +68,14 @@
                 <label for="provider-response-overdue" class="ds-list-filter-label">Over tijd</label>
                 <select id="provider-response-overdue" name="overdue_only" onchange="this.form.submit()">
                     <option value="0" {% if not monitor_filters.overdue_only %}selected{% endif %}>Alles</option>
-                    <option value="1" {% if monitor_filters.overdue_only %}selected{% endif %}>Alleen overdue</option>
+                    <option value="1" {% if monitor_filters.overdue_only %}selected{% endif %}>Alleen te laat</option>
                 </select>
             </div>
             <div class="ds-list-filter-group">
                 <label for="provider-response-rematch" class="ds-list-filter-label">Her-match</label>
                 <select id="provider-response-rematch" name="rematch_recommended_only" onchange="this.form.submit()">
                     <option value="0" {% if not monitor_filters.rematch_recommended_only %}selected{% endif %}>Alles</option>
-                    <option value="1" {% if monitor_filters.rematch_recommended_only %}selected{% endif %}>Alleen her-match nodig</option>
+                    <option value="1" {% if monitor_filters.rematch_recommended_only %}selected{% endif %}>Alleen her-match</option>
                 </select>
             </div>
             <div class="ds-list-filter-group">
@@ -102,49 +102,49 @@
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.waiting_count }}</div>
             <div class="ds-analytics-kpi-label">Wacht op aanbiederreactie</div>
-            <div class="ds-analytics-kpi-trend">Open providerreacties · globaal</div>
+            <div class="ds-analytics-kpi-trend">Open reacties</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.overdue_count }}</div>
             <div class="ds-analytics-kpi-label">Over deadline</div>
-            <div class="ds-analytics-kpi-trend">Direct opvolgen · globaal</div>
+            <div class="ds-analytics-kpi-trend">Nu opvolgen</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.rematch_recommended_count }}</div>
             <div class="ds-analytics-kpi-label">Her-match aanbevolen</div>
-            <div class="ds-analytics-kpi-trend">Reactie blokkeert plaatsing · globaal</div>
+            <div class="ds-analytics-kpi-trend">Blokkeert plaatsing</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.waitlist_no_capacity_count }}</div>
             <div class="ds-analytics-kpi-label">Wachtlijst / Geen capaciteit</div>
-            <div class="ds-analytics-kpi-trend">Escaleren of alternatieven zoeken · globaal</div>
+            <div class="ds-analytics-kpi-trend">Her-route nodig</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.avg_age_days|floatformat:1 }}</div>
             <div class="ds-analytics-kpi-label">Gem. leeftijd open reacties</div>
-            <div class="ds-analytics-kpi-trend">In dagen · globaal</div>
+            <div class="ds-analytics-kpi-trend">In dagen</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.sla_breach_count }}</div>
             <div class="ds-analytics-kpi-label">SLA-overschrijdingen</div>
-            <div class="ds-analytics-kpi-trend">OVERDUE of hoger · globaal</div>
+            <div class="ds-analytics-kpi-trend">Te laat</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.escalation_required_count }}</div>
             <div class="ds-analytics-kpi-label">Escalatie vereist</div>
-            <div class="ds-analytics-kpi-trend">ESCALATED of hoger · globaal</div>
+            <div class="ds-analytics-kpi-trend">Escaleren</div>
         </article>
         <article class="ds-analytics-kpi-card">
             <div class="ds-analytics-kpi-value">{{ monitor_summary.forced_action_count }}</div>
             <div class="ds-analytics-kpi-label">Afgedwongen acties</div>
-            <div class="ds-analytics-kpi-trend">Kritieke beslissingen · globaal</div>
+            <div class="ds-analytics-kpi-trend">Kritiek</div>
         </article>
     </section>
 
     <section class="panel mt-4">
         <div class="ds-detail-header">
             <h2 class="ds-card-title">Overzicht aanbiederreacties</h2>
-            <span class="ds-note-text">Context voor operators · gefilterde wachtrij{% if monitor_provider_overview_is_truncated %} · top {{ monitor_provider_overview_rows|length }} van {{ monitor_provider_overview_total_provider_count }}{% endif %}</span>
+            <span class="ds-note-text">Gefilterde wachtrij{% if monitor_provider_overview_is_truncated %} · top {{ monitor_provider_overview_rows|length }} van {{ monitor_provider_overview_total_provider_count }}{% endif %}</span>
         </div>
         {% if monitor_provider_overview_rows %}
         <div class="ds-table-wrap mt-2">
@@ -152,11 +152,11 @@
                 <thead>
                     <tr>
                         <th>Aanbieder</th>
-                        <th>Open reacties</th>
-                        <th>Overdue reacties</th>
-                        <th>Gem. reactieleeftijd</th>
-                        <th>Recent geen capaciteit</th>
-                        <th>Recent afgewezen</th>
+                        <th>Open</th>
+                        <th>Te laat</th>
+                        <th>Gem. leeftijd</th>
+                        <th>Geen cap.</th>
+                        <th>Afgewezen</th>
                         <th>Signalen</th>
                     </tr>
                 </thead>
@@ -186,7 +186,7 @@
             </table>
         </div>
         {% else %}
-        <div class="ds-empty-state">Geen aanbieders in de huidige monitorfilter.</div>
+        <div class="ds-empty-state">Geen aanbieders.</div>
         {% endif %}
     </section>
 
@@ -201,9 +201,9 @@
             <div class="ds-list-row ds-list-row--compact provider-action-row {% if row.sla_state == 'FORCED_ACTION' %}provider-action-row--forced{% else %}provider-action-row--escalated{% endif %}">
                 <div>
                     <div class="ds-row-title">{{ row.case_title }}</div>
-                    <div class="ds-row-meta">#{{ row.case_id }} · {{ row.provider_name }} · SLA {{ row.sla_state }} · Waiting {{ row.sla_hours_waiting }}h</div>
+                    <div class="ds-row-meta">#{{ row.case_id }} · {{ row.provider_name }} · SLA {{ row.sla_state }} · Wacht {{ row.sla_hours_waiting }}h</div>
                     <div class="item-meta"><strong>Eigenaar:</strong> {{ row.next_owner_label }} · <strong>Escalatie:</strong> {{ row.escalation_level_label }}</div>
-                    <div class="item-meta"><strong>Volgende beste actie:</strong> {{ row.recommended_action_label }}</div>
+                    <div class="item-meta"><strong>Actie:</strong> {{ row.recommended_action_label }}</div>
                     <div class="item-meta">{{ row.recommended_action_detail }}</div>
                 </div>
                 <a href="{{ row.case_href }}" class="btn btn-primary">Open plaatsing</a>
@@ -211,14 +211,14 @@
             {% endfor %}
         </div>
         {% else %}
-        <div class="ds-empty-state">Geen escalated of forced-action casussen in de huidige wachtrij.</div>
+        <div class="ds-empty-state">Geen directe actie.</div>
         {% endif %}
     </section>
 
     <section class="panel mt-4">
         <div class="ds-detail-header">
             <h2 class="ds-card-title">Actiequeue aanbiederreacties</h2>
-            <span class="ds-note-text">{{ monitor_queue_rows|length }} in wachtrij{% if monitor_filters.priority_mode %} · prioriteitsstand actief{% endif %} · {{ monitor_summary.total_cases }} totaal globaal · sortering en filters alleen op wachtrij · bijgewerkt {{ monitor_updated_at|date:"d-m-Y H:i" }}</span>
+            <span class="ds-note-text">{{ monitor_queue_rows|length }} in wachtrij{% if monitor_filters.priority_mode %} · prioriteit actief{% endif %} · bijgewerkt {{ monitor_updated_at|date:"d-m-Y H:i" }}</span>
         </div>
 
         {% if monitor_queue_rows %}
@@ -228,13 +228,13 @@
                     <tr>
                         <th>Casus</th>
                         <th>Aanbieder</th>
-                        <th>Status providerreactie</th>
+                        <th>Status</th>
                         <th>SLA</th>
                         <th>Eigenaar</th>
                         <th>Regio</th>
                         <th>Leeftijd</th>
                         <th>Deadline</th>
-                        <th>Volgende beste actie</th>
+                        <th>Volgende</th>
                         <th>Actie</th>
                     </tr>
                 </thead>
@@ -253,7 +253,7 @@
                         </td>
                         <td>
                             <span class="ds-badge {% if row.sla_state == 'FORCED_ACTION' or row.sla_state == 'ESCALATED' %}badge-critical{% elif row.sla_state == 'OVERDUE' %}badge-high{% else %}badge-medium{% endif %}">SLA {{ row.sla_state }}</span>
-                            <div class="item-meta">Wachten {{ row.sla_hours_waiting }} uur</div>
+                            <div class="item-meta">Wacht {{ row.sla_hours_waiting }} uur</div>
                             {% if row.sla_escalates_in_hours > 0 %}
                             <div class="item-meta">Escaleert over {{ row.sla_escalates_in_hours }} uur</div>
                             {% endif %}
@@ -300,7 +300,7 @@
             </table>
         </div>
         {% else %}
-        <div class="ds-empty-state">Geen open aanbiederreactie-knelpunten gevonden.</div>
+        <div class="ds-empty-state">Geen knelpunten.</div>
         {% endif %}
     </section>
 </div>

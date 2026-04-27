@@ -5,7 +5,7 @@
     <div class="ds-detail-header">
         <div>
             <h1 class="page-title ds-section-title">{% if is_edit %}Casus bewerken{% else %}Nieuwe casus{% endif %}</h1>
-            <p class="page-subtitle ds-helper-text">Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling door aanbieder en matching.</p>
+            <p class="page-subtitle ds-helper-text">Vul de kern in. Daarna gaat de casus door naar matching.</p>
             <p class="form-note required-note ds-note-text">Velden met <strong>*</strong> zijn verplicht.</p>
         </div>
     </div>
@@ -96,7 +96,7 @@
             <div class="ds-detail-card-head">
                 <div class="form-section-number">4</div>
                 <div>
-                    <div class="ds-detail-card-title">Matching dimensies</div>
+                    <div class="ds-detail-card-title">Randvoorwaarden</div>
                 </div>
             </div>
             <div class="ds-detail-grid-2 form-grid-2">
@@ -123,7 +123,7 @@
                 </div>
                 <div>
                     <label for="{{ form.preferred_care_form.id_for_label }}" class="ds-detail-label field-label">{{ form.preferred_care_form.label }} {% if form.preferred_care_form.field.required %}*{% endif %}</label>
-                    <p class="form-helper-text">Kies 1 zorgvorm</p>
+                    <p class="form-helper-text">Kies één zorgvorm</p>
                     <div class="form-choice-grid">
                         {% for choice in form.preferred_care_form.field.choices %}
                         <label class="intake-choice-card">
@@ -162,7 +162,7 @@
             <div class="ds-detail-card-head">
                 <div class="form-section-number">5</div>
                 <div>
-                    <div class="ds-detail-card-title">Cliëntprofiel</div>
+                    <div class="ds-detail-card-title">Profiel</div>
                 </div>
             </div>
             <div class="ds-detail-grid-2 form-grid-2">

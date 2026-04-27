@@ -2,8 +2,10 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, CheckCircle2, Plus, Search, ShieldAlert, Sparkles, UserCheck, Users } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { CareEmptyState, CareFilterLabel, CareInsightBanner, CarePageHeader, CareSectionCard } from "./CareSurface";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
   buildWorkflowCases,
   getCaseDecisionState,
@@ -113,31 +115,31 @@ export function CasussenWorkflowPage({
         key: "waiting-provider",
         severity: waitingProviderCount > 0 ? "warning" : "info",
         count: waitingProviderCount,
-        label: `${waitingProviderCount} casussen wachten langer dan 3 dagen op beoordeling door aanbieder`,
+        label: `${waitingProviderCount} wachten op aanbieder`,
       },
       {
         key: "missing-summary",
         severity: missingSummaryCount > 0 ? "warning" : "info",
         count: missingSummaryCount,
-        label: `${missingSummaryCount} casussen missen informatie voor samenvatting`,
+        label: `${missingSummaryCount} missen samenvatting`,
       },
       {
         key: "rejected",
         severity: rejectedCount > 0 ? "critical" : "info",
         count: rejectedCount,
-        label: `${rejectedCount} casussen zijn afgewezen en hebben een nieuwe match nodig`,
+        label: `${rejectedCount} vragen nieuwe match`,
       },
       {
         key: "ready-placement",
         severity: readyPlacementCount > 0 ? "good" : "info",
         count: readyPlacementCount,
-        label: `${readyPlacementCount} casussen zijn klaar voor plaatsing`,
+        label: `${readyPlacementCount} klaar voor plaatsing`,
       },
       {
         key: "info-requested",
         severity: infoRequestedCount > 0 ? "warning" : "info",
         count: infoRequestedCount,
-        label: `${infoRequestedCount} casussen vragen aanvullende informatie`,
+        label: `${infoRequestedCount} vragen info`,
       },
     ];
   }, [decisionItems]);
@@ -220,6 +222,9 @@ export function CasussenWorkflowPage({
     activeAttention,
   ]);
 
+  const urgentItems = filteredItems.filter(({ item }) => item.urgency === "critical" || item.urgency === "warning");
+  const stableItems = filteredItems.filter(({ item }) => item.urgency !== "critical" && item.urgency !== "warning");
+
   const handleCreateCase = () => {
     onCreateCase?.();
   };
@@ -238,29 +243,26 @@ export function CasussenWorkflowPage({
   ];
 
   return (
-    <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground">Casussen</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Actiegerichte regie op casussen, van aanmelding tot intake.</p>
-        </div>
-        {canCreateCase && (
-          <Button onClick={handleCreateCase}>
-            <Plus size={16} className="mr-2" />
-            Nieuwe casus
-          </Button>
-        )}
-      </header>
+    <div className="space-y-6 pb-10">
+      <CarePageHeader
+        eyebrow={<><Users size={16} className="text-primary" /><span>Casussen</span></>}
+        title="Casussen"
+        subtitle={`${workflowCases.length} actief · ${attentionItems.reduce((sum, item) => sum + item.count, 0)} aandacht`}
+        actions={canCreateCase ? <Button onClick={handleCreateCase}><Plus size={16} className="mr-2" />Nieuwe casus</Button> : undefined}
+      />
 
-      <section className="rounded-3xl border border-border bg-card/55 p-4">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 className="text-sm font-semibold uppercase tracking-[0.08em] text-muted-foreground">Aandacht nu</h2>
-          {activeAttention && (
-            <Button size="sm" variant="ghost" onClick={() => setActiveAttention(null)}>
-              Filter wissen
-            </Button>
-          )}
-        </div>
+      <CareInsightBanner
+        tone="warning"
+        title={`${attentionItems[0]?.count ?? 0} casussen vragen directe opvolging`}
+        copy="Triage op de volgende actie."
+        action={<Button variant="outline" onClick={() => handleNavigate("matching")} className="gap-2"><Sparkles size={14} />Matching</Button>}
+      />
+
+      <CareSectionCard
+        title="Aandacht nu"
+        subtitle="Snelle focus op urgente signalen."
+        actions={activeAttention ? <Button size="sm" variant="ghost" onClick={() => setActiveAttention(null)}>Wis</Button> : undefined}
+      >
         <div className="flex gap-3 overflow-x-auto pb-1">
           {attentionItems.map((attention) => (
             <button
@@ -280,127 +282,130 @@ export function CasussenWorkflowPage({
             </button>
           ))}
         </div>
-      </section>
+      </CareSectionCard>
 
-      <section className="space-y-3 rounded-3xl border border-border bg-card/45 p-4">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
-          <div className="xl:col-span-2">
-            <div className="flex items-center gap-2 rounded-3xl border border-border bg-muted/35 px-3 py-2.5">
-              <Search className="shrink-0 text-muted-foreground" size={18} />
-              <Input
-                type="text"
-                placeholder="Zoek op cliënt, casus, regio of zorgvraag"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-8 border-0 bg-transparent p-0 text-sm text-foreground shadow-none focus-visible:ring-0"
-              />
+      <CareSectionCard title="Filters" subtitle="Zoek en filter de werkvoorraad.">
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-5">
+            <div className="xl:col-span-2">
+              <div className="flex items-center gap-2 rounded-3xl border border-border/80 bg-background/55 px-3 py-2.5">
+                <Search className="shrink-0 text-muted-foreground" size={18} />
+                <Input
+                  type="text"
+                  placeholder="Zoek op cliënt, casus, regio of zorgvraag"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  className="h-8 border-0 bg-transparent p-0 text-sm text-foreground shadow-none focus-visible:ring-0"
+                />
+              </div>
+            </div>
+
+            <CareFilterLabel label="Fase">
+              <select value={selectedPhase} onChange={(event) => setSelectedPhase(event.target.value as "all" | WorkflowBoardColumn)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+                <option value="all">Alle fases</option>
+                {phaseOptions.map((phase) => (
+                  <option key={phase.value} value={phase.value}>{phase.label}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
+
+            <CareFilterLabel label="Urgentie">
+              <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+                <option value="all">Alle urgentie</option>
+                <option value="critical">Kritiek</option>
+                <option value="warning">Hoog</option>
+                <option value="normal">Normaal</option>
+                <option value="stable">Laag</option>
+              </select>
+            </CareFilterLabel>
+
+            <CareFilterLabel label="Regio">
+              <select value={selectedRegion} onChange={(event) => setSelectedRegion(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+                {regions.map((region) => (
+                  <option key={region} value={region}>{region === "all" ? "Alle regio's" : region}</option>
+                ))}
+              </select>
+            </CareFilterLabel>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 xl:grid-cols-[280px_1fr]">
+            <CareFilterLabel label="Verantwoordelijke">
+              <select value={selectedOwner} onChange={(event) => setSelectedOwner(event.target.value as "all" | "Gemeente" | "Zorgaanbieder" | "Systeem")} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
+                <option value="all">Alle verantwoordelijken</option>
+                <option value="Gemeente">Gemeente</option>
+                <option value="Zorgaanbieder">Zorgaanbieder</option>
+                <option value="Systeem">Systeem</option>
+              </select>
+            </CareFilterLabel>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button variant={focusChip === "all" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("all")}>
+                Alle casussen
+              </Button>
+              <Button variant={focusChip === "my-actions" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("my-actions")}>
+                <Users size={14} className="mr-1.5" />Mijn acties
+              </Button>
+              <Button variant={focusChip === "waiting-provider" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("waiting-provider")}>
+                <UserCheck size={14} className="mr-1.5" />Wacht op aanbieder
+              </Button>
+              <Button variant={focusChip === "blocked" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("blocked")}>
+                <AlertTriangle size={14} className="mr-1.5" />Geblokkeerd
+              </Button>
+              <Button variant={focusChip === "ready-placement" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("ready-placement")}>
+                <CheckCircle2 size={14} className="mr-1.5" />Klaar voor plaatsing
+              </Button>
             </div>
           </div>
-
-          <select value={selectedPhase} onChange={(event) => setSelectedPhase(event.target.value as "all" | WorkflowBoardColumn)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
-            <option value="all">Alle fases</option>
-            {phaseOptions.map((phase) => (
-              <option key={phase.value} value={phase.value}>{phase.label}</option>
-            ))}
-          </select>
-
-          <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
-            <option value="all">Alle urgentie</option>
-            <option value="critical">Kritiek</option>
-            <option value="warning">Hoog</option>
-            <option value="normal">Normaal</option>
-            <option value="stable">Laag</option>
-          </select>
-
-          <select value={selectedRegion} onChange={(event) => setSelectedRegion(event.target.value)} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
-            {regions.map((region) => (
-              <option key={region} value={region}>{region === "all" ? "Alle regio's" : region}</option>
-            ))}
-          </select>
         </div>
+      </CareSectionCard>
 
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[280px_1fr]">
-          <select value={selectedOwner} onChange={(event) => setSelectedOwner(event.target.value as "all" | "Gemeente" | "Zorgaanbieder" | "Systeem")} className="w-full rounded-3xl border border-border bg-card px-3 py-2.5 text-sm text-foreground">
-            <option value="all">Alle verantwoordelijken</option>
-            <option value="Gemeente">Gemeente</option>
-            <option value="Zorgaanbieder">Zorgaanbieder</option>
-            <option value="Systeem">Systeem</option>
-          </select>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant={focusChip === "all" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("all")}>
-              Alle casussen
-            </Button>
-            <Button variant={focusChip === "my-actions" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("my-actions")}>
-              <Users size={14} className="mr-1.5" />Mijn acties
-            </Button>
-            <Button variant={focusChip === "waiting-provider" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("waiting-provider")}>
-              <UserCheck size={14} className="mr-1.5" />Wacht op aanbieder
-            </Button>
-            <Button variant={focusChip === "blocked" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("blocked")}>
-              <AlertTriangle size={14} className="mr-1.5" />Geblokkeerd
-            </Button>
-            <Button variant={focusChip === "ready-placement" ? "default" : "outline"} size="sm" onClick={() => setFocusChip("ready-placement")}>
-              <CheckCircle2 size={14} className="mr-1.5" />Klaar voor plaatsing
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden...</div>}
+      {loading && <CareEmptyState title="Casussen laden…" copy="De triageweergave wordt opgebouwd." />}
 
       {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Casussen konden niet geladen worden</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
-        </div>
+        <CareEmptyState title="Casussen laden mislukt" copy={getShortReasonLabel(error, 100)} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && workflowCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-2">
-          <p className="text-lg font-semibold text-foreground">Geen casussen gevonden.</p>
-          <p className="text-sm text-muted-foreground">Pas filters aan of maak een nieuwe casus aan.</p>
-          {canCreateCase && <Button onClick={handleCreateCase}>Nieuwe casus</Button>}
-        </div>
+        <CareEmptyState
+          title="Geen casussen."
+          copy="Pas filters aan."
+          action={canCreateCase ? <Button onClick={handleCreateCase}>Nieuwe casus</Button> : undefined}
+        />
       )}
 
       {!loading && !error && workflowCases.length > 0 && filteredItems.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-2">
-          {focusChip === "my-actions" && (
-            <>
-              <p className="text-lg font-semibold text-foreground">Geen open acties.</p>
-              <p className="text-sm text-muted-foreground">Alle casussen zijn momenteel in behandeling of wachten op een andere partij.</p>
-            </>
-          )}
-          {(focusChip === "waiting-provider" || activeAttention === "waiting-provider") && (
-            <>
-              <p className="text-lg font-semibold text-foreground">Geen casussen wachten op beoordeling door aanbieder.</p>
-              <p className="text-sm text-muted-foreground">Er staan momenteel geen casussen langer dan 3 dagen in beoordeling door aanbieder.</p>
-            </>
-          )}
-          {focusChip !== "my-actions" && focusChip !== "waiting-provider" && activeAttention !== "waiting-provider" && (
-            <>
-              <p className="text-lg font-semibold text-foreground">Geen casussen gevonden.</p>
-              <p className="text-sm text-muted-foreground">Pas filters aan of maak een nieuwe casus aan.</p>
-            </>
-          )}
-        </div>
+        <CareEmptyState
+          title={focusChip === "my-actions" ? "Geen open acties." : "Geen casussen."}
+          copy={focusChip === "my-actions"
+            ? "Alles ligt bij andere partijen."
+            : focusChip === "waiting-provider" || activeAttention === "waiting-provider"
+              ? "Geen casussen wachten langer dan 3 dagen."
+              : "Pas filters aan."}
+        />
       )}
 
       {!loading && !error && filteredItems.length > 0 && (
-        <section className="space-y-4">
-          {filteredItems.map(({ item, decision }) => (
-            <ActionCaseDecisionCard
-              key={item.id}
-              item={item}
-              decision={decision}
-              role={role}
-              onOpen={onCaseClick}
-              onNavigate={handleNavigate}
-            />
-          ))}
-        </section>
+        <div className="space-y-5">
+          {urgentItems.length > 0 && (
+            <CareSectionCard title="Casussen die aandacht nodig hebben" subtitle={`${urgentItems.length} urgent`}>
+              <div className="space-y-4">
+                {urgentItems.map(({ item, decision }) => (
+                  <ActionCaseDecisionCard key={item.id} item={item} decision={decision} role={role} onOpen={onCaseClick} onNavigate={handleNavigate} />
+                ))}
+              </div>
+            </CareSectionCard>
+          )}
+
+          {stableItems.length > 0 && (
+            <CareSectionCard title="Overige casussen" subtitle={`${stableItems.length} stabiel`}>
+              <div className="space-y-4">
+                {stableItems.map(({ item, decision }) => (
+                  <ActionCaseDecisionCard key={item.id} item={item} decision={decision} role={role} onOpen={onCaseClick} onNavigate={handleNavigate} />
+                ))}
+              </div>
+            </CareSectionCard>
+          )}
+        </div>
       )}
     </div>
   );
