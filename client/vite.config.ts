@@ -32,6 +32,13 @@ function devFaviconFallback() {
   };
 }
 
+function manualVendorChunks(id: string) {
+  if (!id.includes('node_modules')) return undefined;
+
+  if (id.includes('maplibre-gl') || id.includes('react-map-gl') || id.includes('leaflet') || id.includes('react-leaflet')) return 'vendor-maps';
+  return undefined;
+}
+
   export default defineConfig(({ command }) => ({
     base: command === 'serve' ? '/' : '/static/spa/',
     plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback()],
@@ -82,6 +89,12 @@ function devFaviconFallback() {
       target: 'esnext',
       outDir: '../theme/static/spa',
       emptyOutDir: false,
+      chunkSizeWarningLimit: 1300,
+      rollupOptions: {
+        output: {
+          manualChunks: manualVendorChunks,
+        },
+      },
     },
     server: {
       port: 3000,
