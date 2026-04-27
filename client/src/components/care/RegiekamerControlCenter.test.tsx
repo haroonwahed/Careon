@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { RegiekamerDecisionOverview } from "../../lib/regiekamerDecisionOverview";
@@ -179,6 +179,26 @@ describe("RegiekamerControlCenter", () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Casus A");
     expect(rows[0]).toHaveTextContent("Prioriteitsscore");
+  });
+
+  it("renders probleem, impact, eigenaar en vereiste actie on each worklist card", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview(),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+
+    const first = screen.getAllByTestId("regiekamer-worklist-item")[0];
+    expect(within(first).getByText("Probleem")).toBeInTheDocument();
+    expect(within(first).getByText("Impact")).toBeInTheDocument();
+    expect(within(first).getByText("Eigenaar")).toBeInTheDocument();
+    expect(within(first).getByText("Vereiste actie")).toBeInTheDocument();
+    expect(first).toHaveTextContent("Gemeente");
+    expect(first).toHaveTextContent("Stuur naar aanbieder");
+    expect(first).toHaveTextContent("Samenvatting is compleet.");
   });
 
   it("filters the worklist client-side", async () => {

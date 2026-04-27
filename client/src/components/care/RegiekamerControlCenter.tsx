@@ -18,16 +18,44 @@ interface RegiekamerControlCenterProps {
 
 type PriorityFilter = "all" | "critical" | "high" | "medium";
 type IssueFilter = "all" | "blockers" | "risks" | "alerts" | "SLA" | "rejection" | "intake";
-type PhaseFilter = "all" | "casus" | "samenvatting" | "matching" | "aanbieder_beoordeling" | "plaatsing" | "intake";
+type PhaseFilter =
+  | "all"
+  | "casus"
+  | "samenvatting"
+  | "matching"
+  | "gemeente_validatie"
+  | "aanbieder_beoordeling"
+  | "plaatsing"
+  | "intake";
 type OwnershipFilter = "all" | RegiekamerOwnershipRole;
 
 const PHASE_LABELS: Record<string, string> = {
   casus: "Casus",
   samenvatting: "Samenvatting",
   matching: "Matching",
+  gemeente_validatie: "Gemeente validatie",
   aanbieder_beoordeling: "Beoordeling door aanbieder",
   plaatsing: "Plaatsing",
   intake: "Intake",
+};
+
+/** NBA action codes from API → korte Nederlandse label voor Regiekamer (alleen weergave). */
+const NBA_ACTION_CODE_LABELS: Record<string, string> = {
+  COMPLETE_CASE_DATA: "Casusgegevens aanvullen",
+  GENERATE_SUMMARY: "Samenvatting genereren",
+  START_MATCHING: "Matching starten",
+  VALIDATE_MATCHING: "Matching valideren",
+  SEND_TO_PROVIDER: "Naar aanbieder sturen",
+  WAIT_PROVIDER_RESPONSE: "Wachten op aanbiederreactie",
+  FOLLOW_UP_PROVIDER: "Aanbieder opvolgen",
+  REMATCH_CASE: "Casus her-matchen",
+  CONFIRM_PLACEMENT: "Plaatsing bevestigen",
+  START_INTAKE: "Intake starten",
+  MONITOR_CASE: "Casus monitoren",
+  ARCHIVE_CASE: "Casus archiveren",
+  PROVIDER_ACCEPT: "Aanbieder accepteert",
+  PROVIDER_REJECT: "Aanbieder wijst af",
+  PROVIDER_REQUEST_INFO: "Aanvullende info opvragen",
 };
 
 const PRIORITY_LABELS: Record<PriorityFilter, string> = {
@@ -173,6 +201,72 @@ function issueTypeLabel(item: RegiekamerDecisionOverviewItem) {
     return "Alert";
   }
   return "Status";
+}
+
+function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
+  if (item.top_blocker?.message) {
+    return item.top_blocker.message;
+  }
+  if (item.top_blocker?.title) {
+    return item.top_blocker.title;
+  }
+  if (item.top_alert?.title && item.top_alert?.message) {
+    return `${item.top_alert.title}: ${item.top_alert.message}`;
+  }
+  if (item.top_alert?.message) {
+    return item.top_alert.message;
+  }
+  if (item.top_alert?.title) {
+    return item.top_alert.title;
+  }
+  if (item.top_risk?.message) {
+    return item.top_risk.message;
+  }
+  if (item.top_risk?.title) {
+    return item.top_risk.title;
+  }
+  return "Geen expliciet signaal vastgelegd; open detail om te controleren.";
+}
+
+function impactLine(item: RegiekamerDecisionOverviewItem): string {
+  const hours = item.hours_in_current_state;
+  const urg = (item.urgency || "").toLowerCase();
+  const parts: string[] = [];
+  if (hours != null && !Number.isNaN(hours) && hours >= 168) {
+    parts.push(`Casus staat al ${formatHours(hours)} in dezelfde stap; doorlooptijd loopt vast.`);
+  } else if (hours != null && !Number.isNaN(hours) && hours >= 72) {
+    parts.push(`Langere stilstand (${formatHours(hours)}) vergroot vertragingsrisico.`);
+  } else if (hours != null && !Number.isNaN(hours) && hours >= 24) {
+    parts.push(`Stap duurt ${formatHours(hours)}; bewaak opvolging.`);
+  }
+  if (urg === "critical" || urg === "crisis" || urg === "high") {
+    parts.push("Verhoogde urgentie vraagt snellere regie.");
+  }
+  if (item.priority_score >= 120) {
+    parts.push("Hoge prioriteit in dit overzicht.");
+  }
+  if (parts.length === 0) {
+    return "Geen acute doorloop-impact gemeld; blijf signalen monitoren.";
+  }
+  return parts.join(" ");
+}
+
+function ownerLabel(item: RegiekamerDecisionOverviewItem): string {
+  const role = (item.responsible_role ?? "regie") as OwnershipFilter;
+  return OWNERSHIP_LABELS[role] ?? "Regie";
+}
+
+function recommendedActionLine(item: RegiekamerDecisionOverviewItem): string {
+  const nba = item.next_best_action;
+  if (nba?.label) {
+    const reason = (nba.reason || "").trim();
+    return reason ? `${nba.label} — ${reason}` : nba.label;
+  }
+  const code = item.top_alert?.recommended_action;
+  if (code) {
+    return NBA_ACTION_CODE_LABELS[code] ?? code;
+  }
+  return "Geen automatische vervolgstap; bekijk casusdetail.";
 }
 
 function matchesIssueFilter(item: RegiekamerDecisionOverviewItem, filter: IssueFilter) {
@@ -581,6 +675,25 @@ function RegiekamerWorkItemCard({
           : "border-border bg-card/75",
       )}
     >
+      <dl className="mb-4 grid gap-3 rounded-2xl border border-border/80 bg-background/50 p-4 text-sm md:grid-cols-2">
+        <div className="space-y-1">
+          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Probleem</dt>
+          <dd className="leading-6 text-foreground">{getShortReasonLabel(primaryProblemText(item))}</dd>
+        </div>
+        <div className="space-y-1">
+          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Impact</dt>
+          <dd className="leading-6 text-foreground">{impactLine(item)}</dd>
+        </div>
+        <div className="space-y-1">
+          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Eigenaar</dt>
+          <dd className="leading-6 text-foreground">{ownerLabel(item)}</dd>
+        </div>
+        <div className="space-y-1">
+          <dt className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Vereiste actie</dt>
+          <dd className="leading-6 text-foreground">{recommendedActionLine(item)}</dd>
+        </div>
+      </dl>
+
       <div className="grid gap-4 xl:grid-cols-12 xl:gap-6">
         <div className="space-y-4 xl:col-span-5">
           <div className="flex flex-wrap items-center gap-2">
@@ -638,13 +751,6 @@ function RegiekamerWorkItemCard({
           <div className="space-y-1">
             <p className="text-xs uppercase tracking-[0.1em] text-muted-foreground">Prioriteitsscore</p>
             <p className="text-sm font-medium text-foreground">{item.priority_score}</p>
-          </div>
-          <div className="flex flex-wrap justify-start gap-2 pt-1 xl:justify-end">
-            {item.next_best_action?.label && (
-              <Badge variant="outline" className="border-primary/20 bg-primary/5 text-foreground">
-                Volgende: {item.next_best_action.label}
-              </Badge>
-            )}
           </div>
           <div className="pt-1 xl:pt-2">
             <Button variant="outline" className="gap-2" onClick={() => onCaseClick(String(item.case_id))}>
