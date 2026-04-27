@@ -353,6 +353,55 @@ class DecisionEngineTests(TestCase):
         self.assertGreaterEqual(result["confidence_score"], 0.0)
         self.assertLessEqual(result["confidence_score"], 1.0)
 
+    def test_matching_explainability_high_fit_scores_higher_confidence_than_weak_fit(self):
+        _, strong_case, _, _ = self._create_case(
+            title="Sterke fit",
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        MatchResultaat.objects.create(
+            casus=strong_case,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.91,
+            score_inhoudelijke_fit=0.92,
+            score_regio_contract_fit=0.88,
+            score_capaciteit_wachttijd_fit=0.84,
+            score_complexiteit_veiligheid_fit=0.9,
+            confidence_label=MatchResultaat.ConfidenceLabel.HOOG,
+            ranking=1,
+        )
+
+        _, weak_case, _, weak_placement = self._create_case(
+            title="Zwakke fit",
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+            placement_status=PlacementRequest.Status.IN_REVIEW,
+            urgency=CaseIntakeProcess.Urgency.CRISIS,
+        )
+        weak_placement.provider_response_notes = "Capaciteit ontbreekt"
+        weak_placement.save(update_fields=["provider_response_notes", "updated_at"])
+        MatchResultaat.objects.create(
+            casus=weak_case,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.44,
+            score_inhoudelijke_fit=0.4,
+            score_regio_contract_fit=0.38,
+            score_capaciteit_wachttijd_fit=0.22,
+            score_complexiteit_veiligheid_fit=0.36,
+            confidence_label=MatchResultaat.ConfidenceLabel.LAAG,
+            ranking=1,
+        )
+
+        strong_result = evaluate_case(strong_case, actor=self.gemeente_user)
+        weak_result = evaluate_case(weak_case, actor=self.gemeente_user)
+
+        self.assertGreater(strong_result["confidence_score"], weak_result["confidence_score"])
+        self.assertIn("Confidence is hoog", strong_result["confidence_reason"])
+        self.assertIn("Confidence is laag", weak_result["confidence_reason"])
+
     def test_matching_explainability_warning_flags_reflect_low_fit(self):
         _, case_record, _, _ = self._create_case(
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
@@ -377,6 +426,30 @@ class DecisionEngineTests(TestCase):
         self.assertTrue(result["warning_flags"]["specialization_gap"])
         self.assertTrue(result["warning_flags"]["distance_issue"])
         self.assertTrue(result["warning_flags"]["urgency_mismatch"])
+
+    def test_matching_explainability_dutch_explanations_remain_present(self):
+        _, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.74,
+            score_inhoudelijke_fit=0.76,
+            score_regio_contract_fit=0.71,
+            score_capaciteit_wachttijd_fit=0.68,
+            score_complexiteit_veiligheid_fit=0.72,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            fit_samenvatting="Aanbieder past bij profiel en urgentie, met aandacht voor capaciteit.",
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertTrue(result["explanation_summary"])
+        self.assertTrue(any("zorgvorm" in item.lower() or "fit" in item.lower() for item in result["strengths"] + result["weaknesses"]))
+        self.assertTrue(all(isinstance(item, str) and item.strip() for item in result["verification_guidance"]))
 
     def test_repeated_rejection_creates_repeated_provider_rejections_risk(self):
         intake, case_record, _, _ = self._create_case(

@@ -29,6 +29,22 @@ DECISION_ENGINE_THRESHOLDS = {
     "repeated_rejection_count": 2,
 }
 
+_EXPLAINABILITY_FACTOR_WEIGHTS = {
+    # Weighted by operational impact in matching decisions.
+    "zorgvorm_match": {"specialization_match": 0.65, "capacity_signal": 0.35},
+    "urgency_match": {"complexity_fit": 0.7, "capacity_signal": 0.3},
+    "special_needs_fit": {"specialization_match": 0.55, "complexity_fit": 0.45},
+}
+
+_CONFIDENCE_FACTORS = {
+    "specialization_match": 0.24,
+    "urgency_match": 0.18,
+    "capacity_signal": 0.2,
+    "region_match": 0.14,
+    "complexity_fit": 0.14,
+    "zorgvorm_match": 0.1,
+}
+
 
 _STATE_PHASE_MAP = {
     WorkflowState.DRAFT_CASE: "casus",
@@ -476,6 +492,20 @@ def _normalize_unit_score(value: Any) -> float:
     return round(score, 4)
 
 
+def _weighted_average(values: dict[str, float], weights: dict[str, float]) -> float:
+    total_weight = 0.0
+    weighted_total = 0.0
+    for key, weight in weights.items():
+        score = _normalize_unit_score(values.get(key))
+        if weight <= 0:
+            continue
+        weighted_total += score * weight
+        total_weight += weight
+    if total_weight <= 0:
+        return 0.0
+    return _normalize_unit_score(weighted_total / total_weight)
+
+
 def _factor_explanation(*, factor_key: str, score: float, urgency: str | None = None) -> str:
     if factor_key == "zorgvorm_match":
         if score >= 0.75:
@@ -575,35 +605,38 @@ def _build_matching_explainability(
             ],
         }
 
-    specialization_score = _normalize_unit_score(match_result.score_inhoudelijke_fit)
-    urgency_score = _normalize_unit_score(
-        match_result.score_complexiteit_veiligheid_fit or match_result.score_complexiteit
-    )
-    region_score = _normalize_unit_score(
-        match_result.score_regio_contract_fit or match_result.score_contract_regio
-    )
-    capacity_score = _normalize_unit_score(
-        match_result.score_capaciteit_wachttijd_fit or match_result.score_capaciteit
-    )
-    complexity_score = _normalize_unit_score(
-        match_result.score_complexiteit_veiligheid_fit or match_result.score_complexiteit
-    )
-    special_needs_score = _normalize_unit_score(
-        0.6 * specialization_score + 0.4 * complexity_score
-    )
-    zorgvorm_score = _normalize_unit_score(
-        0.6 * specialization_score + 0.4 * capacity_score
-    )
+    raw_signals = {
+        "specialization_signal": _normalize_unit_score(match_result.score_inhoudelijke_fit),
+        "region_signal": _normalize_unit_score(
+            match_result.score_regio_contract_fit or match_result.score_contract_regio
+        ),
+        "capacity_signal": _normalize_unit_score(
+            match_result.score_capaciteit_wachttijd_fit or match_result.score_capaciteit
+        ),
+        "complexity_signal": _normalize_unit_score(
+            match_result.score_complexiteit_veiligheid_fit or match_result.score_complexiteit
+        ),
+    }
 
     factor_scores = {
-        "zorgvorm_match": zorgvorm_score,
-        "urgency_match": urgency_score,
-        "specialization_match": specialization_score,
-        "region_match": region_score,
-        "capacity_signal": capacity_score,
-        "complexity_fit": complexity_score,
-        "special_needs_fit": special_needs_score,
+        "specialization_match": raw_signals["specialization_signal"],
+        "region_match": raw_signals["region_signal"],
+        "capacity_signal": raw_signals["capacity_signal"],
+        "complexity_fit": raw_signals["complexity_signal"],
     }
+    factor_scores["zorgvorm_match"] = _weighted_average(
+        factor_scores,
+        _EXPLAINABILITY_FACTOR_WEIGHTS["zorgvorm_match"],
+    )
+    factor_scores["urgency_match"] = _weighted_average(
+        factor_scores,
+        _EXPLAINABILITY_FACTOR_WEIGHTS["urgency_match"],
+    )
+    factor_scores["special_needs_fit"] = _weighted_average(
+        factor_scores,
+        _EXPLAINABILITY_FACTOR_WEIGHTS["special_needs_fit"],
+    )
+
     factor_breakdown = {
         key: {
             "score": score,
@@ -624,29 +657,48 @@ def _build_matching_explainability(
     ][:3]
     tradeoffs = _extract_tradeoffs(match_result.trade_offs)
 
-    confidence_score = _normalize_unit_score(latest_match_confidence)
+    risk_codes = {str((risk or {}).get("code") or "") for risk in risks}
+    risk_penalty = 0.0
+    if "CAPACITY_RISK" in risk_codes:
+        risk_penalty += 0.08
+    if "LOW_MATCH_CONFIDENCE" in risk_codes:
+        risk_penalty += 0.07
+    if "REPEATED_PROVIDER_REJECTIONS" in risk_codes:
+        risk_penalty += 0.06
+
+    warning_flags = {
+        "capacity_risk": "CAPACITY_RISK" in risk_codes or factor_scores["capacity_signal"] < 0.52,
+        "specialization_gap": factor_scores["specialization_match"] < 0.58,
+        "distance_issue": factor_scores["region_match"] < 0.48,
+        "urgency_mismatch": factor_scores["urgency_match"] < 0.55 or (
+            urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}
+            and factor_scores["urgency_match"] < 0.68
+        ),
+    }
+
+    warning_penalty = 0.03 * sum(1 for enabled in warning_flags.values() if enabled)
+    weighted_confidence = _weighted_average(factor_scores, _CONFIDENCE_FACTORS)
+    base_confidence = latest_match_confidence if latest_match_confidence is not None else weighted_confidence
+    confidence_score = _normalize_unit_score(base_confidence - risk_penalty - warning_penalty)
     confidence_label = str(match_result.confidence_label or "").lower()
+    top_factor = max(factor_scores.items(), key=lambda item: item[1])[0]
+    weak_factor_count = sum(1 for score in factor_scores.values() if score < 0.55)
     if confidence_score >= 0.8:
-        confidence_reason = "Confidence is hoog; kernfactoren zijn grotendeels consistent."
+        confidence_reason = (
+            f"Confidence is hoog; {top_factor.replace('_', ' ')} en andere kernfactoren zijn consistent."
+        )
     elif confidence_score >= 0.6:
-        confidence_reason = "Confidence is middelmatig; valideer aannames met casuscontext."
+        confidence_reason = (
+            f"Confidence is middelmatig; {weak_factor_count} factor(en) vragen verificatie voor besluitvorming."
+        )
     elif confidence_score > 0.0:
-        confidence_reason = "Confidence is laag; extra verificatie door gemeente is nodig."
+        confidence_reason = (
+            f"Confidence is laag; {weak_factor_count} factor(en) zijn zwak of onzeker en vereisen extra controle."
+        )
     else:
         confidence_reason = "Confidence ontbreekt of is onzeker; behandel dit advies als zwak."
     if confidence_label == MatchResultaat.ConfidenceLabel.ONZEKER.lower():
         confidence_reason = "Confidence-label is onzeker; data is mogelijk onvolledig."
-
-    risk_codes = {str((risk or {}).get("code") or "") for risk in risks}
-    warning_flags = {
-        "capacity_risk": "CAPACITY_RISK" in risk_codes or capacity_score < 0.5,
-        "specialization_gap": specialization_score < 0.55,
-        "distance_issue": region_score < 0.5,
-        "urgency_mismatch": urgency_score < 0.55 or (
-            urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}
-            and urgency_score < 0.7
-        ),
-    }
     verification_guidance = [
         "Controleer of zorgvorm en urgentie praktisch uitvoerbaar zijn voor deze aanbieder.",
         "Verifieer capaciteit en verwachte wachttijd met actuele aanbiederinformatie.",
