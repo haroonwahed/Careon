@@ -882,7 +882,7 @@ def provider_decision_api(request, case_id):
     actor_role, role_error = _require_workflow_role(
         user=request.user,
         organization=organization,
-        allowed_roles={WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN},
+        allowed_roles={WorkflowRole.ZORGAANBIEDER},
     )
     if role_error is not None:
         return role_error
@@ -1022,6 +1022,17 @@ def provider_decision_api(request, case_id):
         if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
             intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
             intake.save(update_fields=['workflow_state', 'updated_at'])
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=previous_state,
+            new_state=WorkflowState.PROVIDER_REVIEW_PENDING,
+            action=WorkflowAction.PROVIDER_REQUEST_INFO,
+            placement=placement,
+            reason=notes,
+            source='provider_decision_api',
+        )
         return JsonResponse({'ok': True, 'nextPage': 'beoordelingen', 'caseId': str(intake.pk)})
 
     return JsonResponse({'ok': False, 'error': 'Ongeldige providerbeslissing.'}, status=400)
@@ -1162,7 +1173,7 @@ def intake_action_api(request, case_id):
     actor_role, role_error = _require_workflow_role(
         user=request.user,
         organization=organization,
-        allowed_roles={WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN},
+        allowed_roles={WorkflowRole.ZORGAANBIEDER},
     )
     if role_error is not None:
         return role_error

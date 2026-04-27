@@ -14,6 +14,7 @@ from contracts.models import (
     OrganizationMembership,
     PlacementRequest,
     ProviderProfile,
+    UserProfile,
 )
 
 
@@ -54,6 +55,23 @@ class Phase2PilotStabilizationTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
+        self.provider_actor = User.objects.create_user(
+            username='phase2_provider_actor',
+            email='phase2-provider-actor@example.com',
+            password='testpass123',
+        )
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=self.provider_actor,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.create(user=self.provider_actor, role=UserProfile.Role.CLIENT)
+
+    def _grant_provider_actor_case_edit(self, intake):
+        case = intake.case_record
+        case.created_by = self.provider_actor
+        case.save(update_fields=['created_by', 'updated_at'])
 
     def _login(self, user):
         self.client.logout()
@@ -150,6 +168,8 @@ class Phase2PilotStabilizationTests(TestCase):
             'Plaatsing kan pas worden bevestigd na acceptatie door de aanbieder.',
         )
 
+        self._grant_provider_actor_case_edit(intake)
+        self._login(self.provider_actor)
         accept_response = self.client.post(
             reverse('careon:case_outcome_action', kwargs={'pk': intake.pk}),
             {
@@ -165,6 +185,7 @@ class Phase2PilotStabilizationTests(TestCase):
         placement.refresh_from_db()
         self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.ACCEPTED)
 
+        self._login(self.owner)
         approved_response = self.client.post(
             reverse('careon:case_placement_action', kwargs={'pk': intake.pk}),
             {
@@ -195,6 +216,8 @@ class Phase2PilotStabilizationTests(TestCase):
             content_type='application/json',
         )
 
+        self._grant_provider_actor_case_edit(intake)
+        self._login(self.provider_actor)
         missing_reason_response = self.client.post(
             reverse('careon:case_outcome_action', kwargs={'pk': intake.pk}),
             {
@@ -225,6 +248,7 @@ class Phase2PilotStabilizationTests(TestCase):
         self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.REJECTED)
         self.assertEqual(placement.provider_response_reason_code, OutcomeReasonCode.PROVIDER_DECLINED)
 
+        self._login(self.owner)
         rematch_response = self.client.post(
             reverse('careon:case_provider_response_action', kwargs={'pk': intake.pk}),
             {
@@ -248,6 +272,8 @@ class Phase2PilotStabilizationTests(TestCase):
             data=json.dumps({'action': 'assign', 'provider_id': provider.pk}),
             content_type='application/json',
         )
+        self._grant_provider_actor_case_edit(intake)
+        self._login(self.provider_actor)
         self.client.post(
             reverse('careon:case_outcome_action', kwargs={'pk': intake.pk}),
             {
@@ -259,6 +285,7 @@ class Phase2PilotStabilizationTests(TestCase):
             },
             follow=True,
         )
+        self._login(self.admin)
         self.client.post(
             reverse('careon:case_placement_action', kwargs={'pk': intake.pk}),
             {
@@ -268,11 +295,13 @@ class Phase2PilotStabilizationTests(TestCase):
             },
             follow=True,
         )
+        self._login(self.provider_actor)
         self.client.post(
             reverse('careon:intake_action_api', kwargs={'case_id': intake.pk}),
             data=json.dumps({}),
             content_type='application/json',
         )
+        self._login(self.admin)
         archive_response = self.client.post(
             reverse('careon:case_archive_action', kwargs={'pk': intake.pk}),
             {'next': reverse('careon:case_detail', kwargs={'pk': intake.pk})},

@@ -5614,8 +5614,8 @@ def case_outcome_action(request, pk):
     actor_role, role_error_response = _require_workflow_actor_role(
         request,
         intake=intake,
-        allowed_roles={WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN},
-        failure_message='Alleen een zorgaanbieder of admin/regie kan een beoordeling door aanbieder registreren.',
+        allowed_roles={WorkflowRole.ZORGAANBIEDER},
+        failure_message='Alleen een zorgaanbieder kan een beoordeling door aanbieder registreren.',
     )
     if role_error_response is not None:
         return role_error_response

@@ -214,3 +214,72 @@ class WorkflowFoundationLockTests(TestCase):
         self.assertIn('provider_accept', actions)
         self.assertIn('confirm_placement', actions)
         self.assertIn('start_intake', actions)
+
+    def test_org_admin_cannot_record_provider_decision_via_api(self):
+        intake = self._create_matching_ready_case()
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=self.provider,
+            selected_provider=self.provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+
+        self.client.login(username='admin_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:provider_decision_api', kwargs={'case_id': intake.pk}),
+            data='{"status":"ACCEPTED"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_org_admin_cannot_start_intake_via_api_after_placement_confirmed(self):
+        intake = self._create_matching_ready_case()
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=self.provider,
+            selected_provider=self.provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=f'{{"action":"assign","provider_id":{self.provider.pk}}}',
+            content_type='application/json',
+        )
+        self.client.logout()
+        self.client.login(username='provider_user', password='testpass123')
+        self.client.post(
+            reverse('careon:provider_decision_api', kwargs={'case_id': intake.pk}),
+            data='{"status":"ACCEPTED"}',
+            content_type='application/json',
+        )
+        self.client.logout()
+        self.client.login(username='gemeente_user', password='testpass123')
+        self.client.post(
+            reverse('careon:placement_action_api', kwargs={'case_id': intake.pk}),
+            data='{"status":"APPROVED","note":"OK"}',
+            content_type='application/json',
+        )
+        self.client.logout()
+        self.client.login(username='admin_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:intake_action_api', kwargs={'case_id': intake.pk}),
+            data='{}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_provider_cannot_assign_via_matching_action_api(self):
+        intake = self._create_matching_ready_case()
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=f'{{"action":"assign","provider_id":{self.provider.pk}}}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)

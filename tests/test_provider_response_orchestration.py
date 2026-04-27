@@ -14,6 +14,7 @@ from contracts.models import (
     Organization,
     OrganizationMembership,
     PlacementRequest,
+    UserProfile,
 )
 
 
@@ -43,6 +44,19 @@ class ProviderResponseOrchestrationTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
+
+        self.provider_actor = User.objects.create_user(
+            username='provider_actor',
+            email='actor@example.com',
+            password='testpass123',
+        )
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=self.provider_actor,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.create(user=self.provider_actor, role=UserProfile.Role.CLIENT)
 
         self.provider = CareProvider.objects.create(
             organization=self.organization,
@@ -80,6 +94,9 @@ class ProviderResponseOrchestrationTests(TestCase):
 
     def _login_owner(self):
         self.client.login(username='provider_owner', password='testpass123')
+
+    def _login_provider_actor(self):
+        self.client.login(username='provider_actor', password='testpass123')
 
     def _assert_no_provider_response_mutation(self, before, after):
         self.assertEqual(before.provider_response_status, after.provider_response_status)
@@ -308,7 +325,9 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
     def test_provider_response_reject_requires_reason_and_persists_when_valid(self):
-        self._login_owner()
+        self.intake.case_coordinator = self.provider_actor
+        self.intake.save(update_fields=['case_coordinator', 'updated_at'])
+        self._login_provider_actor()
         before = PlacementRequest.objects.get(pk=self.placement.pk)
 
         missing_reason_response = self.client.post(
@@ -623,6 +642,9 @@ class ProviderResponseOrchestrationTests(TestCase):
         next_placement.refresh_from_db()
         self.assertEqual(next_placement.provider_response_status, PlacementRequest.ProviderResponseStatus.PENDING)
 
+        self.intake.case_coordinator = self.provider_actor
+        self.intake.save(update_fields=['case_coordinator', 'updated_at'])
+        self._login_provider_actor()
         accepted_response = self.client.post(
             reverse('careon:case_outcome_action', kwargs={'pk': self.intake.pk}),
             {
