@@ -18,6 +18,21 @@ Run `npm i` to install the dependencies.
 
 Run `npm run dev` to start the development server.
 
+## Python tests (Django)
+
+Use a dedicated virtual environment in this repo (not another project’s `.venv`):
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -U pip
+pip install -r requirements/dev.txt
+export DJANGO_SECRET_KEY=test-not-for-production
+python -m pytest tests/ -q
+```
+
+`requirements/dev.txt` includes `pytest` and `pytest-django`; `pytest.ini` sets `DJANGO_SETTINGS_MODULE=config.settings_test`. CI runs the same `python -m pytest tests/ -q` step after installing `requirements/dev.txt`.
+
 ## Render Deployment
 
 The repository includes a Render blueprint in `render.yaml`.

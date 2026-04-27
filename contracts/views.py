@@ -181,6 +181,13 @@ def _provider_profile_match_surface(profile):
             'gender_summary': 'Geen geslachtsbeperking opgegeven',
             'specialization_summary': 'Specialisaties nog niet ingesteld',
             'contra_summary': 'Geen contra-indicaties opgegeven',
+            'profile_summary': {
+                'age_bands': [],
+                'care_forms': [],
+                'gender_restriction': '',
+                'specializations': [],
+                'contra_indicaties': [],
+            },
         }
 
     age_bands = _provider_profile_age_bands(profile)

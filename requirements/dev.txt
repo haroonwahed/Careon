@@ -13,6 +13,10 @@ django-stubs[compatible-mypy]
 # Test/data helpers
 Faker==17.3.0
 
+# Pytest (local + CI: `python -m pytest` from an env with `pip install -r requirements/dev.txt`)
+pytest==8.3.5
+pytest-django==4.10.0
+
 # Legacy browser/robot automation toolchain (kept for compatibility)
 robotframework==7.3.2
 robotframework-bsnlibrary==1.0.0

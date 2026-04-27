@@ -34,3 +34,6 @@ staticfiles/
 
 # Legacy Windows venv (not the active .venv)
 venv/
+
+# Disposable local venv used for one-off pytest verification
+.venv_pytest_check/

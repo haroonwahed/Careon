@@ -25,6 +25,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements/dev.txt
 
+      - name: Pytest (Django suite)
+        env:
+          DJANGO_SECRET_KEY: this-is-only-for-ci-not-production-change-me-1234567890
+          DJANGO_DEBUG: '0'
+          SSO_ENABLED: '0'
+        run: python -m pytest tests/ -q
+
       - name: Python compile smoke
         run: python -m compileall config contracts
 
