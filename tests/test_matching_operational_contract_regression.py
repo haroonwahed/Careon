@@ -53,7 +53,8 @@ class MatchingOperationalContractRegressionTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.client.login(username="matching-regression-user", password="testpass123")
-        os.environ["FEATURE_REDESIGN"] = "true"
+        # Django matching dashboard (not SPA shell) is required for these contract assertions.
+        os.environ["FEATURE_REDESIGN"] = "false"
 
     def tearDown(self):
         os.environ.pop("FEATURE_REDESIGN", None)

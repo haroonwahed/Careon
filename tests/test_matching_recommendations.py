@@ -79,10 +79,10 @@ class MatchingRecommendationsTests(TestCase):
         self.assertContains(response, 'Wachttijd')
         self.assertContains(response, 'Capaciteit')
         self.assertContains(response, 'Matching')
-        self.assertContains(response, 'Matchstatus')
-        self.assertContains(response, 'Aanbevolen actie')
-        self.assertContains(response, 'Voer aanbevolen actie uit')
-        self.assertContains(response, 'Plaats direct')
+        self.assertContains(response, 'Status: Matchbaar')
+        self.assertContains(response, 'Actie')
+        self.assertContains(response, 'Zoek aanbieder')
+        self.assertContains(response, 'Stuur door naar aanbiederbeoordeling')
         self.assertContains(response, 'Gedragsinvloed')
         self.assertContains(response, 'Limited provider history, behavioral influence kept neutral')
 
@@ -238,7 +238,7 @@ class MatchingRecommendationsTests(TestCase):
         response = self.client.get(reverse('careon:matching_dashboard'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Geografische context')
+        self.assertContains(response, 'Kaartcontext')
         self.assertContains(response, 'Kaart kan nog niet renderen')
         matching_map = response.context['rows'][0]['matching_map']
         self.assertIn('case_location', matching_map)

@@ -445,7 +445,7 @@ class SlaMonitorExposureTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Providerreactie monitor")
         self.assertContains(response, "Open reacties")
-        self.assertContains(response, "Recent geen capaciteit")
+        self.assertContains(response, "Geen cap.")
         self.assertContains(response, "SLA Provider")
         self.assertContains(response, "frequent delays")
 
@@ -479,7 +479,7 @@ class SlaMonitorExposureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SLA Provider")
-        self.assertContains(response, "Recent geen capaciteit")
+        self.assertContains(response, "Geen cap.")
         self.assertNotContains(response, "Filter Provider")
 
 

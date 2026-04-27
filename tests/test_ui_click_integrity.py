@@ -228,7 +228,7 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         # Current approved copy and step treatment for the guided single-page intake.
         self.assertContains(
             response,
-            'Start met de intakegegevens. Na opslaan ga je direct naar het casusdossier voor beoordeling door aanbieder en matching.',
+            'Vul de kern in. Daarna gaat de casus door naar matching.',
         )
         self.assertContains(response, 'Complexiteit')
         self.assertContains(response, 'Velden met <strong>*</strong> zijn verplicht.')

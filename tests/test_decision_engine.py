@@ -165,7 +165,7 @@ class DecisionEngineTests(TestCase):
         self.assertEqual(result["current_state"], "SUMMARY_READY")
         self.assertEqual(result["next_best_action"]["action"], "START_MATCHING")
 
-    def test_matching_ready_case_returns_send_to_provider(self):
+    def test_matching_ready_case_returns_validate_matching_gate(self):
         _, case_record, _, _ = self._create_case(
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
@@ -174,7 +174,7 @@ class DecisionEngineTests(TestCase):
         result = evaluate_case(case_record, actor=self.gemeente_user)
 
         self.assertEqual(result["current_state"], "MATCHING_READY")
-        self.assertEqual(result["next_best_action"]["action"], "SEND_TO_PROVIDER")
+        self.assertEqual(result["next_best_action"]["action"], "VALIDATE_MATCHING")
 
     def test_provider_review_pending_returns_wait_provider_response(self):
         _, case_record, _, _ = self._create_case(

@@ -13,6 +13,7 @@ from contracts.governance import (
     get_policy_values,
     replay_case_decisions,
 )
+from contracts.workflow_state_machine import WorkflowState
 from contracts.models import (
     CaseAssessment,
     CaseDecisionLog,
@@ -81,6 +82,9 @@ class GovernanceAuditTests(TestCase):
             care_form=self.intake.preferred_care_form,
             provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
         )
+        # Persist matching gate so assign does not derive PROVIDER_REVIEW_PENDING from placement alone.
+        self.intake.workflow_state = WorkflowState.MATCHING_READY
+        self.intake.save(update_fields=['workflow_state', 'updated_at'])
 
     def _matching_suggestions(self):
         return [

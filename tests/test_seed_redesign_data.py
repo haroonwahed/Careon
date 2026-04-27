@@ -29,7 +29,7 @@ class SeedRedesignDataCommandTests(TestCase):
                 'current_state': 'MATCHING_READY',
                 'blocker_code': None,
                 'alert_code': None,
-                'next_action': 'SEND_TO_PROVIDER',
+                'next_action': 'VALIDATE_MATCHING',
             },
             PILOT_CASE_TITLES[1]: {
                 'current_state': 'DRAFT_CASE',
@@ -40,8 +40,8 @@ class SeedRedesignDataCommandTests(TestCase):
             PILOT_CASE_TITLES[2]: {
                 'current_state': 'MATCHING_READY',
                 'blocker_code': None,
-                'alert_code': 'WEAK_MATCH_NEEDS_VERIFICATION',
-                'next_action': 'SEND_TO_PROVIDER',
+                'alert_code': 'GEMEENTE_VALIDATION_REQUIRED',
+                'next_action': 'VALIDATE_MATCHING',
             },
             PILOT_CASE_TITLES[3]: {
                 'current_state': 'PROVIDER_REJECTED',
@@ -101,7 +101,7 @@ class SeedRedesignDataCommandTests(TestCase):
                 PILOT_CASE_TITLES[4],
                 PILOT_CASE_TITLES[3],
                 PILOT_CASE_TITLES[5],
-                PILOT_CASE_TITLES[0],
                 PILOT_CASE_TITLES[2],
+                PILOT_CASE_TITLES[0],
             ],
         )
