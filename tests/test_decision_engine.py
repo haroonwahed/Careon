@@ -16,6 +16,7 @@ from contracts.models import (
     Organization,
     OrganizationMembership,
     PlacementRequest,
+    ProviderRegioDekking,
     RegionalConfiguration,
     Zorgaanbieder,
     Zorgprofiel,
@@ -80,6 +81,8 @@ class DecisionEngineTests(TestCase):
             gemeente="Utrecht",
             provincie="Utrecht",
             region="UTR",
+            latitude=52.0907,
+            longitude=5.1214,
             is_active=True,
         )
         self.provider_profile = Zorgprofiel.objects.create(
@@ -424,7 +427,7 @@ class DecisionEngineTests(TestCase):
         result = evaluate_case(case_record, actor=self.gemeente_user)
         self.assertTrue(result["warning_flags"]["capacity_risk"])
         self.assertTrue(result["warning_flags"]["specialization_gap"])
-        self.assertTrue(result["warning_flags"]["distance_issue"])
+        self.assertFalse(result["warning_flags"]["distance_issue"])
         self.assertTrue(result["warning_flags"]["urgency_mismatch"])
 
     def test_matching_explainability_dutch_explanations_remain_present(self):
@@ -450,6 +453,158 @@ class DecisionEngineTests(TestCase):
         self.assertTrue(result["explanation_summary"])
         self.assertTrue(any("zorgvorm" in item.lower() or "fit" in item.lower() for item in result["strengths"] + result["weaknesses"]))
         self.assertTrue(all(isinstance(item, str) and item.strip() for item in result["verification_guidance"]))
+
+    def test_distance_coverage_inside_service_radius(self):
+        intake, _, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.latitude = 52.095
+        intake.longitude = 5.12
+        MatchResultaat.objects.create(
+            casus=intake.contract,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.72,
+            score_inhoudelijke_fit=0.7,
+            score_regio_contract_fit=0.62,
+            score_capaciteit_wachttijd_fit=0.64,
+            score_complexiteit_veiligheid_fit=0.66,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            verificatie_advies="Maximale service radius 8 km",
+            ranking=1,
+        )
+
+        result = evaluate_case(intake, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "geo_distance")
+        self.assertEqual(result["coverage_status"], "inside_radius")
+        self.assertIsNotNone(result["distance_km"])
+        self.assertFalse(result["warning_flags"]["distance_issue"])
+
+    def test_distance_coverage_outside_service_radius_sets_distance_issue(self):
+        intake, _, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.latitude = 52.55
+        intake.longitude = 5.65
+        MatchResultaat.objects.create(
+            casus=intake.contract,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.62,
+            score_inhoudelijke_fit=0.66,
+            score_regio_contract_fit=0.58,
+            score_capaciteit_wachttijd_fit=0.6,
+            score_complexiteit_veiligheid_fit=0.62,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            verificatie_advies="service radius 10 km",
+            ranking=1,
+        )
+
+        result = evaluate_case(intake, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "geo_distance")
+        self.assertEqual(result["coverage_status"], "outside_radius")
+        self.assertTrue(result["warning_flags"]["distance_issue"])
+
+    def test_distance_coverage_same_region_fallback(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        case_record.service_region = "UTR"
+        case_record.save(update_fields=["service_region", "updated_at"])
+        self.provider_branch.region = "UTR"
+        self.provider_branch.save(update_fields=["region", "updated_at"])
+
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.68,
+            score_inhoudelijke_fit=0.66,
+            score_regio_contract_fit=0.52,
+            score_capaciteit_wachttijd_fit=0.57,
+            score_complexiteit_veiligheid_fit=0.61,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "region_fallback")
+        self.assertEqual(result["coverage_status"], "region_fallback_match")
+        self.assertFalse(result["warning_flags"]["distance_issue"])
+
+    def test_distance_coverage_missing_geo_or_coverage_is_unknown(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.regio = None
+        intake.preferred_region = None
+        intake.save(update_fields=["regio", "preferred_region", "updated_at"])
+        self.provider_branch.region = ""
+        self.provider_branch.gemeente = ""
+        self.provider_branch.latitude = None
+        self.provider_branch.longitude = None
+        self.provider_branch.save(update_fields=["region", "gemeente", "latitude", "longitude", "updated_at"])
+        case_record.service_region = ""
+        case_record.save(update_fields=["service_region", "updated_at"])
+
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.63,
+            score_inhoudelijke_fit=0.63,
+            score_regio_contract_fit=0.5,
+            score_capaciteit_wachttijd_fit=0.58,
+            score_complexiteit_veiligheid_fit=0.6,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "unknown")
+        self.assertEqual(result["coverage_status"], "unknown")
+        self.assertFalse(result["warning_flags"]["distance_issue"])
+        self.assertTrue(any("Geo/coverage-data ontbreekt" in item for item in result["verification_guidance"]))
+
+    def test_distance_issue_requires_real_coverage_evidence(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        other_region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name="Rotterdam",
+            region_code="RTM",
+            region_type="GEMEENTELIJK",
+        )
+        ProviderRegioDekking.objects.create(
+            zorgaanbieder=self.provider,
+            aanbieder_vestiging=self.provider_branch,
+            regio=other_region,
+            dekking_status=ProviderRegioDekking.DekkingStatus.ACTIVE,
+            contract_actief=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.6,
+            score_inhoudelijke_fit=0.62,
+            score_regio_contract_fit=0.55,
+            score_capaciteit_wachttijd_fit=0.58,
+            score_complexiteit_veiligheid_fit=0.59,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            ranking=1,
+        )
+
+        result = evaluate_case(intake, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "provider_region_coverage")
+        self.assertEqual(result["coverage_status"], "uncovered_region")
+        self.assertTrue(result["warning_flags"]["distance_issue"])
 
     def test_repeated_rejection_creates_repeated_provider_rejections_risk(self):
         intake, case_record, _, _ = self._create_case(

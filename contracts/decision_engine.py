@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+import re
 from typing import Any, Iterable
 
 from django.db.models import Q
@@ -12,6 +14,7 @@ from contracts.models import (
     CaseIntakeProcess,
     MatchResultaat,
     PlacementRequest,
+    ProviderRegioDekking,
 )
 from contracts.workflow_state_machine import (
     WorkflowRole,
@@ -492,6 +495,228 @@ def _normalize_unit_score(value: Any) -> float:
     return round(score, 4)
 
 
+def _coerce_coordinate(value: Any, *, minimum: float, maximum: float) -> float | None:
+    try:
+        numeric_value = float(value)
+    except (TypeError, ValueError):
+        return None
+    if numeric_value < minimum or numeric_value > maximum:
+        return None
+    return round(numeric_value, 6)
+
+
+def _extract_coordinates(source: Any) -> tuple[float | None, float | None]:
+    if source is None:
+        return None, None
+
+    for latitude_attr, longitude_attr in (("latitude", "longitude"), ("lat", "lng"), ("lat", "lon")):
+        if not hasattr(source, latitude_attr) or not hasattr(source, longitude_attr):
+            continue
+        latitude = _coerce_coordinate(getattr(source, latitude_attr, None), minimum=-90.0, maximum=90.0)
+        longitude = _coerce_coordinate(getattr(source, longitude_attr, None), minimum=-180.0, maximum=180.0)
+        if latitude is not None and longitude is not None:
+            return latitude, longitude
+    return None, None
+
+
+def _haversine_distance_km(*, from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> float:
+    earth_radius_km = 6371.0
+    d_lat = math.radians(to_lat - from_lat)
+    d_lon = math.radians(to_lon - from_lon)
+    lat1 = math.radians(from_lat)
+    lat2 = math.radians(to_lat)
+
+    a = (
+        math.sin(d_lat / 2) ** 2
+        + math.cos(lat1) * math.cos(lat2) * (math.sin(d_lon / 2) ** 2)
+    )
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return round(earth_radius_km * c, 2)
+
+
+def _parse_service_radius_km(value: Any) -> float | None:
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    match = re.search(r"(\d+(?:[.,]\d+)?)\s*km", text)
+    if not match:
+        return None
+    raw_value = match.group(1).replace(",", ".")
+    try:
+        radius = float(raw_value)
+    except ValueError:
+        return None
+    return round(radius, 2) if radius > 0 else None
+
+
+def _build_region_fallback_data(*, intake: CaseIntakeProcess | None, case_record: CareCase | None) -> dict[str, Any]:
+    region_values: list[str] = []
+    region_ids: list[int] = []
+    case_sources: list[Any] = [intake]
+    if intake is not None:
+        case_sources.extend([getattr(intake, "regio", None), getattr(intake, "preferred_region", None), getattr(intake, "gemeente", None)])
+    case_sources.append(case_record)
+
+    for source in case_sources:
+        if source is None:
+            continue
+        for value in (
+            getattr(source, "region_code", None),
+            getattr(source, "region_name", None),
+            getattr(source, "regio_jeugd", None),
+            getattr(source, "region", None),
+            getattr(source, "service_region", None),
+            getattr(source, "municipality_name", None),
+            getattr(source, "gemeente", None),
+        ):
+            normalized = str(value or "").strip().casefold()
+            if normalized and normalized not in region_values:
+                region_values.append(normalized)
+        source_id = getattr(source, "id", None)
+        if isinstance(source_id, int) and source_id not in region_ids:
+            region_ids.append(source_id)
+    return {"region_values": region_values, "region_ids": region_ids}
+
+
+def _evaluate_distance_coverage(
+    *,
+    intake: CaseIntakeProcess | None,
+    case_record: CareCase | None,
+    match_result: MatchResultaat | None,
+    baseline_region_score: float,
+) -> dict[str, Any]:
+    if match_result is None:
+        return {
+            "region_score": baseline_region_score,
+            "coverage_basis": "unknown",
+            "coverage_status": "unknown",
+            "distance_km": None,
+            "service_radius_km": None,
+            "region_fallback_used": False,
+            "distance_evidence": False,
+        }
+
+    provider = getattr(match_result, "zorgaanbieder", None)
+    profiel = getattr(match_result, "zorgprofiel", None)
+    vestiging = getattr(profiel, "aanbieder_vestiging", None) if profiel is not None else None
+    provider_lat, provider_lon = _extract_coordinates(vestiging)
+
+    case_sources = [
+        intake,
+        getattr(intake, "regio", None) if intake is not None else None,
+        getattr(intake, "preferred_region", None) if intake is not None else None,
+        getattr(intake, "gemeente", None) if intake is not None else None,
+        case_record,
+    ]
+    case_lat = None
+    case_lon = None
+    for source in case_sources:
+        case_lat, case_lon = _extract_coordinates(source)
+        if case_lat is not None and case_lon is not None:
+            break
+
+    radius_candidates = [
+        getattr(profiel, "service_area", None) if profiel is not None else None,
+        getattr(vestiging, "name", None),
+        getattr(match_result, "verificatie_advies", None),
+    ]
+    service_radius_km = None
+    for candidate in radius_candidates:
+        service_radius_km = _parse_service_radius_km(candidate)
+        if service_radius_km is not None:
+            break
+
+    if provider is not None:
+        coverage_qs = ProviderRegioDekking.objects.filter(
+            zorgaanbieder=provider,
+            dekking_status=ProviderRegioDekking.DekkingStatus.ACTIVE,
+            contract_actief=True,
+        )
+        if vestiging is not None:
+            coverage_qs = coverage_qs.filter(Q(aanbieder_vestiging=vestiging) | Q(aanbieder_vestiging__isnull=True))
+        region_data = _build_region_fallback_data(intake=intake, case_record=case_record)
+        coverage_rows = list(coverage_qs.select_related("regio"))
+        if coverage_rows:
+            case_region_ids = set(region_data["region_ids"])
+            provider_region_ids = {row.regio_id for row in coverage_rows}
+            has_region_overlap = bool(case_region_ids and provider_region_ids.intersection(case_region_ids))
+            if has_region_overlap:
+                return {
+                    "region_score": max(baseline_region_score, 0.78),
+                    "coverage_basis": "provider_region_coverage",
+                    "coverage_status": "covered_region",
+                    "distance_km": None,
+                    "service_radius_km": None,
+                    "region_fallback_used": False,
+                    "distance_evidence": True,
+                }
+            return {
+                "region_score": min(baseline_region_score, 0.4),
+                "coverage_basis": "provider_region_coverage",
+                "coverage_status": "uncovered_region",
+                "distance_km": None,
+                "service_radius_km": None,
+                "region_fallback_used": False,
+                "distance_evidence": True,
+            }
+
+    if (
+        provider_lat is not None
+        and provider_lon is not None
+        and case_lat is not None
+        and case_lon is not None
+        and service_radius_km is not None
+    ):
+        distance_km = _haversine_distance_km(
+            from_lat=provider_lat,
+            from_lon=provider_lon,
+            to_lat=case_lat,
+            to_lon=case_lon,
+        )
+        inside_radius = distance_km <= service_radius_km
+        return {
+            "region_score": max(baseline_region_score, 0.84) if inside_radius else min(baseline_region_score, 0.35),
+            "coverage_basis": "geo_distance",
+            "coverage_status": "inside_radius" if inside_radius else "outside_radius",
+            "distance_km": distance_km,
+            "service_radius_km": service_radius_km,
+            "region_fallback_used": False,
+            "distance_evidence": True,
+        }
+
+    region_data = _build_region_fallback_data(intake=intake, case_record=case_record)
+    provider_region_values = [
+        str(value or "").strip().casefold()
+        for value in (
+            getattr(vestiging, "region", None),
+            getattr(vestiging, "regio_jeugd", None),
+            getattr(vestiging, "gemeente", None),
+            getattr(case_record, "preferred_provider", None),
+        )
+        if str(value or "").strip()
+    ]
+    if set(provider_region_values).intersection(region_data["region_values"]):
+        return {
+            "region_score": max(baseline_region_score, 0.62),
+            "coverage_basis": "region_fallback",
+            "coverage_status": "region_fallback_match",
+            "distance_km": None,
+            "service_radius_km": None,
+            "region_fallback_used": True,
+            "distance_evidence": False,
+        }
+
+    return {
+        "region_score": baseline_region_score,
+        "coverage_basis": "unknown",
+        "coverage_status": "unknown",
+        "distance_km": None,
+        "service_radius_km": service_radius_km,
+        "region_fallback_used": False,
+        "distance_evidence": False,
+    }
+
+
 def _weighted_average(values: dict[str, float], weights: dict[str, float]) -> float:
     total_weight = 0.0
     weighted_total = 0.0
@@ -570,6 +795,8 @@ def _extract_tradeoffs(raw_tradeoffs: Any) -> list[str]:
 
 def _build_matching_explainability(
     *,
+    intake: CaseIntakeProcess | None,
+    case_record: CareCase | None,
     match_result: MatchResultaat | None,
     latest_match_confidence: float | None,
     urgency: str,
@@ -596,9 +823,13 @@ def _build_matching_explainability(
             "warning_flags": {
                 "capacity_risk": True,
                 "specialization_gap": True,
-                "distance_issue": True,
+                "distance_issue": False,
                 "urgency_mismatch": True,
             },
+            "coverage_basis": "unknown",
+            "coverage_status": "unknown",
+            "distance_km": None,
+            "service_radius_km": None,
             "verification_guidance": [
                 "Start matching of vernieuw het matchadvies.",
                 "Controleer of verplichte casusgegevens en samenvatting compleet zijn.",
@@ -624,6 +855,13 @@ def _build_matching_explainability(
         "capacity_signal": raw_signals["capacity_signal"],
         "complexity_fit": raw_signals["complexity_signal"],
     }
+    coverage = _evaluate_distance_coverage(
+        intake=intake,
+        case_record=case_record,
+        match_result=match_result,
+        baseline_region_score=factor_scores["region_match"],
+    )
+    factor_scores["region_match"] = coverage["region_score"]
     factor_scores["zorgvorm_match"] = _weighted_average(
         factor_scores,
         _EXPLAINABILITY_FACTOR_WEIGHTS["zorgvorm_match"],
@@ -669,7 +907,7 @@ def _build_matching_explainability(
     warning_flags = {
         "capacity_risk": "CAPACITY_RISK" in risk_codes or factor_scores["capacity_signal"] < 0.52,
         "specialization_gap": factor_scores["specialization_match"] < 0.58,
-        "distance_issue": factor_scores["region_match"] < 0.48,
+        "distance_issue": coverage["distance_evidence"] and coverage["coverage_status"] in {"outside_radius", "uncovered_region"},
         "urgency_mismatch": factor_scores["urgency_match"] < 0.55 or (
             urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}
             and factor_scores["urgency_match"] < 0.68
@@ -702,8 +940,24 @@ def _build_matching_explainability(
     verification_guidance = [
         "Controleer of zorgvorm en urgentie praktisch uitvoerbaar zijn voor deze aanbieder.",
         "Verifieer capaciteit en verwachte wachttijd met actuele aanbiederinformatie.",
-        "Bevestig regionale dekking en eventuele reisafstand-impact voor client en gezin.",
     ]
+    if coverage["coverage_basis"] == "geo_distance":
+        verification_guidance.append("Controleer of reisafstand en reistijd passen binnen het gezinsplan.")
+    elif coverage["coverage_basis"] == "region_fallback":
+        verification_guidance.append("Locatie is via regio-fallback bepaald; verifieer exacte reisafstand met aanbieder.")
+    elif coverage["coverage_basis"] == "unknown":
+        verification_guidance.append("Geo/coverage-data ontbreekt; verifieer expliciet postcode, dekking en reisafstand.")
+    else:
+        verification_guidance.append("Bevestig regionale dekking en eventuele reisafstand-impact voor client en gezin.")
+    if coverage["coverage_status"] == "outside_radius":
+        verification_guidance.append("Aanbieder ligt buiten service-radius; beoordeel of uitzonderingsroute nodig is.")
+    if coverage["coverage_status"] == "uncovered_region":
+        verification_guidance.append("Aanbieder heeft geen actieve dekking in deze regio; stem contractuele dekking af.")
+    if coverage["region_fallback_used"]:
+        verification_guidance.append("Regio-match is fallback; controleer adresgegevens voordat je valideert.")
+    verification_guidance.extend([
+        "Leg de gekozen onderbouwing vast bij gemeentevalidatie.",
+    ])
     if warning_flags["specialization_gap"] or warning_flags["urgency_mismatch"]:
         verification_guidance.append("Toets of specialistische behoeften expliciet afgedekt zijn in het aanbiederprofiel.")
     if tradeoffs:
@@ -725,6 +979,10 @@ def _build_matching_explainability(
         "confidence_score": confidence_score,
         "confidence_reason": confidence_reason,
         "warning_flags": warning_flags,
+        "coverage_basis": coverage["coverage_basis"],
+        "coverage_status": coverage["coverage_status"],
+        "distance_km": coverage["distance_km"],
+        "service_radius_km": coverage["service_radius_km"],
         "verification_guidance": verification_guidance[:6],
     }
 
@@ -1471,6 +1729,8 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
     )
     provider_pending_sla_breached = bool(timing_context.get("provider_pending_sla_breached"))
     explainability = _build_matching_explainability(
+        intake=intake,
+        case_record=case_record,
         match_result=match_result,
         latest_match_confidence=latest_match_confidence,
         urgency=urgency,
@@ -1589,6 +1849,10 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "confidence_score": explainability["confidence_score"],
         "confidence_reason": explainability["confidence_reason"],
         "warning_flags": explainability["warning_flags"],
+        "coverage_basis": explainability["coverage_basis"],
+        "coverage_status": explainability["coverage_status"],
+        "distance_km": explainability["distance_km"],
+        "service_radius_km": explainability["service_radius_km"],
         "verification_guidance": explainability["verification_guidance"],
         "allowed_actions": allowed_actions,
         "blocked_actions": blocked_actions,
