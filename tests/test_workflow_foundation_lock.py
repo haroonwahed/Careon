@@ -125,6 +125,19 @@ class WorkflowFoundationLockTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
+    def test_provider_decision_blocked_before_gemeente_validation_gate(self):
+        intake = self._create_matching_ready_case()
+        self.client.login(username='provider_user', password='testpass123')
+
+        response = self.client.post(
+            reverse('careon:provider_decision_api', kwargs={'case_id': intake.pk}),
+            data='{"status":"ACCEPTED","provider_comment":"We willen starten"}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn('Nog geen plaatsing beschikbaar', response.json().get('error', ''))
+
     def test_bulk_update_rejects_workflow_fields(self):
         intake = self._create_matching_ready_case()
 
@@ -214,6 +227,27 @@ class WorkflowFoundationLockTests(TestCase):
         self.assertIn('provider_accept', actions)
         self.assertIn('confirm_placement', actions)
         self.assertIn('start_intake', actions)
+        self.assertGreaterEqual(transition_events.count(), 5)
+        self.assertTrue(all(actor_id is not None for actor_id in transition_events.values_list('actor_id', flat=True)))
+
+    def test_matching_action_does_not_auto_finalize_placement_or_intake(self):
+        intake = self._create_matching_ready_case()
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=f'{{"action":"assign","provider_id":{self.provider.pk}}}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200)
+
+        intake.refresh_from_db()
+        placement = PlacementRequest.objects.get(due_diligence_process=intake)
+        self.assertEqual(placement.status, PlacementRequest.Status.IN_REVIEW)
+        self.assertNotEqual(placement.status, PlacementRequest.Status.APPROVED)
+        self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.PENDING)
+        self.assertNotEqual(intake.status, CaseIntakeProcess.ProcessStatus.COMPLETED)
+        self.assertNotEqual(intake.case_record.case_phase, CareCase.CasePhase.ACTIEF)
 
     def test_org_admin_cannot_record_provider_decision_via_api(self):
         intake = self._create_matching_ready_case()
