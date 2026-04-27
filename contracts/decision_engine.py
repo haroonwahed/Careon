@@ -615,16 +615,8 @@ def _evaluate_distance_coverage(
         if case_lat is not None and case_lon is not None:
             break
 
-    radius_candidates = [
-        getattr(profiel, "service_area", None) if profiel is not None else None,
-        getattr(vestiging, "name", None),
-        getattr(match_result, "verificatie_advies", None),
-    ]
     service_radius_km = None
-    for candidate in radius_candidates:
-        service_radius_km = _parse_service_radius_km(candidate)
-        if service_radius_km is not None:
-            break
+    coverage_rows: list[ProviderRegioDekking] = []
 
     if provider is not None:
         coverage_qs = ProviderRegioDekking.objects.filter(
@@ -637,6 +629,19 @@ def _evaluate_distance_coverage(
         region_data = _build_region_fallback_data(intake=intake, case_record=case_record)
         coverage_rows = list(coverage_qs.select_related("regio"))
         if coverage_rows:
+            prioritized_rows = sorted(
+                coverage_rows,
+                key=lambda row: (
+                    0 if row.aanbieder_vestiging_id is not None else 1,
+                    0 if row.is_primair_dekkingsgebied else 1,
+                    row.id or 0,
+                ),
+            )
+            for row in prioritized_rows:
+                if row.service_radius_km is not None:
+                    service_radius_km = round(float(row.service_radius_km), 2)
+                    break
+        if coverage_rows:
             case_region_ids = set(region_data["region_ids"])
             provider_region_ids = {row.regio_id for row in coverage_rows}
             has_region_overlap = bool(case_region_ids and provider_region_ids.intersection(case_region_ids))
@@ -646,7 +651,7 @@ def _evaluate_distance_coverage(
                     "coverage_basis": "provider_region_coverage",
                     "coverage_status": "covered_region",
                     "distance_km": None,
-                    "service_radius_km": None,
+                    "service_radius_km": service_radius_km,
                     "region_fallback_used": False,
                     "distance_evidence": True,
                 }
@@ -655,10 +660,22 @@ def _evaluate_distance_coverage(
                 "coverage_basis": "provider_region_coverage",
                 "coverage_status": "uncovered_region",
                 "distance_km": None,
-                "service_radius_km": None,
+                "service_radius_km": service_radius_km,
                 "region_fallback_used": False,
                 "distance_evidence": True,
             }
+
+    # Legacy fallback only when no structured radius is available.
+    if service_radius_km is None:
+        radius_candidates = [
+            getattr(profiel, "service_area", None) if profiel is not None else None,
+            getattr(vestiging, "name", None),
+            getattr(match_result, "verificatie_advies", None),
+        ]
+        for candidate in radius_candidates:
+            service_radius_km = _parse_service_radius_km(candidate)
+            if service_radius_km is not None:
+                break
 
     if (
         provider_lat is not None

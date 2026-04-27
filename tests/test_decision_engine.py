@@ -481,6 +481,63 @@ class DecisionEngineTests(TestCase):
         self.assertIsNotNone(result["distance_km"])
         self.assertFalse(result["warning_flags"]["distance_issue"])
 
+    def test_structured_service_radius_is_preferred_over_text_radius(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.latitude = 52.13
+        intake.longitude = 5.18
+        ProviderRegioDekking.objects.create(
+            zorgaanbieder=self.provider,
+            aanbieder_vestiging=self.provider_branch,
+            regio=self.region,
+            service_radius_km=12.0,
+            dekking_status=ProviderRegioDekking.DekkingStatus.ACTIVE,
+            contract_actief=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.71,
+            score_inhoudelijke_fit=0.7,
+            score_regio_contract_fit=0.62,
+            score_capaciteit_wachttijd_fit=0.65,
+            score_complexiteit_veiligheid_fit=0.68,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            verificatie_advies="service radius 2 km",
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertEqual(result["service_radius_km"], 12.0)
+
+    def test_text_radius_fallback_still_works_without_structured_radius(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.latitude = 52.13
+        intake.longitude = 5.18
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.69,
+            score_inhoudelijke_fit=0.67,
+            score_regio_contract_fit=0.61,
+            score_capaciteit_wachttijd_fit=0.62,
+            score_complexiteit_veiligheid_fit=0.65,
+            confidence_label=MatchResultaat.ConfidenceLabel.MIDDEL,
+            verificatie_advies="Maximale service radius 9 km",
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertEqual(result["coverage_basis"], "geo_distance")
+        self.assertEqual(result["service_radius_km"], 9.0)
+
     def test_distance_coverage_outside_service_radius_sets_distance_issue(self):
         intake, _, _, _ = self._create_case(
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
@@ -567,6 +624,7 @@ class DecisionEngineTests(TestCase):
         result = evaluate_case(case_record, actor=self.gemeente_user)
         self.assertEqual(result["coverage_basis"], "unknown")
         self.assertEqual(result["coverage_status"], "unknown")
+        self.assertIsNone(result["service_radius_km"])
         self.assertFalse(result["warning_flags"]["distance_issue"])
         self.assertTrue(any("Geo/coverage-data ontbreekt" in item for item in result["verification_guidance"]))
 

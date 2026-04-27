@@ -3010,6 +3010,12 @@ class ProviderRegioDekking(models.Model):
         validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
         help_text='0.0–1.0 score voor bereikbaarheid/reisafstand.',
     )
+    service_radius_km = models.FloatField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0.0)],
+        help_text='Optionele maximale service-radius in kilometers voor geo-matching.',
+    )
     dekking_status = models.CharField(
         max_length=20,
         choices=DekkingStatus.choices,
