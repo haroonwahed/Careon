@@ -1755,7 +1755,7 @@ def _build_region_health_payload(region, region_cases, region_provider_profiles)
         if is_urgent and not (case.preferred_provider or '').strip():
             urgente_zonder_match += 1
 
-        if case.case_phase == CareCase.CasePhase.BEOORDELING and days_in_phase > 3:
+        if case.case_phase == CareCase.CasePhase.PROVIDER_BEOORDELING and days_in_phase > 3:
             vastgelopen += 1
         elif case.case_phase == CareCase.CasePhase.MATCHING:
             threshold = 2 if is_urgent else 5
@@ -1794,6 +1794,21 @@ def _build_region_health_payload(region, region_cases, region_provider_profiles)
         'providerCountComputed': len(region_provider_profiles),
     })
     return metrics
+
+
+@login_required
+@require_http_methods(["GET"])
+def provider_evaluations_list_api(request):
+    """List provider-side evaluations for the SPA (Aanbieder Beoordeling).
+
+    Returns an empty list until a dedicated evaluation model is wired; the
+    client hook degrades gracefully when this endpoint is absent or empty.
+    """
+    organization = get_user_organization(request.user)
+    if organization is None:
+        return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
+    return JsonResponse({'evaluations': [], 'total_count': 0})
+
 
 @login_required
 @require_http_methods(["GET"])

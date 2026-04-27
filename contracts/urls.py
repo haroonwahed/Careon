@@ -24,6 +24,7 @@ urlpatterns = [
     path('api/cases/<str:case_ref>/', api_views.case_detail_string_fallback_api, name='case_detail_string_fallback_api'),
     path('api/assessments/', api_views.assessments_api, name='assessments_api'),
     path('api/placements/', api_views.placements_api, name='placements_api'),
+    path('api/provider-evaluations/', api_views.provider_evaluations_list_api, name='provider_evaluations_list_api'),
     path('api/signals/', api_views.signals_api, name='signals_api'),
     path('api/tasks/', api_views.tasks_api, name='tasks_api'),
     path('api/documents/', api_views.documents_api, name='documents_api'),
