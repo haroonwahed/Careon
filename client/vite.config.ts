@@ -131,5 +131,7 @@ function devFaviconFallback() {
       environment: 'jsdom',
       setupFiles: './src/test/setup.ts',
       globals: true,
+      include: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
+      exclude: ['tests/e2e/**', '**/playwright/**', '**/*.e2e.{ts,tsx}', 'node_modules/**', 'dist/**'],
     },
   }));
