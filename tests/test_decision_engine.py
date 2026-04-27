@@ -627,6 +627,7 @@ class DecisionEngineTests(TestCase):
         self.assertIsNone(result["service_radius_km"])
         self.assertFalse(result["warning_flags"]["distance_issue"])
         self.assertTrue(any("Geo/coverage-data ontbreekt" in item for item in result["verification_guidance"]))
+        self.assertTrue(any("Casuscoordinaten ontbreken" in item for item in result["verification_guidance"]))
 
     def test_distance_issue_requires_real_coverage_evidence(self):
         intake, case_record, _, _ = self._create_case(

@@ -90,3 +90,39 @@ class CaseApiWorkflowStateTests(TestCase):
         self.assertEqual(list_case["workflow_state"], WorkflowState.PROVIDER_REVIEW_PENDING)
         self.assertEqual(detail_payload["workflow_state"], WorkflowState.PROVIDER_REVIEW_PENDING)
         self.assertEqual(list_case["workflow_state"], detail_payload["workflow_state"])
+
+    def test_case_geo_is_exposed_in_detail_but_not_raw_in_list(self):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title="Case with geo",
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+            workflow_state=WorkflowState.MATCHING_READY,
+            postcode="3511AB",
+            latitude=52.0907,
+            longitude=5.1214,
+        )
+        case_id = intake.ensure_case_record(created_by=self.user).pk
+
+        list_response = self.client.get(reverse("careon:cases_api"))
+        detail_response = self.client.get(reverse("careon:case_detail_api", kwargs={"case_id": case_id}))
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(detail_response.status_code, 200)
+
+        list_payload = list_response.json()
+        list_case = next(item for item in list_payload["contracts"] if item["id"] == str(case_id))
+        detail_payload = detail_response.json()
+
+        self.assertIn("has_case_geo", list_case)
+        self.assertTrue(list_case["has_case_geo"])
+        self.assertNotIn("case_geo", list_case)
+
+        self.assertIn("case_geo", detail_payload)
+        self.assertEqual(detail_payload["case_geo"]["postcode"], "3511AB")
+        self.assertEqual(float(detail_payload["case_geo"]["latitude"]), 52.0907)
+        self.assertEqual(float(detail_payload["case_geo"]["longitude"]), 5.1214)

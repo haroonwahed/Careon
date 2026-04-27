@@ -188,6 +188,9 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'target_completion_date': str(date.today() + timedelta(days=7)),
             'assessment_summary': 'Nieuwe intake via API',
             'description': 'Moet zichtbaar zijn in het casusoverzicht.',
+            'postcode': '3511AB',
+            'latitude': 52.0907,
+            'longitude': 5.1214,
             'urgency': CaseIntakeProcess.Urgency.HIGH,
             'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
@@ -214,6 +217,9 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(intake.contract.case_phase, CareCase.CasePhase.INTAKE)
         self.assertEqual(intake.contract.status, CareCase.Status.PENDING)
         self.assertEqual(intake.contract.service_region, region.region_name)
+        self.assertEqual(intake.postcode, '3511AB')
+        self.assertEqual(float(intake.latitude), 52.0907)
+        self.assertEqual(float(intake.longitude), 5.1214)
 
         cases_response = self.client.get(reverse('careon:cases_api'))
         self.assertEqual(cases_response.status_code, 200)

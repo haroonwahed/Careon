@@ -425,6 +425,9 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'client_age_category',
             'family_situation',
             'school_work_status',
+            'postcode',
+            'latitude',
+            'longitude',
             'case_coordinator',
             'description',
         ]
@@ -450,6 +453,9 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'client_age_category': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'family_situation': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'school_work_status': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
+            'postcode': forms.TextInput(attrs={'class': TAILWIND_INPUT, 'placeholder': 'Bijv. 3511AB'}),
+            'latitude': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': 'any'}),
+            'longitude': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'step': 'any'}),
             'case_coordinator': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'description': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
         }
@@ -475,6 +481,9 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'client_age_category': 'Leeftijdscategorie cliënt',
             'family_situation': 'Gezinssituatie',
             'school_work_status': 'Dagbesteding',
+            'postcode': 'Postcode',
+            'latitude': 'Latitude',
+            'longitude': 'Longitude',
             'case_coordinator': 'Casusregisseur',
             'description': 'Aanvullende opmerkingen',
         }
@@ -550,6 +559,22 @@ class CaseIntakeProcessForm(forms.ModelForm):
         if not raw:
             return []
         return [part.strip() for part in str(raw).split(',') if part.strip()]
+
+    def clean_latitude(self):
+        latitude = self.cleaned_data.get('latitude')
+        if latitude is None:
+            return None
+        if latitude < -90 or latitude > 90:
+            raise forms.ValidationError('Latitude moet tussen -90 en 90 liggen.')
+        return latitude
+
+    def clean_longitude(self):
+        longitude = self.cleaned_data.get('longitude')
+        if longitude is None:
+            return None
+        if longitude < -180 or longitude > 180:
+            raise forms.ValidationError('Longitude moet tussen -180 en 180 liggen.')
+        return longitude
 
 
 class IntakeTaskForm(forms.ModelForm):

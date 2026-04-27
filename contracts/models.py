@@ -1784,6 +1784,24 @@ class CaseIntakeProcess(models.Model):
     has_other_support = models.BooleanField(default=False, verbose_name='Betrokken hulp (ja/nee)')
     other_support_description = models.TextField(blank=True, verbose_name='Beschrijving betrokken hulp')
     school_work_status = models.CharField(max_length=200, blank=True, verbose_name='School- / werkstatus')
+    postcode = models.CharField(
+        max_length=10,
+        blank=True,
+        verbose_name='Postcode',
+        help_text='Globale casuslocatie voor afstands- en dekkingscontrole.',
+    )
+    latitude = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Latitude',
+        help_text='Optionele coordinaten voor afstandsberekening.',
+    )
+    longitude = models.FloatField(
+        null=True,
+        blank=True,
+        verbose_name='Longitude',
+        help_text='Optionele coordinaten voor afstandsberekening.',
+    )
     
     # Risk factors (many-to-many)
     risk_factors = models.ManyToManyField(RiskFactor, blank=True, related_name='intakes', verbose_name='Risicofactoren')

@@ -594,6 +594,7 @@ def _evaluate_distance_coverage(
             "service_radius_km": None,
             "region_fallback_used": False,
             "distance_evidence": False,
+            "case_geo_available": False,
         }
 
     provider = getattr(match_result, "zorgaanbieder", None)
@@ -614,6 +615,7 @@ def _evaluate_distance_coverage(
         case_lat, case_lon = _extract_coordinates(source)
         if case_lat is not None and case_lon is not None:
             break
+    case_geo_available = case_lat is not None and case_lon is not None
 
     service_radius_km = None
     coverage_rows: list[ProviderRegioDekking] = []
@@ -654,6 +656,7 @@ def _evaluate_distance_coverage(
                     "service_radius_km": service_radius_km,
                     "region_fallback_used": False,
                     "distance_evidence": True,
+                    "case_geo_available": case_geo_available,
                 }
             return {
                 "region_score": min(baseline_region_score, 0.4),
@@ -663,6 +666,7 @@ def _evaluate_distance_coverage(
                 "service_radius_km": service_radius_km,
                 "region_fallback_used": False,
                 "distance_evidence": True,
+                "case_geo_available": case_geo_available,
             }
 
     # Legacy fallback only when no structured radius is available.
@@ -699,6 +703,7 @@ def _evaluate_distance_coverage(
             "service_radius_km": service_radius_km,
             "region_fallback_used": False,
             "distance_evidence": True,
+            "case_geo_available": case_geo_available,
         }
 
     region_data = _build_region_fallback_data(intake=intake, case_record=case_record)
@@ -721,6 +726,7 @@ def _evaluate_distance_coverage(
             "service_radius_km": None,
             "region_fallback_used": True,
             "distance_evidence": False,
+            "case_geo_available": case_geo_available,
         }
 
     return {
@@ -731,6 +737,7 @@ def _evaluate_distance_coverage(
         "service_radius_km": service_radius_km,
         "region_fallback_used": False,
         "distance_evidence": False,
+        "case_geo_available": case_geo_available,
     }
 
 
@@ -972,6 +979,8 @@ def _build_matching_explainability(
         verification_guidance.append("Aanbieder heeft geen actieve dekking in deze regio; stem contractuele dekking af.")
     if coverage["region_fallback_used"]:
         verification_guidance.append("Regio-match is fallback; controleer adresgegevens voordat je valideert.")
+    if not coverage.get("case_geo_available", False):
+        verification_guidance.append("Casuscoordinaten ontbreken; verifieer postcode of locatie voordat afstand bepalend wordt.")
     verification_guidance.extend([
         "Leg de gekozen onderbouwing vast bij gemeentevalidatie.",
     ])

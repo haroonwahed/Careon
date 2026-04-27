@@ -176,7 +176,7 @@ def _provider_regions_payload(profile):
     }
 
 
-def _build_case_data(case):
+def _build_case_data(case, *, include_geo=False):
     data = CareCaseData(
         id=str(case.id),
         title=case.title,
@@ -198,6 +198,18 @@ def _build_case_data(case):
     result['contract_type'] = getattr(case, 'contract_type', '') or ''
     result['lifecycle_stage'] = getattr(case, 'lifecycle_stage', '') or ''
     result['workflow_state'] = _case_workflow_state(case)
+    intake = getattr(case, 'due_diligence_process', None)
+    has_case_geo = bool(
+        intake and getattr(intake, 'latitude', None) is not None and getattr(intake, 'longitude', None) is not None
+    )
+    result['has_case_geo'] = has_case_geo
+    if include_geo:
+        result['case_geo'] = {
+            'postcode': str(getattr(intake, 'postcode', '') or '') if intake is not None else '',
+            'latitude': getattr(intake, 'latitude', None) if intake is not None else None,
+            'longitude': getattr(intake, 'longitude', None) if intake is not None else None,
+            'has_coordinates': has_case_geo,
+        }
     return result
 
 
@@ -281,7 +293,7 @@ def case_detail_api(request, contract_id=None, case_id=None):
             pk=record_id,
         )
 
-        payload = _build_case_data(case)
+        payload = _build_case_data(case, include_geo=True)
         payload['decision_evaluation'] = evaluate_case(case, actor=request.user)
         return JsonResponse(payload)
 
@@ -447,6 +459,9 @@ def _build_intake_form_payload(form, coordinator_field):
             'client_age_category': '',
             'family_situation': '',
             'school_work_status': '',
+            'postcode': '',
+            'latitude': '',
+            'longitude': '',
             'case_coordinator': '',
             'description': '',
         },
