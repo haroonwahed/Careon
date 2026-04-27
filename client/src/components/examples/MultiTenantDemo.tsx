@@ -93,41 +93,53 @@ interface MultiTenantDemoProps {
   onThemeToggle: () => void;
 }
 
-function getInitialPageFromPath(pathname: string): Page {
+function getInitialNavigation(pathname: string): { page: Page; caseId: string | null } {
+  const casesSpaMatch = pathname.match(/^\/care\/cases\/(\d+)\/?$/);
+  if (casesSpaMatch) {
+    return { page: "casussen", caseId: casesSpaMatch[1] };
+  }
   if (pathname.startsWith("/care/casussen/new")) {
-    return "nieuwe-casus";
+    return { page: "nieuwe-casus", caseId: null };
   }
   if (pathname.startsWith("/care/casussen/")) {
-    return "casussen";
+    return { page: "casussen", caseId: null };
   }
   if (pathname.startsWith("/care/beoordelingen/")) {
-    return "beoordelingen";
+    return { page: "beoordelingen", caseId: null };
   }
   if (pathname.startsWith("/care/matching/")) {
-    return "matching";
+    return { page: "matching", caseId: null };
   }
   if (pathname.startsWith("/care/plaatsingen/")) {
-    return "plaatsingen";
+    return { page: "plaatsingen", caseId: null };
   }
   if (pathname.startsWith("/care/zorgaanbieders/")) {
-    return "zorgaanbieders";
+    return { page: "zorgaanbieders", caseId: null };
   }
   if (pathname.startsWith("/care/gemeenten/")) {
-    return "gemeenten";
+    return { page: "gemeenten", caseId: null };
   }
   if (pathname.startsWith("/care/regio")) {
-    return "regios";
+    return { page: "regios", caseId: null };
   }
   if (pathname.startsWith("/settings/")) {
-    return "instellingen";
+    return { page: "instellingen", caseId: null };
   }
-  return "regiekamer";
+  return { page: "regiekamer", caseId: null };
 }
+
+const readInitialCareNavigation = (() => {
+  let memo: { page: Page; caseId: string | null } | null = null;
+  return () => {
+    memo ??= getInitialNavigation(window.location.pathname);
+    return memo;
+  };
+})();
 
 export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) {
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
-  const [currentPage, setCurrentPage] = useState<Page>(() => getInitialPageFromPath(window.location.pathname));
-  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState<Page>(() => readInitialCareNavigation().page);
+  const [selectedCase, setSelectedCase] = useState<string | null>(() => readInitialCareNavigation().caseId);
   const { cases } = useCases({ q: "" });
   const { providers } = useProviders({ q: "" });
   const workflowCases = buildWorkflowCases(cases, providers);

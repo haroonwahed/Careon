@@ -131,6 +131,9 @@ urlpatterns = [
     path('risks/', views.CareSignalListView.as_view(), name='risk_log_list'),
     path('risks/<int:pk>/edit/', views.CareSignalUpdateView.as_view(), name='risk_log_update'),
 
+    # SPA dossier route (React shell; client reads case id from path)
+    path('cases/<int:pk>/', views.workflow_case_spa_shell, name='workflow_case_spa'),
+
     path('casussen/', views.CaseIntakeListView.as_view(), name='case_list'),
     path('casussen/new/', views.CaseIntakeCreateView.as_view(), name='case_create'),
     path('casussen/<int:pk>/', views.CaseIntakeDetailView.as_view(), name='case_detail'),

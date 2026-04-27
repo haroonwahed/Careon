@@ -1326,12 +1326,13 @@ def intake_create_api(request):
         source='intake_create_api',
     )
 
+    case_pk = case_record.pk if case_record else intake.pk
     return JsonResponse({
         'ok': True,
         'id': intake.pk,
         'title': intake.title,
         'case_id': str(case_record.pk) if case_record else '',
-        'redirect_url': f"{SPA_DASHBOARD_URL}?page=casussen&case={case_record.pk if case_record else intake.pk}",
+        'redirect_url': f'/care/cases/{case_pk}/',
     })
 
 

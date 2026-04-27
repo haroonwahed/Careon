@@ -566,6 +566,52 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
         }
       />
 
+      {(() => {
+        const resolvedState = decisionEvaluation?.current_state || spaCase.workflowState || currentState;
+        const archivedGuidance = resolvedState === "ARCHIVED";
+        const guidanceStepIndex = stateIndex(resolvedState, archivedGuidance);
+        const stepOwner = FLOW_STEPS[guidanceStepIndex]?.owner ?? "—";
+        const blockerLine = decisionEvaluation?.blockers?.length
+          ? getShortReasonLabel(decisionEvaluation.blockers[0].message, 100)
+          : "Geen open blokkades.";
+        const nextLine = nextBestAction
+          ? `${getShortActionLabel(nextBestAction.label)} — ${getShortReasonLabel(nextBestAction.reason ?? "", 100)}`
+          : decisionLoading
+            ? "Volgende stap wordt geladen…"
+            : "Nog geen vervolgstap beschikbaar.";
+        const showDraftSummaryHint =
+          resolvedState === "DRAFT_CASE"
+          && (nextBestAction?.action === "GENERATE_SUMMARY" || nextBestAction?.action === "COMPLETE_CASE_DATA" || !nextBestAction);
+
+        return (
+          <div className="rounded-2xl border border-border/70 bg-muted/10 px-4 py-3 text-sm text-foreground space-y-2">
+            <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-wrap sm:gap-x-6 sm:gap-y-1">
+              <p>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Staat </span>
+                <span className="text-foreground">{stateLabel(resolvedState, archivedGuidance)}</span>
+              </p>
+              <p>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Eigenaar </span>
+                <span className="text-foreground">{stepOwner}</span>
+              </p>
+              <p>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Blokkade </span>
+                <span className="text-foreground">{blockerLine}</span>
+              </p>
+              <p>
+                <span className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende stap </span>
+                <span className="text-foreground">{nextLine}</span>
+              </p>
+            </div>
+            {showDraftSummaryHint && (
+              <p className="text-xs text-muted-foreground border-t border-border/50 pt-2">
+                Je zit in de casusfase: werk toe naar een samenvatting. Matching start je daarna zelf; die wordt niet automatisch gestart.
+              </p>
+            )}
+          </div>
+        );
+      })()}
+
       <CareInsightBanner
         tone="primary"
         title={getShortActionLabel(decisionPanelMessage ?? bannerActionLabel)}

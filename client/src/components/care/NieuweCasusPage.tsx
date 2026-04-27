@@ -461,13 +461,15 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
     try {
       const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", formState);
-      const createdCaseId = payload.case_id;
+      const createdCaseId = payload.case_id?.trim();
       setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe casusdossier.`);
+      const target =
+        payload.redirect_url ||
+        (createdCaseId ? `/care/cases/${createdCaseId}/` : `${SPA_DASHBOARD_URL}?page=casussen`);
       if (createdCaseId) {
         onCreated?.(createdCaseId);
-        return;
       }
-      window.location.href = payload.redirect_url || `${SPA_DASHBOARD_URL}?page=casussen`;
+      window.location.href = target;
     } catch (error) {
       const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
       const match = responseText.match(/API fout 400: (.*)$/);
@@ -749,7 +751,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Complexiteit *</p>
-                <div className="grid gap-2">
+                <p className="mb-2 text-xs text-muted-foreground">Kies 1 optie</p>
+                <div className="grid gap-2" role="radiogroup" aria-label="Complexiteit">
                   {options.complexity.map((option) => {
                     const active = formState.complexity === option.value;
                     return (
@@ -757,6 +760,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         key={option.value}
                         type="button"
                         onClick={() => updateField("complexity", option.value)}
+                        role="radio"
+                        aria-checked={active}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
                       >
                         {option.label}
@@ -769,7 +774,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
               <div>
                 <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie *</p>
-                <div className="grid gap-2">
+                <p className="mb-2 text-xs text-muted-foreground">Kies 1 optie</p>
+                <div className="grid gap-2" role="radiogroup" aria-label="Urgentie">
                   {options.urgency.map((option) => {
                     const active = formState.urgency === option.value;
                     return (
@@ -777,6 +783,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         key={option.value}
                         type="button"
                         onClick={() => updateField("urgency", option.value)}
+                        role="radio"
+                        aria-checked={active}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
                       >
                         {option.label}

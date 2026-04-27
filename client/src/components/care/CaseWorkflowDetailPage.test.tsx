@@ -186,7 +186,7 @@ describe("CaseWorkflowDetailPage", () => {
 
     render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
 
-    expect(await screen.findByText("Samenvatting ontbreekt")).toBeInTheDocument();
+    expect((await screen.findAllByText(/Samenvatting ontbreekt/)).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Match confidence is laag. Controleer match onderbouwing.").length).toBeGreaterThan(0);
     expect(screen.getByText("Aanbieder beoordeling wacht te lang")).toBeInTheDocument();
     expect(screen.getByText("Blokkeert: Matching starten")).toBeInTheDocument();

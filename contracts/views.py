@@ -6074,6 +6074,11 @@ def dashboard(request):
     return _render_spa_shell_response()
 
 
+def workflow_case_spa_shell(request, pk):  # noqa: ARG001
+    """Serve the SPA shell for workflow case dossier URLs (/care/cases/<id>/)."""
+    return _render_spa_shell_response()
+
+
 @login_required
 def global_search(request):
     q = request.GET.get('q', '').strip()
@@ -6986,8 +6991,8 @@ class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateVi
     def get_success_url(self):
         case_record = getattr(self.object, 'contract', None)
         if case_record:
-            return f"/dashboard/?view=dashboard&page=casussen&case={case_record.pk}"
-        return "/dashboard/?view=dashboard&page=casussen"
+            return f"/care/cases/{case_record.pk}/"
+        return reverse('careon:case_list')
 
 
 class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -7227,7 +7232,7 @@ class CaseAssessmentCreateView(TenantAssignCreateMixin, LoginRequiredMixin, Crea
         intake_id = self.request.GET.get('intake')
         if intake_id:
             try:
-                org = self.get_organization()
+                org = get_user_organization(self.request.user)
                 intake = _active_case_intakes_queryset(org).get(pk=intake_id)
                 initial['due_diligence_process'] = intake
             except CaseIntakeProcess.DoesNotExist:
