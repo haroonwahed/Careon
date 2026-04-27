@@ -464,6 +464,219 @@ def _confidence_to_score(match_result: MatchResultaat | None) -> float | None:
     return mapping.get(match_result.confidence_label)
 
 
+def _normalize_unit_score(value: Any) -> float:
+    try:
+        score = float(value)
+    except (TypeError, ValueError):
+        return 0.0
+    if score < 0.0:
+        return 0.0
+    if score > 1.0:
+        return 1.0
+    return round(score, 4)
+
+
+def _factor_explanation(*, factor_key: str, score: float, urgency: str | None = None) -> str:
+    if factor_key == "zorgvorm_match":
+        if score >= 0.75:
+            return "Zorgvorm sluit goed aan op de casus."
+        if score >= 0.5:
+            return "Zorgvorm is deels passend; controleer randvoorwaarden."
+        return "Zorgvorm match is zwak en vraagt handmatige controle."
+    if factor_key == "urgency_match":
+        if score >= 0.75:
+            return "Urgentie past bij het beschikbare aanbod."
+        if score >= 0.5:
+            return "Urgentie lijkt werkbaar, maar verdient extra check."
+        if urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}:
+            return "Urgentie is hoog terwijl de match hier zwak op scoort."
+        return "Urgentie-aansluiting is beperkt."
+    if factor_key == "specialization_match":
+        if score >= 0.75:
+            return "Inhoudelijke/specialistische fit is sterk."
+        if score >= 0.5:
+            return "Specialistische fit is redelijk, maar niet overtuigend."
+        return "Specialistische fit is laag; inhoudelijke mismatch mogelijk."
+    if factor_key == "region_match":
+        if score >= 0.75:
+            return "Regionale dekking is passend."
+        if score >= 0.5:
+            return "Regio-fit is acceptabel, maar niet optimaal."
+        return "Regio-fit is zwak; afstand of dekking kan knellen."
+    if factor_key == "capacity_signal":
+        if score >= 0.75:
+            return "Capaciteit en wachttijd lijken beheersbaar."
+        if score >= 0.5:
+            return "Capaciteit is krap; monitor doorlooptijd."
+        return "Capaciteit/wachttijd vormen een reeel risico."
+    if factor_key == "complexity_fit":
+        if score >= 0.75:
+            return "Complexiteit en veiligheid lijken goed afgedekt."
+        if score >= 0.5:
+            return "Complexiteit past deels; verifieer uitvoerbaarheid."
+        return "Complexiteit-fit is laag; risico op onvoldoende passend aanbod."
+    if factor_key == "special_needs_fit":
+        if score >= 0.75:
+            return "Bijzondere ondersteuningsbehoeften lijken passend."
+        if score >= 0.5:
+            return "Bijzondere behoeften zijn deels afgedekt."
+        return "Bijzondere behoeften lijken onvoldoende afgedekt."
+    return "Factor vereist handmatige beoordeling."
+
+
+def _extract_tradeoffs(raw_tradeoffs: Any) -> list[str]:
+    if not isinstance(raw_tradeoffs, list):
+        return []
+    values: list[str] = []
+    for item in raw_tradeoffs:
+        if isinstance(item, dict):
+            value = str(item.get("toelichting") or item.get("factor") or "").strip()
+        else:
+            value = str(item or "").strip()
+        if value:
+            values.append(value)
+    return values[:5]
+
+
+def _build_matching_explainability(
+    *,
+    match_result: MatchResultaat | None,
+    latest_match_confidence: float | None,
+    urgency: str,
+    risks: list[dict[str, Any]],
+) -> dict[str, Any]:
+    default_factor_breakdown = {
+        "zorgvorm_match": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "urgency_match": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "specialization_match": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "region_match": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "capacity_signal": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "complexity_fit": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+        "special_needs_fit": {"score": 0.0, "explanation": "Nog geen matchingresultaat beschikbaar."},
+    }
+    if match_result is None:
+        return {
+            "factor_breakdown": default_factor_breakdown,
+            "explanation_summary": "Nog geen onderbouwd matchadvies beschikbaar.",
+            "strengths": [],
+            "weaknesses": ["Geen matchresultaat beschikbaar voor beoordeling."],
+            "tradeoffs": [],
+            "confidence_score": 0.0,
+            "confidence_reason": "Er is nog geen matchresultaat of confidence-label beschikbaar.",
+            "warning_flags": {
+                "capacity_risk": True,
+                "specialization_gap": True,
+                "distance_issue": True,
+                "urgency_mismatch": True,
+            },
+            "verification_guidance": [
+                "Start matching of vernieuw het matchadvies.",
+                "Controleer of verplichte casusgegevens en samenvatting compleet zijn.",
+            ],
+        }
+
+    specialization_score = _normalize_unit_score(match_result.score_inhoudelijke_fit)
+    urgency_score = _normalize_unit_score(
+        match_result.score_complexiteit_veiligheid_fit or match_result.score_complexiteit
+    )
+    region_score = _normalize_unit_score(
+        match_result.score_regio_contract_fit or match_result.score_contract_regio
+    )
+    capacity_score = _normalize_unit_score(
+        match_result.score_capaciteit_wachttijd_fit or match_result.score_capaciteit
+    )
+    complexity_score = _normalize_unit_score(
+        match_result.score_complexiteit_veiligheid_fit or match_result.score_complexiteit
+    )
+    special_needs_score = _normalize_unit_score(
+        0.6 * specialization_score + 0.4 * complexity_score
+    )
+    zorgvorm_score = _normalize_unit_score(
+        0.6 * specialization_score + 0.4 * capacity_score
+    )
+
+    factor_scores = {
+        "zorgvorm_match": zorgvorm_score,
+        "urgency_match": urgency_score,
+        "specialization_match": specialization_score,
+        "region_match": region_score,
+        "capacity_signal": capacity_score,
+        "complexity_fit": complexity_score,
+        "special_needs_fit": special_needs_score,
+    }
+    factor_breakdown = {
+        key: {
+            "score": score,
+            "explanation": _factor_explanation(factor_key=key, score=score, urgency=urgency),
+        }
+        for key, score in factor_scores.items()
+    }
+
+    strengths = [
+        _factor_explanation(factor_key=key, score=score, urgency=urgency)
+        for key, score in sorted(factor_scores.items(), key=lambda item: item[1], reverse=True)
+        if score >= 0.7
+    ][:3]
+    weaknesses = [
+        _factor_explanation(factor_key=key, score=score, urgency=urgency)
+        for key, score in sorted(factor_scores.items(), key=lambda item: item[1])
+        if score < 0.55
+    ][:3]
+    tradeoffs = _extract_tradeoffs(match_result.trade_offs)
+
+    confidence_score = _normalize_unit_score(latest_match_confidence)
+    confidence_label = str(match_result.confidence_label or "").lower()
+    if confidence_score >= 0.8:
+        confidence_reason = "Confidence is hoog; kernfactoren zijn grotendeels consistent."
+    elif confidence_score >= 0.6:
+        confidence_reason = "Confidence is middelmatig; valideer aannames met casuscontext."
+    elif confidence_score > 0.0:
+        confidence_reason = "Confidence is laag; extra verificatie door gemeente is nodig."
+    else:
+        confidence_reason = "Confidence ontbreekt of is onzeker; behandel dit advies als zwak."
+    if confidence_label == MatchResultaat.ConfidenceLabel.ONZEKER.lower():
+        confidence_reason = "Confidence-label is onzeker; data is mogelijk onvolledig."
+
+    risk_codes = {str((risk or {}).get("code") or "") for risk in risks}
+    warning_flags = {
+        "capacity_risk": "CAPACITY_RISK" in risk_codes or capacity_score < 0.5,
+        "specialization_gap": specialization_score < 0.55,
+        "distance_issue": region_score < 0.5,
+        "urgency_mismatch": urgency_score < 0.55 or (
+            urgency in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS}
+            and urgency_score < 0.7
+        ),
+    }
+    verification_guidance = [
+        "Controleer of zorgvorm en urgentie praktisch uitvoerbaar zijn voor deze aanbieder.",
+        "Verifieer capaciteit en verwachte wachttijd met actuele aanbiederinformatie.",
+        "Bevestig regionale dekking en eventuele reisafstand-impact voor client en gezin.",
+    ]
+    if warning_flags["specialization_gap"] or warning_flags["urgency_mismatch"]:
+        verification_guidance.append("Toets of specialistische behoeften expliciet afgedekt zijn in het aanbiederprofiel.")
+    if tradeoffs:
+        verification_guidance.append("Weeg trade-offs expliciet af en leg de keuze vast bij gemeentevalidatie.")
+    if match_result.verificatie_advies:
+        verification_guidance.append(str(match_result.verificatie_advies).strip())
+
+    explanation_summary = (
+        str(match_result.fit_samenvatting).strip()
+        or "Matchadvies samengesteld op basis van inhoudelijke fit, regio en capaciteit."
+    )
+
+    return {
+        "factor_breakdown": factor_breakdown,
+        "explanation_summary": explanation_summary,
+        "strengths": strengths,
+        "weaknesses": weaknesses,
+        "tradeoffs": tradeoffs,
+        "confidence_score": confidence_score,
+        "confidence_reason": confidence_reason,
+        "warning_flags": warning_flags,
+        "verification_guidance": verification_guidance[:6],
+    }
+
+
 def _latest_case_log(intake: CaseIntakeProcess | None) -> list[CaseDecisionLog]:
     if intake is None:
         return []
@@ -1205,6 +1418,12 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         capacity_signals=capacity_signals,
     )
     provider_pending_sla_breached = bool(timing_context.get("provider_pending_sla_breached"))
+    explainability = _build_matching_explainability(
+        match_result=match_result,
+        latest_match_confidence=latest_match_confidence,
+        urgency=urgency,
+        risks=risks,
+    )
 
     next_best_action = _next_best_action(
         current_state=current_state,
@@ -1285,6 +1504,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "hours_in_current_state": hours_in_current_state,
         "urgency": urgency,
         "capacity_signals": capacity_signals,
+        "matching_explainability": explainability,
         "selected_provider_id": (
             str(placement.selected_provider_id)
             if placement and placement.selected_provider_id
@@ -1309,6 +1529,15 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "blockers": blockers,
         "risks": risks,
         "alerts": alerts,
+        "factor_breakdown": explainability["factor_breakdown"],
+        "explanation_summary": explainability["explanation_summary"],
+        "strengths": explainability["strengths"],
+        "weaknesses": explainability["weaknesses"],
+        "tradeoffs": explainability["tradeoffs"],
+        "confidence_score": explainability["confidence_score"],
+        "confidence_reason": explainability["confidence_reason"],
+        "warning_flags": explainability["warning_flags"],
+        "verification_guidance": explainability["verification_guidance"],
         "allowed_actions": allowed_actions,
         "blocked_actions": blocked_actions,
         "decision_context": decision_context,

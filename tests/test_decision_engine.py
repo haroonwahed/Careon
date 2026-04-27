@@ -281,6 +281,103 @@ class DecisionEngineTests(TestCase):
         self.assertTrue(any(risk["code"] == "LOW_MATCH_CONFIDENCE" for risk in result["risks"]))
         self.assertTrue(any(alert["code"] == "WEAK_MATCH_NEEDS_VERIFICATION" for alert in result["alerts"]))
 
+    def test_matching_explainability_structure_present(self):
+        _, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.78,
+            score_inhoudelijke_fit=0.82,
+            score_capaciteit_wachttijd_fit=0.66,
+            score_regio_contract_fit=0.74,
+            score_complexiteit_veiligheid_fit=0.71,
+            confidence_label=MatchResultaat.ConfidenceLabel.HOOG,
+            fit_samenvatting="Aanbieder past goed op urgentie en zorgvorm.",
+            trade_offs=[{"factor": "wachttijd", "toelichting": "Wachttijd is hoger dan alternatief"}],
+            verificatie_advies="Controleer recente capaciteit met aanbieder.",
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+
+        for key in [
+            "factor_breakdown",
+            "explanation_summary",
+            "strengths",
+            "weaknesses",
+            "tradeoffs",
+            "confidence_score",
+            "confidence_reason",
+            "warning_flags",
+            "verification_guidance",
+        ]:
+            self.assertIn(key, result)
+
+        expected_factors = {
+            "zorgvorm_match",
+            "urgency_match",
+            "specialization_match",
+            "region_match",
+            "capacity_signal",
+            "complexity_fit",
+            "special_needs_fit",
+        }
+        self.assertEqual(set(result["factor_breakdown"].keys()), expected_factors)
+        for payload in result["factor_breakdown"].values():
+            self.assertIn("score", payload)
+            self.assertIn("explanation", payload)
+            self.assertGreaterEqual(payload["score"], 0.0)
+            self.assertLessEqual(payload["score"], 1.0)
+            self.assertTrue(payload["explanation"])
+        self.assertTrue(result["verification_guidance"])
+
+    def test_matching_explainability_confidence_score_is_bounded(self):
+        _, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=1.6,
+            confidence_label=MatchResultaat.ConfidenceLabel.HOOG,
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertGreaterEqual(result["confidence_score"], 0.0)
+        self.assertLessEqual(result["confidence_score"], 1.0)
+
+    def test_matching_explainability_warning_flags_reflect_low_fit(self):
+        _, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+            urgency=CaseIntakeProcess.Urgency.HIGH,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.31,
+            score_inhoudelijke_fit=0.28,
+            score_regio_contract_fit=0.33,
+            score_capaciteit_wachttijd_fit=0.21,
+            score_complexiteit_veiligheid_fit=0.34,
+            confidence_label=MatchResultaat.ConfidenceLabel.LAAG,
+            ranking=1,
+        )
+
+        result = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertTrue(result["warning_flags"]["capacity_risk"])
+        self.assertTrue(result["warning_flags"]["specialization_gap"])
+        self.assertTrue(result["warning_flags"]["distance_issue"])
+        self.assertTrue(result["warning_flags"]["urgency_mismatch"])
+
     def test_repeated_rejection_creates_repeated_provider_rejections_risk(self):
         intake, case_record, _, _ = self._create_case(
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
