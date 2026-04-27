@@ -1623,6 +1623,18 @@ class WorkflowStep(models.Model):
 
 class CaseIntakeProcess(models.Model):
     """Care/intake & matching processes (Intakes & Matching)"""
+    class WorkflowState(models.TextChoices):
+        DRAFT_CASE = 'DRAFT_CASE', 'Casus aangemaakt'
+        SUMMARY_READY = 'SUMMARY_READY', 'Samenvatting gereed'
+        MATCHING_READY = 'MATCHING_READY', 'Matching gereed'
+        GEMEENTE_VALIDATED = 'GEMEENTE_VALIDATED', 'Gemeente gevalideerd'
+        PROVIDER_REVIEW_PENDING = 'PROVIDER_REVIEW_PENDING', 'Aanbiederbeoordeling open'
+        PROVIDER_ACCEPTED = 'PROVIDER_ACCEPTED', 'Aanbieder geaccepteerd'
+        PROVIDER_REJECTED = 'PROVIDER_REJECTED', 'Aanbieder afgewezen'
+        PLACEMENT_CONFIRMED = 'PLACEMENT_CONFIRMED', 'Plaatsing bevestigd'
+        INTAKE_STARTED = 'INTAKE_STARTED', 'Intake gestart'
+        ARCHIVED = 'ARCHIVED', 'Gearchiveerd'
+
     class ProcessStatus(models.TextChoices):
         INTAKE = 'INTAKE', 'Intake'
         MATCHING = 'MATCHING', 'Matching'
@@ -1672,6 +1684,14 @@ class CaseIntakeProcess(models.Model):
     contract = models.OneToOneField('CareCase', on_delete=models.SET_NULL, null=True, blank=True, related_name='due_diligence_process')
     title = models.CharField(max_length=200, verbose_name='Casusidentificatie', help_text='Bijv. voornaam + initialiteit')
     status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.INTAKE, verbose_name='Status')
+    workflow_state = models.CharField(
+        max_length=40,
+        choices=WorkflowState.choices,
+        blank=True,
+        default='',
+        verbose_name='Workflowstatus',
+        help_text='Persistente workflowstate voor canonical flow-validatie.',
+    )
     
     # Case coordination
     case_coordinator = models.ForeignKey(

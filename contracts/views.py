@@ -4258,7 +4258,7 @@ def _provider_response_actions_for_case_detail(*, normalized_status, sla_state):
             {
                 'action': 'trigger_rematch',
                 'label': 'Her-match starten',
-                'note': 'SLA FORCED_ACTION bereikt: her-match is de primaire route.',
+                'note': 'Her-match is de primaire route.',
                 'visual_tone': 'primary',
                 'requires_confirmation': False,
             },
@@ -4275,7 +4275,7 @@ def _provider_response_actions_for_case_detail(*, normalized_status, sla_state):
                 'note': 'Alleen bij expliciete operationele onderbouwing; keuze wordt geaudit.',
                 'visual_tone': 'ghost',
                 'requires_confirmation': True,
-                'confirm_text': 'Bevestig dat je expliciet blijft wachten ondanks SLA FORCED_ACTION.',
+                'confirm_text': 'Bevestig wachten ondanks SLA FORCED_ACTION.',
                 'confirm_field': 'confirm_forced_wait',
                 'confirm_value': '1',
             },
@@ -5195,9 +5195,19 @@ def case_matching_action(request, pk):
             messages.error(request, '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
-        previous_state = WorkflowState.MATCHING_READY
-        transition = evaluate_transition(
+        previous_state = derive_workflow_state(intake=intake)
+        validation_transition = evaluate_transition(
             current_state=previous_state,
+            target_state=WorkflowState.GEMEENTE_VALIDATED,
+            actor_role=actor_role,
+            action=WorkflowAction.VALIDATE_MATCHING,
+        )
+        if not validation_transition.allowed:
+            messages.error(request, validation_transition.reason)
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        transition = evaluate_transition(
+            current_state=WorkflowState.GEMEENTE_VALIDATED,
             target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
             actor_role=actor_role,
             action=WorkflowAction.SEND_TO_PROVIDER,
@@ -5206,9 +5216,17 @@ def case_matching_action(request, pk):
             messages.error(request, transition.reason)
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
+        if intake.workflow_state != WorkflowState.GEMEENTE_VALIDATED:
+            intake.workflow_state = WorkflowState.GEMEENTE_VALIDATED
+            intake.save(update_fields=['workflow_state', 'updated_at'])
+
         if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
             intake.status = CaseIntakeProcess.ProcessStatus.DECISION
-            intake.save(update_fields=['status', 'updated_at'])
+            intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+            intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
+        elif intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
+            intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         if intake.case_record is not None:
             intake.case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
@@ -5235,6 +5253,15 @@ def case_matching_action(request, pk):
             actor_user=request.user,
             actor_role=actor_role,
             old_state=previous_state,
+            new_state=WorkflowState.GEMEENTE_VALIDATED,
+            action=WorkflowAction.VALIDATE_MATCHING,
+            source='case_matching_action',
+        )
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=WorkflowState.GEMEENTE_VALIDATED,
             new_state=WorkflowState.PROVIDER_REVIEW_PENDING,
             action=WorkflowAction.SEND_TO_PROVIDER,
             placement=placement,
@@ -5442,11 +5469,11 @@ def case_provider_response_action(request, pk):
             PlacementRequest.ProviderResponseStatus.NEEDS_INFO,
             PlacementRequest.ProviderResponseStatus.WAITLIST,
         } or sla['sla_state'] != 'FORCED_ACTION':
-            messages.error(request, 'Doorgaan met wachten is alleen beschikbaar bij open providerreacties met SLA FORCED_ACTION.')
+            messages.error(request, 'Alleen beschikbaar bij open reacties met SLA FORCED_ACTION.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
         if request.POST.get('confirm_forced_wait') != '1':
-            messages.error(request, 'Bevestig expliciet dat je blijft wachten ondanks SLA FORCED_ACTION.')
+            messages.error(request, 'Bevestig wachten ondanks SLA FORCED_ACTION.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
         forced_wait_reason = (request.POST.get('forced_wait_reason') or '').strip()
@@ -5482,7 +5509,7 @@ def case_provider_response_action(request, pk):
             actual_value={'action': 'continue_waiting'},
             optional_reason=forced_wait_reason,
         )
-        messages.success(request, 'Je hebt expliciet gekozen om te blijven wachten ondanks SLA FORCED_ACTION. Deze keuze is gelogd.')
+        messages.success(request, 'Wachten ondanks SLA FORCED_ACTION is gelogd.')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
     if normalized_action == 'trigger_rematch':
@@ -5491,7 +5518,7 @@ def case_provider_response_action(request, pk):
             PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
             PlacementRequest.ProviderResponseStatus.WAITLIST,
         } and sla['sla_state'] != 'FORCED_ACTION':
-            messages.error(request, 'Her-match is alleen toegestaan na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
+            messages.error(request, 'Her-match alleen na afwijzing, geen capaciteit, wachtlijst of SLA FORCED_ACTION.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
         can_match, match_blocker = intake.can_enter_matching()
@@ -5678,7 +5705,10 @@ def case_outcome_action(request, pk):
             intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
 
-        new_state = derive_workflow_state(intake=intake, placement=placement)
+        new_state = target_state
+        if intake.workflow_state != new_state:
+            intake.workflow_state = new_state
+            intake.save(update_fields=['workflow_state', 'updated_at'])
         log_transition_event(
             intake=intake,
             actor_user=request.user,
@@ -5883,7 +5913,8 @@ def case_placement_action(request, pk):
 
     if status == PlacementRequest.Status.REJECTED and intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
         intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
-        intake.save(update_fields=['status', 'updated_at'])
+        intake.workflow_state = WorkflowState.MATCHING_READY
+        intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
         if intake.case_record is not None:
             intake.case_record.case_phase = CareCase.CasePhase.MATCHING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
@@ -5929,7 +5960,10 @@ def case_placement_action(request, pk):
             optional_reason=note or None,
         )
 
-    new_state = derive_workflow_state(intake=intake, placement=placement)
+    new_state = target_state
+    if intake.workflow_state != new_state:
+        intake.workflow_state = new_state
+        intake.save(update_fields=['workflow_state', 'updated_at'])
     log_transition_event(
         intake=intake,
         actor_user=request.user,
@@ -5986,8 +6020,9 @@ def case_archive_action(request, pk):
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
     case_record = intake.case_record
-    update_fields = ['status', 'updated_at']
+    update_fields = ['status', 'workflow_state', 'updated_at']
     intake.status = CaseIntakeProcess.ProcessStatus.ARCHIVED
+    intake.workflow_state = WorkflowState.ARCHIVED
     intake.save(update_fields=update_fields)
 
     if case_record is not None and case_record.lifecycle_stage != 'ARCHIVED':

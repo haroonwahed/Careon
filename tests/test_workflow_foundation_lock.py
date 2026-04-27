@@ -125,6 +125,21 @@ class WorkflowFoundationLockTests(TestCase):
 
         self.assertEqual(response.status_code, 403)
 
+    def test_bulk_update_rejects_workflow_fields(self):
+        intake = self._create_matching_ready_case()
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:cases_bulk_update_api'),
+            data=f'{{"case_ids":[{intake.case_record.pk}],"updates":{{"case_phase":"provider_beoordeling"}}}}',
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 400)
+        payload = response.json()
+        self.assertEqual(payload.get('success'), False)
+        self.assertIn('case_phase', payload.get('blocked_fields', []))
+
     def test_intake_start_blocked_before_placement_confirmation(self):
         intake = self._create_matching_ready_case()
         PlacementRequest.objects.create(
@@ -194,6 +209,7 @@ class WorkflowFoundationLockTests(TestCase):
         )
         actions = list(transition_events.values_list('user_action', flat=True))
 
+        self.assertIn('validate_matching', actions)
         self.assertIn('send_to_provider', actions)
         self.assertIn('provider_accept', actions)
         self.assertIn('confirm_placement', actions)
