@@ -475,16 +475,21 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                     const recommendation = getRecommendationBadge(provider.id, index);
                     const reasoningLine = getReasoningLine(provider);
                     return (
-                      <button
+                      <article
                         key={provider.id}
-                        type="button"
-                        onClick={() => setSelectedProvider(provider.id)}
                         onMouseEnter={() => setHoveredProvider(provider.id)}
                         onMouseLeave={() => setHoveredProvider(null)}
                         className={`rounded-2xl border bg-white p-3 text-left shadow-[0_8px_24px_-22px_rgba(15,23,42,0.34)] transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_16px_34px_-24px_rgba(124,92,255,0.28)] dark:bg-slate-800 ${
                           isSelected ? "border-primary/50 bg-primary-light/30 ring-2 ring-primary/20 dark:bg-primary/20" : "border-slate-200 dark:border-slate-700"
                         }`}
                       >
+                        <button
+                          type="button"
+                          aria-label={`Selecteer ${provider.name}`}
+                          aria-pressed={isSelected}
+                          onClick={() => setSelectedProvider(provider.id)}
+                          className="w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+                        >
                         <div className="mb-2.5 flex items-start justify-between gap-3">
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
@@ -528,8 +533,9 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                             <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{provider.waitingListLength}</p>
                           </div>
                         </div>
+                        </button>
 
-                        <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+                        <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
                           <Button
                             size="sm"
                             className="flex-1"
@@ -551,7 +557,7 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                         </div>
 
                         {isSelected && (
-                          <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+                          <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
                                 <p className="text-slate-500 dark:text-slate-400">Stad</p>
@@ -584,7 +590,7 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                             </p>
                           </div>
                         )}
-                      </button>
+                      </article>
                     );
                   })}
                 </div>
