@@ -47,6 +47,36 @@ from contracts.workflow_state_machine import (
 )
 
 
+_WORKFLOW_STATE_VALUES = {
+    WorkflowState.DRAFT_CASE,
+    WorkflowState.SUMMARY_READY,
+    WorkflowState.MATCHING_READY,
+    WorkflowState.GEMEENTE_VALIDATED,
+    WorkflowState.PROVIDER_REVIEW_PENDING,
+    WorkflowState.PROVIDER_ACCEPTED,
+    WorkflowState.PROVIDER_REJECTED,
+    WorkflowState.PLACEMENT_CONFIRMED,
+    WorkflowState.INTAKE_STARTED,
+    WorkflowState.ARCHIVED,
+}
+
+
+def _case_workflow_state(case):
+    try:
+        intake = case.due_diligence_process
+    except CaseIntakeProcess.DoesNotExist:
+        intake = None
+
+    persisted_state = str(getattr(intake, 'workflow_state', '') or '').strip() if intake is not None else ''
+    if persisted_state in _WORKFLOW_STATE_VALUES:
+        return persisted_state
+    if intake is not None:
+        return derive_workflow_state(intake=intake)
+    if getattr(case, 'lifecycle_stage', '') == 'ARCHIVED':
+        return WorkflowState.ARCHIVED
+    return WorkflowState.DRAFT_CASE
+
+
 def _coerce_coordinate(value, *, minimum, maximum):
     try:
         numeric_value = float(value)
@@ -167,6 +197,7 @@ def _build_case_data(case):
     result['service_region'] = getattr(case, 'service_region', '') or ''
     result['contract_type'] = getattr(case, 'contract_type', '') or ''
     result['lifecycle_stage'] = getattr(case, 'lifecycle_stage', '') or ''
+    result['workflow_state'] = _case_workflow_state(case)
     return result
 
 
@@ -189,7 +220,10 @@ def contracts_api(request):
         )
 
         organization = get_user_organization(request.user)
-        queryset = scope_queryset_for_organization(CareCase.objects.all(), organization).exclude(lifecycle_stage='ARCHIVED')
+        queryset = scope_queryset_for_organization(
+            CareCase.objects.select_related('due_diligence_process'),
+            organization,
+        ).exclude(lifecycle_stage='ARCHIVED')
 
         if params.q:
             queryset = queryset.filter(
@@ -241,7 +275,11 @@ def case_detail_api(request, contract_id=None, case_id=None):
             return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
 
         organization = get_user_organization(request.user)
-        case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=record_id)
+        case = get_scoped_object_or_404(
+            CareCase.objects.select_related('due_diligence_process'),
+            organization,
+            pk=record_id,
+        )
 
         payload = _build_case_data(case)
         payload['decision_evaluation'] = evaluate_case(case, actor=request.user)
