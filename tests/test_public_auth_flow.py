@@ -1,4 +1,5 @@
 import re
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
@@ -124,3 +125,28 @@ class PublicAuthFlowTests(TestCase):
                 is_active=True,
             ).exists()
         )
+
+    @patch('contracts.views.ensure_user_organization', side_effect=RuntimeError('tenant bootstrap failed'))
+    def test_register_does_not_500_when_tenant_bootstrap_fails(self, _mock_bootstrap):
+        register_page = self.client.get(reverse('register'))
+        csrf = self._extract_csrf(register_page)
+
+        username = 'signup-bootstrap-fail-user'
+        email = 'signup-bootstrap-fail-user@example.com'
+        password = 'testpass123'
+
+        response = self.client.post(
+            reverse('register'),
+            {
+                'csrfmiddlewaretoken': csrf,
+                'username': username,
+                'email': email,
+                'password1': password,
+                'password2': password,
+            },
+            follow=False,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], reverse('login'))
+        self.assertTrue(User.objects.filter(username=username).exists())

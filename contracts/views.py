@@ -3707,10 +3707,24 @@ class SignUpView(CreateView):
 
     def form_valid(self, form):
         response = super().form_valid(form)
-        UserProfile.objects.get_or_create(user=self.object)
-        ensure_user_organization(self.object)
+        try:
+            UserProfile.objects.get_or_create(user=self.object)
+        except Exception:
+            logger.exception("Registration profile bootstrap failed for user_id=%s", getattr(self.object, "id", None))
 
-        login(self.request, self.object, backend='django.contrib.auth.backends.ModelBackend')
+        try:
+            ensure_user_organization(self.object)
+        except Exception:
+            logger.exception("Registration tenancy bootstrap failed for user_id=%s", getattr(self.object, "id", None))
+            messages.warning(
+                self.request,
+                "Account is aangemaakt, maar organisatie-instellingen worden nog voorbereid. Log opnieuw in als dit zichtbaar blijft.",
+            )
+
+        try:
+            login(self.request, self.object, backend='django.contrib.auth.backends.ModelBackend')
+        except Exception:
+            logger.exception("Post-registration auto login failed for user_id=%s", getattr(self.object, "id", None))
         return response
 
 
