@@ -38,3 +38,6 @@ venv/
 
 # Disposable local venv used for one-off pytest verification
 .venv_pytest_check/
+
+# SPA build output
+theme/static/spa/assets/
