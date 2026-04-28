@@ -1,5 +1,6 @@
 import json
 from datetime import date, timedelta
+from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
@@ -225,6 +226,55 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(cases_response.status_code, 200)
         case_titles = [item['title'] for item in cases_response.json()['contracts']]
         self.assertIn('API Intake Visible In Casussen', case_titles)
+
+    @patch('contracts.api.views.log_transition_event', side_effect=RuntimeError('transition log store unavailable'))
+    @patch('contracts.api.views.log_action', side_effect=RuntimeError('audit log store unavailable'))
+    def test_intake_create_api_still_succeeds_when_logging_fails(self, _mock_log_action, _mock_log_transition):
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Utrecht',
+            municipality_code='UTR',
+            created_by=self.user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Utrecht',
+            region_code='RU',
+            created_by=self.user,
+        )
+        region.served_municipalities.add(municipality)
+
+        bootstrap_response = self.client.get(reverse('careon:intake_form_options_api'))
+        self.assertEqual(bootstrap_response.status_code, 200)
+        payload = bootstrap_response.json()['initial_values']
+        payload.update({
+            'title': 'API Intake Logging Failure Tolerated',
+            'target_completion_date': str(date.today() + timedelta(days=7)),
+            'assessment_summary': 'Nieuwe intake via API',
+            'description': 'Mag niet falen op logging.',
+            'postcode': '3511AB',
+            'latitude': 52.0907,
+            'longitude': 5.1214,
+            'urgency': CaseIntakeProcess.Urgency.HIGH,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': region.region_type,
+            'preferred_region': str(region.pk),
+            'gemeente': str(municipality.pk),
+            'case_coordinator': str(self.user.pk),
+        })
+
+        response = self.client.post(
+            reverse('careon:intake_create_api'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        body = response.json()
+        intake = CaseIntakeProcess.objects.get(pk=body['id'])
+        self.assertIsNotNone(intake.contract_id)
+        self.assertEqual(body['case_id'], str(intake.contract_id))
 
     def test_assessment_decision_api_returns_decision_first_payload(self):
         intake = CaseIntakeProcess.objects.create(

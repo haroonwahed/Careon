@@ -124,6 +124,7 @@ SECRET_KEY = os.getenv(
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = _bool_env('DJANGO_DEBUG', default=_bool_env('DEBUG', default=True))
+ENABLE_DJANGO_BROWSER_RELOAD = _bool_env('ENABLE_DJANGO_BROWSER_RELOAD', default=False)
 
 ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', default=['*'])
 
@@ -155,7 +156,7 @@ INSTALLED_APPS = [
     'contracts',
 ]
 
-if DEBUG:
+if DEBUG and ENABLE_DJANGO_BROWSER_RELOAD:
     INSTALLED_APPS.extend([
         'django_browser_reload',
         'debug_toolbar',
@@ -192,7 +193,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-if DEBUG:
+if DEBUG and ENABLE_DJANGO_BROWSER_RELOAD:
     MIDDLEWARE.insert(2, 'debug_toolbar.middleware.DebugToolbarMiddleware')
     MIDDLEWARE.append('django_browser_reload.middleware.BrowserReloadMiddleware')
 

@@ -3,6 +3,7 @@
 API views for CareOn case workspace functionality.
 """
 import json
+import logging
 from datetime import date
 
 from django.http import JsonResponse
@@ -45,6 +46,8 @@ from contracts.workflow_state_machine import (
     normalize_provider_rejection_states,
     resolve_actor_role,
 )
+
+logger = logging.getLogger(__name__)
 
 
 _WORKFLOW_STATE_VALUES = {
@@ -1308,23 +1311,37 @@ def intake_create_api(request):
 
     intake = form.save()
     case_record = intake.ensure_case_record(created_by=request.user)
-    log_action(
-        request.user,
-        'CREATE',
-        'CaseIntakeProcess',
-        intake.id,
-        str(intake),
-        request=request,
-    )
-    log_transition_event(
-        intake=intake,
-        actor_user=request.user,
-        actor_role=actor_role,
-        old_state='NONE',
-        new_state=WorkflowState.DRAFT_CASE,
-        action=WorkflowAction.CREATE_CASE,
-        source='intake_create_api',
-    )
+    try:
+        log_action(
+            request.user,
+            'CREATE',
+            'CaseIntakeProcess',
+            intake.id,
+            str(intake),
+            request=request,
+        )
+    except Exception:
+        logger.exception(
+            "Intake create audit logging failed for intake_id=%s user_id=%s",
+            intake.id,
+            getattr(request.user, "id", None),
+        )
+    try:
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state='NONE',
+            new_state=WorkflowState.DRAFT_CASE,
+            action=WorkflowAction.CREATE_CASE,
+            source='intake_create_api',
+        )
+    except Exception:
+        logger.exception(
+            "Intake create transition logging failed for intake_id=%s user_id=%s",
+            intake.id,
+            getattr(request.user, "id", None),
+        )
 
     case_pk = case_record.pk if case_record else intake.pk
     return JsonResponse({

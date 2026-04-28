@@ -15,7 +15,6 @@ import { LOGIN_URL, REGISTER_URL } from "../../lib/routes";
 
 interface PublicLandingPageProps {
   onThemeToggle: () => void;
-  onOpenDashboard: () => void;
 }
 
 const featureCards = [
@@ -44,7 +43,6 @@ const trustRows = [
 
 export function PublicLandingPage({
   onThemeToggle,
-  onOpenDashboard,
 }: PublicLandingPageProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -87,14 +85,13 @@ export function PublicLandingPage({
             >
               Inloggen
             </a>
-            <button
-              type="button"
-              onClick={onOpenDashboard}
+            <a
+              href={REGISTER_URL}
               className="inline-flex h-11 items-center gap-2 rounded-2xl bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
             >
               Start direct
               <ArrowRight size={16} />
-            </button>
+            </a>
           </div>
         </div>
       </header>
@@ -112,14 +109,13 @@ export function PublicLandingPage({
             </p>
 
             <div className="mt-8 flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={onOpenDashboard}
+              <a
+                href={REGISTER_URL}
                 className="inline-flex h-12 items-center gap-2 rounded-2xl bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
               >
                 Start direct
                 <ArrowRight size={16} />
-              </button>
+              </a>
               <a
                 href={REGISTER_URL}
                 className="inline-flex h-12 items-center rounded-2xl border border-border bg-card px-5 text-sm font-semibold text-foreground transition-colors hover:bg-muted/60"

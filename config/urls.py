@@ -39,7 +39,7 @@ urlpatterns = [
     path('toggle-redesign/', careon_views.toggle_redesign, name='toggle_redesign'),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG and getattr(settings, 'ENABLE_DJANGO_BROWSER_RELOAD', False):
     try:
         import django_browser_reload.urls  # noqa: F401
     except ModuleNotFoundError:
