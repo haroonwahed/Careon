@@ -112,7 +112,7 @@ class PublicAuthFlowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], reverse('login'))
+        self.assertEqual(response['Location'], reverse('dashboard'))
 
         user = User.objects.get(username=username)
         org_name = f"{user.get_full_name().strip() or user.username}'s Regie"
@@ -149,5 +149,5 @@ class PublicAuthFlowTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(response['Location'], reverse('login'))
+        self.assertEqual(response['Location'], reverse('dashboard'))
         self.assertTrue(User.objects.filter(username=username).exists())

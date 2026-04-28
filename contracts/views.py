@@ -3702,7 +3702,7 @@ class BudgetUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView
 
 class SignUpView(CreateView):
     form_class = RegistrationForm
-    success_url = reverse_lazy('login')
+    success_url = reverse_lazy('dashboard')
     template_name = 'registration/register.html'
 
     def form_valid(self, form):
