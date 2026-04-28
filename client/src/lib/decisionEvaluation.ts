@@ -80,6 +80,8 @@ export interface DecisionEvaluation {
   case_id: number | string | null;
   current_state: string;
   phase: string;
+  coverage_basis?: string | null;
+  coverage_status?: string | null;
   next_best_action: NextBestAction | null;
   blockers: DecisionBlocker[];
   risks: DecisionRisk[];

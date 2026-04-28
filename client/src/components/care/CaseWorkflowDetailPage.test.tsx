@@ -60,6 +60,8 @@ function makeDecisionEvaluation(overrides: Partial<DecisionEvaluation> = {}): De
     case_id: "C-100",
     current_state: "MATCHING_READY",
     phase: "matching",
+    coverage_basis: "geo_distance",
+    coverage_status: "inside_radius",
     next_best_action: {
       action: "SEND_TO_PROVIDER",
       label: "Stuur naar aanbieder",
@@ -190,6 +192,56 @@ describe("CaseWorkflowDetailPage", () => {
     expect(screen.getAllByText("Match confidence is laag. Controleer match onderbouwing.").length).toBeGreaterThan(0);
     expect(screen.getByText("Aanbieder beoordeling wacht te lang")).toBeInTheDocument();
     expect(screen.getByText("Blokkeert: Matching starten")).toBeInTheDocument();
+  });
+
+  it("renders missing-data checklist and disables primary CTA when blockers exist", async () => {
+    setupCase(makeDecisionEvaluation({
+      blockers: [
+        {
+          code: "INCOMPLETE_CASE",
+          severity: "high",
+          message: "Casus is nog niet compleet.",
+          blocking_actions: ["GENERATE_SUMMARY"],
+        },
+      ],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByTestId("missing-data-checklist")).toBeInTheDocument();
+    expect(screen.getByText("Vul ontbrekende casusgegevens aan")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stuur naar aanbieder" })).toBeDisabled();
+    expect(screen.getByText("Los eerst de open blokkades op via de checklist.")).toBeInTheDocument();
+  });
+
+  it("renders geo confidence badge for distance-based coverage", async () => {
+    setupCase(makeDecisionEvaluation({
+      coverage_basis: "geo_distance",
+      coverage_status: "inside_radius",
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+    expect(await screen.findByText("Distance-based")).toBeInTheDocument();
+  });
+
+  it("renders geo confidence badge for region fallback coverage", async () => {
+    setupCase(makeDecisionEvaluation({
+      coverage_basis: "region_fallback",
+      coverage_status: "region_fallback_match",
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+    expect(await screen.findByText("Region fallback")).toBeInTheDocument();
+  });
+
+  it("renders geo confidence badge for unknown coverage", async () => {
+    setupCase(makeDecisionEvaluation({
+      coverage_basis: "unknown",
+      coverage_status: "unknown",
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+    expect(await screen.findByText("Geo unknown")).toBeInTheDocument();
   });
 
   it("respects role-specific action visibility", async () => {

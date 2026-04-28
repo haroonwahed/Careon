@@ -288,6 +288,74 @@ function ActionCard({
   );
 }
 
+function blockerChecklistItem(blockerCode: string, caseId: string) {
+  const fallback = {
+    label: "Casusgegevens controleren",
+    href: `/care/casussen/${caseId}/edit/`,
+  };
+  const mapping: Record<string, { label: string; href: string }> = {
+    INCOMPLETE_CASE: {
+      label: "Vul ontbrekende casusgegevens aan",
+      href: `/care/casussen/${caseId}/edit/?section=casus`,
+    },
+    MISSING_REQUIRED_CASE_DATA: {
+      label: "Controleer verplichte gegevens",
+      href: `/care/casussen/${caseId}/edit/?section=casus`,
+    },
+    MISSING_SUMMARY: {
+      label: "Maak samenvatting af",
+      href: `/care/beoordelingen/`,
+    },
+    MISSING_MATCH_RESULT: {
+      label: "Rond matching af",
+      href: `/care/matching/`,
+    },
+    PROVIDER_NOT_SELECTED: {
+      label: "Selecteer een aanbieder",
+      href: `/care/matching/`,
+    },
+  };
+  return mapping[blockerCode] ?? fallback;
+}
+
+function GeoConfidenceBadge({
+  coverageBasis,
+  coverageStatus,
+}: {
+  coverageBasis?: string | null;
+  coverageStatus?: string | null;
+}) {
+  const normalizedBasis = coverageBasis ?? "unknown";
+  if (normalizedBasis === "geo_distance") {
+    return (
+      <div className="rounded-xl border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-100" data-testid="geo-confidence-badge">
+        <p className="font-semibold">Distance-based</p>
+        <p className="mt-1 text-blue-100/90">
+          Afstand is op coördinaten gebaseerd. {coverageStatus === "outside_radius" ? "Controleer radius of kies alternatief." : "Gebruik dit als primaire geo-evidence."}
+        </p>
+      </div>
+    );
+  }
+  if (normalizedBasis === "region_fallback" || normalizedBasis === "provider_region_coverage") {
+    return (
+      <div className="rounded-xl border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-xs text-amber-100" data-testid="geo-confidence-badge">
+        <p className="font-semibold">Region fallback</p>
+        <p className="mt-1 text-amber-100/90">
+          Match is regio-gebaseerd. Verifieer afstand handmatig voor plaatsingsbesluit.
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="rounded-xl border border-red-500/35 bg-red-500/10 px-3 py-2 text-xs text-red-100" data-testid="geo-confidence-badge">
+      <p className="font-semibold">Geo unknown</p>
+      <p className="mt-1 text-red-100/90">
+        Coördinaten ontbreken. Vraag geo-gegevens aan voordat je op afstand beslist.
+      </p>
+    </div>
+  );
+}
+
 function ProviderDecisionDialog({
   open,
   mode,
@@ -454,6 +522,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
   const nextActionBlocked = nextBestAction
     ? decisionEvaluation?.blocked_actions.find((action) => action.action === nextBestAction.action) ?? null
     : null;
+  const hasBlockers = Boolean(decisionEvaluation?.blockers?.length);
 
   const handleAction = async (action: CaseDecisionActionCode, payload?: Record<string, unknown>) => {
     if (!decisionEvaluation) {
@@ -531,6 +600,9 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
   const bannerActionPriority = nextBestAction?.priority ?? "low";
   const bannerActionDescription = nextBestAction ? `Actie: ${nextBestAction.action}` : "Geen actie beschikbaar";
   const bannerActionDisabledReason = nextActionBlocked?.reason ?? "Deze actie is op dit moment niet beschikbaar.";
+  const primaryDisabledReason = hasBlockers
+    ? "Los eerst de open blokkades op via de checklist."
+    : bannerActionDisabledReason;
 
   return (
     <div className="space-y-6 pb-12">
@@ -608,6 +680,34 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                 Je zit in de casusfase: werk toe naar een samenvatting. Matching start je daarna zelf; die wordt niet automatisch gestart.
               </p>
             )}
+            {hasBlockers && (
+              <div className="border-t border-border/50 pt-2" data-testid="missing-data-checklist">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Checklist open blokkades</p>
+                <div className="mt-2 space-y-2">
+                  {decisionEvaluation?.blockers.map((blocker) => {
+                    const checklist = blockerChecklistItem(blocker.code, caseId);
+                    return (
+                      <div key={`checklist-${blocker.code}`} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border/70 bg-background/30 px-3 py-2">
+                        <div>
+                          <p className="text-xs font-medium text-foreground">{checklist.label}</p>
+                          <p className="text-xs text-muted-foreground">{getShortReasonLabel(blocker.message, 88)}</p>
+                        </div>
+                        <a
+                          href={checklist.href}
+                          className="text-xs font-semibold text-primary hover:underline"
+                        >
+                          Openen
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            <GeoConfidenceBadge
+              coverageBasis={decisionEvaluation?.coverage_basis}
+              coverageStatus={decisionEvaluation?.coverage_status}
+            />
           </div>
         );
       })()}
@@ -620,14 +720,14 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
           <div className="space-y-2">
             <Button
               onClick={handlePrimaryAction}
-              disabled={decisionLoading || !nextBestAction || !nextActionAllowed || Boolean(nextActionBlocked?.reason) || (nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId)}
+              disabled={decisionLoading || hasBlockers || !nextBestAction || !nextActionAllowed || Boolean(nextActionBlocked?.reason) || (nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId)}
               className="gap-2"
             >
               {getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie")}
               <ArrowRight size={16} />
             </Button>
-            {!nextActionAllowed && nextActionBlocked && (
-              <p className="max-w-xs text-xs text-muted-foreground">{getShortReasonLabel(bannerActionDisabledReason, 80)}</p>
+            {(hasBlockers || (!nextActionAllowed && nextActionBlocked)) && (
+              <p className="max-w-xs text-xs text-muted-foreground">{getShortReasonLabel(primaryDisabledReason, 80)}</p>
             )}
             {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
               <p className="max-w-xs text-xs text-muted-foreground">Nog geen geselecteerde aanbieder.</p>
