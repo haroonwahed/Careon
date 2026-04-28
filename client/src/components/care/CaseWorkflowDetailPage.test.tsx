@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { SpaCase } from "../../hooks/useCases";
 import type { DecisionEvaluation } from "../../lib/decisionEvaluation";
@@ -400,6 +400,85 @@ describe("CaseWorkflowDetailPage", () => {
 
     expect(await screen.findByTestId("rejection-loop-panel")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Stuur naar aanbieder" })).toBeEnabled();
+  });
+
+  it("renders time-pressure strip for high urgency and shows owner/action/reason", async () => {
+    setupCase(makeDecisionEvaluation({
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        urgency: "critical",
+      },
+      blockers: [],
+      next_best_action: {
+        action: "SEND_TO_PROVIDER",
+        label: "Stuur naar aanbieder",
+        priority: "high",
+        reason: "Urgente casus vraagt directe opvolging.",
+      },
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    const strip = await screen.findByTestId("time-pressure-strip");
+    expect(strip).toBeInTheDocument();
+    expect(within(strip).getByText("Tijdkritische casus")).toBeInTheDocument();
+    expect(within(strip).getByText(/Eigenaar:/)).toBeInTheDocument();
+    expect(within(strip).getByText(/Volgende stap:/)).toBeInTheDocument();
+    expect(within(strip).getByText(/Urgente casus vraagt directe opvolging/)).toBeInTheDocument();
+  });
+
+  it("renders time-pressure strip for SLA risk", async () => {
+    setupCase(makeDecisionEvaluation({
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        urgency: "normal",
+        hours_in_current_state: 80,
+      },
+      next_best_action: {
+        action: "MONITOR_CASE",
+        label: "Casus monitoren",
+        priority: "medium",
+        reason: "SLA opvolging nodig.",
+      },
+      alerts: [
+        {
+          code: "PROVIDER_REVIEW_PENDING_SLA",
+          severity: "high",
+          title: "SLA-risico",
+          message: "Reactietijd overschreden.",
+          recommended_action: "FOLLOW_UP_PROVIDER",
+          evidence: {},
+        },
+      ],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByTestId("time-pressure-strip")).toBeInTheDocument();
+    expect(screen.getByText(/SLA-risico gedetecteerd/)).toBeInTheDocument();
+  });
+
+  it("does not render time-pressure strip for normal priority without risk", async () => {
+    setupCase(makeDecisionEvaluation({
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        urgency: "normal",
+        hours_in_current_state: 10,
+      },
+      next_best_action: {
+        action: "MONITOR_CASE",
+        label: "Casus monitoren",
+        priority: "medium",
+        reason: "Reguliere opvolging.",
+      },
+      alerts: [],
+      risks: [],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByRole("button", { name: "Casus monitoren" })).toBeInTheDocument();
+    expect(screen.queryByTestId("time-pressure-strip")).not.toBeInTheDocument();
   });
 
   it("respects role-specific action visibility", async () => {

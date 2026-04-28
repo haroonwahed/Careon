@@ -440,6 +440,19 @@ function rejectionInterventions(latestReason: string, nextAction?: string | null
   return options.slice(0, 2);
 }
 
+function hasSlaOrDeadlineRisk(evaluation: DecisionEvaluation | null) {
+  if (!evaluation) {
+    return false;
+  }
+  const hasSignalCode = [...evaluation.alerts, ...evaluation.risks].some((signal) => (
+    signal.code.includes("SLA")
+    || signal.code.includes("DEADLINE")
+    || signal.code.includes("OVERDUE")
+  ));
+  const staleState = (evaluation.decision_context.hours_in_current_state ?? 0) >= 72;
+  return hasSignalCode || staleState;
+}
+
 function ProviderDecisionDialog({
   open,
   mode,
@@ -700,6 +713,20 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
   const rejectionLoopMode = rejectionCount >= 2 || hasRepeatedRejectionSignal(decisionEvaluation);
   const rejectionPattern = rejectionDiagnosis(latestRejectionReason, nextBestAction?.action ?? null);
   const rejectionActions = rejectionInterventions(latestRejectionReason, nextBestAction?.action ?? null);
+  const resolvedState = decisionEvaluation?.current_state || spaCase.workflowState || currentState;
+  const guidanceStepIndex = stateIndex(resolvedState, resolvedState === "ARCHIVED");
+  const stepOwner = FLOW_STEPS[guidanceStepIndex]?.owner ?? "Gemeente";
+  const timePressureMode = (
+    (decisionEvaluation?.decision_context.urgency === "critical" || decisionEvaluation?.decision_context.urgency === "high")
+    || nextBestAction?.priority === "critical"
+    || nextBestAction?.priority === "high"
+    || hasSlaOrDeadlineRisk(decisionEvaluation)
+  );
+  const timePressureBlocker = decisionEvaluation?.blockers?.[0]?.message ?? "Geen directe blokkade gemeld.";
+  const timePressureReason = nextBestAction?.reason || "Actieve opvolging is nodig om vertraging te voorkomen.";
+  const timePressureDeadlineHint = hasSlaOrDeadlineRisk(decisionEvaluation)
+    ? "SLA-risico gedetecteerd: plan opvolging binnen 24 uur."
+    : null;
 
   return (
     <div className="space-y-6 pb-12">
@@ -736,10 +763,7 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
       />
 
       {(() => {
-        const resolvedState = decisionEvaluation?.current_state || spaCase.workflowState || currentState;
         const archivedGuidance = resolvedState === "ARCHIVED";
-        const guidanceStepIndex = stateIndex(resolvedState, archivedGuidance);
-        const stepOwner = FLOW_STEPS[guidanceStepIndex]?.owner ?? "—";
         const blockerLine = decisionEvaluation?.blockers?.length
           ? getShortReasonLabel(decisionEvaluation.blockers[0].message, 100)
           : "Geen open blokkades.";
@@ -847,6 +871,21 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
         );
       })()}
 
+      {timePressureMode && (
+        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 space-y-2" data-testid="time-pressure-strip">
+          <p className="font-semibold">Tijdkritische casus</p>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-red-100/90">
+            <p><span className="font-semibold">Eigenaar:</span> {stepOwner}</p>
+            <p><span className="font-semibold">Volgende stap:</span> {getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie")}</p>
+          </div>
+          <p className="text-xs text-red-100/90"><span className="font-semibold">Reden:</span> {getShortReasonLabel(timePressureReason, 140)}</p>
+          <p className="text-xs text-red-100/90"><span className="font-semibold">Blokkade:</span> {getShortReasonLabel(timePressureBlocker, 140)}</p>
+          {timePressureDeadlineHint && (
+            <p className="text-xs text-red-100/90">{timePressureDeadlineHint}</p>
+          )}
+        </div>
+      )}
+
       <CareInsightBanner
         tone="primary"
         title={getShortActionLabel(decisionPanelMessage ?? bannerActionLabel)}
@@ -863,6 +902,11 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             </Button>
             {(hasBlockers || (!nextActionAllowed && nextActionBlocked)) && (
               <p className="max-w-xs text-xs text-muted-foreground">{getShortReasonLabel(primaryDisabledReason, 80)}</p>
+            )}
+            {!hasBlockers && !nextActionAllowed && nextActionBlocked && (
+              <p className="max-w-xs text-xs text-muted-foreground">
+                Los eerst de blokkade op; daarna kan de volgende stap worden uitgevoerd.
+              </p>
             )}
             {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
               <p className="max-w-xs text-xs text-muted-foreground">Nog geen geselecteerde aanbieder.</p>
