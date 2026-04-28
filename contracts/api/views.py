@@ -1304,53 +1304,68 @@ def intake_create_api(request):
     if not form.is_valid():
         return JsonResponse({'errors': _flatten_form_errors(form)}, status=400)
 
-    set_organization_on_instance(form.instance, organization)
-    if not form.instance.start_date:
-        form.instance.start_date = date.today()
-    form.instance.workflow_state = WorkflowState.DRAFT_CASE
-
-    intake = form.save()
-    case_record = intake.ensure_case_record(created_by=request.user)
     try:
-        log_action(
-            request.user,
-            'CREATE',
-            'CaseIntakeProcess',
-            intake.id,
-            str(intake),
-            request=request,
-        )
+        set_organization_on_instance(form.instance, organization)
+        if not form.instance.start_date:
+            form.instance.start_date = date.today()
+        form.instance.workflow_state = WorkflowState.DRAFT_CASE
+
+        intake = form.save()
+        case_record = intake.ensure_case_record(created_by=request.user)
+        try:
+            log_action(
+                request.user,
+                'CREATE',
+                'CaseIntakeProcess',
+                intake.id,
+                str(intake),
+                request=request,
+            )
+        except Exception:
+            logger.exception(
+                "Intake create audit logging failed for intake_id=%s user_id=%s",
+                intake.id,
+                getattr(request.user, "id", None),
+            )
+        try:
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state='NONE',
+                new_state=WorkflowState.DRAFT_CASE,
+                action=WorkflowAction.CREATE_CASE,
+                source='intake_create_api',
+            )
+        except Exception:
+            logger.exception(
+                "Intake create transition logging failed for intake_id=%s user_id=%s",
+                intake.id,
+                getattr(request.user, "id", None),
+            )
+
+        case_pk = case_record.pk if case_record else intake.pk
+        return JsonResponse({
+            'ok': True,
+            'id': intake.pk,
+            'title': intake.title,
+            'case_id': str(case_record.pk) if case_record else '',
+            'redirect_url': f'/care/cases/{case_pk}/',
+        })
     except Exception:
         logger.exception(
-            "Intake create audit logging failed for intake_id=%s user_id=%s",
-            intake.id,
+            "Intake create failed for user_id=%s org_id=%s payload_keys=%s",
             getattr(request.user, "id", None),
+            getattr(organization, "id", None),
+            sorted(payload.keys()) if isinstance(payload, dict) else [],
         )
-    try:
-        log_transition_event(
-            intake=intake,
-            actor_user=request.user,
-            actor_role=actor_role,
-            old_state='NONE',
-            new_state=WorkflowState.DRAFT_CASE,
-            action=WorkflowAction.CREATE_CASE,
-            source='intake_create_api',
+        return JsonResponse(
+            {
+                'ok': False,
+                'error': 'Nieuwe casus kon niet worden geladen. Probeer opnieuw of neem contact op met support.',
+            },
+            status=500,
         )
-    except Exception:
-        logger.exception(
-            "Intake create transition logging failed for intake_id=%s user_id=%s",
-            intake.id,
-            getattr(request.user, "id", None),
-        )
-
-    case_pk = case_record.pk if case_record else intake.pk
-    return JsonResponse({
-        'ok': True,
-        'id': intake.pk,
-        'title': intake.title,
-        'case_id': str(case_record.pk) if case_record else '',
-        'redirect_url': f'/care/cases/{case_pk}/',
-    })
 
 
 # ---------------------------------------------------------------------------

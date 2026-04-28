@@ -276,6 +276,53 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertIsNotNone(intake.contract_id)
         self.assertEqual(body['case_id'], str(intake.contract_id))
 
+    @patch.object(CaseIntakeProcess, 'ensure_case_record', side_effect=RuntimeError('case bootstrap failed'))
+    def test_intake_create_api_returns_json_500_when_internal_error_occurs(self, _mock_ensure_case_record):
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Utrecht',
+            municipality_code='UTR',
+            created_by=self.user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Utrecht',
+            region_code='RU',
+            created_by=self.user,
+        )
+        region.served_municipalities.add(municipality)
+
+        bootstrap_response = self.client.get(reverse('careon:intake_form_options_api'))
+        self.assertEqual(bootstrap_response.status_code, 200)
+        payload = bootstrap_response.json()['initial_values']
+        payload.update({
+            'title': 'API Intake Returns Controlled Error',
+            'target_completion_date': str(date.today() + timedelta(days=7)),
+            'assessment_summary': 'Nieuwe intake via API',
+            'description': 'Foutpad moet JSON blijven.',
+            'postcode': '3511AB',
+            'latitude': 52.0907,
+            'longitude': 5.1214,
+            'urgency': CaseIntakeProcess.Urgency.HIGH,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': region.region_type,
+            'preferred_region': str(region.pk),
+            'gemeente': str(municipality.pk),
+            'case_coordinator': str(self.user.pk),
+        })
+
+        response = self.client.post(
+            reverse('careon:intake_create_api'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 500)
+        body = response.json()
+        self.assertFalse(body['ok'])
+        self.assertIn('Nieuwe casus kon niet worden geladen', body['error'])
+
     def test_assessment_decision_api_returns_decision_first_payload(self):
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
