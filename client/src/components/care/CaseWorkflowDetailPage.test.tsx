@@ -62,6 +62,22 @@ function makeDecisionEvaluation(overrides: Partial<DecisionEvaluation> = {}): De
     phase: "matching",
     coverage_basis: "geo_distance",
     coverage_status: "inside_radius",
+    factor_breakdown: {
+      specialization: 0.91,
+      capacity: 0.87,
+      region: 0.84,
+      urgency: 0.82,
+      complexity: 0.85,
+    },
+    weaknesses: [],
+    tradeoffs: [],
+    confidence_score: 0.84,
+    confidence_reason: "De match is goed onderbouwd met stabiele factoren.",
+    warning_flags: {
+      specialization_gap: false,
+      urgency_mismatch: false,
+    },
+    verification_guidance: [],
     next_best_action: {
       action: "SEND_TO_PROVIDER",
       label: "Stuur naar aanbieder",
@@ -242,6 +258,72 @@ describe("CaseWorkflowDetailPage", () => {
 
     render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
     expect(await screen.findByText("Geo unknown")).toBeInTheDocument();
+  });
+
+  it("renders low-confidence panel and keeps CTA enabled when no hard blockers exist", async () => {
+    setupCase(makeDecisionEvaluation({
+      confidence_score: 0.52,
+      confidence_reason: "Confidence is laag door beperkte dekking en specialistische mismatch.",
+      blockers: [],
+      warning_flags: {
+        specialization_gap: true,
+        urgency_mismatch: false,
+      },
+      factor_breakdown: {
+        specialization: 0.41,
+        capacity: 0.82,
+        region: 0.54,
+        urgency: 0.79,
+        complexity: 0.77,
+      },
+      weaknesses: [
+        "Specialisatie sluit niet volledig aan.",
+        "Regionale dekking is beperkt.",
+      ],
+      verification_guidance: [
+        "Verifieer specialistische dekking met aanbieder.",
+        "Controleer reisafstand met gezin.",
+        "Leg risicoweging vast.",
+      ],
+      tradeoffs: [
+        "Hogere kwaliteit maar langere reistijd.",
+        "Sneller beschikbaar maar minder specialistisch profiel.",
+        "Reserveoptie met lagere fitscore.",
+      ],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByTestId("low-confidence-panel")).toBeInTheDocument();
+    expect(screen.getByText("Waarom extra controleren?")).toBeInTheDocument();
+    expect(screen.getByText("Confidence is laag door beperkte dekking en specialistische mismatch.")).toBeInTheDocument();
+    expect(screen.getByText(/Specialisatie \(41%\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Regio \(54%\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Verifieer specialistische dekking/)).toBeInTheDocument();
+    expect(screen.getByText(/Controleer reisafstand met gezin/)).toBeInTheDocument();
+    expect(screen.queryByText("Leg risicoweging vast.")).not.toBeInTheDocument();
+    expect(screen.getByText(/Hogere kwaliteit maar langere reistijd/)).toBeInTheDocument();
+    expect(screen.getByText(/Sneller beschikbaar maar minder specialistisch profiel/)).toBeInTheDocument();
+    expect(screen.queryByText("Reserveoptie met lagere fitscore.")).not.toBeInTheDocument();
+    expect(screen.getByText("Controleer deze punten vóór versturen naar aanbieder.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stuur naar aanbieder" })).toBeEnabled();
+  });
+
+  it("does not render low-confidence panel for strong confidence without warnings", async () => {
+    setupCase(makeDecisionEvaluation({
+      confidence_score: 0.89,
+      weaknesses: [],
+      warning_flags: {
+        specialization_gap: false,
+        urgency_mismatch: false,
+      },
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByRole("button", { name: "Stuur naar aanbieder" })).toBeInTheDocument();
+    expect(screen.queryByTestId("low-confidence-panel")).not.toBeInTheDocument();
+    expect(screen.queryByText("Waarom extra controleren?")).not.toBeInTheDocument();
   });
 
   it("respects role-specific action visibility", async () => {

@@ -356,6 +356,39 @@ function GeoConfidenceBadge({
   );
 }
 
+function factorLabel(key: string) {
+  const labels: Record<string, string> = {
+    specialization: "Specialisatie",
+    capacity: "Capaciteit",
+    region: "Regio",
+    urgency: "Urgentie",
+    complexity: "Complexiteit",
+  };
+  return labels[key] ?? key;
+}
+
+function lowConfidenceFactors(
+  factorBreakdown?: Record<string, number> | null,
+  weaknesses?: string[] | null,
+) {
+  const rankedFactors = Object.entries(factorBreakdown ?? {})
+    .filter(([, score]) => Number.isFinite(score))
+    .sort((a, b) => a[1] - b[1])
+    .slice(0, 2)
+    .map(([factor, score]) => `${factorLabel(factor)} (${Math.round(score * 100)}%)`);
+  if (rankedFactors.length > 0) {
+    return rankedFactors;
+  }
+  return (weaknesses ?? []).slice(0, 2);
+}
+
+function hasWarningFlags(warningFlags?: Record<string, boolean> | null) {
+  if (!warningFlags) {
+    return false;
+  }
+  return Object.values(warningFlags).some(Boolean);
+}
+
 function ProviderDecisionDialog({
   open,
   mode,
@@ -603,6 +636,14 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
   const primaryDisabledReason = hasBlockers
     ? "Los eerst de open blokkades op via de checklist."
     : bannerActionDisabledReason;
+  const lowConfidenceMode = Boolean(
+    (decisionEvaluation?.confidence_score ?? 1) < 0.65
+      || (decisionEvaluation?.weaknesses?.length ?? 0) > 0
+      || hasWarningFlags(decisionEvaluation?.warning_flags),
+  );
+  const topWeakFactors = lowConfidenceFactors(decisionEvaluation?.factor_breakdown, decisionEvaluation?.weaknesses);
+  const verificationSteps = (decisionEvaluation?.verification_guidance ?? []).slice(0, 2);
+  const tradeOffs = (decisionEvaluation?.tradeoffs ?? []).slice(0, 2);
 
   return (
     <div className="space-y-6 pb-12">
@@ -708,6 +749,44 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
               coverageBasis={decisionEvaluation?.coverage_basis}
               coverageStatus={decisionEvaluation?.coverage_status}
             />
+            {lowConfidenceMode && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 space-y-2" data-testid="low-confidence-panel">
+                <p className="font-semibold text-amber-100">Waarom extra controleren?</p>
+                <p className="text-amber-100/90">
+                  {getShortReasonLabel(decisionEvaluation?.confidence_reason ?? "Confidence is laag of onzeker.", 140)}
+                </p>
+                {topWeakFactors.length > 0 && (
+                  <div>
+                    <p className="font-medium">Zwakke factoren</p>
+                    <ul className="mt-1 space-y-1">
+                      {topWeakFactors.map((factor) => (
+                        <li key={`weak-${factor}`}>- {factor}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {verificationSteps.length > 0 && (
+                  <div>
+                    <p className="font-medium">Verificatie</p>
+                    <ul className="mt-1 space-y-1">
+                      {verificationSteps.map((step) => (
+                        <li key={`verify-${step}`}>- {getShortReasonLabel(step, 110)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {tradeOffs.length > 0 && (
+                  <div>
+                    <p className="font-medium">Trade-offs</p>
+                    <ul className="mt-1 space-y-1">
+                      {tradeOffs.map((tradeoff) => (
+                        <li key={`tradeoff-${tradeoff}`}>- {getShortReasonLabel(tradeoff, 110)}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -731,6 +810,11 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
             )}
             {nextBestAction && nextActionAllowed && nextBestAction.action === "SEND_TO_PROVIDER" && !selectedProviderId && (
               <p className="max-w-xs text-xs text-muted-foreground">Nog geen geselecteerde aanbieder.</p>
+            )}
+            {lowConfidenceMode && (
+              <p className="max-w-xs text-xs text-amber-200">
+                Controleer deze punten vóór versturen naar aanbieder.
+              </p>
             )}
           </div>
         )}

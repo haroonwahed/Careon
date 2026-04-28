@@ -82,6 +82,13 @@ export interface DecisionEvaluation {
   phase: string;
   coverage_basis?: string | null;
   coverage_status?: string | null;
+  factor_breakdown?: Record<string, number> | null;
+  weaknesses?: string[] | null;
+  tradeoffs?: string[] | null;
+  confidence_score?: number | null;
+  confidence_reason?: string | null;
+  warning_flags?: Record<string, boolean> | null;
+  verification_guidance?: string[] | null;
   next_best_action: NextBestAction | null;
   blockers: DecisionBlocker[];
   risks: DecisionRisk[];
