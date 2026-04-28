@@ -825,10 +825,38 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                 </div>
               </div>
             )}
-            <GeoConfidenceBadge
-              coverageBasis={decisionEvaluation?.coverage_basis}
-              coverageStatus={decisionEvaluation?.coverage_status}
-            />
+            {timePressureMode && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-100 space-y-2" data-testid="time-pressure-strip">
+                <p className="font-semibold">Tijdkritische casus</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-red-100/90">
+                  <p><span className="font-semibold">Eigenaar:</span> {stepOwner}</p>
+                  <p><span className="font-semibold">Volgende stap:</span> {getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie")}</p>
+                </div>
+                <p className="text-xs text-red-100/90"><span className="font-semibold">Reden:</span> {getShortReasonLabel(timePressureReason, 140)}</p>
+                <p className="text-xs text-red-100/90"><span className="font-semibold">Blokkade:</span> {getShortReasonLabel(timePressureBlocker, 140)}</p>
+                {timePressureDeadlineHint && (
+                  <p className="text-xs text-red-100/90">{timePressureDeadlineHint}</p>
+                )}
+              </div>
+            )}
+            {rejectionLoopMode && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 space-y-2" data-testid="rejection-loop-panel">
+                <p className="font-semibold text-amber-100">Waarom loopt deze casus vast?</p>
+                <p className="text-xs text-amber-100/90">Afwijzingen door aanbieders: {rejectionCount}</p>
+                {latestRejectionReason && (
+                  <p className="text-xs text-amber-100/90">Laatste reden: {getShortReasonLabel(latestRejectionReason, 140)}</p>
+                )}
+                <p className="text-xs text-amber-100/90">{rejectionPattern}</p>
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-100/90">Aanbevolen interventie vóór rematch</p>
+                  <ul className="mt-1 space-y-1 text-xs text-amber-100/90">
+                    {rejectionActions.map((action) => (
+                      <li key={`intervention-${action}`}>- {action}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            )}
             {lowConfidenceMode && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 space-y-2" data-testid="low-confidence-panel">
                 <p className="font-semibold text-amber-100">Waarom extra controleren?</p>
@@ -867,24 +895,13 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                 )}
               </div>
             )}
+            <GeoConfidenceBadge
+              coverageBasis={decisionEvaluation?.coverage_basis}
+              coverageStatus={decisionEvaluation?.coverage_status}
+            />
           </div>
         );
       })()}
-
-      {timePressureMode && (
-        <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-100 space-y-2" data-testid="time-pressure-strip">
-          <p className="font-semibold">Tijdkritische casus</p>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-red-100/90">
-            <p><span className="font-semibold">Eigenaar:</span> {stepOwner}</p>
-            <p><span className="font-semibold">Volgende stap:</span> {getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie")}</p>
-          </div>
-          <p className="text-xs text-red-100/90"><span className="font-semibold">Reden:</span> {getShortReasonLabel(timePressureReason, 140)}</p>
-          <p className="text-xs text-red-100/90"><span className="font-semibold">Blokkade:</span> {getShortReasonLabel(timePressureBlocker, 140)}</p>
-          {timePressureDeadlineHint && (
-            <p className="text-xs text-red-100/90">{timePressureDeadlineHint}</p>
-          )}
-        </div>
-      )}
 
       <CareInsightBanner
         tone="primary"
@@ -924,25 +941,6 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
           </div>
         )}
       />
-
-      {rejectionLoopMode && (
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 space-y-2" data-testid="rejection-loop-panel">
-          <p className="font-semibold text-amber-100">Waarom loopt deze casus vast?</p>
-          <p className="text-xs text-amber-100/90">Afwijzingen door aanbieders: {rejectionCount}</p>
-          {latestRejectionReason && (
-            <p className="text-xs text-amber-100/90">Laatste reden: {getShortReasonLabel(latestRejectionReason, 140)}</p>
-          )}
-          <p className="text-xs text-amber-100/90">{rejectionPattern}</p>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-100/90">Aanbevolen interventie vóór rematch</p>
-            <ul className="mt-1 space-y-1 text-xs text-amber-100/90">
-              {rejectionActions.map((action) => (
-                <li key={`intervention-${action}`}>- {action}</li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
 
       <CareSectionCard
         title="Casuspad"
