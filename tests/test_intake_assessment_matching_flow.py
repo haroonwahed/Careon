@@ -227,9 +227,10 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         case_titles = [item['title'] for item in cases_response.json()['contracts']]
         self.assertIn('API Intake Visible In Casussen', case_titles)
 
+    @patch('contracts.api.views.logger.exception')
     @patch('contracts.api.views.log_transition_event', side_effect=RuntimeError('transition log store unavailable'))
     @patch('contracts.api.views.log_action', side_effect=RuntimeError('audit log store unavailable'))
-    def test_intake_create_api_still_succeeds_when_logging_fails(self, _mock_log_action, _mock_log_transition):
+    def test_intake_create_api_still_succeeds_when_logging_fails(self, _mock_log_action, _mock_log_transition, _mock_log_exception):
         municipality = MunicipalityConfiguration.objects.create(
             organization=self.organization,
             municipality_name='Utrecht',
@@ -276,8 +277,9 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertIsNotNone(intake.contract_id)
         self.assertEqual(body['case_id'], str(intake.contract_id))
 
+    @patch('contracts.api.views.logger.exception')
     @patch.object(CaseIntakeProcess, 'ensure_case_record', side_effect=RuntimeError('case bootstrap failed'))
-    def test_intake_create_api_returns_json_500_when_internal_error_occurs(self, _mock_ensure_case_record):
+    def test_intake_create_api_returns_json_500_when_internal_error_occurs(self, _mock_ensure_case_record, _mock_log_exception):
         municipality = MunicipalityConfiguration.objects.create(
             organization=self.organization,
             municipality_name='Utrecht',

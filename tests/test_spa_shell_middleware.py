@@ -18,7 +18,7 @@ class SpaShellMigrationMiddlewareTests(TestCase):
     def test_shell_render_failure_returns_fallback_response(self):
         request = self._build_request('/dashboard/')
 
-        with patch('contracts.middleware.is_feature_redesign_enabled', return_value=True), patch(
+        with patch('contracts.middleware.logger.exception'), patch('contracts.middleware.is_feature_redesign_enabled', return_value=True), patch(
             'contracts.middleware._render_spa_shell_response',
             side_effect=RuntimeError('boom'),
         ):
@@ -35,7 +35,7 @@ class SpaShellMigrationMiddlewareTests(TestCase):
         def failing_get_response(_request):
             raise RuntimeError('boom')
 
-        with patch('contracts.middleware.is_feature_redesign_enabled', return_value=False):
+        with patch('contracts.middleware.logger.exception'), patch('contracts.middleware.is_feature_redesign_enabled', return_value=False):
             response = SpaShellMigrationMiddleware(failing_get_response)(request)
 
         self.assertEqual(response.status_code, 200)

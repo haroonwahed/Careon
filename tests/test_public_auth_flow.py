@@ -126,8 +126,9 @@ class PublicAuthFlowTests(TestCase):
             ).exists()
         )
 
+    @patch('contracts.views.logger.exception')
     @patch('contracts.views.ensure_user_organization', side_effect=RuntimeError('tenant bootstrap failed'))
-    def test_register_does_not_500_when_tenant_bootstrap_fails(self, _mock_bootstrap):
+    def test_register_does_not_500_when_tenant_bootstrap_fails(self, _mock_bootstrap, _mock_log_exception):
         register_page = self.client.get(reverse('register'))
         csrf = self._extract_csrf(register_page)
 
