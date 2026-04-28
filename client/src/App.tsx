@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { MultiTenantDemo } from "./components/examples/MultiTenantDemo";
 import { PublicLandingPage } from "./components/public/PublicLandingPage";
-import { PUBLIC_LANDING_URL, SPA_DASHBOARD_URL } from "./lib/routes";
+import { PUBLIC_LANDING_URL, REGISTER_URL } from "./lib/routes";
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -40,7 +40,7 @@ export default function App() {
         <PublicLandingPage
           onThemeToggle={() => setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark")}
           onOpenDashboard={() => {
-            window.location.assign(SPA_DASHBOARD_URL);
+            window.location.assign(REGISTER_URL);
           }}
         />
       </div>
