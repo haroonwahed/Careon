@@ -389,6 +389,57 @@ function hasWarningFlags(warningFlags?: Record<string, boolean> | null) {
   return Object.values(warningFlags).some(Boolean);
 }
 
+function hasRepeatedRejectionSignal(evaluation: DecisionEvaluation | null) {
+  if (!evaluation) {
+    return false;
+  }
+  const repeatedRisk = evaluation.risks.some((risk) => risk.code === "REPEATED_PROVIDER_REJECTIONS");
+  const repeatedAlert = evaluation.alerts.some((alert) => alert.code === "REPEATED_PROVIDER_REJECTIONS");
+  const rejectionActionHint = evaluation.alerts.some((alert) => alert.recommended_action === "REMATCH_CASE");
+  return repeatedRisk || repeatedAlert || rejectionActionHint;
+}
+
+function rejectionDiagnosis(latestReason: string, nextAction?: string | null) {
+  const normalizedReason = latestReason.toLowerCase();
+  if (normalizedReason.includes("capac") || normalizedReason.includes("wacht")) {
+    return "Patroon: capaciteits- of wachttijdknelpunt bij aanbieders.";
+  }
+  if (normalizedReason.includes("special") || normalizedReason.includes("expert")) {
+    return "Patroon: specialistische match is nog onvoldoende overtuigend.";
+  }
+  if (normalizedReason.includes("regio") || normalizedReason.includes("afstand")) {
+    return "Patroon: regionale dekking of reisafstand veroorzaakt afwijzing.";
+  }
+  if (nextAction === "REMATCH_CASE") {
+    return "Patroon: herhaalde afwijzingen vragen eerst om gerichte bijsturing.";
+  }
+  return "Patroon: dezelfde casuscontext leidt tot herhaalde afwijzingen.";
+}
+
+function rejectionInterventions(latestReason: string, nextAction?: string | null) {
+  const options = [
+    "Verrijk casusgegevens",
+    "Verbreden regio",
+    "Controleer zorgvorm",
+    "Escaleren naar regie",
+    "Benader aanbieder met aanvullende toelichting",
+  ];
+  const normalizedReason = latestReason.toLowerCase();
+  if (normalizedReason.includes("capac") || normalizedReason.includes("wacht")) {
+    return ["Verbreden regio", "Escaleren naar regie"];
+  }
+  if (normalizedReason.includes("special") || normalizedReason.includes("expert")) {
+    return ["Verrijk casusgegevens", "Controleer zorgvorm"];
+  }
+  if (normalizedReason.includes("regio") || normalizedReason.includes("afstand")) {
+    return ["Verbreden regio", "Benader aanbieder met aanvullende toelichting"];
+  }
+  if (nextAction === "REMATCH_CASE") {
+    return ["Verrijk casusgegevens", "Benader aanbieder met aanvullende toelichting"];
+  }
+  return options.slice(0, 2);
+}
+
 function ProviderDecisionDialog({
   open,
   mode,
@@ -644,6 +695,11 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
   const topWeakFactors = lowConfidenceFactors(decisionEvaluation?.factor_breakdown, decisionEvaluation?.weaknesses);
   const verificationSteps = (decisionEvaluation?.verification_guidance ?? []).slice(0, 2);
   const tradeOffs = (decisionEvaluation?.tradeoffs ?? []).slice(0, 2);
+  const rejectionCount = decisionEvaluation?.decision_context.provider_rejection_count ?? 0;
+  const latestRejectionReason = decisionEvaluation?.decision_context.latest_rejection_reason ?? "";
+  const rejectionLoopMode = rejectionCount >= 2 || hasRepeatedRejectionSignal(decisionEvaluation);
+  const rejectionPattern = rejectionDiagnosis(latestRejectionReason, nextBestAction?.action ?? null);
+  const rejectionActions = rejectionInterventions(latestRejectionReason, nextBestAction?.action ?? null);
 
   return (
     <div className="space-y-6 pb-12">
@@ -816,9 +872,33 @@ export function CaseWorkflowDetailPage({ caseId, role = "gemeente", onBack }: Ca
                 Controleer deze punten vóór versturen naar aanbieder.
               </p>
             )}
+            {rejectionLoopMode && (
+              <p className="max-w-xs text-xs text-amber-200">
+                Voorkom herhaling: kies eerst een gerichte interventie.
+              </p>
+            )}
           </div>
         )}
       />
+
+      {rejectionLoopMode && (
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100 space-y-2" data-testid="rejection-loop-panel">
+          <p className="font-semibold text-amber-100">Waarom loopt deze casus vast?</p>
+          <p className="text-xs text-amber-100/90">Afwijzingen door aanbieders: {rejectionCount}</p>
+          {latestRejectionReason && (
+            <p className="text-xs text-amber-100/90">Laatste reden: {getShortReasonLabel(latestRejectionReason, 140)}</p>
+          )}
+          <p className="text-xs text-amber-100/90">{rejectionPattern}</p>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-amber-100/90">Aanbevolen interventie vóór rematch</p>
+            <ul className="mt-1 space-y-1 text-xs text-amber-100/90">
+              {rejectionActions.map((action) => (
+                <li key={`intervention-${action}`}>- {action}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
 
       <CareSectionCard
         title="Casuspad"

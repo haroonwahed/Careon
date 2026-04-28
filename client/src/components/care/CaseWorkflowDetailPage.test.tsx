@@ -326,6 +326,82 @@ describe("CaseWorkflowDetailPage", () => {
     expect(screen.queryByText("Waarom extra controleren?")).not.toBeInTheDocument();
   });
 
+  it("renders rejection-loop coach after repeated provider rejection", async () => {
+    setupCase(makeDecisionEvaluation({
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        provider_rejection_count: 3,
+        latest_rejection_reason: "Onvoldoende specialistische expertise voor deze casus.",
+      },
+      next_best_action: {
+        action: "REMATCH_CASE",
+        label: "Her-matchen",
+        priority: "high",
+        reason: "Herhaal matching met aangepaste context.",
+      },
+      alerts: [
+        {
+          code: "PROVIDER_REVIEW_PENDING_SLA",
+          severity: "high",
+          title: "Aanbieder beoordeling wacht te lang",
+          message: "Opvolging nodig.",
+          recommended_action: "REMATCH_CASE",
+          evidence: {},
+        },
+      ],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByTestId("rejection-loop-panel")).toBeInTheDocument();
+    expect(screen.getByText("Waarom loopt deze casus vast?")).toBeInTheDocument();
+    expect(screen.getByText("Afwijzingen door aanbieders: 3")).toBeInTheDocument();
+    expect(screen.getByText(/Laatste reden: Onvoldoende specialistische expertise/)).toBeInTheDocument();
+    expect(screen.getByText(/Patroon: specialistische match is nog onvoldoende overtuigend/)).toBeInTheDocument();
+    expect(screen.getByText(/Verrijk casusgegevens/)).toBeInTheDocument();
+    expect(screen.getByText(/Controleer zorgvorm/)).toBeInTheDocument();
+    expect(screen.getByText("Voorkom herhaling: kies eerst een gerichte interventie.")).toBeInTheDocument();
+  });
+
+  it("does not render rejection-loop coach without rejection loop signals", async () => {
+    setupCase(makeDecisionEvaluation({
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        provider_rejection_count: 1,
+        latest_rejection_reason: "",
+      },
+      risks: [],
+      alerts: [],
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByRole("button", { name: "Stuur naar aanbieder" })).toBeInTheDocument();
+    expect(screen.queryByTestId("rejection-loop-panel")).not.toBeInTheDocument();
+  });
+
+  it("keeps CTA governed by existing rules during rejection loop guidance", async () => {
+    setupCase(makeDecisionEvaluation({
+      blockers: [],
+      decision_context: {
+        ...makeDecisionEvaluation().decision_context,
+        provider_rejection_count: 2,
+        latest_rejection_reason: "Regio past niet bij aanbieder.",
+      },
+      next_best_action: {
+        action: "SEND_TO_PROVIDER",
+        label: "Stuur naar aanbieder",
+        priority: "high",
+        reason: "Nieuwe selectie kan worden aangeboden.",
+      },
+    }));
+
+    render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
+
+    expect(await screen.findByTestId("rejection-loop-panel")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Stuur naar aanbieder" })).toBeEnabled();
+  });
+
   it("respects role-specific action visibility", async () => {
     setupCase(
       makeDecisionEvaluation({
