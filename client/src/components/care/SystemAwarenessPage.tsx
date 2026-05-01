@@ -4,12 +4,11 @@ import { DominantActionPanel } from "../design/DominantActionPanel";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CanonicalPhaseBadge,
   CareMetaChip,
-  CarePageTemplate,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
 } from "./CareUnifiedPage";
 import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
@@ -1185,29 +1184,26 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   };
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="decision"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title={<span className="inline-flex items-center gap-2"><Siren size={16} className="text-primary" />Regiekamer</span>}
-          subtitle="Waar moet je nu ingrijpen? Alleen signalen die regie-actie vragen."
-          actions={(
-            <>
-              <Button variant="outline" onClick={refetch} className="gap-2">
-                <RefreshCw size={14} />
-                Ververs
-              </Button>
-              {generatedAtLabel && <p className="text-xs text-muted-foreground">Bijgewerkt op {generatedAtLabel}</p>}
-              {filtersActive && (
-                <Button variant="ghost" onClick={clearFilters} className="gap-2">
-                  Filters wissen
-                </Button>
-              )}
-            </>
+      title={<span className="inline-flex items-center gap-2"><Siren size={16} className="text-primary" />Regiekamer</span>}
+      subtitle="Waar moet je nu ingrijpen? Alleen signalen die regie-actie vragen."
+      actions={(
+        <>
+          <Button variant="outline" onClick={refetch} className="gap-2">
+            <RefreshCw size={14} />
+            Ververs
+          </Button>
+          {generatedAtLabel && <p className="text-xs text-muted-foreground">Bijgewerkt op {generatedAtLabel}</p>}
+          {filtersActive && (
+            <Button variant="ghost" onClick={clearFilters} className="gap-2">
+              Filters wissen
+            </Button>
           )}
-        />
-      }
-      attention={
+        </>
+      )}
+      dominantAction={
         <div className={SECTION_STACK_CLASS}>
           {hasActiveData && (
             <DominantActionPanel
@@ -1525,7 +1521,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
           )}
         </div>
       )}
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }
 

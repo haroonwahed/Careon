@@ -11,20 +11,8 @@ const CARE_DIR = join(dirname(fileURLToPath(import.meta.url)), "../components/ca
  *
  * @see PAGE_GENERATOR_PATTERN.md
  */
-const DIRECT_CARE_PAGE_TEMPLATE_EXCEPTIONS: ReadonlyMap<string, string> = new Map([
-  [
-    "AanbiederBeoordelingPage.tsx",
-    "Multiple embedded list/workspace templates; scaffold migration tracked separately.",
-  ],
-  ["AssessmentQueuePage.tsx", "Not yet migrated to CarePageScaffold."],
-  ["IntakeListPage.tsx", "Not yet migrated to CarePageScaffold."],
-  ["PlacementTrackingPage.tsx", "Not yet migrated to CarePageScaffold."],
-  ["SignalenPage.tsx", "Not yet migrated to CarePageScaffold."],
-  [
-    "SystemAwarenessPage.tsx",
-    "Regiekamer / system-awareness experience; bespoke shell until unified scaffold rollout.",
-  ],
-]);
+/** Empty: no care route may use `CarePageTemplate` directly without migrating to `CarePageScaffold`. */
+const DIRECT_CARE_PAGE_TEMPLATE_EXCEPTIONS: ReadonlyMap<string, string> = new Map();
 
 const IGNORE_FILES = new Set(["CareUnifiedPage.tsx", "CarePageScaffold.tsx"]);
 
