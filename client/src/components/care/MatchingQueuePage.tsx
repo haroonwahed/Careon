@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Building2, Clock3, Shuffle } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CanonicalPhaseBadge,
   CareAttentionBar,
@@ -9,10 +10,8 @@ import {
   CareDominantStatus,
   CareMetricBadge,
   CareMetaChip,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
   normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
@@ -58,25 +57,24 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
   const blockedCount = queueCases.filter((item) => item.isBlocked).length;
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="worklist"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title="Matching"
-          subtitle="Vergelijk fit, capaciteit en blokkades voordat je doorzet naar validatie."
-          metric={
-            <CareMetricBadge>
-              {queueCases.length} casussen klaar voor matching
-            </CareMetricBadge>
-          }
-        />
+      title="Matching"
+      subtitle="Vergelijk fit, capaciteit en blokkades voordat je doorzet naar validatie."
+      metric={
+        <CareMetricBadge>
+          {queueCases.length} casussen klaar voor matching
+        </CareMetricBadge>
       }
-      attention={
-        <CareAttentionBar
-          visible={blockedCount > 0}
-          tone="warning"
-          message={`${blockedCount} casus${blockedCount === 1 ? "" : "sen"} geblokkeerd — los dit eerst op voordat matching betrouwbaar is.`}
-        />
+      dominantAction={
+        blockedCount > 0 ? (
+          <CareAttentionBar
+            visible
+            tone="warning"
+            message={`${blockedCount} casus${blockedCount === 1 ? "" : "sen"} geblokkeerd — los dit eerst op voordat matching betrouwbaar is.`}
+          />
+        ) : undefined
       }
       filters={
         <CareSearchFiltersBar
@@ -174,6 +172,6 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
         title="Werk vanuit samenvatting"
         copy="Matching is alleen zinvol als de casus inhoudelijk compleet is."
       />
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }

@@ -18,7 +18,6 @@ const DIRECT_CARE_PAGE_TEMPLATE_EXCEPTIONS: ReadonlyMap<string, string> = new Ma
   ],
   ["AssessmentQueuePage.tsx", "Not yet migrated to CarePageScaffold."],
   ["IntakeListPage.tsx", "Not yet migrated to CarePageScaffold."],
-  ["MatchingQueuePage.tsx", "Not yet migrated to CarePageScaffold."],
   ["PlacementTrackingPage.tsx", "Not yet migrated to CarePageScaffold."],
   ["SignalenPage.tsx", "Not yet migrated to CarePageScaffold."],
   [
