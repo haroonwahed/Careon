@@ -29,6 +29,7 @@ import {
   buildRegiekamerNbaInstrumentationPayload,
   emitRegiekamerNbaEvent,
   shouldEmitRegiekamerNbaShown,
+  type RegiekamerNbaInsightSource,
 } from "../../lib/regiekamerNbaInstrumentation";
 
 interface SystemAwarenessPageProps {
@@ -1006,11 +1007,8 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     );
   }, [hasActiveData, regiekamerNba, uiMode]);
 
-  const onInsightDetailsToggle = useCallback(
-    (e: ToggleEvent<HTMLDetailsElement>) => {
-      if (!e.currentTarget.open) {
-        return;
-      }
+  const emitInsightOpened = useCallback(
+    (source: RegiekamerNbaInsightSource) => {
       emitRegiekamerNbaEvent(
         "nba_insight_opened",
         buildRegiekamerNbaInstrumentationPayload({
@@ -1018,10 +1016,31 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
           uiMode,
           title: regiekamerNba.title,
           reasonCount: regiekamerNba.reasons.length,
+          source,
         }),
       );
     },
     [regiekamerNba, uiMode],
+  );
+
+  const onInsightWhyToggle = useCallback(
+    (e: ToggleEvent<HTMLDetailsElement>) => {
+      if (!e.currentTarget.open) {
+        return;
+      }
+      emitInsightOpened("why");
+    },
+    [emitInsightOpened],
+  );
+
+  const onInsightFlowToggle = useCallback(
+    (e: ToggleEvent<HTMLDetailsElement>) => {
+      if (!e.currentTarget.open) {
+        return;
+      }
+      emitInsightOpened("flow");
+    },
+    [emitInsightOpened],
   );
 
   const dominantPanelDescription = formatRegiekamerDominantDescription(regiekamerNba);
@@ -1165,7 +1184,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
               <details
                 data-testid="regiekamer-insight-why"
                 className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
-                onToggle={onInsightDetailsToggle}
+                onToggle={onInsightWhyToggle}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                   Waarom gebeurt dit?
@@ -1195,7 +1214,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
               <details
                 data-testid="regiekamer-insight-flow"
                 className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
-                onToggle={onInsightDetailsToggle}
+                onToggle={onInsightFlowToggle}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                   Bekijk doorloop in de keten

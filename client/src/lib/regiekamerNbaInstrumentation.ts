@@ -9,6 +9,9 @@ export type RegiekamerNbaInstrumentationEventName =
   | "nba_cases_link_clicked"
   | "nba_insight_opened";
 
+/** Which Regiekamer insight `<details>` opened (`nba_insight_opened` only). */
+export type RegiekamerNbaInsightSource = "why" | "flow";
+
 export type RegiekamerNbaInstrumentationPayload = {
   actionKey: RegiekamerNbaActionKey;
   uiMode: RegiekamerNbaUiMode;
@@ -16,6 +19,8 @@ export type RegiekamerNbaInstrumentationPayload = {
   reasonCount: number;
   timestamp: string;
   route: typeof REGIEKAMER_NBA_ROUTE;
+  /** Present for `nba_insight_opened` — extend with more literals when disclosures grow */
+  source?: RegiekamerNbaInsightSource;
 };
 
 export function buildRegiekamerNbaInstrumentationPayload(args: {
@@ -25,9 +30,10 @@ export function buildRegiekamerNbaInstrumentationPayload(args: {
   reasonCount: number;
   /** For deterministic unit tests */
   now?: Date;
+  source?: RegiekamerNbaInsightSource;
 }): RegiekamerNbaInstrumentationPayload {
   const t = args.now ?? new Date();
-  return {
+  const base: RegiekamerNbaInstrumentationPayload = {
     actionKey: args.actionKey,
     uiMode: args.uiMode,
     title: args.title,
@@ -35,6 +41,10 @@ export function buildRegiekamerNbaInstrumentationPayload(args: {
     timestamp: t.toISOString(),
     route: REGIEKAMER_NBA_ROUTE,
   };
+  if (args.source !== undefined) {
+    base.source = args.source;
+  }
+  return base;
 }
 
 let lastShownDedupe: { fingerprint: string; at: number } | null = null;

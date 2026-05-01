@@ -26,6 +26,24 @@ describe("buildRegiekamerNbaInstrumentationPayload", () => {
       route: REGIEKAMER_NBA_ROUTE,
     });
   });
+
+  it("includes source for insight-opened payloads", () => {
+    const fixed = new Date("2026-05-01T12:00:00.000Z");
+    const p = buildRegiekamerNbaInstrumentationPayload({
+      actionKey: "OPEN_REPORTS",
+      uiMode: "optimization",
+      title: "Volume hoog genoeg voor ketenanalyse",
+      reasonCount: 1,
+      now: fixed,
+      source: "flow",
+    });
+    expect(p.source).toBe("flow");
+    expect(p).toMatchObject({
+      actionKey: "OPEN_REPORTS",
+      source: "flow",
+      route: REGIEKAMER_NBA_ROUTE,
+    });
+  });
 });
 
 describe("shouldEmitRegiekamerNbaShown", () => {
