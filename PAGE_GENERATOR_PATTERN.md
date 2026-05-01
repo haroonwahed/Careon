@@ -104,7 +104,7 @@ Existing route hooks (e.g. `care-search-control-stack`, `metric-strip`, row `dat
 | **Regiekamer** | `decision` | `DominantActionPanel` + compact metric strip + search + worklist; insights in stable/optimization. *(Not migrated to scaffold in generator v1 — reference only.)* |
 | **Casussen** | `worklist` | Header metric badge + tabs + search + `CareWorkRow`. |
 | **Signalen** | `signal-action` | Tabs + search + `SignalWorkRow`. |
-| **Acties** | `signal-action` | First route using **`CarePageScaffold`** in production. |
+| **Acties** | `signal-action` | Uses **`CarePageScaffold`** (with **Casussen** / `WorkloadPage`). |
 | **Zorgaanbieders** | `exception` | Map + cards + `zorgaanbieders-filter-panel`; **do not** force this scaffold until product approves. |
 
 ---
