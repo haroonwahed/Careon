@@ -17,6 +17,7 @@ Enforceable rules for the authenticated Care SPA shell: layout, tokens, shared p
 | Template | Use |
 |----------|-----|
 | **`CarePageTemplate`** | Standard list/work routes: header → optional attention → optional filters → body. |
+| **`CarePageScaffold`** | Optional compositional wrapper around **`CarePageTemplate`** with stable page hooks (`care-page-scaffold`, `care-page-header`, `care-page-content`, `care-page-insights`) and **`data-care-page-archetype`** — see **`PAGE_GENERATOR_PATTERN.md`**. |
 | **Case workspace** | `CaseExecutionPage` (or equivalent) when `selectedCase` / `/care/cases/:id` is active: NBA + single context panel; not a second full chrome. |
 | **Map/special** | e.g. Zorgaanbieders map: may omit `CareSearchFiltersBar` in favor of a documented filter surface (`zorgaanbieders-filter-panel`). |
 
@@ -183,6 +184,7 @@ This route stays **out of** the default **`CarePageTemplate` + `CareSearchFilter
 ## 14. References
 
 - `AGENTS.md` — canonical flow and UI mode enforcement.
+- `PAGE_GENERATOR_PATTERN.md` — Care Shell page scaffold (`CarePageScaffold`) and archetypes.
 - `client/tests/e2e/care-design-system.spec.ts` — automated checks for shell, Regiekamer, rows, dark theme.
 - `client/src/components/design/DominantActionPanel.tsx` — shared dominant action primitive.
 

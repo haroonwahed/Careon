@@ -4,15 +4,14 @@ import { Button } from "../ui/button";
 import { useTasks, ActionStatus, SpaTask } from "../../hooks/useTasks";
 import { countOpenCareTasks, isOpenCareTask } from "../../lib/actiesTaskSemantics";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareDominantStatus,
   CareFilterTabButton,
   CareFilterTabGroup,
   CareMetaChip,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
 } from "./CareUnifiedPage";
 
@@ -122,14 +121,11 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
   };
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="signal-action"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title="Acties"
-          subtitle={`Taken en actiepunten · ${loading ? "…" : `${statusCounts.overdue} te laat · ${statusCounts.today} vandaag · ${statusCounts.upcoming} binnenkort`}`}
-        />
-      }
+      title="Acties"
+      subtitle={`Taken en actiepunten · ${loading ? "…" : `${statusCounts.overdue} te laat · ${statusCounts.today} vandaag · ${statusCounts.upcoming} binnenkort`}`}
       filters={
         <CareSearchFiltersBar
           tabs={
@@ -192,6 +188,6 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
           />
         )}
       </div>
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }
