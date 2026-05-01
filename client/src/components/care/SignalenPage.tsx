@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Info,
@@ -9,6 +9,8 @@ import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import {
   CareDominantStatus,
+  CareFilterTabButton,
+  CareFilterTabGroup,
   CareMetaChip,
   CarePageTemplate,
   CarePrimaryList,
@@ -141,7 +143,8 @@ function SignalWorkRow({
           </Button>
         ) : undefined
       }
-      actionLabel={`${primary.label} →`}
+      actionLabel={primary.label.replace(/\s*→\s*$/u, "").trim() || primary.label}
+      actionVariant={signal.severity === "critical" || signal.severity === "warning" ? "primary" : "ghost"}
       onOpen={openFromRow}
       onAction={(event) => {
         event.stopPropagation();
@@ -333,43 +336,13 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   const warningCount = signals.filter((s) => s.severity === "warning").length;
   const infoCount = signals.filter((s) => s.severity === "info").length;
 
-  const getSeverityIcon = (severity: SignalSeverity) => {
-    switch (severity) {
-      case "critical":
-        return <XCircle size={18} className="text-red-400" />;
-      case "warning":
-        return <AlertTriangle size={18} className="text-amber-400" />;
-      case "info":
-        return <Info size={18} className="text-blue-400" />;
+  const toggleSeverityFilter = (key: SignalSeverity | "all") => {
+    if (key === "all") {
+      setSelectedSeverity("all");
+      return;
     }
+    setSelectedSeverity((current) => (current === key ? "all" : key));
   };
-
-  const summaryCardClass = (selected: boolean, selectedRing: string) =>
-    cn(
-      "rounded-2xl border border-border/70 bg-card/75 p-4 text-left transition-all hover:scale-[1.02]",
-      selected ? selectedRing : "",
-    );
-
-  const renderSummaryCard = (
-    key: SignalSeverity,
-    label: string,
-    count: number,
-    icon: ReactNode,
-    selectedClass: string,
-  ) => (
-    <button
-      key={key}
-      type="button"
-      onClick={() => setSelectedSeverity(selectedSeverity === key ? "all" : key)}
-      className={summaryCardClass(selectedSeverity === key, selectedClass)}
-    >
-      <div className="mb-1 flex items-center justify-between">
-        <p className="text-2xl font-bold text-foreground">{loading ? "—" : count}</p>
-        <div className="rounded-lg p-2">{icon}</div>
-      </div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-    </button>
-  );
 
   return (
     <CarePageTemplate
@@ -381,39 +354,36 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
         />
       }
       filters={
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4 px-1">
-            {renderSummaryCard(
-              "critical",
-              "Kritieke signalen",
-              criticalCount,
-              <XCircle size={18} className="text-red-400" />,
-              "border-2 border-red-500 shadow-lg shadow-red-500/20",
-            )}
-            {renderSummaryCard(
-              "warning",
-              "Waarschuwingen",
-              warningCount,
-              <AlertTriangle size={18} className="text-amber-400" />,
-              "border-2 border-amber-500 shadow-lg shadow-amber-500/20",
-            )}
-            {renderSummaryCard(
-              "info",
-              "Informatie",
-              infoCount,
-              <Info size={18} className="text-blue-400" />,
-              "border-2 border-blue-500 shadow-lg shadow-blue-500/20",
-            )}
-          </div>
-          <CareSearchFiltersBar
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoek signalen..."
-            showSecondaryFilters={showSecondaryFilters}
-            onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-            secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
-          />
-        </div>
+        <CareSearchFiltersBar
+          tabs={
+            <CareFilterTabGroup aria-label="Ernst signalen">
+              <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
+                Alles
+              </CareFilterTabButton>
+              <CareFilterTabButton
+                selected={selectedSeverity === "critical"}
+                onClick={() => toggleSeverityFilter("critical")}
+              >
+                Kritiek ({loading ? "—" : criticalCount})
+              </CareFilterTabButton>
+              <CareFilterTabButton
+                selected={selectedSeverity === "warning"}
+                onClick={() => toggleSeverityFilter("warning")}
+              >
+                Waarschuwing ({loading ? "—" : warningCount})
+              </CareFilterTabButton>
+              <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
+                Info ({loading ? "—" : infoCount})
+              </CareFilterTabButton>
+            </CareFilterTabGroup>
+          }
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek signalen..."
+          showSecondaryFilters={showSecondaryFilters}
+          onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+          secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
+        />
       }
     >
       <div className="space-y-3">

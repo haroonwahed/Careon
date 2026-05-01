@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Building2, ChevronDown, ChevronUp, Clock3, Info, RefreshCw, Siren, TriangleAlert } from "lucide-react";
+import { ArrowRight, Building2, ChevronDown, ChevronUp, Clock3, RefreshCw, Siren } from "lucide-react";
+import { DominantActionPanel } from "../design/DominantActionPanel";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import { CareEmptyState } from "./CareSurface";
 import {
-  CareAttentionBar,
+  CanonicalPhaseBadge,
   CareMetaChip,
   CarePageTemplate,
   CareSearchFiltersBar,
@@ -13,6 +14,7 @@ import {
 } from "./CareUnifiedPage";
 import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
 import { getShortReasonLabel } from "../../lib/uxCopy";
+import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import type {
   RegiekamerDecisionOverviewItem,
   RegiekamerOwnershipRole,
@@ -154,6 +156,17 @@ const PHASE_LABELS: Record<string, string> = {
   intake: "Intake",
 };
 
+/** Canonieke keten voor doorloop-funnel (Regiekamer). */
+const FLOW_PIPELINE_PHASES: PhaseFilter[] = [
+  "casus",
+  "samenvatting",
+  "matching",
+  "gemeente_validatie",
+  "aanbieder_beoordeling",
+  "plaatsing",
+  "intake",
+];
+
 /** NBA action codes from API → korte Nederlandse label voor Regiekamer (alleen weergave). */
 const NBA_ACTION_CODE_LABELS: Record<string, string> = {
   COMPLETE_CASE_DATA: "Casusgegevens aanvullen",
@@ -250,75 +263,12 @@ function severityBadgeClasses(severity?: string | null) {
   }
 }
 
-function phaseLabel(phase: string) {
-  return PHASE_LABELS[phase] ?? (phase || "Onbekend");
-}
-
-/** Imperative next-best-action labels (decision system, not dashboard copy). */
-const NBA_IMPERATIVE: Record<string, string> = {
-  COMPLETE_CASE_DATA: "Vul casusgegevens aan",
-  GENERATE_SUMMARY: "Genereer samenvatting",
-  START_MATCHING: "Start matching",
-  VALIDATE_MATCHING: "Valideer matching",
-  SEND_TO_PROVIDER: "Stuur naar aanbieder",
-  WAIT_PROVIDER_RESPONSE: "Volg aanbieder op",
-  FOLLOW_UP_PROVIDER: "Volg aanbieder op",
-  REMATCH_CASE: "Her-match casus",
-  CONFIRM_PLACEMENT: "Bevestig plaatsing",
-  START_INTAKE: "Start intake",
-  MONITOR_CASE: "Bewaak casus",
-  ARCHIVE_CASE: "Archiveer casus",
-  PROVIDER_ACCEPT: "Verwerk acceptatie",
-  PROVIDER_REJECT: "Verwerk afwijzing",
-  PROVIDER_REQUEST_INFO: "Beantwoord infoverzoek",
-};
-
-function imperativeCtaLabel(item: RegiekamerDecisionOverviewItem): string {
-  const code = item.next_best_action?.action?.trim();
-  if (code && NBA_IMPERATIVE[code]) {
-    return NBA_IMPERATIVE[code];
+function imperativeCtaLabel(item: RegiekamerDecisionOverviewItem): string | null {
+  const nba = item.next_best_action;
+  if (!nba) {
+    return null;
   }
-  const label = item.next_best_action?.label?.trim();
-  if (label) {
-    return label;
-  }
-  return "Open casus nu";
-}
-
-function phaseBadgeShellClass(phase: string): string {
-  switch (phase) {
-    case "samenvatting":
-      return "border-amber-500/40 bg-amber-500/12 text-amber-100";
-    case "matching":
-      return "border-sky-500/40 bg-sky-500/12 text-sky-100";
-    case "gemeente_validatie":
-      return "border-violet-500/40 bg-violet-500/12 text-violet-100";
-    case "aanbieder_beoordeling":
-      return "border-fuchsia-500/40 bg-fuchsia-500/12 text-fuchsia-100";
-    case "plaatsing":
-      return "border-emerald-500/40 bg-emerald-500/12 text-emerald-100";
-    case "intake":
-      return "border-cyan-500/40 bg-cyan-500/12 text-cyan-100";
-    case "casus":
-    default:
-      return "border-border/80 bg-muted/35 text-foreground";
-  }
-}
-
-function PhaseFlowBadge({ phase }: { phase: string }) {
-  const label = phaseLabel(phase);
-  return (
-    <span
-      className={cn(
-        "inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none tracking-tight",
-        phaseBadgeShellClass(phase),
-      )}
-      title="Fase in de canonieke keten"
-    >
-      <span className="size-1.5 shrink-0 rounded-full bg-current opacity-90" aria-hidden />
-      <span className="truncate">{label}</span>
-    </span>
-  );
+  return imperativeLabelForActionCode(nba.action, nba.label);
 }
 
 function formatHours(hours: number | null) {
@@ -368,6 +318,21 @@ function issueTypeLabel(item: RegiekamerDecisionOverviewItem) {
     return "Alert";
   }
   return "Status";
+}
+
+/** Decision-system problem class (uppercase, scannable). */
+function issueTypeLabelUpper(item: RegiekamerDecisionOverviewItem): string {
+  const t = issueTypeLabel(item);
+  if (t === "Blokkade") {
+    return "BLOKKADE";
+  }
+  if (t === "Risico") {
+    return "RISICO";
+  }
+  if (t === "Alert") {
+    return "ALERT";
+  }
+  return "STATUS";
 }
 
 function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
@@ -478,6 +443,49 @@ function metricNavForItemKey(key: string): MetricNav {
   return { kind: "issue", issue: "all" };
 }
 
+function countByPhase(items: RegiekamerDecisionOverviewItem[]): Record<string, number> {
+  const m: Record<string, number> = {};
+  for (const it of items) {
+    const p = (it.phase || "").trim() || "onbekend";
+    m[p] = (m[p] ?? 0) + 1;
+  }
+  return m;
+}
+
+function dominantFlowPhase(
+  items: RegiekamerDecisionOverviewItem[],
+): { phase: PhaseFilter; count: number; label: string } | null {
+  if (items.length === 0) {
+    return null;
+  }
+  const counts = countByPhase(items);
+  let best: PhaseFilter | "onbekend" = "casus";
+  let bestN = -1;
+  for (const ph of FLOW_PIPELINE_PHASES) {
+    const n = counts[ph] ?? 0;
+    if (n > bestN) {
+      bestN = n;
+      best = ph;
+    }
+  }
+  if (bestN <= 0) {
+    return null;
+  }
+  return { phase: best as PhaseFilter, count: bestN, label: PHASE_LABELS[best] ?? best };
+}
+
+function failureShareLines(items: RegiekamerDecisionOverviewItem[]): { label: string; pct: number }[] {
+  if (items.length === 0) {
+    return [];
+  }
+  const total = items.length;
+  const rows = FLOW_PIPELINE_PHASES.map((ph) => ({
+    label: PHASE_LABELS[ph] ?? ph,
+    pct: Math.round(((countByPhase(items)[ph] ?? 0) / total) * 100),
+  })).sort((a, b) => b.pct - a.pct);
+  return rows.filter((r) => r.pct > 0).slice(0, 3);
+}
+
 function dominantMetricKey(totals: {
   critical_blockers: number;
   high_priority_alerts: number;
@@ -503,6 +511,63 @@ function dominantMetricKey(totals: {
   return null;
 }
 
+/** UI-only Regiekamer modes — derived from existing totals/items (no API changes). */
+export type RegiekamerUiMode = "crisis" | "intervention" | "stable" | "optimization";
+
+type InterventionFocus = "weak_match" | "risks" | "intake_pressure";
+
+/** Risico's uit totals tellen mee vanaf deze drempel (eenvoudige regel). */
+const REGIEKAMER_RISK_THRESHOLD = 1;
+
+/** Genoeg volume om optimalisatie / analyse te rechtvaardigen. */
+const REGIEKAMER_OPTIMIZATION_MIN_ACTIVE_CASES = 8;
+
+function deriveInterventionFocus(input: {
+  noMatchUrgentCount: number;
+  highPriorityAlerts: number;
+  intakeDelaysTotal: number;
+}): InterventionFocus {
+  if (input.noMatchUrgentCount > 0) {
+    return "weak_match";
+  }
+  if (input.highPriorityAlerts >= REGIEKAMER_RISK_THRESHOLD) {
+    return "risks";
+  }
+  return "intake_pressure";
+}
+
+/**
+ * crisis: blokkades of SLA-breaches
+ * intervention: verhoogd risico, zwakke match, of intake-druk (geen crisis)
+ * stable: rustig beeld, beperkt volume
+ * optimization: stabiel + genoeg volume
+ */
+function deriveRegiekamerMode(input: {
+  criticalBlockers: number;
+  providerSlaBreaches: number;
+  highPriorityAlerts: number;
+  noMatchUrgentCount: number;
+  intakeDelaysTotal: number;
+  activeCases: number;
+}): RegiekamerUiMode {
+  if (input.criticalBlockers > 0 || input.providerSlaBreaches > 0) {
+    return "crisis";
+  }
+  const matchingWeak = input.noMatchUrgentCount > 0;
+  const risksElevated = input.highPriorityAlerts >= REGIEKAMER_RISK_THRESHOLD;
+  const intakePressure = input.intakeDelaysTotal > 0;
+  if (risksElevated || matchingWeak || intakePressure) {
+    return "intervention";
+  }
+  if (input.activeCases >= REGIEKAMER_OPTIMIZATION_MIN_ACTIVE_CASES) {
+    return "optimization";
+  }
+  return "stable";
+}
+
+const FLOW_CHAIN_LABEL =
+  "Casus → Samenvatting → Matching → Gemeente validatie → Wacht op aanbieder → Plaatsing → Intake";
+
 function CompactMetricStrip({
   totals,
   onMetricNavigate,
@@ -512,12 +577,17 @@ function CompactMetricStrip({
     critical_blockers: number;
     high_priority_alerts: number;
     provider_sla_breaches: number;
-    repeated_rejections: number;
     intake_delays: number;
   };
   onMetricNavigate: (nav: MetricNav) => void;
 }) {
-  const dom = dominantMetricKey(totals);
+  const dom = dominantMetricKey({
+    critical_blockers: totals.critical_blockers,
+    high_priority_alerts: totals.high_priority_alerts,
+    provider_sla_breaches: totals.provider_sla_breaches,
+    intake_delays: totals.intake_delays,
+    repeated_rejections: 0,
+  });
   type MetricTone = "neutral" | "critical" | "warning" | "success";
   const slaBreaches = totals.provider_sla_breaches;
   const items: Array<{
@@ -531,7 +601,7 @@ function CompactMetricStrip({
     {
       key: "cases",
       testId: "regiekamer-summary-active",
-      label: "Casussen actief",
+      label: "Actief",
       value: totals.active_cases,
       tone: "neutral",
       dominant: false,
@@ -561,14 +631,6 @@ function CompactMetricStrip({
       dominant: dom === "sla",
     },
     {
-      key: "rejections",
-      testId: "regiekamer-summary-rejections",
-      label: "Herhaald afwijzen",
-      value: totals.repeated_rejections,
-      tone: totals.repeated_rejections > 0 ? "warning" : "neutral",
-      dominant: dom === "rejections",
-    },
-    {
       key: "intake",
       testId: "regiekamer-summary-intake",
       label: "Intake vertraagd",
@@ -580,86 +642,47 @@ function CompactMetricStrip({
 
   const toneClass = (tone: MetricTone) => {
     if (tone === "critical") {
-      return "border-red-500/40 bg-red-500/12 text-red-100";
+      return "border-red-500/25 bg-red-500/[0.07] text-red-100/95";
     }
     if (tone === "warning") {
-      return "border-amber-500/40 bg-amber-500/12 text-amber-100";
+      return "border-amber-500/25 bg-amber-500/[0.07] text-amber-100/95";
     }
     if (tone === "success") {
-      return "border-emerald-500/40 bg-emerald-500/12 text-emerald-100";
+      return "border-emerald-500/25 bg-emerald-500/[0.07] text-emerald-100/95";
     }
-    return "border-border/70 bg-background/40 text-foreground";
+    return "border-border/50 bg-muted/10 text-foreground";
   };
 
   return (
-    <section data-testid="metric-strip" data-density="compact" className="w-full rounded-xl border border-border/70 bg-card/70 p-2">
-      <div className="grid w-full grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+    <section data-testid="metric-strip" data-density="compact" className="w-full rounded-xl border border-border/50 bg-card/50 p-2">
+      <p className="sr-only">
+        Filters op het overzicht. Elke tegel past het casuslijst-filter aan of opent de werkvoorraad bij Actief.
+      </p>
+      <div className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((item) => (
           <button
             key={item.key}
             type="button"
             data-testid={item.testId}
-            data-metric-dominant={item.dominant ? "true" : undefined}
-            aria-label={`${item.label}: ${item.value}. Klik om te filteren of te navigeren.`}
+            data-metric-supports-dominant={item.dominant ? "true" : undefined}
+            aria-label={`Filter: ${item.label}, waarde ${item.value}.`}
             onClick={() => {
               onMetricNavigate(metricNavForItemKey(item.key));
             }}
             className={cn(
-              "flex h-12 w-full min-w-0 cursor-pointer flex-col items-stretch justify-center gap-0.5 rounded-lg border px-3 py-1.5 text-left text-sm transition-all hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 sm:px-4",
+              "flex h-11 w-full min-w-0 cursor-pointer flex-col items-stretch justify-center gap-0.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:px-3",
               toneClass(item.tone),
-              item.dominant && "z-[1] scale-[1.02] shadow-lg ring-2 ring-primary/60 ring-offset-2 ring-offset-background",
+              item.dominant && "border-l-2 border-l-primary/55 pl-2",
             )}
           >
             <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</span>
-            <span
-              className={cn(
-                "truncate text-right text-base font-bold tabular-nums leading-none",
-                item.dominant && "text-[17px]",
-              )}
-            >
+            <span className="truncate text-right text-[15px] font-semibold tabular-nums leading-none">
               {item.value}
             </span>
           </button>
         ))}
       </div>
     </section>
-  );
-}
-
-function OperationalSignalRow({
-  tone,
-  message,
-  ctaLabel,
-  onClick,
-}: {
-  tone: "warning" | "info";
-  message: string;
-  ctaLabel: string;
-  onClick: () => void;
-}) {
-  return (
-    <CareAttentionBar
-      tone={tone}
-      message={message}
-      icon={tone === "warning" ? <TriangleAlert className="text-amber-400" size={18} /> : <Info className="text-cyan-400" size={18} />}
-      action={
-        <Button
-          type="button"
-          variant="default"
-          size="sm"
-          onClick={onClick}
-          className={cn(
-            "h-9 gap-2 rounded-full px-4 text-xs font-bold shadow-md",
-            tone === "warning" && "ring-2 ring-amber-500/35",
-            tone === "info" &&
-              "border border-cyan-500/40 bg-cyan-600 text-white ring-2 ring-cyan-500/30 hover:bg-cyan-600/90 dark:bg-cyan-700 dark:hover:bg-cyan-700/90",
-          )}
-        >
-          {ctaLabel}
-          <ArrowRight size={14} className="shrink-0 opacity-95" aria-hidden />
-        </Button>
-      }
-    />
   );
 }
 
@@ -690,6 +713,8 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialFromUrl.phaseFilter);
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>(initialFromUrl.ownershipFilter);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
+  const [deepDiveOpen, setDeepDiveOpen] = useState(false);
+  const [regieActionsExpanded, setRegieActionsExpanded] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -824,8 +849,332 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   const highPriorityAlerts = data?.totals.high_priority_alerts ?? 0;
   const providerSlaBreaches = data?.totals.provider_sla_breaches ?? 0;
   const intakeDelaysTotal = data?.totals.intake_delays ?? 0;
-  const overdueActionCount = visibleItems.filter((item) => (item.hours_in_current_state ?? 0) >= 168).length;
-  const noProviderCount = visibleItems.filter((item) => !item.assigned_provider || item.assigned_provider === "Nog geen toegewezen aanbieder").length;
+
+  const allOverviewItems = data?.items ?? [];
+  const noMatchUrgentCount = useMemo(
+    () =>
+      allOverviewItems.filter(
+        i =>
+          i.phase === "matching"
+          && (i.urgency === "critical" || i.urgency === "warning" || i.urgency === "high"),
+      ).length,
+    [allOverviewItems],
+  );
+  const failureLines = useMemo(() => failureShareLines(allOverviewItems), [allOverviewItems]);
+  const flowHotspot = useMemo(() => dominantFlowPhase(allOverviewItems), [allOverviewItems]);
+  const phaseCountsMap = useMemo(() => countByPhase(allOverviewItems), [allOverviewItems]);
+  const noMatchDrillItems = useMemo(
+    () =>
+      allOverviewItems.filter(
+        i =>
+          i.phase === "matching"
+          && (i.urgency === "critical" || i.urgency === "warning" || i.urgency === "high"),
+      ),
+    [allOverviewItems],
+  );
+
+  const activeCasesTotal = data?.totals.active_cases ?? 0;
+
+  const uiMode = useMemo(
+    () =>
+      deriveRegiekamerMode({
+        criticalBlockers,
+        providerSlaBreaches,
+        highPriorityAlerts,
+        noMatchUrgentCount,
+        intakeDelaysTotal,
+        activeCases: activeCasesTotal,
+      }),
+    [
+      activeCasesTotal,
+      criticalBlockers,
+      providerSlaBreaches,
+      highPriorityAlerts,
+      intakeDelaysTotal,
+      noMatchUrgentCount,
+    ],
+  );
+
+  const interventionFocus = useMemo(
+    () =>
+      deriveInterventionFocus({
+        noMatchUrgentCount,
+        highPriorityAlerts,
+        intakeDelaysTotal,
+      }),
+    [highPriorityAlerts, intakeDelaysTotal, noMatchUrgentCount],
+  );
+
+  const actionReminders = useCallback(() => {
+    setSearchQuery("");
+    setPriorityFilter("all");
+    setIssueFilter("SLA");
+    setPhaseFilter("aanbieder_beoordeling");
+    setOwnershipFilter("all");
+  }, []);
+
+  const actionRematch = useCallback(() => {
+    setSearchQuery("");
+    setPriorityFilter("all");
+    setIssueFilter("alerts");
+    setPhaseFilter("matching");
+    setOwnershipFilter("all");
+  }, []);
+
+  const applyFiltersAll = useCallback(() => {
+    setSearchQuery("");
+    setPriorityFilter("all");
+    setIssueFilter("all");
+    setPhaseFilter("all");
+    setOwnershipFilter("all");
+  }, []);
+
+  const runModePrimary = useCallback(() => {
+    switch (uiMode) {
+      case "crisis":
+        applyFiltersAll();
+        if (criticalBlockers > 0) {
+          setIssueFilter("blockers");
+          setPhaseFilter("all");
+        } else {
+          setIssueFilter("SLA");
+          setPhaseFilter("all");
+        }
+        break;
+      case "intervention":
+        applyFiltersAll();
+        if (interventionFocus === "weak_match") {
+          actionRematch();
+          return;
+        }
+        if (interventionFocus === "risks") {
+          setIssueFilter("risks");
+          setPhaseFilter("all");
+        } else {
+          setIssueFilter("intake");
+          setPhaseFilter("all");
+        }
+        break;
+      case "stable":
+        onAppNavigate?.("/casussen");
+        break;
+      case "optimization":
+        onAppNavigate?.("/rapportages");
+        break;
+      default:
+        break;
+    }
+  }, [
+    actionRematch,
+    applyFiltersAll,
+    criticalBlockers,
+    interventionFocus,
+    onAppNavigate,
+    uiMode,
+  ]);
+
+  const runModeSecondary = useCallback(() => {
+    switch (uiMode) {
+      case "crisis":
+        onAppNavigate?.("/casussen");
+        break;
+      case "intervention":
+        applyFiltersAll();
+        if (interventionFocus === "weak_match") {
+          setIssueFilter("risks");
+          setPhaseFilter("all");
+        } else if (interventionFocus === "risks") {
+          if (noMatchUrgentCount > 0) {
+            actionRematch();
+          } else {
+            actionReminders();
+          }
+        } else {
+          setIssueFilter("risks");
+          setPhaseFilter("all");
+        }
+        break;
+      case "optimization":
+        onAppNavigate?.("/casussen");
+        break;
+      default:
+        break;
+    }
+  }, [
+    actionRematch,
+    actionReminders,
+    applyFiltersAll,
+    interventionFocus,
+    noMatchUrgentCount,
+    onAppNavigate,
+    uiMode,
+  ]);
+
+  const applyModeCasesLink = useCallback(() => {
+    runModePrimary();
+  }, [runModePrimary]);
+
+  const modeDominantUi = useMemo(() => {
+    const r = (v: number) => Math.max(0, Math.round(v));
+    switch (uiMode) {
+      case "crisis": {
+        const b = r(criticalBlockers);
+        const s = r(providerSlaBreaches);
+        const slaOnly = b === 0 && s > 0;
+        const headline =
+          b > 0 && s > 0
+            ? `Keten onder druk: ${b} blokkade(s) en ${s} SLA-signal(en)`
+            : b > 0
+              ? b === 1
+                ? "1 kritieke blokkade actief"
+                : `${b} kritieke blokkades actief`
+              : `${s} SLA-signal(en) vragen directe regie`;
+        const why =
+          b > 0 && s > 0
+            ? "Blokkades en SLA overschaduwen de rest — pak dit eerst aan."
+            : b > 0
+              ? "Zonder oplossing blijft de keten stilstaan."
+              : "Reactietijd of capaciteit schuurt tegen de afspraak.";
+        const primaryLabel = slaOnly ? "Pak SLA-signalen aan" : "Los blokkades op";
+        const linkCount = b > 0 ? b : s;
+        return {
+          tone: "urgent" as const,
+          headline,
+          why,
+          primaryLabel,
+          secondaryLabel: "Bekijk werkvoorraad" as string | undefined,
+          linkCount,
+          showCasesLink: true,
+        };
+      }
+      case "intervention": {
+        if (interventionFocus === "weak_match") {
+          const c = r(noMatchUrgentCount);
+          return {
+            tone: "attention" as const,
+            headline: `Matching vraagt regie (${c} casussen)`,
+            why: "Zwak signaal of geen passende match — validatie of her-matching nodig.",
+            primaryLabel: "Herstart matching",
+            secondaryLabel: "Bekijk risico's",
+            linkCount: c,
+            showCasesLink: true,
+          };
+        }
+        if (interventionFocus === "risks") {
+          const c = r(highPriorityAlerts);
+          return {
+            tone: "attention" as const,
+            headline: `${c} casussen met verhoogd risico`,
+            why: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
+            primaryLabel: "Bekijk risico's",
+            secondaryLabel: noMatchUrgentCount > 0 ? "Herstart matching" : "Stuur reminders naar aanbieders",
+            linkCount: c,
+            showCasesLink: true,
+          };
+        }
+        const c = r(intakeDelaysTotal);
+        return {
+          tone: "attention" as const,
+          headline: `${c} casussen met intake-vertraging`,
+          why: "Start van zorg vertraagt na plaatsing.",
+          primaryLabel: "Bekijk intake-vertraging",
+          secondaryLabel: "Bekijk risico's",
+          linkCount: c,
+          showCasesLink: true,
+        };
+      }
+      case "optimization":
+        return {
+          tone: "calm" as const,
+          headline: "Volume hoog genoeg voor ketenanalyse",
+          why: `${activeCasesTotal} actieve casussen — waar kun je tijd of capaciteit winnen?`,
+          primaryLabel: "Analyseer prestaties",
+          secondaryLabel: "Bekijk werkvoorraad",
+          linkCount: 0,
+          showCasesLink: false,
+        };
+      case "stable":
+      default:
+        return {
+          tone: "calm" as const,
+          headline: "Keten stabiel",
+          why: "Geen blokkades of SLA-druk; risico's zijn beperkt.",
+          primaryLabel: "Bekijk werkvoorraad",
+          secondaryLabel: undefined as string | undefined,
+          linkCount: 0,
+          showCasesLink: false,
+        };
+    }
+  }, [
+    activeCasesTotal,
+    criticalBlockers,
+    highPriorityAlerts,
+    intakeDelaysTotal,
+    interventionFocus,
+    noMatchUrgentCount,
+    providerSlaBreaches,
+    uiMode,
+  ]);
+
+  const showInsightSections = uiMode === "stable" || uiMode === "optimization";
+
+  const insightWhyBullets = useMemo(() => {
+    const bullets: string[] = [];
+    for (const row of failureLines) {
+      bullets.push(`${row.pct}% van de casussen staat in ${row.label}.`);
+    }
+    return bullets.slice(0, 3);
+  }, [failureLines]);
+
+  const regieActionDefs = useMemo(() => {
+    const rows: { key: string; title: string; cta: string; onClick: () => void }[] = [];
+    if (uiMode === "crisis") {
+      return rows;
+    }
+    if (uiMode === "intervention") {
+      rows.push({
+        key: "align-dominant",
+        title: "Zelfde prioriteit als het paneel hierboven",
+        cta: modeDominantUi.primaryLabel,
+        onClick: runModePrimary,
+      });
+      if (modeDominantUi.secondaryLabel) {
+        rows.push({
+          key: "align-secondary",
+          title: "Alternatieve vervolgstap",
+          cta: modeDominantUi.secondaryLabel,
+          onClick: runModeSecondary,
+        });
+      }
+      return rows;
+    }
+    if (uiMode === "stable") {
+      rows.push({
+        key: "stock",
+        title: "Open de werkvoorraad voor detail en prioriteit",
+        cta: "Bekijk werkvoorraad",
+        onClick: () => onAppNavigate?.("/casussen"),
+      });
+      return rows;
+    }
+    rows.push({
+      key: "reports",
+      title: "Rapportages en trends voor ketenverbetering",
+      cta: "Analyseer prestaties",
+      onClick: () => onAppNavigate?.("/rapportages"),
+    });
+    rows.push({
+      key: "stock",
+      title: "Casussen blijven de bron voor dagelijkse regie",
+      cta: "Bekijk werkvoorraad",
+      onClick: () => onAppNavigate?.("/casussen"),
+    });
+    return rows;
+  }, [modeDominantUi, onAppNavigate, runModePrimary, runModeSecondary, uiMode]);
+
+  const regieVisibleCap = regieActionsExpanded ? 3 : 2;
+  const regieVisibleActions = regieActionDefs.slice(0, regieVisibleCap);
+  const regieHasMore = regieActionDefs.length > regieVisibleCap;
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -841,7 +1190,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       header={
         <CareUnifiedHeader
           title={<span className="inline-flex items-center gap-2"><Siren size={16} className="text-primary" />Regiekamer</span>}
-          subtitle="Operationele regie op blokkades, risico's en volgende acties."
+          subtitle="Waar moet je nu ingrijpen? Alleen signalen die regie-actie vragen."
           actions={(
             <>
               <Button variant="outline" onClick={refetch} className="gap-2">
@@ -860,48 +1209,160 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       }
       attention={
         <div className={SECTION_STACK_CLASS}>
+          {hasActiveData && (
+            <DominantActionPanel
+              tone={modeDominantUi.tone}
+              title={modeDominantUi.headline}
+              description={modeDominantUi.why}
+              primaryAction={{
+                label: modeDominantUi.primaryLabel,
+                onClick: runModePrimary,
+                testId: "regiekamer-dominant-primary-cta",
+              }}
+              secondaryAction={
+                modeDominantUi.secondaryLabel
+                  ? {
+                      label: modeDominantUi.secondaryLabel,
+                      onClick: runModeSecondary,
+                      testId: "regiekamer-dominant-secondary-cta",
+                    }
+                  : undefined
+              }
+              supplementalLink={
+                modeDominantUi.showCasesLink && modeDominantUi.linkCount > 0
+                  ? {
+                      label: `Bekijk casussen (${modeDominantUi.linkCount})`,
+                      onClick: applyModeCasesLink,
+                      testId: "regiekamer-dominant-cases-link",
+                    }
+                  : undefined
+              }
+              panelTestId="regiekamer-dominant-action"
+              rootDataset={{ "data-regiekamer-mode": uiMode }}
+            />
+          )}
+
           <CompactMetricStrip
             totals={{
               active_cases: data?.totals.active_cases ?? 0,
               critical_blockers: criticalBlockers,
               high_priority_alerts: highPriorityAlerts,
               provider_sla_breaches: providerSlaBreaches,
-              repeated_rejections: data?.totals.repeated_rejections ?? 0,
               intake_delays: data?.totals.intake_delays ?? 0,
             }}
             onMetricNavigate={handleMetricNavigate}
           />
 
-          <div className="space-y-1.5">
-            <OperationalSignalRow
-              tone="warning"
-              message={
-                criticalBlockers > 0
-                  ? `${criticalBlockers} casussen met kritieke blokkade (backend)`
-                  : `${overdueActionCount} casussen wachten langer dan 7 dagen in dit filter`
-              }
-              ctaLabel="Lang wachten"
-              onClick={() => setPriorityFilter("high")}
-            />
-            <OperationalSignalRow
-              tone="info"
-              message={
-                providerSlaBreaches > 0
-                  ? `${providerSlaBreaches} casussen met provider-SLA of capaciteitssignaal (backend)`
-                  : `${noProviderCount} casussen zonder toegewezen aanbieder in dit filter`
-              }
-              ctaLabel="Bekijk tekort"
-              onClick={() => setIssueFilter("alerts")}
-            />
-            {intakeDelaysTotal > 0 && (
-              <OperationalSignalRow
-                tone="warning"
-                message={`${intakeDelaysTotal} casussen met vertraagde of ontbrekende intake (backend)`}
-                ctaLabel="Bekijk intake"
-                onClick={() => setIssueFilter("intake")}
-              />
-            )}
-          </div>
+          {hasActiveData && allOverviewItems.length > 0 && showInsightSections && (
+            <>
+              <details
+                data-testid="regiekamer-insight-why"
+                className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                  Waarom gebeurt dit?
+                  <ChevronDown size={18} className="shrink-0 text-muted-foreground transition-transform" aria-hidden />
+                </summary>
+                <div className="border-t border-border/40 px-4 pb-4 pt-3">
+                  {insightWhyBullets.length > 0 ? (
+                    <ul className="list-disc space-y-1.5 pl-4 text-sm leading-snug text-foreground/95">
+                      {insightWhyBullets.map((line) => (
+                        <li key={line}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Geen aanvullende verdeling beschikbaar.</p>
+                  )}
+                  {flowHotspot && flowHotspot.count > 0 && (
+                    <p className="mt-3 text-sm font-medium leading-snug text-foreground">
+                      Grootste knelpunt: {flowHotspot.label}
+                      {flowHotspot.phase === "aanbieder_beoordeling"
+                        ? " — casussen blijven hangen vóór beoordeling."
+                        : ` — ${flowHotspot.count} casussen in deze fase.`}
+                    </p>
+                  )}
+                </div>
+              </details>
+
+              <details
+                data-testid="regiekamer-insight-flow"
+                className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+                  Bekijk doorloop in de keten
+                  <ChevronDown size={18} className="shrink-0 text-muted-foreground transition-transform" aria-hidden />
+                </summary>
+                <div className="border-t border-border/40 px-4 pb-4 pt-3">
+                  <p className="text-xs leading-relaxed text-muted-foreground">{FLOW_CHAIN_LABEL}</p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {FLOW_PIPELINE_PHASES.map((ph) => {
+                      const n = phaseCountsMap[ph] ?? 0;
+                      return (
+                        <div
+                          key={ph}
+                          className="flex min-w-[3.75rem] flex-1 flex-col items-center rounded-md border border-border/50 bg-background/30 px-1.5 py-1.5 text-center"
+                        >
+                          <span className="text-base font-bold tabular-nums leading-none text-foreground">{n}</span>
+                          <span className="mt-0.5 line-clamp-2 text-[9px] font-semibold uppercase leading-tight text-muted-foreground">
+                            {PHASE_LABELS[ph] ?? ph}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </details>
+            </>
+          )}
+
+          {hasActiveData && uiMode !== "crisis" && regieVisibleActions.length > 0 && (
+            <section
+              data-testid="regiekamer-action-queue"
+              className="rounded-xl border border-border/50 bg-card/30 px-4 py-3"
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                Regie-acties nu
+              </p>
+              <ol className="mt-2 space-y-2.5 text-sm text-foreground">
+                {regieVisibleActions.map((row, idx) => (
+                  <li
+                    key={row.key}
+                    className={cn(
+                      "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
+                      idx < regieVisibleActions.length - 1 && "border-b border-border/40 pb-2.5",
+                    )}
+                  >
+                    <span>
+                      <span className="font-semibold tabular-nums">{idx + 1}.</span> {row.title}
+                    </span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-9 shrink-0 gap-1.5"
+                      data-testid={idx === 0 ? "regiekamer-regie-action-primary" : undefined}
+                      onClick={row.onClick}
+                    >
+                      {row.cta}
+                      <ArrowRight size={14} />
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+              {regieHasMore && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  data-testid="regiekamer-regie-actions-more"
+                  className="mt-2 h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                  onClick={() => setRegieActionsExpanded((current) => !current)}
+                >
+                  {regieActionsExpanded ? "Minder acties" : "Toon meer acties"}
+                </Button>
+              )}
+            </section>
+          )}
         </div>
       }
       filters={
@@ -1001,6 +1462,46 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
 
       {!loading && !error && visibleItems.length > 0 && (
         <div className="space-y-4 px-1">
+          {/* 5 — Verdieping: geen-match casussen (optioneel) */}
+          {noMatchDrillItems.length > 0 && (
+            <section className="rounded-xl border border-border/70 bg-card/30 px-3 py-3">
+              <button
+                type="button"
+                className="flex w-full items-center justify-between gap-2 text-left"
+                onClick={() => setDeepDiveOpen(o => !o)}
+                aria-expanded={deepDiveOpen}
+              >
+                <span className="text-sm font-semibold text-foreground">
+                  Verdieping: casussen zonder match (hoog urgent) ({noMatchDrillItems.length})
+                </span>
+                {deepDiveOpen ? <ChevronUp size={18} className="shrink-0 text-muted-foreground" /> : <ChevronDown size={18} className="shrink-0 text-muted-foreground" />}
+              </button>
+              {deepDiveOpen && (
+                <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
+                  <ul className="space-y-2 text-sm text-foreground/90">
+                    {noMatchDrillItems.slice(0, 12).map((item) => (
+                      <li key={String(item.case_id)} className="flex flex-wrap items-baseline gap-x-2">
+                        <button
+                          type="button"
+                          className="font-mono text-xs font-semibold text-primary hover:underline"
+                          onClick={() => onCaseClick(String(item.case_id))}
+                        >
+                          {item.case_reference}
+                        </button>
+                        <span className="text-muted-foreground">→</span>
+                        <span className="min-w-0">{primaryProblemText(item)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/95">
+                    <span className="font-semibold">Aanbeveling: </span>
+                    verruim regio of herzie zorgtype; controleer capaciteit en escaleer bij herhaalde afwijzingen.
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           {urgentItems.length > 0 && (
             <section className="space-y-1.5">
               <h2 className="text-[15px] font-semibold tracking-tight">Direct actie nodig ({urgentItems.length})</h2>
@@ -1038,11 +1539,13 @@ function RegiekamerWorkItemCard({
   urgent?: boolean;
 }) {
   const primaryAction = imperativeCtaLabel(item);
+  const hasPrimaryNba = primaryAction != null && primaryAction.trim() !== "";
   const blockerLine = getShortReasonLabel(primaryProblemText(item), 56);
+  const consequenceLine = getShortReasonLabel(impactLine(item), 110);
   return (
     <CareWorkRow
       testId="regiekamer-worklist-item"
-      leading={<PhaseFlowBadge phase={item.phase} />}
+      leading={<CanonicalPhaseBadge phaseId={item.phase} />}
       title={item.title}
       context={
         <span className="text-[12px] text-muted-foreground">
@@ -1053,9 +1556,12 @@ function RegiekamerWorkItemCard({
       }
       status={
         <div className="flex max-w-full flex-col gap-1 md:items-center">
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
-            {issueTypeLabel(item)}
+          <span className="text-[10px] font-bold tracking-[0.16em] text-foreground/90">
+            {issueTypeLabelUpper(item)}
           </span>
+          <p className="max-w-[20rem] text-[11px] font-medium leading-snug text-muted-foreground">
+            {consequenceLine}
+          </p>
           <CareMetaChip
             className={cn(
               "max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
@@ -1078,8 +1584,9 @@ function RegiekamerWorkItemCard({
           <span className="max-w-[140px] truncate">{item.assigned_provider || "Nog geen aanbieder"}</span>
         </CareMetaChip>
       }
-      actionLabel={primaryAction}
+      actionLabel={hasPrimaryNba ? primaryAction! : ""}
       actionVariant="primary"
+      hideAction={!hasPrimaryNba}
       onOpen={() => onCaseClick(String(item.case_id))}
       onAction={(event) => {
         event.stopPropagation();

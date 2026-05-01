@@ -1,12 +1,13 @@
 import { useState, type MouseEvent } from "react";
 import { Clock, AlertTriangle, Phone, Mail, FileText, UserPlus, GitMerge, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { cn } from "../ui/utils";
 import { useTasks, ActionStatus, SpaTask } from "../../hooks/useTasks";
 import { countOpenCareTasks, isOpenCareTask } from "../../lib/actiesTaskSemantics";
 import { CareEmptyState } from "./CareSurface";
 import {
   CareDominantStatus,
+  CareFilterTabButton,
+  CareFilterTabGroup,
   CareMetaChip,
   CarePageTemplate,
   CarePrimaryList,
@@ -28,21 +29,17 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
 
   const openTasks = tasks.filter(isOpenCareTask);
   const openTaskTotal = countOpenCareTasks(tasks);
+  const statusCounts = {
+    overdue: openTasks.filter((t) => t.actionStatus === "overdue").length,
+    today: openTasks.filter((t) => t.actionStatus === "today").length,
+    upcoming: openTasks.filter((t) => t.actionStatus === "upcoming").length,
+  };
   const filteredActions = openTasks
     .filter((action) => {
       if (selectedStatus !== "all" && action.actionStatus !== selectedStatus) return false;
       if (searchQuery && !action.title.toLowerCase().includes(searchQuery.toLowerCase()) && !action.linkedCaseId.toLowerCase().includes(searchQuery.toLowerCase())) return false;
       return true;
     });
-
-  const quickFilterBtn = (selected: boolean, tone: "overdue" | "today" | "upcoming") =>
-    cn(
-      "rounded-xl border border-border/70 bg-card/75 p-4 text-left transition-colors hover:bg-card/90",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-      selected && tone === "overdue" && "border-destructive/80 bg-destructive/5",
-      selected && tone === "today" && "border-amber-500/70 bg-amber-500/5",
-      selected && tone === "upcoming" && "border-blue-500/60 bg-blue-500/5",
-    );
 
   const groupedActions = {
     overdue: filteredActions.filter((action) => action.actionStatus === "overdue"),
@@ -101,7 +98,8 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
                   {action.assignedTo ? <CareMetaChip>@ {action.assignedTo}</CareMetaChip> : null}
                 </>
               }
-              actionLabel="Open casus →"
+              actionLabel={action.actionStatus === "overdue" ? "Open casus nu" : "Open casus"}
+              actionVariant={action.actionStatus === "overdue" || action.actionStatus === "today" ? "primary" : "ghost"}
               onOpen={() => onCaseClick(action.linkedCaseId)}
               onAction={(event: MouseEvent<HTMLButtonElement>) => {
                 event.stopPropagation();
@@ -115,52 +113,54 @@ export function ActiesPage({ onCaseClick }: ActiesPageProps) {
     );
   };
 
+  const toggleStatusFilter = (key: ActionStatus | "all") => {
+    if (key === "all") {
+      setSelectedStatus("all");
+      return;
+    }
+    setSelectedStatus((current) => (current === key ? "all" : key));
+  };
+
   return (
     <CarePageTemplate
       className="pb-8"
       header={
         <CareUnifiedHeader
           title="Acties"
-          subtitle={`Taken en actiepunten · ${groupedActions.overdue.length} te laat · ${groupedActions.today.length} vandaag · ${groupedActions.upcoming.length} binnenkort`}
+          subtitle={`Taken en actiepunten · ${loading ? "…" : `${statusCounts.overdue} te laat · ${statusCounts.today} vandaag · ${statusCounts.upcoming} binnenkort`}`}
         />
       }
       filters={
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4 px-1">
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === "overdue" ? "all" : "overdue")}
-              className={quickFilterBtn(selectedStatus === "overdue", "overdue")}
-            >
-              <p className="text-2xl font-bold text-foreground mb-1">{groupedActions.overdue.length}</p>
-              <p className="text-sm text-muted-foreground">Te laat</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === "today" ? "all" : "today")}
-              className={quickFilterBtn(selectedStatus === "today", "today")}
-            >
-              <p className="text-2xl font-bold text-foreground mb-1">{groupedActions.today.length}</p>
-              <p className="text-sm text-muted-foreground">Vandaag</p>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedStatus(selectedStatus === "upcoming" ? "all" : "upcoming")}
-              className={quickFilterBtn(selectedStatus === "upcoming", "upcoming")}
-            >
-              <p className="text-2xl font-bold text-foreground mb-1">{groupedActions.upcoming.length}</p>
-              <p className="text-sm text-muted-foreground">Binnenkort</p>
-            </button>
-          </div>
-          <CareSearchFiltersBar
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoek acties of casus ID..."
-            showSecondaryFilters={showSecondaryFilters}
-            onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-            secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
-          />
-        </div>
+        <CareSearchFiltersBar
+          tabs={
+            <CareFilterTabGroup aria-label="Status acties">
+              <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => toggleStatusFilter("all")}>
+                Alles
+              </CareFilterTabButton>
+              <CareFilterTabButton
+                selected={selectedStatus === "overdue"}
+                onClick={() => toggleStatusFilter("overdue")}
+              >
+                Te laat ({loading ? "—" : statusCounts.overdue})
+              </CareFilterTabButton>
+              <CareFilterTabButton selected={selectedStatus === "today"} onClick={() => toggleStatusFilter("today")}>
+                Vandaag ({loading ? "—" : statusCounts.today})
+              </CareFilterTabButton>
+              <CareFilterTabButton
+                selected={selectedStatus === "upcoming"}
+                onClick={() => toggleStatusFilter("upcoming")}
+              >
+                Binnenkort ({loading ? "—" : statusCounts.upcoming})
+              </CareFilterTabButton>
+            </CareFilterTabGroup>
+          }
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek acties of casus ID..."
+          showSecondaryFilters={showSecondaryFilters}
+          onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+          secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
+        />
       }
     >
       <div className="space-y-8">

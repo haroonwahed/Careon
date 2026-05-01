@@ -321,7 +321,8 @@ function GemeenteView({
                     {urgencyLabel(caseItem.urgency)}
                   </CareMetaChip>
                 }
-                actionLabel={isAccepted ? "Bekijk intake" : "Bekijk status"}
+                actionLabel={isAccepted ? "Start intake" : caseItem.urgency === "critical" ? "Reageer nu" : "Bekijk status"}
+                actionVariant={isAccepted || caseItem.urgency === "critical" ? "primary" : "ghost"}
                 onOpen={() => onCaseClick(caseItem.id)}
                 onAction={(event) => {
                   event.stopPropagation();

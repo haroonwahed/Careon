@@ -3,6 +3,7 @@ import { Building2, Clock3, Shuffle } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
 import {
+  CanonicalPhaseBadge,
   CareAttentionBar,
   CareContextHint,
   CareDominantStatus,
@@ -13,6 +14,7 @@ import {
   CareSearchFiltersBar,
   CareUnifiedHeader,
   CareWorkRow,
+  normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
@@ -127,6 +129,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
           {queueCases.map((item) => (
             <CareWorkRow
               key={item.id}
+              leading={<CanonicalPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
               title={item.clientLabel}
               context={`${item.id} · ${item.region}`}
               status={
@@ -153,7 +156,8 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   {item.recommendedProvidersCount} aanbieders
                 </CareMetaChip>
               }
-              actionLabel={item.primaryActionEnabled ? "Start matching" : "Controleer match"}
+              actionLabel={item.primaryActionEnabled ? "Start matching" : "Controleer matchadvies"}
+              actionVariant={item.primaryActionEnabled ? "primary" : "ghost"}
               onOpen={() => onCaseClick(item.id)}
               onAction={(event) => {
                 event.stopPropagation();

@@ -60,7 +60,7 @@ describe("CareWorkRow / CareListRow", () => {
     );
     expect(screen.getByTestId("lead")).toBeInTheDocument();
     expect(screen.getByText("Titel")).toBeInTheDocument();
-    expect(screen.getByTestId("st")).toBeInTheDocument();
+    expect(screen.getAllByTestId("st")).toHaveLength(2);
     expect(screen.getByText("Actie →").closest("button")).toBeTruthy();
   });
 
@@ -86,5 +86,20 @@ describe("CareWorkRow / CareListRow", () => {
 
   it("aliases CareListRow to CareWorkRow", () => {
     expect(CareListRow).toBe(CareWorkRow);
+  });
+
+  it("hides the CTA when hideAction is true", () => {
+    render(
+      <CareWorkRow
+        title="Rij"
+        context="Onder"
+        status={<span>S</span>}
+        actionLabel="Verborgen"
+        hideAction
+        onOpen={vi.fn()}
+        onAction={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText("Verborgen")).not.toBeInTheDocument();
   });
 });

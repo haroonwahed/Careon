@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Q, Count
+from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
@@ -82,6 +82,12 @@ _WORKFLOW_STATE_VALUES = {
 
 
 def _case_workflow_state(case):
+    """
+    Prefer persisted CaseIntakeProcess.workflow_state when set (authoritative for transitions).
+    Otherwise derive from intake/placement (same logic as derive_workflow_state).
+    API consumers should treat mismatch with placement_request_* as a signal to open the dossier,
+    not auto-reconcile persisted workflow_state here (server transitions own writes).
+    """
     try:
         intake = case.due_diligence_process
     except CaseIntakeProcess.DoesNotExist:
@@ -263,6 +269,13 @@ def _build_case_data(case, *, include_geo=False):
         result['urgency_granted_date'] = (
             intake.urgency_granted_date.isoformat() if getattr(intake, 'urgency_granted_date', None) else None
         )
+        # Latest placement row (same signals as derive_workflow_state) for SPA when workflow_state is absent/stale.
+        placement_rows = list(intake.indications.all())
+        placement = placement_rows[0] if placement_rows else None
+        result['placement_request_status'] = placement.status if placement is not None else None
+        result['placement_provider_response_status'] = (
+            placement.provider_response_status if placement is not None else None
+        )
     else:
         result['arrangement_type_code'] = ''
         result['arrangement_provider'] = ''
@@ -271,6 +284,8 @@ def _build_case_data(case, *, include_geo=False):
         result['urgency_validated'] = False
         result['urgency_document_present'] = False
         result['urgency_granted_date'] = None
+        result['placement_request_status'] = None
+        result['placement_provider_response_status'] = None
     has_case_geo = bool(
         intake and getattr(intake, 'latitude', None) is not None and getattr(intake, 'longitude', None) is not None
     )
@@ -305,7 +320,12 @@ def contracts_api(request):
 
         organization = get_user_organization(request.user)
         queryset = scope_queryset_for_organization(
-            CareCase.objects.select_related('due_diligence_process'),
+            CareCase.objects.select_related('due_diligence_process').prefetch_related(
+                Prefetch(
+                    'due_diligence_process__indications',
+                    queryset=PlacementRequest.objects.order_by('-updated_at'),
+                ),
+            ),
             organization,
         ).exclude(lifecycle_stage='ARCHIVED')
 
@@ -360,7 +380,12 @@ def case_detail_api(request, contract_id=None, case_id=None):
 
         organization = get_user_organization(request.user)
         case = get_scoped_object_or_404(
-            CareCase.objects.select_related('due_diligence_process'),
+            CareCase.objects.select_related('due_diligence_process').prefetch_related(
+                Prefetch(
+                    'due_diligence_process__indications',
+                    queryset=PlacementRequest.objects.order_by('-updated_at'),
+                ),
+            ),
             organization,
             pk=record_id,
         )

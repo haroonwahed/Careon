@@ -2,11 +2,17 @@
 
 This document describes the Playwright **design system contract** suite for the authenticated React shell (`MultiTenantDemo` at `/?view=dashboard`). It complements `client/tests/e2e/care-visual-regression.spec.ts` (layout rhythm, focus, CTA fetch behaviour).
 
+## Relationship to the Care Shell Contract
+
+- **[`CARE_SHELL_CONTRACT.md`](./CARE_SHELL_CONTRACT.md)** defines the Care Shell **rules** (templates, tokens, layout contracts, Regiekamer modes, forbidden patterns).
+- **This document** explains **how** those rules are **enforced** in automation: Playwright specs in `client/tests/e2e/care-design-system.spec.ts` and `client/tests/e2e/care-visual-regression.spec.ts`.
+- **`DominantActionPanel`** (`client/src/components/design/DominantActionPanel.tsx`) is the current **reference primitive** for page-level next-best-action UI; routes such as Regiekamer compose it with copy, actions, and `data-*` hooks (see the contract for the full dominant-action rules).
+
 ## What the suite protects
 
 - **App shell**: stable `data-testid` hooks on the outer shell, sidebar, top bar, and scrollable main area; exactly one `<main>` landmark.
 - **Page headers**: presence of `CareUnifiedHeader` (`data-testid="care-unified-header"`) on migrated list pages; title + operational subtitle pattern.
-- **Decision layer (Regiekamer)**: metric strip, repeated `CareAttentionBar` instances (`data-component="care-attention-bar"`), non-empty “Operatieve aandacht” copy.
+- **Decision layer (Regiekamer)**: single dominant next-action panel (`data-testid="regiekamer-dominant-action"`, `data-regiekamer-mode` = `crisis` | `intervention` | `stable` | `optimization`), compact metric strip (`metric-strip`), disclosures **only** in `stable` / `optimization` (hidden in `crisis` / `intervention`), **no** competing `CareAttentionBar` rows above the fold.
 - **Shared search / filters**: `CareSearchFiltersBar` contract (`care-search-control-stack`, `care-search-input` with `aria-label`, optional `care-more-filters-toggle` where the page enables secondary filters).
 - **Operational rows**: `CareWorkRow` exposes `data-care-work-row`, status via `data-component="care-dominant-status"`, metadata via `data-component="care-meta-chip"`, and a bounded number of row-level buttons.
 - **Casus workspace**: `next-best-action` and `case-context-panel` render after opening a stubbed casus from the werkvoorraad (the spec clicks the **row title**; the row CTA may route to another workflow screen instead of the workspace).
@@ -15,7 +21,7 @@ This document describes the Playwright **design system contract** suite for the 
 
 ## Canonical references
 
-- **`/regiekamer`** — canonical operational shell (metric strip + attention bars + shared filters + `CareWorkRow` list).
+- **`/regiekamer`** — canonical operational shell (dominant action + metric strip + disclosures + shared filters + `CareWorkRow` list).
 - **`/casussen`** — secondary reference for worklists, triage tabs, chips, and row CTAs.
 - **`/matching`** — must stay aligned with the same `CarePageTemplate` / `CareSearchFiltersBar` / `CareWorkRow` family.
 
@@ -25,7 +31,7 @@ Gemeente sidebar navigation in `care-design-system.spec.ts`:
 
 | Route | Notes |
 |-------|--------|
-| `/regiekamer` | Metric strip, attention bars, Meer filters |
+| `/regiekamer` | Dominant action, metric strip, disclosures, Meer filters |
 | `/casussen` | Shared search bar + worklist |
 | `/matching` | Shared search bar; rows optional if empty state |
 | `/acties` | Shared search + task rows |

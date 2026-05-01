@@ -82,6 +82,60 @@ export function CareDominantStatus({ children, className }: { children: ReactNod
   );
 }
 
+/** Maps workboard column ids (hyphen) to canonieke keten phase ids (underscore). */
+export function normalizeBoardColumnToPhaseId(boardColumn: string): string {
+  return boardColumn.replace(/-/g, "_");
+}
+
+const CANONICAL_PHASE_LABELS: Record<string, string> = {
+  casus: "Casus",
+  samenvatting: "Samenvatting",
+  matching: "Matching",
+  gemeente_validatie: "Gemeente validatie",
+  aanbieder_beoordeling: "Wacht op aanbieder",
+  plaatsing: "Plaatsing",
+  intake: "Intake",
+};
+
+function canonicalPhaseBadgeShellClass(phaseId: string): string {
+  switch (phaseId) {
+    case "samenvatting":
+      return "border-amber-500/40 bg-amber-500/12 text-amber-100";
+    case "matching":
+      return "border-sky-500/40 bg-sky-500/12 text-sky-100";
+    case "gemeente_validatie":
+      return "border-violet-500/40 bg-violet-500/12 text-violet-100";
+    case "aanbieder_beoordeling":
+      return "border-fuchsia-500/40 bg-fuchsia-500/12 text-fuchsia-100";
+    case "plaatsing":
+      return "border-emerald-500/40 bg-emerald-500/12 text-emerald-100";
+    case "intake":
+      return "border-cyan-500/40 bg-cyan-500/12 text-cyan-100";
+    case "casus":
+    default:
+      return "border-border/80 bg-muted/35 text-foreground";
+  }
+}
+
+/** Visible phase in the canonical flow (Casussen, Regiekamer, etc.). */
+export function CanonicalPhaseBadge({ phaseId }: { phaseId: string }) {
+  const normalized = phaseId.includes("-") ? normalizeBoardColumnToPhaseId(phaseId) : phaseId;
+  const label = CANONICAL_PHASE_LABELS[normalized] ?? (normalized || "Casus");
+  return (
+    <span
+      data-component="canonical-phase-badge"
+      className={cn(
+        "inline-flex max-w-[11rem] items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none tracking-tight",
+        canonicalPhaseBadgeShellClass(normalized),
+      )}
+      title="Fase in de canonieke keten"
+    >
+      <span className="size-1.5 shrink-0 rounded-full bg-current opacity-90" aria-hidden />
+      <span className="truncate">{label}</span>
+    </span>
+  );
+}
+
 export function CareContextHint({
   icon,
   title,
@@ -327,6 +381,8 @@ export type CareWorkRowProps = {
   accentTone?: "critical" | "warning" | "neutral";
   /** Primary = decision CTA (Regiekamer next-best-action); ghost = secondary list action. */
   actionVariant?: "primary" | "ghost";
+  /** When true, no row CTA button (e.g. no next_best_action — open row for detail only). */
+  hideAction?: boolean;
   className?: string;
   testId?: string;
   /** Optional icon or badge before title/context (e.g. Acties type icon). */
@@ -348,6 +404,7 @@ export function CareWorkRow({
   onAction,
   accentTone = "neutral",
   actionVariant = "ghost",
+  hideAction = false,
   className,
   testId,
   leading,
@@ -369,43 +426,50 @@ export function CareWorkRow({
       }}
       style={{ minHeight: tokens.density.worklistRowHeight }}
       className={cn(
-        "cursor-pointer rounded-xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 transition-colors hover:bg-card/90",
+        "cursor-pointer rounded-2xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-all hover:border-border/90 hover:bg-card/90 hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         accentClass,
         className,
       )}
     >
-      <div className="grid gap-2 md:grid-cols-[minmax(0,1.2fr)_minmax(0,0.95fr)_minmax(0,1.15fr)] md:items-center md:gap-3">
-        <div className="flex min-w-0 items-start gap-2.5">
+      <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between">
+        <div className="flex min-w-0 flex-1 items-start gap-2.5">
           {leading ? <div className="mt-0.5 shrink-0 [&_svg]:size-4">{leading}</div> : null}
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[14px] font-semibold leading-tight text-foreground">{title}</p>
-            <p className="truncate text-[12px] text-muted-foreground">{context}</p>
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+              <p className="min-w-0 truncate text-[14px] font-semibold leading-tight text-foreground">{title}</p>
+              <div className="md:hidden">{status}</div>
+            </div>
+            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] leading-none text-muted-foreground">
+              {context}
+            </div>
           </div>
         </div>
-        <div className="flex min-w-0 items-center md:justify-center">{status}</div>
-        <div className="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
-          <div className="flex flex-wrap items-center justify-end gap-1">
+        <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
+            <div className="hidden md:block">{status}</div>
             {time}
             {contextInfo}
           </div>
-          <Button
-            size="sm"
-            variant={actionVariant === "primary" ? "default" : "ghost"}
-            type="button"
-            data-care-work-row-cta={actionVariant}
-            onClick={(event) => {
-              event.stopPropagation();
-              onAction(event);
-            }}
-            className={cn(
-              actionVariant === "primary"
-                ? "h-9 max-w-[min(100%,17rem)] shrink-0 justify-center rounded-xl px-4 text-[13px] font-semibold shadow-md"
-                : "h-8 shrink-0 justify-center rounded-full px-3 text-[13px] font-medium text-primary hover:bg-primary/10 hover:text-primary",
-            )}
-          >
-            <span className="truncate">{actionLabel}</span>
-          </Button>
+          {!hideAction ? (
+            <Button
+              size="sm"
+              variant={actionVariant === "primary" ? "default" : "ghost"}
+              type="button"
+              data-care-work-row-cta={actionVariant}
+              onClick={(event) => {
+                event.stopPropagation();
+                onAction(event);
+              }}
+              className={cn(
+                actionVariant === "primary"
+                  ? "h-9 max-w-[min(100%,17rem)] shrink-0 justify-center rounded-xl px-4 text-[13px] font-semibold shadow-md"
+                  : "h-8 shrink-0 justify-center rounded-full px-3 text-[13px] font-medium text-primary hover:bg-primary/10 hover:text-primary",
+              )}
+            >
+              <span className="truncate">{actionLabel}</span>
+            </Button>
+          ) : null}
         </div>
       </div>
     </article>

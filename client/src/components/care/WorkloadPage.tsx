@@ -3,6 +3,7 @@ import { Building2, ChevronDown, ChevronUp, Clock3 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
 import {
+  CanonicalPhaseBadge,
   CareDominantStatus,
   CareMetricBadge,
   CareMetaChip,
@@ -13,6 +14,7 @@ import {
   CareSearchFiltersBar,
   CareUnifiedHeader,
   CareWorkRow,
+  normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
@@ -190,8 +192,9 @@ export function WorkloadPage({
 
   const compactProblemLabel = (item: (typeof classifiedItems)[number]["item"], decision: (typeof classifiedItems)[number]["decision"]): string => {
     const problem = getShortReasonLabel(decision.blockedReason ?? item.missingDataItems[0] ?? decision.whyHere).toLowerCase();
-    if (problem.includes("urgentie")) return "Urgentie ontbreekt";
-    if (problem.includes("samenvatting")) return "Samenvatting ontbreekt";
+    if (item.isBlocked || item.missingDataItems.length > 0) return "Blokkade";
+    if (problem.includes("urgentie")) return "Blokkade";
+    if (problem.includes("samenvatting")) return "Blokkade";
     if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Wacht op aanbieder";
     return decision.requiresCurrentUserAction ? "Actie vereist" : "Geen actie nodig";
   };
@@ -353,15 +356,27 @@ export function WorkloadPage({
                           // Keep debug diagnostics directly in UI for rapid triage in development.
                           // This block is dev-only and excluded from production usage.
                           const classification = classifyCasusWorkboardState(item, decision);
+                          const showPrimaryCta = decision.requiresCurrentUserAction && decision.primaryActionEnabled;
                           return (
                           <div key={item.id} className="group relative">
                             <CareWorkRow
+                              leading={<CanonicalPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
                               title={item.clientLabel}
-                              context={`${item.clientAge} jaar · ${item.careType}`}
+                              context={
+                                <>
+                                  <CareMetaChip>{item.clientAge} jaar</CareMetaChip>
+                                  <CareMetaChip>{item.region}</CareMetaChip>
+                                  <CareMetaChip title={item.careType}>
+                                    <span className="max-w-[10rem] truncate">{item.careType}</span>
+                                  </CareMetaChip>
+                                </>
+                              }
                               status={
                                 <CareDominantStatus
                                   className={
-                                    sectionKey === "attention"
+                                    item.isBlocked || item.missingDataItems.length > 0
+                                      ? "border-red-500/35 bg-red-500/10 text-red-700 dark:text-red-200"
+                                      : sectionKey === "attention"
                                       ? "border-destructive/35 bg-destructive/10 text-destructive"
                                       : sectionKey === "waiting-provider"
                                         ? "border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200"
@@ -385,7 +400,8 @@ export function WorkloadPage({
                                   </CareMetaChip>
                                 ) : undefined
                               }
-                              actionLabel={`${compactActionLabel(decision)} →`}
+                              actionLabel={compactActionLabel(decision)}
+                              actionVariant={showPrimaryCta ? "primary" : "ghost"}
                               onOpen={() => onCaseClick(item.id)}
                               onAction={(event) => {
                                 event.stopPropagation();

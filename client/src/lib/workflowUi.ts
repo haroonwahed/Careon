@@ -55,6 +55,8 @@ export interface WorkflowCaseView {
   intakeDateLabel: string | null;
   placementStatusLabel: string;
   workflowState: ComputedCaseState;
+  /** Backend canonical state when present; drives placement sub-steps (confirm vs plan intake). */
+  canonicalWorkflowState: CanonicalWorkflowState | null;
   summarySnippet: string;
   whyInThisStep: string;
   responsibleParty: string;
@@ -70,6 +72,12 @@ export interface WorkflowCaseView {
   waitlistBucket: number;
   urgencyGrantedDate: string | null;
   intakeStartDate: string | null;
+  /** Intake arrangement metadata (legacy/missing workflow_state inference). */
+  arrangementTypeCode: string;
+  arrangementProvider: string;
+  arrangementEndDate: string | null;
+  placementRequestStatus: string | null;
+  placementProviderResponseStatus: string | null;
 }
 
 export type CaseDecisionRole = "gemeente" | "zorgaanbieder" | "admin";
@@ -617,6 +625,8 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
         ? "Overgedragen aan intake"
         : "Nog niet gestart",
     workflowState: {} as ComputedCaseState,
+    canonicalWorkflowState:
+      spaCase.workflowState && isCanonicalWorkflowState(spaCase.workflowState) ? spaCase.workflowState : null,
     summarySnippet: buildSummarySnippet(spaCase, missingDataItems),
     whyInThisStep,
     responsibleParty: resolveResponsibility(boardColumn),
@@ -632,6 +642,11 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
     waitlistBucket: spaCase.waitlistBucket,
     urgencyGrantedDate: spaCase.urgencyGrantedDate,
     intakeStartDate: spaCase.intakeStartDate,
+    arrangementTypeCode: spaCase.arrangementTypeCode ?? "",
+    arrangementProvider: spaCase.arrangementProvider ?? "",
+    arrangementEndDate: spaCase.arrangementEndDate ?? null,
+    placementRequestStatus: spaCase.placementRequestStatus ?? null,
+    placementProviderResponseStatus: spaCase.placementProviderResponseStatus ?? null,
   };
 
   view.workflowState = buildWorkflowState(spaCase, view);
@@ -641,6 +656,77 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
 
 export function buildWorkflowCases(spaCases: SpaCase[], providers: SpaProvider[] = []): WorkflowCaseView[] {
   return spaCases.map((spaCase) => buildWorkflowCase(spaCase, providers));
+}
+
+/**
+ * Effective canonical sub-step for placement rows when API omits workflow_state but intake
+ * carries arrangement metadata or latest PlacementRequest snapshot (API mirrors derive_workflow_state).
+ */
+export function effectivePlacementCanonicalState(item: WorkflowCaseView): CanonicalWorkflowState | null {
+  if (item.canonicalWorkflowState) return item.canonicalWorkflowState;
+  if (item.phase !== "plaatsing") return null;
+  const end = item.arrangementEndDate?.trim();
+  if (end) return "PLACEMENT_CONFIRMED";
+  const prs = item.placementRequestStatus?.trim();
+  if (prs === "APPROVED") return "PLACEMENT_CONFIRMED";
+  const prrs = item.placementProviderResponseStatus?.trim();
+  if (prrs === "ACCEPTED") return "PROVIDER_ACCEPTED";
+  return null;
+}
+
+/** Tab bucket aligned with row sub-step (canonical, arrangement, placement snapshot), not raw day count alone. */
+export type PlacementTrackingBucket = "te-bevestigen" | "lopend" | "afgerond";
+
+export function placementTrackingTabBucket(item: WorkflowCaseView): PlacementTrackingBucket {
+  if (item.phase === "afgerond") return "afgerond";
+  const eff = effectivePlacementCanonicalState(item);
+  if (eff === "PLACEMENT_CONFIRMED") return "lopend";
+  if (eff === "PROVIDER_ACCEPTED") return "te-bevestigen";
+  return item.daysInCurrentPhase <= 2 ? "te-bevestigen" : "lopend";
+}
+
+/** Plaatsing row has no workflow/arrangement/placement snapshot — CTA is heuristic; user should verify in dossier. */
+export function placementTrackingSubstepAmbiguous(item: WorkflowCaseView): boolean {
+  return item.phase === "plaatsing" && effectivePlacementCanonicalState(item) === null;
+}
+
+/** Row status on placement tracking (per case, not the active tab filter). */
+export function placementTrackingRowStatusLabel(item: WorkflowCaseView): string {
+  if (item.phase === "afgerond") return "Afgerond";
+  if (item.phase !== "plaatsing") return item.phaseLabel;
+  const canonical = effectivePlacementCanonicalState(item);
+  if (canonical === "PLACEMENT_CONFIRMED") return "Lopend";
+  if (canonical === "PROVIDER_ACCEPTED") return "Te bevestigen";
+  return item.daysInCurrentPhase <= 2 ? "Te bevestigen" : "Lopend";
+}
+
+/** Row CTA for placement tracking from workflow state (with days fallback when canonical state is missing). */
+export function placementTrackingRowAction(item: WorkflowCaseView): {
+  actionLabel: string;
+  actionVariant: "primary" | "ghost";
+} {
+  if (item.phase === "afgerond") {
+    return { actionLabel: "Bekijk afronding", actionVariant: "ghost" };
+  }
+  if (item.phase !== "plaatsing") {
+    return {
+      actionLabel: item.primaryActionLabel,
+      actionVariant: item.primaryActionEnabled && !item.isBlocked ? "primary" : "ghost",
+    };
+  }
+  const canonical = effectivePlacementCanonicalState(item);
+  const label =
+    canonical === "PLACEMENT_CONFIRMED"
+      ? "Plan intake"
+      : canonical === "PROVIDER_ACCEPTED"
+        ? "Bevestig plaatsing"
+        : item.daysInCurrentPhase <= 2
+          ? "Bevestig plaatsing"
+          : "Plan intake";
+  return {
+    actionLabel: label,
+    actionVariant: item.primaryActionEnabled && !item.isBlocked ? "primary" : "ghost",
+  };
 }
 
 function isRoleResponsible(party: CaseResponsibleParty, role: CaseDecisionRole): boolean {

@@ -5,10 +5,13 @@ from django.test import Client, TestCase
 from django.urls import reverse
 
 from contracts.models import (
+    CareCase,
     CaseAssessment,
     CaseIntakeProcess,
+    Client as CareClient,
     Organization,
     OrganizationMembership,
+    PlacementRequest,
 )
 from contracts.workflow_state_machine import WorkflowState
 
@@ -126,3 +129,67 @@ class CaseApiWorkflowStateTests(TestCase):
         self.assertEqual(detail_payload["case_geo"]["postcode"], "3511AB")
         self.assertEqual(float(detail_payload["case_geo"]["latitude"]), 52.0907)
         self.assertEqual(float(detail_payload["case_geo"]["longitude"]), 5.1214)
+
+    def test_cases_list_and_detail_include_placement_snapshot_fields(self):
+        case_id = self._create_case_with_state(workflow_state=WorkflowState.MATCHING_READY)
+
+        list_response = self.client.get(reverse("careon:cases_api"))
+        detail_response = self.client.get(reverse("careon:case_detail_api", kwargs={"case_id": case_id}))
+
+        list_case = next(item for item in list_response.json()["contracts"] if item["id"] == str(case_id))
+        detail_payload = detail_response.json()
+
+        self.assertIn("placement_request_status", list_case)
+        self.assertIn("placement_provider_response_status", list_case)
+        self.assertIsNone(list_case["placement_request_status"])
+        self.assertIsNone(list_case["placement_provider_response_status"])
+
+        self.assertIn("placement_request_status", detail_payload)
+        self.assertIn("placement_provider_response_status", detail_payload)
+        self.assertIsNone(detail_payload["placement_request_status"])
+        self.assertIsNone(detail_payload["placement_provider_response_status"])
+
+    def test_placement_snapshot_matches_latest_placement_request(self):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title="Placement API snapshot",
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+            workflow_state=WorkflowState.PLACEMENT_CONFIRMED,
+        )
+        CaseAssessment.objects.create(
+            intake=intake,
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+            assessed_by=self.user,
+        )
+        case_id = intake.ensure_case_record(created_by=self.user).pk
+        CareCase.objects.filter(pk=case_id).update(case_phase=CareCase.CasePhase.PLAATSING)
+
+        provider = CareClient.objects.create(organization=self.organization, name="Snapshot Provider")
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.APPROVED,
+            proposed_provider=provider,
+            selected_provider=provider,
+            care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.ACCEPTED,
+        )
+
+        list_response = self.client.get(reverse("careon:cases_api"))
+        detail_response = self.client.get(reverse("careon:case_detail_api", kwargs={"case_id": case_id}))
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(detail_response.status_code, 200)
+
+        list_case = next(item for item in list_response.json()["contracts"] if item["id"] == str(case_id))
+        detail_payload = detail_response.json()
+
+        self.assertEqual(list_case["placement_request_status"], PlacementRequest.Status.APPROVED)
+        self.assertEqual(list_case["placement_provider_response_status"], PlacementRequest.ProviderResponseStatus.ACCEPTED)
+        self.assertEqual(detail_payload["placement_request_status"], PlacementRequest.Status.APPROVED)
+        self.assertEqual(detail_payload["placement_provider_response_status"], PlacementRequest.ProviderResponseStatus.ACCEPTED)

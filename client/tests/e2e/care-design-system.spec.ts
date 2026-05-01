@@ -72,13 +72,28 @@ test.describe("Care design system (SPA)", () => {
     }
   });
 
-  test("Regiekamer (canonical): metric strip, operative attention, shared search + Meer filters", async ({ page }) => {
+  test("Regiekamer (canonical): dominant action, metric strip, disclosures, shared search + Meer filters", async ({
+    page,
+  }) => {
     await assertShell(page);
+    /** Stubbed GET must finish before `hasActiveData` renders the dominant panel (expect default is 10s). */
+    await expect(page.getByTestId("regiekamer-dominant-action")).toBeVisible({ timeout: 30_000 });
+    await expect(page.locator('[data-component="care-dominant-action-panel"]')).toHaveCount(1);
+    const dominantPanelTop = await page.getByTestId("regiekamer-dominant-action").evaluate((el) => el.getBoundingClientRect().top);
+    expect(dominantPanelTop, "dominant action panel should appear above the fold").toBeLessThan(420);
     await expect(page.getByTestId("metric-strip")).toBeVisible();
     await expect(page.getByTestId("care-unified-header")).toBeVisible();
-    const attentionBars = page.locator('[data-component="care-attention-bar"]');
-    expect(await attentionBars.count()).toBeGreaterThanOrEqual(2);
-    await expect(attentionBars.first().getByText("Operatieve aandacht")).toBeVisible();
+    const competingAttentionBars = page.locator('[data-component="care-attention-bar"]');
+    expect(await competingAttentionBars.count()).toBeLessThanOrEqual(0);
+    await expect(page.getByTestId("regiekamer-dominant-action")).toHaveCount(1);
+    await expect(page.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "crisis");
+    await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
+    await expect(page.getByTestId("regiekamer-insight-flow")).toHaveCount(0);
+    await expect(page.getByTestId("regiekamer-action-queue")).toHaveCount(0);
+    const dominantPrimary = page.getByTestId("regiekamer-dominant-primary-cta");
+    await expect(dominantPrimary).toBeVisible();
+    await dominantPrimary.focus();
+    await expect(dominantPrimary).toBeFocused();
     await assertCareSearchStack(page);
     await expect(page.getByTestId("care-more-filters-toggle")).toBeVisible();
   });
@@ -206,5 +221,164 @@ test.describe("Care design system (SPA)", () => {
     await expect(page.getByRole("dialog").getByText(/aanbiederbeoordeling/i)).toBeVisible();
     await page.getByRole("button", { name: /^Annuleren$/i }).click();
     await expect(page.getByRole("dialog", { name: /Bevestig keuze/i })).toHaveCount(0);
+  });
+});
+
+const STABLE_REGIEKAMER_ITEMS = [
+  {
+    case_id: "st-1",
+    case_reference: "ST-1",
+    title: "Stable casus A",
+    current_state: "PLACED",
+    phase: "plaatsing",
+    urgency: "low",
+    assigned_provider: "Test",
+    next_best_action: { action: "MONITOR_CASE", label: "Monitor", priority: "low", reason: "stub" },
+    top_blocker: null,
+    top_risk: null,
+    top_alert: null,
+    blocker_count: 0,
+    risk_count: 0,
+    alert_count: 0,
+    priority_score: 42,
+    age_hours: 10,
+    hours_in_current_state: 5,
+    issue_tags: [] as string[],
+    responsible_role: "regie",
+  },
+  {
+    case_id: "st-2",
+    case_reference: "ST-2",
+    title: "Stable casus B",
+    current_state: "INTAKE",
+    phase: "intake",
+    urgency: "low",
+    assigned_provider: "Test",
+    next_best_action: { action: "START_INTAKE", label: "Start", priority: "low", reason: "stub" },
+    top_blocker: null,
+    top_risk: null,
+    top_alert: null,
+    blocker_count: 0,
+    risk_count: 0,
+    alert_count: 0,
+    priority_score: 35,
+    age_hours: 8,
+    hours_in_current_state: 3,
+    issue_tags: [] as string[],
+    responsible_role: "zorgaanbieder",
+  },
+];
+
+test.describe("Regiekamer adaptive modes (SPA)", () => {
+  async function darkTheme(page: Page) {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("careon-theme", "dark");
+    });
+  }
+
+  test("stable: insights collapsed by default + Bekijk werkvoorraad", async ({ page }) => {
+    await darkTheme(page);
+    await installCareApiStubs(page, {
+      regiekamerOverview: {
+        totals: {
+          active_cases: 5,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          intake_delays: 0,
+          repeated_rejections: 0,
+        },
+        items: STABLE_REGIEKAMER_ITEMS,
+      },
+    });
+    await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
+    const panel = page.getByTestId("regiekamer-dominant-action");
+    await expect(panel).toHaveCount(1);
+    await expect(panel).toHaveAttribute("data-regiekamer-mode", "stable");
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Bekijk werkvoorraad/);
+    await expect(page.getByTestId("regiekamer-insight-why")).toBeVisible();
+    await expect(page.getByTestId("regiekamer-insight-flow")).toBeVisible();
+    expect(await page.getByTestId("regiekamer-insight-why").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
+    expect(await page.getByTestId("regiekamer-insight-flow").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
+    await page.getByTestId("regiekamer-insight-why").locator("summary").click();
+    expect(await page.getByTestId("regiekamer-insight-why").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(true);
+    await expect(page.getByTestId("regiekamer-action-queue")).toBeVisible();
+  });
+
+  test("optimization: Analyseer prestaties + insights", async ({ page }) => {
+    await darkTheme(page);
+    await installCareApiStubs(page, {
+      regiekamerOverview: {
+        totals: {
+          active_cases: 12,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          intake_delays: 0,
+          repeated_rejections: 0,
+        },
+        items: STABLE_REGIEKAMER_ITEMS,
+      },
+    });
+    await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
+    const panel = page.getByTestId("regiekamer-dominant-action");
+    await expect(panel).toHaveAttribute("data-regiekamer-mode", "optimization");
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Analyseer prestaties/);
+    await expect(page.getByTestId("regiekamer-insight-why")).toBeVisible();
+    expect(await page.getByTestId("regiekamer-insight-flow").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
+    await page.getByTestId("regiekamer-insight-flow").locator("summary").click();
+    expect(await page.getByTestId("regiekamer-insight-flow").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(true);
+  });
+
+  test("intervention: matching zwak — Herstart matching, geen insight-secties", async ({ page }) => {
+    await darkTheme(page);
+    await installCareApiStubs(page, {
+      regiekamerOverview: {
+        totals: {
+          active_cases: 3,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          intake_delays: 0,
+          repeated_rejections: 0,
+        },
+        items: [
+          {
+            case_id: "int-1",
+            case_reference: "INT-1",
+            title: "Match probleem",
+            current_state: "MATCHING_READY",
+            phase: "matching",
+            urgency: "high",
+            assigned_provider: "",
+            next_best_action: {
+              action: "VALIDATE_MATCHING",
+              label: "Valideer matching",
+              priority: "high",
+              reason: "stub",
+            },
+            top_blocker: null,
+            top_risk: null,
+            top_alert: null,
+            blocker_count: 0,
+            risk_count: 0,
+            alert_count: 0,
+            priority_score: 95,
+            age_hours: 48,
+            hours_in_current_state: 24,
+            issue_tags: ["alerts"],
+            responsible_role: "gemeente",
+          },
+        ],
+      },
+    });
+    await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Herstart matching/);
+    await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
+    await expect(page.getByTestId("regiekamer-action-queue")).toBeVisible();
   });
 });

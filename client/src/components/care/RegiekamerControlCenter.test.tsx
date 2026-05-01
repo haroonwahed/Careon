@@ -177,12 +177,13 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     expectRegiekamerMode();
-    expect(screen.getByTestId("regiekamer-summary-active")).toHaveTextContent("Casussen actief");
+    expect(screen.getByTestId("regiekamer-summary-active")).toHaveTextContent("Actief");
     expect(screen.getByTestId("regiekamer-summary-critical")).toHaveTextContent("Geblokkeerd");
     expect(screen.getByTestId("regiekamer-summary-alerts")).toHaveTextContent("Risico's");
     expect(screen.getByTestId("regiekamer-summary-sla")).toHaveTextContent("SLA");
     expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
-    expect(screen.getByText(/casussen met kritieke blokkade|casussen wachten langer dan 7 dagen/i)).toBeInTheDocument();
+    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "crisis");
+    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
 
     expect(screen.queryByText("Volgende stap")).not.toBeInTheDocument();
     expect(screen.queryByText(/Processtatus|Process status/i)).not.toBeInTheDocument();
@@ -223,17 +224,54 @@ describe("SystemAwarenessPage", () => {
     expect(within(first).getByRole("button", { name: /Stuur naar aanbieder/i })).toBeInTheDocument();
   });
 
-  it("shows backend intake-delay attention row when totals indicate delays", () => {
+  it("surfaces intake delay as dominant action when it is the top scenario", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
-          active_cases: 3,
-          critical_blockers: 1,
-          high_priority_alerts: 1,
-          provider_sla_breaches: 1,
-          repeated_rejections: 1,
+          active_cases: 2,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          repeated_rejections: 0,
           intake_delays: 2,
         },
+        items: [
+          makeItem({
+            case_id: 201,
+            case_reference: "#201",
+            title: "Casus intake",
+            phase: "intake",
+            current_state: "INTAKE_PENDING",
+            urgency: "medium",
+            top_blocker: null,
+            top_risk: {
+              code: "INTAKE_DELAYED",
+              severity: "medium",
+              message: "Intake vertraagd.",
+              evidence: {},
+            },
+            top_alert: null,
+            blocker_count: 0,
+            priority_score: 62,
+            hours_in_current_state: 36,
+            issue_tags: ["intake", "risks"],
+          }),
+          makeItem({
+            case_id: 202,
+            case_reference: "#202",
+            title: "Casus rustig",
+            phase: "plaatsing",
+            current_state: "PLACEMENT_CONFIRMED",
+            urgency: "low",
+            top_blocker: null,
+            top_risk: null,
+            top_alert: null,
+            blocker_count: 0,
+            priority_score: 40,
+            hours_in_current_state: 12,
+            issue_tags: [],
+          }),
+        ],
       }),
       loading: false,
       error: null,
@@ -242,8 +280,9 @@ describe("SystemAwarenessPage", () => {
 
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
-    expect(screen.getByText(/2 casussen met vertraagde of ontbrekende intake/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk intake" })).toBeInTheDocument();
+    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
+    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveTextContent(/intake-vertraging/i);
+    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Bekijk intake-vertraging/i);
   });
 
   it("filters the worklist client-side", async () => {

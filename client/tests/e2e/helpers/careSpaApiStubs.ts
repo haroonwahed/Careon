@@ -73,8 +73,22 @@ export function buildDecisionEvaluationStub(caseId: string) {
   };
 }
 
+/** Partial override for `/care/api/regiekamer/decision-overview/` (E2E only). */
+export type RegiekamerOverviewStubPatch = {
+  generated_at?: string;
+  totals?: Partial<{
+    active_cases: number;
+    critical_blockers: number;
+    high_priority_alerts: number;
+    provider_sla_breaches: number;
+    repeated_rejections: number;
+    intake_delays: number;
+  }>;
+  items?: unknown[];
+};
+
 /** Stub GET /care/api/* so Vite→Django proxy 401 does not redirect to login during E2E. */
-export async function installCareApiStubs(page: Page) {
+export async function installCareApiStubs(page: Page, options?: { regiekamerOverview?: RegiekamerOverviewStubPatch }) {
   const casesPayload = {
     contracts: [
       {
@@ -302,6 +316,20 @@ export async function installCareApiStubs(page: Page) {
     ],
   };
 
+  const mergedRegiekamerPayload =
+    options?.regiekamerOverview != null
+      ? {
+          ...regiekamerPayload,
+          ...options.regiekamerOverview,
+          totals: {
+            ...regiekamerPayload.totals,
+            ...options.regiekamerOverview.totals,
+          },
+          items: options.regiekamerOverview.items ?? regiekamerPayload.items,
+          generated_at: options.regiekamerOverview.generated_at ?? regiekamerPayload.generated_at,
+        }
+      : regiekamerPayload;
+
   const tasksPayload = {
     tasks: [
       {
@@ -326,7 +354,9 @@ export async function installCareApiStubs(page: Page) {
       await route.continue();
       return;
     }
-    const pathname = new URL(route.request().url()).pathname;
+    /** Normalize so matching survives duplicate slashes or trailing slash drift from proxies / fetch URL builders. */
+    const pathname = new URL(route.request().url()).pathname.replace(/\/{2,}/g, "/");
+    const pathNoTrailing = pathname.replace(/\/+$/, "") || "/";
     const fulfill = (body: unknown) =>
       route.fulfill({
         status: 200,
@@ -334,27 +364,30 @@ export async function installCareApiStubs(page: Page) {
         body: JSON.stringify(body),
       });
 
-    if (/^\/care\/api\/cases\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/cases") {
       await fulfill(casesPayload);
       return;
     }
-    if (/^\/care\/api\/providers\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/providers") {
       await fulfill(providersPayload);
       return;
     }
-    if (/^\/care\/api\/regiekamer\/decision-overview\/?$/.test(pathname)) {
-      await fulfill(regiekamerPayload);
+    if (
+      pathNoTrailing === "/care/api/regiekamer/decision-overview"
+      || pathname.includes("/regiekamer/decision-overview")
+    ) {
+      await fulfill(mergedRegiekamerPayload);
       return;
     }
-    if (/^\/care\/api\/tasks\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/tasks") {
       await fulfill(tasksPayload);
       return;
     }
-    if (/^\/care\/api\/provider-evaluations\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/provider-evaluations") {
       await fulfill({ evaluations: [], total_count: 0 });
       return;
     }
-    if (/^\/care\/api\/assessments\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/assessments") {
       /** One incomplete assessment so Signalen always has ≥1 deterministic row in E2E (not a backend contract). */
       await fulfill({
         assessments: [
@@ -376,11 +409,11 @@ export async function installCareApiStubs(page: Page) {
       });
       return;
     }
-    if (/^\/care\/api\/regions\/health\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/regions/health") {
       await fulfill({ regions: [], total_count: 0 });
       return;
     }
-    if (/^\/care\/api\/regions\/?$/.test(pathname)) {
+    if (pathNoTrailing === "/care/api/regions") {
       await fulfill({ regions: [], total_count: 0 });
       return;
     }

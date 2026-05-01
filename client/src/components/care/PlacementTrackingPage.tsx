@@ -3,6 +3,7 @@ import { CheckCircle2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
 import {
+  CanonicalPhaseBadge,
   CareAttentionBar,
   CareContextHint,
   CareDominantStatus,
@@ -15,10 +16,17 @@ import {
   CareSearchFiltersBar,
   CareUnifiedHeader,
   CareWorkRow,
+  normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
-import { buildWorkflowCases } from "../../lib/workflowUi";
+import {
+  buildWorkflowCases,
+  placementTrackingRowAction,
+  placementTrackingRowStatusLabel,
+  placementTrackingSubstepAmbiguous,
+  placementTrackingTabBucket,
+} from "../../lib/workflowUi";
 
 interface PlacementTrackingPageProps {
   onCaseClick: (caseId: string) => void;
@@ -38,19 +46,20 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
   }, [cases, providers]);
 
   const tabCounts = {
-    "te-bevestigen": placementCases.filter((item) => item.phase === "plaatsing" && item.daysInCurrentPhase <= 2).length,
-    lopend: placementCases.filter((item) => item.phase === "plaatsing" && item.daysInCurrentPhase > 2).length,
-    afgerond: placementCases.filter((item) => item.phase === "afgerond").length,
+    "te-bevestigen": placementCases.filter((item) => placementTrackingTabBucket(item) === "te-bevestigen").length,
+    lopend: placementCases.filter((item) => placementTrackingTabBucket(item) === "lopend").length,
+    afgerond: placementCases.filter((item) => placementTrackingTabBucket(item) === "afgerond").length,
   };
 
-  const visibleCases = placementCases.filter((item) => {
-    if (activeTab === "te-bevestigen") return item.phase === "plaatsing" && item.daysInCurrentPhase <= 2;
-    if (activeTab === "lopend") return item.phase === "plaatsing" && item.daysInCurrentPhase > 2;
-    return item.phase === "afgerond";
-  });
+  const visibleCases = placementCases.filter((item) => placementTrackingTabBucket(item) === activeTab);
 
   const intakeStallCount = useMemo(
     () => placementCases.filter((item) => item.phase === "plaatsing" && item.daysInCurrentPhase >= 5).length,
+    [placementCases],
+  );
+
+  const ambiguousPlacementCount = useMemo(
+    () => placementCases.filter((item) => placementTrackingSubstepAmbiguous(item)).length,
     [placementCases],
   );
 
@@ -98,6 +107,15 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
       }
     >
       <CareAttentionBar
+        visible={ambiguousPlacementCount > 0}
+        tone="info"
+        message={
+          ambiguousPlacementCount === 1
+            ? "1 casus heeft geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open het dossier voor de exacte tussenstap."
+            : `${ambiguousPlacementCount} casussen hebben geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open het dossier voor de exacte tussenstap.`
+        }
+      />
+      <CareAttentionBar
         visible={intakeStallCount > 0}
         tone="warning"
         message={`${intakeStallCount} plaatsing${intakeStallCount === 1 ? "" : "en"} staat${intakeStallCount === 1 ? "" : "en"} ≥5 dagen in plaatsing zonder duidelijke intake — plan intake of escaleer via Regiekamer.`}
@@ -118,28 +136,41 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
 
       {!loading && !error && visibleCases.length > 0 && (
         <CarePrimaryList>
-          {visibleCases.map((item) => (
+          {visibleCases.map((item) => {
+            const { actionLabel, actionVariant } = placementTrackingRowAction(item);
+            const ambiguous = placementTrackingSubstepAmbiguous(item);
+            return (
             <CareWorkRow
               key={item.id}
+              leading={<CanonicalPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
               title={item.clientLabel}
               context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
-              status={<CareDominantStatus>{tabLabel[activeTab]}</CareDominantStatus>}
+              status={<CareDominantStatus>{placementTrackingRowStatusLabel(item)}</CareDominantStatus>}
               time={
                 <CareMetaChip>
                   {item.daysInCurrentPhase}d in fase
                 </CareMetaChip>
               }
               contextInfo={
-                <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
+                <>
+                  <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
+                  {ambiguous ? (
+                    <CareMetaChip title="Geen workflow/arrangement/placement-record in API — controleer in dossier">
+                      Status via dossier
+                    </CareMetaChip>
+                  ) : null}
+                </>
               }
-              actionLabel="Bekijk intake"
+              actionLabel={actionLabel}
+              actionVariant={actionVariant}
               onOpen={() => onCaseClick(item.id)}
               onAction={(event) => {
                 event.stopPropagation();
                 onCaseClick(item.id);
               }}
             />
-          ))}
+            );
+          })}
         </CarePrimaryList>
       )}
 

@@ -34,6 +34,9 @@ interface ApiCase {
   arrangement_provider?: string;
   arrangement_end_date?: string | null;
   workflow_state?: string;
+  /** Latest placement request (matches derive_workflow_state signals). */
+  placement_request_status?: string | null;
+  placement_provider_response_status?: string | null;
 }
 
 interface ApiListResponse {
@@ -71,6 +74,9 @@ export interface SpaCase {
   arrangementProvider: string;
   arrangementEndDate: string | null;
   workflowState?: CanonicalWorkflowState;
+  /** Mirrors PlacementRequest.status / provider_response_status when API sends them. */
+  placementRequestStatus?: string | null;
+  placementProviderResponseStatus?: string | null;
 }
 
 // ---- Mapping helpers ---------------------------------------------------
@@ -168,6 +174,8 @@ function mapApiCase(c: ApiCase): SpaCase {
     arrangementTypeCode: c.arrangement_type_code ?? '',
     arrangementProvider: c.arrangement_provider ?? '',
     arrangementEndDate: c.arrangement_end_date ?? null,
+    placementRequestStatus: c.placement_request_status ?? null,
+    placementProviderResponseStatus: c.placement_provider_response_status ?? null,
     workflowState,
   };
 }

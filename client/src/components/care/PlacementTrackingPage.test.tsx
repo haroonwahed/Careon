@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { SpaCase } from "../../hooks/useCases";
 import type { SpaProvider } from "../../hooks/useProviders";
@@ -35,6 +36,9 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
     arrangementTypeCode: "",
     arrangementProvider: "Aanbieder X",
     arrangementEndDate: null,
+    placementRequestStatus: null,
+    placementProviderResponseStatus: null,
+    workflowState: undefined,
     ...overrides,
   };
 }
@@ -98,6 +102,80 @@ describe("PlacementTrackingPage", () => {
 
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Te bevestigen ·/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk intake" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bevestig plaatsing" })).toBeInTheDocument();
+  });
+
+  it("shows Plan intake when placement is confirmed in canonical state (row-level, not tab)", async () => {
+    const user = userEvent.setup();
+    mockUseCases.mockReturnValue({
+      cases: [
+        makeCase({
+          id: "C-PC",
+          title: "Cliënt C",
+          status: "plaatsing",
+          wachttijd: 1,
+          workflowState: "PLACEMENT_CONFIRMED",
+        }),
+      ],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
+
+    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+
+    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
+    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
+  });
+
+  it("infers Plan intake from placement APPROVED without workflow_state", async () => {
+    const user = userEvent.setup();
+    mockUseCases.mockReturnValue({
+      cases: [
+        makeCase({
+          id: "C-PA",
+          title: "Cliënt A",
+          status: "plaatsing",
+          wachttijd: 1,
+          workflowState: undefined,
+          placementRequestStatus: "APPROVED",
+        }),
+      ],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
+
+    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+
+    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
+    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
+  });
+
+  it("infers Plan intake from arrangement end date without workflow_state", async () => {
+    const user = userEvent.setup();
+    mockUseCases.mockReturnValue({
+      cases: [
+        makeCase({
+          id: "C-PE",
+          title: "Cliënt E",
+          status: "plaatsing",
+          wachttijd: 1,
+          workflowState: undefined,
+          arrangementEndDate: "2027-08-15",
+        }),
+      ],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
+
+    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+
+    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
+    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
   });
 });

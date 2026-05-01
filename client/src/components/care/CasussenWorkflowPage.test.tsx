@@ -210,8 +210,10 @@ describe("WorkloadPage", () => {
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
     expect(screen.getByText("test")).toBeInTheDocument();
-    expect(screen.getByText(/jaar · Ambulante zorg/)).toBeInTheDocument();
-    expect(screen.getByText("Urgentie ontbreekt")).toBeInTheDocument();
+    expect(screen.getByText(/\d+ jaar/)).toBeInTheDocument();
+    expect(screen.getByText("Utrecht")).toBeInTheDocument();
+    expect(screen.getByText("Ambulante zorg")).toBeInTheDocument();
+    expect(screen.getAllByText("Blokkade").length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Vul urgentie aan" })).toBeInTheDocument();
     expect(screen.getByText("1d")).toBeInTheDocument();
     expect(screen.queryByText(/^Blokkade:/)).not.toBeInTheDocument();

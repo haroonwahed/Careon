@@ -101,13 +101,13 @@ function caseExecutionPhaseBadgeClass(stepId: FlowStepId): string {
 }
 
 const STEP_REQUIREMENTS: Record<FlowStepId, string> = {
-  casus: "Casus compleet.",
-  samenvatting: "Samenvatting beschikbaar.",
-  matching: "Samenvatting bevestigd.",
-  gemeente_validatie: "Matchadvies beschikbaar.",
-  aanbieder_beoordeling: "Gemeente validatie afgerond.",
-  plaatsing: "Aanbieder akkoord.",
-  intake: "Plaatsing bevestigd.",
+  casus: "Klaar",
+  samenvatting: "Nog nodig",
+  matching: "Wacht",
+  gemeente_validatie: "Wacht",
+  aanbieder_beoordeling: "Wacht",
+  plaatsing: "Wacht",
+  intake: "Wacht",
 };
 
 /** Dwell-based urgency on the active step (yellow → orange → red). */
@@ -300,8 +300,12 @@ function CaseWorkflowTimeline({
                 </div>
                 <p className={`text-[14px] font-semibold ${isCurrent ? "text-foreground" : "text-foreground/90"}`}>{step.label}</p>
                 <p className="mt-0.5 text-[12px] text-muted-foreground">{step.owner}</p>
-                <p className={`mt-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${hintTone}`}>{stateText}</p>
-                <p className={`mt-0.5 text-[12px] leading-snug ${hintTone}`}>{compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]}</p>
+                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                  <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${hintTone}`}>
+                    {stateText}
+                  </span>
+                </div>
+                <p className={`mt-1 text-[11px] leading-snug ${hintTone}`}>{compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]}</p>
               </div>
             );
           })}
@@ -869,13 +873,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
           </p>
         )}
       </div>
-      <NextBestAction className="flex w-full shrink-0 flex-col gap-2 sm:flex-row lg:w-auto lg:max-w-md">
+      <NextBestAction className="flex w-full shrink-0 flex-col gap-2 sm:flex-row sm:items-center lg:w-auto lg:max-w-md">
         {nextBestAction ? (
           <Button
             type="button"
             onClick={handlePrimaryAction}
             disabled={actionButtonDisabled}
-            className="h-12 min-h-[48px] w-full min-w-[200px] gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+            className="h-12 min-h-[48px] w-full min-w-[200px] self-center gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground sm:self-center"
           >
             {primaryButtonLabel ?? getShortActionLabel(nextBestAction.label)}
             <ArrowRight size={16} />
@@ -978,13 +982,24 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
           Samenvatting & kern
         </summary>
         <div className="border-t border-border/60 px-4 pb-4 pt-2" data-testid="case-context-panel">
-          <div className="space-y-1.5 text-[12px] text-muted-foreground">
-            <p>Regio: {spaCase.regio}</p>
-            <p>Zorgvraag: {spaCase.zorgtype}</p>
-            <p>Urgentie: {spaCase.urgency}</p>
-            <p>Wachttijd: {spaCase.wachttijd} weken</p>
-            <p>Eigenaar stap: {stepOwner}</p>
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center rounded-full border border-border/70 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Regio · {spaCase.regio}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-border/70 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Vraag · {spaCase.zorgtype}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-border/70 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Urgentie · {spaCase.urgency}
+            </span>
+            <span className="inline-flex items-center rounded-full border border-border/70 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Wachttijd · {spaCase.wachttijd} weken
+            </span>
+            <span className="inline-flex items-center rounded-full border border-border/70 bg-background/65 px-2.5 py-1 text-[11px] text-muted-foreground">
+              Eigenaar · {stepOwner}
+            </span>
           </div>
+          <p className="mt-2 text-[12px] leading-snug text-muted-foreground">Kern voor de volgende beslissing. Alles hier stuurt door naar de volgende stap.</p>
         </div>
       </details>
 

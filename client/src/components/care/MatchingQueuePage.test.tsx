@@ -90,7 +90,7 @@ describe("MatchingQueuePage", () => {
 
     render(<MatchingQueuePage onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Controleer match" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Controleer matchadvies" })).toBeInTheDocument();
   });
 
   it("uses unified header, search, and work row CTA copy", () => {

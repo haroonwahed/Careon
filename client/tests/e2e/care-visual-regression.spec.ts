@@ -72,7 +72,10 @@ test.describe("Care list visual regression (SPA)", () => {
     });
     expect(ringish).not.toMatch(/^\|\s*none\s*\|\s*0(px)?\s*$/);
 
-    const cta = focusedRow.locator('button[type="button"]').filter({ hasText: /→|Open|Bekijk|Start|Vul|Controleer/i }).first();
+    const cta = focusedRow
+      .locator('button[type="button"]')
+      .filter({ hasText: /→|Open|Bekijk|Start|Vul|Controleer|Stuur|Valideer|Volg|Herplan|Naar/i })
+      .first();
     await expect(cta).toBeVisible();
     const ctaInsideRow = await focusedRow.evaluate((row) => {
       const rowEl = row as HTMLElement;
@@ -130,9 +133,26 @@ test.describe("Care list visual regression (SPA)", () => {
 
     await page.setViewportSize({ width: 390, height: 900 });
     await expect(page.getByRole("heading", { name: /Werkvoorraad/i })).toBeVisible({ timeout: 30_000 });
-    await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-    const chipRow = rows.first().locator("div.flex.flex-wrap.items-center.justify-end.gap-1").first();
-    const noOverflow = await chipRow.evaluate((el) => el.scrollWidth <= el.clientWidth + 4);
+    const firstRow = page.locator('[data-testid="worklist"] article[data-density="compact"]').first();
+    await expect(firstRow).toBeVisible({ timeout: 30_000 });
+    /** CareWorkRow: trailing column → chip strip (`justify-end` row). Do not use first `care-meta-chip` (may sit in context line above). */
+    const noOverflow = await firstRow.evaluate((article) => {
+      const row = article.firstElementChild as HTMLElement | null;
+      if (!row || row.children.length < 2) {
+        return false;
+      }
+      const rightCol = row.children[1] as HTMLElement;
+      const chipStrip = rightCol.firstElementChild as HTMLElement | null;
+      if (!chipStrip) {
+        return false;
+      }
+      const hasContractChip =
+        chipStrip.querySelector('[data-component="care-meta-chip"], [data-component="care-dominant-status"]') !== null;
+      if (!hasContractChip) {
+        return false;
+      }
+      return chipStrip.scrollWidth <= chipStrip.clientWidth + 4;
+    });
     expect(noOverflow, "metadata chips should not overflow chip strip on narrow viewport").toBeTruthy();
     await maybeDump(page, "casussen-mobile");
     await page.setViewportSize({ width: 1280, height: 900 });
@@ -200,7 +220,8 @@ test.describe("Care list visual regression (SPA)", () => {
     const aligned = await first.evaluate((row) => {
       const el = row as HTMLElement;
       const lead = el.querySelector("[class*='mt-0.5'][class*='shrink-0']") as HTMLElement | null;
-      const title = el.querySelector(".min-w-0.flex-1") as HTMLElement | null;
+      /** Title stack — must not match the outer `flex-1` row wrapper (also has min-w-0 flex-1). */
+      const title = el.querySelector(".min-w-0.flex-1.space-y-1") as HTMLElement | null;
       if (!lead || !title) {
         return false;
       }
