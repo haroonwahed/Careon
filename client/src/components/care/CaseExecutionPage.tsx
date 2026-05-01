@@ -39,6 +39,8 @@ import {
 import { Textarea } from "../ui/textarea";
 import { cn } from "../ui/utils";
 import { CasusWorkspaceLayout } from "./CasusWorkspaceLayout";
+import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
+import { NextBestAction } from "../design/NextBestAction";
 import { ProcessTimeline } from "../design/ProcessTimeline";
 import { useCases } from "../../hooks/useCases";
 import {
@@ -78,6 +80,26 @@ const FLOW_STEPS = [
 
 type FlowStepId = typeof FLOW_STEPS[number]["id"];
 
+function caseExecutionPhaseBadgeClass(stepId: FlowStepId): string {
+  switch (stepId) {
+    case "samenvatting":
+      return "border-amber-500/40 bg-amber-500/12 text-amber-100";
+    case "matching":
+      return "border-sky-500/40 bg-sky-500/12 text-sky-100";
+    case "gemeente_validatie":
+      return "border-violet-500/40 bg-violet-500/12 text-violet-100";
+    case "aanbieder_beoordeling":
+      return "border-fuchsia-500/40 bg-fuchsia-500/12 text-fuchsia-100";
+    case "plaatsing":
+      return "border-emerald-500/40 bg-emerald-500/12 text-emerald-100";
+    case "intake":
+      return "border-cyan-500/40 bg-cyan-500/12 text-cyan-100";
+    case "casus":
+    default:
+      return "border-border/80 bg-muted/35 text-foreground";
+  }
+}
+
 const STEP_REQUIREMENTS: Record<FlowStepId, string> = {
   casus: "Casus compleet.",
   samenvatting: "Samenvatting beschikbaar.",
@@ -86,6 +108,30 @@ const STEP_REQUIREMENTS: Record<FlowStepId, string> = {
   aanbieder_beoordeling: "Gemeente validatie afgerond.",
   plaatsing: "Aanbieder akkoord.",
   intake: "Plaatsing bevestigd.",
+};
+
+/** Dwell-based urgency on the active step (yellow → orange → red). */
+function timelineTimePressureTier(
+  hours: number | null | undefined,
+): "none" | "warn" | "elevated" | "critical" {
+  if (hours == null || Number.isNaN(hours) || hours < 24) {
+    return "none";
+  }
+  if (hours < 72) {
+    return "warn";
+  }
+  if (hours < 168) {
+    return "elevated";
+  }
+  return "critical";
+}
+
+const TIMELINE_PRESSURE_CIRCLE: Record<"warn" | "elevated" | "critical", string> = {
+  warn: "border-amber-500/70 bg-amber-500/12 text-amber-800 dark:text-amber-300 shadow-[0_0_0_1px_rgba(245,158,11,0.22)]",
+  elevated:
+    "border-orange-500/75 bg-orange-500/12 text-orange-900 dark:text-orange-300 shadow-[0_0_0_1px_rgba(249,115,22,0.26)]",
+  critical:
+    "border-destructive/80 bg-destructive/15 text-destructive shadow-[0_0_0_1px_rgba(239,68,68,0.32)] motion-safe:animate-pulse",
 };
 
 function phaseDecisionEyebrow(stepId: FlowStepId): string {
@@ -178,59 +224,84 @@ function CaseWorkflowTimeline({
   activeIndex,
   blocked,
   compactHint,
+  hoursInCurrentState,
 }: {
   steps: typeof FLOW_STEPS;
   activeIndex: number;
   blocked: boolean;
   compactHint: Record<string, string>;
+  hoursInCurrentState?: number | null;
 }) {
   return (
-    <ProcessTimeline className="rounded-2xl bg-background/70 px-4 py-4 md:px-5 md:py-5">
-      <div className="mb-5 flex items-center justify-between gap-4">
+    <ProcessTimeline className="rounded-2xl bg-background/70 px-3 py-3 md:px-4 md:py-3.5">
+      <div className="mb-3 flex items-center justify-between gap-3">
         <h2 className="text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Processtatus</h2>
         <p className="text-[12px] text-muted-foreground">{steps.length} stappen</p>
       </div>
       <div className="relative">
-        <div className="absolute left-4 right-4 top-[22px] hidden h-px bg-border/80 md:block" />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-7 md:gap-0">
+        <div className="absolute left-3 right-3 top-[20px] hidden h-px bg-border/80 md:block" />
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-7 md:gap-0">
           {steps.map((step, index) => {
             const isCurrent = index === activeIndex;
             const isCompleted = index < activeIndex;
             const isBlocked = isCurrent && blocked;
+            const dwellPressure = isCurrent && !isBlocked ? timelineTimePressureTier(hoursInCurrentState) : "none";
             const circleTone = isCompleted
               ? "border-emerald-500/60 bg-emerald-500/10 text-emerald-400"
               : isBlocked
                 ? "border-destructive/80 bg-destructive/10 text-destructive"
-                : isCurrent
-                  ? "border-primary/60 bg-primary/10 text-primary"
-                  : "border-border/70 bg-background/80 text-muted-foreground";
+                : isCurrent && dwellPressure !== "none"
+                  ? TIMELINE_PRESSURE_CIRCLE[dwellPressure]
+                  : isCurrent
+                    ? "border-primary/60 bg-primary/10 text-primary"
+                    : "border-border/70 bg-background/80 text-muted-foreground";
             const stateText = isCompleted
               ? "Klaar"
               : isBlocked
                 ? "Geblokkeerd"
-                : isCurrent
-                  ? "Actief"
-                  : "Volgt";
+                : isCurrent && dwellPressure === "critical"
+                  ? "Escaleer"
+                  : isCurrent && dwellPressure !== "none"
+                    ? "Aandacht"
+                    : isCurrent
+                      ? "Actief"
+                      : "Volgt";
             const hintTone = isCompleted
               ? "text-emerald-400"
               : isBlocked
                 ? "text-destructive"
-                : isCurrent
-                  ? "text-foreground"
-                  : "text-muted-foreground";
+                : isCurrent && dwellPressure === "critical"
+                  ? "text-destructive"
+                  : isCurrent && dwellPressure === "elevated"
+                    ? "text-orange-700 dark:text-orange-300"
+                    : isCurrent && dwellPressure === "warn"
+                      ? "text-amber-800 dark:text-amber-300"
+                      : isCurrent
+                        ? "text-foreground"
+                        : "text-muted-foreground";
 
             return (
-              <div key={step.id} className="relative min-w-0 px-1 pt-0 md:px-2 md:pt-12">
-                <div className="mb-3 flex items-center gap-3 md:absolute md:left-2 md:top-0 md:flex-col md:items-start md:gap-0">
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-semibold ${circleTone}`}>
-                    {isCompleted ? <CheckCircle2 size={16} /> : index + 1}
+              <div key={step.id} className="relative min-w-0 px-0.5 pt-0 md:px-1.5 md:pt-10">
+                <div className="mb-2 flex items-center gap-2 md:absolute md:left-1.5 md:top-0 md:flex-col md:items-start md:gap-0">
+                  <div
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-semibold",
+                      "motion-safe:transition-[color,background-color,border-color,box-shadow] motion-safe:duration-500 motion-safe:ease-out",
+                      circleTone,
+                    )}
+                  >
+                    {isCompleted ? (
+                      <CheckCircle2 size={16} className="motion-safe:transition-opacity motion-safe:duration-300" />
+                    ) : (
+                      index + 1
+                    )}
                   </div>
                   <div className="hidden md:block" />
                 </div>
                 <p className={`text-[14px] font-semibold ${isCurrent ? "text-foreground" : "text-foreground/90"}`}>{step.label}</p>
-                <p className="mt-1 text-[12px] text-muted-foreground">{step.owner}</p>
-                <p className={`mt-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${hintTone}`}>{stateText}</p>
-                <p className={`mt-1 text-[12px] leading-snug ${hintTone}`}>{compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]}</p>
+                <p className="mt-0.5 text-[12px] text-muted-foreground">{step.owner}</p>
+                <p className={`mt-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] ${hintTone}`}>{stateText}</p>
+                <p className={`mt-0.5 text-[12px] leading-snug ${hintTone}`}>{compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]}</p>
               </div>
             );
           })}
@@ -552,10 +623,10 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const stepOwner = FLOW_STEPS[guidanceStepIndex]?.owner ?? "Gemeente";
   const dominantBlocker = decisionEvaluation?.blockers?.[0] ?? null;
   const blockerIsMissingSummary = dominantBlocker?.code === "MISSING_SUMMARY";
-  const nextActionLabel = getShortActionLabel(nextBestAction?.label ?? "Geen vervolgactie");
-  const primaryActionLabel = nextBestAction?.action === "START_MATCHING"
-    ? "Start matching"
-    : nextActionLabel;
+  const primaryButtonLabel = nextBestAction
+    ? imperativeLabelForActionCode(nextBestAction.action, nextBestAction.label)
+      ?? getShortActionLabel(nextBestAction.label)
+    : null;
   const nextActionReason = getShortReasonLabel(nextBestAction?.reason ?? "Deze actie is nodig om de workflow veilig te laten doorgaan.", 170);
   const impossibleActions = decisionEvaluation?.blocked_actions?.length
     ? decisionEvaluation.blocked_actions
@@ -673,12 +744,21 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const matchingOutcome = decisionEvaluation?.decision_context.matching_outcome ?? null;
   const activeFlowStepId = (FLOW_STEPS[guidanceStepIndex]?.id ?? "casus") as FlowStepId;
 
+  const hoursInFlowState = decisionEvaluation?.decision_context?.hours_in_current_state ?? null;
+  const timelineActiveStepId = FLOW_STEPS[workflowIndex]?.id;
+  const timelineCompactHint: Record<string, string> = { ...processCompactHint };
+  if (timelineActiveStepId && typeof hoursInFlowState === "number" && hoursInFlowState >= 24) {
+    const base = timelineCompactHint[timelineActiveStepId] ?? STEP_REQUIREMENTS[timelineActiveStepId as FlowStepId];
+    timelineCompactHint[timelineActiveStepId] = `${base} · ${Math.round(hoursInFlowState)}u in deze stap`;
+  }
+
   const flowProgress = (
     <CaseWorkflowTimeline
       steps={timeline}
       activeIndex={workflowIndex}
       blocked={hasBlockers}
-      compactHint={processCompactHint}
+      compactHint={timelineCompactHint}
+      hoursInCurrentState={hoursInFlowState}
     />
   );
 
@@ -729,7 +809,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
       ];
     }
     return [
-      "Volg de volgende stap in de keten.",
+      "Werk de keten stap voor stap af volgens de huidige fase.",
       "Blokkades hebben voorrang op nieuwe acties.",
       "Alle stappen blijven traceerbaar.",
     ];
@@ -738,8 +818,21 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const caseHero = (
     <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
       <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={cn(
+              "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none tracking-tight",
+              caseExecutionPhaseBadgeClass(activeFlowStepId),
+            )}
+            title="Fase in de canonieke keten"
+          >
+            <span className="size-1.5 shrink-0 rounded-full bg-current opacity-90" aria-hidden />
+            <span className="truncate">{FLOW_STEPS[guidanceStepIndex]?.label ?? "Casus"}</span>
+          </span>
+        </div>
         {dominantBlocker ? (
           <>
+            <p className="text-[10px] font-bold tracking-[0.16em] text-red-200/90">BLOKKADE</p>
             <p className="text-[15px] font-semibold text-destructive">
               {getShortReasonLabel(dominantBlocker.message, 100)}
             </p>
@@ -751,7 +844,10 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
           </>
         ) : (
           <>
-            <p className="text-[15px] font-semibold text-foreground">{nextActionLabel}</p>
+            <p className="text-[10px] font-bold tracking-[0.16em] text-muted-foreground">ACTIE</p>
+            <p className="text-[15px] font-semibold text-foreground">
+              {primaryButtonLabel ?? getShortReasonLabel(nextBestAction?.label ?? "Geen actie vastgesteld", 80)}
+            </p>
             <p className="text-[13px] text-muted-foreground">{getShortReasonLabel(nextActionReason, 140)}</p>
           </>
         )}
@@ -773,16 +869,22 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
           </p>
         )}
       </div>
-      <div data-testid="next-best-action" className="flex w-full shrink-0 flex-col gap-2 sm:flex-row lg:w-auto lg:max-w-md">
-        <Button
-          type="button"
-          onClick={handlePrimaryAction}
-          disabled={actionButtonDisabled}
-          className="h-12 min-h-[48px] w-full min-w-[200px] gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
-        >
-          {blockerIsMissingSummary ? "Genereer samenvatting" : primaryActionLabel}
-          <ArrowRight size={16} />
-        </Button>
+      <NextBestAction className="flex w-full shrink-0 flex-col gap-2 sm:flex-row lg:w-auto lg:max-w-md">
+        {nextBestAction ? (
+          <Button
+            type="button"
+            onClick={handlePrimaryAction}
+            disabled={actionButtonDisabled}
+            className="h-12 min-h-[48px] w-full min-w-[200px] gap-2 rounded-full bg-primary px-6 text-base font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
+          >
+            {primaryButtonLabel ?? getShortActionLabel(nextBestAction.label)}
+            <ArrowRight size={16} />
+          </Button>
+        ) : (
+          <p className="w-full max-w-md rounded-xl border border-dashed border-border/70 bg-card/40 px-4 py-3 text-sm text-muted-foreground">
+            Geen workflowactie door het systeem vastgesteld. Controleer signalen hieronder of vernieuw beslisinformatie.
+          </p>
+        )}
         <Button
           asChild
           variant="outline"
@@ -791,7 +893,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         >
           <a href={`/care/casussen/${caseId}/edit/?section=casus`}>Casusgegevens controleren</a>
         </Button>
-      </div>
+      </NextBestAction>
     </div>
   );
 

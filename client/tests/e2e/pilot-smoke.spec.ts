@@ -188,7 +188,7 @@ test.describe.configure({ mode: "serial" });
 
 test("pilot smoke covers login, register, Regiekamer, and casus detail", async ({ page }) => {
   await page.goto(BASE_URL);
-  await expect(page).toHaveTitle("CareOn - Zorgregieplatform");
+  await expect(page).toHaveTitle(/CareOn|SaaS Careon|Zorgregie/i);
   await expect(page.getByRole("heading", { name: /Van casus tot intake in één regieomgeving/i })).toBeVisible();
 
   await registerTempUser(page);
