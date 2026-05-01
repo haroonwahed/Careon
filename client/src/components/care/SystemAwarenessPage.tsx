@@ -25,6 +25,11 @@ import {
   type RegiekamerNbaActionKey,
   type RegiekamerNbaUiMode,
 } from "../../lib/regiekamerNextBestAction";
+import {
+  buildRegiekamerNbaInstrumentationPayload,
+  emitRegiekamerNbaEvent,
+  shouldEmitRegiekamerNbaShown,
+} from "../../lib/regiekamerNbaInstrumentation";
 
 interface SystemAwarenessPageProps {
   onCaseClick: (caseId: string) => void;
@@ -941,19 +946,83 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   );
 
   const runModePrimary = useCallback(() => {
+    emitRegiekamerNbaEvent(
+      "nba_primary_clicked",
+      buildRegiekamerNbaInstrumentationPayload({
+        actionKey: regiekamerNba.primaryAction.actionKey,
+        uiMode,
+        title: regiekamerNba.title,
+        reasonCount: regiekamerNba.reasons.length,
+      }),
+    );
     runNbaAction(regiekamerNba.primaryAction.actionKey);
-  }, [regiekamerNba.primaryAction.actionKey, runNbaAction]);
+  }, [regiekamerNba, runNbaAction, uiMode]);
 
   const runModeSecondary = useCallback(() => {
     const secondary = regiekamerNba.secondaryAction;
     if (secondary) {
+      emitRegiekamerNbaEvent(
+        "nba_secondary_clicked",
+        buildRegiekamerNbaInstrumentationPayload({
+          actionKey: secondary.actionKey,
+          uiMode,
+          title: regiekamerNba.title,
+          reasonCount: regiekamerNba.reasons.length,
+        }),
+      );
       runNbaAction(secondary.actionKey);
     }
-  }, [regiekamerNba.secondaryAction, runNbaAction]);
+  }, [regiekamerNba, runNbaAction, uiMode]);
 
   const applyModeCasesLink = useCallback(() => {
-    runModePrimary();
-  }, [runModePrimary]);
+    emitRegiekamerNbaEvent(
+      "nba_cases_link_clicked",
+      buildRegiekamerNbaInstrumentationPayload({
+        actionKey: regiekamerNba.primaryAction.actionKey,
+        uiMode,
+        title: regiekamerNba.title,
+        reasonCount: regiekamerNba.reasons.length,
+      }),
+    );
+    runNbaAction(regiekamerNba.primaryAction.actionKey);
+  }, [regiekamerNba, runNbaAction, uiMode]);
+
+  useEffect(() => {
+    if (!hasActiveData) {
+      return;
+    }
+    const fp = `${uiMode}|${regiekamerNba.primaryAction.actionKey}|${regiekamerNba.title}|${regiekamerNba.reasons.length}`;
+    if (!shouldEmitRegiekamerNbaShown(fp)) {
+      return;
+    }
+    emitRegiekamerNbaEvent(
+      "nba_shown",
+      buildRegiekamerNbaInstrumentationPayload({
+        actionKey: regiekamerNba.primaryAction.actionKey,
+        uiMode,
+        title: regiekamerNba.title,
+        reasonCount: regiekamerNba.reasons.length,
+      }),
+    );
+  }, [hasActiveData, regiekamerNba, uiMode]);
+
+  const onInsightDetailsToggle = useCallback(
+    (e: ToggleEvent<HTMLDetailsElement>) => {
+      if (!e.currentTarget.open) {
+        return;
+      }
+      emitRegiekamerNbaEvent(
+        "nba_insight_opened",
+        buildRegiekamerNbaInstrumentationPayload({
+          actionKey: regiekamerNba.primaryAction.actionKey,
+          uiMode,
+          title: regiekamerNba.title,
+          reasonCount: regiekamerNba.reasons.length,
+        }),
+      );
+    },
+    [regiekamerNba, uiMode],
+  );
 
   const dominantPanelDescription = formatRegiekamerDominantDescription(regiekamerNba);
 
@@ -1096,6 +1165,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
               <details
                 data-testid="regiekamer-insight-why"
                 className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
+                onToggle={onInsightDetailsToggle}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                   Waarom gebeurt dit?
@@ -1125,6 +1195,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
               <details
                 data-testid="regiekamer-insight-flow"
                 className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
+                onToggle={onInsightDetailsToggle}
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
                   Bekijk doorloop in de keten
