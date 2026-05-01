@@ -110,7 +110,7 @@ describe("WorkloadPage", () => {
       makeCase({ id: "C-902", title: "Casus stabiel", status: "matching", urgency: "normal" }),
     ]);
 
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
+    const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
     expectCasussenMode();
     expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
@@ -120,7 +120,7 @@ describe("WorkloadPage", () => {
     expect(screen.getByRole("tab", { name: "Wacht op aanbieder" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Geblokkeerd" })).toBeInTheDocument();
     expect(screen.getByText("Casus triage")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /→$/i }).length).toBeGreaterThan(0);
+    expect(container.querySelectorAll("[data-care-work-row-cta]").length).toBeGreaterThan(0);
 
     expect(screen.queryByText(/^SLA$/)).not.toBeInTheDocument();
     expect(screen.queryByText(/^Alerts$/)).not.toBeInTheDocument();
@@ -196,7 +196,7 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={onCaseClick} role="gemeente" onNavigateToWorkflow={onNavigateToWorkflow} />);
     fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanbieder" }));
-    fireEvent.click(screen.getByRole("button", { name: "Bekijk status →" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bekijk status" }));
 
     expect(onNavigateToWorkflow).toHaveBeenCalledWith("beoordelingen");
     expect(onCaseClick).not.toHaveBeenCalled();
@@ -212,7 +212,7 @@ describe("WorkloadPage", () => {
     expect(screen.getByText("test")).toBeInTheDocument();
     expect(screen.getByText(/jaar · Ambulante zorg/)).toBeInTheDocument();
     expect(screen.getByText("Urgentie ontbreekt")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vul urgentie aan →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vul urgentie aan" })).toBeInTheDocument();
     expect(screen.getByText("1d")).toBeInTheDocument();
     expect(screen.queryByText(/^Blokkade:/)).not.toBeInTheDocument();
   });

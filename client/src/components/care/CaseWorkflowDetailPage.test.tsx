@@ -160,11 +160,12 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.getByRole("button", { name: "Meer acties" })).toBeInTheDocument();
     expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
     expect(await screen.findByText("Processtatus")).toBeInTheDocument();
-    expect(screen.getByText("Volgende stap")).toBeInTheDocument();
-    expect(screen.getByText("Bewijs")).toBeInTheDocument();
-    expect(screen.getByText("Context")).toBeInTheDocument();
-    expect(screen.getByText("Acties")).toBeInTheDocument();
-    expect(screen.getByText("Historie")).toBeInTheDocument();
+    expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Naar aanbieder/i })).toBeInTheDocument();
+    expect(screen.getByText("Bewijs (overzicht)")).toBeInTheDocument();
+    expect(screen.getByText("Verificatie & context")).toBeInTheDocument();
+    expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(2);
+    expect(screen.getByText("Activiteit & historie")).toBeInTheDocument();
     expect(container.innerHTML).not.toContain("mx-auto max-w-[1440px]");
     expect(container.innerHTML).not.toContain("#111827");
     expect(container.innerHTML).not.toContain("#080E1A");
@@ -185,11 +186,11 @@ describe("CaseExecutionPage workspace", () => {
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
     expectCasusDetailMode();
-    expect(await screen.findByText("Volgende stap")).toBeInTheDocument();
+    expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     expect(screen.getByText("Processtatus")).toBeInTheDocument();
-    expect(screen.getByText("Wat vraagt aandacht")).toBeInTheDocument();
+    expect(await screen.findByText("Blokkade")).toBeInTheDocument();
     expect(screen.getAllByText("Samenvatting").length).toBeGreaterThan(0);
-    expect(screen.getByText("Context")).toBeInTheDocument();
+    expect(screen.getByText("Verificatie & context")).toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
 
     expect(screen.queryByText("Casussen")).not.toBeInTheDocument();
@@ -222,7 +223,7 @@ describe("CaseExecutionPage workspace", () => {
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
     expect((await screen.findAllByText("Samenvatting ontbreekt")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Wat vraagt aandacht")).toBeInTheDocument();
+    expect(await screen.findByText("Blokkade")).toBeInTheDocument();
   });
 
   it("shows decision context evidence for low-confidence and repeated rejection signals", async () => {
@@ -249,7 +250,7 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect(await screen.findByText("Context")).toBeInTheDocument();
+    expect(await screen.findByText("Verificatie & context")).toBeInTheDocument();
     expect(screen.getAllByText("52%").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Confidence is laag.").length).toBeGreaterThan(0);
   });
@@ -258,7 +259,7 @@ describe("CaseExecutionPage workspace", () => {
     setupCase(makeDecisionEvaluation());
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
-    const primaryButtons = await screen.findAllByRole("button", { name: "Naar aanbieder" });
+    const primaryButtons = await screen.findAllByRole("button", { name: /Stuur naar aanbieder/i });
     const clickable = primaryButtons.filter((button) => !button.hasAttribute("disabled"));
     expect(clickable.length).toBeGreaterThan(0);
     clickable.forEach((button) => fireEvent.click(button));
