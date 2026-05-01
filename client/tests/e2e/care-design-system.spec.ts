@@ -128,14 +128,20 @@ test.describe("Care design system (SPA)", () => {
 
   test("casus workspace: next-best-action + single context panel", async ({ page }) => {
     await goSidebar(page, "Casussen");
-    const row = page.locator("[data-care-work-row]").filter({ hasText: /E2E matching casus/i }).first();
+    await expect(page.getByRole("heading", { name: /Werkvoorraad/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    // Scope to Casussen worklist — Regiekamer may surface the same stub casus in embedded rows.
+    const row = page
+      .getByTestId("worklist")
+      .locator("[data-care-work-row]")
+      .filter({ hasText: /E2E matching casus/i })
+      .first();
     await expect(row).toBeVisible({ timeout: 30_000 });
     // Row body opens the workspace; the row CTA may navigate to a workflow route instead.
     const titleLine = row.locator("p.font-semibold").first();
     await titleLine.click();
     await expect(page.getByTestId("next-best-action")).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId("case-context-panel")).toHaveCount(1);
-    const cta = page.getByTestId("next-best-action").getByRole("button", { name: /Matching valideren/i });
+    const cta = page.getByTestId("next-best-action").getByRole("button", { name: /Valideer matching/i });
     await cta.focus();
     await expect(cta).toBeFocused();
     await expect(cta).toBeVisible();
@@ -186,5 +192,19 @@ test.describe("Care design system (SPA)", () => {
 
     const h1InMain = page.locator('[data-testid="care-app-main"] h1');
     expect(await h1InMain.count()).toBeLessThanOrEqual(3);
+  });
+
+  test("Matching workspace: Selecteer opens confirmation (advisory, not instant assign)", async ({ page }) => {
+    await goSidebar(page, "Matching");
+    await expect(page.getByRole("heading", { name: /^Matching$/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    const row = page.locator("[data-care-work-row]").filter({ hasText: /e2e-matching-1/i }).first();
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await row.click();
+    await expect(page.getByRole("heading", { name: /Top 3 aanbevelingen/i })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: /^Selecteer$/i }).first().click();
+    await expect(page.getByRole("dialog", { name: /Bevestig keuze/i })).toBeVisible();
+    await expect(page.getByRole("dialog").getByText(/aanbiederbeoordeling/i)).toBeVisible();
+    await page.getByRole("button", { name: /^Annuleren$/i }).click();
+    await expect(page.getByRole("dialog", { name: /Bevestig keuze/i })).toHaveCount(0);
   });
 });

@@ -160,9 +160,10 @@ export function MatchingPageWithMap({
                 { label: "Score", value: `${score}%` },
               ];
 
+      const capacityUpdateLabel = caseData?.lastActivity?.trim() || "recent onbekend";
       const warnings =
         index === 0
-          ? ["Capaciteit onzeker (laatste update: 3 dagen geleden)"]
+          ? [`Capaciteit onzeker (laatste activiteit casus: ${capacityUpdateLabel})`]
           : index === 1
             ? ["Minder ervaring met complexe casussen"]
             : ["Lage capaciteit", "Onzekere wachttijd"];
@@ -193,7 +194,7 @@ export function MatchingPageWithMap({
         whyShownThird: index === 2 ? "Geen betere alternatieven beschikbaar" : null,
       };
     });
-  }, [topMatches]);
+  }, [topMatches, caseData?.lastActivity]);
 
   const overflowList = useMemo(
     () =>
@@ -245,15 +246,27 @@ export function MatchingPageWithMap({
   const optA = rankedMatches[0] ?? null;
   const optB = rankedMatches[1] ?? null;
 
+  const spaCaseRaw = cases.find((c) => c.id === caseId) ?? null;
   const matchQualityPercent = bestMatch?.score ?? 0;
   const confidenceWord =
     matchQualityPercent >= 85 ? "Hoog" : matchQualityPercent >= 70 ? "Gemiddeld" : "Laag";
   const showUrgentBanner = caseData.urgency === "critical" || caseData.urgency === "high";
   const capacityScarceInRegion =
     rankedMatches.length > 0 && rankedMatches.every((m) => m.provider.availableSpots <= 1);
+  const urgencyBannerLabel = !showUrgentBanner
+    ? null
+    : spaCaseRaw?.urgency === "critical"
+      ? "Urgent: spoedige regie en matching vereist"
+      : spaCaseRaw != null && spaCaseRaw.wachttijd >= 5
+        ? `Urgent: casus al ${spaCaseRaw.wachttijd} dagen in de stroom — versnel doorleiding`
+        : "Urgent: hoge prioriteit — plan validatie en doorleiding snel";
   const waaromNietHoger = [
-    "Beperkte capaciteit in regio",
-    caseData.risk === "high" || caseData.risk === "medium" ? "Complexe zorgvraag" : "Aanvullende beperkingen in het profiel",
+    capacityScarceInRegion ? "Beperkte capaciteit in regio" : "Beperkte keuze in gematcht aanbod",
+    caseData.risk === "high" || caseData.risk === "medium"
+      ? "Complexe zorgvraag"
+      : caseData.signal.trim() && caseData.signal !== "Geen bijzonderheden"
+        ? caseData.signal
+        : "Aanvullende beperkingen in het profiel",
   ];
 
   const handleSelectProvider = (providerId: string) => {
@@ -412,10 +425,10 @@ export function MatchingPageWithMap({
                     <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matching</p>
                     <h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">Matching — Casus {caseData.id}</h1>
                     <div className="flex flex-wrap gap-2">
-                      {showUrgentBanner ? (
+                      {urgencyBannerLabel ? (
                         <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
                           <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
-                          Urgent: intake binnen 5 dagen vereist
+                          {urgencyBannerLabel}
                         </span>
                       ) : null}
                       {capacityScarceInRegion ? (
@@ -771,7 +784,10 @@ export function MatchingPageWithMap({
                   <p>Dit betekent:</p>
                   <ul className="list-disc space-y-1 pl-5">
                     <li>De casus gaat naar aanbiederbeoordeling (advies; geen automatische plaatsing).</li>
-                    <li>Andere opties vervallen tijdelijk voor deze doorleiding totdat je opnieuw matcht.</li>
+                    <li>
+                      Andere aanbieders worden niet automatisch afgewezen; dit legt een voorkeurskeuze vast voor deze
+                      doorleiding. Bij een andere route kun je opnieuw matchen.
+                    </li>
                   </ul>
                 </div>
               </DialogDescription>
