@@ -19,6 +19,11 @@ import type {
   RegiekamerOwnershipRole,
   RegiekamerPriorityBand,
 } from "../../lib/regiekamerDecisionOverview";
+import {
+  computeRegiekamerNextBestAction,
+  type RegiekamerNbaActionKey,
+  type RegiekamerNbaUiMode,
+} from "../../lib/regiekamerNextBestAction";
 
 interface SystemAwarenessPageProps {
   onCaseClick: (caseId: string) => void;
@@ -510,59 +515,8 @@ function dominantMetricKey(totals: {
   return null;
 }
 
-/** UI-only Regiekamer modes — derived from existing totals/items (no API changes). */
-export type RegiekamerUiMode = "crisis" | "intervention" | "stable" | "optimization";
-
-type InterventionFocus = "weak_match" | "risks" | "intake_pressure";
-
-/** Risico's uit totals tellen mee vanaf deze drempel (eenvoudige regel). */
-const REGIEKAMER_RISK_THRESHOLD = 1;
-
-/** Genoeg volume om optimalisatie / analyse te rechtvaardigen. */
-const REGIEKAMER_OPTIMIZATION_MIN_ACTIVE_CASES = 8;
-
-function deriveInterventionFocus(input: {
-  noMatchUrgentCount: number;
-  highPriorityAlerts: number;
-  intakeDelaysTotal: number;
-}): InterventionFocus {
-  if (input.noMatchUrgentCount > 0) {
-    return "weak_match";
-  }
-  if (input.highPriorityAlerts >= REGIEKAMER_RISK_THRESHOLD) {
-    return "risks";
-  }
-  return "intake_pressure";
-}
-
-/**
- * crisis: blokkades of SLA-breaches
- * intervention: verhoogd risico, zwakke match, of intake-druk (geen crisis)
- * stable: rustig beeld, beperkt volume
- * optimization: stabiel + genoeg volume
- */
-function deriveRegiekamerMode(input: {
-  criticalBlockers: number;
-  providerSlaBreaches: number;
-  highPriorityAlerts: number;
-  noMatchUrgentCount: number;
-  intakeDelaysTotal: number;
-  activeCases: number;
-}): RegiekamerUiMode {
-  if (input.criticalBlockers > 0 || input.providerSlaBreaches > 0) {
-    return "crisis";
-  }
-  const matchingWeak = input.noMatchUrgentCount > 0;
-  const risksElevated = input.highPriorityAlerts >= REGIEKAMER_RISK_THRESHOLD;
-  const intakePressure = input.intakeDelaysTotal > 0;
-  if (risksElevated || matchingWeak || intakePressure) {
-    return "intervention";
-  }
-  if (input.activeCases >= REGIEKAMER_OPTIMIZATION_MIN_ACTIVE_CASES) {
-    return "optimization";
-  }
-  return "stable";
-}
+/** UI-only Regiekamer modes — computed via `computeRegiekamerNextBestAction` (deterministic). */
+export type RegiekamerUiMode = RegiekamerNbaUiMode;
 
 const FLOW_CHAIN_LABEL =
   "Casus → Samenvatting → Matching → Gemeente validatie → Wacht op aanbieder → Plaatsing → Intake";
@@ -874,35 +828,29 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
 
   const activeCasesTotal = data?.totals.active_cases ?? 0;
 
-  const uiMode = useMemo(
+  const regiekamerNba = useMemo(
     () =>
-      deriveRegiekamerMode({
-        criticalBlockers,
-        providerSlaBreaches,
-        highPriorityAlerts,
-        noMatchUrgentCount,
-        intakeDelaysTotal,
+      computeRegiekamerNextBestAction({
+        totals: {
+          critical_blockers: criticalBlockers,
+          provider_sla_breaches: providerSlaBreaches,
+          high_priority_alerts: highPriorityAlerts,
+          intake_delays: intakeDelaysTotal,
+        },
         activeCases: activeCasesTotal,
+        noMatchUrgentCount,
       }),
     [
       activeCasesTotal,
       criticalBlockers,
-      providerSlaBreaches,
       highPriorityAlerts,
       intakeDelaysTotal,
       noMatchUrgentCount,
+      providerSlaBreaches,
     ],
   );
 
-  const interventionFocus = useMemo(
-    () =>
-      deriveInterventionFocus({
-        noMatchUrgentCount,
-        highPriorityAlerts,
-        intakeDelaysTotal,
-      }),
-    [highPriorityAlerts, intakeDelaysTotal, noMatchUrgentCount],
-  );
+  const uiMode = regiekamerNba.panel.uiMode;
 
   const actionReminders = useCallback(() => {
     setSearchQuery("");
@@ -928,192 +876,69 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     setOwnershipFilter("all");
   }, []);
 
-  const runModePrimary = useCallback(() => {
-    switch (uiMode) {
-      case "crisis":
-        applyFiltersAll();
-        if (criticalBlockers > 0) {
+  const runNbaAction = useCallback(
+    (key: RegiekamerNbaActionKey) => {
+      switch (key) {
+        case "FOCUS_BLOCKERS":
+          applyFiltersAll();
           setIssueFilter("blockers");
           setPhaseFilter("all");
-        } else {
+          break;
+        case "FOCUS_SLA":
+          applyFiltersAll();
           setIssueFilter("SLA");
           setPhaseFilter("all");
-        }
-        break;
-      case "intervention":
-        applyFiltersAll();
-        if (interventionFocus === "weak_match") {
+          break;
+        case "FOCUS_MATCHING":
           actionRematch();
-          return;
-        }
-        if (interventionFocus === "risks") {
-          setIssueFilter("risks");
-          setPhaseFilter("all");
-        } else {
+          break;
+        case "FOCUS_INTAKE":
+          applyFiltersAll();
           setIssueFilter("intake");
           setPhaseFilter("all");
-        }
-        break;
-      case "stable":
-        onAppNavigate?.("/casussen");
-        break;
-      case "optimization":
-        onAppNavigate?.("/rapportages");
-        break;
-      default:
-        break;
-    }
-  }, [
-    actionRematch,
-    applyFiltersAll,
-    criticalBlockers,
-    interventionFocus,
-    onAppNavigate,
-    uiMode,
-  ]);
+          break;
+        case "FOCUS_RISKS":
+          applyFiltersAll();
+          setIssueFilter("risks");
+          setPhaseFilter("all");
+          break;
+        case "OPEN_WORKQUEUE":
+          onAppNavigate?.("/casussen");
+          break;
+        case "OPEN_REPORTS":
+          onAppNavigate?.("/rapportages");
+          break;
+        case "REVIEW_STABLE":
+          onAppNavigate?.("/casussen");
+          break;
+        case "SLA_PROVIDER_REMINDERS":
+          actionReminders();
+          break;
+        default:
+          break;
+      }
+    },
+    [actionRematch, actionReminders, applyFiltersAll, onAppNavigate],
+  );
+
+  const runModePrimary = useCallback(() => {
+    runNbaAction(regiekamerNba.primaryAction.actionKey);
+  }, [regiekamerNba.primaryAction.actionKey, runNbaAction]);
 
   const runModeSecondary = useCallback(() => {
-    switch (uiMode) {
-      case "crisis":
-        onAppNavigate?.("/casussen");
-        break;
-      case "intervention":
-        applyFiltersAll();
-        if (interventionFocus === "weak_match") {
-          setIssueFilter("risks");
-          setPhaseFilter("all");
-        } else if (interventionFocus === "risks") {
-          if (noMatchUrgentCount > 0) {
-            actionRematch();
-          } else {
-            actionReminders();
-          }
-        } else {
-          setIssueFilter("risks");
-          setPhaseFilter("all");
-        }
-        break;
-      case "optimization":
-        onAppNavigate?.("/casussen");
-        break;
-      default:
-        break;
+    const secondary = regiekamerNba.secondaryAction;
+    if (secondary) {
+      runNbaAction(secondary.actionKey);
     }
-  }, [
-    actionRematch,
-    actionReminders,
-    applyFiltersAll,
-    interventionFocus,
-    noMatchUrgentCount,
-    onAppNavigate,
-    uiMode,
-  ]);
+  }, [regiekamerNba.secondaryAction, runNbaAction]);
 
   const applyModeCasesLink = useCallback(() => {
     runModePrimary();
   }, [runModePrimary]);
 
-  const modeDominantUi = useMemo(() => {
-    const r = (v: number) => Math.max(0, Math.round(v));
-    switch (uiMode) {
-      case "crisis": {
-        const b = r(criticalBlockers);
-        const s = r(providerSlaBreaches);
-        const slaOnly = b === 0 && s > 0;
-        const headline =
-          b > 0 && s > 0
-            ? `Keten onder druk: ${b} blokkade(s) en ${s} SLA-signal(en)`
-            : b > 0
-              ? b === 1
-                ? "1 kritieke blokkade actief"
-                : `${b} kritieke blokkades actief`
-              : `${s} SLA-signal(en) vragen directe regie`;
-        const why =
-          b > 0 && s > 0
-            ? "Blokkades en SLA overschaduwen de rest — pak dit eerst aan."
-            : b > 0
-              ? "Zonder oplossing blijft de keten stilstaan."
-              : "Reactietijd of capaciteit schuurt tegen de afspraak.";
-        const primaryLabel = slaOnly ? "Pak SLA-signalen aan" : "Los blokkades op";
-        const linkCount = b > 0 ? b : s;
-        return {
-          tone: "urgent" as const,
-          headline,
-          why,
-          primaryLabel,
-          secondaryLabel: "Bekijk werkvoorraad" as string | undefined,
-          linkCount,
-          showCasesLink: true,
-        };
-      }
-      case "intervention": {
-        if (interventionFocus === "weak_match") {
-          const c = r(noMatchUrgentCount);
-          return {
-            tone: "attention" as const,
-            headline: `Matching vraagt regie (${c} casussen)`,
-            why: "Zwak signaal of geen passende match — validatie of her-matching nodig.",
-            primaryLabel: "Herstart matching",
-            secondaryLabel: "Bekijk risico's",
-            linkCount: c,
-            showCasesLink: true,
-          };
-        }
-        if (interventionFocus === "risks") {
-          const c = r(highPriorityAlerts);
-          return {
-            tone: "attention" as const,
-            headline: `${c} casussen met verhoogd risico`,
-            why: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
-            primaryLabel: "Bekijk risico's",
-            secondaryLabel: noMatchUrgentCount > 0 ? "Herstart matching" : "Stuur reminders naar aanbieders",
-            linkCount: c,
-            showCasesLink: true,
-          };
-        }
-        const c = r(intakeDelaysTotal);
-        return {
-          tone: "attention" as const,
-          headline: `${c} casussen met intake-vertraging`,
-          why: "Start van zorg vertraagt na plaatsing.",
-          primaryLabel: "Bekijk intake-vertraging",
-          secondaryLabel: "Bekijk risico's",
-          linkCount: c,
-          showCasesLink: true,
-        };
-      }
-      case "optimization":
-        return {
-          tone: "calm" as const,
-          headline: "Volume hoog genoeg voor ketenanalyse",
-          why: `${activeCasesTotal} actieve casussen — waar kun je tijd of capaciteit winnen?`,
-          primaryLabel: "Analyseer prestaties",
-          secondaryLabel: "Bekijk werkvoorraad",
-          linkCount: 0,
-          showCasesLink: false,
-        };
-      case "stable":
-      default:
-        return {
-          tone: "calm" as const,
-          headline: "Keten stabiel",
-          why: "Geen blokkades of SLA-druk; risico's zijn beperkt.",
-          primaryLabel: "Bekijk werkvoorraad",
-          secondaryLabel: undefined as string | undefined,
-          linkCount: 0,
-          showCasesLink: false,
-        };
-    }
-  }, [
-    activeCasesTotal,
-    criticalBlockers,
-    highPriorityAlerts,
-    intakeDelaysTotal,
-    interventionFocus,
-    noMatchUrgentCount,
-    providerSlaBreaches,
-    uiMode,
-  ]);
+  const dominantPanelDescription = regiekamerNba.impactHint
+    ? `${regiekamerNba.description} ${regiekamerNba.impactHint}`
+    : regiekamerNba.description;
 
   const showInsightSections = uiMode === "stable" || uiMode === "optimization";
 
@@ -1134,14 +959,14 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       rows.push({
         key: "align-dominant",
         title: "Zelfde prioriteit als het paneel hierboven",
-        cta: modeDominantUi.primaryLabel,
+        cta: regiekamerNba.primaryAction.label,
         onClick: runModePrimary,
       });
-      if (modeDominantUi.secondaryLabel) {
+      if (regiekamerNba.secondaryAction) {
         rows.push({
           key: "align-secondary",
           title: "Alternatieve vervolgstap",
-          cta: modeDominantUi.secondaryLabel,
+          cta: regiekamerNba.secondaryAction.label,
           onClick: runModeSecondary,
         });
       }
@@ -1169,7 +994,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       onClick: () => onAppNavigate?.("/casussen"),
     });
     return rows;
-  }, [modeDominantUi, onAppNavigate, runModePrimary, runModeSecondary, uiMode]);
+  }, [onAppNavigate, regiekamerNba.primaryAction.label, regiekamerNba.secondaryAction, runModePrimary, runModeSecondary, uiMode]);
 
   const regieVisibleCap = regieActionsExpanded ? 3 : 2;
   const regieVisibleActions = regieActionDefs.slice(0, regieVisibleCap);
@@ -1207,27 +1032,27 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
         <div className={SECTION_STACK_CLASS}>
           {hasActiveData && (
             <DominantActionPanel
-              tone={modeDominantUi.tone}
-              title={modeDominantUi.headline}
-              description={modeDominantUi.why}
+              tone={regiekamerNba.panel.tone}
+              title={regiekamerNba.title}
+              description={dominantPanelDescription}
               primaryAction={{
-                label: modeDominantUi.primaryLabel,
+                label: regiekamerNba.primaryAction.label,
                 onClick: runModePrimary,
                 testId: "regiekamer-dominant-primary-cta",
               }}
               secondaryAction={
-                modeDominantUi.secondaryLabel
+                regiekamerNba.secondaryAction
                   ? {
-                      label: modeDominantUi.secondaryLabel,
+                      label: regiekamerNba.secondaryAction.label,
                       onClick: runModeSecondary,
                       testId: "regiekamer-dominant-secondary-cta",
                     }
                   : undefined
               }
               supplementalLink={
-                modeDominantUi.showCasesLink && modeDominantUi.linkCount > 0
+                regiekamerNba.panel.showCasesLink && regiekamerNba.panel.linkCount > 0
                   ? {
-                      label: `Bekijk casussen (${modeDominantUi.linkCount})`,
+                      label: `Bekijk casussen (${regiekamerNba.panel.linkCount})`,
                       onClick: applyModeCasesLink,
                       testId: "regiekamer-dominant-cases-link",
                     }
