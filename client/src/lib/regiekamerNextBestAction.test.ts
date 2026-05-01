@@ -3,6 +3,7 @@ import {
   REGIEKAMER_NBA_OPTIMIZATION_MIN_ACTIVE,
   REGIEKAMER_NBA_RISK_THRESHOLD,
   computeRegiekamerNextBestAction,
+  formatRegiekamerDominantDescription,
 } from "./regiekamerNextBestAction";
 
 function baseTotals() {
@@ -28,6 +29,9 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_BLOCKERS");
     expect(r.panel.uiMode).toBe("crisis");
     expect(r.impactHint).toMatch(/SLA-signal/);
+    expect(r.reasons).toEqual(["2 casussen met kritieke blokkade"]);
+    expect(formatRegiekamerDominantDescription(r)).toMatch(/• 2 casussen met kritieke blokkade/);
+    expect(formatRegiekamerDominantDescription(r)).toMatch(/Daarnaast: 5 SLA-signal/);
   });
 
   it("uses SLA tier when no blockers", () => {
@@ -42,6 +46,7 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_SLA");
     expect(r.title).toMatch(/SLA-signal/);
     expect(r.panel.linkCount).toBe(2);
+    expect(r.reasons).toEqual(["2 SLA-signal(en) te laat bij aanbieder"]);
   });
 
   it("prioritizes matching failures before intake delays", () => {
@@ -65,6 +70,7 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(intakeOnly.primaryAction.actionKey).toBe("FOCUS_INTAKE");
     expect(intakeOnly.title).toMatch(/intake-vertraging/);
+    expect(intakeOnly.reasons).toEqual(["4 met vertraagde intake-start"]);
   });
 
   it("surfaces risks after the four priority tiers", () => {
@@ -79,6 +85,7 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_RISKS");
     expect(r.secondaryAction?.actionKey).toBe("SLA_PROVIDER_REMINDERS");
     expect(r.panel.uiMode).toBe("intervention");
+    expect(r.reasons).toEqual(["1 casussen met verhoogd risico"]);
   });
 
   it("does not surface risks below threshold", () => {
@@ -101,6 +108,7 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(r.primaryAction.actionKey).toBe("OPEN_REPORTS");
     expect(r.panel.uiMode).toBe("optimization");
+    expect(r.reasons).toEqual(["8 actieve casussen in keten"]);
   });
 
   it("defaults to stable when volume is low and signals are quiet", () => {
@@ -111,6 +119,7 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(r.primaryAction.actionKey).toBe("REVIEW_STABLE");
     expect(r.panel.uiMode).toBe("stable");
+    expect(r.reasons).toEqual([]);
   });
 
   it("rounds fractional totals defensively", () => {
@@ -126,5 +135,48 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(r.primaryAction.actionKey).toBe("FOCUS_BLOCKERS");
     expect(r.title).toMatch(/1 kritieke blokkade/);
+  });
+
+  it("splits blocker reasons into upstream vs aanbieder when explain slices are provided", () => {
+    const r = computeRegiekamerNextBestAction({
+      totals: {
+        ...baseTotals(),
+        critical_blockers: 3,
+      },
+      activeCases: 5,
+      noMatchUrgentCount: 0,
+      explain: {
+        blockerWaitingCases: 2,
+        blockedProviderCases: 1,
+      },
+    });
+    expect(r.reasons).toEqual([
+      "2 casussen wachten upstream",
+      "1 casussen blokkeren bij aanbieder",
+    ]);
+  });
+
+  it("uses matchingMissingCandidates in matching tier when provided", () => {
+    const r = computeRegiekamerNextBestAction({
+      totals: baseTotals(),
+      activeCases: 3,
+      noMatchUrgentCount: 4,
+      explain: { matchingMissingCandidates: 3 },
+    });
+    expect(r.primaryAction.actionKey).toBe("FOCUS_MATCHING");
+    expect(r.reasons).toEqual(["3 zonder passende kandidaat"]);
+  });
+
+  it("allows SLA overdue count override via explain", () => {
+    const r = computeRegiekamerNextBestAction({
+      totals: {
+        ...baseTotals(),
+        provider_sla_breaches: 2,
+      },
+      activeCases: 2,
+      noMatchUrgentCount: 0,
+      explain: { slaOverdueCount: 2 },
+    });
+    expect(r.reasons).toEqual(["2 SLA-signal(en) te laat bij aanbieder"]);
   });
 });

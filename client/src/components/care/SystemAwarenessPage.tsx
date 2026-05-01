@@ -21,6 +21,7 @@ import type {
 } from "../../lib/regiekamerDecisionOverview";
 import {
   computeRegiekamerNextBestAction,
+  formatRegiekamerDominantDescription,
   type RegiekamerNbaActionKey,
   type RegiekamerNbaUiMode,
 } from "../../lib/regiekamerNextBestAction";
@@ -828,6 +829,22 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
 
   const activeCasesTotal = data?.totals.active_cases ?? 0;
 
+  const regiekamerNbaExplain = useMemo(() => {
+    const criticalTop = allOverviewItems.filter(
+      (i) => String(i.top_blocker?.severity ?? "").toLowerCase() === "critical",
+    );
+    const blockedProviderCases = criticalTop.filter((i) => i.phase === "aanbieder_beoordeling").length;
+    const blockerWaitingCases = criticalTop.length - blockedProviderCases;
+    const matchingMissingCandidates = noMatchDrillItems.filter((i) => !(i.assigned_provider ?? "").trim()).length;
+    return {
+      blockerWaitingCases,
+      blockedProviderCases,
+      matchingMissingCandidates,
+      slaOverdueCount: providerSlaBreaches,
+      intakeDelayedStart: intakeDelaysTotal,
+    };
+  }, [allOverviewItems, noMatchDrillItems, providerSlaBreaches, intakeDelaysTotal]);
+
   const regiekamerNba = useMemo(
     () =>
       computeRegiekamerNextBestAction({
@@ -839,6 +856,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
         },
         activeCases: activeCasesTotal,
         noMatchUrgentCount,
+        explain: regiekamerNbaExplain,
       }),
     [
       activeCasesTotal,
@@ -847,6 +865,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       intakeDelaysTotal,
       noMatchUrgentCount,
       providerSlaBreaches,
+      regiekamerNbaExplain,
     ],
   );
 
@@ -936,9 +955,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     runModePrimary();
   }, [runModePrimary]);
 
-  const dominantPanelDescription = regiekamerNba.impactHint
-    ? `${regiekamerNba.description} ${regiekamerNba.impactHint}`
-    : regiekamerNba.description;
+  const dominantPanelDescription = formatRegiekamerDominantDescription(regiekamerNba);
 
   const showInsightSections = uiMode === "stable" || uiMode === "optimization";
 

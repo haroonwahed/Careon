@@ -29,6 +29,22 @@ function r(n: number): number {
   return Math.max(0, Math.round(n));
 }
 
+/**
+ * Optional drill-down for `reasons[]` (deterministic; populated by caller from overview items).
+ */
+export type RegiekamerNbaExplainInput = {
+  /** Casussen met kritieke blokkade die upstream wachten (niet primair bij aanbieder-beoordeling). */
+  blockerWaitingCases?: number;
+  /** Casussen met kritieke blokkade in aanbieder-beoordeling. */
+  blockedProviderCases?: number;
+  /** Matching-urgent zonder zichtbare aanbieder / kandidaat. */
+  matchingMissingCandidates?: number;
+  /** SLA-te laat (default: gelijk aan provider-SLA-teller in SLA-tier). */
+  slaOverdueCount?: number;
+  /** Intake-vertraagd (default: gelijk aan intake_delays in intake-tier). */
+  intakeDelayedStart?: number;
+};
+
 export type RegiekamerNbaInput = {
   totals: Pick<
     RegiekamerDecisionOverviewTotals,
@@ -37,6 +53,7 @@ export type RegiekamerNbaInput = {
   activeCases: number;
   /** Matching-urgent count: matching phase + hoog/kritiek urgent (same as Regiekamer UI). */
   noMatchUrgentCount: number;
+  explain?: RegiekamerNbaExplainInput;
 };
 
 /**
@@ -46,6 +63,8 @@ export type RegiekamerNbaInput = {
 export type RegiekamerNbaDecision = {
   title: string;
   description: string;
+  /** Korte deterministische “waarom”-regels voor transparantie (UI plakt ze achter `description`). */
+  reasons: string[];
   primaryAction: { label: string; actionKey: RegiekamerNbaActionKey };
   secondaryAction?: { label: string; actionKey: RegiekamerNbaActionKey };
   impactHint?: string;
@@ -57,10 +76,49 @@ export type RegiekamerNbaDecision = {
   };
 };
 
+function blockerReasons(b: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+  const w = r(explain?.blockerWaitingCases ?? 0);
+  const p = r(explain?.blockedProviderCases ?? 0);
+  const out: string[] = [];
+  if (w > 0) {
+    out.push(`${w} casussen wachten upstream`);
+  }
+  if (p > 0) {
+    out.push(`${p} casussen blokkeren bij aanbieder`);
+  }
+  if (out.length === 0 && b > 0) {
+    out.push(`${b} casussen met kritieke blokkade`);
+  }
+  return out;
+}
+
+function slaReasons(s: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+  const n = r(explain?.slaOverdueCount ?? s);
+  if (n <= 0) {
+    return [];
+  }
+  return [`${n} SLA-signal(en) te laat bij aanbieder`];
+}
+
+function matchingReasons(m: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+  const mcRaw = explain?.matchingMissingCandidates;
+  const mc = mcRaw != null ? r(mcRaw) : null;
+  if (mc != null && mc > 0) {
+    return [`${mc} zonder passende kandidaat`];
+  }
+  return [`${m} urgent in matching (hoog/kritiek)`];
+}
+
+function intakeReasons(d: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+  const n = r(explain?.intakeDelayedStart ?? d);
+  return [`${n} met vertraagde intake-start`];
+}
+
 /**
  * Rule-ordered decision. When both blokkades and SLA exist, blokkades win; SLA is surfaced in `impactHint`.
  */
 export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): RegiekamerNbaDecision {
+  const ex = input.explain;
   const b = r(input.totals.critical_blockers);
   const s = r(input.totals.provider_sla_breaches);
   const m = r(input.noMatchUrgentCount);
@@ -80,6 +138,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title,
       description,
+      reasons: blockerReasons(b, ex),
       primaryAction: { label: "Los blokkades op", actionKey: "FOCUS_BLOCKERS" },
       secondaryAction: { label: "Bekijk werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       impactHint,
@@ -97,6 +156,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title: `${s} SLA-signal(en) vragen directe regie`,
       description: "Reactietijd of capaciteit schuurt tegen de afspraak.",
+      reasons: slaReasons(s, ex),
       primaryAction: { label: "Pak SLA-signalen aan", actionKey: "FOCUS_SLA" },
       secondaryAction: { label: "Bekijk werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {
@@ -113,6 +173,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title: `Matching vraagt regie (${m} casussen)`,
       description: "Zwak signaal of geen passende match — validatie of her-matching nodig.",
+      reasons: matchingReasons(m, ex),
       primaryAction: { label: "Herstart matching", actionKey: "FOCUS_MATCHING" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
@@ -129,6 +190,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title: `${d} casussen met intake-vertraging`,
       description: "Start van zorg vertraagt na plaatsing.",
+      reasons: intakeReasons(d, ex),
       primaryAction: { label: "Bekijk intake-vertraging", actionKey: "FOCUS_INTAKE" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
@@ -145,6 +207,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title: `${risks} casussen met verhoogd risico`,
       description: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
+      reasons: [`${risks} casussen met verhoogd risico`],
       primaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       secondaryAction: {
         label: "Stuur reminders naar aanbieders",
@@ -164,6 +227,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     return {
       title: "Volume hoog genoeg voor ketenanalyse",
       description: `${active} actieve casussen — waar kun je tijd of capaciteit winnen?`,
+      reasons: [`${active} actieve casussen in keten`],
       primaryAction: { label: "Analyseer prestaties", actionKey: "OPEN_REPORTS" },
       secondaryAction: { label: "Bekijk werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {
@@ -178,6 +242,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   return {
     title: "Keten stabiel",
     description: "Geen blokkades of SLA-druk; risico's zijn beperkt.",
+    reasons: [],
     primaryAction: { label: "Bekijk werkvoorraad", actionKey: "REVIEW_STABLE" },
     panel: {
       tone: "calm",
@@ -186,4 +251,16 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       uiMode: "stable",
     },
   };
+}
+
+/**
+ * Plakt deterministische redenen aan de beschrijving (inline bullets; werkt in één `<p>` zonder extra CSS).
+ */
+export function formatRegiekamerDominantDescription(
+  decision: Pick<RegiekamerNbaDecision, "description" | "reasons" | "impactHint">,
+): string {
+  const reasonPart =
+    decision.reasons.length > 0 ? ` ${decision.reasons.map((x) => `• ${x}`).join(" ")}` : "";
+  const base = `${decision.description}${reasonPart}`;
+  return decision.impactHint ? `${base} ${decision.impactHint}` : base;
 }
