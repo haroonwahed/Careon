@@ -145,7 +145,7 @@ class Phase2PilotStabilizationTests(TestCase):
         self.assertTrue(summary_payload['summary']['matchingReady'])
 
         matching_response = self.client.post(
-            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps({'action': 'assign', 'provider_id': provider.pk}),
             content_type='application/json',
         )
@@ -211,7 +211,7 @@ class Phase2PilotStabilizationTests(TestCase):
 
         self._login(self.owner)
         self.client.post(
-            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps({'action': 'assign', 'provider_id': provider.pk}),
             content_type='application/json',
         )
@@ -268,7 +268,7 @@ class Phase2PilotStabilizationTests(TestCase):
 
         self._login(self.admin)
         self.client.post(
-            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps({'action': 'assign', 'provider_id': provider.pk}),
             content_type='application/json',
         )
@@ -297,7 +297,7 @@ class Phase2PilotStabilizationTests(TestCase):
         )
         self._login(self.provider_actor)
         self.client.post(
-            reverse('careon:intake_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:intake_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps({}),
             content_type='application/json',
         )

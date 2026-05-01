@@ -355,7 +355,8 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
   const worklistRow = page.getByTestId("regiekamer-worklist-item").filter({ hasText: CASE_TITLE }).first();
   await worklistRow.click();
   await expect(page.getByRole("button", { name: "Terug naar casussen" })).toBeVisible();
-  await expect(page.getByText("Volgende stap")).toBeVisible();
+  await expect(page.getByTestId("casus-hero-band")).toBeVisible();
+  await expect(page.getByTestId("next-best-action")).toBeVisible();
 });
 
 test("pilot demo part 2 rematches, accepts, confirms placement, and starts intake", async ({ page }) => {

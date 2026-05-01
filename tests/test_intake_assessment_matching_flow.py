@@ -98,7 +98,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertContains(matching_response, '<div id="root"></div>', html=True)
 
         matching_candidates_response = self.client.get(
-            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.pk})
+            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.contract_id})
         )
         self.assertEqual(matching_candidates_response.status_code, 200)
         candidates_payload = matching_candidates_response.json()
@@ -106,7 +106,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertIn('matches', candidates_payload)
 
         assign_response = self.client.post(
-            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps(
                 {
                     'action': 'assign',
@@ -150,7 +150,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         )
 
         response = self.client.post(
-            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
             data=json.dumps(
                 {
                     'action': 'assign',
@@ -430,7 +430,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self._assert_spa_shell(response)
 
         matching_candidates_response = self.client.get(
-            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.pk})
+            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.contract_id})
         )
         self.assertEqual(matching_candidates_response.status_code, 200)
         payload = matching_candidates_response.json()
@@ -459,7 +459,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self._assert_spa_shell(response)
 
         matching_candidates_response = self.client.get(
-            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.pk})
+            reverse('careon:matching_candidates_api', kwargs={'case_id': intake.contract_id})
         )
         self.assertEqual(matching_candidates_response.status_code, 200)
         payload = matching_candidates_response.json()
@@ -709,7 +709,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self._assert_spa_shell(case_detail)
 
         placement_payload = self.client.get(
-            reverse('careon:case_placement_detail_api', kwargs={'case_id': intake.pk})
+            reverse('careon:case_placement_detail_api', kwargs={'case_id': intake.contract_id})
         ).json()
         self.assertEqual(placement_payload.get('placement', {}).get('status'), PlacementRequest.Status.APPROVED)
 

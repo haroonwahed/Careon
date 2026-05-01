@@ -88,7 +88,7 @@ class SeedDemoDataTests(TestCase):
         match = MatchResultaat.objects.get(casus=intake.case_record)
 
         self.client.force_login(user)
-        response = self.client.get(reverse('careon:matching_candidates_api', kwargs={'case_id': intake.pk}))
+        response = self.client.get(reverse('careon:matching_candidates_api', kwargs={'case_id': intake.contract_id}))
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()

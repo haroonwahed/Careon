@@ -6,7 +6,7 @@ import json
 import logging
 from datetime import date
 
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
@@ -95,6 +95,29 @@ def _case_workflow_state(case):
     if getattr(case, 'lifecycle_stage', '') == 'ARCHIVED':
         return WorkflowState.ARCHIVED
     return WorkflowState.DRAFT_CASE
+
+
+def _get_intake_for_case_api_id(case_id, organization, *, lock=False, select_related=None):
+    """
+    URLs under /care/api/cases/<case_id>/ use the CareCase primary key for assessment,
+    decision evaluation, and SPA calls. Resolve CaseIntakeProcess via CareCase.contract back-ref,
+    not CaseIntakeProcess.pk (which may differ).
+    """
+    case_record = get_scoped_object_or_404(
+        CareCase.objects.all(),
+        organization,
+        pk=case_id,
+    )
+    base_rel = ('contract', 'organization')
+    extra = tuple(select_related) if select_related else ()
+    qs = CaseIntakeProcess.objects.select_related(*base_rel, *extra)
+    if lock:
+        qs = qs.select_for_update(of=('self',))
+    return get_scoped_object_or_404(
+        qs,
+        organization,
+        contract=case_record,
+    )
 
 
 def _coerce_coordinate(value, *, minimum, maximum):
@@ -196,6 +219,14 @@ def _provider_regions_payload(profile):
     }
 
 
+def _safe_case_intake(case):
+    """Return linked CaseIntakeProcess or None (OneToOne may not exist)."""
+    try:
+        return case.due_diligence_process
+    except CaseIntakeProcess.DoesNotExist:
+        return None
+
+
 def _build_case_data(case, *, include_geo=False):
     data = CareCaseData(
         id=str(case.id),
@@ -218,7 +249,28 @@ def _build_case_data(case, *, include_geo=False):
     result['contract_type'] = getattr(case, 'contract_type', '') or ''
     result['lifecycle_stage'] = getattr(case, 'lifecycle_stage', '') or ''
     result['workflow_state'] = _case_workflow_state(case)
-    intake = getattr(case, 'due_diligence_process', None)
+    intake = _safe_case_intake(case)
+    # Intake-backed fields for SPA (placement inference + urgency) when older clients omit workflow_state.
+    if intake is not None:
+        result['arrangement_type_code'] = (getattr(intake, 'arrangement_type_code', '') or '').strip()
+        result['arrangement_provider'] = (getattr(intake, 'arrangement_provider', '') or '').strip()
+        result['arrangement_end_date'] = (
+            intake.arrangement_end_date.isoformat() if getattr(intake, 'arrangement_end_date', None) else None
+        )
+        result['intake_start_date'] = intake.start_date.isoformat() if getattr(intake, 'start_date', None) else None
+        result['urgency_validated'] = bool(getattr(intake, 'urgency_validated', False))
+        result['urgency_document_present'] = bool(getattr(intake, 'urgency_document', None))
+        result['urgency_granted_date'] = (
+            intake.urgency_granted_date.isoformat() if getattr(intake, 'urgency_granted_date', None) else None
+        )
+    else:
+        result['arrangement_type_code'] = ''
+        result['arrangement_provider'] = ''
+        result['arrangement_end_date'] = None
+        result['intake_start_date'] = None
+        result['urgency_validated'] = False
+        result['urgency_document_present'] = False
+        result['urgency_granted_date'] = None
     has_case_geo = bool(
         intake and getattr(intake, 'latitude', None) is not None and getattr(intake, 'longitude', None) is not None
     )
@@ -535,10 +587,14 @@ def matching_candidates_api(request, case_id):
     if organization is None:
         return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
 
-    intake = CaseIntakeProcess.objects.filter(organization=organization, pk=case_id).select_related(
-        'regio', 'preferred_region', 'gemeente', 'contract'
-    ).first()
-    if intake is None:
+    try:
+        intake = _get_intake_for_case_api_id(
+            case_id,
+            organization,
+            lock=False,
+            select_related=('regio', 'preferred_region', 'gemeente'),
+        )
+    except Http404:
         return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return JsonResponse({'error': 'Casus is gearchiveerd.'}, status=400)
@@ -817,11 +873,7 @@ def matching_action_api(request, case_id):
     action = (payload.get('action') or '').strip().lower()
 
     with transaction.atomic():
-        intake = get_scoped_object_or_404(
-            CaseIntakeProcess.objects.select_for_update(of=('self',)).select_related('contract'),
-            organization,
-            pk=case_id,
-        )
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -983,11 +1035,7 @@ def matching_action_api(request, case_id):
 @require_http_methods(["GET"])
 def case_placement_detail_api(request, case_id):
     organization = get_user_organization(request.user)
-    intake = get_scoped_object_or_404(
-        CaseIntakeProcess.objects.select_related('contract'),
-        organization,
-        pk=case_id,
-    )
+    intake = _get_intake_for_case_api_id(case_id, organization, lock=False)
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return JsonResponse({'caseId': str(intake.pk), 'placement': {}, 'error': 'Casus is gearchiveerd.'}, status=400)
     placement = (
@@ -1037,11 +1085,7 @@ def provider_decision_api(request, case_id):
     reason_code = str(payload.get('rejection_reason_code') or payload.get('reason_code') or '').strip().upper()
 
     with transaction.atomic():
-        intake = get_scoped_object_or_404(
-            CaseIntakeProcess.objects.select_for_update(of=('self',)).select_related('contract'),
-            organization,
-            pk=case_id,
-        )
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -1208,11 +1252,7 @@ def placement_action_api(request, case_id):
     requested_status = str(payload.get('status') or '').strip().upper()
     note = (payload.get('note') or payload.get('comment') or '').strip()
     with transaction.atomic():
-        intake = get_scoped_object_or_404(
-            CaseIntakeProcess.objects.select_for_update(of=('self',)).select_related('contract'),
-            organization,
-            pk=case_id,
-        )
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -1323,11 +1363,7 @@ def intake_action_api(request, case_id):
         return role_error
 
     with transaction.atomic():
-        intake = get_scoped_object_or_404(
-            CaseIntakeProcess.objects.select_for_update(of=('self',)).select_related('contract'),
-            organization,
-            pk=case_id,
-        )
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
