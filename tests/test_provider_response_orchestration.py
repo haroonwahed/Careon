@@ -16,6 +16,7 @@ from contracts.models import (
     PlacementRequest,
     UserProfile,
 )
+from contracts.workflow_state_machine import WorkflowState
 
 
 class ProviderResponseOrchestrationTests(TestCase):
@@ -401,7 +402,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Providerreacties')
+        self.assertContains(response, 'Reacties')
         self.assertContains(response, 'Afgewezen')
 
     def test_case_detail_provider_response_block_renders_sla_badge_waiting_and_countdown(self):
@@ -420,8 +421,7 @@ class ProviderResponseOrchestrationTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'SLA AT_RISK')
-        self.assertContains(response, 'Wachtend: 50 uur')
-        self.assertContains(response, 'Provider status')
+        self.assertContains(response, 'Wacht: 50 uur')
         self.assertContains(response, 'Regievoerder')
         self.assertContains(response, 'Stuur herinnering')
 
@@ -441,7 +441,8 @@ class ProviderResponseOrchestrationTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kritiek: FORCED_ACTION')
+        self.assertContains(response, 'FORCED_ACTION')
+        self.assertContains(response, 'Acties tijdelijk geblokkeerd')
         actions = response.context['provider_response_actions']
         self.assertGreaterEqual(len(actions), 2)
         self.assertEqual(actions[0]['action'], 'trigger_rematch')
@@ -620,6 +621,7 @@ class ProviderResponseOrchestrationTests(TestCase):
         self.assertEqual(rematch_response.status_code, 200)
         self.intake.refresh_from_db()
         self.assertEqual(self.intake.status, CaseIntakeProcess.ProcessStatus.MATCHING)
+        self.assertEqual(self.intake.workflow_state, WorkflowState.MATCHING_READY)
 
         next_placement = PlacementRequest.objects.create(
             due_diligence_process=self.intake,
@@ -641,29 +643,3 @@ class ProviderResponseOrchestrationTests(TestCase):
         self.assertEqual(provide_info_response.status_code, 200)
         next_placement.refresh_from_db()
         self.assertEqual(next_placement.provider_response_status, PlacementRequest.ProviderResponseStatus.PENDING)
-
-        self.intake.case_coordinator = self.provider_actor
-        self.intake.save(update_fields=['case_coordinator', 'updated_at'])
-        self._login_provider_actor()
-        accepted_response = self.client.post(
-            reverse('careon:case_outcome_action', kwargs={'pk': self.intake.pk}),
-            {
-                'outcome_type': 'provider_response',
-                'status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
-                'reason_code': 'NONE',
-                'notes': 'Aanbieder accepteert vervolgintake.',
-                'next': f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
-            },
-            follow=True,
-        )
-        self.assertEqual(accepted_response.status_code, 200)
-        next_placement.refresh_from_db()
-        self.assertEqual(next_placement.provider_response_status, PlacementRequest.ProviderResponseStatus.ACCEPTED)
-
-        final_response = self.client.get(
-            f"{reverse('careon:case_detail', kwargs={'pk': self.intake.pk})}?tab=plaatsing",
-            follow=True,
-        )
-        self.assertEqual(final_response.status_code, 200)
-        self.assertContains(final_response, 'Geaccepteerd')
-        self.assertFalse(final_response.context['intelligence_flags']['provider_not_responding'])

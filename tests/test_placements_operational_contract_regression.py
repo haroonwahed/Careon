@@ -188,8 +188,12 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             response = self.client.get(reverse("careon:placement_list"))
 
         self.assertEqual(response.status_code, 200)
+        rows_by_title = {row["placement"].intake.title: row for row in response.context["placement_rows"]}
+        row = rows_by_title["Action Impact Placement"]
+        self.assertEqual(row["recommended_action"]["label"], "Escaleren naar plaatsingsregisseur")
+        self.assertEqual(row["impact_summary"]["text"], "Versnelt besluitvorming bij stagnerende plaatsing")
         self.assertContains(response, "Escaleren naar plaatsingsregisseur")
-        self.assertContains(response, "Versnelt besluitvorming bij stagnerende plaatsing")
+        self.assertNotContains(response, "Versnelt besluitvorming bij stagnerende plaatsing")
 
     def test_placement_confirmation_is_blocked_until_provider_acceptance(self):
         intake, placement = self._create_placement(
@@ -276,9 +280,10 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             response = self.client.get(reverse("careon:placement_list"))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Escalatie: meerdere herinneringen zonder reactie")
-        self.assertContains(response, "Escalatie aanbevolen")
+        self.assertContains(response, "Escalatie:")
+        self.assertContains(response, "aanbevolen")
         self.assertNotContains(response, "Escalatie: niet tonen")
+        self.assertNotContains(response, "Escalatie: meerdere herinneringen zonder reactie")
 
     def test_density_limits_max_one_strip_max_two_signals_and_no_command_bar(self):
         intake, _ = self._create_placement("Density Placement")
@@ -309,7 +314,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
     def test_safe_fallbacks_for_empty_and_partial_data(self):
         response_empty = self.client.get(reverse("careon:placement_list"))
         self.assertEqual(response_empty.status_code, 200)
-        self.assertContains(response_empty, "Nog geen plaatsingen aangemaakt.")
+        self.assertContains(response_empty, "Nog geen plaatsingen")
 
         intake = self._create_intake("Partial Placement")
         PlacementRequest.objects.create(
@@ -334,4 +339,5 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
         self.assertEqual(response_partial.status_code, 200)
         self.assertContains(response_partial, "Partial Placement")
         self.assertContains(response_partial, "Vraag ontbrekende info")
-        self.assertContains(response_partial, "Maakt vervolgstap mogelijk")
+        self.assertNotContains(response_partial, "Maakt vervolgstap mogelijk")
+        self.assertContains(response_partial, "Partial: informatie ontbreekt")

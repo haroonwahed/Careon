@@ -158,7 +158,7 @@ export function TopBar({
   const RoleIcon = getRoleIcon(currentContext.type);
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
+    <header data-testid="care-top-bar" className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
       
       {/* LEFT: ROLE/CONTEXT SWITCHER */}
       <div className="shrink-0">

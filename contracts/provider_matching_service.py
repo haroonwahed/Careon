@@ -327,7 +327,11 @@ def _score_performance_fit(prestaties):
     react = float(prestaties.gemiddelde_reactietijd_uren or 0)
     score += 2.5 if 0 < react <= 24 else 1.5 if react <= 72 else 0
 
-    acceptance = float(prestaties.acceptatiegraad_of_aanname_ratio or 0.0)
+    acceptance = float(
+        getattr(prestaties, 'acceptatiegraad_of_aanname_ratio', None)
+        or prestaties.succesratio_match_naar_plaatsing
+        or 0.0
+    )
     score += min(2.0, acceptance * 2.0)
 
     drop_out = float(prestaties.plaatsing_voortijdig_beeindigd_ratio or 0.0)

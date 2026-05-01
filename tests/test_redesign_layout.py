@@ -1,5 +1,3 @@
-
-import os
 import re
 
 from django.contrib.auth.models import User
@@ -15,7 +13,6 @@ class RedesignLayoutTests(TestCase):
             email='test@example.com',
             password='testpass123',
         )
-        os.environ['FEATURE_REDESIGN'] = 'true'
         self.client.login(username='testuser', password='testpass123')
 
     def _assert_dashboard_spa_shell(self, response):
@@ -24,7 +21,6 @@ class RedesignLayoutTests(TestCase):
         self.assertIn('<div id="root"></div>', html)
         self.assertRegex(html, r'/static/spa/assets/index-[^\"\']+\.js')
         self.assertRegex(html, r'/static/spa/assets/index-[^\"\']+\.css')
-        # The shell contract is injected for regression coverage; the visible contract is the SPA root.
 
     def test_base_shell_and_theme_controls(self):
         response = self.client.get(reverse('dashboard'))
@@ -45,7 +41,3 @@ class RedesignLayoutTests(TestCase):
     def test_dashboard_reduces_secondary_actions(self):
         response = self.client.get(reverse('dashboard'))
         self._assert_dashboard_spa_shell(response)
-
-    def tearDown(self):
-        if 'FEATURE_REDESIGN' in os.environ:
-            del os.environ['FEATURE_REDESIGN']

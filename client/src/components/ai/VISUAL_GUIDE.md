@@ -10,9 +10,7 @@
 │                                                        │
 │ Start matching proces                                  │ ← Title (bold)
 │                                                        │
-│ Aanbieder Beoordeling is compleet en alle vereiste gegevens     │ ← Explanation
-│ zijn aanwezig. Systeem heeft 3 potentiële matches     │   (muted text)
-│ geïdentificeerd in de regio.                          │
+│ Casus is compleet. 3 matches klaar.                   │ ← Explanation
 │                                                        │
 │ ┌──────────────────┐                                  │
 │ │ Start matching → │                                  │ ← CTA Button
@@ -37,7 +35,7 @@ Padding: 20px
 │ └──────────────────────────────────────────────────┘ │
 │                                                        │
 │ ┌──────────────────────────────────────────────────┐ │
-│ │ 🟠 Urgente casus met langere reactietijd        │ │ ← Warning
+│ │ 🟠 Urgente casus met trage reactie              │ │ ← Warning
 │ └──────────────────────────────────────────────────┘ │
 │                                                        │
 │ ┌──────────────────────────────────────────────────┐ │
@@ -56,15 +54,15 @@ Text size: 12px
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ 📄 Casus samenvatting                                  │ ← Header
+│ 📄 Samenvatting                                         │ ← Header
 │                                                        │
 │ ✓ 15 jaar, woonachtig in Amsterdam                    │ ← Success item
 │                                                        │
 │ ℹ️ Zorgvraag: Intensieve Ambulante Begeleiding        │ ← Info item
 │                                                        │
-│ ⚠️ Hoge urgentie - spoedtraject vereist               │ ← Warning item
+│ ⚠️ Hoge urgentie                                       │ ← Warning item
 │                                                        │
-│ ✓ Aanbieder Beoordeling gepland met Dr. P. Bakker               │ ← Default item
+│ ✓ Beoordeling gepland                                 │ ← Default item
 └────────────────────────────────────────────────────────┘
 
 Icon: 14px (left aligned)
@@ -108,7 +106,7 @@ Score colors:
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ ℹ️ Aanbieder Beoordeling gepland voor 18 april met Dr. Bakker  │
+│ ℹ️ Beoordeling gepland op 18 april                    │
 └────────────────────────────────────────────────────────┘
 
 Types & Colors:
@@ -140,7 +138,7 @@ Border radius: 8px
 │  Left Panel    │  Center/Main        │  Right Panel            │
 │                │                     │  (AI Insights)          │
 │  • Case info   │  • Samenvatting 🤖 │  • Risicosignalen 🤖  │
-│  • Details     │  • Work area        │  • Process status       │
+│  • Details     │  • Work area        │  • Status               │
 │  • Contact     │  • SystemInsight 🤖│  • Suggestions          │
 │                │                     │                         │
 └────────────────┴─────────────────────┴─────────────────────────┘

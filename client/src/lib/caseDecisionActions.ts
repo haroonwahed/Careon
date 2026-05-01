@@ -4,6 +4,7 @@ export type CaseDecisionActionCode =
   | "COMPLETE_CASE_DATA"
   | "GENERATE_SUMMARY"
   | "START_MATCHING"
+  | "VALIDATE_MATCHING"
   | "SEND_TO_PROVIDER"
   | "WAIT_PROVIDER_RESPONSE"
   | "FOLLOW_UP_PROVIDER"
@@ -135,6 +136,13 @@ export async function executeCaseAction(
         shortDescription: "Casus doorgestuurd naar matching vanuit casusdetail.",
       });
       return { kind: "mutation", message: "Matching gestart." };
+
+    case "VALIDATE_MATCHING":
+      return {
+        kind: "navigate",
+        message: "Matching wordt geopend.",
+        href: `/care/cases/${caseIdString}/?tab=matching`,
+      };
 
     case "SEND_TO_PROVIDER":
       if (!selectedProviderId) {

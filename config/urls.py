@@ -36,7 +36,6 @@ urlpatterns = [
     path('register/', careon_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('toggle-redesign/', careon_views.toggle_redesign, name='toggle_redesign'),
 ]
 
 if settings.DEBUG and getattr(settings, 'ENABLE_DJANGO_BROWSER_RELOAD', False):
@@ -53,3 +52,7 @@ if settings.SSO_ENABLED:
 if settings.DEBUG:
     urlpatterns += staticfiles_urlpatterns()
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+handler403 = 'contracts.views.handler403'
+handler404 = 'contracts.views.handler404'
+handler500 = 'contracts.views.handler500'

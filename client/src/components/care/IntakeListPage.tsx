@@ -1,8 +1,16 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Loader2, Search, Send, XCircle } from "lucide-react";
+import { CheckCircle2, Clock3, Loader2, Send, XCircle } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { useCases, type SpaCase } from "../../hooks/useCases";
 import { Button } from "../ui/button";
+import { CareEmptyState } from "./CareSurface";
+import {
+  CareContextHint,
+  CareMetricBadge,
+  CarePageTemplate,
+  CareSearchFiltersBar,
+  CareUnifiedHeader,
+} from "./CareUnifiedPage";
 import { UrgencyBadge } from "./UrgencyBadge";
 
 interface IntakeListPageProps {
@@ -61,6 +69,10 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
 
   const summary = requestBadge(view);
   const visibleCases = view === "requests" ? pendingRequests : intakeCases;
+  const avgWaitDays =
+    visibleCases.length > 0
+      ? Math.round(visibleCases.reduce((total, caseItem) => total + caseItem.wachttijd, 0) / visibleCases.length)
+      : 0;
 
   const handleDecision = async (caseId: string, status: "ACCEPTED" | "REJECTED") => {
     if (submittingCaseId) {
@@ -88,77 +100,76 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">{summary.title}</h1>
-        <p className="text-sm text-muted-foreground">{summary.description}</p>
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Open aanvragen</p>
-            <Send size={18} className="text-blue-500" />
-          </div>
-          <p className="text-3xl font-bold text-foreground">{pendingRequests.length}</p>
-        </div>
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">In intake</p>
-            <CheckCircle2 size={18} className="text-green-500" />
-          </div>
-          <p className="text-3xl font-bold text-foreground">{intakeCases.length}</p>
-        </div>
-        <div className="premium-card p-5">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-muted-foreground">Gemiddelde wachttijd</p>
-            <Clock3 size={18} className="text-amber-500" />
-          </div>
-          <p className="text-3xl font-bold text-foreground">
-            {visibleCases.length > 0
-              ? Math.round(visibleCases.reduce((total, caseItem) => total + caseItem.wachttijd, 0) / visibleCases.length)
-              : 0}
-            <span className="ml-1 text-base font-medium text-muted-foreground">dagen</span>
-          </p>
-        </div>
-      </div>
-
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-        <input
-          type="text"
-          placeholder="Zoek op casus, regio of zorgtype"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          className="w-full rounded-lg border border-border bg-card py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+    <CarePageTemplate
+      header={
+        <CareUnifiedHeader
+          title={summary.title}
+          subtitle={summary.description}
+          metric={
+            <CareMetricBadge>
+              {visibleCases.length} zichtbaar · {pendingRequests.length} open{" "}
+              {pendingRequests.length === 1 ? "aanvraag" : "aanvragen"} · {intakeCases.length} plaatsing/intake
+            </CareMetricBadge>
+          }
         />
-      </div>
-
+      }
+      attention={
+        <div className="grid grid-cols-1 gap-3 px-1 md:grid-cols-3">
+          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">Open aanvragen</p>
+              <Send size={16} className="text-primary" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{pendingRequests.length}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">In plaatsing / intake</p>
+              <CheckCircle2 size={16} className="text-emerald-400" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{intakeCases.length}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">Gem. wachttijd (filter)</p>
+              <Clock3 size={16} className="text-amber-400" />
+            </div>
+            <p className="text-2xl font-semibold text-foreground">
+              {avgWaitDays}
+              <span className="ml-1 text-sm font-medium text-muted-foreground">dagen</span>
+            </p>
+          </div>
+        </div>
+      }
+      filters={
+        <CareSearchFiltersBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek op casus, regio of zorgtype"
+        />
+      }
+    >
       {feedback && (
         <div className="rounded-2xl border border-border bg-card/70 px-4 py-3 text-sm text-foreground">
           {feedback}
         </div>
       )}
 
-      {loading && (
-        <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-          <Loader2 size={18} className="animate-spin" />
-          <span>Laden…</span>
-        </div>
-      )}
+      {loading && <CareEmptyState title="Laden…" copy="Intake-overzicht wordt opgebouwd." />}
 
       {!loading && error && (
-        <div className="premium-card p-6 text-sm text-destructive">
-          Fout bij laden: {error}
-        </div>
+        <CareEmptyState
+          title="Fout bij laden"
+          copy={error}
+          action={<Button variant="outline" onClick={() => void refetch()}>Opnieuw</Button>}
+        />
       )}
 
       {!loading && !error && visibleCases.length === 0 && (
-        <div className="premium-card p-8 text-center text-sm text-muted-foreground">
-          {view === "requests"
-            ? "Geen open verzoeken."
-            : "Geen casussen."}
-        </div>
+        <CareEmptyState
+          title={view === "requests" ? "Geen open verzoeken" : "Geen casussen in dit overzicht"}
+          copy={view === "requests" ? "Pas de zoekopdracht of kom later terug." : "Geen plaatsingen of intakes die aan dit filter voldoen."}
+        />
       )}
 
       {!loading && !error && visibleCases.length > 0 && (
@@ -224,19 +235,11 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
         </div>
       )}
 
-      <div className="premium-card border-blue-500/20 bg-blue-500/5 p-6">
-        <div className="flex items-start gap-4">
-          <div className="rounded-lg bg-blue-500/10 p-2">
-            <CheckCircle2 className="text-blue-500" size={22} />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground mb-1">Workflow</p>
-            <p className="text-sm text-muted-foreground">
-              Accepteren zet door naar plaatsing en intake. Afwijzen stuurt terug naar matching.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
+      <CareContextHint
+        icon={<CheckCircle2 className="text-primary" size={20} />}
+        title="Workflow"
+        copy="Accepteren zet door naar plaatsing en intake. Afwijzen stuurt terug naar matching."
+      />
+    </CarePageTemplate>
   );
 }

@@ -11,8 +11,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { 
-  Search,
+import {
   MapPin,
   Users,
   Building2,
@@ -21,10 +20,10 @@ import {
   ChevronRight,
   TrendingUp,
   TrendingDown,
-  Activity
+  Activity,
 } from "lucide-react";
-import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import { CareSearchFiltersBar } from "./CareUnifiedPage";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 import { useRegions, type SpaRegion } from "../../hooks/useRegions";
@@ -106,7 +105,7 @@ export function RegiosPage({
       signals.push({
         id: "critical-health",
         message: `${systemState.criticalRegions.length} regio${systemState.criticalRegions.length === 1 ? "" : "'s"} heeft kritieke belasting`,
-        actionLabel: "Open matching",
+        actionLabel: "Naar matching",
         onAction: () => openSignalen(),
       });
     }
@@ -273,43 +272,37 @@ export function RegiosPage({
       </div>
 
       {/* SEARCH + FILTERS */}
-      <div className="flex flex-col sm:flex-row gap-4">
-        {/* Search */}
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
-          <Input
-            placeholder="Zoek regio..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      <div className="space-y-3">
+        <CareSearchFiltersBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek regio..."
+        />
+        <div className="flex flex-col gap-3 px-1 sm:flex-row sm:flex-wrap sm:items-center">
+          <Select value={capacityFilter} onValueChange={setCapacityFilter}>
+            <SelectTrigger className="w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-56">
+              <SelectValue placeholder="Alle capaciteit statussen" />
+            </SelectTrigger>
+            <SelectContent className="border-border bg-card text-foreground">
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle capaciteit statussen</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="stabiel">Stabiel</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="druk">Druk</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="tekort">Tekort</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="kritiek">Kritiek</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={sortBy} onValueChange={(v: string) => setSortBy(v as "cases" | "capacity" | "waittime")}>
+            <SelectTrigger className="w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-52">
+              <SelectValue placeholder="Sorteer op casussen" />
+            </SelectTrigger>
+            <SelectContent className="border-border bg-card text-foreground">
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="cases">Sorteer op casussen</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="capacity">Sorteer op bezetting</SelectItem>
+              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="waittime">Sorteer op wachttijd</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-
-        {/* Capacity Filter */}
-        <Select value={capacityFilter} onValueChange={setCapacityFilter}>
-          <SelectTrigger className="w-56 border-border bg-card text-foreground hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/40">
-            <SelectValue placeholder="Alle capaciteit statussen" />
-          </SelectTrigger>
-          <SelectContent className="border-border bg-card text-foreground">
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle capaciteit statussen</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="stabiel">Stabiel</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="druk">Druk</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="tekort">Tekort</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="kritiek">Kritiek</SelectItem>
-          </SelectContent>
-        </Select>
-
-        {/* Sort */}
-        <Select value={sortBy} onValueChange={(v: string) => setSortBy(v as "cases" | "capacity" | "waittime")}>
-          <SelectTrigger className="w-52 border-border bg-card text-foreground hover:bg-muted/35 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:border-primary/40">
-            <SelectValue placeholder="Sorteer op casussen" />
-          </SelectTrigger>
-          <SelectContent className="border-border bg-card text-foreground">
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="cases">Sorteer op casussen</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="capacity">Sorteer op bezetting</SelectItem>
-            <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="waittime">Sorteer op wachttijd</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {/* VISUALIZATION - HEAT INDICATORS */}
@@ -437,7 +430,7 @@ export function RegiosPage({
                 setCapacityFilter("all");
               }}
             >
-              Reset filters
+              Filters wissen
             </Button>
           </div>
         )}

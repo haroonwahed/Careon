@@ -12,10 +12,6 @@ def get_feature_flag(flag_name, default=False):
     # Then check Django settings
     return getattr(settings, flag_name, default)
 
-def is_feature_redesign_enabled():
-    """Check if FEATURE_REDESIGN flag is enabled"""
-    return get_feature_flag('FEATURE_REDESIGN', False)
-
 def is_test_mode_enabled():
     """Check if TEST_MODE flag is enabled"""
     return get_feature_flag('TEST_MODE', False)

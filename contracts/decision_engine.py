@@ -17,6 +17,7 @@ from contracts.models import (
     ProviderRegioDekking,
 )
 from contracts.workflow_state_machine import (
+    WAITLIST_PROPOSAL_NOTES_MARKER,
     WorkflowRole,
     WorkflowState,
     derive_workflow_state,
@@ -1033,6 +1034,16 @@ def _active_placement(intake: CaseIntakeProcess | None) -> PlacementRequest | No
     )
 
 
+def _infer_matching_outcome(placement: PlacementRequest | None) -> str | None:
+    """Detect gemeente-persisted waitlist proposal (DRAFT + marker), not provider waitlist response."""
+    if placement is None:
+        return None
+    notes = placement.decision_notes or ""
+    if WAITLIST_PROPOSAL_NOTES_MARKER in notes and placement.status == PlacementRequest.Status.DRAFT:
+        return "WAITLIST_PROPOSAL"
+    return None
+
+
 def _latest_match_result(case_record: CareCase | None) -> MatchResultaat | None:
     if case_record is None:
         return None
@@ -1569,6 +1580,7 @@ def _next_best_action(
     placement_confirmed: bool,
     intake_started: bool,
     is_archived: bool,
+    matching_outcome: str | None = None,
 ) -> dict[str, Any] | None:
     if is_archived:
         return None
@@ -1595,7 +1607,13 @@ def _next_best_action(
     elif current_state == WorkflowState.GEMEENTE_VALIDATED:
         action = "SEND_TO_PROVIDER"
         priority = "high"
-        reason = "Validatie is afgerond; stuur de casus naar aanbiederbeoordeling."
+        if matching_outcome == "WAITLIST_PROPOSAL":
+            reason = (
+                "Concept wachtlijstvoorstel staat klaar. Stuur naar de aanbieder voor reactie — "
+                "nog geen definitieve plaatsing."
+            )
+        else:
+            reason = "Validatie is afgerond; stuur de casus naar aanbiederbeoordeling."
     elif current_state == WorkflowState.PROVIDER_REVIEW_PENDING:
         if provider_pending_sla_breached:
             action = "FOLLOW_UP_PROVIDER"
@@ -1670,6 +1688,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
             assessment = None
 
     placement = _active_placement(intake)
+    matching_outcome = _infer_matching_outcome(placement)
     match_result = _latest_match_result(case_record)
     current_state = (
         derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
@@ -1772,14 +1791,26 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         placement_confirmed=placement_confirmed,
         intake_started=intake_started,
         is_archived=is_archived,
+        matching_outcome=matching_outcome,
     )
+    if (
+        next_best_action
+        and matching_outcome == "WAITLIST_PROPOSAL"
+        and str(next_best_action.get("action") or "") == "SEND_TO_PROVIDER"
+    ):
+        next_best_action = {**next_best_action, "label": "Stuur wachtlijstvoorstel naar aanbieder"}
 
     action_rows = [
         ("COMPLETE_CASE_DATA", "Casusgegevens aanvullen"),
         ("GENERATE_SUMMARY", "Samenvatting genereren"),
         ("START_MATCHING", "Start matching"),
         ("VALIDATE_MATCHING", "Valideer matching"),
-        ("SEND_TO_PROVIDER", "Stuur naar aanbieder"),
+        (
+            "SEND_TO_PROVIDER",
+            "Stuur wachtlijstvoorstel naar aanbieder"
+            if matching_outcome == "WAITLIST_PROPOSAL"
+            else "Stuur naar aanbieder",
+        ),
         ("WAIT_PROVIDER_RESPONSE", "Wacht op aanbiederreactie"),
         ("FOLLOW_UP_PROVIDER", "Volg aanbieder op"),
         ("REMATCH_CASE", "Her-match casus"),
@@ -1832,6 +1863,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "required_data_complete": required_data_complete,
         "has_summary": has_summary,
         "has_matching_result": has_matching_result,
+        "matching_outcome": matching_outcome,
         "latest_match_confidence": latest_match_confidence,
         "provider_review_status": provider_review_status,
         "provider_rejection_count": provider_rejection_count,

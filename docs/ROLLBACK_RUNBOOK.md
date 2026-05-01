@@ -47,16 +47,6 @@ sudo systemctl restart gunicorn-careon
 curl -s -o /dev/null -w "%{http_code}" https://<host>/static/spa/?view=dashboard
 ```
 
-**Feature flags** (toggle without a restart when using database flags):
-
-```bash
-# Disable the redesign flag immediately
-python manage.py shell -c "
-from config.feature_flags import set_flag
-set_flag('FEATURE_REDESIGN', False)
-"
-```
-
 ---
 
 ## 3. L2 — Code-Only Rollback

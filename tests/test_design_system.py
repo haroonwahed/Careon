@@ -1,5 +1,3 @@
-
-import os
 import re
 from importlib import reload
 
@@ -19,6 +17,7 @@ class DesignSystemTests(TestCase):
             email='test@example.com',
             password='testpass123',
         )
+        self.client.login(username='testuser', password='testpass123')
 
     def _assert_spa_shell(self, response):
         self.assertEqual(response.status_code, 200)
@@ -26,17 +25,8 @@ class DesignSystemTests(TestCase):
         body = response.content.decode('utf-8')
         self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.js')
         self.assertRegex(body, r'/static/spa/assets/index-[^\"\']+\.css')
-        # Dashboard is SPA-first; legacy server-rendered dashboard content is no longer the contract.
 
-    def test_dashboard_loads_with_feature_flag_enabled(self):
-        os.environ['FEATURE_REDESIGN'] = 'true'
-        self.client.login(username='testuser', password='testpass123')
-        response = self.client.get(reverse('dashboard'))
-        self._assert_spa_shell(response)
-
-    def test_dashboard_loads_with_feature_flag_disabled(self):
-        os.environ['FEATURE_REDESIGN'] = 'false'
-        self.client.login(username='testuser', password='testpass123')
+    def test_dashboard_loads_as_spa_shell(self):
         response = self.client.get(reverse('dashboard'))
         self._assert_spa_shell(response)
 
@@ -67,14 +57,10 @@ class DesignSystemTests(TestCase):
         self.assertIn('stat-value', rendered)
 
     def test_responsive_shell_markers(self):
-        os.environ['FEATURE_REDESIGN'] = 'true'
-        self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
         self._assert_spa_shell(response)
 
     def test_search_and_notifications_links_exist(self):
-        os.environ['FEATURE_REDESIGN'] = 'true'
-        self.client.login(username='testuser', password='testpass123')
         response = self.client.get(reverse('dashboard'))
         self._assert_spa_shell(response)
 
@@ -84,7 +70,3 @@ class DesignSystemTests(TestCase):
         reloaded_urls = reload(project_urls)
         patterns = [str(pattern.pattern) for pattern in reloaded_urls.urlpatterns]
         self.assertIn('^static/(?P<path>.*)$', patterns)
-
-    def tearDown(self):
-        if 'FEATURE_REDESIGN' in os.environ:
-            del os.environ['FEATURE_REDESIGN']

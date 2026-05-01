@@ -81,6 +81,7 @@ from .governance import (
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
+from .error_pages import render_safe_error_page
 from .navigation import SPA_DASHBOARD_URL
 # Temporary blocker: active matching flow still depends on legacy_backend module.
 # Keep until a non-legacy matching service is introduced and migrated here.
@@ -89,6 +90,7 @@ from .operational_decision_contract import build_operational_decision_for_intake
 from .operational_decision_presenter import present_operational_decision
 from .tenancy import ensure_user_organization, get_user_organization, scope_queryset_for_organization, set_organization_on_instance
 from .workflow_state_machine import (
+    WAITLIST_PROPOSAL_NOTES_MARKER,
     WorkflowAction,
     WorkflowRole,
     WorkflowState,
@@ -98,8 +100,6 @@ from .workflow_state_machine import (
     normalize_provider_rejection_states,
     resolve_actor_role,
 )
-from config.feature_flags import is_feature_redesign_enabled
-
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -636,16 +636,16 @@ def _build_matching_map_context(intake, suggestions, *, selected_provider_id=Non
 
     limitations = []
     if not case_location['has_coordinates']:
-        limitations.append('Casuscoordinaten ontbreken in het huidige schema.')
+        limitations.append('Casus mist geo.')
     if has_candidates and not providers_with_coordinates:
-        limitations.append('Aanbiedercoordinaten ontbreken in het huidige schema.')
+        limitations.append('Aanbieders missen geo.')
     if has_candidates and not any(marker['distance_label'] for marker in provider_markers):
-        limitations.append('Afstand wordt pas berekend zodra zowel casus- als aanbiedercoordinaten beschikbaar zijn.')
+        limitations.append('Afstand volgt zodra geo compleet is.')
 
     if not has_candidates:
         empty_state = {
-            'title': 'Nog geen kandidaten om geografisch te tonen',
-            'message': 'De kaartlaag blijft ondersteunend. Start eerst matching om topaanbieders te tonen.',
+            'title': 'Nog geen kaart',
+            'message': 'Start matching om kandidaten te tonen.',
         }
     elif can_render_map:
         empty_state = {
@@ -654,13 +654,13 @@ def _build_matching_map_context(intake, suggestions, *, selected_provider_id=Non
         }
     elif has_partial_geo:
         empty_state = {
-            'title': 'Geografische context is nog onvolledig',
-            'message': 'Er is al locatiecontext beschikbaar, maar niet genoeg coordinaten om de kaartlaag volledig te plotten.',
+            'title': 'Kaart deels beschikbaar',
+            'message': 'Er is geo, maar nog niet genoeg voor een volle kaart.',
         }
     else:
         empty_state = {
-            'title': 'Kaart kan nog niet renderen',
-            'message': 'Locatiecoordinaten ontbreken voor casus en aanbieders. De kaartintegratie is voorbereid, maar wacht nog op expliciete latitude/longitude-velden.',
+            'title': 'Nog geen geo',
+            'message': 'Voeg geo toe om de kaart te tonen.',
         }
 
     return {
@@ -1342,6 +1342,95 @@ def _assign_provider_to_intake(*, request, intake, provider, source):
             'source': source,
         },
         request=request,
+    )
+
+    return placement
+
+
+def _prepare_waitlist_proposal_for_intake(
+    *,
+    request,
+    intake,
+    provider,
+    source,
+    match_score=None,
+):
+    """Persist a gemeente-side waitlist proposal (DRAFT placement), without sending to provider review."""
+    can_match, match_blocker = intake.can_enter_matching()
+    if not can_match:
+        raise ValidationError(match_blocker)
+
+    notes = (
+        f'{WAITLIST_PROPOSAL_NOTES_MARKER} Wachtlijstvoorstel (concept) voor {provider.name}. '
+        'Nog niet verstuurd naar aanbieder; geen definitieve plaatsing.'
+    )
+    placement, created = PlacementRequest.objects.get_or_create(
+        due_diligence_process=intake,
+        defaults={
+            'status': PlacementRequest.Status.DRAFT,
+            'proposed_provider': provider,
+            'selected_provider': provider,
+            'care_form': intake.preferred_care_form,
+            'decision_notes': notes,
+            'provider_response_status': PlacementRequest.ProviderResponseStatus.PENDING,
+        },
+    )
+    if not created:
+        placement.proposed_provider = provider
+        placement.selected_provider = provider
+        placement.status = PlacementRequest.Status.DRAFT
+        placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
+        placement.decision_notes = notes
+        if not placement.care_form:
+            placement.care_form = intake.preferred_care_form
+        placement.save(
+            update_fields=[
+                'proposed_provider',
+                'selected_provider',
+                'care_form',
+                'status',
+                'provider_response_status',
+                'decision_notes',
+                'updated_at',
+            ]
+        )
+
+    log_action(
+        request.user,
+        AuditLog.Action.APPROVE,
+        'WaitlistProposalPrepared',
+        object_id=placement.id,
+        object_repr=f'{intake.title} -> {provider.name} (wachtlijst concept)',
+        changes={
+            'intake_id': intake.id,
+            'provider_id': provider.id,
+            'provider_name': provider.name,
+            'source': source,
+            'matching_outcome': 'WAITLIST_PROPOSAL',
+            'match_score': match_score,
+            'actor_role': resolve_actor_role(user=request.user, organization=intake.organization),
+        },
+        request=request,
+    )
+
+    _actor_role = resolve_actor_role(user=request.user, organization=intake.organization)
+    log_case_decision_event(
+        case_id=intake.pk,
+        placement_id=placement.pk,
+        event_type=CaseDecisionLog.EventType.PROVIDER_SELECTED,
+        recommendation_context={
+            'matching_outcome': 'WAITLIST_PROPOSAL',
+            'provider_id': provider.pk,
+            'provider_name': provider.name,
+            'match_score': match_score,
+            'capacity_state': 'no_direct_capacity',
+            'actor_role': _actor_role,
+        },
+        user_action='waitlist_proposal_prepared',
+        actor_user_id=getattr(request.user, 'id', None),
+        action_source=source,
+        provider_id=provider.id,
+        optional_reason='Wachtlijstvoorstel (concept) vastgelegd door gemeente.',
     )
 
     return placement
@@ -3748,19 +3837,6 @@ class AddExpenseView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
 # ==================== FUNCTION-BASED VIEWS ====================
 
 @login_required
-def toggle_redesign(request):
-    if request.method == 'POST':
-        import os
-        current_value = os.environ.get('FEATURE_REDESIGN', 'false').lower()
-        new_value = 'false' if current_value == 'true' else 'true'
-        os.environ['FEATURE_REDESIGN'] = new_value
-        from config.feature_flags import cache
-        cache.clear()
-        return redirect(request.META.get('HTTP_REFERER', SPA_DASHBOARD_URL))
-    return redirect(SPA_DASHBOARD_URL)
-
-
-@login_required
 def design_mode_settings(request):
     if request.method == 'GET':
         return JsonResponse({'ok': True, 'design_mode': DESIGN_MODE_SPA})
@@ -3845,6 +3921,18 @@ def case_flow_detail_redirect(request, pk):
 def case_flow_update_redirect(request, pk):
     """Route legacy intake edit URLs to the canonical case edit page."""
     return redirect('careon:case_update', pk=pk)
+
+
+def handler403(request, exception=None):  # noqa: ARG001
+    return render_safe_error_page(request, 403, '403.html')
+
+
+def handler404(request, exception=None):  # noqa: ARG001
+    return render_safe_error_page(request, 404, '404.html')
+
+
+def handler500(request):
+    return render_safe_error_page(request, 500, '500.html')
 
 
 def _normalize_provider_response_status_code(status):
@@ -5291,6 +5379,92 @@ def case_matching_action(request, pk):
         messages.success(request, f'Aanbieder {provider.name} gekoppeld aan casus "{intake.title}".')
         return _redirect_to_safe_next_or_default(request, next_fallback)
 
+    if action == 'prepare_waitlist_proposal':
+        provider = get_object_or_404(
+            Client.objects.filter(organization=org, status='ACTIVE'),
+            pk=request.POST.get('provider_id'),
+        )
+        assessment = getattr(intake, 'case_assessment', None)
+        active_for_block = (
+            PlacementRequest.objects.filter(due_diligence_process=intake)
+            .order_by('-updated_at', '-created_at')
+            .first()
+        )
+        if active_for_block and active_for_block.status == PlacementRequest.Status.IN_REVIEW:
+            messages.error(
+                request,
+                'Deze casus is al naar de aanbieder verstuurd; wachtlijstvoorstel kan niet meer als concept worden vastgelegd.',
+            )
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        previous_state = derive_workflow_state(intake=intake, assessment=assessment)
+        if previous_state == WorkflowState.MATCHING_READY:
+            validation_transition = evaluate_transition(
+                current_state=WorkflowState.MATCHING_READY,
+                target_state=WorkflowState.GEMEENTE_VALIDATED,
+                actor_role=actor_role,
+                action=WorkflowAction.VALIDATE_MATCHING,
+            )
+            if not validation_transition.allowed:
+                messages.error(request, validation_transition.reason)
+                return _redirect_to_safe_next_or_default(request, next_fallback)
+        elif previous_state == WorkflowState.GEMEENTE_VALIDATED:
+            pass
+        else:
+            messages.error(
+                request,
+                'Wachtlijstvoorstel kan alleen worden vastgelegd tijdens matching of na eerdere gemeente-validatie zonder verzending naar aanbieder.',
+            )
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        raw_score = (request.POST.get('match_score') or '').strip()
+        match_score = None
+        if raw_score:
+            try:
+                match_score = int(raw_score)
+            except ValueError:
+                match_score = None
+
+        try:
+            placement = _prepare_waitlist_proposal_for_intake(
+                request=request,
+                intake=intake,
+                provider=provider,
+                source='case_matching_action_prepare_waitlist',
+                match_score=match_score,
+            )
+        except ValidationError as exc:
+            messages.error(request, '; '.join(exc.messages) or 'Wachtlijstvoorstel mislukt.')
+            return _redirect_to_safe_next_or_default(request, next_fallback)
+
+        intake.workflow_state = WorkflowState.GEMEENTE_VALIDATED
+        if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
+            intake.status = CaseIntakeProcess.ProcessStatus.DECISION
+        intake.save(update_fields=['workflow_state', 'status', 'updated_at'])
+
+        if intake.case_record is not None and intake.case_record.case_phase != CareCase.CasePhase.MATCHING:
+            intake.case_record.case_phase = CareCase.CasePhase.MATCHING
+            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+
+        if previous_state == WorkflowState.MATCHING_READY:
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state=previous_state,
+                new_state=WorkflowState.GEMEENTE_VALIDATED,
+                action=WorkflowAction.VALIDATE_MATCHING,
+                placement=placement,
+                source='case_matching_action_prepare_waitlist',
+            )
+
+        case_detail_url = reverse('careon:case_detail', kwargs={'pk': intake.pk})
+        messages.success(
+            request,
+            f'Wachtlijstvoorstel (concept) vastgelegd voor {provider.name}. Controleer de casus voordat u naar de aanbieder verzendt.',
+        )
+        return _redirect_to_safe_next_or_default(request, case_detail_url)
+
     if action == 'reject':
         provider = get_object_or_404(
             Client.objects.filter(organization=org, status='ACTIVE'),
@@ -5555,7 +5729,9 @@ def case_provider_response_action(request, pk):
         placement.save(update_fields=['status', 'provider_response_status', 'decision_notes', 'updated_at'])
         if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
             intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
-            intake.save(update_fields=['status', 'updated_at'])
+        if intake.workflow_state != WorkflowState.MATCHING_READY:
+            intake.workflow_state = WorkflowState.MATCHING_READY
+        intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
         if intake.case_record is not None:
             intake.case_record.case_phase = CareCase.CasePhase.MATCHING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])

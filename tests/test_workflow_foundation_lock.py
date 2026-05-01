@@ -1,3 +1,4 @@
+import json
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
@@ -15,6 +16,8 @@ from contracts.models import (
     PlacementRequest,
     UserProfile,
 )
+from contracts.decision_engine import evaluate_case
+from contracts.workflow_state_machine import WAITLIST_PROPOSAL_NOTES_MARKER, WorkflowState
 
 
 User = get_user_model()
@@ -317,3 +320,135 @@ class WorkflowFoundationLockTests(TestCase):
             content_type='application/json',
         )
         self.assertEqual(response.status_code, 403)
+
+    def test_prepare_waitlist_proposal_persists_draft_and_gemeente_validated(self):
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps(
+                {
+                    'action': 'prepare_waitlist_proposal',
+                    'provider_id': self.provider.pk,
+                    'match_score': 88,
+                }
+            ),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()
+        self.assertTrue(payload.get('ok'))
+        self.assertEqual(payload.get('matchingOutcome'), 'WAITLIST_PROPOSAL')
+        self.assertEqual(payload.get('nextPage'), 'case_detail')
+
+        intake.refresh_from_db()
+        self.assertEqual(intake.workflow_state, WorkflowState.GEMEENTE_VALIDATED)
+        self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.DECISION)
+
+        placement = PlacementRequest.objects.get(due_diligence_process=intake)
+        self.assertEqual(placement.status, PlacementRequest.Status.DRAFT)
+        self.assertIn(WAITLIST_PROPOSAL_NOTES_MARKER, placement.decision_notes)
+
+        log_row = CaseDecisionLog.objects.filter(case_id=intake.pk, user_action='waitlist_proposal_prepared').first()
+        self.assertIsNotNone(log_row)
+        self.assertEqual(log_row.recommendation_context.get('actor_role'), 'gemeente')
+
+        case_record = intake.case_record
+        self.assertIsNotNone(case_record)
+        decision = evaluate_case(case_record, actor=self.gemeente_user)
+        self.assertEqual(decision['decision_context'].get('matching_outcome'), 'WAITLIST_PROPOSAL')
+        self.assertEqual(decision.get('next_best_action', {}).get('action'), 'SEND_TO_PROVIDER')
+        self.assertFalse(decision.get('decision_context', {}).get('placement_confirmed', True))
+
+    def test_provider_cannot_prepare_waitlist_proposal_via_matching_action_api(self):
+        intake = self._create_matching_ready_case()
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps(
+                {
+                    'action': 'prepare_waitlist_proposal',
+                    'provider_id': self.provider.pk,
+                    'match_score': 80,
+                }
+            ),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(PlacementRequest.objects.filter(due_diligence_process=intake).exists())
+
+    def test_case_matching_action_prepare_waitlist_proposal_form_post(self):
+        """Legacy HTML POST parity with matching_action_api prepare_waitlist_proposal."""
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:case_matching_action', kwargs={'pk': intake.pk}),
+            {
+                'action': 'prepare_waitlist_proposal',
+                'provider_id': str(self.provider.pk),
+                'match_score': '91',
+            },
+            follow=False,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('careon:case_detail', kwargs={'pk': intake.pk}), response.url)
+
+        intake.refresh_from_db()
+        self.assertEqual(intake.workflow_state, WorkflowState.GEMEENTE_VALIDATED)
+        placement = PlacementRequest.objects.get(due_diligence_process=intake)
+        self.assertEqual(placement.status, PlacementRequest.Status.DRAFT)
+        self.assertIn(WAITLIST_PROPOSAL_NOTES_MARKER, placement.decision_notes)
+
+    def test_matching_action_api_prepare_waitlist_requires_login(self):
+        intake = self._create_matching_ready_case()
+        self.client.logout()
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps(
+                {'action': 'prepare_waitlist_proposal', 'provider_id': self.provider.pk},
+            ),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 302)
+
+    def test_other_organization_user_cannot_prepare_waitlist_via_matching_action_api(self):
+        intake = self._create_matching_ready_case()
+        other_org = Organization.objects.create(name='Foreign Municipality Org', slug='foreign-muni-wf')
+        outsider = User.objects.create_user(username='foreign_gemeente_wf', password='testpass123')
+        OrganizationMembership.objects.create(
+            organization=other_org,
+            user=outsider,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.create(user=outsider, role=UserProfile.Role.ASSOCIATE)
+        self.client.login(username='foreign_gemeente_wf', password='testpass123')
+        response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.pk}),
+            data=json.dumps(
+                {'action': 'prepare_waitlist_proposal', 'provider_id': self.provider.pk},
+            ),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_foreign_user_gets_404_on_case_matching_action_prepare_waitlist(self):
+        intake = self._create_matching_ready_case()
+        other_org = Organization.objects.create(name='Foreign Html Org', slug='foreign-html-wf')
+        outsider = User.objects.create_user(username='foreign_html_wf', password='testpass123')
+        OrganizationMembership.objects.create(
+            organization=other_org,
+            user=outsider,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.create(user=outsider, role=UserProfile.Role.ASSOCIATE)
+        self.client.login(username='foreign_html_wf', password='testpass123')
+        response = self.client.post(
+            reverse('careon:case_matching_action', kwargs={'pk': intake.pk}),
+            {
+                'action': 'prepare_waitlist_proposal',
+                'provider_id': str(self.provider.pk),
+            },
+        )
+        self.assertEqual(response.status_code, 404)

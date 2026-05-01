@@ -145,7 +145,7 @@ class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Profiel aanvullen")
         self.assertContains(response, "Geen wachttijddata")
-        self.assertContains(response, "Zorgvormen nog niet ingesteld")
+        self.assertContains(response, "Regio, zorgvormen en capaciteit ontbreken nog")
 
     def test_empty_state_is_safe_and_calm(self):
         response = self.client.get(reverse("careon:client_list"))

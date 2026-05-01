@@ -20,32 +20,15 @@
                 {{ provider_workspace_summary.subtle_summary }}
             </div>
             {% endif %}
+            <div class="mt-4 flex flex-wrap gap-2">
+                <span class="ds-badge badge-blue">{{ provider_workspace_summary.provider_count }} in selectie</span>
+                <span class="ds-badge badge-blue">{{ provider_workspace_summary.direct_capacity_count }} direct inzetbaar</span>
+                <span class="ds-badge badge-medium">{{ provider_workspace_summary.pressure_capacity_count }} capaciteit onder druk</span>
+                <span class="ds-badge badge-critical">{{ provider_workspace_summary.high_wait_count }} wachtdruk hoog</span>
+            </div>
         </div>
         <div class="page-actions">
             <a href="{% url 'careon:client_create' %}" class="btn btn-primary">Nieuwe aanbieder</a>
-        </div>
-    </div>
-
-    <div class="provider-workspace__summary-grid">
-        <div class="provider-workspace__summary-card">
-            <div class="provider-workspace__summary-label">In selectie</div>
-            <div class="provider-workspace__summary-value">{{ provider_workspace_summary.provider_count }}</div>
-            <div class="provider-workspace__summary-meta">Aanbieders binnen de huidige selectie</div>
-        </div>
-        <div class="provider-workspace__summary-card">
-            <div class="provider-workspace__summary-label">Direct inzetbaar</div>
-            <div class="provider-workspace__summary-value provider-workspace__summary-value--good">{{ provider_workspace_summary.direct_capacity_count }}</div>
-            <div class="provider-workspace__summary-meta">Ruimte beschikbaar zonder zware wachtdruk</div>
-        </div>
-        <div class="provider-workspace__summary-card">
-            <div class="provider-workspace__summary-label">Capaciteit onder druk</div>
-            <div class="provider-workspace__summary-value provider-workspace__summary-value--warning">{{ provider_workspace_summary.pressure_capacity_count }}</div>
-            <div class="provider-workspace__summary-meta">Beperkte ruimte of geen instroomcapaciteit</div>
-        </div>
-        <div class="provider-workspace__summary-card">
-            <div class="provider-workspace__summary-label">Wachtdruk hoog</div>
-            <div class="provider-workspace__summary-value provider-workspace__summary-value--critical">{{ provider_workspace_summary.high_wait_count }}</div>
-            <div class="provider-workspace__summary-meta">Gemiddelde wachttijd of wachtlijst loopt op</div>
         </div>
     </div>
 
@@ -106,103 +89,80 @@
         </div>
     </form>
 
-    <div class="ds-list-table provider-workspace__table-shell">
-        <div class="ds-table-wrap">
-            <table class="ds-table provider-workspace__table">
-                <thead>
-                    <tr>
-                        <th>Aanbieder</th>
-                        <th>Capaciteit</th>
-                        <th>Wachtdruk</th>
-                        <th>Beschikbaarheid</th>
-                        <th>Capabilities</th>
-                        <th>Regio's</th>
-                        <th>Contact</th>
-                        <th class="">Acties</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in provider_rows %}
-                    <tr>
-                        <td>
-                            <div class="provider-row__name">
-                                <a href="{% url 'careon:client_detail' row.client.pk %}">{{ row.client.name }}</a>
-                            </div>
-                            <div class="provider-row__meta">
-                                <span>{{ row.client.get_client_type_display }}</span>
-                                {% if row.client.industry %}
-                                <span>{{ row.client.industry }}</span>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="provider-chip provider-chip--{{ row.capacity_state.tone }}">{{ row.capacity_state.label }}</span>
-                            <div class="provider-row__detail">{{ row.capacity_state.detail }}</div>
-                        </td>
-                        <td>
-                            <span class="provider-chip provider-chip--{{ row.wait_pressure.tone }}">{{ row.wait_pressure.label }}</span>
-                            <div class="provider-row__detail">{{ row.wait_pressure.detail }}</div>
-                        </td>
-                        <td>
-                            <div class="provider-row__signal provider-row__signal--{{ row.operational_signal.tone }}">{{ row.operational_signal.label }}</div>
-                            <div class="provider-row__detail">{{ row.operational_signal.detail }}</div>
-                        </td>
-                        <td>
-                            {% if row.capability_badges %}
-                            <div class="provider-row__capabilities">
-                                {% for badge in row.capability_badges %}
-                                <span class="provider-capability-badge">{{ badge }}</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                            <div class="provider-row__detail">{{ row.capability_summary }}</div>
-                        </td>
-                        <td>
-                            <div class="provider-row__detail provider-row__detail--strong">{{ row.region_summary }}</div>
-                        </td>
-                        <td>
-                            <div class="provider-row__detail provider-row__detail--strong">{{ row.contact_primary }}</div>
-                            {% if row.contact_secondary %}
-                            <div class="provider-row__detail">{{ row.contact_secondary }}</div>
-                            {% endif %}
-                        </td>
-                        <td class="td-right provider-row__actions">
-                            <a href="{% url 'careon:client_detail' row.client.pk %}" class="btn btn-secondary btn-sm">Profiel</a>
-                            <a href="{% url 'careon:client_update' row.client.pk %}" class="btn btn-ghost btn-sm">Wijzigen</a>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="td-empty">
-                            <div class="ds-empty-state provider-workspace__empty-state">
-                                <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                                <p class="provider-workspace__empty-title">
-                                    {% if has_active_filters %}
-                                    Geen aanbieders gevonden binnen deze selectie.
-                                    {% else %}
-                                    Nog geen zorgaanbieders ingericht.
-                                    {% endif %}
-                                </p>
-                                <p class="provider-workspace__empty-copy">
-                                    {% if has_active_filters %}
-                                    Pas de filters aan om capaciteit, wachtdruk of regio opnieuw te bekijken.
-                                    {% else %}
-                                    Voeg een aanbieder toe om capaciteit en wachtdruk vanuit deze werkruimte te volgen.
-                                    {% endif %}
-                                </p>
-                                <div class="provider-workspace__empty-actions">
-                                    {% if has_active_filters %}
-                                    <a href="{% url 'careon:client_list' %}" class="btn btn-secondary">Reset filters</a>
-                                    {% endif %}
-                                    <a href="{% url 'careon:client_create' %}" class="btn btn-primary">Aanbieder toevoegen</a>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <div class="queue-list mt-4">
+        {% for row in provider_rows %}
+        <article class="queue-row">
+            <div class="queue-head">
+                <div class="min-w-0">
+                    <a href="{% url 'careon:client_detail' row.client.pk %}" class="queue-title">{{ row.client.name }}</a>
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-[color:var(--zr-text-secondary)]">
+                        <span>{{ row.client.get_client_type_display }}</span>
+                        {% if row.client.industry %}
+                        <span>·</span>
+                        <span>{{ row.client.industry }}</span>
+                        {% endif %}
+                        <span>·</span>
+                        <span>{{ row.region_summary }}</span>
+                    </div>
+                </div>
+                <div class="flex shrink-0 flex-wrap items-center gap-2">
+                    <span class="ds-badge badge-blue">{{ row.capacity_state.label }}</span>
+                    <span class="ds-badge badge-medium">{{ row.wait_pressure.label }}</span>
+                    <span class="ds-badge badge-gray">{{ row.operational_signal.label }}</span>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+                {% if row.capability_badges %}
+                {% for badge in row.capability_badges %}
+                <span class="ds-badge badge-blue">{{ badge }}</span>
+                {% endfor %}
+                {% endif %}
+                <span class="ds-badge badge-gray">{{ row.contact_primary }}</span>
+                {% if row.contact_secondary %}
+                <span class="ds-badge badge-gray">{{ row.contact_secondary }}</span>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-[color:var(--zr-text-secondary)]">
+                    {{ row.capacity_state.detail }}
+                    <span class="mx-2">·</span>
+                    {{ row.wait_pressure.detail }}
+                    <span class="mx-2">·</span>
+                    {{ row.operational_signal.detail }}
+                </p>
+                <div class="ds-list-row-actions">
+                    <a href="{% url 'careon:client_detail' row.client.pk %}" class="ds-list-row-action-btn">Profiel</a>
+                    <a href="{% url 'careon:client_update' row.client.pk %}" class="ds-list-row-action-btn">Wijzigen</a>
+                </div>
+            </div>
+        </article>
+        {% empty %}
+        <div class="ds-empty-state provider-workspace__empty-state">
+            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            <p class="provider-workspace__empty-title">
+                {% if has_active_filters %}
+                Geen aanbieders gevonden binnen deze selectie.
+                {% else %}
+                Nog geen zorgaanbieders ingericht.
+                {% endif %}
+            </p>
+            <p class="provider-workspace__empty-copy">
+                {% if has_active_filters %}
+                Pas de filters aan om capaciteit, wachtdruk of regio opnieuw te bekijken.
+                {% else %}
+                Voeg een aanbieder toe om capaciteit en wachtdruk vanuit deze werkruimte te volgen.
+                {% endif %}
+            </p>
+            <div class="provider-workspace__empty-actions">
+                {% if has_active_filters %}
+                <a href="{% url 'careon:client_list' %}" class="btn btn-secondary">Filters wissen</a>
+                {% endif %}
+                <a href="{% url 'careon:client_create' %}" class="btn btn-primary">Aanbieder toevoegen</a>
+            </div>
         </div>
+        {% endfor %}
     </div>
 
     {% if is_paginated %}

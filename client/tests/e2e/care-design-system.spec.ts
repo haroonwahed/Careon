@@ -1,0 +1,190 @@
+/**
+ * Design-system contract tests for the authenticated Careon SPA (gemeente role).
+ * Protects shell chrome, shared list/search primitives, decision surfaces, and light a11y/dark checks.
+ *
+ * @see DESIGN_SYSTEM_TESTING.md at repository root.
+ */
+import { expect, test, type Page } from "@playwright/test";
+import { goSidebar, installCareApiStubs, SPA_BASE } from "./helpers/careSpaApiStubs";
+
+test.describe.configure({ mode: "serial", timeout: 90_000 });
+
+async function assertShell(page: Page) {
+  await expect(page.getByTestId("care-app-shell")).toBeVisible();
+  await expect(page.getByTestId("care-sidebar")).toBeVisible();
+  await expect(page.getByTestId("care-top-bar")).toBeVisible();
+  await expect(page.getByTestId("care-app-main")).toBeVisible();
+  await expect(page.getByRole("main")).toBeVisible();
+  await expect(page.locator("main")).toHaveCount(1);
+}
+
+async function assertCareSearchStack(page: Page) {
+  await expect(page.getByTestId("care-search-control-stack")).toBeVisible();
+  const input = page.getByTestId("care-search-input");
+  await expect(input).toBeVisible();
+  await expect(input).toHaveAttribute("aria-label", /.+/);
+}
+
+/** Rows built on CareWorkRow expose `data-care-work-row`; Regiekamer also tags items with `data-testid="regiekamer-worklist-item"`. */
+async function assertOperationalRowContract(page: Page) {
+  const workRows = page.locator("[data-care-work-row]");
+  const regieRows = page.getByTestId("regiekamer-worklist-item");
+  const count = await workRows.count();
+  const regieCount = await regieRows.count();
+  expect(count + regieCount, "expected at least one operational row or regiekamer row").toBeGreaterThan(0);
+  const row = count > 0 ? workRows.first() : regieRows.first();
+  await expect(row).toBeVisible();
+  const primaryCtas = row.locator('button[type="button"]');
+  expect(await primaryCtas.count(), "each row should expose a small number of explicit buttons (primary CTA + optional controls)").toBeLessThanOrEqual(3);
+  const dominant = row.locator('[data-component="care-dominant-status"]');
+  const chips = row.locator('[data-component="care-meta-chip"]');
+  expect(await dominant.count() + await chips.count(), "row should surface status or metadata chips").toBeGreaterThan(0);
+}
+
+test.describe("Care design system (SPA)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("careon-theme", "dark");
+    });
+    await installCareApiStubs(page);
+    await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
+  });
+
+  test("shell + landmarks: target gemeente routes stay inside unified chrome", async ({ page }) => {
+    const routes: Array<{ nav: string; heading: RegExp | string }> = [
+      { nav: "Regiekamer", heading: /Regiekamer/i },
+      { nav: "Casussen", heading: /Werkvoorraad/i },
+      { nav: "Matching", heading: /^Matching$/i },
+      { nav: "Acties", heading: /^Acties$/i },
+      { nav: "Signalen", heading: /^Signalen$/i },
+      { nav: "Zorgaanbieders", heading: /Zorgaanbieders/i },
+      { nav: "Regio's", heading: "Regio's" },
+      { nav: "Wacht op aanbieder", heading: /Wacht op aanbieder/i },
+      { nav: "Plaatsingen", heading: /Plaatsingen/i },
+    ];
+
+    for (const { nav, heading } of routes) {
+      await goSidebar(page, nav);
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible({ timeout: 30_000 });
+      await assertShell(page);
+      await expect(page.getByText(/Django administration/i)).toHaveCount(0);
+    }
+  });
+
+  test("Regiekamer (canonical): metric strip, operative attention, shared search + Meer filters", async ({ page }) => {
+    await assertShell(page);
+    await expect(page.getByTestId("metric-strip")).toBeVisible();
+    await expect(page.getByTestId("care-unified-header")).toBeVisible();
+    const attentionBars = page.locator('[data-component="care-attention-bar"]');
+    expect(await attentionBars.count()).toBeGreaterThanOrEqual(2);
+    await expect(attentionBars.first().getByText("Operatieve aandacht")).toBeVisible();
+    await assertCareSearchStack(page);
+    await expect(page.getByTestId("care-more-filters-toggle")).toBeVisible();
+  });
+
+  test("shared CareSearchFiltersBar on list-heavy pages (excl. Zorgaanbieders map page)", async ({ page }) => {
+    const pages: Array<{ nav: string; heading: RegExp | string }> = [
+      { nav: "Casussen", heading: /Werkvoorraad/i },
+      { nav: "Matching", heading: /^Matching$/i },
+      { nav: "Acties", heading: /^Acties$/i },
+      { nav: "Signalen", heading: /^Signalen$/i },
+      { nav: "Plaatsingen", heading: /Plaatsingen/i },
+      { nav: "Regio's", heading: "Regio's" },
+    ];
+    for (const { nav, heading } of pages) {
+      await goSidebar(page, nav);
+      await expect(page.getByRole("heading", { name: heading, level: 1 })).toBeVisible({ timeout: 30_000 });
+      await assertCareSearchStack(page);
+    }
+
+    await goSidebar(page, "Zorgaanbieders");
+    await expect(page.getByRole("heading", { name: /Zorgaanbieders/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("care-search-control-stack")).toHaveCount(0);
+    await expect(page.getByTestId("zorgaanbieders-filter-panel")).toBeVisible();
+    await expect(page.getByPlaceholder(/Zoek op naam, specialisatie of regio/i)).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Filters$/i })).toBeVisible();
+  });
+
+  test("operational rows: Casussen + Matching + Regiekamer + Signalen share work-row contract", async ({ page }) => {
+    await assertOperationalRowContract(page);
+
+    await goSidebar(page, "Casussen");
+    await expect(page.getByTestId("worklist")).toBeVisible({ timeout: 30_000 });
+    await assertOperationalRowContract(page);
+
+    await goSidebar(page, "Matching");
+    await expect(page.getByRole("heading", { name: /^Matching$/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    const emptyMatching = page.getByText("Geen casussen in matching");
+    if (!(await emptyMatching.isVisible().catch(() => false))) {
+      await assertOperationalRowContract(page);
+    }
+
+    await goSidebar(page, "Signalen");
+    await expect(page.getByRole("heading", { name: /^Signalen$/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("signalen-worklist")).toBeVisible({ timeout: 30_000 });
+    await assertOperationalRowContract(page);
+  });
+
+  test("casus workspace: next-best-action + single context panel", async ({ page }) => {
+    await goSidebar(page, "Casussen");
+    const row = page.locator("[data-care-work-row]").filter({ hasText: /E2E matching casus/i }).first();
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    // Row body opens the workspace; the row CTA may navigate to a workflow route instead.
+    const titleLine = row.locator("p.font-semibold").first();
+    await titleLine.click();
+    await expect(page.getByTestId("next-best-action")).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("case-context-panel")).toHaveCount(1);
+    const cta = page.getByTestId("next-best-action").getByRole("button", { name: /Matching valideren/i });
+    await cta.focus();
+    await expect(cta).toBeFocused();
+    await expect(cta).toBeVisible();
+  });
+
+  test("dark theme: html.dark present; flag light-only Tailwind surfaces in main", async ({ page }) => {
+    const hasDark = await page.evaluate(() => document.documentElement.classList.contains("dark"));
+    expect(hasDark, "localStorage careon-theme=dark should yield html.dark for portal-safe theming").toBe(true);
+
+    const legacySurfaces = await page.evaluate(() => {
+      const root = document.querySelector('[data-testid="care-app-main"]');
+      if (!root) {
+        return { whites: 0, grayFills: 0 };
+      }
+      const candidates = root.querySelectorAll<HTMLElement>("*");
+      let whites = 0;
+      let grayFills = 0;
+      candidates.forEach((el) => {
+        const c = el.className;
+        if (typeof c !== "string") {
+          return;
+        }
+        if (c.includes("dark:")) {
+          return;
+        }
+        if (/\bbg-white\b/.test(c)) {
+          whites += 1;
+        }
+        if (/\bbg-gray-(50|100)\b/.test(c) || /\bbg-slate-50\b/.test(c)) {
+          grayFills += 1;
+        }
+      });
+      return { whites, grayFills };
+    });
+    expect(
+      legacySurfaces.whites,
+      "In dark mode, avoid legacy Tailwind panels that only set bg-white without a dark: surface token",
+    ).toBe(0);
+    expect(
+      legacySurfaces.grayFills,
+      "In dark mode, avoid light gray fills (gray-50/100, slate-50) without a dark: companion on the same element",
+    ).toBe(0);
+  });
+
+  test("accessibility smoke: one main, sidebar nav, bounded h1 count in main", async ({ page }) => {
+    await assertShell(page);
+    await expect(page.getByTestId("care-sidebar").getByRole("navigation")).toBeVisible();
+
+    const h1InMain = page.locator('[data-testid="care-app-main"] h1');
+    expect(await h1InMain.count()).toBeLessThanOrEqual(3);
+  });
+});

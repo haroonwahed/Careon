@@ -125,7 +125,7 @@ function deriveProblems(
     problems.push({ type: 'delayed', label: `Wachttijd > ${wachttijd} dagen` });
   }
   if (phase === 'provider_beoordeling') {
-    problems.push({ type: 'missing-assessment', label: 'Aanbieder beoordeelt verzoek' });
+    problems.push({ type: 'missing-assessment', label: 'Wacht op aanbiederreactie' });
   }
   return problems;
 }

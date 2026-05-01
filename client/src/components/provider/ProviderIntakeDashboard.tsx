@@ -256,7 +256,7 @@ export function ProviderIntakeDashboard() {
                   disabled={activeFiltersCount === 0 && searchQuery === ""}
                 >
                   <X size={16} className="mr-2" />
-                  Reset filters
+                  Filters wissen
                 </Button>
               </div>
             </div>
@@ -281,7 +281,7 @@ export function ProviderIntakeDashboard() {
                 }}
                 className="text-sm text-primary hover:underline"
               >
-                Reset filters
+                Filters wissen
               </button>
             )}
           </div>

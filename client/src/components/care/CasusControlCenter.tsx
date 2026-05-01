@@ -413,7 +413,13 @@ function ContextPanel({ casus }: { casus: Casus }) {
       {casus.assessment.notes && (
         <div className="premium-card p-5">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Samenvatting</p>
-          <p className="text-sm text-muted-foreground leading-relaxed">{casus.assessment.notes}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {casus.assessment.notes.length > 110 ? `${casus.assessment.notes.slice(0, 107).trim()}…` : casus.assessment.notes}
+          </p>
+          <details className="mt-3 rounded-lg border border-border/80 bg-background/60 px-3 py-2 text-sm">
+            <summary className="cursor-pointer list-none font-medium text-foreground">Details</summary>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{casus.assessment.notes}</p>
+          </details>
         </div>
       )}
     </div>
@@ -463,7 +469,7 @@ function IntakeInitialPanel({
   return (
     <div className="space-y-4">
       <div className="premium-card p-5">
-        <SectionHeader icon={<FileText size={16} className="text-primary" />} title="Intake informatie" />
+        <SectionHeader icon={<FileText size={16} className="text-primary" />} title="Intake" />
         <div className="space-y-3">
           <Row label="Type zorg" value={casus.careType} />
           <Row label="Regio" value={casus.region} />
@@ -474,12 +480,13 @@ function IntakeInitialPanel({
 
       <div className="premium-card p-5">
         <SectionHeader icon={<Zap size={16} className="text-primary" />} title="Volgende stap" />
-        <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg text-sm mb-4">
-          <p className="text-muted-foreground leading-relaxed">
-            Een beoordeling is vereist voordat de casus kan worden gematcht. Wijs een beoordelaar toe
-            en definieer urgentie, complexiteit en het gewenste zorgtype.
+        <p className="text-sm text-muted-foreground mb-4">Beoordeling nodig voor matching.</p>
+        <details className="mb-4 rounded-lg border border-border/80 bg-background/60 px-3 py-2 text-sm">
+          <summary className="cursor-pointer list-none font-medium text-foreground">Details</summary>
+          <p className="mt-2 text-muted-foreground leading-relaxed">
+            Wijs een beoordelaar toe en bepaal urgentie, complexiteit en zorgtype.
           </p>
-        </div>
+        </details>
         {primaryAction && (
           <ActionButton action={primaryAction} onClick={() => onAction(primaryAction.type)} fullWidth />
         )}
@@ -820,7 +827,7 @@ function PlaatsingPanel({
 
       {/* Validation checklist */}
       <div className="premium-card p-5">
-        <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Validatie checklist" />
+        <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
             label="Beoordeling afgerond"
@@ -851,9 +858,10 @@ function PlaatsingPanel({
           Bevestig plaatsing
         </Button>
         {!allPassed && (
-          <p className="text-xs text-muted-foreground text-center mt-2">
-            Voltooi alle stappen om de plaatsing te bevestigen
-          </p>
+          <details className="mt-2 rounded-lg border border-border/80 bg-background/60 px-3 py-2 text-sm">
+            <summary className="cursor-pointer list-none text-center text-xs font-medium text-muted-foreground">Details</summary>
+            <p className="mt-2 text-xs text-muted-foreground text-center">Voltooi alle stappen om te bevestigen.</p>
+          </details>
         )}
       </div>
 
@@ -901,7 +909,7 @@ function IntakeProviderPanel({
     <div className="space-y-4">
       {/* Handover summary */}
       <div className="premium-card p-5">
-        <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Overdracht aan aanbieder" />
+        <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Overdracht" />
         <div className="space-y-3 text-sm mb-4">
           <Row label="Aanbieder" value={placement.providerName ?? "—"} />
           <Row label="Bevestigd op" value={placement.confirmedAt ? new Date(placement.confirmedAt).toLocaleDateString("nl-NL") : "—"} />
@@ -916,9 +924,7 @@ function IntakeProviderPanel({
         {isUnresponsive && (
           <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm mb-4">
             <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-amber-700 dark:text-amber-400">
-              Aanbieder heeft {intake.providerResponseDays} werkdagen niet gereageerd.
-            </p>
+            <p className="text-amber-700 dark:text-amber-400">Aanbieder reageert al {intake.providerResponseDays} werkdagen niet.</p>
           </div>
         )}
       </div>
@@ -926,7 +932,7 @@ function IntakeProviderPanel({
       {/* Gemeente actions */}
       {(role === "gemeente" || role === "admin") && (
         <div className="premium-card p-5">
-          <SectionHeader icon={<Phone size={16} className="text-primary" />} title="Acties gemeente" />
+          <SectionHeader icon={<Phone size={16} className="text-primary" />} title="Gemeente" />
           <div className="space-y-2">
             {gemeenteActions.map(a => (
               <ActionButton key={a.id} action={a} onClick={() => onAction(a.type)} fullWidth />
@@ -938,11 +944,11 @@ function IntakeProviderPanel({
       {/* Provider actions */}
       {(role === "zorgaanbieder" || role === "admin") && (
         <div className="premium-card p-5">
-          <SectionHeader icon={<CalendarPlus size={16} className="text-primary" />} title="Acties aanbieder" />
+          <SectionHeader icon={<CalendarPlus size={16} className="text-primary" />} title="Aanbieder" />
           <div className="space-y-3">
             {!intake.plannedAt && (
               <div>
-                <label className="text-sm font-medium mb-1.5 block">Intake datum plannen</label>
+                <label className="text-sm font-medium mb-1.5 block">Datum</label>
                 <Input
                   type="date"
                   value={intakeDate}
@@ -1080,7 +1086,7 @@ function IntelligencePanel({
     <div className="space-y-4">
       {/* Progress */}
       <div className="premium-card p-5">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Voortgang</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Fase</p>
         <div className="space-y-0">
           {visiblePhases.map((phase, idx) => {
             const isCompleted = !isBlocked && idx < currentIndex;

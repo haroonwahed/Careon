@@ -1,4 +1,3 @@
-import os
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -33,11 +32,13 @@ class MatchingRecommendationsTests(TestCase):
             is_active=True,
         )
         self.client.login(username='match_user', password='testpass123')
-        os.environ['FEATURE_REDESIGN'] = 'false'
 
-    def tearDown(self):
-        if 'FEATURE_REDESIGN' in os.environ:
-            del os.environ['FEATURE_REDESIGN']
+    def _assert_spa_shell(self, response):
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<div id="root"></div>', html=True)
+        self.assertContains(response, '/static/spa/assets/index-')
+        self.assertNotContains(response, 'Careon Zorgregie')
+        self.assertNotContains(response, 'Globaal zoeken')
 
     def test_matching_panel_shows_score_wait_capacity_reason(self):
         provider = CareProvider.objects.create(
@@ -73,18 +74,7 @@ class MatchingRecommendationsTests(TestCase):
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Matchscore')
-        self.assertContains(response, 'Wachttijd')
-        self.assertContains(response, 'Capaciteit')
-        self.assertContains(response, 'Matching')
-        self.assertContains(response, 'Status: Matchbaar')
-        self.assertContains(response, 'Actie')
-        self.assertContains(response, 'Zoek aanbieder')
-        self.assertContains(response, 'Stuur door naar aanbiederbeoordeling')
-        self.assertContains(response, 'Gedragsinvloed')
-        self.assertContains(response, 'Limited provider history, behavioral influence kept neutral')
+        self._assert_spa_shell(response)
 
     def test_matching_panel_shows_region_match_badge(self):
         region = RegionalConfiguration.objects.create(
@@ -131,11 +121,7 @@ class MatchingRecommendationsTests(TestCase):
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'ROAZ Noord')
-        matching_map = response.context['rows'][0]['matching_map']
-        self.assertEqual(matching_map['provider_markers'][0]['geo_fit_score'], 100)
+        self._assert_spa_shell(response)
 
     def test_matching_panel_filters_candidate_profiles_by_live_fields(self):
         intake = CaseIntakeProcess.objects.create(
@@ -197,10 +183,7 @@ class MatchingRecommendationsTests(TestCase):
             },
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Filters wissen')
-        self.assertEqual(len(response.context['rows'][0]['suggestions']), 1)
-        self.assertEqual(response.context['rows'][0]['suggestions'][0]['provider_name'], 'Passende Residentiële Aanbieder')
+        self._assert_spa_shell(response)
 
     def test_matching_panel_exposes_map_contract_and_empty_geo_state(self):
         provider = CareProvider.objects.create(
@@ -220,7 +203,7 @@ class MatchingRecommendationsTests(TestCase):
 
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
-            title='Intake Map Contract',
+            title='Intake No Geo',
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
@@ -236,18 +219,7 @@ class MatchingRecommendationsTests(TestCase):
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Kaartcontext')
-        self.assertContains(response, 'Kaart kan nog niet renderen')
-        matching_map = response.context['rows'][0]['matching_map']
-        self.assertIn('case_location', matching_map)
-        self.assertIn('provider_markers', matching_map)
-        self.assertIn('selected_provider_id', matching_map)
-        self.assertFalse(matching_map['summary']['can_render_map'])
-        self.assertFalse(matching_map['summary']['has_case_coordinates'])
-        self.assertEqual(len(matching_map['provider_markers']), 1)
-        self.assertEqual(matching_map['provider_markers'][0]['provider_name'], 'Aanbieder Zonder Coordinaten')
+        self._assert_spa_shell(response)
 
 
 class MatchingExplainabilityUnitTests(TestCase):

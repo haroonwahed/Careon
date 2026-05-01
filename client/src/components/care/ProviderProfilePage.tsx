@@ -574,7 +574,7 @@ export function ProviderProfilePage({
 
               <div className="space-y-2">
                 <a 
-                  href="#"
+                  href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
                   <FileText size={14} className="text-primary" />
@@ -582,7 +582,7 @@ export function ProviderProfilePage({
                 </a>
                 
                 <a 
-                  href="#"
+                  href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
                   <FileText size={14} className="text-primary" />
@@ -590,7 +590,7 @@ export function ProviderProfilePage({
                 </a>
 
                 <a 
-                  href="#"
+                  href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
                   <FileText size={14} className="text-primary" />

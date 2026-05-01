@@ -5,8 +5,7 @@ from django.db import DatabaseError
 from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 
-from config.feature_flags import is_feature_redesign_enabled
-
+from .error_pages import render_safe_error_page
 from .models import AuditLog
 from .models import OrganizationMembership
 from .tenancy import get_user_organization
@@ -28,102 +27,10 @@ def _disable_response_caching(response):
     return response
 
 
-def _build_shell_contract():
-    return (
-        '<style>'
-        '.careon-shell-contract { '
-        'position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; '
-        'overflow: hidden; white-space: nowrap; }'
-        '.careon-shell-contract .page-wrap { max-width: 1440px; }'
-        '@media (max-width: 1024px) { .careon-shell-contract .visually-hidden { display: none; } }'
-        '</style>'
-        '<section class="careon-shell-contract" aria-hidden="true">'
-        '<div id="global-search-input"></div>'
-        '<input aria-label="Globaal zoeken" type="text" />'
-        '<button type="submit">Zoek</button>'
-        '<button title="Thema wisselen">Thema wisselen</button>'
-        '<button title="Meldingen">Meldingen</button>'
-        '<span class="visually-hidden">visually-hidden</span>'
-        '<button>Uitloggen</button>'
-        '<div class="page-wrap">'
-        '<div class="command-grid"></div>'
-        '<div class="decision-alert-strip"></div>'
-        '<div class="decision-alert-card"></div>'
-        '<div class="decision-focus-panel"></div>'
-        '<div class="decision-rail-column"></div>'
-        '<div class="decision-rail-card"></div>'
-        '<div class="ds-insight-section"></div>'
-        '<div class="ds-insight-head"></div>'
-        '<div class="queue-row"></div>'
-        '</div>'
-        '<h1>Welkom terug</h1>'
-        '<h2>Operationele signalen</h2>'
-        '<section>Deze casus is geblokkeerd</section>'
-        '<section>Aanbieder Beoordeling starten</section>'
-        '<section>Andere actieve casussen</section>'
-        '<section>Aanbieder Beoordeling ontbreekt</section>'
-        '<section>Wachttijd: 2 dagen</section>'
-        '<section>Zoek casus, client, document of actie</section>'
-        '<section>Casussen zonder match</section>'
-        '<section>Wachttijd overschreden</section>'
-        '<section>Urgente casussen</section>'
-        '<section>Blokkerende casus</section>'
-        '<section>Actieve casus</section>'
-        '<section>Kerngegevens</section>'
-        '<section>Tijdlijn</section>'
-        '<section>Knelpunten</section>'
-        '<section>Capaciteitssignalen</section>'
-        '<section>Laatst bijgewerkt</section>'
-        '<section>Casussen</section>'
-        '<section>Zoek op titel of casus-ID...</section>'
-        '<section>Alle statussen</section>'
-        '<section>Nieuwe casus</section>'
-        '<section>Dashboard</section>'
-        '<section>Taken</section>'
-        '<section>Documenten</section>'
-        '<section>Matching</section>'
-        '<section>Budgetten</section>'
-        '<section>Zoek budgetten op afdeling of omschrijving...</section>'
-        '<section>Nieuw budget</section>'
-        '<section>Regie Operaties</section>'
-        '<section>Plaatsingen</section>'
-        '<section>Gemeenten</section>'
-        '<section>Geografische context</section>'
-        '<section>Kaart kan nog niet renderen</section>'
-        '<section>Matchscore</section>'
-        '<section>Matchstatus</section>'
-        '<section>Wachttijd</section>'
-        '<section>Capaciteit</section>'
-        '<section>Filters wissen</section>'
-        '<section>Zoek aanbieder</section>'
-        '<section>Zorgvorm</section>'
-        '<section>Leeftijdsgroep</section>'
-        '<section>Regio-fit</section>'
-        '<section>Profielsignalering</section>'
-        '<section>Matchingsignalen</section>'
-        '<section>Bewerk profiel</section>'
-        '<section>Providerprofiel</section>'
-        '<section>Zorgvormen</section>'
-        '<section>Geslacht</section>'
-        '<section>Specialisaties</section>'
-        '<section>Contra-indicaties</section>'
-        '<section>Aanbevolen actie</section>'
-        '<section>Voer aanbevolen actie uit</section>'
-        '<section>Plaats direct</section>'
-        '<section>Gedragsinvloed</section>'
-        '<section>Limited provider history, behavioral influence kept neutral</section>'
-        '<section>ROAZ Noord</section>'
-        '</section>'
-    )
-
-
-def _render_spa_shell_response(*, include_contract=False):
+def _render_spa_shell_response():
     spa_index_path = settings.BASE_DIR / 'theme' / 'static' / 'spa' / 'index.html'
-    shell_contract = _build_shell_contract() if include_contract else ''
     if spa_index_path.exists():
         html = spa_index_path.read_text(encoding='utf-8')
-        if shell_contract:
-            html = html.replace('</body>', f'{shell_contract}</body>')
         response = HttpResponse(html, content_type='text/html')
         response['X-Careon-Ui-Surface'] = 'spa'
         return _disable_response_caching(response)
@@ -140,7 +47,6 @@ def _render_spa_shell_response(*, include_contract=False):
             '</head>'
             '<body>'
             '<div id="root"></div>'
-            f'{shell_contract}'
             '</body>'
             '</html>'
         ),
@@ -150,43 +56,15 @@ def _render_spa_shell_response(*, include_contract=False):
     return _disable_response_caching(response)
 
 
-def _render_shell_fallback_response():
-    response = HttpResponse(
-        (
-            '<!DOCTYPE html>'
-            '<html lang="en">'
-            '<head>'
-            '<meta charset="UTF-8" />'
-            '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
-            '<title>Careon</title>'
-            '<style>html, body { height: 100%; margin: 0; font-family: sans-serif; }'
-            'main { min-height: 100%; display: grid; place-items: center; padding: 24px; }'
-            '.fallback-shell { max-width: 720px; width: 100%; border: 1px solid #dbe1ea; border-radius: 20px; padding: 24px; }'
-            '.fallback-shell h1 { margin-top: 0; }'
-            '.fallback-links { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }'
-            '.fallback-links a { display: inline-block; padding: 10px 14px; border-radius: 999px; text-decoration: none; background: #1f5eff; color: #fff; }'
-            '.fallback-links a.secondary { background: #eef2f8; color: #1d2b4a; }'
-            '</style>'
-            '</head>'
-            '<body>'
-            '<main>'
-            '<section class="fallback-shell">'
-            '<h1>Careon</h1>'
-            '<p>De werkruimte laadt momenteel in een veilige fallback-modus. De kernroutes blijven beschikbaar.</p>'
-            '<div class="fallback-links">'
-            '<a href="/dashboard/">Regiekamer</a>'
-            '<a href="/care/casussen/" class="secondary">Casussen</a>'
-            '<a href="/care/matching/" class="secondary">Matching</a>'
-            '</div>'
-            '</section>'
-            '</main>'
-            '</body>'
-            '</html>'
-        ),
-        content_type='text/html',
-    )
-    response['X-Careon-Ui-Surface'] = 'spa-fallback'
-    return _disable_response_caching(response)
+def _should_render_safe_error_page(request, response):
+    if request.path.startswith('/care/api/'):
+        return False
+    if response.status_code not in {403, 404, 500}:
+        return False
+    content_type = response.get('Content-Type', '')
+    if 'application/json' in content_type or 'application/xml' in content_type:
+        return False
+    return True
 
 
 class AuditLogMiddleware:
@@ -227,33 +105,43 @@ class OrganizationMiddleware:
 
 
 class SpaShellMigrationMiddleware:
-    """Serve the SPA shell for authenticated care workspace pages when enabled.
+    """Serve the SPA shell for authenticated workspace pages.
 
-    The SPA shell is opt-in through the redesign feature flag so canonical
-    server-rendered routes remain available by default while migration work
-    continues.
+    The legacy Django-rendered care workspace is retired. Authenticated
+    workspace routes render the SPA shell directly while backend and API
+    exceptions remain available.
     """
 
     EXCLUDED_PREFIXES = (
         '/care/api/',
     )
+    EXCLUDED_EXACT = {
+        '/care/organizations/activity/export/',
+    }
     SHELL_PATHS = {
         '/dashboard/',
         '/care/casussen/',
-        '/care/budgetten/',
-        '/care/budgets/',
+        '/care/casussen/new/',
         '/care/beoordelingen/',
         '/care/matching/',
         '/care/plaatsingen/',
         '/care/signalen/',
         '/care/gemeenten/',
+        '/care/search/',
     }
+    SHELL_PREFIXES = (
+        '/dashboard/',
+        '/settings/',
+        '/care/',
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response
 
     def _is_excluded(self, path):
         if any(path.startswith(prefix) for prefix in self.EXCLUDED_PREFIXES):
+            return True
+        if path in self.EXCLUDED_EXACT:
             return True
 
         # Keep invite acceptance logic reachable as a real backend endpoint.
@@ -262,36 +150,46 @@ class SpaShellMigrationMiddleware:
 
         return False
 
+    def _should_serve_shell(self, request):
+        path = request.path
+        if request.method != 'GET':
+            return False
+
+        user = getattr(request, 'user', None)
+        if user is None or not getattr(user, 'is_authenticated', False):
+            return False
+
+        if self._is_excluded(path):
+            return False
+
+        return any(path.startswith(prefix) for prefix in self.SHELL_PREFIXES)
+
     def __call__(self, request):
         user = getattr(request, 'user', None)
-        if (
-            is_feature_redesign_enabled()
-            and
-            request.method == 'GET'
-            and request.path in self.SHELL_PATHS
-            and user is not None
-            and getattr(user, 'is_authenticated', False)
-            and not self._is_excluded(request.path)
-        ):
+        if self._should_serve_shell(request):
             try:
-                return _render_spa_shell_response(include_contract=True)
+                return _render_spa_shell_response()
             except Exception:
                 logger.exception('Failed to render SPA shell for path=%s', request.path)
-                return _render_shell_fallback_response()
+                return render_safe_error_page(request, 500, '500.html')
 
         try:
-            return self.get_response(request)
+            response = self.get_response(request)
         except Exception:
             if (
                 request.method == 'GET'
                 and user is not None
                 and getattr(user, 'is_authenticated', False)
-                and request.path in self.SHELL_PATHS
+                and any(request.path.startswith(prefix) for prefix in self.SHELL_PREFIXES)
                 and not self._is_excluded(request.path)
             ):
                 logger.exception('Downstream failure on SPA shell path=%s', request.path)
-                return _render_shell_fallback_response()
+                return render_safe_error_page(request, 500, '500.html')
             raise
+
+        if _should_render_safe_error_page(request, response):
+            return render_safe_error_page(request, response.status_code, f'{response.status_code}.html')
+        return response
 
 
 def log_action(user, action, model_name, object_id=None, object_repr='', changes=None, request=None):

@@ -483,7 +483,9 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             follow=True,
         )
 
-        self._assert_spa_shell(response)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '<div id="root"></div>', html=True)
+        self.assertContains(response, '/static/spa/assets/index-', status_code=200)
 
     def test_case_scoped_task_create_locks_intake_server_side(self):
         locked_intake = CaseIntakeProcess.objects.create(

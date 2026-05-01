@@ -45,22 +45,19 @@ export function AssessmentQueueCard({
   const hasWarnings = missingInfo.some(info => info.severity === "warning");
 
   return (
-    <div className={`
-      premium-card p-5 transition-all duration-200
-      hover:border-primary/50 hover:shadow-lg
+    <article className={`
+      premium-card queue-row transition-colors
       ${hasErrors ? "border-red-border" : ""}
       ${hasWarnings && !hasErrors ? "border-yellow-border" : ""}
     `}>
       <div className="flex items-start justify-between gap-4">
-        {/* Left: Case Info */}
         <div className="flex-1">
-          {/* Header */}
-          <div className="flex items-center gap-3 mb-3">
-            <span className={`px-2.5 py-1 rounded-md text-xs font-medium border ${config.color}`}>
+          <div className="flex flex-wrap items-center gap-3 mb-3">
+            <span className={`ds-badge ${config.color}`}>
               {config.label}
             </span>
             {wachttijd > 3 && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-light border border-red-border">
+              <div className="flex items-center gap-1.5 ds-badge badge-critical">
                 <Clock size={12} className="text-red-base" />
                 <span className="text-xs font-semibold text-red-base">
                   {wachttijd}d
@@ -69,23 +66,20 @@ export function AssessmentQueueCard({
             )}
           </div>
 
-          {/* Title */}
-          <h3 className="text-base font-semibold text-foreground mb-2">
+          <h3 className="queue-title text-base font-semibold text-foreground mb-2">
             {caseTitle}
           </h3>
 
-          {/* Meta Info */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
             <div className="flex items-center gap-1.5">
               <MapPin size={14} />
               <span>{regio}</span>
             </div>
             <div className="text-xs">
-              Case ID: {id}
+              Casus-ID: {id}
             </div>
           </div>
 
-          {/* Missing Info Indicators */}
           {missingInfo.length > 0 && (
             <div className="space-y-2">
               {missingInfo.slice(0, 2).map((info, idx) => (
@@ -121,7 +115,6 @@ export function AssessmentQueueCard({
           )}
         </div>
 
-        {/* Right: Action */}
         <div className="flex flex-col items-end gap-3">
           <Button
             onClick={onStart}
@@ -143,6 +136,6 @@ export function AssessmentQueueCard({
           )}
         </div>
       </div>
-    </div>
+    </article>
   );
 }

@@ -328,7 +328,7 @@ export function PlacementPage({
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={16} className="text-green-base" />
-                <span className="text-muted-foreground">Klaar voor intakeplanning</span>
+                <span className="text-muted-foreground">Klaar voor intake</span>
               </div>
             </div>
           </div>
@@ -355,12 +355,12 @@ export function PlacementPage({
         <div className="col-span-3">
           <div className="premium-card p-4 sticky top-24">
             <h3 className="text-sm font-semibold text-foreground mb-4">
-              Casus samenvatting
+              Samenvatting
             </h3>
             
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-muted-foreground text-xs mb-1">Case ID</p>
+                <p className="text-muted-foreground text-xs mb-1">Casus-ID</p>
                 <p className="font-medium text-foreground">{caseData.id}</p>
               </div>
               
@@ -492,7 +492,7 @@ export function PlacementPage({
                 className="bg-primary hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} className="mr-2" />
-                Bevestig plaatsing
+                Bevestig
               </Button>
             </div>
           </div>
@@ -506,7 +506,7 @@ export function PlacementPage({
             <div className="flex items-start justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
-                  Bevestig plaatsing
+                  Bevestig
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   Controleer de details voordat je de plaatsing vastzet
@@ -578,7 +578,7 @@ export function PlacementPage({
                 ) : (
                   <>
                     <CheckCircle2 size={16} className="mr-2" />
-                    Bevestig plaatsing
+                    Bevestig
                   </>
                 )}
               </Button>

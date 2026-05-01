@@ -2,47 +2,33 @@
 {% block title %}Casussen - Careon{% endblock %}
 {% block content %}
 {% load static %}
-<div class="ds-list-shell">
-    <div class="ds-list-header">
+<div class="page-wrap page-wrap-command" data-layout="max-width: 1440px">
+    <header class="ds-list-header">
         <div>
-            <h1 class="page-title">Casussen</h1>
+            <h1 class="page-title">Werkvoorraad</h1>
+            <p class="page-subtitle">Beheer en stuur casussen</p>
             <p class="ds-note-text">
-                {{ total_intakes }} totaal &middot; {{ active_intakes }} actief &middot; {{ urgent_intakes }} urgent in intakefase
+                {{ total_intakes }} casussen &mdash; {{ urgent_intakes }} vragen aandacht
                 {% if can_show_archived %}
                 &middot; {{ archived_intakes }} gearchiveerd{% if not show_archived %} verborgen{% endif %}
                 {% endif %}
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
+        <div class="ds-list-actions">
             {% if can_show_archived %}
-            <a href="?show_archived={% if show_archived %}0{% else %}1{% endif %}" class="btn btn-ghost">
+            <a href="?show_archived={% if show_archived %}0{% else %}1{% endif %}" class="btn btn-secondary">
                 {% if show_archived %}Gearchiveerde casussen verbergen{% else %}Gearchiveerde casussen tonen{% endif %}
             </a>
             {% endif %}
             <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
         </div>
-    </div>
+    </header>
 
-    <div class="ds-list-kpi-grid">
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Totaal</div>
-            <div class="ds-list-kpi-value">{{ total_intakes }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Actief</div>
-            <div class="ds-list-kpi-value">{{ active_intakes }}</div>
-        </div>
-        <div class="ds-list-kpi-card">
-            <div class="ds-list-kpi-label">Urgent</div>
-            <div class="ds-list-kpi-value tone-critical">{{ urgent_intakes }}</div>
-        </div>
-    </div>
-
-    <div class="ds-list-filters">
+    <section class="ds-list-filters">
         <form method="get" class="ds-list-filter-row">
             <div class="ds-list-filter-group">
                 <label for="intake-q" class="ds-list-filter-label">Zoeken</label>
-                <input id="intake-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op titel of casus-ID...">
+                <input id="intake-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op cliënt, casus, regio of zorgvraag">
             </div>
             <div class="ds-list-filter-group">
                 <label for="intake-status" class="ds-list-filter-label">Fase</label>
@@ -85,126 +71,101 @@
             </div>
             <button type="submit" class="btn btn-secondary ds-btn-compact">Filter</button>
         </form>
-    </div>
+    </section>
 
     {% if casussen_operational_strip %}
-    <!-- OperationalSignalStrip primitive (max 1 for Casussen MEDIUM-HIGH intensity) -->
-    <div class="ds-card casus-operational-strip casus-operational-strip--{{ casussen_operational_strip.severity }}">
-        <strong class="casus-operational-strip__label">Operationeel inzicht</strong>
-        <p class="casus-operational-strip__message">{{ casussen_operational_strip.message }}</p>
-    </div>
+    <section class="command-alert-strip">
+        <div class="command-alert-link" style="cursor: default;">
+            <div class="command-alert-meta">
+                <span>{{ casussen_operational_strip.severity|upper }}</span>
+                <span class="command-alert-label">Operationeel inzicht</span>
+            </div>
+            <span class="command-alert-count">{{ casussen_operational_strip.message }}</span>
+        </div>
+    </section>
     {% endif %}
 
-    {% if intakes %}
-    <table class="ds-list-table">
-        <thead>
-            <tr>
-                <th>Casus</th>
-                <th>Operationele signalen</th>
-                <th>Aanbevolen actie</th>
-                <th>Impact</th>
-                <th class="ds-cell-right">Intakedatum</th>
-                <th class="ds-cell-right">Acties</th>
-            </tr>
-        </thead>
-        <tbody>
+    <section class="mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--zr-text-secondary)]">
+                Vraagt aandacht ({{ intake_rows|length }})
+            </h2>
+            <span class="text-sm text-[color:var(--zr-text-secondary)]">
+                {{ active_intakes }} actief{% if can_show_archived %} · {{ archived_intakes }} gearchiveerd{% endif %}
+            </span>
+        </div>
+
+        {% if intake_rows %}
+        <div class="queue-list mt-3">
             {% for row in intake_rows %}
-            <tr>
-                <td>
-                    <a href="{% url 'careon:case_detail' row.obj.pk %}" class="ds-link casus-row-title">{{ row.title }}</a>
-                    <div class="casus-row-meta">
-                        <span class="ds-badge badge-gray">{{ row.status }}</span>
-                        {% if row.obj.status == 'ARCHIVED' %}
-                        <span class="ds-badge badge-low">Gearchiveerd</span>
-                        {% endif %}
-                        <span class="ds-badge badge-medium">{{ row.urgency }}</span>
-                        {% if row.bottleneck_badge %}
-                        <!-- BottleneckBadge primitive -->
-                        <span class="ds-badge {{ row.bottleneck_badge.badge_class }}">{{ row.bottleneck_badge.label }}</span>
-                        {% endif %}
-                    </div>
-                </td>
-
-                <td>
-                    <!-- AttentionBand primitive -->
-                    <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
-
-                    <!-- PriorityBadge primitive (max 1 per item) -->
-                    <div class="casus-row-signal-line">
-                        <span class="ds-badge {{ row.priority_badge.badge_class }}" title="{{ row.priority_badge.label }}">{{ row.priority_badge.compact_label }}</span>
-                        <span class="ds-note-text">#{{ row.priority_rank }}</span>
-                    </div>
-
-                    <!-- Max 2 strongest local signals per card -->
-                    {% if row.strongest_signals %}
-                    <ul class="casus-row-signal-list">
-                        {% for signal in row.strongest_signals %}
-                        <li><span class="ds-badge {{ signal.badge_class }}">{{ signal.label }}</span></li>
-                        {% endfor %}
-                    </ul>
-                    {% endif %}
-
-                    {% if row.escalation_recommended %}
-                    <div class="casus-row-escalation">Escalatie aanbevolen</div>
-                    {% endif %}
-                </td>
-
-                <td>
-                    <!-- RecommendedActionBlock primitive -->
-                    <a href="{{ row.recommended_action.url }}" class="casus-recommended-action casus-recommended-action--{{ row.attention_band.severity }}">
-                        <div class="casus-recommended-action__main">
-                            <p class="casus-recommended-action__label">Aanbevolen actie</p>
-                            <p class="casus-recommended-action__action">{{ row.recommended_action.label }}</p>
-                            <p class="ds-note-text">{{ row.recommended_action.reason }}</p>
+            <article class="queue-row">
+                <div class="queue-head">
+                    <div class="min-w-0">
+                        <a href="{% url 'careon:case_detail' row.obj.pk %}" class="queue-title">{{ row.title }}</a>
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-[color:var(--zr-text-secondary)]">
+                            <span>{{ row.lead }}</span>
+                            <span>·</span>
+                            <span>{{ row.category }}</span>
+                            <span>·</span>
+                            <span>{{ row.region }}</span>
+                            <span>·</span>
+                            <span>{{ row.created|date:"d-m-Y" }}</span>
                         </div>
-                    </a>
-                </td>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-2">
+                        <a href="{{ row.recommended_action.url }}" class="btn btn-ghost">{{ row.recommended_action.label }}</a>
+                        <span class="ds-badge badge-low">{{ row.attention_band.label }}</span>
+                    </div>
+                </div>
 
-                <td>
-                    <!-- ImpactSummary primitive (mandatory with action) -->
-                    <p class="casus-impact-summary">{{ row.impact_summary.text }}</p>
-                </td>
+                <div class="flex flex-wrap gap-2">
+                    <span class="ds-badge badge-gray">{{ row.status }}</span>
+                    <span class="ds-badge {% if row.urgency == 'Crisis' %}badge-critical{% elif row.urgency == 'Hoog' %}badge-high{% elif row.urgency == 'Middel' %}badge-medium{% else %}badge-low{% endif %}">{{ row.urgency }}</span>
+                    {% if row.bottleneck_badge %}
+                    <span class="ds-badge {{ row.bottleneck_badge.badge_class }}">{{ row.bottleneck_badge.label }}</span>
+                    {% endif %}
+                    <span class="ds-badge badge-blue">{{ row.priority_badge.compact_label }}</span>
+                </div>
 
-                <td class="ds-cell-right">{{ row.created|date:"d-m-Y" }}</td>
-                <td class="ds-cell-right">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-[color:var(--zr-text-secondary)]">{{ row.recommended_action.reason }}</p>
                     <div class="ds-list-row-actions">
                         <a href="{% url 'careon:case_detail' row.obj.pk %}" class="ds-list-row-action-btn">Openen</a>
                         <a href="{% url 'careon:case_update' row.obj.pk %}" class="ds-list-row-action-btn">Wijzigen</a>
                     </div>
-                </td>
-            </tr>
+                </div>
+            </article>
             {% endfor %}
-        </tbody>
-    </table>
-
-    {% if is_paginated %}
-    <div class="ds-list-pagination">
-        <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
-        <div class="ds-list-pagination-buttons">
-            {% if page_obj.has_previous %}
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page=1" class="ds-list-pagination-btn">Eerste</a>
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
-            {% endif %}
-            {% if page_obj.has_next %}
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
-            {% endif %}
         </div>
-    </div>
-    {% endif %}
 
-    {% else %}
-    <div class="ds-list-empty">
-        <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                <h3 class="ds-list-empty-title">Nog geen casussen</h3>
-                <p class="ds-list-empty-copy">
-                    <a href="{% url 'careon:case_create' %}" class="btn btn-primary ds-stack-top-sm">Maak je eerste casus aan</a>
-                </p>
-                {% if can_show_archived and not show_archived and archived_intakes %}
-                <p class="mt-3 text-xs ds-text-secondary">Er zijn ook gearchiveerde casussen. Gebruik de knop bovenaan om ze zichtbaar te maken.</p>
+        {% if is_paginated %}
+        <div class="ds-list-pagination">
+            <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+            <div class="ds-list-pagination-buttons">
+                {% if page_obj.has_previous %}
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page=1" class="ds-list-pagination-btn">Eerste</a>
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
                 {% endif %}
             </div>
-    {% endif %}
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="ds-empty-state">
+            <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <h3 class="ds-list-empty-title">Nog geen casussen</h3>
+            <p class="ds-list-empty-copy">Maak je eerste casus aan.</p>
+            <p class="mt-3">
+                <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
+            </p>
+            {% if can_show_archived and not show_archived and archived_intakes %}
+            <p class="mt-3 text-xs ds-text-secondary">Er zijn ook gearchiveerde casussen. Gebruik de knop bovenaan om ze zichtbaar te maken.</p>
+            {% endif %}
+        </div>
+        {% endif %}
+    </section>
 </div>
-
 {% endblock %}

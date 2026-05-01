@@ -29,7 +29,7 @@ export function ProviderProfileDemo() {
       {/* Demo Controls */}
       <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-card/95 backdrop-blur space-y-3">
         <p className="text-xs font-semibold text-muted-foreground uppercase">
-          Demo Controls
+          Demo
         </p>
         
         <div className="space-y-2">
@@ -39,7 +39,7 @@ export function ProviderProfileDemo() {
             onClick={() => setContext("matching")}
             className="w-full"
           >
-            Matching Context
+            Matching
           </Button>
           <Button
             size="sm"
@@ -47,14 +47,14 @@ export function ProviderProfileDemo() {
             onClick={() => setContext("exploration")}
             className="w-full"
           >
-            Exploration Context
+            Verkennen
           </Button>
         </div>
 
         <div className="text-xs text-muted-foreground pt-2 border-t border-border">
-          <p>Current: <span className="font-semibold text-foreground">{context}</span></p>
+          <p>Nu: <span className="font-semibold text-foreground">{context}</span></p>
           {context === "matching" && (
-            <p className="mt-1">Match: <span className="font-semibold text-green-400">94%</span></p>
+            <p className="mt-1">Score: <span className="font-semibold text-green-400">94%</span></p>
           )}
         </div>
       </div>

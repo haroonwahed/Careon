@@ -49,6 +49,10 @@ export interface Provider {
   specializations: string[];
   rating: number;
   responseTime: number;  // hours
+  /** From API when available; used for map accuracy only */
+  latitude?: number | null;
+  longitude?: number | null;
+  hasCoordinates?: boolean;
 }
 
 export interface Placement {

@@ -1,0 +1,11 @@
+<section class="ds-card page-stack">
+    <div class="page-stack">
+        <p class="ds-detail-indicator">Foutpagina</p>
+        <h1 class="page-title ds-section-title">{{ error_title }}</h1>
+        <p class="page-subtitle ds-helper-text">{{ error_message }}</p>
+    </div>
+    <div class="ds-list-actions">
+        <a href="{% url primary_href_name %}" class="btn btn-primary">{{ primary_label }}</a>
+        <a href="{% url secondary_href_name %}" class="btn btn-secondary">{{ secondary_label }}</a>
+    </div>
+</section>

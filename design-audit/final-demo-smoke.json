@@ -1,0 +1,92 @@
+[
+  {
+    "route": "dashboard",
+    "requestedUrl": "http://127.0.0.1:8010/dashboard/",
+    "finalUrl": "http://127.0.0.1:8010/dashboard/",
+    "title": "SaaS Careon",
+    "requestFailures": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "asset404s": [],
+    "legacyHit": [
+      "NETWERK",
+      "STURING",
+      "Collapse sidebar"
+    ],
+    "hasRoot": false,
+    "hasSpaAssets": true,
+    "hasBranding": true
+  },
+  {
+    "route": "new-case",
+    "requestedUrl": "http://127.0.0.1:8010/care/casussen/new/",
+    "finalUrl": "http://127.0.0.1:8010/care/casussen/new/",
+    "title": "SaaS Careon",
+    "requestFailures": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "asset404s": [],
+    "legacyHit": [
+      "NETWERK",
+      "STURING",
+      "Collapse sidebar"
+    ],
+    "hasRoot": false,
+    "hasSpaAssets": true,
+    "hasBranding": true
+  },
+  {
+    "route": "matching",
+    "requestedUrl": "http://127.0.0.1:8010/care/matching/",
+    "finalUrl": "http://127.0.0.1:8010/care/matching/",
+    "title": "SaaS Careon",
+    "requestFailures": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "asset404s": [],
+    "legacyHit": [
+      "NETWERK",
+      "STURING",
+      "Collapse sidebar"
+    ],
+    "hasRoot": false,
+    "hasSpaAssets": true,
+    "hasBranding": true
+  },
+  {
+    "route": "search",
+    "requestedUrl": "http://127.0.0.1:8010/care/search/?q=test",
+    "finalUrl": "http://127.0.0.1:8010/care/search/?q=test",
+    "title": "SaaS Careon",
+    "requestFailures": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "asset404s": [],
+    "legacyHit": [
+      "NETWERK",
+      "STURING",
+      "Collapse sidebar"
+    ],
+    "hasRoot": false,
+    "hasSpaAssets": true,
+    "hasBranding": true
+  },
+  {
+    "route": "missing",
+    "requestedUrl": "http://127.0.0.1:8010/care/does-not-exist/",
+    "finalUrl": "http://127.0.0.1:8010/care/does-not-exist/",
+    "title": "SaaS Careon",
+    "requestFailures": [],
+    "consoleErrors": [],
+    "pageErrors": [],
+    "asset404s": [],
+    "legacyHit": [
+      "NETWERK",
+      "STURING",
+      "Collapse sidebar"
+    ],
+    "hasRoot": false,
+    "hasSpaAssets": true,
+    "hasBranding": true
+  }
+]

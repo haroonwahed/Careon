@@ -99,7 +99,7 @@ export function ProviderCaseCard({
             )}
           </div>
           <p className="text-sm text-muted-foreground">
-            Case ID: {caseData.id} · Geplaatst door {caseData.municipality}
+            Casus-ID: {caseData.id} · Geplaatst door {caseData.municipality}
           </p>
         </div>
 

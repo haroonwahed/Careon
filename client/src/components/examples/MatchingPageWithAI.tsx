@@ -1,7 +1,5 @@
 /**
- * EXAMPLE: MatchingPage with AI Decision Intelligence Layer
- * 
- * Shows AI-powered match explanations and provider recommendations
+ * Compact example of matching with AI explanations.
  */
 
 import { useState } from "react";
@@ -43,7 +41,7 @@ export function MatchingPageWithAI({
   // AI Decision Logic
   const recommendation = {
     title: `Match met ${bestMatch.name}`,
-    explanation: "Beste match op basis van specialisatie, capaciteit en reactietijd. Systeem heeft 94% match score berekend.",
+    explanation: "Beste match op basis van specialisatie, capaciteit en reactietijd.",
     actionLabel: "Bevestig match",
     confidence: "high" as const,
     onAction: () => onConfirmMatch(bestMatch.id)
@@ -54,14 +52,14 @@ export function MatchingPageWithAI({
   if (topMatches.every(p => p.availableSpots === 0)) {
     riskSignals.push({
       severity: "critical" as const,
-      message: "Geen providers met directe capaciteit in regio"
+      message: "Geen providers met directe capaciteit"
     });
   }
 
   if (caseData.urgency === "high" && bestMatch.responseTime > 6) {
     riskSignals.push({
       severity: "warning" as const,
-      message: "Urgente casus met reactietijd boven 6 uur"
+      message: "Urgente casus met trage reactie"
     });
   }
 
@@ -73,7 +71,7 @@ export function MatchingPageWithAI({
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
       >
         <ArrowLeft size={20} />
-        <span className="text-sm font-medium">Terug</span>
+          <span className="text-sm font-medium">Terug</span>
       </button>
 
       {/* Header */}
@@ -82,7 +80,7 @@ export function MatchingPageWithAI({
           Matching · {caseData.clientName}
         </h1>
         <p className="text-sm text-muted-foreground break-words">
-          {topMatches.length} potentiële matches gevonden in {caseData.region}
+          {topMatches.length} matches in {caseData.region}
         </p>
       </div>
 
@@ -104,7 +102,7 @@ export function MatchingPageWithAI({
           {/* AI Insight: Match Status */}
           <SystemInsight
             type="info"
-            message={`${topMatches.length} aanbieders gevonden met match score tussen 62-94%`}
+            message={`${topMatches.length} aanbieders met score 62-94%`}
           />
 
           {/* Provider Cards with AI Explanations */}
@@ -196,14 +194,14 @@ export function MatchingPageWithAI({
                     index === 0 
                       ? [
                           "Specialisatie match",
-                          "3 plekken beschikbaar",
+                          "3 plekken vrij",
                           "Reactie binnen 4u"
                         ]
                       : index === 1
                       ? [
                           "Goede match",
                           "8 plekken vrij",
-                          "Hogere rating (4.6)"
+                          "Rating 4.6"
                         ]
                       : [
                           "Hoogste rating (4.8)",
@@ -235,9 +233,9 @@ export function MatchingPageWithAI({
 
           {/* Match Criteria */}
           <div className="premium-card p-4">
-            <h3 className="text-sm font-semibold text-foreground mb-3">
-              Match criteria
-            </h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">
+              Criteria
+              </h3>
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Specialisatie</span>

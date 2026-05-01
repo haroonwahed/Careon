@@ -52,8 +52,8 @@ export function CarePageHeader({
   className?: string;
 }) {
   return (
-    <header className={cn("rounded-[24px] border border-border/80 bg-card/80 p-5 shadow-sm backdrop-blur", className)}>
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+    <header className={cn("border-b border-border/70 pb-4", className)}>
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
         <div className="space-y-3">
           {eyebrow && (
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
@@ -92,7 +92,7 @@ export function CareInsightBanner({
   return (
     <section
       className={cn(
-        compact ? "rounded-2xl border-l-4 px-4 py-3" : "rounded-2xl border-l-4 p-5",
+        compact ? "border-l-4 px-4 py-3" : "border-l-4 p-4",
         styles.shell,
         className,
       )}
@@ -139,10 +139,10 @@ export function CareMetricCard({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "group relative flex min-h-[140px] flex-col justify-between rounded-[16px] border p-4 text-left transition-all duration-200",
+        "group relative flex min-h-[120px] flex-col justify-between rounded-xl border p-4 text-left transition-colors duration-200",
         styles.shell,
-        onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-lg",
-        active && "ring-2 ring-primary/35 shadow-[0_10px_28px_rgba(139,92,246,0.18)]",
+        onClick && "cursor-pointer hover:border-border/90",
+        active && "ring-2 ring-primary/30",
         className,
       )}
     >
@@ -179,7 +179,7 @@ export function CareSectionCard({
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-[20px] border border-border bg-card/72 p-5 shadow-sm backdrop-blur", className)}>
+    <section className={cn("rounded-xl border border-border/70 bg-card/35 p-4", className)}>
       {(title || subtitle || actions) && (
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1">
@@ -206,9 +206,9 @@ export function CareEmptyState({
   className?: string;
 }) {
   return (
-    <div className={cn("rounded-[20px] border border-border bg-card/75 p-10 text-center shadow-sm", className)}>
-      <div className="mx-auto max-w-xl space-y-3">
-        <p className="text-lg font-semibold text-foreground">{title}</p>
+    <div className={cn("border border-dashed border-border/70 bg-transparent px-5 py-8 text-left", className)}>
+      <div className="space-y-2">
+        <p className="text-base font-semibold text-foreground">{title}</p>
         {copy && <p className="text-sm leading-6 text-muted-foreground">{copy}</p>}
         {action && <div className="pt-1">{action}</div>}
       </div>

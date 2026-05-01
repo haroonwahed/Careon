@@ -10,9 +10,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { 
-  Search,
-  Filter,
+import {
   Upload,
   Download,
   Eye,
@@ -28,7 +26,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { CareSearchFiltersBar } from "./CareUnifiedPage";
 import { useDocuments } from "../../hooks/useDocuments";
 import { Loader2 } from "lucide-react";
 
@@ -195,90 +193,62 @@ export function DocumentenPage() {
 
       {/* Search & Filters */}
       <div className="premium-card p-4">
-        <div className="flex flex-col lg:flex-row gap-3">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search 
-              size={18} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-            />
-            <Input
-              placeholder="Zoek documenten, casus ID, cliënt..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          {/* Filter Toggle */}
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`gap-2 ${showFilters ? "border-primary/50 text-primary" : ""}`}
-          >
-            <Filter size={16} />
-            Filters
-            {showFilters && <X size={14} />}
-          </Button>
-        </div>
+        <CareSearchFiltersBar
+          className="!px-0"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek documenten, casus ID, cliënt..."
+          showSecondaryFilters={showFilters}
+          onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
+          secondaryFiltersLabel="Filters"
+          secondaryFilters={
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Type</label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as DocumentType | "all")}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alle types</option>
+                  <option value="intake">Intake</option>
+                  <option value="contract">Contract</option>
+                  <option value="rapport">Rapport</option>
+                  <option value="beoordeling">Beoordeling door aanbieder</option>
+                  <option value="overig">Overig</option>
+                </select>
+              </div>
 
-        {/* Filter Options */}
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
-            {/* Type Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Type
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as DocumentType | "all")}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alle types</option>
-                <option value="intake">Intake</option>
-                <option value="contract">Contract</option>
-                <option value="rapport">Rapport</option>
-                <option value="beoordeling">Beoordeling door aanbieder</option>
-                <option value="overig">Overig</option>
-              </select>
-            </div>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Gekoppeld aan</label>
+                <select
+                  value={linkedToFilter}
+                  onChange={(e) => setLinkedToFilter(e.target.value as LinkedEntity | "all")}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alles</option>
+                  <option value="casus">Casus</option>
+                  <option value="aanbieder">Aanbieder</option>
+                  <option value="gemeente">Gemeente</option>
+                  <option value="geen">Niet gekoppeld</option>
+                </select>
+              </div>
 
-            {/* Linked To Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Gekoppeld aan
-              </label>
-              <select
-                value={linkedToFilter}
-                onChange={(e) => setLinkedToFilter(e.target.value as LinkedEntity | "all")}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alles</option>
-                <option value="casus">Casus</option>
-                <option value="aanbieder">Aanbieder</option>
-                <option value="gemeente">Gemeente</option>
-                <option value="geen">Niet gekoppeld</option>
-              </select>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Status</label>
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as DocumentStatus | "all")}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alle statussen</option>
+                  <option value="actief">Actief</option>
+                  <option value="gearchiveerd">Gearchiveerd</option>
+                </select>
+              </div>
             </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as DocumentStatus | "all")}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alle statussen</option>
-                <option value="actief">Actief</option>
-                <option value="gearchiveerd">Gearchiveerd</option>
-              </select>
-            </div>
-          </div>
-        )}
+          }
+        />
       </div>
 
       {/* Document List */}

@@ -8,21 +8,21 @@
  * - Platform-level multi-tenancy
  */
 
-import { useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { TopBar } from "../navigation/TopBar";
 import { Sidebar } from "../navigation/Sidebar";
-import { RegiekamerControlCenter } from "../care/RegiekamerControlCenter";
+import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
 import { RegiosPage } from "../care/RegiosPage";
 import { AssessmentQueuePage } from "../care/AssessmentQueuePage";
 import { AanbiederBeoordelingPage } from "../care/AanbiederBeoordelingPage";
 import { MatchingPageWrapper } from "../care/MatchingPageWrapper";
 import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
 import { IntakeListPage } from "../care/IntakeListPage";
-import { CasussenWorkflowPage } from "../care/CasussenWorkflowPage";
+import { WorkloadPage } from "../care/WorkloadPage";
 import { NieuweCasusPage } from "../care/NieuweCasusPage";
 import { ZorgaanbiedersPage } from "../care/ZorgaanbiedersPage";
 import { GemeentenPage } from "../care/GemeentenPage";
-import { CaseWorkflowDetailPage } from "../care/CaseWorkflowDetailPage";
+import { CaseExecutionPage } from "../care/CaseExecutionPage";
 import { SignalenPage } from "../care/SignalenPage";
 import { ActiesPage } from "../care/ActiesPage";
 import { DocumentenPage } from "../care/DocumentenPage";
@@ -31,6 +31,8 @@ import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { useTasks } from "../../hooks/useTasks";
+import { countOpenCareTasks } from "../../lib/actiesTaskSemantics";
 import { buildWorkflowCases } from "../../lib/workflowUi";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
@@ -88,109 +90,279 @@ type Page =
   | "intake"
   | "mijn-casussen"
   | "gebruikers";
+
+const PAGE_TO_HREF: Record<Page, string> = {
+  regiekamer: "/regiekamer",
+  casussen: "/casussen",
+  "nieuwe-casus": "/casussen/nieuw",
+  beoordelingen: "/beoordelingen",
+  matching: "/matching",
+  plaatsingen: "/plaatsingen",
+  acties: "/acties",
+  zorgaanbieders: "/zorgaanbieders",
+  gemeenten: "/gemeenten",
+  regios: "/regios",
+  signalen: "/signalen",
+  rapportages: "/rapportages",
+  documenten: "/documenten",
+  audittrail: "/audittrail",
+  instellingen: "/instellingen",
+  intake: "/intake",
+  "mijn-casussen": "/mijn-casussen",
+  gebruikers: "/gebruikers",
+};
+
+const GEMEENTE_PAGES: readonly Page[] = [
+  "regiekamer",
+  "casussen",
+  "nieuwe-casus",
+  "beoordelingen",
+  "matching",
+  "plaatsingen",
+  "acties",
+  "zorgaanbieders",
+  "gemeenten",
+  "regios",
+  "signalen",
+  "rapportages",
+  "documenten",
+  "audittrail",
+  "instellingen",
+];
+
+const ZORGAANBIEDER_PAGES: readonly Page[] = ["intake", "mijn-casussen", "beoordelingen", "documenten"];
+
+const ADMIN_PAGES: readonly Page[] = [
+  "regiekamer",
+  "regios",
+  "gebruikers",
+  "beoordelingen",
+  "casussen",
+  "matching",
+  "plaatsingen",
+  "acties",
+  "signalen",
+  "nieuwe-casus",
+  "rapportages",
+  "instellingen",
+];
+
+function normalizePageForRole(page: Page, role: RoleType): Page {
+  const allowed = role === "gemeente" ? GEMEENTE_PAGES : role === "zorgaanbieder" ? ZORGAANBIEDER_PAGES : ADMIN_PAGES;
+  if ((allowed as readonly string[]).includes(page)) {
+    return page;
+  }
+  return role === "zorgaanbieder" ? "intake" : "regiekamer";
+}
+
+function pathWithoutTrailingSlash(path: string): string {
+  if (path.length > 1 && path.endsWith("/")) {
+    return path.slice(0, -1);
+  }
+  return path || "/";
+}
+
+/** Resolve shell page + optional case overlay from URL (legacy /care/… and canonical /… paths). */
+function getInitialNavigation(pathname: string): { page: Page; caseId: string | null } {
+  const path = pathWithoutTrailingSlash(pathname.split("?")[0] ?? pathname);
+
+  const casesSpaMatch = path.match(/^\/care\/cases\/(\d+)$/);
+  if (casesSpaMatch) {
+    return { page: "casussen", caseId: casesSpaMatch[1] };
+  }
+  if (path.startsWith("/care/casussen/new")) {
+    return { page: "nieuwe-casus", caseId: null };
+  }
+  if (path.startsWith("/care/casussen")) {
+    return { page: "casussen", caseId: null };
+  }
+  if (path.startsWith("/care/beoordelingen")) {
+    return { page: "beoordelingen", caseId: null };
+  }
+  if (path.startsWith("/care/matching")) {
+    return { page: "matching", caseId: null };
+  }
+  if (path.startsWith("/care/plaatsingen")) {
+    return { page: "plaatsingen", caseId: null };
+  }
+  if (path.startsWith("/care/zorgaanbieders")) {
+    return { page: "zorgaanbieders", caseId: null };
+  }
+  if (path.startsWith("/care/gemeenten")) {
+    return { page: "gemeenten", caseId: null };
+  }
+  if (path.startsWith("/care/regio")) {
+    return { page: "regios", caseId: null };
+  }
+  if (path.startsWith("/settings")) {
+    return { page: "instellingen", caseId: null };
+  }
+
+  const shellMap: Record<string, Page> = {
+    "/regiekamer": "regiekamer",
+    "/casussen": "casussen",
+    "/casussen/nieuw": "nieuwe-casus",
+    "/beoordelingen": "beoordelingen",
+    "/matching": "matching",
+    "/plaatsingen": "plaatsingen",
+    "/acties": "acties",
+    "/zorgaanbieders": "zorgaanbieders",
+    "/gemeenten": "gemeenten",
+    "/regios": "regios",
+    "/signalen": "signalen",
+    "/rapportages": "rapportages",
+    "/documenten": "documenten",
+    "/audittrail": "audittrail",
+    "/instellingen": "instellingen",
+    "/intake": "intake",
+    "/mijn-casussen": "mijn-casussen",
+    "/gebruikers": "gebruikers",
+  };
+
+  const shellPage = shellMap[path];
+  if (shellPage) {
+    return { page: shellPage, caseId: null };
+  }
+
+  return { page: "regiekamer", caseId: null };
+}
+
+function pageToHref(page: Page, caseId: string | null): string {
+  if (caseId) {
+    return `/care/cases/${caseId}/`;
+  }
+  return PAGE_TO_HREF[page];
+}
+
 interface MultiTenantDemoProps {
   theme: "light" | "dark";
   onThemeToggle: () => void;
 }
 
-function getInitialNavigation(pathname: string): { page: Page; caseId: string | null } {
-  const casesSpaMatch = pathname.match(/^\/care\/cases\/(\d+)\/?$/);
-  if (casesSpaMatch) {
-    return { page: "casussen", caseId: casesSpaMatch[1] };
-  }
-  if (pathname.startsWith("/care/casussen/new")) {
-    return { page: "nieuwe-casus", caseId: null };
-  }
-  if (pathname.startsWith("/care/casussen/")) {
-    return { page: "casussen", caseId: null };
-  }
-  if (pathname.startsWith("/care/beoordelingen/")) {
-    return { page: "beoordelingen", caseId: null };
-  }
-  if (pathname.startsWith("/care/matching/")) {
-    return { page: "matching", caseId: null };
-  }
-  if (pathname.startsWith("/care/plaatsingen/")) {
-    return { page: "plaatsingen", caseId: null };
-  }
-  if (pathname.startsWith("/care/zorgaanbieders/")) {
-    return { page: "zorgaanbieders", caseId: null };
-  }
-  if (pathname.startsWith("/care/gemeenten/")) {
-    return { page: "gemeenten", caseId: null };
-  }
-  if (pathname.startsWith("/care/regio")) {
-    return { page: "regios", caseId: null };
-  }
-  if (pathname.startsWith("/settings/")) {
-    return { page: "instellingen", caseId: null };
-  }
-  return { page: "regiekamer", caseId: null };
-}
-
-const readInitialCareNavigation = (() => {
-  let memo: { page: Page; caseId: string | null } | null = null;
-  return () => {
-    memo ??= getInitialNavigation(window.location.pathname);
-    return memo;
-  };
-})();
-
 export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) {
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
-  const [currentPage, setCurrentPage] = useState<Page>(() => readInitialCareNavigation().page);
-  const [selectedCase, setSelectedCase] = useState<string | null>(() => readInitialCareNavigation().caseId);
+  const [currentPage, setCurrentPage] = useState<Page>(() =>
+    normalizePageForRole(
+      getInitialNavigation(typeof window !== "undefined" ? window.location.pathname : "/").page,
+      availableContexts[0].type,
+    ),
+  );
+  const [selectedCase, setSelectedCase] = useState<string | null>(() =>
+    typeof window !== "undefined" ? getInitialNavigation(window.location.pathname).caseId : null,
+  );
   const { cases } = useCases({ q: "" });
   const { providers } = useProviders({ q: "" });
-  const workflowCases = buildWorkflowCases(cases, providers);
-  const queueCounts = {
-    casussen: workflowCases.filter((casus) => casus.phase !== "afgerond").length,
-    beoordelingen: workflowCases.filter((casus) => casus.phase === "provider_beoordeling").length,
-    matching: workflowCases.filter((casus) => casus.readyForMatching).length,
-    plaatsingen: workflowCases.filter((casus) => casus.readyForPlacement).length,
-    acties: workflowCases.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 10).length,
-  };
+  const { tasks: careTasks } = useTasks({ q: "" });
+  /** Sidebar badges must match the same datasets as the pages they point to (e.g. Acties = CareTask list). */
+  const queueCounts = useMemo(() => {
+    const wf = buildWorkflowCases(cases, providers);
+    return {
+      casussen: wf.filter((casus) => casus.phase !== "afgerond").length,
+      beoordelingen: wf.filter((casus) => casus.phase === "provider_beoordeling" && casus.daysInCurrentPhase >= 3).length,
+      matching: wf.filter((casus) => casus.readyForMatching).length,
+      plaatsingen: wf.filter((casus) => casus.readyForPlacement).length,
+      acties: countOpenCareTasks(careTasks),
+      signalen: wf.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 7).length,
+    };
+  }, [cases, providers, careTasks]);
+
+  const goToPage = useCallback(
+    (page: Page) => {
+      const normalized = normalizePageForRole(page, currentContext.type);
+      setCurrentPage(normalized);
+      setSelectedCase(null);
+      window.history.pushState({}, "", pageToHref(normalized, null));
+    },
+    [currentContext.type],
+  );
+
+  useEffect(() => {
+    const onPop = () => {
+      const { page, caseId } = getInitialNavigation(window.location.pathname);
+      const normalized = normalizePageForRole(page, currentContext.type);
+      setCurrentPage(normalized);
+      setSelectedCase(caseId);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [currentContext.type]);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const raw = getInitialNavigation(window.location.pathname);
+    const normalized = normalizePageForRole(raw.page, currentContext.type);
+    if (normalized === raw.page) {
+      return;
+    }
+    window.history.replaceState(window.history.state, "", pageToHref(normalized, raw.caseId));
+  }, [currentContext.type]);
 
   const handleContextSwitch = (contextId: string) => {
-    const newContext = availableContexts.find(c => c.id === contextId);
+    const newContext = availableContexts.find((c) => c.id === contextId);
     if (newContext) {
       setCurrentContext(newContext);
-      
-      // Reset to appropriate home page for role
-      if (newContext.type === "zorgaanbieder") {
-        setCurrentPage("intake");
-      } else {
-        setCurrentPage("regiekamer");
-      }
-
       setSelectedCase(null);
+      const home: Page = newContext.type === "zorgaanbieder" ? "intake" : "regiekamer";
+      const normalized = normalizePageForRole(home, newContext.type);
+      setCurrentPage(normalized);
+      window.history.pushState({}, "", pageToHref(normalized, null));
     }
   };
 
   const handleNavigate = (itemId: string, _href: string) => {
-    setCurrentPage(itemId as Page);
-    // Reset case/provider selection when navigating
+    const normalized = normalizePageForRole(itemId as Page, currentContext.type);
+    setCurrentPage(normalized);
     setSelectedCase(null);
+    window.history.pushState({}, "", pageToHref(normalized, null));
   };
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
-    // Don't change the page, just show the case detail overlay
+    const listPage = normalizePageForRole("casussen", currentContext.type);
+    setCurrentPage(listPage);
+    window.history.pushState({}, "", `/care/cases/${caseId}/`);
   };
 
   const handleCloseCaseDetail = () => {
-    setSelectedCase(null);
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      window.history.back();
+    } else {
+      setSelectedCase(null);
+      const fallback = normalizePageForRole("casussen", currentContext.type);
+      setCurrentPage(fallback);
+      window.history.replaceState({}, "", pageToHref(fallback, null));
+    }
   };
+
+  const handleAppNavigate = useCallback(
+    (path: string) => {
+      const pathname = (path.split("?")[0] ?? path).split("#")[0] ?? "/";
+      const { page, caseId } = getInitialNavigation(pathname);
+      const normalized = normalizePageForRole(page, currentContext.type);
+      setCurrentPage(normalized);
+      setSelectedCase(caseId);
+      window.history.pushState({}, "", path.startsWith("/") ? path : `/${path}`);
+    },
+    [currentContext.type],
+  );
 
   const handleProviderSelect = (providerId: string) => {
     void providerId;
   };
 
-  const handleRegionClick = (_regionId: string) => setCurrentPage("regios");
+  const handleRegionClick = (_regionId: string) => {
+    goToPage("regios");
+  };
 
-  const handleViewGemeenten = (_regionId: string) => setCurrentPage("gemeenten");
+  const handleViewGemeenten = (_regionId: string) => {
+    goToPage("gemeenten");
+  };
 
-  const handleViewProviders = (_regionId: string) => setCurrentPage("zorgaanbieders");
+  const handleViewProviders = (_regionId: string) => {
+    goToPage("zorgaanbieders");
+  };
 
   const handleOpenEntityFromAudit = (entry: any) => {
     if (entry.entityType === "casus" && entry.entityId) {
@@ -198,16 +370,16 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       return;
     }
     if (entry.entityType === "document") {
-      setCurrentPage("documenten");
+      goToPage("documenten");
       return;
     }
     if (entry.entityType === "instellingen") {
-      setCurrentPage("instellingen");
+      goToPage("instellingen");
     }
   };
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div data-testid="care-app-shell" className="flex h-screen bg-background overflow-hidden">
       {/* SIDEBAR */}
       <Sidebar
         role={currentContext.type}
@@ -226,44 +398,65 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           availableContexts={availableContexts}
           onContextSwitch={handleContextSwitch}
           notificationCount={7}
-          onNotificationClick={() => setCurrentPage("acties")}
+          onNotificationClick={() => {
+            goToPage("acties");
+          }}
           onSearch={() => undefined}
           userName="Jane Doe"
           userRole="Regisseur"
-          onProfileClick={() => setCurrentPage("instellingen")}
-          onSettingsClick={() => setCurrentPage("instellingen")}
+          onProfileClick={() => {
+            goToPage("instellingen");
+          }}
+          onSettingsClick={() => {
+            goToPage("instellingen");
+          }}
           onLogout={() => {
-            setCurrentContext(availableContexts[0]);
-            setCurrentPage("regiekamer");
+            const resetCtx = availableContexts[0];
+            setCurrentContext(resetCtx);
             setSelectedCase(null);
+            const home = normalizePageForRole("regiekamer", resetCtx.type);
+            setCurrentPage(home);
+            window.history.pushState({}, "", pageToHref(home, null));
           }}
         />
 
         {/* CONTENT */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 flex flex-col p-6 overflow-y-auto">
-            
-            {/* GEMEENTE PAGES */}
-            {currentContext.type === "gemeente" && (
+        <main data-testid="care-app-main" className="flex-1 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+            {selectedCase ? (
+              <CaseExecutionPage
+                caseId={selectedCase}
+                role={currentContext.type}
+                onBack={handleCloseCaseDetail}
+              />
+            ) : currentContext.type === "gemeente" ? (
               <>
                 {currentPage === "regiekamer" && (
-                  <RegiekamerControlCenter onCaseClick={handleCaseClick} />
+                  <SystemAwarenessPage onCaseClick={handleCaseClick} onAppNavigate={handleAppNavigate} />
                 )}
 
                 {currentPage === "casussen" && (
-                  <CasussenWorkflowPage
+                  <WorkloadPage
                     onCaseClick={handleCaseClick}
-                    onCreateCase={() => setCurrentPage("nieuwe-casus")}
+                    onCreateCase={() => {
+                      goToPage("nieuwe-casus");
+                    }}
                     canCreateCase
                     role={currentContext.type}
-                    onNavigateToWorkflow={(page) => setCurrentPage(page)}
+                    onNavigateToWorkflow={(page) => {
+                      goToPage(page as Page);
+                    }}
                   />
                 )}
 
                 {currentPage === "nieuwe-casus" && (
                   <NieuweCasusPage
-                    onCancel={() => setCurrentPage("casussen")}
-                    onCreated={() => setCurrentPage("casussen")}
+                    onCancel={() => {
+                      goToPage("casussen");
+                    }}
+                    onCreated={() => {
+                      goToPage("casussen");
+                    }}
                   />
                 )}
 
@@ -271,21 +464,38 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <AanbiederBeoordelingPage
                     role="gemeente"
                     onCaseClick={handleCaseClick}
-                    onNavigateToMatching={() => setCurrentPage("matching")}
-                    onNavigateToPlaatsingen={() => setCurrentPage("plaatsingen")}
-                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                    onNavigateToMatching={() => {
+                      goToPage("matching");
+                    }}
+                    onNavigateToPlaatsingen={() => {
+                      goToPage("plaatsingen");
+                    }}
+                    onNavigateToCasussen={() => {
+                      goToPage("casussen");
+                    }}
                   />
                 )}
 
                 {currentPage === "matching" && (
                   <MatchingPageWrapper
-                    onNavigateToCasussen={() => setCurrentPage("casussen")}
-                    onNavigateToBeoordelingen={() => setCurrentPage("beoordelingen")}
+                    onNavigateToCasussen={() => {
+                      goToPage("casussen");
+                    }}
+                    onNavigateToBeoordelingen={() => {
+                      goToPage("beoordelingen");
+                    }}
+                    onNavigateToCaseDetail={(id) => {
+                      handleCaseClick(id);
+                    }}
                   />
                 )}
 
                 {currentPage === "plaatsingen" && (
-                  <PlacementPageWrapper onNavigateToMatching={() => setCurrentPage("matching")} />
+                  <PlacementPageWrapper
+                    onNavigateToMatching={() => {
+                      goToPage("matching");
+                    }}
+                  />
                 )}
 
                 {currentPage === "acties" && (
@@ -293,7 +503,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "zorgaanbieders" && (
-                  <ZorgaanbiedersPage />
+                  <ZorgaanbiedersPage theme={theme} />
                 )}
 
                 {currentPage === "gemeenten" && (
@@ -309,7 +519,24 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "signalen" && (
-                  <SignalenPage />
+                  <SignalenPage
+                    onOpenCase={handleCaseClick}
+                    onNavigateToWorkflow={(target) => {
+                      if (target === "zorgaanbieders") {
+                        goToPage("zorgaanbieders");
+                      } else if (target === "matching") {
+                        goToPage("matching");
+                      } else if (target === "plaatsingen") {
+                        goToPage("plaatsingen");
+                      } else if (target === "beoordelingen") {
+                        goToPage("beoordelingen");
+                      } else if (target === "intake") {
+                        goToPage("plaatsingen");
+                      } else {
+                        goToPage("casussen");
+                      }
+                    }}
+                  />
                 )}
 
                 {currentPage === "rapportages" && (
@@ -328,20 +555,19 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <InstellingenPage />
                 )}
               </>
-            )}
-
-            {/* ZORGAANBIEDER PAGES */}
-            {currentContext.type === "zorgaanbieder" && (
+            ) : currentContext.type === "zorgaanbieder" ? (
               <>
                 {currentPage === "intake" && (
                   <IntakeListPage onCaseClick={handleCaseClick} role={currentContext.type as "gemeente" | "zorgaanbieder" | "admin"} />
                 )}
 
                 {currentPage === "mijn-casussen" && (
-                  <CasussenWorkflowPage
+                  <WorkloadPage
                     onCaseClick={handleCaseClick}
                     role={currentContext.type}
-                    onNavigateToWorkflow={(page) => setCurrentPage(page)}
+                    onNavigateToWorkflow={(page) => {
+                      goToPage(page as Page);
+                    }}
                   />
                 )}
 
@@ -349,8 +575,12 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <AanbiederBeoordelingPage
                     role="zorgaanbieder"
                     onCaseClick={handleCaseClick}
-                    onNavigateToPlaatsingen={() => setCurrentPage("intake")}
-                    onNavigateToCasussen={() => setCurrentPage("mijn-casussen")}
+                    onNavigateToPlaatsingen={() => {
+                      goToPage("intake");
+                    }}
+                    onNavigateToCasussen={() => {
+                      goToPage("mijn-casussen");
+                    }}
                   />
                 )}
 
@@ -358,15 +588,10 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <DocumentenPage />
                 )}
               </>
-            )}
-
-            {/* ADMIN PAGES */}
-            {currentContext.type === "admin" && (
+            ) : (
               <>
-                {/* Same as gemeente pages, plus: */}
-                
                 {currentPage === "regiekamer" && (
-                  <RegiekamerControlCenter onCaseClick={handleCaseClick} />
+                  <SystemAwarenessPage onCaseClick={handleCaseClick} onAppNavigate={handleAppNavigate} />
                 )}
 
                 {currentPage === "regios" && (
@@ -384,30 +609,30 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                         Gebruikers
                       </h1>
                       <p className="text-sm text-muted-foreground">
-                        Beheer gebruikers en toegang
+                        Gebruikers en toegang
                       </p>
                     </div>
-                    
+
                     <div className="premium-card p-12 text-center">
-                      <p className="text-lg font-bold text-foreground mb-4">
-                        Admin Only
+                      <p className="mb-4 text-lg font-bold text-foreground">
+                        Alleen beheerder
                       </p>
-                      <p className="text-muted-foreground mb-8">
-                        This page is only available to administrators.<br />
-                        Manage users, permissions, and system access.
+                      <p className="mb-8 text-muted-foreground">
+                        Alleen voor beheerders.<br />
+                        Beheer gebruikers, rechten en toegang.
                       </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto">
+
+                      <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-3">
                         <div className="premium-card p-6">
-                          <p className="text-3xl font-bold text-foreground mb-2">24</p>
-                          <p className="text-sm text-muted-foreground">Gemeente users</p>
+                          <p className="mb-2 text-3xl font-bold text-foreground">24</p>
+                          <p className="text-sm text-muted-foreground">Gemeente</p>
                         </div>
                         <div className="premium-card p-6">
-                          <p className="text-3xl font-bold text-foreground mb-2">18</p>
-                          <p className="text-sm text-muted-foreground">Zorgaanbieder users</p>
+                          <p className="mb-2 text-3xl font-bold text-foreground">18</p>
+                          <p className="text-sm text-muted-foreground">Zorgaanbieder</p>
                         </div>
                         <div className="premium-card p-6">
-                          <p className="text-3xl font-bold text-primary mb-2">3</p>
+                          <p className="mb-2 text-3xl font-bold text-primary">3</p>
                           <p className="text-sm text-muted-foreground">Admins</p>
                         </div>
                       </div>
@@ -415,28 +640,33 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   </div>
                 )}
 
-                {/* Other admin pages... */}
                 {currentPage === "beoordelingen" && (
                   <AanbiederBeoordelingPage
                     role="admin"
                     onCaseClick={handleCaseClick}
-                    onNavigateToMatching={() => setCurrentPage("matching")}
-                    onNavigateToPlaatsingen={() => setCurrentPage("plaatsingen")}
-                    onNavigateToCasussen={() => setCurrentPage("casussen")}
+                    onNavigateToMatching={() => {
+                      goToPage("matching");
+                    }}
+                    onNavigateToPlaatsingen={() => {
+                      goToPage("plaatsingen");
+                    }}
+                    onNavigateToCasussen={() => {
+                      goToPage("casussen");
+                    }}
                   />
                 )}
 
                 {(currentPage === "casussen" || currentPage === "matching" || currentPage === "plaatsingen" || currentPage === "acties" || currentPage === "signalen") && (
                   <div className="space-y-6">
                     <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
+                      <h1 className="mb-2 text-3xl font-bold text-foreground">
                         {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
                       </h1>
                       <p className="text-sm text-muted-foreground">
                         Admin view - all organizations
                       </p>
                     </div>
-                    
+
                     <div className="premium-card p-12 text-center">
                       <p className="text-muted-foreground">
                         Admin page - showing data across all organizations
@@ -447,8 +677,12 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
                 {currentPage === "nieuwe-casus" && (
                   <NieuweCasusPage
-                    onCancel={() => setCurrentPage("casussen")}
-                    onCreated={() => setCurrentPage("casussen")}
+                    onCancel={() => {
+                      goToPage("casussen");
+                    }}
+                    onCreated={() => {
+                      goToPage("casussen");
+                    }}
                   />
                 )}
 
@@ -461,25 +695,10 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
               </>
             )}
-
           </div>
         </main>
       </div>
 
-      {/* CASUS CONTROL CENTER - Modal Overlay */}
-      {selectedCase && (
-        <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 overflow-y-auto">
-          <div className="min-h-screen">
-            <div className="p-6 max-w-[1400px] mx-auto">
-              <CaseWorkflowDetailPage
-                caseId={selectedCase}
-                role={currentContext.type}
-                onBack={handleCloseCaseDetail}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

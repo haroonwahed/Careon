@@ -59,7 +59,7 @@ export function CaseDetailPage({ caseId, onBack, onStartMatching }) {
   const summary = [
     { text: "15 jaar, woonachtig in Amsterdam", type: "default" },
     { text: "Zorgvraag: Intensieve Ambulante Begeleiding", type: "info" },
-    { text: "Hoge urgentie - spoedtraject vereist", type: "warning" }
+      { text: "Hoge urgentie", type: "warning" }
   ];
 
   return (
@@ -95,7 +95,7 @@ export function CaseDetailPage({ caseId, onBack, onStartMatching }) {
             <Risicosignalen signals={riskSignals} />
             
             {/* Other insights */}
-            <div>Process status...</div>
+            <div>Status...</div>
           </AIInsightPanel>
         </div>
       </div>
@@ -205,7 +205,7 @@ import { MatchExplanation } from "@/components/ai";
 
 ```tsx
 <div className="p-4 bg-muted rounded-lg">
-  <p>Aanbieder Beoordeling gepland voor 18 april</p>
+  <p>Beoordeling gepland op 18 april</p>
 </div>
 ```
 
@@ -216,7 +216,7 @@ import { SystemInsight } from "@/components/ai";
 
 <SystemInsight
   type="info"
-  message="Aanbieder Beoordeling gepland voor 18 april met Dr. P. Bakker"
+  message="Beoordeling gepland op 18 april"
 />
 ```
 
@@ -256,7 +256,7 @@ if (provider.availableSpots === 0) {
 if (caseData.urgency === "high" && provider.responseTime > 6) {
   riskSignals.push({
     severity: "warning",
-    message: "Urgente casus met reactietijd boven 6 uur"
+    message: "Urgente casus met trage reactie"
   });
 }
 

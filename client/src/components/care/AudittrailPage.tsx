@@ -10,9 +10,7 @@
  */
 
 import { useState } from "react";
-import { 
-  Search,
-  Filter,
+import {
   X,
   ChevronRight,
   Calendar,
@@ -30,7 +28,7 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { CareSearchFiltersBar } from "./CareUnifiedPage";
 import { useAuditLog } from "../../hooks/useAuditLog";
 import { Loader2 } from "lucide-react";
 
@@ -183,97 +181,69 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
 
       {/* Search & Filters */}
       <div className="premium-card p-4">
-        <div className="flex flex-col lg:flex-row gap-3">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <Search 
-              size={18} 
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
-            />
-            <Input
-              placeholder="Zoek op casus ID, gebruiker, actie..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          {/* Filter Toggle */}
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`gap-2 ${showFilters ? "border-primary/50 text-primary" : ""}`}
-          >
-            <Filter size={16} />
-            Filters
-            {showFilters && <X size={14} />}
-          </Button>
-        </div>
+        <CareSearchFiltersBar
+          className="!px-0"
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek op casus ID, gebruiker, actie..."
+          showSecondaryFilters={showFilters}
+          onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
+          secondaryFiltersLabel="Filters"
+          secondaryFilters={
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Type</label>
+                <select
+                  value={typeFilter}
+                  onChange={(e) => setTypeFilter(e.target.value as EntityType | "all")}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alle types</option>
+                  <option value="casus">Casus</option>
+                  <option value="beoordeling">Beoordeling door aanbieder</option>
+                  <option value="matching">Matching</option>
+                  <option value="plaatsing">Plaatsing</option>
+                  <option value="intake">Intake</option>
+                  <option value="document">Document</option>
+                  <option value="gebruiker">Gebruiker</option>
+                  <option value="instellingen">Instellingen</option>
+                </select>
+              </div>
 
-        {/* Filter Options */}
-        {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 pt-4 border-t border-border">
-            {/* Type Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Type
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as EntityType | "all")}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alle types</option>
-                <option value="casus">Casus</option>
-                <option value="beoordeling">Beoordeling door aanbieder</option>
-                <option value="matching">Matching</option>
-                <option value="plaatsing">Plaatsing</option>
-                <option value="intake">Intake</option>
-                <option value="document">Document</option>
-                <option value="gebruiker">Gebruiker</option>
-                <option value="instellingen">Instellingen</option>
-              </select>
-            </div>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Actie</label>
+                <select
+                  value={actionFilter}
+                  onChange={(e) => setActionFilter(e.target.value as ActionType | "all")}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alle acties</option>
+                  <option value="aangemaakt">Aangemaakt</option>
+                  <option value="gewijzigd">Gewijzigd</option>
+                  <option value="verwijderd">Verwijderd</option>
+                  <option value="bevestigd">Bevestigd</option>
+                  <option value="toegewezen">Toegewezen</option>
+                  <option value="geupload">Geüpload</option>
+                </select>
+              </div>
 
-            {/* Action Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Actie
-              </label>
-              <select
-                value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value as ActionType | "all")}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alle acties</option>
-                <option value="aangemaakt">Aangemaakt</option>
-                <option value="gewijzigd">Gewijzigd</option>
-                <option value="verwijderd">Verwijderd</option>
-                <option value="bevestigd">Bevestigd</option>
-                <option value="toegewezen">Toegewezen</option>
-                <option value="geupload">Geüpload</option>
-              </select>
+              <div>
+                <label className="mb-2 block text-xs font-medium text-muted-foreground">Gebruiker</label>
+                <select
+                  value={userFilter}
+                  onChange={(e) => setUserFilter(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
+                >
+                  <option value="all">Alle gebruikers</option>
+                  <option value="U-001">Jane Doe</option>
+                  <option value="U-002">Mark van den Berg</option>
+                  <option value="U-003">Dr. P. Bakker</option>
+                  <option value="U-004">Lisa de Vries</option>
+                </select>
+              </div>
             </div>
-
-            {/* User Filter */}
-            <div>
-              <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                Gebruiker
-              </label>
-              <select
-                value={userFilter}
-                onChange={(e) => setUserFilter(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-border bg-card text-sm"
-              >
-                <option value="all">Alle gebruikers</option>
-                <option value="U-001">Jane Doe</option>
-                <option value="U-002">Mark van den Berg</option>
-                <option value="U-003">Dr. P. Bakker</option>
-                <option value="U-004">Lisa de Vries</option>
-              </select>
-            </div>
-          </div>
-        )}
+          }
+        />
       </div>
 
       {/* Activity List */}

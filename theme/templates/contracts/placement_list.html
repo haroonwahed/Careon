@@ -1,51 +1,81 @@
 {% extends "base.html" %}
 {% block title %}Plaatsingen - Zorgregie{% endblock %}
 {% block content %}
-<div class="ds-list-shell ds-page-shell">
-
-<div class="ds-list-header ds-page-header">
-    <div>
-        <h1 class="page-title ds-section-title">Plaatsingen</h1>
+<div class="page-wrap page-wrap-command" data-layout="max-width: 1440px">
+    <header class="ds-list-header">
+        <div>
+            <h1 class="page-title">Plaatsingen</h1>
+            <p class="page-subtitle">Bevestigd tot intake</p>
+            <p class="ds-note-text flex flex-wrap items-center gap-2">
+                <span class="ds-badge badge-blue">{{ placement_rows|length }} plaatsingen open</span>
+                <span>Bevestiging en handoff</span>
+            </p>
         </div>
-    <a href="{% url 'careon:matching_dashboard' %}" class="action-chip">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-        Naar matching
-    </a>
-</div>
+        <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-secondary">Naar matching</a>
+    </header>
 
-<form method="get" class="ds-list-filters">
-    <input type="text" name="q" value="{{ search_query }}" placeholder="Zoek op casus of aanbieder...">
-    <select name="status" onchange="this.form.submit()">
-        <option value="">Alle statussen</option>
-        {% for val, label in status_choices %}
-        <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-    </select>
-    <button type="submit" class="btn btn-secondary">Zoeken</button>
-</form>
+    <section class="ds-list-filters">
+        <form method="get" class="ds-list-filter-row">
+            <div class="ds-list-filter-group">
+                <label for="placement-q" class="ds-list-filter-label">Zoeken</label>
+                <input id="placement-q" type="text" name="q" value="{{ search_query }}" placeholder="Zoek op casus, aanbieder of regio...">
+            </div>
+            <div class="ds-list-filter-group">
+                <label for="placement-status" class="ds-list-filter-label">Status</label>
+                <select id="placement-status" name="status" onchange="this.form.submit()">
+                    <option value="">Alle statussen</option>
+                    {% for val, label in status_choices %}
+                    <option value="{{ val }}" {% if request.GET.status == val %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn btn-secondary ds-btn-compact">Zoeken</button>
+        </form>
+    </section>
 
-<div class="ds-list-table">
-    <div class="ds-table-wrap ds-list-container">
-        <table class="ds-table">
-            <thead><tr>
-                <th>Casus</th>
-                <th>Toegewezen aanbieder</th>
-                <th>Zorgvorm</th>
-                <th>Startdatum</th>
-                <th>Status</th>
-                <th></th>
-            </tr></thead>
-            <tbody>
-                {% for row in placement_rows %}
-                {% with placement=row.placement %}
-                <tr>
-                    <td>
-                        <a href="{% url 'careon:placement_detail' placement.pk %}">
+    <section class="mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--zr-text-secondary)]">
+                Plaatsingen ({{ placement_rows|length }})
+            </h2>
+            <span class="text-sm text-[color:var(--zr-text-secondary)]">Bevestiging en handoff</span>
+        </div>
+
+        {% if placement_rows %}
+        <div class="queue-list mt-3">
+            {% for row in placement_rows %}
+            {% with placement=row.placement %}
+            <article class="queue-row">
+                <div class="queue-head">
+                    <div class="min-w-0">
+                        <a href="{% url 'careon:placement_detail' placement.pk %}" class="queue-title">
                             {% if placement.intake %}{{ placement.intake.title }}{% else %}Plaatsing #{{ placement.pk }}{% endif %}
                         </a>
-                        {% if placement.intake %}<div class="item-meta">{{ placement.intake.get_urgency_display }}</div>{% endif %}
-                    </td>
-                    <td>
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-[color:var(--zr-text-secondary)]">
+                            <span>{{ placement.get_status_display }}</span>
+                            <span>·</span>
+                            <span>{{ placement.get_care_form_display|default:"—" }}</span>
+                            <span>·</span>
+                            <span>{{ placement.start_date|date:"d-m-Y"|default:"—" }}</span>
+                        </div>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-2">
+                        <a href="{{ row.recommended_action.href }}" class="btn btn-ghost">{{ row.recommended_action.label }}</a>
+                        <span class="ds-badge badge-low">{{ row.phase_label }}</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <span class="ds-badge badge-gray">{{ placement.get_status_display }}</span>
+                    <span class="ds-badge badge-blue">{{ row.phase_label }}</span>
+                    {% if row.stall_reason %}
+                    <span class="ds-badge badge-medium">{{ row.stall_reason }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-[color:var(--zr-text-secondary)]">
+                        <strong class="text-[color:var(--zr-text-primary)]">Aanbieder:</strong>
                         {% if placement.selected_provider %}
                             {{ placement.selected_provider.name }}
                         {% elif placement.proposed_provider %}
@@ -53,58 +83,52 @@
                         {% else %}
                             —
                         {% endif %}
-                    </td>
-                    <td>{{ placement.get_care_form_display|default:"—" }}</td>
-                    <td>{{ placement.start_date|date:"d-m-Y"|default:"—" }}</td>
-                    <td>
-                        <span class="badge-sm {% if placement.status == 'APPROVED' %}ds-stage-placement{% elif placement.status == 'IN_REVIEW' %}ds-stage-assessment{% elif placement.status == 'REJECTED' %}badge-red{% else %}badge-gray{% endif %}">{{ placement.get_status_display }}</span>
-                        <div class="item-meta">Fase: {{ row.phase_label }}</div>
-                        {% if row.stall_reason %}
-                        <div class="item-meta">{{ row.stall_reason }}</div>
-                        {% endif %}
-                        <div class="item-meta"><strong>Volgende beste actie:</strong> {{ row.recommended_action.label }}</div>
-                        {% if row.recommended_action.reason %}
-                        <div class="item-meta">{{ row.recommended_action.reason }}</div>
-                        {% endif %}
-                        {% if row.impact_summary.text %}
-                        <div class="item-meta">{{ row.impact_summary.text }}</div>
-                        {% endif %}
+                        <span class="mx-2">·</span>
+                        <strong class="text-[color:var(--zr-text-primary)]">Blokkade:</strong> {{ row.stall_reason|default:"Geen blokkade" }}
                         {% if row.escalation_recommended %}
-                        <div class="item-meta">Escalatie aanbevolen</div>
-                        {% if row.escalation_reason %}
-                        <div class="item-meta">{{ row.escalation_reason }}</div>
+                        <span class="mx-2">·</span>
+                        <strong class="text-[color:var(--zr-text-primary)]">Escalatie:</strong> aanbevolen
                         {% endif %}
-                        {% endif %}
-                    </td>
-                    <td class="ds-cell-right">
-                        <a href="{% url 'careon:placement_detail' placement.pk %}" class="btn btn-ghost">Openen</a>
+                    </p>
+                    <div class="ds-list-row-actions">
+                        <a href="{% url 'careon:placement_detail' placement.pk %}" class="ds-list-row-action-btn">Openen</a>
                         {% if placement.intake %}
-                        <a href="{% url 'careon:case_detail' placement.intake.pk %}?tab=plaatsing" class="btn btn-ghost">Open casus</a>
-                        {% else %}
-                        <span class="c-secondary">Inspectie</span>
+                        <a href="{% url 'careon:case_detail' placement.intake.pk %}?tab=plaatsing" class="ds-list-row-action-btn">Open casus</a>
                         {% endif %}
-                    </td>
-                </tr>
-                {% endwith %}
-                {% empty %}
-                <tr><td colspan="6" class="empty-state">
-                    <p>Nog geen plaatsingen aangemaakt.</p>
-                    <p class="ds-note-text">Plaatsingen worden aangemaakt via het matching dashboard.</p>
-                    <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">→ Naar matching</a>
-                </td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-{% if is_paginated %}
-<div class="ds-list-pagination"><div class="ds-list-pagination-buttons">
-    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="btn btn-ghost">Vorige</a>{% endif %}
-    <span class="ds-note-text">Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="btn btn-ghost">Volgende</a>{% endif %}
-</div></div>
-{% endif %}
-
+                    </div>
+                </div>
+            </article>
+            {% endwith %}
+            {% empty %}
+            <div class="ds-empty-state">
+                <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <h3 class="ds-list-empty-title">Nog geen plaatsingen</h3>
+                <p class="ds-list-empty-copy">Plaatsingen worden aangemaakt via matching.</p>
+                <p class="mt-3">
+                    <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">Naar matching</a>
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+        {% if is_paginated %}
+        <div class="ds-list-pagination">
+            <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+            <div class="ds-list-pagination-buttons">
+                {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>{% endif %}
+                {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>{% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="ds-empty-state">
+            <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <h3 class="ds-list-empty-title">Nog geen plaatsingen</h3>
+            <p class="ds-list-empty-copy">Plaatsingen worden aangemaakt via matching.</p>
+            <p class="mt-3">
+                <a href="{% url 'careon:matching_dashboard' %}" class="btn btn-primary">Naar matching</a>
+            </p>
+        </div>
+        {% endif %}
+    </section>
 </div>
 {% endblock %}

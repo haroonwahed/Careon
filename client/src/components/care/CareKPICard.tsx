@@ -51,37 +51,21 @@ export function CareKPICard({
   const style = urgencyStyles[urgency];
 
   return (
-    <div 
-      className={`
-        premium-card kpi-card p-6 
-        ${style.border} ${style.glow}
-        hover:scale-[1.02] transition-transform
-      `}
-    >
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <div className={`text-3xl font-semibold ${style.value}`}>
-            {value}
-          </div>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-          )}
+    <div className={`premium-card kpi-card p-5 ${style.border} ${style.glow}`}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
+          <div className={`mt-2 text-3xl font-semibold tracking-tight ${style.value}`}>{value}</div>
+          {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
         </div>
-        <div className={`p-3 rounded-xl bg-muted/30 ${style.icon}`}>
-          <Icon size={24} />
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-primary/10 ${style.icon}`}>
+          <Icon size={18} />
         </div>
       </div>
-      
+
       {trend && (
-        <div className="flex items-center gap-2 text-xs">
-          <span 
-            className={
-              trend.direction === "up" 
-                ? "text-[#EF4444]" 
-                : "text-[#10B981]"
-            }
-          >
+        <div className="mt-4 flex items-center gap-2 text-xs">
+          <span className={trend.direction === "up" ? "text-[#EF4444]" : "text-[#10B981]"}>
             {trend.direction === "up" ? "↑" : "↓"} {Math.abs(trend.value)}%
           </span>
           <span className="text-muted-foreground">{trend.label}</span>

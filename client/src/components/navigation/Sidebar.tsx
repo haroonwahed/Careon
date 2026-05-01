@@ -76,24 +76,10 @@ const gemeenteNavigation: NavSection[] = [
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
-        id: "beoordelingen",
-        label: "Beoordeling door aanbieder",
-        icon: FileCheck,
-        href: "/beoordelingen",
-        surfaceStatus: "ACTIVE_PRODUCT",
-      },
-      {
         id: "matching",
         label: "Matching",
         icon: MapPinned,
         href: "/matching",
-        surfaceStatus: "ACTIVE_PRODUCT",
-      },
-      {
-        id: "plaatsingen",
-        label: "Plaatsingen",
-        icon: CheckCircle,
-        href: "/plaatsingen",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
@@ -104,6 +90,27 @@ const gemeenteNavigation: NavSection[] = [
         href: "/acties",
         surfaceStatus: "ACTIVE_PRODUCT",
       }
+    ]
+  },
+  {
+    id: "flow-status",
+    label: "FLOW STATUS",
+    color: "amber",
+    items: [
+      {
+        id: "beoordelingen",
+        label: "Wacht op aanbieder",
+        icon: FileCheck,
+        href: "/beoordelingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
+        id: "plaatsingen",
+        label: "Plaatsingen",
+        icon: CheckCircle,
+        href: "/plaatsingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
     ]
   },
   {
@@ -119,68 +126,11 @@ const gemeenteNavigation: NavSection[] = [
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
-        id: "gemeenten",
-        label: "Gemeenten",
-        icon: MapPin,
-        href: "/gemeenten",
-        surfaceStatus: "ACTIVE_PRODUCT",
-      },
-      {
         id: "regios",
         label: "Regio's",
         icon: Map,
         href: "/regios",
         surfaceStatus: "ACTIVE_PRODUCT",
-      }
-    ]
-  },
-  {
-    id: "sturing",
-    label: "STURING",
-    color: "amber",
-    items: [
-      {
-        id: "signalen",
-        label: "Signalen",
-        icon: AlertTriangle,
-        badge: 5,
-        href: "/signalen",
-        surfaceStatus: "ACTIVE_PRODUCT",
-      },
-      {
-        id: "rapportages",
-        label: "Rapportages",
-        icon: BarChart3,
-        href: "/rapportages",
-        surfaceStatus: "DEMO_ONLY",
-      }
-    ]
-  },
-  {
-    id: "instellingen",
-    label: "INSTELLINGEN",
-    color: "muted",
-    items: [
-      {
-        id: "documenten",
-        label: "Documenten",
-        icon: FolderOpen,
-        href: "/documenten",
-        surfaceStatus: "SUPPORTING_INTERNAL",
-      },
-      {
-        id: "audittrail",
-        label: "Audittrail",
-        icon: History,
-        href: "/audittrail",
-        surfaceStatus: "SUPPORTING_INTERNAL",
-      },
-      {
-        id: "instellingen",
-        label: "Instellingen",
-        icon: Settings,
-        href: "/instellingen",
-        surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]
   }
@@ -377,9 +327,20 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
   const [collapsed, setCollapsed] = useState(false);
   
   const navigationStructure = getNavigationForRole(role);
+  const gemeenteBottomSignalItem: NavItem | null = role === "gemeente"
+    ? {
+        id: "signalen",
+        label: "Signalen",
+        icon: AlertTriangle,
+        badge: 5,
+        href: "/signalen",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      }
+    : null;
 
   return (
-    <aside 
+    <aside
+      data-testid="care-sidebar"
       className={`
         h-screen bg-card border-r border-border
         transition-all duration-300 ease-in-out
@@ -406,7 +367,7 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
       </div>
 
       {/* NAVIGATION */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3">
+      <nav className="flex-1 overflow-y-auto py-6 px-3" aria-label="Hoofdnavigatie">
         {navigationStructure.map((section, sectionIndex) => (
           <div 
             key={section.id}
@@ -512,6 +473,60 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
           </div>
         ))}
       </nav>
+
+      {gemeenteBottomSignalItem && (
+        <div className="px-3 pb-2">
+          {(() => {
+            const SignalIcon = gemeenteBottomSignalItem.icon;
+            return (
+              <>
+          {!collapsed && (
+            <div className="px-3 mb-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+                STURING
+              </span>
+            </div>
+          )}
+          <button
+            onClick={() => onNavigate?.(gemeenteBottomSignalItem.id, gemeenteBottomSignalItem.href || "#")}
+            className={`
+              w-full group relative
+              flex items-center gap-3
+              px-3 py-2.5 rounded-lg
+              transition-all duration-200
+              ${collapsed ? "justify-center" : ""}
+              ${activeItemId === gemeenteBottomSignalItem.id
+                ? "bg-primary-light text-primary shadow-sm border border-transparent"
+                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+              }
+            `}
+            title={collapsed ? gemeenteBottomSignalItem.label : undefined}
+          >
+            <SignalIcon size={20} className={activeItemId === gemeenteBottomSignalItem.id ? "text-primary" : ""} />
+            {!collapsed && (
+              <span className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
+                <span className={activeItemId === gemeenteBottomSignalItem.id ? "text-primary" : ""}>
+                  {gemeenteBottomSignalItem.label}
+                </span>
+              </span>
+            )}
+            {!collapsed && (badgeOverrides[gemeenteBottomSignalItem.id] ?? gemeenteBottomSignalItem.badge) !== undefined && (
+              <span className={`
+                min-w-6 px-2 py-0.5 rounded-full text-xs font-semibold text-center border
+                ${activeItemId === gemeenteBottomSignalItem.id
+                  ? "bg-primary text-white"
+                  : "bg-muted/40 text-foreground/70 border-border"
+                }
+              `}>
+                {badgeOverrides[gemeenteBottomSignalItem.id] ?? gemeenteBottomSignalItem.badge}
+              </span>
+            )}
+          </button>
+              </>
+            );
+          })()}
+        </div>
+      )}
 
       {/* FOOTER (Optional - User Profile) */}
       <div className="p-3 border-t border-border">

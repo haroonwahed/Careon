@@ -61,6 +61,8 @@ export interface DecisionEvaluationContext {
   hours_in_current_state: number | null;
   urgency: string;
   capacity_signals: Array<Record<string, unknown>>;
+  /** Backend: e.g. WAITLIST_PROPOSAL when a DRAFT waitlist concept exists on the case. */
+  matching_outcome?: string | null;
   selected_provider_id?: string | null;
   selected_provider_name?: string | null;
 }

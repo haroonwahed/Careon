@@ -1,6 +1,3 @@
-
-import os
-
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -24,13 +21,18 @@ class RedesignComponentsTestCase(TestCase):
             is_active=True,
         )
         self.client.login(username='testuser', password='testpass123')
-        os.environ['FEATURE_REDESIGN'] = 'true'
 
-    def test_dashboard_component_labels(self):
-        response = self.client.get(reverse('dashboard'))
+    def _assert_spa_shell(self, response):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<div id="root"></div>', html=True)
         self.assertContains(response, '/static/spa/assets/index-')
+        self.assertNotContains(response, 'Careon Zorgregie')
+        self.assertNotContains(response, 'Globaal zoeken')
+        self.assertNotContains(response, 'CASUSMANAGEMENT')
+
+    def test_dashboard_component_labels(self):
+        response = self.client.get(reverse('dashboard'))
+        self._assert_spa_shell(response)
 
     def test_root_path_renders_public_landing_for_authenticated_users(self):
         response = self.client.get(reverse('index'))
@@ -39,7 +41,7 @@ class RedesignComponentsTestCase(TestCase):
         self.assertContains(response, 'Regieplatform voor gemeenten en zorgaanbieders')
         self.assertContains(response, 'public-shell')
 
-    def test_case_list_alias_renders_configuration_components(self):
+    def test_case_list_alias_renders_spa_shell(self):
         provider = ClientModel.objects.create(
             organization=self.organization,
             name='ZorgPlus Noord',
@@ -54,28 +56,15 @@ class RedesignComponentsTestCase(TestCase):
         )
 
         response = self.client.get(reverse('careon:case_list'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Casussen')
-        self.assertContains(response, 'Zoek op titel of casus-ID...')
-        self.assertContains(response, 'Alle statussen')
-        self.assertContains(response, 'Nieuwe casus')
+        self._assert_spa_shell(response)
 
     def test_navigation_structure(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Dashboard')
-        self.assertContains(response, 'Casussen')
-        self.assertContains(response, 'Taken')
-        self.assertContains(response, 'Documenten')
-        self.assertContains(response, 'Matching')
+        self._assert_spa_shell(response)
 
     def test_accessibility_and_responsive_markers(self):
         response = self.client.get(reverse('dashboard'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'id="global-search-input"')
-        self.assertContains(response, 'aria-label="Globaal zoeken"')
-        self.assertContains(response, '@media (max-width: 1024px)')
-        self.assertContains(response, 'visually-hidden')
+        self._assert_spa_shell(response)
 
     def test_budget_list_matches_dashboard_style(self):
         Budget.objects.create(
@@ -89,12 +78,7 @@ class RedesignComponentsTestCase(TestCase):
         )
 
         response = self.client.get(reverse('careon:budget_list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Budgetten')
-        self.assertContains(response, 'Zoek budgetten op afdeling of omschrijving...')
-        self.assertContains(response, 'Nieuw budget')
-        self.assertContains(response, 'Regie Operaties')
+        self._assert_spa_shell(response)
 
     def test_placement_list_alias_uses_configuration_view(self):
         client_record = ClientModel.objects.create(
@@ -120,16 +104,8 @@ class RedesignComponentsTestCase(TestCase):
         )
 
         response = self.client.get(reverse('careon:placement_list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Plaatsingen')
+        self._assert_spa_shell(response)
 
     def test_municipality_list_uses_current_authenticated_shell(self):
         response = self.client.get(reverse('careon:municipality_list'))
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Gemeenten')
-
-    def tearDown(self):
-        if 'FEATURE_REDESIGN' in os.environ:
-            del os.environ['FEATURE_REDESIGN']
+        self._assert_spa_shell(response)

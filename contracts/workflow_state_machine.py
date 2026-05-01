@@ -30,6 +30,10 @@ class WorkflowState:
     ARCHIVED = 'ARCHIVED'
 
 
+# Marker stored on PlacementRequest.decision_notes for gemeente-side waitlist concepts (status DRAFT).
+WAITLIST_PROPOSAL_NOTES_MARKER = '[WAITLIST_PROPOSAL]'
+
+
 class WorkflowAction:
     CREATE_CASE = 'create_case'
     COMPLETE_SUMMARY = 'complete_summary'

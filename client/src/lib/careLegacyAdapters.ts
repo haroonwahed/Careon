@@ -77,6 +77,9 @@ export function toLegacyProvider(spaProvider: SpaProvider): Provider {
     specializations: spaProvider.specializations ?? [],
     rating: Number(rating.toFixed(1)),
     responseTime: Math.max(1, Math.round((spaProvider.averageWaitDays ?? 1) * 24)),
+    latitude: spaProvider.latitude ?? null,
+    longitude: spaProvider.longitude ?? null,
+    hasCoordinates: Boolean(spaProvider.hasCoordinates && spaProvider.latitude != null && spaProvider.longitude != null),
   };
 }
 

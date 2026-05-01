@@ -1,6 +1,6 @@
-# AI Decision Intelligence Layer
+# AI Decision Layer
 
-Embedded intelligence components for the Careon Zorgregie platform.
+Compact AI components for Careon Zorgregie.
 
 ## Design Principles
 
@@ -16,14 +16,14 @@ Embedded intelligence components for the Careon Zorgregie platform.
 
 ### 1. AanbevolenActie
 
-**Primary decision card with recommended action**
+**Action card**
 
 ```tsx
 import { AanbevolenActie } from "@/components/ai";
 
 <AanbevolenActie
   title="Start matching proces"
-  explanation="Aanbieder Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd."
+  explanation="Casus is compleet. 3 matches klaar."
   actionLabel="Start matching"
   confidence="high" // "high" | "medium" | "low"
   variant="default" // "default" | "urgent"
@@ -32,9 +32,9 @@ import { AanbevolenActie } from "@/components/ai";
 ```
 
 **When to use:**
-- Top of Casus Detail page
-- Top of Matching page  
-- Top of Aanbieder Beoordeling page
+- Top of casus detail
+- Top of matching
+- Top of beoordeling
 
 **Placement:** Always at the top, before main content
 
@@ -55,7 +55,7 @@ import { Risicosignalen } from "@/components/ai";
     },
     { 
       severity: "warning",
-      message: "Urgente casus met langere reactietijd" 
+      message: "Urgente casus met trage reactie" 
     }
   ]}
   compact={false} // optional, for tighter spacing
@@ -73,13 +73,13 @@ import { Risicosignalen } from "@/components/ai";
 
 ### 3. Samenvatting
 
-**Clean summary panel with bullet points**
+**Summary panel**
 
 ```tsx
 import { Samenvatting } from "@/components/ai";
 
 <Samenvatting
-  title="Casus samenvatting" // optional
+  title="Samenvatting" // optional
   items={[
     { 
       text: "15 jaar, woonachtig in Amsterdam",
@@ -90,7 +90,7 @@ import { Samenvatting } from "@/components/ai";
       type: "info"
     },
     { 
-      text: "Hoge urgentie - spoedtraject vereist",
+      text: "Hoge urgentie",
       type: "warning"
     }
   ]}
@@ -109,7 +109,7 @@ import { Samenvatting } from "@/components/ai";
 
 ### 4. MatchExplanation
 
-**Explains WHY a provider match was selected**
+**Match explanation**
 
 ```tsx
 import { MatchExplanation } from "@/components/ai";
@@ -140,14 +140,14 @@ import { MatchExplanation } from "@/components/ai";
 
 ### 5. SystemInsight
 
-**Inline feedback strip for quick insights**
+**Inline insight**
 
 ```tsx
 import { SystemInsight } from "@/components/ai";
 
 <SystemInsight
   type="info" // "info" | "warning" | "success" | "blocked" | "suggestion"
-  message="Aanbieder Beoordeling gepland voor 18 april met Dr. P. Bakker"
+  message="Beoordeling gepland op 18 april"
   compact={false} // optional
 />
 ```
@@ -194,11 +194,11 @@ import { AIInsightPanel } from "@/components/ai";
 │    "Start matching proces"                              │
 │    [Start matching button]                              │
 ├─────────────────────┬────────────────┬──────────────────┤
-│ Case Information    │ Samenvatting   │ AI Insights      │
-│                     │ 🤖             │ 🤖               │
-│ • Cliënt           │ • Key points   │ Risicosignalen   │
+│ Case Info          │ Samenvatting   │ AI Insights      │
+│                    │ 🤖             │ 🤖               │
+│ • Cliënt           │ • Kernpunten   │ Risicosignalen   │
 │ • Regio            │                │                  │
-│ • Zorgtype         │ SystemInsight  │ Process Status   │
+│ • Zorgtype         │ SystemInsight  │ Status           │
 │                     │ 🤖             │                  │
 └─────────────────────┴────────────────┴──────────────────┘
 ```
@@ -324,7 +324,7 @@ const getRecommendation = (caseData) => {
   if (caseData.status === "matching") {
     return {
       title: "Start matching proces",
-      explanation: "Aanbieder Beoordeling is compleet. Systeem heeft 3 matches...",
+      explanation: "Casus is compleet. 3 matches klaar...",
       actionLabel: "Start matching",
       confidence: "high"
     };
@@ -333,7 +333,7 @@ const getRecommendation = (caseData) => {
   // Default
   return {
     title: "Wacht op beoordeling",
-    explanation: "Aanbieder Beoordeling is ingepland...",
+    explanation: "Beoordeling staat gepland...",
     actionLabel: "Bekijk beoordeling"
   };
 };

@@ -1,0 +1,485 @@
+{
+  "capturedAt": "2026-04-30T13:43:36.458Z",
+  "baseUrl": "http://127.0.0.1:8000",
+  "publicResults": [
+    {
+      "name": "home",
+      "url": "http://127.0.0.1:8000/",
+      "file": "01-home.png",
+      "title": "CareOn - Zorgregieplatform",
+      "finalUrl": "http://127.0.0.1:8000/",
+      "screenshot": "screenshots/01-home.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "login",
+      "url": "http://127.0.0.1:8000/login/",
+      "file": "02-login.png",
+      "title": "Inloggen - Careon",
+      "finalUrl": "http://127.0.0.1:8000/login/",
+      "screenshot": "screenshots/02-login.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "register",
+      "url": "http://127.0.0.1:8000/register/",
+      "file": "03-register.png",
+      "title": "Account aanmaken - Careon",
+      "finalUrl": "http://127.0.0.1:8000/register/",
+      "screenshot": "screenshots/03-register.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    }
+  ],
+  "authResults": [
+    {
+      "name": "dashboard",
+      "url": "http://127.0.0.1:8000/dashboard/",
+      "file": "04-dashboard.png",
+      "title": "SaaS Careon",
+      "finalUrl": "http://127.0.0.1:8000/dashboard/",
+      "screenshot": "screenshots/04-dashboard.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "regiekamer",
+      "url": "http://127.0.0.1:8000/dashboard/",
+      "file": "05-regiekamer.png",
+      "title": "SaaS Careon",
+      "finalUrl": "http://127.0.0.1:8000/dashboard/",
+      "screenshot": "screenshots/05-regiekamer.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "casussen-list",
+      "url": "http://127.0.0.1:8000/care/casussen/",
+      "file": "06-casussen-list.png",
+      "title": "Casussen - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/casussen/",
+      "screenshot": "screenshots/06-casussen-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "casussen-create",
+      "url": "http://127.0.0.1:8000/care/casussen/new/",
+      "file": "07-casussen-create.png",
+      "title": "Nieuwe casus - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/casussen/new/",
+      "screenshot": "screenshots/07-casussen-create.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "case-detail-84",
+      "url": "http://127.0.0.1:8000/care/casussen/84/",
+      "file": "08-casus-detail-84.png",
+      "title": "Onvolledige intake - jongen 13 jaar, schoolverzuim en gezinsspanning - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/casussen/84/",
+      "screenshot": "screenshots/08-casus-detail-84.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "case-workspace-98",
+      "url": "http://127.0.0.1:8000/care/cases/98/?tab=matching",
+      "file": "09-case-workspace-98.png",
+      "title": "SaaS Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/cases/98/?tab=matching",
+      "screenshot": "screenshots/09-case-workspace-98.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "matching",
+      "url": "http://127.0.0.1:8000/care/matching/",
+      "file": "10-matching.png",
+      "title": "Matching – Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/matching/",
+      "screenshot": "screenshots/10-matching.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "beoordelingen-list",
+      "url": "http://127.0.0.1:8000/care/beoordelingen/",
+      "file": "11-beoordelingen-list.png",
+      "title": "Beoordeling door aanbieder - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/beoordelingen/",
+      "screenshot": "screenshots/11-beoordelingen-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "beoordeling-detail-35",
+      "url": "http://127.0.0.1:8000/care/beoordelingen/35/",
+      "file": "12-beoordeling-detail-35.png",
+      "title": "Beoordeling door aanbieder - Crisisplaatsing jeugd - meisje 15 jaar, onveilige thuissituatie - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/beoordelingen/35/",
+      "screenshot": "screenshots/12-beoordeling-detail-35.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "plaatsingen-list",
+      "url": "http://127.0.0.1:8000/care/plaatsingen/",
+      "file": "13-plaatsingen-list.png",
+      "title": "Plaatsingen - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/plaatsingen/",
+      "screenshot": "screenshots/13-plaatsingen-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "plaatsing-detail-21",
+      "url": "http://127.0.0.1:8000/care/plaatsingen/21/",
+      "file": "14-plaatsing-detail-21.png",
+      "title": "Plaatsing - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/plaatsingen/21/",
+      "screenshot": "screenshots/14-plaatsing-detail-21.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "intake-overdracht",
+      "url": "http://127.0.0.1:8000/care/intake-overdracht/",
+      "file": "15-intake-overdracht.png",
+      "title": "Plaatsingen - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/intake-overdracht/",
+      "screenshot": "screenshots/15-intake-overdracht.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "clients-list",
+      "url": "http://127.0.0.1:8000/care/clients/",
+      "file": "16-clients-list.png",
+      "title": "Aanbieders - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/clients/",
+      "screenshot": "screenshots/16-clients-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "client-detail-16",
+      "url": "http://127.0.0.1:8000/care/clients/16/",
+      "file": "17-client-detail-16.png",
+      "title": "Jeugd & Gezin Utrecht - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/clients/16/",
+      "screenshot": "screenshots/17-client-detail-16.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "gemeenten-list",
+      "url": "http://127.0.0.1:8000/care/gemeenten/",
+      "file": "18-gemeenten-list.png",
+      "title": "Gemeenten - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/gemeenten/",
+      "screenshot": "screenshots/18-gemeenten-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "regions-list",
+      "url": "http://127.0.0.1:8000/care/regio%27s/",
+      "file": "19-regios-list.png",
+      "title": "Zorgregio's - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/regio%27s/",
+      "screenshot": "screenshots/19-regios-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "documents-list",
+      "url": "http://127.0.0.1:8000/care/documents/",
+      "file": "20-documents-list.png",
+      "title": "Documenten - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/documents/",
+      "screenshot": "screenshots/20-documents-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "document-detail-11",
+      "url": "http://127.0.0.1:8000/care/documents/11/",
+      "file": "21-document-detail-11.png",
+      "title": "Casusmemo - Crisisplaatsing jeugd - meisje 15 jaar, onveilige thuissituatie - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/documents/11/",
+      "screenshot": "screenshots/21-document-detail-11.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "tasks-list",
+      "url": "http://127.0.0.1:8000/care/tasks/",
+      "file": "22-tasks-list.png",
+      "title": "Takenbord",
+      "finalUrl": "http://127.0.0.1:8000/care/tasks/",
+      "screenshot": "screenshots/22-tasks-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "signals-list",
+      "url": "http://127.0.0.1:8000/care/signalen/",
+      "file": "23-signals-list.png",
+      "title": "Signalen - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/signalen/",
+      "screenshot": "screenshots/23-signals-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "signal-detail-12",
+      "url": "http://127.0.0.1:8000/care/signalen/12/",
+      "file": "24-signal-detail-12.png",
+      "title": "Signaal - Crisisplaatsing jeugd - meisje 15 jaar, onveilige thuissituatie - Signalen - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/signalen/12/",
+      "screenshot": "screenshots/24-signal-detail-12.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "budgets-list",
+      "url": "http://127.0.0.1:8000/care/budgets/",
+      "file": "25-budgets-list.png",
+      "title": "Budget & capaciteit - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/budgets/",
+      "screenshot": "screenshots/25-budgets-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "budget-detail-1",
+      "url": "http://127.0.0.1:8000/care/budgets/1/",
+      "file": "26-budget-detail-1.png",
+      "title": "Budgetdetails - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/budgets/1/",
+      "screenshot": "screenshots/26-budget-detail-1.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "deadlines-list",
+      "url": "http://127.0.0.1:8000/care/deadlines/",
+      "file": "27-deadlines-list.png",
+      "title": "Taken - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/deadlines/",
+      "screenshot": "screenshots/27-deadlines-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "waittimes-list",
+      "url": "http://127.0.0.1:8000/care/wachttijden/",
+      "file": "28-wachttijden-list.png",
+      "title": "Wachttijden - Zorgregie",
+      "finalUrl": "http://127.0.0.1:8000/care/wachttijden/",
+      "screenshot": "screenshots/28-wachttijden-list.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "audit-log",
+      "url": "http://127.0.0.1:8000/care/audit-log/",
+      "file": "29-audit-log.png",
+      "title": "Audit en activiteitenlog - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/audit-log/",
+      "screenshot": "screenshots/29-audit-log.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "reports",
+      "url": "http://127.0.0.1:8000/care/reports/",
+      "file": "30-reports.png",
+      "title": "Rapportages & Regie - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/reports/",
+      "screenshot": "screenshots/30-reports.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "provider-responses",
+      "url": "http://127.0.0.1:8000/care/regiekamer/provider-responses/",
+      "file": "31-provider-responses.png",
+      "title": "Providerreactie monitor - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/regiekamer/provider-responses/",
+      "screenshot": "screenshots/31-provider-responses.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "organization-team",
+      "url": "http://127.0.0.1:8000/care/organizations/team/",
+      "file": "32-organization-team.png",
+      "title": "Organisatieteam - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/organizations/team/",
+      "screenshot": "screenshots/32-organization-team.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "organization-activity",
+      "url": "http://127.0.0.1:8000/care/organizations/activity/",
+      "file": "33-organization-activity.png",
+      "title": "Organisatieactiviteit - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/organizations/activity/",
+      "screenshot": "screenshots/33-organization-activity.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "profile",
+      "url": "http://127.0.0.1:8000/profile/",
+      "file": "34-profile.png",
+      "title": "Profiel - Careon",
+      "finalUrl": "http://127.0.0.1:8000/profile/",
+      "screenshot": "screenshots/34-profile.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "settings",
+      "url": "http://127.0.0.1:8000/settings/",
+      "file": "35-settings.png",
+      "title": "Instellingen - Careon",
+      "finalUrl": "http://127.0.0.1:8000/settings/",
+      "screenshot": "screenshots/35-settings.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "design-mode",
+      "url": "http://127.0.0.1:8000/settings/design-mode/",
+      "file": "36-design-mode.png",
+      "title": "",
+      "finalUrl": "http://127.0.0.1:8000/settings/design-mode/",
+      "screenshot": "screenshots/36-design-mode.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "search",
+      "url": "http://127.0.0.1:8000/care/search/?q=test",
+      "file": "37-search.png",
+      "title": "Zoeken: test - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/search/?q=test",
+      "screenshot": "screenshots/37-search.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "notifications",
+      "url": "http://127.0.0.1:8000/care/notifications/",
+      "file": "38-notifications.png",
+      "title": "Meldingen - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/notifications/",
+      "screenshot": "screenshots/38-notifications.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "workflows",
+      "url": "http://127.0.0.1:8000/care/workflows/",
+      "file": "39-workflows.png",
+      "title": "Rapportages & Regie - Careon",
+      "finalUrl": "http://127.0.0.1:8000/care/workflows/",
+      "screenshot": "screenshots/39-workflows.png",
+      "consoleEntries": [],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "workflow-detail-1",
+      "url": "http://127.0.0.1:8000/care/workflows/1/",
+      "file": "40-workflow-detail-1.png",
+      "title": "Page not found at /care/workflows/1/",
+      "finalUrl": "http://127.0.0.1:8000/care/workflows/1/",
+      "screenshot": "screenshots/40-workflow-detail-1.png",
+      "consoleEntries": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "workflow-step-update-1",
+      "url": "http://127.0.0.1:8000/care/workflows/step/1/update/",
+      "file": "41-workflow-step-update-1.png",
+      "title": "Page not found at /care/workflows/step/1/update/",
+      "finalUrl": "http://127.0.0.1:8000/care/workflows/step/1/update/",
+      "screenshot": "screenshots/41-workflow-step-update-1.png",
+      "consoleEntries": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "pageErrors": [],
+      "requestFailures": []
+    },
+    {
+      "name": "case-not-found",
+      "url": "http://127.0.0.1:8000/care/does-not-exist/",
+      "file": "42-404.png",
+      "title": "Page not found at /care/does-not-exist/",
+      "finalUrl": "http://127.0.0.1:8000/care/does-not-exist/",
+      "screenshot": "screenshots/42-404.png",
+      "consoleEntries": [
+        {
+          "type": "error",
+          "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        }
+      ],
+      "pageErrors": [],
+      "requestFailures": []
+    }
+  ]
+}

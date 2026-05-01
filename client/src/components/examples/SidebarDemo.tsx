@@ -11,7 +11,7 @@
 
 import { useState } from "react";
 import { Sidebar } from "../navigation/Sidebar";
-import { RegiekamerControlCenter } from "../care/RegiekamerControlCenter";
+import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
 import { RegiosPage } from "../care/RegiosPage";
 import { ProviderProfilePage } from "../care/ProviderProfilePage";
 import { mockProviders } from "../../lib/casesData";
@@ -76,7 +76,7 @@ export function SidebarDemo() {
           {/* REGIEKAMER */}
           {currentPage === "regiekamer" && (
             <div className="p-6">
-              <RegiekamerControlCenter onCaseClick={handleCaseClick} />
+              <SystemAwarenessPage onCaseClick={handleCaseClick} />
             </div>
           )}
 
@@ -89,13 +89,13 @@ export function SidebarDemo() {
                     Casussen
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Alle actieve casussen in het systeem
+                    Actieve casussen
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
                   <p className="text-muted-foreground">
-                    Casussen page - To be implemented
+                    Nog te bouwen.
                   </p>
                 </div>
               </div>
@@ -117,7 +117,7 @@ export function SidebarDemo() {
                 
                 <div className="premium-card p-12 text-center">
                   <p className="text-muted-foreground">
-                    Acties page - To be implemented
+                    Nog te bouwen.
                   </p>
                 </div>
               </div>
@@ -133,22 +133,20 @@ export function SidebarDemo() {
                     Zorgaanbieders
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Overzicht van alle zorgaanbieders
+                    Zorgaanbieders
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Zorgaanbieders page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                   <button
                     onClick={() => {
                       // Demo: show provider profile
-                      alert("Would show provider profile page");
+                      alert("Profiel bekijken");
                     }}
                     className="mt-4 px-4 py-2 bg-primary rounded-lg text-white hover:bg-primary/90"
                   >
-                    Demo: View Provider Profile
+                    Profiel bekijken
                   </button>
                 </div>
               </div>
@@ -164,14 +162,12 @@ export function SidebarDemo() {
                     Gemeenten
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Overzicht van gemeenten en casussen
+                    Gemeenten en casussen
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Gemeenten page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>
@@ -197,14 +193,12 @@ export function SidebarDemo() {
                     Signalen
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    5 signalen vereisen aandacht
+                    5 signalen
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Signalen page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>
@@ -219,14 +213,12 @@ export function SidebarDemo() {
                     Rapportages
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Genereer en bekijk rapporten
+                    Rapporten
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Rapportages page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>
@@ -241,14 +233,12 @@ export function SidebarDemo() {
                     Documenten
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Documenten en templates
+                    Documenten
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Documenten page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>
@@ -263,14 +253,12 @@ export function SidebarDemo() {
                     Audittrail
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Systeem activiteiten en wijzigingen
+                    Activiteiten en wijzigingen
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Audittrail page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>
@@ -285,14 +273,12 @@ export function SidebarDemo() {
                     Instellingen
                   </h1>
                   <p className="text-sm text-muted-foreground">
-                    Systeem en gebruikersinstellingen
+                    Systeeminstellingen
                   </p>
                 </div>
                 
                 <div className="premium-card p-12 text-center">
-                  <p className="text-muted-foreground">
-                    Instellingen page - To be implemented
-                  </p>
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
                 </div>
               </div>
             </div>

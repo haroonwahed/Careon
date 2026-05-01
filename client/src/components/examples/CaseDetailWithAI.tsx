@@ -1,8 +1,5 @@
 /**
- * EXAMPLE: CaseDetailPage with AI Decision Intelligence Layer
- * 
- * This demonstrates the integration pattern for AI components
- * across the Careon Zorgregie platform.
+ * Compact example of the case detail + AI layer pattern.
  */
 
 import { useState } from "react";
@@ -38,7 +35,7 @@ export function CaseDetailWithAI({
   if (!caseData) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-muted-foreground">Case niet gevonden</p>
+        <p className="text-muted-foreground">Casus niet gevonden</p>
       </div>
     );
   }
@@ -48,7 +45,7 @@ export function CaseDetailWithAI({
     if (caseData.status === "matching") {
       return {
         title: "Start matching proces",
-        explanation: "Beoordeling is compleet en alle vereiste gegevens zijn aanwezig. Systeem heeft 3 potentiële matches geïdentificeerd in de regio.",
+        explanation: "Casus is compleet. Er zijn 3 passende matches.",
         actionLabel: "Start matching",
         confidence: "high" as const,
         onAction: () => onStartMatching(caseId)
@@ -58,7 +55,7 @@ export function CaseDetailWithAI({
     if (caseData.status === "blocked") {
       return {
         title: "Escaleer naar capaciteitsmanager",
-        explanation: "Geen geschikte aanbieders beschikbaar in de regio. Directe actie vereist om wachttijd te voorkomen.",
+        explanation: "Geen geschikte aanbieders. Directe actie nodig.",
         actionLabel: "Escaleer case",
         confidence: "high" as const,
         variant: "urgent" as const,
@@ -68,7 +65,7 @@ export function CaseDetailWithAI({
 
     return {
       title: "Wacht op beoordeling",
-      explanation: "Beoordeling is ingepland voor Dr. P. Bakker. Verwachte oplevering: 18 april 2026.",
+      explanation: "Beoordeling staat gepland op 18 april 2026.",
       actionLabel: "Bekijk beoordeling",
       confidence: "high" as const,
       onAction: () => console.log("View assessment")
@@ -81,7 +78,7 @@ export function CaseDetailWithAI({
     if (caseData.urgency === "high" && caseData.status === "assessment") {
       signals.push({
         severity: "warning" as const,
-        message: "Urgente casus - beoordeling loopt 3 dagen vertraging op"
+        message: "Urgente casus: beoordeling loopt 3 dagen uit"
       });
     }
 
@@ -95,7 +92,7 @@ export function CaseDetailWithAI({
     if (caseData.risk === "high") {
       signals.push({
         severity: "warning" as const,
-        message: "Hoog risico op escalatie - wekelijkse monitoring vereist"
+        message: "Hoog risico op escalatie"
       });
     }
 
@@ -114,12 +111,12 @@ export function CaseDetailWithAI({
       },
       { 
         text: caseData.urgency === "high" 
-          ? "Hoge urgentie - spoedtraject vereist" 
+          ? "Hoge urgentie" 
           : "Regulier traject",
         type: caseData.urgency === "high" ? "warning" as const : "success" as const
       },
       { 
-        text: "Beoordeling gepland met Dr. P. Bakker",
+        text: "Beoordeling gepland",
         type: "info" as const
       }
     ];
@@ -167,11 +164,11 @@ export function CaseDetailWithAI({
       {/* Main Layout: 3-Column Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         
-        {/* LEFT COLUMN: Case Information (4 cols) */}
+        {/* LEFT COLUMN: Case info (4 cols) */}
         <div className="xl:col-span-4 space-y-6">
           <div className="premium-card p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4">
-              Casus informatie
+          <h3 className="text-sm font-semibold text-foreground mb-4">
+              Casusinfo
             </h3>
             
             <div className="space-y-3 text-sm">
@@ -215,7 +212,7 @@ export function CaseDetailWithAI({
         <div className="xl:col-span-5 space-y-6">
           {/* AI LAYER: Case Summary */}
           <Samenvatting
-            title="Casus samenvatting"
+            title="Samenvatting"
             items={summary}
           />
 
@@ -223,24 +220,24 @@ export function CaseDetailWithAI({
           <div className="space-y-3">
             <SystemInsight
               type="info"
-              message="Beoordeling gepland voor 18 april met Dr. P. Bakker"
+              message="Beoordeling gepland op 18 april"
             />
             
             {caseData.status === "matching" && (
               <SystemInsight
                 type="success"
-                message="3 potentiële matches gevonden - match score range 78-94%"
+                message="3 matches gevonden (78-94%)"
               />
             )}
           </div>
 
           {/* Placeholder for work area content */}
           <div className="premium-card p-5">
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+              <h3 className="text-sm font-semibold text-foreground mb-4">
               Werkgebied
             </h3>
             <p className="text-sm text-muted-foreground">
-              Workflow-specifieke content afhankelijk van status...
+              Workflow-inhoud afhankelijk van status.
             </p>
           </div>
         </div>
@@ -257,7 +254,7 @@ export function CaseDetailWithAI({
             {/* Additional AI Insights */}
             <div className="premium-card p-4">
               <h3 className="text-sm font-semibold text-foreground mb-3">
-                Procesvoortgang
+                Voortgang
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs">
@@ -281,11 +278,10 @@ export function CaseDetailWithAI({
             {caseData.urgency === "high" && (
               <div className="premium-card p-4 bg-purple-500/5 border-2 border-purple-500/20">
                 <h3 className="text-sm font-semibold text-purple-300 mb-2">
-                  Overwegingen
+                  Overweging
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed break-words">
-                  Bij hoge urgentie: overweeg parallelle intake bij meerdere aanbieders 
-                  om wachttijd te minimaliseren.
+                  Bij hoge urgentie: overweeg parallelle intake.
                 </p>
               </div>
             )}

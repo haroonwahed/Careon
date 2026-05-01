@@ -382,3 +382,48 @@ A task is complete only when:
 If anything conflicts:
 
 → Canonical Flow wins
+
+---
+
+## UI MODE ENFORCEMENT
+
+- MetricStrip → ONLY Regiekamer
+- Worklist → ONLY Casussen
+- NextBestAction → ONLY Casus Detail
+- ProcessTimeline → ONLY Casus Detail
+
+Never create duplicate components.
+
+If unsure → REMOVE element.
+
+---
+
+## Design Token Discipline
+
+- Never introduce new hardcoded colors or spacing.
+- Always use tokens or existing Tailwind theme keys.
+
+If a value is missing:
+→ extend tokens  
+→ do NOT inline it
+
+---
+
+## VISUAL DENSITY RULES
+
+- No oversized cards unless explicitly required
+- KPI/status metrics must remain compact strips
+- Operational signals must remain compact alert rows
+- Worklist rows must remain rows, not cards
+- Process timelines must remain compact and connected
+- Do not add large decorative spacing
+- Do not create nested card layouts
+- Vertical space belongs primarily to the work/list/action area
+- If a component grows too large, compress it before adding new UI
+
+Conceptual hard limits:
+- Metric strip: max ~56px
+- Operational signal row: max ~64px
+- Process timeline: max ~72px
+- Worklist row: max ~64px
+- Next-best-action: max ~156px

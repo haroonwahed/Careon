@@ -1,6 +1,6 @@
 (function () {
   var STORAGE_KEY = "careon-theme";
-  var THEMES = ["light", "dark", "careon-premium"];
+  var THEMES = ["light", "dark"];
 
   function isValidTheme(theme) {
     return THEMES.indexOf(theme) !== -1;

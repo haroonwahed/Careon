@@ -17,6 +17,13 @@ export default {
         warn: '#F59E0B',
         danger: '#DC2626',
         muted: '#6B7280',
+        bg: '#0B0F1A',
+        surface: '#121826',
+        surfaceSubtle: '#0F1523',
+        border: 'rgba(255,255,255,0.08)',
+        primary: '#7C3AED',
+        warning: '#F59E0B',
+        info: '#06B6D4',
         'gray-50': '#F9FAFB',
         'gray-100': '#F3F4F6',
         'gray-200': '#E5E7EB',
@@ -57,6 +64,12 @@ export default {
         '10': '2.5rem',    // 40px
         '12': '3rem',      // 48px
         '16': '4rem',      // 64px
+        section: '24px',
+        block: '16px',
+      },
+      borderRadius: {
+        sm: '8px',
+        md: '12px',
       },
       maxWidth: {
         'container': '1200px',

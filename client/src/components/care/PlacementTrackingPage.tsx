@@ -1,7 +1,21 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, CheckCircle2, Search } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { CareEmptyState } from "./CareSurface";
+import {
+  CareAttentionBar,
+  CareContextHint,
+  CareDominantStatus,
+  CareFilterTabButton,
+  CareFilterTabGroup,
+  CareMetricBadge,
+  CareMetaChip,
+  CarePageTemplate,
+  CarePrimaryList,
+  CareSearchFiltersBar,
+  CareUnifiedHeader,
+  CareWorkRow,
+} from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { buildWorkflowCases } from "../../lib/workflowUi";
@@ -35,97 +49,105 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
     return item.phase === "afgerond";
   });
 
+  const intakeStallCount = useMemo(
+    () => placementCases.filter((item) => item.phase === "plaatsing" && item.daysInCurrentPhase >= 5).length,
+    [placementCases],
+  );
+
   const emptyCopy = {
-    "te-bevestigen": "Plaatsingen verschijnen hier zodra matching een aanbieder heeft opgeleverd.",
-    lopend: "Lopende plaatsingen ontstaan nadat een match bevestigd is en intake gepland wordt.",
-    afgerond: "Afgeronde plaatsingen verschijnen nadat intake en overdracht zijn afgerond.",
+    "te-bevestigen": "Bevestig plaatsing en plan intake zodra de aanbieder heeft geaccepteerd.",
+    lopend: "Volg lopende plaatsingen tot intake is gepland en gestart.",
+    afgerond: "Afgeronde trajecten blijven hier terugvindbaar voor audit en nazorg.",
   } as const;
 
+  const tabLabel: Record<PlacementTab, string> = {
+    "te-bevestigen": "Te bevestigen",
+    lopend: "Lopend",
+    afgerond: "Afgerond",
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Plaatsingen</h1>
-        <p className="text-sm text-muted-foreground">Volg bevestiging tot overdracht.</p>
-      </div>
+    <CarePageTemplate
+      className="pb-8"
+      header={
+        <CareUnifiedHeader
+          title="Plaatsingen"
+          subtitle="Van bevestiging tot intake — één lijn door de keten."
+          metric={
+            <CareMetricBadge>
+              {placementCases.length} plaatsingen in flow
+            </CareMetricBadge>
+          }
+        />
+      }
+      filters={
+        <CareSearchFiltersBar
+          tabs={
+            <CareFilterTabGroup aria-label="Plaatsing-status">
+              {(["te-bevestigen", "lopend", "afgerond"] as PlacementTab[]).map((tab) => (
+                <CareFilterTabButton key={tab} selected={activeTab === tab} onClick={() => setActiveTab(tab)}>
+                  {tabLabel[tab]} · {tabCounts[tab]}
+                </CareFilterTabButton>
+              ))}
+            </CareFilterTabGroup>
+          }
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek casus, provider of regio..."
+        />
+      }
+    >
+      <CareAttentionBar
+        visible={intakeStallCount > 0}
+        tone="warning"
+        message={`${intakeStallCount} plaatsing${intakeStallCount === 1 ? "" : "en"} staat${intakeStallCount === 1 ? "" : "en"} ≥5 dagen in plaatsing zonder duidelijke intake — plan intake of escaleer via Regiekamer.`}
+      />
 
-      <div className="flex items-center gap-3">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-          <Search className="text-muted-foreground flex-shrink-0" size={18} />
-          <Input type="text" placeholder="Zoek op casus, provider of regio..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground" />
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        {(["te-bevestigen", "lopend", "afgerond"] as PlacementTab[]).map((tab) => (
-          <button key={tab} type="button" onClick={() => setActiveTab(tab)} className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-all ${activeTab === tab ? "border-primary/45 bg-primary/10 text-primary" : "border-border bg-card text-muted-foreground hover:text-foreground hover:border-primary/30"}`}>
-            {tab === "te-bevestigen" ? "Te bevestigen" : tab === "lopend" ? "Lopend" : "Afgerond"} · {tabCounts[tab]}
-          </button>
-        ))}
-      </div>
-
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Plaatsingen laden…</div>}
+      {loading && <CareEmptyState title="Plaatsingen laden…" copy="De lijst wordt opgebouwd." />}
       {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Laden mislukt</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw</Button>
-        </div>
+        <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && visibleCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen plaatsingen</p>
-          <p className="text-sm text-muted-foreground">{emptyCopy[activeTab]}</p>
-          <Button onClick={() => onNavigateToMatching?.()}>Ga naar matching</Button>
-        </div>
+        <CareEmptyState
+          title="Geen plaatsingen in dit overzicht"
+          copy={emptyCopy[activeTab]}
+          action={<Button onClick={() => onNavigateToMatching?.()}>Naar matching</Button>}
+        />
       )}
 
       {!loading && !error && visibleCases.length > 0 && (
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          <div className="grid grid-cols-[1fr_1.4fr_1fr_1fr_1fr_1fr_160px] gap-4 border-b border-border px-5 py-4 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-            <span>Casus</span>
-            <span>Provider</span>
-            <span>Regio</span>
-            <span>Status</span>
-            <span>Intake</span>
-            <span>Laatste update</span>
-            <span className="text-right">Actie</span>
-          </div>
-          <div className="divide-y divide-border">
-            {visibleCases.map((item) => (
-              <div key={item.id} className="grid grid-cols-[1fr_1.4fr_1fr_1fr_1fr_1fr_160px] gap-4 px-5 py-4 items-center transition-colors hover:bg-muted/20">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{item.id}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.clientLabel}</p>
-                </div>
-                <p className="text-sm text-foreground">{item.recommendedProviderName ?? "Nog niet gekozen"}</p>
-                <p className="text-sm text-foreground">{item.region}</p>
-                <p className="text-sm text-foreground">{activeTab === "te-bevestigen" ? "Te bevestigen" : activeTab === "lopend" ? "Lopend" : "Afgerond"}</p>
-                <p className="text-sm text-foreground">{activeTab === "te-bevestigen" ? "Wacht" : item.intakeDateLabel ?? "Volgt"}</p>
-                <p className="text-sm text-foreground">{item.daysInCurrentPhase} dagen</p>
-                <div className="text-right">
-                  <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={() => onCaseClick(item.id)}>
-                    Open plaatsing
-                    <ArrowRight size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        <CarePrimaryList>
+          {visibleCases.map((item) => (
+            <CareWorkRow
+              key={item.id}
+              title={item.clientLabel}
+              context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
+              status={<CareDominantStatus>{tabLabel[activeTab]}</CareDominantStatus>}
+              time={
+                <CareMetaChip>
+                  {item.daysInCurrentPhase}d in fase
+                </CareMetaChip>
+              }
+              contextInfo={
+                <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
+              }
+              actionLabel="Bekijk intake"
+              onOpen={() => onCaseClick(item.id)}
+              onAction={(event) => {
+                event.stopPropagation();
+                onCaseClick(item.id);
+              }}
+            />
+          ))}
+        </CarePrimaryList>
       )}
 
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start gap-4">
-            <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
-              <CheckCircle2 className="text-primary" size={20} />
-            </div>
-            <div>
-            <p className="font-semibold text-foreground mb-1">Volgt uit matching</p>
-            <p className="text-sm text-muted-foreground">Bevestiging en intake blijven in dezelfde casusflow.</p>
-            </div>
-          </div>
-        </div>
-    </div>
+      <CareContextHint
+        icon={<CheckCircle2 className="text-primary" size={20} />}
+        title="Volgt uit matching"
+        copy="Plaatsing en intake horen bij elkaar; gebruik de casus voor de volgende beslissing."
+      />
+    </CarePageTemplate>
   );
 }

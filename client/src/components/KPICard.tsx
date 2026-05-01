@@ -49,18 +49,13 @@ export function KPICard({ label, value, subtitle, icon: Icon, delta, language = 
 
   return (
     <div 
-      className="kpi-card relative rounded-2xl p-6 group transition-all duration-200 dark:bg-gradient-to-br dark:from-[#12121C] dark:to-[#16162A] bg-gradient-to-br from-white to-[#fafafa] border dark:border-primary/20 border-primary/15"
-      style={{
-        boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(139, 92, 246, 0.08)"
-      }}
+      className="kpi-card relative rounded-xl border border-border/70 bg-card/55 p-5"
     >
-      <div className="flex items-start justify-between mb-5">
+      <div className="flex items-start justify-between gap-4">
         <span className="text-[15px] font-medium dark:text-muted-foreground tracking-normal">
           {label}
         </span>
-        <div 
-          className="w-9 h-9 rounded-xl dark:bg-primary/15 bg-primary/10 flex items-center justify-center transition-all duration-200"
-        >
+        <div className="flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-primary/10 transition-all duration-200">
           <Icon className="h-4 w-4 dark:text-primary text-primary" />
         </div>
       </div>

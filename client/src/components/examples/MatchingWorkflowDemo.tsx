@@ -22,7 +22,7 @@ export function MatchingWorkflowDemo() {
     
     // In real app, this would navigate to placement page
     setTimeout(() => {
-      alert(`Match bevestigd! Volgende stap: Plaatsing voorbereiden`);
+      alert(`Bevestigd. Start plaatsing.`);
     }, 500);
   };
 
@@ -35,10 +35,10 @@ export function MatchingWorkflowDemo() {
       {matchConfirmed && (
         <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-green-500/10 border-2 border-green-500/30 max-w-sm">
           <p className="text-sm font-semibold text-green-400">
-            ✓ Match bevestigd!
+            ✓ Bevestigd
           </p>
           <p className="text-xs text-muted-foreground mt-1">
-            Systeem bereidt plaatsing voor...
+            Start plaatsing.
           </p>
         </div>
       )}

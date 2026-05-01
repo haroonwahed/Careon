@@ -283,13 +283,13 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <div className="sticky bottom-4 z-20 rounded-3xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="text-sm font-semibold text-foreground">Bevestig en ga verder</p>
+                <p className="text-sm font-semibold text-foreground">Bevestig</p>
                 <p className="text-sm text-muted-foreground">{formState.decision ? data.consequences[formState.decision]?.title : 'Selecteer eerst een beslissing om verder te gaan.'}</p>
                 {submitError && <p className="mt-1 text-sm text-red-300">{submitError}</p>}
               </div>
               <Button onClick={handleSubmit} disabled={!isValid || saving} className="min-w-[220px] gap-2">
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-                {saving ? 'Opslaan...' : 'Bevestig en ga verder'}
+                {saving ? 'Opslaan...' : 'Bevestig'}
               </Button>
             </div>
           </div>
@@ -299,7 +299,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <section className="rounded-3xl border border-border bg-card p-5">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Casus samenvatting</h2>
+              <h2 className="text-base font-semibold text-foreground">Samenvatting</h2>
             </div>
             <div className="mt-4 grid gap-3 text-sm">
               <div>
@@ -340,7 +340,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           <section className="rounded-3xl border border-border bg-card p-5">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-primary" />
-              <h2 className="text-base font-semibold text-foreground">Systeemhints</h2>
+              <h2 className="text-base font-semibold text-foreground">Hints</h2>
             </div>
             <div className="mt-4 space-y-4 text-sm">
               <div className="rounded-2xl border border-border bg-muted/20 p-3">
@@ -349,7 +349,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                 <p className="mt-1 text-muted-foreground">{data.hints.suggestedUrgency.reason}</p>
               </div>
               <div className="rounded-2xl border border-border bg-muted/20 p-3">
-                <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Matching-moeilijkheid</p>
+                <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Moeilijkheid</p>
                 <p className="mt-1 font-semibold text-foreground">{data.hints.matchingDifficulty.level}</p>
                 <p className="mt-1 text-muted-foreground">{data.hints.matchingDifficulty.detail}</p>
               </div>

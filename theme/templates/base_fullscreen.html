@@ -6,19 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Careon{% endblock %}</title>
     <link href="{% static 'css/zorgregie-design-system.css' %}" rel="stylesheet">
-    <script>
-        (function() {
-            var stored = localStorage.getItem('careon-auth-theme') || 'light';
-            var theme = stored === 'dark' ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', theme);
-        })();
-        function toggleTheme() {
-            var current = document.documentElement.getAttribute('data-theme');
-            var next = current === 'dark' ? 'light' : 'dark';
-            document.documentElement.setAttribute('data-theme', next);
-            localStorage.setItem('careon-auth-theme', next);
-        }
-    </script>
+    <script defer src="{% static 'js/theme-switcher.js' %}"></script>
 </head>
 <body class="auth-page-body">
     {% block body %}

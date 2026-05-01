@@ -100,7 +100,7 @@ function manualVendorChunks(id: string) {
       port: 3000,
       open: true,
       proxy: {
-        '/care/': {
+        '/care/api/': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
@@ -111,6 +111,11 @@ function manualVendorChunks(id: string) {
           secure: false,
         },
         '/static/js/': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/static/spa/': {
           target: 'http://127.0.0.1:8000',
           changeOrigin: true,
           secure: false,
@@ -131,6 +136,15 @@ function manualVendorChunks(id: string) {
           headers: {
             origin: 'http://127.0.0.1:8000',
             referer: 'http://127.0.0.1:8000/login/',
+          },
+        },
+        '/register/': {
+          target: 'http://127.0.0.1:8000',
+          changeOrigin: true,
+          secure: false,
+          headers: {
+            origin: 'http://127.0.0.1:8000',
+            referer: 'http://127.0.0.1:8000/register/',
           },
         },
         '/settings/': {

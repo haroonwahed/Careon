@@ -283,7 +283,10 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
           </div>
         </div>
 
-        <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] sm:p-4 dark:border-slate-800 dark:bg-slate-900">
+        <div
+          data-testid="zorgaanbieders-filter-panel"
+          className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] sm:p-4 dark:border-slate-800 dark:bg-slate-900"
+        >
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
           <div className="min-w-0 flex-1 rounded-2xl bg-slate-50/85 p-3 dark:bg-slate-800/80">
             <div className="flex items-center gap-2">
@@ -462,7 +465,7 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                       className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
                       onClick={() => (hasActiveFilters ? resetFilters() : setShowFilters(true))}
                     >
-                      {hasActiveFilters ? "Reset filters" : "Open filters"}
+                      {hasActiveFilters ? "Filters wissen" : "Filters openen"}
                     </Button>
                   </div>
                 </div>

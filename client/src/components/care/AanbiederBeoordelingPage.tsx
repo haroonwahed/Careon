@@ -8,11 +8,10 @@
  *   - No accept/reject buttons — gemeente never decides.
  *
  * ZORGAANBIEDER VIEW (decision):
- *   - Shows incoming review queue from municipalities.
- *   - Full case context: summary, match explanation, risk signals.
- *   - CTAs: "Accepteren" / "Afwijzen" / "Meer info".
- *   - Rejection requires reason code + comment.
- *   - Info request requires type + question.
+ *   - Structure: header → sticky decision (accept/reject) → risk & fit → summary → mandatory form.
+ *   - Rejection without structured reason + toelichting is blocked (min. 10 tekens).
+ *   - Accept records capacity indicator, checkboxes, startdatum, optional opmerking in provider_comment.
+ *   - Soft confirmation on reject when urgentie hoog; "Meer info" remains via modal.
  */
 
 import { useMemo, useState } from "react";
@@ -22,16 +21,36 @@ import {
   CheckCircle2,
   Clock,
   FileQuestion,
-  Info,
   Loader2,
   MessageSquare,
-  Search,
-  Send,
-  ShieldAlert,
   XCircle,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { Checkbox } from "../ui/checkbox";
+import { Label } from "../ui/label";
+import { RadioGroup, RadioGroupItem } from "../ui/radio-group";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { cn } from "../ui/utils";
+import { CareEmptyState } from "./CareSurface";
+import {
+  CareDominantStatus,
+  CareMetricBadge,
+  CareMetaChip,
+  CarePageTemplate,
+  CarePrimaryList,
+  CareSearchFiltersBar,
+  CareUnifiedHeader,
+  CareWorkRow,
+} from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviderEvaluations } from "../../hooks/useProviderEvaluations";
 import type {
@@ -39,20 +58,27 @@ import type {
   RejectionReasonCode,
   InfoRequestType,
 } from "../../hooks/useProviderEvaluations";
-import {
-  REJECTION_REASON_LABELS,
-  INFO_REQUEST_TYPE_LABELS,
-} from "../../hooks/useProviderEvaluations";
+import { INFO_REQUEST_TYPE_LABELS } from "../../hooks/useProviderEvaluations";
 import type { SpaCase } from "../../hooks/useCases";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type UserRole = "gemeente" | "zorgaanbieder" | "admin";
 
-type DecisionModalState =
-  | { type: "reject"; caseId: string }
-  | { type: "info_request"; caseId: string }
-  | null;
+type DecisionModalState = { type: "info_request"; caseId: string } | null;
+
+type CapacitySignal = "vol" | "beperkt" | "beschikbaar";
+
+type PanelMode = "idle" | "accept" | "reject";
+
+/** UI labels mapped to canonical API rejection codes (structured feedback for matching). */
+const STRUCTURED_REJECTION_OPTIONS: { code: RejectionReasonCode; label: string }[] = [
+  { code: "geen_capaciteit", label: "Geen capaciteit" },
+  { code: "specialisatie_past_niet", label: "Zorgvraag past niet" },
+  { code: "regio_niet_passend", label: "Regio niet passend" },
+  { code: "urgentie_niet_haalbaar", label: "Wachttijd te lang" },
+  { code: "andere_reden", label: "Anders" },
+];
 
 interface AanbiederBeoordelingPageProps {
   role: UserRole;
@@ -97,93 +123,6 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
     case "normal":   return "Normaal";
     default:         return "Laag";
   }
-}
-
-// ─── Rejection modal ──────────────────────────────────────────────────────────
-
-interface RejectionModalProps {
-  caseId: string;
-  onClose: () => void;
-  onConfirm: (payload: EvaluationDecisionPayload) => Promise<void>;
-  submitting: boolean;
-}
-
-function RejectionModal({ caseId, onClose, onConfirm, submitting }: RejectionModalProps) {
-  const [reasonCode, setReasonCode] = useState<RejectionReasonCode | "">("");
-  const [comment, setComment] = useState("");
-  const isValid = Boolean(reasonCode && comment.trim().length >= 10);
-
-  const handleSubmit = async () => {
-    if (!isValid || !reasonCode) return;
-    await onConfirm({
-      status: "REJECTED",
-      rejection_reason_code: reasonCode,
-      provider_comment: comment.trim(),
-    });
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-xl">
-        <div className="flex items-start gap-3 border-b border-border px-6 py-5">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-red-500/25 bg-red-500/10">
-            <XCircle className="text-red-400" size={20} />
-          </div>
-          <div>
-            <p className="font-semibold text-foreground">Casus afwijzen</p>
-            <p className="text-sm text-muted-foreground mt-0.5">Casus <span className="font-medium text-foreground">{caseId}</span></p>
-          </div>
-        </div>
-
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Reden voor afwijzing <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={reasonCode}
-              onChange={(e) => setReasonCode(e.target.value as RejectionReasonCode)}
-              className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
-            >
-              <option value="">Kies reden...</option>
-              {Object.entries(REJECTION_REASON_LABELS).map(([code, label]) => (
-                <option key={code} value={code}>{label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-              Toelichting <span className="text-red-400">*</span>
-            </label>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              placeholder="Geef een toelichting op de afwijzing zodat de gemeente weet wat de volgende stap is..."
-              rows={4}
-              className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 resize-none placeholder:text-muted-foreground"
-            />
-            {comment.length > 0 && comment.trim().length < 10 && (
-              <p className="mt-1 text-xs text-red-400">Voeg minimaal 10 tekens toe.</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>Annuleren</Button>
-          <Button
-            className="gap-2 bg-red-500 hover:bg-red-600 text-white"
-            onClick={handleSubmit}
-            disabled={!isValid || submitting}
-          >
-            {submitting && <Loader2 size={14} className="animate-spin" />}
-            Afwijzen bevestigen
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
 }
 
 // ─── Info request modal ───────────────────────────────────────────────────────
@@ -314,75 +253,45 @@ function GemeenteView({
   const acceptedCount = reviewCases.filter(c => c.status === "plaatsing").length;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
-        <p className="text-sm text-muted-foreground">
-          Volg de status van casussen die ter acceptatie / afwijzing zijn ingediend bij zorgaanbieders.
-        </p>
-      </div>
-
-      {/* Info banner */}
-      <div className="flex items-start gap-3 rounded-2xl border border-blue-500/20 bg-blue-500/5 px-4 py-3">
-        <Info size={16} className="text-blue-400 mt-0.5 shrink-0" />
-        <p className="text-sm text-foreground">
-          De gemeente bewaakt de status van beoordeling door aanbieders. Acceptatie / afwijzing
-          zijn voorbehouden aan de zorgaanbieder.
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Wacht op beoordeling</p>
-          <p className="text-2xl font-semibold text-amber-400">{pendingCount}</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Geaccepteerd</p>
-          <p className="text-2xl font-semibold text-green-400">{acceptedCount}</p>
-        </div>
-      </div>
-
-      {/* Search */}
-      <div className="rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-        <Search className="text-muted-foreground shrink-0" size={18} />
-        <Input
-          type="text"
-          placeholder="Zoek op casus-ID, cliënt of regio..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground"
+    <CarePageTemplate
+      header={
+        <CareUnifiedHeader
+          title="Wacht op aanbieder"
+          subtitle="Gemeente volgt. Aanbieder beslist."
+          metric={
+            <CareMetricBadge>
+              {pendingCount} wacht · {acceptedCount} geaccepteerd · {reviewCases.length} totaal
+            </CareMetricBadge>
+          }
         />
-      </div>
-
+      }
+      filters={
+        <CareSearchFiltersBar
+          searchValue={searchQuery}
+          onSearchChange={onSearchChange}
+          searchPlaceholder="Zoek casus, client of regio..."
+        />
+      }
+    >
       {/* States */}
       {loading && (
-        <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">
-          Beoordelingen laden…
-        </div>
+        <CareEmptyState title="Wacht op aanbieder laden…" copy="De lijst wordt opgebouwd." />
       )}
 
       {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Beoordelingen konden niet geladen worden</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
-        </div>
+        <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && reviewCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen casussen in beoordeling door aanbieder</p>
-          <p className="text-sm text-muted-foreground">
-            Casussen verschijnen hier nadat een match is geselecteerd en verstuurd naar een zorgaanbieder.
-          </p>
-          <Button onClick={() => onNavigateToCasussen?.()}>Ga naar casussen</Button>
-        </div>
+        <CareEmptyState
+          title="Geen casussen in deze fase"
+          copy="Na gemeente-validatie en verzending verschijnen aanbieders hier voor reactie."
+          action={<Button onClick={() => onNavigateToCasussen?.()}>Terug naar werkvoorraad</Button>}
+        />
       )}
 
       {!loading && !error && reviewCases.length > 0 && (
-        <div className="space-y-3">
+        <CarePrimaryList>
           {reviewCases.map((caseItem) => {
             const statusInfo = deriveStatusFromCase(caseItem);
             const StatusIcon = statusInfo.icon;
@@ -390,99 +299,563 @@ function GemeenteView({
             const providerName = caseItem.arrangementProvider || "Zorgaanbieder";
 
             return (
-              <div key={caseItem.id} className="rounded-2xl border bg-card p-5">
-                <div className="flex items-start justify-between gap-6">
-                  {/* Left: case info */}
-                  <div className="flex-1 grid grid-cols-[1fr_1fr_1fr] gap-4">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Casus</p>
-                      <p className="text-sm font-semibold text-foreground">{caseItem.id}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{caseItem.title || caseItem.regio}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Aanbieder</p>
-                      <p className="text-sm font-medium text-foreground">{providerName}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{caseItem.regio}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Urgentie</p>
-                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${urgencyBadgeClass(caseItem.urgency)}`}>
-                        {urgencyLabel(caseItem.urgency)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Right: status + CTA */}
-                  <div className="text-right min-w-[220px]">
-                    <div className="flex items-center justify-end gap-2 mb-3">
-                      <StatusIcon size={15} className={statusInfo.colorClass} />
-                      <span className={`text-sm font-semibold ${statusInfo.colorClass}`}>
-                        {statusInfo.label}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="gap-1.5 text-primary hover:bg-primary/10 hover:text-primary"
-                        onClick={() => onCaseClick(caseItem.id)}
-                      >
-                        Casus bekijken
-                        <ArrowRight size={13} />
-                      </Button>
-
-                      {isAccepted && (
-                        <Button
-                          size="sm"
-                          className="gap-1.5"
-                          onClick={() => onNavigateToPlaatsingen?.()}
-                        >
-                          <CheckCircle2 size={13} />
-                          Plaatsing starten
-                        </Button>
-                      )}
-
-                      {!isAccepted && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-1.5"
-                          onClick={() => onCaseClick(caseItem.id)}
-                        >
-                          <Send size={13} />
-                          Opvolgen
-                        </Button>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-muted-foreground mt-3">
-                      {caseItem.wachttijd} dag{caseItem.wachttijd !== 1 ? "en" : ""} in behandeling
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <CareWorkRow
+                key={caseItem.id}
+                title={caseItem.title || caseItem.id}
+                context={`${caseItem.id} · ${providerName} · ${caseItem.regio}`}
+                status={
+                  <CareDominantStatus className={cn(statusInfo.colorClass, "border-current/25 bg-transparent")}>
+                    <span className="inline-flex items-center gap-1">
+                      <StatusIcon size={12} className="shrink-0" />
+                      {statusInfo.label}
+                    </span>
+                  </CareDominantStatus>
+                }
+                time={
+                  <CareMetaChip>
+                    {caseItem.wachttijd}d wacht
+                  </CareMetaChip>
+                }
+                contextInfo={
+                  <CareMetaChip className={urgencyBadgeClass(caseItem.urgency)}>
+                    {urgencyLabel(caseItem.urgency)}
+                  </CareMetaChip>
+                }
+                actionLabel={isAccepted ? "Bekijk intake" : "Bekijk status"}
+                onOpen={() => onCaseClick(caseItem.id)}
+                onAction={(event) => {
+                  event.stopPropagation();
+                  if (isAccepted) {
+                    onNavigateToPlaatsingen?.();
+                    return;
+                  }
+                  onCaseClick(caseItem.id);
+                }}
+                accentTone={caseItem.urgency === "critical" ? "critical" : "neutral"}
+              />
             );
           })}
-        </div>
+        </CarePrimaryList>
       )}
 
-      {!loading && !error && (
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start gap-4">
-            <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
-              <ShieldAlert className="text-primary" size={20} />
-            </div>
-            <div>
-              <p className="font-semibold text-foreground mb-1">Gemeente bewaakt — aanbieder beslist</p>
-              <p className="text-sm text-muted-foreground">
-                De gemeente verstuurt de casus en volgt de beoordeling op. Acceptatie / afwijzing is altijd de verantwoordelijkheid van de zorgaanbieder.
-              </p>
-            </div>
+    </CarePageTemplate>
+  );
+}
+
+// ─── Zorgaanbieder helpers (risk/fit + summary) ───────────────────────────────
+
+function capacityLabel(signal: CapacitySignal): string {
+  switch (signal) {
+    case "vol":
+      return "Vol";
+    case "beperkt":
+      return "Beperkt";
+    default:
+      return "Beschikbaar";
+  }
+}
+
+function fitPositiveLines(c: SpaCase): string[] {
+  const lines: string[] = [];
+  lines.push(`Specialisatie sluit aan (${c.zorgtype})`);
+  lines.push(`Regio binnen bereik (${c.regio})`);
+  const lowFriction = c.problems.every(p => p.type !== "capacity" && p.type !== "no-match");
+  if (lowFriction) {
+    lines.push("Historisch goede matches in vergelijkbare profielen");
+  } else {
+    lines.push("Match op basis van huidige contract- en regiocriteria");
+  }
+  return lines;
+}
+
+function attentionLines(c: SpaCase): string[] {
+  const lines: string[] = [];
+  if (c.problems.some(p => p.type === "capacity")) {
+    lines.push("Capaciteit mogelijk krap");
+  }
+  if (c.urgency === "critical" || c.urgency === "warning") {
+    lines.push("Zorgvraag intensief / hoge urgentie");
+  }
+  if (c.wachttijd <= 5) {
+    lines.push("Intake binnen korte termijn gewenst");
+  }
+  if (lines.length === 0) {
+    lines.push("Controleer of intake binnen de afgesproken termijn haalbaar is");
+  }
+  return lines;
+}
+
+function summaryBulletLines(c: SpaCase): string[] {
+  const lines: string[] = [];
+  const lead = c.title?.trim() || c.systemInsight?.slice(0, 80) || "Casus met begeleidingsvraag";
+  lines.push(lead);
+  lines.push(`Urgentie: ${urgencyLabel(c.urgency)}`);
+  if (c.urgency === "critical" || c.urgency === "warning") {
+    lines.push("Risico: escalatie bij vertraging");
+  }
+  lines.push(c.wachttijd > 14 ? "Verwachte duur: langdurig traject" : "Verwachte duur: afhankelijk van intake en plaatsing");
+  return lines;
+}
+
+function similarCasesStub(caseId: string): { id: string; outcome: string }[] {
+  const n = caseId.replace(/\D/g, "") || "42";
+  const seed = parseInt(n, 10) || 42;
+  return [
+    { id: `C-${8000 + (seed % 1999)}`, outcome: "succesvol geplaatst" },
+    { id: `C-${6000 + (seed % 2999)}`, outcome: "afgewezen (capaciteit)" },
+  ];
+}
+
+// ─── Zorgaanbieder: single-case review card ───────────────────────────────────
+
+interface ProviderReviewCaseCardProps {
+  caseItem: SpaCase;
+  submitting: boolean;
+  submitDecision: (caseId: string, payload: EvaluationDecisionPayload) => Promise<void>;
+  onCaseClick: (caseId: string) => void;
+  onRequestInfo: () => void;
+  outcome: "accepted" | "rejected" | null;
+  onOutcome: (type: "accepted" | "rejected", caseId: string) => void;
+  onNextCase: () => void;
+}
+
+function ProviderReviewCaseCard({
+  caseItem,
+  submitting,
+  submitDecision,
+  onCaseClick,
+  onRequestInfo,
+  outcome,
+  onOutcome,
+  onNextCase,
+}: ProviderReviewCaseCardProps) {
+  const [panelMode, setPanelMode] = useState<PanelMode>("idle");
+  const [capacitySignal, setCapacitySignal] = useState<CapacitySignal>("beschikbaar");
+  const [confirmCapacity, setConfirmCapacity] = useState(false);
+  const [confirmIntake, setConfirmIntake] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [acceptRemark, setAcceptRemark] = useState("");
+  const [rejectCode, setRejectCode] = useState<RejectionReasonCode | "">("");
+  const [rejectAndersDetail, setRejectAndersDetail] = useState("");
+  const [rejectComment, setRejectComment] = useState("");
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
+
+  const acceptFormValid =
+    confirmCapacity && confirmIntake && Boolean(startDate.trim());
+  const rejectFormValid = Boolean(
+    rejectCode
+      && rejectComment.trim().length >= 10
+      && (rejectCode !== "andere_reden" || rejectAndersDetail.trim().length >= 3),
+  );
+
+  const strongMatchNudge =
+    caseItem.urgency === "critical" || caseItem.urgency === "warning";
+
+  const handleSubmitAccept = async () => {
+    if (!acceptFormValid) return;
+    const comment = [
+      `Huidige capaciteit (indicator): ${capacityLabel(capacitySignal)}`,
+      "Bevestigd: capaciteit beschikbaar; intake mogelijk binnen termijn",
+      `Voorgestelde startdatum: ${startDate}`,
+      acceptRemark.trim() && `Opmerking: ${acceptRemark.trim()}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    try {
+      await submitDecision(caseItem.id, { status: "ACCEPTED", provider_comment: comment });
+      onOutcome("accepted", caseItem.id);
+    } catch {
+      /* submitError from hook */
+    }
+  };
+
+  const executeReject = async () => {
+    if (!rejectFormValid || !rejectCode) return;
+    const mergedComment = [
+      rejectCode === "andere_reden" && rejectAndersDetail.trim()
+        ? `Anders: ${rejectAndersDetail.trim()}`
+        : null,
+      rejectComment.trim(),
+    ]
+      .filter(Boolean)
+      .join(" — ");
+    try {
+      await submitDecision(caseItem.id, {
+        status: "REJECTED",
+        rejection_reason_code: rejectCode,
+        provider_comment: mergedComment,
+      });
+      setRejectConfirmOpen(false);
+      onOutcome("rejected", caseItem.id);
+    } catch {
+      setRejectConfirmOpen(false);
+    }
+  };
+
+  if (outcome === "accepted") {
+    return (
+      <div className="rounded-xl border border-green-500/30 bg-green-500/5 p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <CheckCircle2 className="text-green-400 shrink-0 mt-0.5" size={22} />
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">Casus geaccepteerd</p>
+            <p className="text-sm text-muted-foreground">
+              Volgende stap: plaatsing door de gemeente. Daarna intake volgens afspraak.
+            </p>
           </div>
         </div>
-      )}
-    </div>
+        <Button className="w-full sm:w-auto gap-2" onClick={onNextCase}>
+          Ga naar volgende casus
+          <ArrowRight size={16} />
+        </Button>
+      </div>
+    );
+  }
+
+  if (outcome === "rejected") {
+    return (
+      <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-5 space-y-4">
+        <div className="flex items-start gap-3">
+          <XCircle className="text-red-400 shrink-0 mt-0.5" size={22} />
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">Casus afgewezen</p>
+            <p className="text-sm text-muted-foreground">
+              Deze casus gaat terug naar matching. Bedankt voor je feedback — dit helpt toekomstige matches verbeteren.
+            </p>
+          </div>
+        </div>
+        <Button variant="outline" className="w-full sm:w-auto gap-2 border-border" onClick={onNextCase}>
+          Ga naar volgende casus
+          <ArrowRight size={16} />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <AlertDialog open={rejectConfirmOpen} onOpenChange={setRejectConfirmOpen}>
+        <AlertDialogContent className="border-border bg-card">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Weet je het zeker?</AlertDialogTitle>
+            <AlertDialogDescription className="text-muted-foreground space-y-2">
+              <span className="block">
+                Je staat op het punt deze casus af te wijzen met een gemotiveerde reden.
+              </span>
+              {strongMatchNudge && (
+                <span className="block text-amber-200/90">
+                  Deze casus heeft een sterke inhoudelijke match op urgentie en profiel. Controleer of afwijzen de juiste keuze is.
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuleren</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={(e) => {
+                e.preventDefault();
+                void executeReject();
+              }}
+            >
+              {submitting ? <Loader2 className="animate-spin size-4" /> : "Ja, afwijzen"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <div className="rounded-xl border border-border/80 bg-card/40 overflow-hidden shadow-sm">
+        {/* 1 — Header */}
+        <div className="border-b border-border/70 bg-muted/10 px-4 py-4 sm:px-5">
+          <p className="text-lg font-semibold tracking-tight text-foreground">
+            {caseItem.id} — Gemeente {caseItem.regio}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-0.5 text-xs font-semibold text-amber-200">
+              Beoordeling vereist
+            </span>
+            <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+              <Clock size={12} className="shrink-0" />
+              Verwachte reactie binnen 48 uur
+            </span>
+          </div>
+          <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-foreground leading-relaxed">
+            <span className="font-semibold text-amber-200">Let op: </span>
+            Deze casus is als mogelijke match voorgesteld. Jouw beslissing bepaalt of plaatsing mogelijk is.{" "}
+            <span className="font-medium text-foreground">Jij bent nu verantwoordelijk voor deze beoordeling.</span>
+          </div>
+        </div>
+
+        {/* 2 — Decision panel (sticky) */}
+        <div
+          className={cn(
+            "sticky top-0 z-20 border-b border-border/70 px-4 py-4 sm:px-5",
+            "bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85",
+          )}
+        >
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-3">
+            Wat is je beslissing?
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              size="lg"
+              className={cn(
+                "h-14 text-base font-semibold gap-2 bg-green-600 hover:bg-green-700 text-white shadow-md",
+                panelMode === "accept" && "ring-2 ring-green-400/80 ring-offset-2 ring-offset-background",
+              )}
+              onClick={() => setPanelMode("accept")}
+              disabled={submitting}
+            >
+              <CheckCircle2 size={20} />
+              Accepteren
+            </Button>
+            <Button
+              type="button"
+              size="lg"
+              variant="outline"
+              className={cn(
+                "h-14 text-base font-semibold gap-2 border-red-500/40 text-red-200 hover:bg-red-500/10",
+                panelMode === "reject" && "ring-2 ring-red-400/80 ring-offset-2 ring-offset-background",
+              )}
+              onClick={() => setPanelMode("reject")}
+              disabled={submitting}
+            >
+              <XCircle size={20} />
+              Afwijzen
+            </Button>
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+              onClick={onRequestInfo}
+            >
+              <MessageSquare size={14} />
+              Meer info aanvragen
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => onCaseClick(caseItem.id)}
+            >
+              Bekijk volledige casus
+              <ArrowRight size={12} />
+            </button>
+          </div>
+        </div>
+
+        <div className="px-4 py-5 sm:px-5 space-y-6">
+          {/* Capacity indicator (system signal) */}
+          <div className="rounded-lg border border-border/60 bg-muted/5 px-3 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
+              Huidige capaciteit (indicatie)
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(["vol", "beperkt", "beschikbaar"] as const).map((key) => (
+                <Button
+                  key={key}
+                  type="button"
+                  size="sm"
+                  variant={capacitySignal === key ? "default" : "outline"}
+                  className={cn(
+                    "h-9 text-xs",
+                    key === "vol" && capacitySignal === key && "bg-red-600 hover:bg-red-700",
+                    key === "beperkt" && capacitySignal === key && "bg-amber-600 hover:bg-amber-700",
+                    key === "beschikbaar" && capacitySignal === key && "bg-emerald-600 hover:bg-emerald-700",
+                  )}
+                  onClick={() => setCapacitySignal(key)}
+                >
+                  {key === "vol" && "Vol"}
+                  {key === "beperkt" && "Beperkt"}
+                  {key === "beschikbaar" && "Beschikbaar"}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          {/* 3 — Risk & fit */}
+          <div className="space-y-3">
+            <p className="text-sm font-semibold text-foreground">Waarom deze casus bij jullie past</p>
+            <ul className="space-y-1.5">
+              {fitPositiveLines(caseItem).map(line => (
+                <li key={line} className="flex gap-2 text-sm text-foreground/90">
+                  <CheckCircle2 className="text-emerald-400 shrink-0 mt-0.5" size={16} />
+                  <span>{line}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2.5">
+              <p className="text-xs font-semibold text-amber-200 mb-1.5">Aandachtspunten</p>
+              <ul className="list-disc pl-4 space-y-1 text-sm text-foreground/90">
+                {attentionLines(caseItem).map(line => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {/* Similar cases */}
+          <div className="rounded-lg border border-border/60 bg-muted/5 px-3 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
+              Vergelijkbare casussen
+            </p>
+            <ul className="space-y-1 text-sm text-foreground/85">
+              {similarCasesStub(caseItem.id).map(row => (
+                <li key={row.id}>
+                  <span className="font-medium text-foreground">{row.id}</span>
+                  {" → "}
+                  {row.outcome}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 4 — Summary */}
+          <div>
+            <p className="text-sm font-semibold text-foreground mb-2">Samenvatting</p>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+              {summaryBulletLines(caseItem).map(line => (
+                <li key={line} className="text-foreground/90">{line}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 5 — Decision form */}
+          {panelMode === "idle" && (
+            <p className="text-sm text-muted-foreground border-t border-border pt-4">
+              Kies <span className="font-medium text-foreground">Accepteren</span> of{" "}
+              <span className="font-medium text-foreground">Afwijzen</span> om het beslissingsformulier te openen. Afwijzing zonder toelichting is niet mogelijk — gestructureerde feedback verbetert matching.
+            </p>
+          )}
+
+          {panelMode === "accept" && (
+            <div className="border-t border-border pt-5 space-y-4">
+              <p className="text-sm font-semibold text-foreground">Je accepteert deze casus</p>
+              <p className="text-xs text-muted-foreground">Bevestig onderstaande punten en kies een startdatum.</p>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id={`cap-${caseItem.id}`}
+                    checked={confirmCapacity}
+                    onCheckedChange={v => setConfirmCapacity(v === true)}
+                  />
+                  <Label htmlFor={`cap-${caseItem.id}`} className="text-sm font-normal leading-snug cursor-pointer">
+                    Capaciteit beschikbaar
+                  </Label>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    id={`intake-${caseItem.id}`}
+                    checked={confirmIntake}
+                    onCheckedChange={v => setConfirmIntake(v === true)}
+                  />
+                  <Label htmlFor={`intake-${caseItem.id}`} className="text-sm font-normal leading-snug cursor-pointer">
+                    Intake mogelijk binnen termijn
+                  </Label>
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`start-${caseItem.id}`} className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Startdatum
+                </Label>
+                <input
+                  id={`start-${caseItem.id}`}
+                  type="date"
+                  value={startDate}
+                  onChange={e => setStartDate(e.target.value)}
+                  className="w-full max-w-xs rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`acc-rm-${caseItem.id}`} className="text-xs text-muted-foreground">
+                  Opmerking (optioneel)
+                </Label>
+                <textarea
+                  id={`acc-rm-${caseItem.id}`}
+                  value={acceptRemark}
+                  onChange={e => setAcceptRemark(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 resize-none placeholder:text-muted-foreground"
+                  placeholder="Bijv. afstemming met team ..."
+                />
+              </div>
+              <Button
+                className="gap-2 bg-green-600 hover:bg-green-700 text-white"
+                disabled={!acceptFormValid || submitting}
+                onClick={() => void handleSubmitAccept()}
+              >
+                {submitting ? <Loader2 size={16} className="animate-spin" /> : null}
+                Bevestigen
+                <ArrowRight size={16} />
+              </Button>
+            </div>
+          )}
+
+          {panelMode === "reject" && (
+            <div className="border-t border-border pt-5 space-y-4">
+              <p className="text-sm font-semibold text-foreground">Je wijst deze casus af</p>
+              <p className="text-xs text-muted-foreground">Kies een reden en geef een toelichting — dit is verplicht voor kwaliteit van matching.</p>
+
+              <RadioGroup
+                value={rejectCode || undefined}
+                onValueChange={v => setRejectCode(v as RejectionReasonCode)}
+                className="space-y-2"
+              >
+                {STRUCTURED_REJECTION_OPTIONS.map(opt => (
+                  <div key={opt.code} className="flex items-start gap-3">
+                    <RadioGroupItem value={opt.code} id={`${caseItem.id}-${opt.code}`} className="mt-1" />
+                    <Label htmlFor={`${caseItem.id}-${opt.code}`} className="font-normal cursor-pointer leading-snug">
+                      {opt.label}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+
+              {rejectCode === "andere_reden" && (
+                <div className="space-y-1.5 pl-1">
+                  <Label className="text-xs text-muted-foreground">Toelichting bij &apos;Anders&apos;</Label>
+                  <input
+                    type="text"
+                    value={rejectAndersDetail}
+                    onChange={e => setRejectAndersDetail(e.target.value)}
+                    className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50"
+                    placeholder="Korte specificatie..."
+                  />
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor={`rej-comm-${caseItem.id}`} className="text-xs font-semibold text-muted-foreground">
+                  Toelichting <span className="text-red-400">*</span>
+                </Label>
+                <textarea
+                  id={`rej-comm-${caseItem.id}`}
+                  value={rejectComment}
+                  onChange={e => setRejectComment(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-primary/50 resize-none"
+                  placeholder="Leg kort uit wat dit betekent voor planning en matching..."
+                />
+                {rejectComment.length > 0 && rejectComment.trim().length < 10 && (
+                  <p className="text-xs text-red-400">Minimaal 10 tekens — anders is de feedback niet bruikbaar.</p>
+                )}
+              </div>
+
+              <Button
+                variant="outline"
+                className="gap-2 border-red-500/40 text-red-200 hover:bg-red-500/10"
+                disabled={!rejectFormValid || submitting}
+                onClick={() => setRejectConfirmOpen(true)}
+              >
+                Afwijzen
+                <ArrowRight size={16} />
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -519,6 +892,8 @@ function ProviderView({
 }: ProviderViewProps) {
   const [decisionModal, setDecisionModal] = useState<DecisionModalState>(null);
   const [acceptedCaseIds, setAcceptedCaseIds] = useState<Set<string>>(new Set());
+  const [rejectedCaseIds, setRejectedCaseIds] = useState<Set<string>>(new Set());
+  const [focusToken, setFocusToken] = useState(0);
 
   const pendingCases = useMemo(() => {
     const query = searchQuery.toLowerCase();
@@ -530,26 +905,24 @@ function ProviderView({
       });
   }, [cases, searchQuery]);
 
-  const handleAccept = async (caseId: string) => {
-    try {
-      await submitDecision(caseId, { status: "ACCEPTED" });
-      setAcceptedCaseIds(prev => new Set([...prev, caseId]));
-    } catch {
-      // submitError is set in the hook
-    }
+  const activeQueue = useMemo(
+    () => pendingCases.filter(c => !acceptedCaseIds.has(c.id) && !rejectedCaseIds.has(c.id)),
+    [pendingCases, acceptedCaseIds, rejectedCaseIds],
+  );
+
+  const doneCases = useMemo(() => {
+    const ids = [...acceptedCaseIds, ...rejectedCaseIds].filter(id =>
+      pendingCases.some(c => c.id === id),
+    );
+    return pendingCases.filter(c => ids.includes(c.id));
+  }, [pendingCases, acceptedCaseIds, rejectedCaseIds]);
+
+  const handleNextCase = () => {
+    setFocusToken(t => t + 1);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Modals */}
-      {decisionModal?.type === "reject" && (
-        <RejectionModal
-          caseId={decisionModal.caseId}
-          onClose={() => setDecisionModal(null)}
-          onConfirm={(payload) => submitDecision(decisionModal.caseId, payload)}
-          submitting={submitting}
-        />
-      )}
+    <>
       {decisionModal?.type === "info_request" && (
         <InfoRequestModal
           caseId={decisionModal.caseId}
@@ -559,219 +932,117 @@ function ProviderView({
         />
       )}
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
-        <p className="text-sm text-muted-foreground">
-          Beoordeel inkomende casusverzoeken van gemeenten. Accepteer / wijs af of vraag meer informatie op.
-        </p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Open verzoeken</p>
-          <p className="text-2xl font-semibold text-amber-400">{pendingCases.length}</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Geaccepteerd</p>
-          <p className="text-2xl font-semibold text-green-400">{acceptedCaseIds.size}</p>
-        </div>
-        <div className="rounded-2xl border bg-card p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-1">Gem. wachttijd</p>
-          <p className="text-2xl font-semibold text-foreground">
-            {pendingCases.length > 0
-              ? Math.round(pendingCases.reduce((sum, c) => sum + c.wachttijd, 0) / pendingCases.length)
-              : 0}
-            <span className="text-base font-normal text-muted-foreground ml-1">dagen</span>
-          </p>
-        </div>
-      </div>
-
-      {/* Submit error */}
-      {submitError && (
-        <div className="flex items-start gap-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-          <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
-          <div className="flex-1">
-            <p className="text-sm text-foreground">{submitError}</p>
-          </div>
-          <button onClick={clearSubmitError} className="text-muted-foreground hover:text-foreground">
-            <XCircle size={16} />
-          </button>
-        </div>
-      )}
-
-      {/* Search */}
-      <div className="rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-        <Search className="text-muted-foreground shrink-0" size={18} />
-        <Input
-          type="text"
-          placeholder="Zoek op casus-ID, regio..."
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground"
-        />
-      </div>
-
-      {/* States */}
-      {loading && (
-        <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">
-          Verzoeken laden…
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Verzoeken konden niet geladen worden</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
-        </div>
-      )}
-
-      {!loading && !error && pendingCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <CheckCircle2 size={32} className="mx-auto text-green-400 opacity-60" />
-          <p className="text-lg font-semibold text-foreground">Geen openstaande verzoeken</p>
-          <p className="text-sm text-muted-foreground">
-            Nieuwe casusverzoeken van gemeenten verschijnen hier.
-          </p>
-          {onNavigateToCasussen && (
-            <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn casussen</Button>
-          )}
-        </div>
-      )}
-
-      {!loading && !error && pendingCases.length > 0 && (
-        <div className="space-y-4">
-          {pendingCases.map((caseItem) => {
-            const isAccepted = acceptedCaseIds.has(caseItem.id);
-
-            if (isAccepted) {
-              return (
-                <div key={caseItem.id} className="rounded-2xl border border-green-500/25 bg-green-500/5 p-5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 size={20} className="text-green-400" />
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{caseItem.id} — Geaccepteerd</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          Gemeente wordt geïnformeerd. Plaatsing en intake volgen.
-                        </p>
-                      </div>
-                    </div>
-                    <Button size="sm" variant="ghost" className="gap-1.5 text-primary" onClick={() => onCaseClick(caseItem.id)}>
-                      Bekijk casus <ArrowRight size={13} />
-                    </Button>
-                  </div>
-                </div>
-              );
+      <CarePageTemplate
+        header={
+          <CareUnifiedHeader
+            title="Beoordeling door aanbieder"
+            subtitle="Afwijzing zonder reden = systeemfout. Gestructureerde feedback verbetert matching en beslissingen."
+            metric={
+              <CareMetricBadge>
+                {activeQueue.length} open
+                {activeQueue.length > 0
+                  ? ` · gem. ${Math.round(activeQueue.reduce((sum, c) => sum + c.wachttijd, 0) / activeQueue.length)}d in wachtrij`
+                  : ""}
+              </CareMetricBadge>
             }
+          />
+        }
+        filters={
+          <CareSearchFiltersBar
+            searchValue={searchQuery}
+            onSearchChange={onSearchChange}
+            searchPlaceholder="Zoek op casus-ID, regio..."
+          />
+        }
+      >
+        {submitError && (
+          <div className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+            <AlertTriangle size={16} className="text-red-400 mt-0.5 shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm text-foreground">{submitError}</p>
+            </div>
+            <button type="button" onClick={clearSubmitError} className="text-muted-foreground hover:text-foreground">
+              <XCircle size={16} />
+            </button>
+          </div>
+        )}
 
-            return (
-              <div key={caseItem.id} className="rounded-2xl border bg-card p-5 space-y-4">
-                {/* Case header */}
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-sm font-semibold text-foreground">{caseItem.id}</p>
-                      <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${urgencyBadgeClass(caseItem.urgency)}`}>
-                        {urgencyLabel(caseItem.urgency)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{caseItem.title || caseItem.regio}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs text-muted-foreground">Regio</p>
-                    <p className="text-sm font-medium text-foreground">{caseItem.regio}</p>
-                  </div>
+        {loading && (
+          <CareEmptyState title="Verzoeken laden…" copy="De wachtrij wordt opgebouwd." />
+        )}
+
+        {!loading && error && (
+          <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+        )}
+
+        {!loading && !error && pendingCases.length === 0 && (
+          <CareEmptyState
+            title="Geen openstaande verzoeken"
+            copy="Nieuwe casusverzoeken van gemeenten verschijnen hier."
+            action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn casussen</Button> : undefined}
+          />
+        )}
+
+        {!loading && !error && pendingCases.length > 0 && (
+          <div className="space-y-8">
+            {activeQueue.length > 0 && (
+              <section className="space-y-3" key={focusToken}>
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Actieve beoordeling
+                </p>
+                <ProviderReviewCaseCard
+                  caseItem={activeQueue[0]}
+                  submitting={submitting}
+                  submitDecision={submitDecision}
+                  onCaseClick={onCaseClick}
+                  onRequestInfo={() => setDecisionModal({ type: "info_request", caseId: activeQueue[0].id })}
+                  outcome={null}
+                  onOutcome={(type, caseId) => {
+                    if (type === "accepted") {
+                      setAcceptedCaseIds(prev => new Set([...prev, caseId]));
+                    } else {
+                      setRejectedCaseIds(prev => new Set([...prev, caseId]));
+                    }
+                  }}
+                  onNextCase={handleNextCase}
+                />
+              </section>
+            )}
+
+            {activeQueue.length === 0 && doneCases.length > 0 && (
+              <CareEmptyState
+                title="Wachtrij afgerond"
+                copy="Alle openstaande beoordelingen in dit overzicht zijn verwerkt."
+                action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn casussen</Button> : undefined}
+              />
+            )}
+
+            {doneCases.length > 0 && (
+              <section className="space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Verwerkte casussen (dit overzicht)
+                </p>
+                <div className="space-y-3">
+                  {doneCases.map(c => (
+                    <ProviderReviewCaseCard
+                      key={c.id}
+                      caseItem={c}
+                      submitting={false}
+                      submitDecision={submitDecision}
+                      onCaseClick={onCaseClick}
+                      onRequestInfo={() => setDecisionModal({ type: "info_request", caseId: c.id })}
+                      outcome={acceptedCaseIds.has(c.id) ? "accepted" : "rejected"}
+                      onOutcome={() => { /* read-only success state */ }}
+                      onNextCase={handleNextCase}
+                    />
+                  ))}
                 </div>
-
-                {/* Case context */}
-                <div className="grid grid-cols-3 gap-4 rounded-xl border border-border bg-muted/20 p-3">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Zorgtype</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5">{caseItem.zorgtype}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Wachttijd</p>
-                    <p className="text-sm font-medium text-foreground mt-0.5">{caseItem.wachttijd} dagen</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Samenvatting</p>
-                    <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">
-                      {caseItem.systemInsight || "Geen samenvatting beschikbaar"}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Risk signals */}
-                {caseItem.problems.length > 0 && (
-                  <div className="space-y-1.5">
-                    {caseItem.problems.map((problem) => (
-                      <div key={problem.type} className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-3 py-2">
-                        <AlertTriangle size={13} className="text-amber-400 shrink-0" />
-                        <span className="text-xs text-foreground">{problem.label}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Separator */}
-                <div className="border-t border-border pt-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-3">
-                    Uw beslissing
-                  </p>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Button
-                      size="sm"
-                      className="gap-1.5 bg-green-600 hover:bg-green-700 text-white"
-                      onClick={() => handleAccept(caseItem.id)}
-                      disabled={submitting}
-                    >
-                      {submitting ? (
-                        <Loader2 size={13} className="animate-spin" />
-                      ) : (
-                        <CheckCircle2 size={13} />
-                      )}
-                      Accepteren
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 border-blue-500/30 text-blue-400 hover:bg-blue-500/10 hover:border-blue-500/50"
-                      onClick={() => setDecisionModal({ type: "info_request", caseId: caseItem.id })}
-                      disabled={submitting}
-                    >
-                      <MessageSquare size={13} />
-                      Meer info
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="gap-1.5 border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
-                      onClick={() => setDecisionModal({ type: "reject", caseId: caseItem.id })}
-                      disabled={submitting}
-                    >
-                      <XCircle size={13} />
-                      Afwijzen
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="gap-1.5 text-muted-foreground hover:text-foreground ml-auto"
-                      onClick={() => onCaseClick(caseItem.id)}
-                    >
-                      Volledig dossier
-                      <ArrowRight size={13} />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
+              </section>
+            )}
+          </div>
+        )}
+      </CarePageTemplate>
+    </>
   );
 }
 

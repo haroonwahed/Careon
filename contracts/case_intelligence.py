@@ -764,7 +764,7 @@ def detect_risk_signals(case_data: Dict[str, Any]) -> List[Dict[str, str]]:
         signals.append(
             {
                 "code": "rematch_recommended",
-                "label": "Her-match aanbevolen",
+                    "label": "Her-match",
                 "message": "Providerreactie blokkeert intake-voortgang.",
                 "action": "Herstart matching met alternatieve aanbieders.",
             }

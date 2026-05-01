@@ -2,7 +2,8 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { RegiekamerDecisionOverview } from "../../lib/regiekamerDecisionOverview";
-import { RegiekamerControlCenter } from "./RegiekamerControlCenter";
+import { expectRegiekamerMode } from "../../test/utils/modeGuards";
+import { SystemAwarenessPage } from "./SystemAwarenessPage";
 
 const mockUseRegiekamerDecisionOverview = vi.fn();
 
@@ -144,7 +145,7 @@ function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): Regi
   };
 }
 
-describe("RegiekamerControlCenter", () => {
+describe("SystemAwarenessPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -157,12 +158,36 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Regiekamer" })).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-summary-active")).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-summary-critical")).toHaveTextContent("1");
     expect(screen.getByTestId("regiekamer-summary-alerts")).toHaveTextContent("1");
+  });
+
+  it("enforces regiekamer screen responsibility boundaries", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview(),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    expectRegiekamerMode();
+    expect(screen.getByTestId("regiekamer-summary-active")).toHaveTextContent("Casussen actief");
+    expect(screen.getByTestId("regiekamer-summary-critical")).toHaveTextContent("Geblokkeerd");
+    expect(screen.getByTestId("regiekamer-summary-alerts")).toHaveTextContent("Risico's");
+    expect(screen.getByTestId("regiekamer-summary-sla")).toHaveTextContent("SLA");
+    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
+    expect(screen.getByText(/casussen met kritieke blokkade|casussen wachten langer dan 7 dagen/i)).toBeInTheDocument();
+
+    expect(screen.queryByText("Volgende stap")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Processtatus|Process status/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Genereer samenvatting" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
   });
 
   it("renders the priority worklist in score order", () => {
@@ -173,15 +198,15 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     const rows = screen.getAllByTestId("regiekamer-worklist-item");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Casus A");
-    expect(rows[0]).toHaveTextContent("Prioriteitsscore");
+    expect(rows[0]).toHaveTextContent("Matching");
   });
 
-  it("renders probleem, impact, eigenaar en vereiste actie on each worklist card", () => {
+  it("renders compact card content on each worklist card", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -189,16 +214,36 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     const first = screen.getAllByTestId("regiekamer-worklist-item")[0];
-    expect(within(first).getByText("Probleem")).toBeInTheDocument();
-    expect(within(first).getByText("Impact")).toBeInTheDocument();
-    expect(within(first).getByText("Eigenaar")).toBeInTheDocument();
-    expect(within(first).getByText("Vereiste actie")).toBeInTheDocument();
+    expect(within(first).getByText("Casus A")).toBeInTheDocument();
     expect(first).toHaveTextContent("Gemeente");
-    expect(first).toHaveTextContent("Stuur naar aanbieder");
-    expect(first).toHaveTextContent("Samenvatting is compleet.");
+    expect(first).toHaveTextContent("Samenvatting ontbreekt");
+    expect(within(first).getByRole("button", { name: /Stuur naar aanbieder/i })).toBeInTheDocument();
+  });
+
+  it("shows backend intake-delay attention row when totals indicate delays", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview({
+        totals: {
+          active_cases: 3,
+          critical_blockers: 1,
+          high_priority_alerts: 1,
+          provider_sla_breaches: 1,
+          repeated_rejections: 1,
+          intake_delays: 2,
+        },
+      }),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    expect(screen.getByText(/2 casussen met vertraagde of ontbrekende intake/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk intake" })).toBeInTheDocument();
   });
 
   it("filters the worklist client-side", async () => {
@@ -210,19 +255,20 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
+    await user.click(screen.getByRole("button", { name: /Meer filters/i }));
     await user.selectOptions(screen.getByRole("combobox", { name: "Prioriteit" }), "critical");
     expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus A")).toBeInTheDocument();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Prioriteit" }), "all");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Issue type" }), "intake");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Type" }), "intake");
     expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus C")).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByRole("combobox", { name: "Issue type" }), "all");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Rol ownership" }), "regie");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Type" }), "all");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Rol" }), "regie");
     expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus B")).toBeInTheDocument();
   });
@@ -245,7 +291,7 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     expect(screen.getByText("Geen actieve casussen.")).toBeInTheDocument();
   });
@@ -286,7 +332,7 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     expect(screen.getByText("Geen signalen.")).toBeInTheDocument();
     expect(screen.getByText("De keten loopt zonder blokkades.")).toBeInTheDocument();
@@ -301,9 +347,9 @@ describe("RegiekamerControlCenter", () => {
       refetch: vi.fn(),
     });
 
-    render(<RegiekamerControlCenter onCaseClick={onCaseClick} />);
+    render(<SystemAwarenessPage onCaseClick={onCaseClick} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: "Bekijk detail" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Stuur naar aanbieder/i })[0]);
 
     expect(onCaseClick).toHaveBeenCalledWith("101");
   });

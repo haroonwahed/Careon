@@ -47,7 +47,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
       case "afgerond":
         return { label: "Afgesloten", color: "text-muted-foreground" };
       default:
-        return { label: "Open", color: "text-muted-foreground" };
+        return { label: "Openstaand", color: "text-muted-foreground" };
     }
   };
 

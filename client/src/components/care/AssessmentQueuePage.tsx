@@ -1,7 +1,14 @@
 import { useMemo, useState } from "react";
-import { ArrowRight, ClipboardCheck, Search } from "lucide-react";
+import { ArrowRight, ClipboardCheck } from "lucide-react";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
+import { CareEmptyState } from "./CareSurface";
+import {
+  CareContextHint,
+  CareMetricBadge,
+  CarePageTemplate,
+  CareSearchFiltersBar,
+  CareUnifiedHeader,
+} from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { buildWorkflowCases } from "../../lib/workflowUi";
@@ -14,57 +21,73 @@ interface AssessmentQueuePageProps {
 export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: AssessmentQueuePageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUrgency, setSelectedUrgency] = useState("all");
+  const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const { cases, loading, error, refetch } = useCases({ q: searchQuery });
   const { providers } = useProviders({ q: "" });
 
   const queueCases = useMemo(() => {
     return buildWorkflowCases(cases, providers)
-      .filter((item) => item.phase === "intake" || item.phase === "beoordeling")
+      .filter((item) => item.phase === "intake" || item.phase === "provider_beoordeling")
       .filter((item) => selectedUrgency === "all" || item.urgency === selectedUrgency)
       .sort((left, right) => right.daysInCurrentPhase - left.daysInCurrentPhase);
   }, [cases, providers, selectedUrgency]);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-2">Beoordeling door aanbieder</h1>
-        <p className="text-sm text-muted-foreground">Wachtrij voor acceptatie, afwijzing of info.</p>
-      </div>
+    <CarePageTemplate
+      header={
+        <CareUnifiedHeader
+          title="Beoordeling door aanbieder"
+          subtitle="Open voor besluit."
+          metric={
+            <CareMetricBadge>
+              {queueCases.length} {queueCases.length === 1 ? "casus in wachtrij" : "casussen in wachtrij"}
+            </CareMetricBadge>
+          }
+        />
+      }
+      filters={
+        <CareSearchFiltersBar
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Zoek casus, cliënt of regio..."
+          showSecondaryFilters={showSecondaryFilters}
+          onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+          secondaryFilters={
+            <label className="block max-w-xs text-xs text-muted-foreground">
+              <span className="mb-1 block font-medium uppercase tracking-[0.08em]">Urgentie</span>
+              <select
+                value={selectedUrgency}
+                onChange={(event) => setSelectedUrgency(event.target.value)}
+                className="h-10 w-full rounded-xl border border-border/70 bg-background px-3 text-sm text-foreground"
+              >
+                <option value="all">Alle urgentie</option>
+                <option value="critical">Kritiek</option>
+                <option value="warning">Hoog</option>
+                <option value="normal">Normaal</option>
+                <option value="stable">Laag</option>
+              </select>
+            </label>
+          }
+        />
+      }
+    >
+      {loading && <CareEmptyState title="Casussen laden…" copy="De beoordelingswachtrij wordt opgebouwd." />}
 
-      <div className="flex items-center gap-3">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-          <Search className="text-muted-foreground flex-shrink-0" size={18} />
-          <Input type="text" placeholder="Zoek op casus, cliënt of regio..." value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground" />
-        </div>
-        <select value={selectedUrgency} onChange={(event) => setSelectedUrgency(event.target.value)} className="w-40 px-3 py-3 pr-10 appearance-none bg-card border border-border rounded-2xl text-sm text-foreground">
-          <option value="all">Alle urgentie</option>
-          <option value="critical">Kritiek</option>
-          <option value="warning">Hoog</option>
-          <option value="normal">Normaal</option>
-          <option value="stable">Laag</option>
-        </select>
-      </div>
-
-      {loading && <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Casussen laden…</div>}
       {!loading && error && (
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
-          <p className="text-base font-semibold text-foreground">Laden mislukt</p>
-          <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" onClick={refetch}>Opnieuw</Button>
-        </div>
+        <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && queueCases.length === 0 && (
-        <div className="rounded-2xl border bg-card p-12 text-center space-y-3">
-          <p className="text-lg font-semibold text-foreground">Geen open beoordelingen</p>
-          <p className="text-sm text-muted-foreground">Verschijnt zodra samenvatting klaar is.</p>
-          <Button onClick={() => onNavigateToCasussen?.()}>Ga naar casussen</Button>
-        </div>
+        <CareEmptyState
+          title="Geen open beoordelingen"
+          copy="Zodra casussen intake of aanbieder-beoordeling ingaan, verschijnen ze hier."
+          action={<Button onClick={() => onNavigateToCasussen?.()}>Ga naar werkvoorraad</Button>}
+        />
       )}
 
       {!loading && !error && queueCases.length > 0 && (
-        <div className="rounded-2xl border bg-card overflow-hidden">
-          <div className="grid grid-cols-[1.1fr_1.4fr_80px_1fr_110px_150px_170px] gap-4 border-b border-border px-5 py-4 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+        <div className="rounded-2xl border border-border/70 bg-card/75 overflow-hidden">
+          <div className="grid grid-cols-[1fr_1.2fr_70px_0.9fr_90px_110px_132px] gap-3 border-b border-border/70 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <span>Casus</span>
             <span>Cliënt</span>
             <span>Leeftijd</span>
@@ -73,24 +96,32 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
             <span>Wachttijd</span>
             <span className="text-right">Actie</span>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-border/70">
             {queueCases.map((item) => (
-              <div key={item.id} className="grid grid-cols-[1.1fr_1.4fr_80px_1fr_110px_150px_170px] gap-4 px-5 py-4 items-center transition-colors hover:bg-muted/20">
+              <div
+                key={item.id}
+                className="grid grid-cols-[1fr_1.2fr_70px_0.9fr_90px_110px_132px] gap-3 px-4 py-3 items-center transition-colors hover:bg-muted/15"
+              >
                 <div>
                   <p className="text-sm font-semibold text-foreground">{item.id}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.phaseLabel}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.phaseLabel}</p>
                 </div>
                 <div>
                   <p className="text-sm font-medium text-foreground">{item.clientLabel}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{item.tags[0] ?? "Casus"}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{item.tags[0] ?? "Casus"}</p>
                 </div>
                 <p className="text-sm text-foreground">{item.clientAge}</p>
                 <p className="text-sm text-foreground">{item.region}</p>
                 <p className="text-sm text-foreground">{item.urgencyLabel}</p>
                 <p className="text-sm text-foreground">{item.daysInCurrentPhase} dagen</p>
                 <div className="text-right">
-                  <Button size="sm" variant="ghost" className="gap-2 text-primary hover:bg-primary/10 hover:text-primary" onClick={() => onCaseClick?.(item.id)}>
-                    Open casus
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="gap-2 text-primary hover:bg-primary/10 hover:text-primary"
+                    onClick={() => onCaseClick?.(item.id)}
+                  >
+                    Openen
                     <ArrowRight size={14} />
                   </Button>
                 </div>
@@ -100,17 +131,11 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         </div>
       )}
 
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="flex items-start gap-4">
-            <div className="icon-surface flex h-10 w-10 items-center justify-center rounded-full border border-border">
-              <ClipboardCheck className="text-primary" size={20} />
-            </div>
-            <div>
-            <p className="font-semibold text-foreground mb-1">Zelfde casusflow</p>
-            <p className="text-sm text-muted-foreground">Beoordeling blijft gekoppeld aan de casus.</p>
-            </div>
-          </div>
-        </div>
-    </div>
+      <CareContextHint
+        icon={<ClipboardCheck className="text-primary" size={20} />}
+        title="Zelfde casusflow"
+        copy="Beoordeling blijft aan de casus gekoppeld."
+      />
+    </CarePageTemplate>
   );
 }

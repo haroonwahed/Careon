@@ -123,7 +123,7 @@ SECRET_KEY = os.getenv(
 )
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = _bool_env('DJANGO_DEBUG', default=_bool_env('DEBUG', default=True))
+DEBUG = _bool_env('DJANGO_DEBUG', default=_bool_env('DEBUG', default=False))
 ENABLE_DJANGO_BROWSER_RELOAD = _bool_env('ENABLE_DJANGO_BROWSER_RELOAD', default=False)
 
 ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', default=['*'])
@@ -335,6 +335,7 @@ if SSO_ENABLED:
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True
 
 QUIET_TEST_LOGS = os.getenv('DJANGO_TEST_LOG_LEVEL', '').strip().upper()
 if not QUIET_TEST_LOGS and any(arg == 'test' for arg in sys.argv):

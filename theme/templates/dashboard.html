@@ -7,11 +7,11 @@
     <header class="ds-list-header">
         <div>
             <h1 class="page-title">Regiekamer</h1>
-            <p class="page-subtitle">Command center voor zorgtoewijzing en doorstroom</p>
+            <p class="page-subtitle">Regie op casussen en doorstroom</p>
         </div>
         <div class="ds-list-actions">
             <a href="{% url 'careon:reports_dashboard' %}" class="btn btn-secondary">Rapportages</a>
-            <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Open volledige queue</a>
+            <a href="{% url 'careon:case_list' %}" class="btn btn-secondary">Volledige lijst</a>
             <a href="{% url 'careon:case_create' %}" class="btn btn-primary">Nieuwe casus</a>
         </div>
     </header>
@@ -31,7 +31,7 @@
     <div class="command-grid">
         <section class="ds-card" data-row-template-class="queue-row">
             <div class="ds-detail-header">
-                <h2 class="ds-card-title">Priority Case Queue</h2>
+                <h2 class="ds-card-title">Prioriteitslijst</h2>
                 <span class="ds-note-text">{{ total_active_cases }} actief</span>
             </div>
 
@@ -41,7 +41,7 @@
                 <article class="queue-row{% if selected_case_id == row.id %} is-selected{% endif %}">
                     <div class="queue-head">
                         <a href="?case={{ row.id }}" class="queue-title">{{ row.title }}</a>
-                        <a href="{{ row.case_href }}" class="btn btn-ghost">Open case</a>
+                        <a href="{{ row.case_href }}" class="btn btn-ghost">Open casus</a>
                     </div>
 
                     <div class="queue-meta">
@@ -57,16 +57,16 @@
 
                     <div class="queue-next">
                         <div>
-                            <div class="queue-next-label">Next best action</div>
+                            <div class="queue-next-label">Volgende actie</div>
                             <strong>{{ row.next_action.label }}</strong>
                         </div>
                         <a href="{{ row.next_action.href }}" class="btn btn-primary">{{ row.next_action.label }}</a>
                     </div>
 
                     <div class="ds-list-actions">
-                        <a href="{{ row.quick_assign_href }}" class="btn btn-secondary">Assign</a>
-                        <a href="{{ row.quick_escalate_href }}" class="btn btn-secondary">Escalate</a>
-                        <a href="{{ row.quick_review_href }}" class="btn btn-secondary">Review</a>
+                        <a href="{{ row.quick_assign_href }}" class="btn btn-secondary">Toewijzen</a>
+                        <a href="{{ row.quick_escalate_href }}" class="btn btn-secondary">Opschalen</a>
+                        <a href="{{ row.quick_review_href }}" class="btn btn-secondary">Beoordelen</a>
                     </div>
                 </article>
                 {% endfor %}
@@ -78,7 +78,7 @@
 
         <section class="ds-card">
             <div class="ds-detail-header">
-                <h2 class="ds-card-title">Active Case Panel</h2>
+                <h2 class="ds-card-title">Actieve casus</h2>
                 <span class="ds-note-text">Laatst bijgewerkt: {{ dashboard_updated_at|date:"d-m-Y H:i" }}</span>
             </div>
 
@@ -104,7 +104,7 @@
 
             <div class="ds-detail-grid-2 command-detail-grid">
                 <div class="ds-card">
-                    <h3 class="ds-card-title">Key details</h3>
+                    <h3 class="ds-card-title">Kern</h3>
                     <dl class="ds-field-list">
                         <div class="ds-field-item">
                             <dt>Casus</dt>
@@ -130,7 +130,7 @@
                 </div>
 
                 <div class="ds-card">
-                    <h3 class="ds-card-title">Timeline preview</h3>
+                    <h3 class="ds-card-title">Tijdlijn</h3>
                     <div class="timeline-list">
                         {% for item in active_case.timeline %}
                         <div class="timeline-item">
@@ -143,11 +143,11 @@
             </div>
 
             <div class="ds-card command-match-card">
-                <h3 class="ds-card-title">Match status</h3>
+                <h3 class="ds-card-title">Matchstatus</h3>
                 <p class="ds-note-text--strong">{{ active_case.match_status }}</p>
                 <div class="ds-list-actions command-match-actions">
                     <a href="{{ active_case.next_action.href }}" class="btn btn-primary">{{ active_case.next_action.label }}</a>
-                    <a href="{{ active_case.case_href }}" class="btn btn-secondary">Open case detail</a>
+                    <a href="{{ active_case.case_href }}" class="btn btn-secondary">Open casus</a>
                 </div>
             </div>
             {% else %}
@@ -158,7 +158,7 @@
         <aside class="ds-detail-sections">
             <section class="ds-card">
                 <div class="ds-detail-header">
-                    <h2 class="ds-card-title">Bottlenecks</h2>
+                    <h2 class="ds-card-title">Blokkades</h2>
                     <span class="ds-note-text">Top 3</span>
                 </div>
                 {% if bottleneck_signals %}
@@ -177,7 +177,7 @@
 
             <section class="ds-card">
                 <div class="ds-detail-header">
-                    <h2 class="ds-card-title">Capacity Signals</h2>
+                    <h2 class="ds-card-title">Capaciteitssignalen</h2>
                     <span class="ds-note-text">Aanbieders en regio</span>
                 </div>
                 {% if capacity_signals %}

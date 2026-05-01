@@ -1,22 +1,33 @@
 import { useMemo, useState, type ReactNode } from "react";
 import {
-  Search,
-  SlidersHorizontal,
   AlertTriangle,
   Info,
   XCircle,
-  ArrowRight,
   Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { cn } from "../ui/utils";
+import {
+  CareDominantStatus,
+  CareMetaChip,
+  CarePageTemplate,
+  CarePrimaryList,
+  CareSearchFiltersBar,
+  CareUnifiedHeader,
+  CareWorkRow,
+} from "./CareUnifiedPage";
+import { CareEmptyState } from "./CareSurface";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useAssessments } from "../../hooks/useAssessments";
 import { useRegions } from "../../hooks/useRegions";
 import { buildWorkflowCases } from "../../lib/workflowUi";
+import type { WorkflowCaseView } from "../../lib/workflowUi";
 
 type SignalSeverity = "critical" | "warning" | "info";
-type WorkflowTarget = "casussen" | "beoordelingen" | "matching" | "plaatsingen" | "zorgaanbieders";
+
+/** Nav targets from signals: workflow URLs plus zorgaanbieders network view. */
+type SignalNavigateTarget = WorkflowCaseView["nextBestActionUrl"] | "zorgaanbieders";
 
 interface ActionSignal {
   id: string;
@@ -27,13 +38,13 @@ interface ActionSignal {
   casusReference: string | null;
   actions: Array<
     | { kind: "open_case"; label: string; caseId: string }
-    | { kind: "navigate"; label: string; target: WorkflowTarget }
+    | { kind: "navigate"; label: string; target: SignalNavigateTarget }
   >;
 }
 
 interface SignalenPageProps {
   onOpenCase?: (caseId: string) => void;
-  onNavigateToWorkflow?: (target: WorkflowTarget) => void;
+  onNavigateToWorkflow?: (target: SignalNavigateTarget) => void;
 }
 
 const PHASE_LABELS: Record<string, string> = {
@@ -55,9 +66,96 @@ function severityLabel(severity: SignalSeverity): "kritiek" | "waarschuwing" | "
   }
 }
 
+function dominantToneClass(severity: SignalSeverity): string {
+  switch (severity) {
+    case "critical":
+      return "border-destructive/40 bg-destructive/15 text-destructive";
+    case "warning":
+      return "border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200";
+    default:
+      return "border-border/70 bg-muted/25 text-muted-foreground";
+  }
+}
+
+function SignalSeverityIcon({ severity }: { severity: SignalSeverity }) {
+  switch (severity) {
+    case "critical":
+      return <XCircle size={16} className="text-red-400" />;
+    case "warning":
+      return <AlertTriangle size={16} className="text-amber-400" />;
+    default:
+      return <Info size={16} className="text-blue-400" />;
+  }
+}
+
+function SignalWorkRow({
+  signal,
+  onRunAction,
+}: {
+  signal: ActionSignal;
+  onRunAction: (action: ActionSignal["actions"][number]) => void;
+}) {
+  const primary = signal.actions[0];
+  const secondary = signal.actions[1];
+  const accentTone = signal.severity === "critical" ? "critical" : signal.severity === "warning" ? "warning" : "neutral";
+
+  if (!primary) {
+    return null;
+  }
+
+  const openFromRow = () => {
+    onRunAction(primary);
+  };
+
+  return (
+    <CareWorkRow
+      testId="signalen-worklist-item"
+      leading={<SignalSeverityIcon severity={signal.severity} />}
+      title={signal.title}
+      context={signal.explanation}
+      status={
+        <CareDominantStatus className={cn("justify-center", dominantToneClass(signal.severity))}>
+          {severityLabel(signal.severity)}
+        </CareDominantStatus>
+      }
+      time={
+        signal.casusReference ? (
+          <CareMetaChip title={signal.casusReference}>
+            <span className="max-w-[200px] truncate">Casus: {signal.casusReference}</span>
+          </CareMetaChip>
+        ) : undefined
+      }
+      contextInfo={
+        secondary ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 shrink-0 px-2 text-xs"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRunAction(secondary);
+            }}
+          >
+            {secondary.label}
+          </Button>
+        ) : undefined
+      }
+      actionLabel={`${primary.label} →`}
+      onOpen={openFromRow}
+      onAction={(event) => {
+        event.stopPropagation();
+        onRunAction(primary);
+      }}
+      accentTone={accentTone}
+    />
+  );
+}
+
 export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSeverity, setSelectedSeverity] = useState<SignalSeverity | "all">("all");
+  const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
 
   const { cases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases({ q: "" });
   const { providers, loading: providersLoading, error: providersError, refetch: refetchProviders } = useProviders({ q: "" });
@@ -238,35 +336,19 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   const getSeverityIcon = (severity: SignalSeverity) => {
     switch (severity) {
       case "critical":
-        return <XCircle size={16} className="text-red-400" />;
+        return <XCircle size={18} className="text-red-400" />;
       case "warning":
-        return <AlertTriangle size={16} className="text-amber-400" />;
+        return <AlertTriangle size={18} className="text-amber-400" />;
       case "info":
-        return <Info size={16} className="text-blue-400" />;
+        return <Info size={18} className="text-blue-400" />;
     }
   };
 
-  const getSeverityColor = (severity: SignalSeverity) => {
-    switch (severity) {
-      case "critical":
-        return "border-l-red-500 bg-red-500/5";
-      case "warning":
-        return "border-l-amber-500 bg-amber-500/5";
-      case "info":
-        return "border-l-blue-500 bg-blue-500/5";
-    }
-  };
-
-  const getBadgeClasses = (severity: SignalSeverity) => {
-    switch (severity) {
-      case "critical":
-        return "bg-red-500/10 text-red-300 border-red-500/30";
-      case "warning":
-        return "bg-amber-500/10 text-amber-300 border-amber-500/30";
-      default:
-        return "bg-blue-500/10 text-blue-300 border-blue-500/30";
-    }
-  };
+  const summaryCardClass = (selected: boolean, selectedRing: string) =>
+    cn(
+      "rounded-2xl border border-border/70 bg-card/75 p-4 text-left transition-all hover:scale-[1.02]",
+      selected ? selectedRing : "",
+    );
 
   const renderSummaryCard = (
     key: SignalSeverity,
@@ -277,10 +359,9 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   ) => (
     <button
       key={key}
+      type="button"
       onClick={() => setSelectedSeverity(selectedSeverity === key ? "all" : key)}
-      className={`premium-card p-4 text-left transition-all hover:scale-[1.02] ${
-        selectedSeverity === key ? selectedClass : ""
-      }`}
+      className={summaryCardClass(selectedSeverity === key, selectedClass)}
     >
       <div className="mb-1 flex items-center justify-between">
         <p className="text-2xl font-bold text-foreground">{loading ? "—" : count}</p>
@@ -291,55 +372,50 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="mb-2 text-3xl font-semibold text-foreground">Signalen</h1>
-        <p className="text-muted-foreground">
-          Automatische detectie van problemen en afwijkingen · {loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}
-        </p>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        {renderSummaryCard(
-          "critical",
-          "Kritieke signalen",
-          criticalCount,
-          <XCircle size={18} className="text-red-400" />,
-          "border-2 border-red-500 shadow-lg shadow-red-500/20",
-        )}
-        {renderSummaryCard(
-          "warning",
-          "Waarschuwingen",
-          warningCount,
-          <AlertTriangle size={18} className="text-amber-400" />,
-          "border-2 border-amber-500 shadow-lg shadow-amber-500/20",
-        )}
-        {renderSummaryCard(
-          "info",
-          "Informatie",
-          infoCount,
-          <Info size={18} className="text-blue-400" />,
-          "border-2 border-blue-500 shadow-lg shadow-blue-500/20",
-        )}
-      </div>
-
-      <div className="flex gap-3">
-        <div className="relative flex-1">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Zoek signalen..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-11 w-full rounded-xl border-2 border-muted-foreground/20 bg-background pl-11 pr-4 text-foreground placeholder:text-muted-foreground focus:border-primary/50 focus:outline-none transition-colors"
+    <CarePageTemplate
+      className="pb-8"
+      header={
+        <CareUnifiedHeader
+          title="Signalen"
+          subtitle={`Automatische detectie van problemen en afwijkingen · ${loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}`}
+        />
+      }
+      filters={
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4 px-1">
+            {renderSummaryCard(
+              "critical",
+              "Kritieke signalen",
+              criticalCount,
+              <XCircle size={18} className="text-red-400" />,
+              "border-2 border-red-500 shadow-lg shadow-red-500/20",
+            )}
+            {renderSummaryCard(
+              "warning",
+              "Waarschuwingen",
+              warningCount,
+              <AlertTriangle size={18} className="text-amber-400" />,
+              "border-2 border-amber-500 shadow-lg shadow-amber-500/20",
+            )}
+            {renderSummaryCard(
+              "info",
+              "Informatie",
+              infoCount,
+              <Info size={18} className="text-blue-400" />,
+              "border-2 border-blue-500 shadow-lg shadow-blue-500/20",
+            )}
+          </div>
+          <CareSearchFiltersBar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoek signalen..."
+            showSecondaryFilters={showSecondaryFilters}
+            onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+            secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
           />
         </div>
-        <Button variant="outline" className="border-2 border-muted-foreground/20">
-          <SlidersHorizontal size={18} />
-          Meer filters
-        </Button>
-      </div>
-
+      }
+    >
       <div className="space-y-3">
         {loading && (
           <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
@@ -349,55 +425,39 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
         )}
 
         {error && (
-          <div className="premium-card space-y-2 p-6 text-center text-destructive">
-            <p>Kon signalen niet laden: {error}</p>
-            <Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>
-          </div>
+          <CareEmptyState
+            title="Kon signalen niet laden"
+            copy={error}
+            action={(
+              <Button variant="outline" size="sm" onClick={refetch}>
+                Opnieuw proberen
+              </Button>
+            )}
+          />
         )}
 
-        {!loading && !error && filteredSignals.map((signal) => (
-          <div key={signal.id} className={`premium-card border-l-4 p-4 ${getSeverityColor(signal.severity)}`}>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="mb-1 flex items-center gap-2">
-                  <h3 className="font-semibold text-foreground">{signal.title}</h3>
-                  <span className={`rounded border px-2 py-0.5 text-[11px] font-medium uppercase tracking-[0.06em] ${getBadgeClasses(signal.severity)}`}>
-                    {severityLabel(signal.severity)}
-                  </span>
-                </div>
-                {signal.casusReference && (
-                  <p className="mb-1 text-xs text-muted-foreground">Casus: {signal.casusReference}</p>
-                )}
-                <p className="text-sm text-muted-foreground">{signal.explanation}</p>
-              </div>
-
-              <div className="flex flex-shrink-0 items-center gap-2">
-                {signal.actions.slice(0, 2).map((action, index) => (
-                  <Button
-                    key={`${signal.id}-${index}`}
-                    size="sm"
-                    variant={index === 0 ? "default" : "outline"}
-                    className="gap-1"
-                    onClick={() => runAction(action)}
-                  >
-                    {action.label}
-                    <ArrowRight size={13} />
-                  </Button>
-                ))}
-                <div className="mt-0.5 hidden md:block">{getSeverityIcon(signal.severity)}</div>
-              </div>
-            </div>
+        {!loading && !error && filteredSignals.length > 0 && (
+          <div data-testid="signalen-worklist">
+            <CarePrimaryList>
+              {filteredSignals.map((signal) => (
+                <SignalWorkRow key={signal.id} signal={signal} onRunAction={runAction} />
+              ))}
+            </CarePrimaryList>
           </div>
-        ))}
+        )}
 
         {!loading && !error && filteredSignals.length === 0 && (
-          <div className="premium-card p-10 text-center">
-            <p className="text-base font-semibold text-foreground">Geen actieve signalen op dit moment</p>
-            <p className="mt-1 text-sm text-muted-foreground">De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging.</p>
-            <Button className="mt-4" onClick={() => onNavigateToWorkflow?.("casussen")}>Ga naar casussen</Button>
-          </div>
+          <CareEmptyState
+            title="Geen actieve signalen op dit moment"
+            copy="De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging."
+            action={(
+              <Button className="mt-2" onClick={() => onNavigateToWorkflow?.("casussen")}>
+                Ga naar casussen
+              </Button>
+            )}
+          />
         )}
       </div>
-    </div>
+    </CarePageTemplate>
   );
 }

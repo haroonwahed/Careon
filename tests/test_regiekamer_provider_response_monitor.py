@@ -125,10 +125,9 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Providerreactie monitor')
-        self.assertContains(response, 'Actiequeue aanbiederreacties')
-        self.assertContains(response, 'Eigenaar')
-        self.assertContains(response, 'Wacht')
-        self.assertContains(response, 'Escaleert over')
+        self.assertContains(response, 'Aanbieders')
+        self.assertContains(response, 'Wachtrij')
+        self.assertContains(response, 'open reacties')
         self.assertContains(response, 'Open plaatsing')
         self.assertContains(response, f"{reverse('careon:case_detail', kwargs={'pk': intake.pk})}?tab=plaatsing")
 
@@ -175,15 +174,15 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         response = self.client.get(reverse('careon:provider_response_monitor'))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Directe actie vereist')
+        self.assertContains(response, 'Actie nu')
         self.assertContains(response, 'Casus Escalatie Blok')
         self.assertContains(response, 'SLA FORCED_ACTION')
         self.assertContains(response, 'Eigenaar:')
         self.assertContains(response, 'Regievoerder')
         self.assertContains(response, 'Actie:')
-        self.assertContains(response, 'SLA-overschrijdingen')
-        self.assertContains(response, 'Escalatie vereist')
-        self.assertContains(response, 'Afgedwongen acties')
+        self.assertContains(response, 'Wachtrij')
+        self.assertContains(response, 'SLA FORCED_ACTION')
+        self.assertContains(response, 'SLA ON_TRACK')
 
     def test_monitor_row_recommendation_for_forced_action_is_critical(self):
         forced_intake = self._create_case('Casus Forced Urgentie')
@@ -281,7 +280,7 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         self.assertContains(response, 'prioriteit actief')
         self.assertContains(response, 'SLA FORCED_ACTION')
         self.assertContains(response, 'SLA OVERDUE')
-        self.assertContains(response, 'Directe actie vereist')
+        self.assertContains(response, 'Actie nu')
 
     def test_monitor_excludes_accepted_and_completed_case_items(self):
         accepted_intake = self._create_case('Casus Geaccepteerd')
@@ -565,7 +564,8 @@ class RegiekamerProviderResponseMonitorTests(TestCase):
         self.assertEqual(refreshed_row['status'], PlacementRequest.ProviderResponseStatus.PENDING)
         self.assertEqual(refreshed_row['age_days'], 0)
         self.assertIsNotNone(refreshed_row['resend_action'])
-        self.assertContains(response, 'Laatste aanvraag')
+        self.assertContains(response, 'Monitor voortgang')
+        self.assertContains(response, 'SLA ON_TRACK')
 
     def test_monitor_default_triage_sort_prioritizes_overdue_then_rematch_then_urgency_then_age(self):
         overdue_intake = self._create_case('Casus Overdue Laag', urgency=CaseIntakeProcess.Urgency.LOW)

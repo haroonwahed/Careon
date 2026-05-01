@@ -10,9 +10,15 @@ import { MatchingQueuePage } from "./MatchingQueuePage";
 interface MatchingPageWrapperProps {
   onNavigateToCasussen?: () => void;
   onNavigateToBeoordelingen?: () => void;
+  /** After waitlist proposal is saved, open case detail (e.g. `/care/cases/<id>/`). */
+  onNavigateToCaseDetail?: (caseId: string) => void;
 }
 
-export function MatchingPageWrapper({ onNavigateToCasussen, onNavigateToBeoordelingen }: MatchingPageWrapperProps) {
+export function MatchingPageWrapper({
+  onNavigateToCasussen,
+  onNavigateToBeoordelingen,
+  onNavigateToCaseDetail,
+}: MatchingPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const [matchConfirmed, setMatchConfirmed] = useState(false);
 
@@ -44,6 +50,7 @@ export function MatchingPageWrapper({ onNavigateToCasussen, onNavigateToBeoordel
         caseId={selectedCase}
         onBack={handleBack}
         onConfirmMatch={handleConfirmMatch}
+        onNavigateToCase={onNavigateToCaseDetail}
       />
     );
   }

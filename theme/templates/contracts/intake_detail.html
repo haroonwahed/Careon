@@ -89,34 +89,34 @@
     <section class="ds-card" data-shell-slot="decision-block">
         <div class="ds-detail-header">
             <h2 class="ds-card-title">Beslisblok</h2>
-            <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">In 3 seconden duidelijk</span>
+            <span class="rounded-full bg-blue-100 px-2.5 py-1 text-xs font-semibold text-blue-700">Kern</span>
         </div>
 
         {% with top_candidate=matching_preview_candidates|first %}
         <div class="ds-detail-grid-2">
             <article class="ds-card">
-                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Aanbevolen aanbieder</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-blue-700">Match</p>
                 {% if ready_for_matching and top_candidate %}
                 <h3 class="mt-1 text-2xl font-semibold ds-text-strong">{{ top_candidate.provider_name }}</h3>
-                <p class="mt-2 text-sm ds-text-secondary">{{ top_candidate.explanation.fit_summary }}</p>
+                <p class="mt-2 text-sm ds-text-secondary">{{ top_candidate.explanation.fit_summary|truncatechars:84 }}</p>
                 {% if top_candidate.decision_hint %}
-                <p class="mt-1 text-xs font-medium text-slate-600">Kernreden: {{ top_candidate.decision_hint }}</p>
+                <p class="mt-1 text-xs font-medium text-slate-600">Reden: {{ top_candidate.decision_hint|truncatechars:48 }}</p>
                 {% endif %}
 
                 <div class="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold">
                     {% if top_candidate.explanation.confidence == 'high' %}
-                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">Confidence: Hoog</span>
+                    <span class="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-700">Vertrouwen: Hoog</span>
                     {% elif top_candidate.explanation.confidence == 'medium' %}
-                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">Confidence: Medium</span>
+                    <span class="rounded-full bg-amber-100 px-2.5 py-1 text-amber-700">Vertrouwen: Midden</span>
                     {% else %}
-                    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700">Confidence: Laag</span>
+                    <span class="rounded-full bg-slate-200 px-2.5 py-1 text-slate-700">Vertrouwen: Laag</span>
                     {% endif %}
                     <span class="rounded-full bg-blue-100 px-2.5 py-1 text-blue-700">Fitscore {{ top_candidate.fit_score }}%</span>
                 </div>
 
                 {% if top_candidate.explanation.trade_offs or top_candidate.decision_trade_offs %}
-                <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-amber-700">Let op</p>
+                <details class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                    <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide text-amber-700">Details</summary>
                     <ul class="mt-2 space-y-1 text-sm text-amber-900">
                         {% for tradeoff in top_candidate.explanation.trade_offs %}
                         <li>- {{ tradeoff }}</li>
@@ -125,7 +125,7 @@
                         <li>- {{ tradeoff }}</li>
                         {% endfor %}
                     </ul>
-                </div>
+                </details>
                 {% endif %}
 
                 <div class="mt-4 grid gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -136,20 +136,20 @@
                         <input type="hidden" name="provider_id" value="{{ top_candidate.provider_id }}">
                         <input type="hidden" name="phase" value="{{ active_flow_stage }}">
                         <input type="hidden" name="next" value="{% url 'careon:case_detail' intake.pk %}?tab=matching&amp;phase={{ active_flow_stage }}">
-                        <button type="submit" class="btn btn-primary">Stuur naar aanbiederbeoordeling: {{ top_candidate.provider_name }}</button>
+                        <button type="submit" class="btn btn-primary">Naar aanbieder</button>
                     </form>
                     {% else %}
                     <a href="{{ matching_href }}" class="btn btn-primary">Open matchingbesluit</a>
                     {% endif %}
-                    <a href="{{ matching_href }}" class="btn btn-secondary">Bekijk alternatieven</a>
-                    <a href="{{ placement_href }}" class="btn btn-ghost">Opnieuw beoordelen</a>
+                    <a href="{{ matching_href }}" class="btn btn-secondary">Alternatieven</a>
+                    <a href="{{ placement_href }}" class="btn btn-ghost">Opnieuw</a>
                 </div>
                 {% else %}
                 <h3 class="mt-1 text-xl font-semibold ds-text-strong">Nog geen match</h3>
-                <p class="mt-2 text-sm ds-text-secondary">Werk beoordeling af.</p>
+                <p class="mt-2 text-sm ds-text-secondary">Beoordeling nodig.</p>
                 <div class="mt-3 flex flex-wrap items-center gap-2">
                     <a href="{{ assessment_href }}" class="btn btn-primary">{{ assessment_action_label }}</a>
-                    <a href="{{ matching_href }}" class="btn btn-secondary">Open matching</a>
+                    <a href="{{ matching_href }}" class="btn btn-secondary">Matching</a>
                 </div>
                 {% endif %}
             </article>
@@ -158,7 +158,7 @@
                 {% if provider_response_summary %}
                 <div class="ds-summary-strip">
                     <div class="ds-summary-item ds-summary-item--risk">
-                        <p class="ds-summary-label">SLA urgentie</p>
+                        <p class="ds-summary-label">SLA</p>
                         <p class="mt-1 text-sm font-semibold ds-text-strong">
                             {% if provider_response_summary.sla_state in 'OVERDUE|ESCALATED|FORCED_ACTION' %}
                             {{ provider_response_summary.sla_state }} - reactie vereist
@@ -171,7 +171,7 @@
                     </div>
                 </div>
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Provider status</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Status</p>
                     <p class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.status_label }}</p>
                     <p class="mt-1 text-xs ds-text-secondary">Laatste: {{ provider_response_summary.requested_at|date:"d-m-Y H:i"|default:"Nog geen actie" }}</p>
                     {% if provider_response_summary.action_deadline %}
@@ -181,7 +181,7 @@
                 {% else %}
                 <div class="ds-summary-strip">
                     <div class="ds-summary-item {% if not safe_to_proceed %}ds-summary-item--risk{% endif %}">
-                        <p class="ds-summary-label">SLA urgentie</p>
+                        <p class="ds-summary-label">SLA</p>
                         <p class="mt-1 text-sm font-semibold ds-text-strong">{% if safe_to_proceed %}Klaar{% else %}Blokkade{% endif %}</p>
                     </div>
                 </div>
@@ -189,7 +189,7 @@
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
                     <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Actie</p>
                     <p class="mt-1 text-sm font-semibold ds-text-strong">{{ next_action.label }}</p>
-                    <p class="mt-1 text-xs ds-text-secondary">{{ next_action.help }}</p>
+                    <p class="mt-1 text-xs ds-text-secondary">{{ next_action.help|truncatechars:64 }}</p>
                 </div>
             </aside>
         </div>
@@ -204,7 +204,7 @@
 
         <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
             <div class="rounded-lg border border-gray-200 bg-white p-3">
-                <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Providerreactie status</p>
+                <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Status</p>
                 {% if provider_response_summary %}
                 <p class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.status_label }}</p>
                 <p class="mt-1 text-xs ds-text-secondary">SLA {{ provider_response_summary.sla_state }} · Wacht {{ provider_response_summary.sla_hours_waiting }}u</p>
@@ -220,7 +220,7 @@
                         {% csrf_token %}
                         <input type="hidden" name="action" value="{{ action.action }}">
                         <input type="hidden" name="next" value="{% url 'careon:case_detail' intake.pk %}?tab=plaatsing&amp;phase={{ active_flow_stage }}">
-                        <div class="text-xs ds-text-secondary">{{ action.label }}</div>
+                        <div class="text-xs ds-text-secondary">{{ action.label|truncatechars:28 }}</div>
                         <button type="submit" class="btn btn-secondary">Uitvoeren</button>
                     </form>
                     {% endfor %}
@@ -229,7 +229,7 @@
             </div>
 
             <div class="rounded-lg border border-gray-200 bg-white p-3">
-                <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Matching alternatieven</p>
+                <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Alternatieven</p>
                 {% if matching_preview_candidates|length > 1 %}
                 <div class="ds-info-grid mt-2 sm:grid-cols-2">
                     {% for candidate in matching_preview_candidates|slice:"1:" %}
@@ -242,9 +242,9 @@
                     {% endfor %}
                 </div>
                 {% elif matching_preview_candidates %}
-                <p class="mt-2 text-xs ds-text-secondary">Geen extra alternatieven naast de topaanbeveling.</p>
+                <p class="mt-2 text-xs ds-text-secondary">Geen extra alternatieven.</p>
                 {% else %}
-                <p class="mt-2 text-xs ds-text-secondary">Alternatieven verschijnen zodra matching beschikbaar is.</p>
+                <p class="mt-2 text-xs ds-text-secondary">Zodra matching klaar is.</p>
                 {% endif %}
             </div>
         </div>
@@ -274,7 +274,7 @@
 
             <div class="space-y-3">
                 <div class="rounded-lg border border-gray-200 bg-white p-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Ontbrekende informatie</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide ds-text-secondary">Ontbrekend</p>
                     {% if missing_information_alerts %}
                     <ul class="mt-2 space-y-1 text-sm ds-text-strong">
                         {% for item in missing_information_alerts|slice:":3" %}
@@ -286,11 +286,11 @@
                     {% endif %}
                 </div>
                 <details class="rounded-lg border border-gray-200 bg-white p-3">
-                    <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide ds-text-secondary">Notities en casuscontext</summary>
+                    <summary class="cursor-pointer text-xs font-semibold uppercase tracking-wide ds-text-secondary">Notities</summary>
                     {% if system_signals %}
                     <ul class="mt-2 space-y-1 text-sm ds-text-strong">
                         {% for signal in system_signals|slice:":3" %}
-                        <li>- {{ signal.message }}</li>
+                        <li>- {{ signal.message|truncatechars:80 }}</li>
                         {% endfor %}
                     </ul>
                     {% else %}
@@ -348,7 +348,7 @@
                     </div>
                 </div>
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Uitkomstgebeurtenissen</p>
+                    <p class="ds-note-text--strong">Uitkomsten</p>
                 </div>
                 {% if outcome_timeline_events %}
                 <div class="ds-list-container">
@@ -370,7 +370,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Nog geen uitkomstgebeurtenissen vastgelegd.</p>
+                <p class="ds-note-text">Nog geen uitkomsten.</p>
                 {% endif %}
                 {% elif selected_tab == 'documenten' %}
                 <div class="ds-detail-header">
@@ -380,7 +380,7 @@
                         <a href="{{ case_document_context_href }}" class="btn btn-secondary">{{ case_document_action_label }}</a>
                     </div>
                 </div>
-                <p class="ds-note-text">Upload documenten vanuit deze casus; de globale documentenpagina is voor archief en zoeken.</p>
+                <p class="ds-note-text">Documenten horen hier. Archief en zoeken staan globaal.</p>
                 {% if documents %}
                 <div class="ds-list-container">
                     {% for row in case_document_rows %}
@@ -396,12 +396,12 @@
                             </div>
                             {% endif %}
                         </div>
-                        <span class="btn btn-ghost">Open</span>
+                        <span class="btn btn-ghost">Openen</span>
                     </a>
                     {% endfor %}
                 </div>
                 {% else %}
-                <div class="ds-empty-state">Nog geen documenten gekoppeld aan deze casus.</div>
+                <div class="ds-empty-state">Nog geen documenten.</div>
                 {% endif %}
                 {% elif selected_tab == 'taken' %}
                 <div class="ds-detail-header">
@@ -413,7 +413,7 @@
                         {% endif %}
                     </div>
                 </div>
-                <p class="ds-note-text">Werk taken primair in deze casus; overzicht is bedoeld voor casus-overstijgende sturing.</p>
+                <p class="ds-note-text">Taken horen hier.</p>
                 {% if open_tasks %}
                 <div class="ds-list-container">
                     {% for task in open_tasks %}
@@ -424,7 +424,7 @@
                         </div>
                         {% if can_edit_case %}
                         <div class="flex items-center gap-2">
-                            <a href="{% url 'careon:task_update' task.pk %}" class="btn btn-ghost">Open</a>
+                            <a href="{% url 'careon:task_update' task.pk %}" class="btn btn-ghost">Openen</a>
                             <form method="post" action="{% url 'careon:deadline_complete' task.pk %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="next" value="{% url 'careon:case_detail' intake.pk %}?tab=taken&amp;phase={{ active_flow_stage }}">
@@ -448,7 +448,7 @@
                         {% endif %}
                     </div>
                 </div>
-                <p class="ds-note-text">Werk signalen primair in deze casus; overzicht is bedoeld voor monitoring over meerdere casussen.</p>
+                <p class="ds-note-text">Signalen horen hier.</p>
                 {% if open_signals %}
                 <div class="ds-list-container">
                     {% for signal in open_signals %}
@@ -490,8 +490,6 @@
                     <p class="ds-note-text--strong">Matching in deze casus</p>
                     <a href="{{ matching_archive_href }}" class="btn btn-ghost">Matchingoverzicht</a>
                 </div>
-                <p class="ds-note-text">Matching hoort hier.</p>
-
                 {% if latest_assignment %}
                 <div class="ds-info-card mb-3">
                     <span class="ds-info-label">Laatste matchresultaat</span>
@@ -518,11 +516,14 @@
                                 {% if candidate.capacity %}· Capaciteit: {{ candidate.capacity }}{% endif %}
                             </div>
                             {% if candidate.explanation.trade_offs %}
-                            <ul class="mt-1 space-y-0.5 text-xs ds-text-secondary">
-                                {% for tradeoff in candidate.explanation.trade_offs|slice:":2" %}
-                                <li>- {{ tradeoff }}</li>
-                                {% endfor %}
-                            </ul>
+                            <details class="mt-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
+                                <summary class="cursor-pointer text-xs font-semibold ds-text-secondary">Details</summary>
+                                <ul class="mt-1 space-y-0.5 text-xs ds-text-secondary">
+                                    {% for tradeoff in candidate.explanation.trade_offs|slice:":2" %}
+                                    <li>- {{ tradeoff }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
                             {% endif %}
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -566,11 +567,11 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Geen matchinghistorie.</p>
+                <p class="ds-note-text">Geen historie.</p>
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Afgewezen</p>
+                    <p class="ds-note-text--strong">Afwijzingen</p>
                 </div>
                 {% if rejected_options %}
                 <div class="space-y-2">
@@ -593,7 +594,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Geen afgewezen aanbieders.</p>
+                <p class="ds-note-text">Geen afwijzingen.</p>
                 {% endif %}
 
                 {% else %}
@@ -650,7 +651,7 @@
                 {% endif %}
 
                 <div class="ds-detail-header mt-4">
-                    <p class="ds-note-text--strong">Providerreacties</p>
+                    <p class="ds-note-text--strong">Reacties</p>
                 </div>
                 {% if provider_response_summary %}
                 <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -659,9 +660,9 @@
                             <div class="ds-row-title">{{ provider_response_summary.status_label }}</div>
                             <div class="mt-1 flex flex-wrap items-center gap-2 text-xs ds-text-secondary">
                                 <span class="inline-flex rounded-full px-2 py-0.5 font-semibold {% if provider_response_summary.sla_state == 'ON_TRACK' %}bg-emerald-100 text-emerald-700{% elif provider_response_summary.sla_state == 'AT_RISK' %}bg-amber-100 text-amber-700{% elif provider_response_summary.sla_state == 'OVERDUE' %}bg-red-100 text-red-700{% elif provider_response_summary.sla_state == 'ESCALATED' %}bg-rose-200 text-rose-900{% else %}bg-rose-900 text-white{% endif %}">SLA {{ provider_response_summary.sla_state }}</span>
-                                <span>Wachtend: {{ provider_response_summary.sla_hours_waiting }} uur</span>
+                                <span>Wacht: {{ provider_response_summary.sla_hours_waiting }} uur</span>
                                 {% if provider_response_summary.sla_escalates_in_hours > 0 %}
-                                <span>Escaleert over {{ provider_response_summary.sla_escalates_in_hours }} uur</span>
+                                <span>Escalatie: {{ provider_response_summary.sla_escalates_in_hours }} uur</span>
                                 {% endif %}
                                 <span>Open sinds {{ provider_response_summary.age_days }} dagen</span>
                                 {% if provider_response_summary.deadline_at %}
@@ -681,12 +682,12 @@
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
                             <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Eigenaar</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_owner_label }}</div>
-                            <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.ownership_reason }}</div>
+                            <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.ownership_reason|truncatechars:60 }}</div>
                         </div>
                         <div class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
                             <div class="text-[11px] font-semibold uppercase tracking-wide ds-text-secondary">Actie</div>
                             <div class="mt-1 text-sm font-semibold ds-text-strong">{{ provider_response_summary.next_action_label }}</div>
-                            <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.action_deadline_label }}</div>
+                            <div class="mt-1 text-xs ds-text-secondary">{{ provider_response_summary.action_deadline_label|truncatechars:60 }}</div>
                         </div>
                     </div>
                     <div class="mt-2 flex flex-wrap items-center gap-2 text-xs ds-text-secondary">
@@ -698,8 +699,8 @@
 
                     {% if provider_response_summary.sla_forced_action_required %}
                     <div class="mt-3 rounded-md border border-red-300 bg-red-50 px-3 py-2">
-                        <div class="text-sm font-semibold text-red-800">Kritiek: FORCED_ACTION</div>
-                        <div class="mt-1 text-xs text-red-700">Her-match of leg vast.</div>
+                        <div class="text-sm font-semibold text-red-800">Kritiek</div>
+                        <div class="mt-1 text-xs text-red-700">Her-match of vastleggen.</div>
                     </div>
                     {% endif %}
 
@@ -708,8 +709,8 @@
                         {% for action in provider_response_actions %}
                         <div class="ds-list-row ds-list-row--compact {% if provider_response_summary.sla_forced_action_required and action.action == 'trigger_rematch' %}border-red-300 bg-red-50{% endif %}">
                             <div>
-                                <div class="ds-row-title">{{ action.label }}{% if provider_response_summary.sla_forced_action_required and action.action == 'trigger_rematch' %} · primaire route{% endif %}</div>
-                                <div class="ds-row-meta">{{ action.note }}</div>
+                                <div class="ds-row-title">{{ action.label|truncatechars:32 }}{% if provider_response_summary.sla_forced_action_required and action.action == 'trigger_rematch' %} · primair{% endif %}</div>
+                                <div class="ds-row-meta">{{ action.note|truncatechars:64 }}</div>
                             </div>
                             <form method="post" action="{{ provider_response_action_href }}" {% if action.requires_confirmation %}onsubmit="return confirm('{{ action.confirm_text }}')"{% endif %}>
                                 {% csrf_token %}
@@ -736,7 +737,7 @@
                 <div class="ds-detail-header mt-4">
                     <p class="ds-note-text--strong">Uitkomst</p>
                 </div>
-                <p class="text-xs ds-text-secondary">Werk uitkomsten hier bij.</p>
+                <p class="text-xs ds-text-secondary">Werk hier bij.</p>
                 <div class="space-y-3">
                     {% for section in outcome_sections %}
                     <div class="rounded-lg border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -799,21 +800,21 @@
                 </div>
                 <div class="ds-info-grid sm:grid-cols-2">
                     <div class="ds-info-card">
-                        <span class="ds-info-label">Overdrachtstatus</span>
+                        <span class="ds-info-label">Overdracht</span>
                         <strong>{% if placement_handoff_docs_count %}Gedocumenteerd{% else %}Nog niet geregistreerd{% endif %}</strong>
                         {% if latest_handoff_doc %}
-                        <p class="text-xs ds-text-secondary">Laatste: {{ latest_handoff_doc.title }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
+                        <p class="text-xs ds-text-secondary">Laatste: {{ latest_handoff_doc.title|truncatechars:40 }} ({{ latest_handoff_doc.created_at|date:"d-m-Y" }})</p>
                         {% else %}
-                        <p class="text-xs ds-text-secondary">Voeg handoff toe.</p>
+                        <p class="text-xs ds-text-secondary">Voeg toe.</p>
                         {% endif %}
                     </div>
                     <div class="ds-info-card">
-                        <span class="ds-info-label">Notificatiestatus</span>
+                        <span class="ds-info-label">Notificaties</span>
                         <strong>{% if placement_notifications_count %}Notificaties aanwezig{% else %}Geen notificatie gevonden{% endif %}</strong>
                         {% if latest_placement_notification %}
-                        <p class="text-xs ds-text-secondary">Laatste: {{ latest_placement_notification.title }} ({{ latest_placement_notification.created_at|date:"d-m-Y H:i" }})</p>
+                        <p class="text-xs ds-text-secondary">Laatste: {{ latest_placement_notification.title|truncatechars:40 }} ({{ latest_placement_notification.created_at|date:"d-m-Y H:i" }})</p>
                         {% else %}
-                        <p class="text-xs ds-text-secondary">Status volgt na notificaties.</p>
+                        <p class="text-xs ds-text-secondary">Volgt na notificaties.</p>
                         {% endif %}
                     </div>
                 </div>
@@ -829,7 +830,7 @@
                 {% if next_action_state_label %}
                 <span class="inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold {% if next_action_severity == 'critical' %}bg-red-100 text-red-700{% elif next_action_severity == 'warning' %}bg-amber-100 text-amber-700{% else %}bg-emerald-100 text-emerald-700{% endif %}">{{ next_action_state_label }}</span>
                 {% endif %}
-                <p class="ds-note-text">{{ next_action.help }}</p>
+                <p class="ds-note-text">{{ next_action.help|truncatechars:64 }}</p>
                 <a href="{{ next_action.href }}" class="btn btn-primary inline-cta-block">{{ next_action.label }}</a>
                 {% if can_edit_case %}
                 <div class="mt-2 grid grid-cols-1 gap-2">
@@ -899,7 +900,7 @@
                     {% endfor %}
                 </div>
                 {% else %}
-                <p class="ds-note-text">Nog geen documenten</p>
+                <p class="ds-note-text">Nog geen documenten.</p>
                 {% endif %}
             </section>
         </aside>

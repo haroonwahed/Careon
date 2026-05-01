@@ -24,12 +24,12 @@ export function RegiosDemo() {
 
   const handleViewGemeenten = (regionId: string) => {
     console.log("Navigate to gemeenten in region:", regionId);
-    alert(`Would navigate to Gemeenten page filtered by region: ${regionId}`);
+    alert(`Gemeenten in ${regionId}`);
   };
 
   const handleViewProviders = (regionId: string) => {
     console.log("Navigate to providers in region:", regionId);
-    alert(`Would navigate to Providers page filtered by region: ${regionId}`);
+    alert(`Zorgaanbieders in ${regionId}`);
   };
 
   const handleBack = () => {
@@ -39,22 +39,22 @@ export function RegiosDemo() {
 
   const handleGemeenteClick = (gemeenteId: string) => {
     console.log("Navigate to gemeente:", gemeenteId);
-    alert(`Would navigate to Gemeente detail: ${gemeenteId}`);
+    alert(`Gemeente: ${gemeenteId}`);
   };
 
   const handleProviderClick = (providerId: string) => {
     console.log("Navigate to provider:", providerId);
-    alert(`Would navigate to Provider profile: ${providerId}`);
+    alert(`Profiel: ${providerId}`);
   };
 
   const handleViewAllGemeenten = () => {
     console.log("Navigate to all gemeenten");
-    alert("Would navigate to Gemeenten page");
+    alert("Alle gemeenten");
   };
 
   const handleViewAllProviders = () => {
     console.log("Navigate to all providers");
-    alert("Would navigate to Providers page");
+    alert("Alle zorgaanbieders");
   };
 
   return (
@@ -62,13 +62,13 @@ export function RegiosDemo() {
       {/* Demo Controls */}
       <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-card/95 backdrop-blur space-y-3">
         <p className="text-xs font-semibold text-muted-foreground uppercase">
-          Demo Controls
+          Demo
         </p>
         
         <div className="text-xs text-muted-foreground">
-          <p>Current view:</p>
+          <p>View:</p>
           <p className="font-semibold text-foreground mt-1">
-            {currentView === "overview" ? "Regio's Overview" : `Region Detail: ${selectedRegion}`}
+            {currentView === "overview" ? "Overzicht" : `Detail: ${selectedRegion}`}
           </p>
         </div>
 
@@ -77,7 +77,7 @@ export function RegiosDemo() {
             onClick={handleBack}
             className="text-xs text-primary hover:underline"
           >
-            ← Back to overview
+            ← Terug
           </button>
         )}
       </div>
@@ -92,7 +92,7 @@ export function RegiosDemo() {
         ) : (
           <div className="premium-card p-6">
             <p className="text-sm text-muted-foreground">
-              Regio detail demo is verwijderd. Gebruik de actieve Regio's flow via RegiosPage.
+              Gebruik de actieve Regio's flow via RegiosPage.
             </p>
             <button onClick={handleBack} className="mt-3 text-sm text-primary hover:underline">
               Terug naar overzicht

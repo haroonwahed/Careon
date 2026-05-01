@@ -1,5 +1,3 @@
-import os
-
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
@@ -23,7 +21,6 @@ class DashboardShellTestCase(TestCase):
             is_active=True,
         )
         self.client.login(username='testuser', password='testpass123')
-        os.environ['FEATURE_REDESIGN'] = 'true'
 
     def test_dashboard_primary_focus(self):
         response = self.client.get(reverse('dashboard'))
@@ -64,9 +61,11 @@ class DashboardShellTestCase(TestCase):
 
         response = self.client.get(reverse('careon:case_list'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Casussen')
-        self.assertContains(response, 'Zoek op titel of casus-ID...')
-        self.assertContains(response, 'Nieuwe casus')
+        self.assertContains(response, '<div id="root"></div>', html=True)
+        self.assertContains(response, '/static/spa/assets/index-')
+        self.assertNotContains(response, 'Careon Zorgregie')
+        self.assertNotContains(response, 'Regiekamer')
+        self.assertNotContains(response, 'Globaal zoeken')
 
     def test_accessibility_features(self):
         response = self.client.get(reverse('dashboard'))
@@ -79,7 +78,3 @@ class DashboardShellTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, '<div id="root"></div>', html=True)
         self.assertContains(response, '/static/spa/assets/index-')
-
-    def tearDown(self):
-        if 'FEATURE_REDESIGN' in os.environ:
-            del os.environ['FEATURE_REDESIGN']

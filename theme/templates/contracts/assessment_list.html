@@ -1,133 +1,137 @@
 {% extends "base.html" %}
 {% block title %}Beoordeling door aanbieder - Careon{% endblock %}
 {% block content %}
-<div class="ds-list-shell">
-    <div class="ds-list-header ds-page-header">
-        <div class="ds-list-header">
+<div class="page-wrap page-wrap-command" data-layout="max-width: 1440px">
+    <header class="ds-list-header">
+        <div>
             <h1 class="page-title">Beoordeling door aanbieder</h1>
-            <p class="ds-header-meta">
-                <span>{{ total_assessments }} totaal</span>
+            <p class="page-subtitle">Open voor besluit</p>
+            <p class="ds-note-text flex flex-wrap items-center gap-2">
+                <span class="ds-badge badge-blue">{{ total_assessments }} casussen open</span>
                 <span>{{ pending_assessments }} in behandeling</span>
+                <span>·</span>
                 <span>{{ ready_for_matching }} gereed voor matching</span>
             </p>
         </div>
-        <a href="{% url 'careon:assessment_create' %}" class="btn btn-primary">Nieuwe beoordeling door aanbieder</a>
-    </div>
+        <a href="{% url 'careon:assessment_create' %}" class="btn btn-primary">Nieuwe beoordeling</a>
+    </header>
 
-    <div class="ds-list-filters">
+    <section class="ds-list-filters">
         <form method="get" class="ds-list-filter-row">
             <div class="ds-list-filter-group">
                 <label for="assessment-q" class="ds-list-filter-label">Zoeken</label>
-                <input id="assessment-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op casus...">
+                <input id="assessment-q" type="search" name="q" value="{{ search_query }}" placeholder="Zoek op casus, cliënt of regio...">
             </div>
             <div class="ds-list-filter-group">
                 <label for="assessment-status" class="ds-list-filter-label">Status</label>
                 <select id="assessment-status" name="status" onchange="this.form.submit()">
                     <option value="">Alle statussen</option>
                     {% for choice_id, choice_label in status_choices %}
-                        <option value="{{ choice_id }}" {% if request.GET.status == choice_id %}selected{% endif %}>{{ choice_label }}</option>
+                    <option value="{{ choice_id }}" {% if request.GET.status == choice_id %}selected{% endif %}>{{ choice_label }}</option>
                     {% endfor %}
                 </select>
             </div>
             <button type="submit" class="btn btn-secondary ds-btn-compact">Filter</button>
         </form>
-    </div>
+    </section>
 
     {% if beoordelingen_operational_strip %}
-    <div class="ds-card assessment-operational-strip assessment-operational-strip--{{ beoordelingen_operational_strip.severity }}">
-        <div>
-            <strong class="assessment-operational-strip__label">Doorstroomsignaal</strong>
-            <p class="assessment-operational-strip__message">{{ beoordelingen_operational_strip.message }}</p>
+    <section class="command-alert-strip">
+        <div class="command-alert-link" style="cursor: default;">
+            <div class="command-alert-meta">
+                <span>{{ beoordelingen_operational_strip.severity|upper }}</span>
+                <span class="command-alert-label">Doorstroomsignaal</span>
+            </div>
+            <span class="command-alert-count">{{ beoordelingen_operational_strip.message }}</span>
         </div>
-        <a href="{{ beoordelingen_operational_strip.cta_href }}" class="ds-list-row-action-btn">{{ beoordelingen_operational_strip.cta_label }}</a>
-    </div>
+        <a href="{{ beoordelingen_operational_strip.cta_href }}" class="btn btn-secondary">{{ beoordelingen_operational_strip.cta_label }}</a>
+    </section>
     {% endif %}
 
-    {% if assessments %}
-    <table class="ds-list-table">
-        <thead>
-            <tr>
-                <th>Casus</th>
-                <th>Wat ontbreekt</th>
-                <th>Wat blokkeert dit</th>
-                <th>Wat nu</th>
-                <th>Gewijzigd</th>
-                <th class="ds-cell-right">Acties</th>
-            </tr>
-        </thead>
-        <tbody>
+    <section class="mt-6">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-sm font-semibold uppercase tracking-[0.12em] text-[color:var(--zr-text-secondary)]">
+                Open beoordelingen ({{ assessment_rows|length }})
+            </h2>
+            <span class="text-sm text-[color:var(--zr-text-secondary)]">
+                {{ ready_for_matching }} klaar voor matching
+            </span>
+        </div>
+
+        {% if assessment_rows %}
+        <div class="queue-list mt-3">
             {% for row in assessment_rows %}
-            <tr>
-                <td>
-                    <a href="{% url 'careon:assessment_detail' row.obj.pk %}" class="ds-link assessment-row-title">{{ row.intake.title }}</a>
-                    <div class="assessment-row-meta">
-                        <span class="ds-badge badge-gray">{{ row.assessment_status_label }}</span>
-                        <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
-                        <span class="ds-note-text">Prioriteit #{{ row.priority_rank }}</span>
-                    </div>
-                </td>
-
-                <td>
-                    <p class="assessment-row-copy">{{ row.missing_copy }}</p>
-                </td>
-
-                <td>
-                    {% if row.strongest_signal %}
-                    <span class="ds-badge {{ row.strongest_signal.badge_class }}">{{ row.strongest_signal.label }}</span>
-                    {% endif %}
-                    <p class="assessment-row-copy assessment-row-copy--subtle">{{ row.blocked_copy }}</p>
-                    {% if row.escalation_recommended %}
-                    <p class="assessment-row-escalation">Escalatie aanbevolen</p>
-                    {% endif %}
-                </td>
-
-                <td>
-                    <a href="{{ row.recommended_action.url }}" class="casus-recommended-action casus-recommended-action--{{ row.attention_band.severity }}">
-                        <div class="casus-recommended-action__main">
-                            <p class="casus-recommended-action__label">Aanbevolen actie</p>
-                            <p class="casus-recommended-action__action">{{ row.recommended_action.label }}</p>
-                            <p class="ds-note-text">{{ row.recommended_action.reason }}</p>
-                            <p class="assessment-impact-summary">{{ row.impact_summary.text }}</p>
+            <article class="queue-row">
+                <div class="queue-head">
+                    <div class="min-w-0">
+                        <a href="{% url 'careon:assessment_detail' row.obj.pk %}" class="queue-title">{{ row.intake.title }}</a>
+                        <div class="mt-2 flex flex-wrap items-center gap-2 text-sm text-[color:var(--zr-text-secondary)]">
+                            <span>{{ row.assessment_status_label }}</span>
+                            <span>·</span>
+                            <span>{{ row.updated_at|date:"d-m-Y H:i" }}</span>
+                            <span>·</span>
+                            <span>Prioriteit #{{ row.priority_rank }}</span>
                         </div>
-                    </a>
-                </td>
+                    </div>
+                    <div class="flex shrink-0 flex-col items-end gap-2">
+                        <a href="{{ row.recommended_action.url }}" class="btn btn-ghost">{{ row.recommended_action.label }}</a>
+                        <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
+                    </div>
+                </div>
 
-                <td>{{ row.updated_at|date:"d-m-Y H:i" }}</td>
-                <td class="ds-cell-right">
+                <div class="flex flex-wrap gap-2">
+                    <span class="ds-badge badge-blue">{{ row.priority_rank|default:"0" }} prioriteit</span>
+                    <span class="ds-badge badge-gray">{{ row.assessment_status_label }}</span>
+                    <span class="ds-badge {{ row.attention_band.badge_class }}">{{ row.attention_band.label }}</span>
+                    {% if row.escalation_recommended %}
+                    <span class="ds-badge badge-critical">Escalatie aanbevolen</span>
+                    {% endif %}
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <p class="text-sm text-[color:var(--zr-text-secondary)]">
+                        <strong class="text-[color:var(--zr-text-primary)]">Ontbreekt:</strong> {{ row.missing_copy }}
+                        <span class="mx-2">·</span>
+                        <strong class="text-[color:var(--zr-text-primary)]">Blokkade:</strong> {{ row.blocked_copy }}
+                        {% if row.strongest_signal %}
+                        <span class="mx-2">·</span>
+                        <strong class="text-[color:var(--zr-text-primary)]">Signaal:</strong> {{ row.strongest_signal.label }}
+                        {% endif %}
+                    </p>
                     <div class="ds-list-row-actions">
                         <a href="{% url 'careon:assessment_detail' row.obj.pk %}" class="ds-list-row-action-btn">Bekijken</a>
                         <a href="{% url 'careon:assessment_update' row.obj.pk %}" class="ds-list-row-action-btn">Bewerken</a>
                     </div>
-                </td>
-            </tr>
+                </div>
+            </article>
             {% endfor %}
-        </tbody>
-    </table>
-
-    {% if is_paginated %}
-    <div class="ds-list-pagination">
-        <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
-        <div class="ds-list-pagination-buttons">
-            {% if page_obj.has_previous %}
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page=1" class="ds-list-pagination-btn">Eerste</a>
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
-            {% endif %}
-            {% if page_obj.has_next %}
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
-            <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
-            {% endif %}
         </div>
-    </div>
-    {% endif %}
 
-    {% else %}
-    <div class="ds-list-empty">
-        <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-        <h3 class="ds-list-empty-title">Geen beoordelingen door aanbieders gevonden</h3>
-        <p class="ds-list-empty-copy">
-            <a href="{% url 'careon:assessment_create' %}" class="btn btn-primary ds-stack-top-sm">Nieuwe beoordeling door aanbieder</a>
-        </p>
-    </div>
-    {% endif %}
+        {% if is_paginated %}
+        <div class="ds-list-pagination">
+            <span>Pagina {{ page_obj.number }} van {{ page_obj.paginator.num_pages }}</span>
+            <div class="ds-list-pagination-buttons">
+                {% if page_obj.has_previous %}
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page=1" class="ds-list-pagination-btn">Eerste</a>
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="ds-list-pagination-btn">Vorige</a>
+                {% endif %}
+                {% if page_obj.has_next %}
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="ds-list-pagination-btn">Volgende</a>
+                <a href="?{% if query_string_without_page %}{{ query_string_without_page }}&amp;{% endif %}page={{ page_obj.paginator.num_pages }}" class="ds-list-pagination-btn">Laatste</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+        {% else %}
+        <div class="ds-empty-state">
+            <svg class="ds-list-empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+            <h3 class="ds-list-empty-title">Geen beoordelingen door aanbieders gevonden</h3>
+            <p class="ds-list-empty-copy">Nieuwe beoordelingen verschijnen hier zodra een casus is voorbereid voor matching.</p>
+            <p class="mt-3">
+                <a href="{% url 'careon:assessment_create' %}" class="btn btn-primary">Nieuwe beoordeling</a>
+            </p>
+        </div>
+        {% endif %}
+    </section>
 </div>
 {% endblock %}

@@ -9,8 +9,7 @@
  */
 
 import { useState, useMemo } from "react";
-import { 
-  Search,
+import {
   MapPin,
   Users,
   AlertTriangle,
@@ -19,10 +18,13 @@ import {
   TrendingDown,
   Activity,
   Building2,
-  Filter
 } from "lucide-react";
-import { Input } from "../ui/input";
 import { Button } from "../ui/button";
+import {
+  CareFilterTabButton,
+  CareFilterTabGroup,
+  CareSearchFiltersBar,
+} from "./CareUnifiedPage";
 
 // AI Components
 import { SystemInsight } from "../ai";
@@ -136,50 +138,27 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
       />
 
       {/* SEARCH & FILTERS */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 rounded-2xl border border-border bg-muted/35 p-3 flex items-center gap-2">
-          <Search className="text-muted-foreground flex-shrink-0" size={18} />
-          <Input
-            type="text"
-            placeholder="Zoek gemeente of regio..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="border-0 bg-transparent shadow-none focus-visible:ring-0 h-8 p-0 text-sm text-foreground placeholder:text-muted-foreground"
-          />
-        </div>
-
-        {/* Quick Filters */}
-        <div className="flex gap-2">
-          <Button
-            variant={selectedStatus === "all" ? "default" : "outline"}
-            onClick={() => setSelectedStatus("all")}
-            size="sm"
-          >
-            Alle
-          </Button>
-          <Button
-            variant={selectedStatus === "shortage" ? "default" : "outline"}
-            onClick={() => setSelectedStatus("shortage")}
-            size="sm"
-          >
-            Tekort
-          </Button>
-          <Button
-            variant={selectedStatus === "urgent" ? "default" : "outline"}
-            onClick={() => setSelectedStatus("urgent")}
-            size="sm"
-          >
-            Urgent
-          </Button>
-          <Button
-            variant={selectedStatus === "blocked" ? "default" : "outline"}
-            onClick={() => setSelectedStatus("blocked")}
-            size="sm"
-          >
-            Geblokkeerd
-          </Button>
-        </div>
-      </div>
+      <CareSearchFiltersBar
+        tabs={
+          <CareFilterTabGroup aria-label="Status gemeenten">
+            <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => setSelectedStatus("all")}>
+              Alle
+            </CareFilterTabButton>
+            <CareFilterTabButton selected={selectedStatus === "shortage"} onClick={() => setSelectedStatus("shortage")}>
+              Tekort
+            </CareFilterTabButton>
+            <CareFilterTabButton selected={selectedStatus === "urgent"} onClick={() => setSelectedStatus("urgent")}>
+              Urgent
+            </CareFilterTabButton>
+            <CareFilterTabButton selected={selectedStatus === "blocked"} onClick={() => setSelectedStatus("blocked")}>
+              Geblokkeerd
+            </CareFilterTabButton>
+          </CareFilterTabGroup>
+        }
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Zoek gemeente of regio..."
+      />
 
       {/* GEMEENTEN TABLE */}
       <div className="premium-card overflow-hidden">

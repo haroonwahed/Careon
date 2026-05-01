@@ -1,0 +1,55 @@
+[
+  {
+    "route": "/dashboard/",
+    "routeName": "dashboard",
+    "legacyVisibleHits": [
+      "NETWERK",
+      "STURING"
+    ],
+    "bodyTextPreview": "Careon\n\nZorgregie\n\nREGIE\nRegiekamer\nCasussen\n9\nMatching\n6\nActies\n5\nFLOW STATUS\nWacht op aanbieder\n2\nPlaatsingen\n1\nNETWERK\nZorgaanbieders\nRegio's\nSTURING\nSignalen\n6\nJD\n\nJane Doe\n\nRegisseur\n\nGEMEENTE\n\nUtrecht\n\n7\nJD\n\nJane Doe\n\nRegisseur\n\nRegiekamer\n\nOperationele regie op blokkades, risico's en volgende acties.\n\nVervers\n\nBijgewerkt op 1 mei 2026, 00:16\n\nCasussen\n9\nBlokkades\n1\nAlerts\n5\nSLA\n1 te laat\nAfwijzingen\n2\nIntake\n1\n\nOPERATIEVE AANDACHT\n\n1 casussen met kritieke blokkade (backend)\n\nLang wachten\n\nOPERATIEVE AANDACHT\n\n1 casussen met provider-SLA of capaciteitssignaal (backend)\n\nBekijk tekort\n\nOPERATIEVE AANDACHT\n\n1 casussen met vertraagde of ontbrekende intake (backend)\n\nBekijk intake\nMeer fil",
+    "click": {
+      "label": "Casussen",
+      "clicked": false
+    }
+  },
+  {
+    "route": "/care/casussen/new/",
+    "routeName": "new-case",
+    "legacyVisibleHits": [
+      "NETWERK",
+      "STURING"
+    ],
+    "bodyTextPreview": "Careon\n\nZorgregie\n\nREGIE\nRegiekamer\nCasussen\n9\nMatching\n6\nActies\n5\nFLOW STATUS\nWacht op aanbieder\n2\nPlaatsingen\n1\nNETWERK\nZorgaanbieders\nRegio's\nSTURING\nSignalen\n6\nJD\n\nJane Doe\n\nRegisseur\n\nGEMEENTE\n\nUtrecht\n\n7\nJD\n\nJane Doe\n\nRegisseur\n\nINTAKE\nNIEUWE CASUS\nNieuwe casus\nToelichting\nTerug\nSTAP 1 VAN 3\n33%\nStap 1\nBasis\nStap 2\nZorgvraag\nStap 3\nRandvoorwaarden\n1\nBasisinformatie\nInfo\nCLIËNT *\nSTARTDATUM CASUS *\n30-04-2026\nDEADLINE MATCHING *\n08-05-2026\n3 dagen\n7 dagen\n14 dagen\nTerug\nVolgende"
+  },
+  {
+    "route": "/care/matching/",
+    "routeName": "matching",
+    "legacyVisibleHits": [
+      "NETWERK",
+      "STURING"
+    ],
+    "bodyTextPreview": "Careon\n\nZorgregie\n\nREGIE\nRegiekamer\nCasussen\n9\nMatching\n6\nActies\n5\nFLOW STATUS\nWacht op aanbieder\n2\nPlaatsingen\n1\nNETWERK\nZorgaanbieders\nRegio's\nSTURING\nSignalen\n6\nJD\n\nJane Doe\n\nRegisseur\n\nGEMEENTE\n\nUtrecht\n\n7\nJD\n\nJane Doe\n\nRegisseur\n\nMatching\n\nVergelijk fit, capaciteit en blokkades voordat je doorzet naar validatie.\n\n6 casussen klaar voor matching\nMeer filters\n\nPilot cliënt\n\n98 · —\n\nFit sterk (89%)\n1d\n3 aanbieders\nStart matching\n\nWalkthrough Casus Geo\n\n93 · Regio Midden Pilot\n\nFit sterk (89%)\n3d\n3 aanbieders\nStart matching\n\nAfwijzing aanbieder - meisje 14 jaar, autisme en escalatie\n\n87 · Regio Midden Pilot\n\nFit sterk (89%)\n12d\n3 aanbieders\nStart matching\n\nZwakke match - jongen 16 jaar, LVB ",
+    "click": {
+      "label": "Bekijk match",
+      "clicked": false
+    }
+  },
+  {
+    "route": "/care/search/?q=test",
+    "routeName": "search",
+    "legacyVisibleHits": [
+      "NETWERK",
+      "STURING"
+    ],
+    "bodyTextPreview": "Careon\n\nZorgregie\n\nREGIE\nRegiekamer\nCasussen\n9\nMatching\n6\nActies\n5\nFLOW STATUS\nWacht op aanbieder\n2\nPlaatsingen\n1\nNETWERK\nZorgaanbieders\nRegio's\nSTURING\nSignalen\n6\nJD\n\nJane Doe\n\nRegisseur\n\nGEMEENTE\n\nUtrecht\n\n7\nJD\n\nJane Doe\n\nRegisseur\n\nRegiekamer\n\nOperationele regie op blokkades, risico's en volgende acties.\n\nVervers\n\nBijgewerkt op 1 mei 2026, 00:16\n\nCasussen\n9\nBlokkades\n1\nAlerts\n5\nSLA\n1 te laat\nAfwijzingen\n2\nIntake\n1\n\nOPERATIEVE AANDACHT\n\n1 casussen met kritieke blokkade (backend)\n\nLang wachten\n\nOPERATIEVE AANDACHT\n\n1 casussen met provider-SLA of capaciteitssignaal (backend)\n\nBekijk tekort\n\nOPERATIEVE AANDACHT\n\n1 casussen met vertraagde of ontbrekende intake (backend)\n\nBekijk intake\nMeer fil"
+  },
+  {
+    "route": "/care/does-not-exist/",
+    "routeName": "missing",
+    "legacyVisibleHits": [
+      "NETWERK",
+      "STURING"
+    ],
+    "bodyTextPreview": "Careon\n\nZorgregie\n\nREGIE\nRegiekamer\nCasussen\n9\nMatching\n6\nActies\n5\nFLOW STATUS\nWacht op aanbieder\n2\nPlaatsingen\n1\nNETWERK\nZorgaanbieders\nRegio's\nSTURING\nSignalen\n6\nJD\n\nJane Doe\n\nRegisseur\n\nGEMEENTE\n\nUtrecht\n\n7\nJD\n\nJane Doe\n\nRegisseur\n\nRegiekamer\n\nOperationele regie op blokkades, risico's en volgende acties.\n\nVervers\n\nBijgewerkt op 1 mei 2026, 00:16\n\nCasussen\n9\nBlokkades\n1\nAlerts\n5\nSLA\n1 te laat\nAfwijzingen\n2\nIntake\n1\n\nOPERATIEVE AANDACHT\n\n1 casussen met kritieke blokkade (backend)\n\nLang wachten\n\nOPERATIEVE AANDACHT\n\n1 casussen met provider-SLA of capaciteitssignaal (backend)\n\nBekijk tekort\n\nOPERATIEVE AANDACHT\n\n1 casussen met vertraagde of ontbrekende intake (backend)\n\nBekijk intake\nMeer fil"
+  }
+]

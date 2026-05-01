@@ -228,7 +228,7 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         # Current approved copy and step treatment for the guided single-page intake.
         self.assertContains(
             response,
-            'Vul de kern in. Daarna gaat de casus door naar matching.',
+            'Registreer de minimale casusgegevens. De samenvatting en matching volgen daarna.',
         )
         self.assertContains(response, 'Complexiteit')
         self.assertContains(response, 'Velden met <strong>*</strong> zijn verplicht.')
@@ -245,6 +245,8 @@ class UIButtonAndFlowIntegrityTests(TestCase):
             response,
             'Vul de vier blokken hieronder in. Velden met <strong>*</strong> zijn verplicht.',
         )
+        self.assertContains(response, 'Concept bewaren')
+        self.assertContains(response, 'Opslaan en naar samenvatting')
 
     def test_case_create_entry_links_stay_versioned(self):
         dashboard_response = self.client.get(reverse('dashboard'), follow=True)

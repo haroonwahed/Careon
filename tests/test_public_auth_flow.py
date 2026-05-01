@@ -91,6 +91,17 @@ class PublicAuthFlowTests(TestCase):
         self.assertEqual(landing_response.status_code, 200)
         self.assertContains(landing_response, 'public-shell')
 
+    def test_protected_care_routes_redirect_anonymous_users_to_login(self):
+        for url_name in (
+            'careon:case_create',
+            'careon:matching_dashboard',
+            'careon:case_list',
+        ):
+            with self.subTest(url_name=url_name):
+                response = self.client.get(reverse(url_name), follow=False)
+                self.assertIn(response.status_code, [301, 302])
+                self.assertIn('/login/', response['Location'])
+
     def test_register_bootstraps_a_tenant(self):
         register_page = self.client.get(reverse('register'))
         csrf = self._extract_csrf(register_page)

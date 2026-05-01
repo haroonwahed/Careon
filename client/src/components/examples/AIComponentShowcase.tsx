@@ -1,8 +1,7 @@
 /**
  * AI Component Showcase
  * 
- * Visual demonstration of all AI decision intelligence components
- * Use this page to preview and test all AI components together
+ * Compact visual demo of the AI decision intelligence components.
  */
 
 import { 
@@ -21,10 +20,10 @@ export function AIComponentShowcase() {
       {/* Header */}
       <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          AI Decision Intelligence Layer
+          AI overzicht
         </h1>
         <p className="text-muted-foreground">
-          Component showcase voor de Careon Zorgregie platform
+          Compacte demo van Careon AI-bouwstenen
         </p>
       </div>
 
@@ -36,14 +35,14 @@ export function AIComponentShowcase() {
             1. Aanbevolen Actie
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Primary decision card with recommended action
+            Korte actiekaart.
           </p>
           
           <div className="space-y-4">
             {/* Default variant */}
             <AanbevolenActie
-              title="Start matching proces"
-              explanation="Beoordeling is compleet en alle vereiste gegevens zijn aanwezig. Systeem heeft 3 potentiële matches geïdentificeerd in de regio."
+              title="Start matching"
+              explanation="Casus compleet. Er zijn 3 passende matches."
               actionLabel="Start matching"
               confidence="high"
               onAction={() => console.log("Action clicked")}
@@ -51,8 +50,8 @@ export function AIComponentShowcase() {
 
             {/* Urgent variant */}
             <AanbevolenActie
-              title="Escaleer naar capaciteitsmanager"
-              explanation="Geen geschikte aanbieders beschikbaar in de regio. Directe actie vereist om wachttijd te voorkomen."
+              title="Escaleer capaciteit"
+              explanation="Geen geschikte aanbieders. Directe actie nodig."
               actionLabel="Escaleer case"
               confidence="high"
               variant="urgent"
@@ -61,8 +60,8 @@ export function AIComponentShowcase() {
 
             {/* Medium confidence */}
             <AanbevolenActie
-              title="Overweeg alternatief zorgtype"
-              explanation="Huidige zorgvraag heeft beperkte matches. Overweeg aanpassing van zorgtype voor betere resultaten."
+              title="Kies alternatief"
+              explanation="Beperkte matches. Probeer ander zorgtype."
               actionLabel="Bekijk alternatieven"
               confidence="medium"
               onAction={() => console.log("Alternative action clicked")}
@@ -76,7 +75,7 @@ export function AIComponentShowcase() {
             2. Risicosignalen
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Compact warning component for risk detection
+            Korte waarschuwingen.
           </p>
           
           <div className="grid grid-cols-2 gap-6">
@@ -89,7 +88,7 @@ export function AIComponentShowcase() {
                 },
                 {
                   severity: "warning",
-                  message: "Urgente casus met reactietijd boven 6 uur"
+                  message: "Urgente casus met trage reactie"
                 },
                 {
                   severity: "info",
@@ -121,18 +120,18 @@ export function AIComponentShowcase() {
             3. Samenvatting
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Clean summary panel with bullet points
+            Korte kernpunten.
           </p>
           
           <div className="grid grid-cols-2 gap-6">
             {/* Default */}
             <Samenvatting
-              title="Casus samenvatting"
+              title="Samenvatting"
               items={[
                 { text: "15 jaar, woonachtig in Amsterdam", type: "default" },
                 { text: "Zorgvraag: Intensieve Ambulante Begeleiding", type: "info" },
-                { text: "Hoge urgentie - spoedtraject vereist", type: "warning" },
-                { text: "Beoordeling compleet en goedgekeurd", type: "success" }
+                { text: "Hoge urgentie", type: "warning" },
+                { text: "Beoordeling klaar", type: "success" }
               ]}
             />
 
@@ -141,8 +140,8 @@ export function AIComponentShowcase() {
               title="Intake briefing"
               items={[
                 { text: "Complexe gedragsproblematiek", type: "info" },
-                { text: "Trauma-geïnformeerde aanpak nodig", type: "warning" },
-                { text: "Start binnen 3 werkdagen", type: "success" }
+                { text: "Trauma-aanpak nodig", type: "warning" },
+                { text: "Start binnen 3 dagen", type: "success" }
               ]}
               compact
             />
@@ -155,7 +154,7 @@ export function AIComponentShowcase() {
             4. Match Explanation
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Explains WHY a provider match was selected
+            Waarom deze match.
           </p>
           
           <div className="grid grid-cols-3 gap-6">
@@ -164,7 +163,7 @@ export function AIComponentShowcase() {
               score={94}
               strengths={[
                 "Specialisatie match",
-                "3 plekken beschikbaar",
+                "3 plekken vrij",
                 "Reactie binnen 4u"
               ]}
               confidence="high"
@@ -174,13 +173,13 @@ export function AIComponentShowcase() {
             <MatchExplanation
               score={78}
               strengths={[
-                "Goede match voor zorgvraag",
+                "Goede match",
                 "8 plekken vrij",
-                "Hoge rating (4.6)"
+                "Rating 4.6"
               ]}
               tradeoffs={[
                 "Reactietijd 12u",
-                "Minder ervaring met complexe cases"
+                "Minder ervaring"
               ]}
               confidence="medium"
             />
@@ -189,7 +188,7 @@ export function AIComponentShowcase() {
             <MatchExplanation
               score={62}
               strengths={[
-                "Hoogste rating (4.8)",
+                "Top rating (4.8)",
                 "Perfecte specialisatie"
               ]}
               tradeoffs={[
@@ -207,23 +206,23 @@ export function AIComponentShowcase() {
             5. System Insight
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            Inline feedback strips for quick insights
+            Korte feedbackstroken.
           </p>
           
           <div className="space-y-3 max-w-2xl">
             <SystemInsight
               type="info"
-              message="Beoordeling gepland voor 18 april met Dr. P. Bakker"
+              message="Beoordeling gepland op 18 april"
             />
 
             <SystemInsight
               type="success"
-              message="3 potentiële matches gevonden - match score range 78-94%"
+              message="3 matches gevonden (78-94%)"
             />
 
             <SystemInsight
               type="warning"
-              message="Urgente casus - reactietijd van aanbieder is boven gewenste 6 uur"
+              message="Urgente casus: aanbieder reageert traag"
             />
 
             <SystemInsight
@@ -233,7 +232,7 @@ export function AIComponentShowcase() {
 
             <SystemInsight
               type="suggestion"
-              message="Overweeg parallelle intake bij top 2 matches om wachttijd te minimaliseren"
+              message="Overweeg parallelle intake bij top 2 matches"
             />
           </div>
         </section>
@@ -241,17 +240,17 @@ export function AIComponentShowcase() {
         {/* Section 6: Full Layout Example */}
         <section>
           <h2 className="text-xl font-bold text-foreground mb-4">
-            6. Complete Layout Pattern
+            6. Layout patroon
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
-            3-column grid with AI layer integration
+            3-koloms opzet met AI-laag.
           </p>
           
           <div className="space-y-6">
             {/* Top: Recommended Action */}
             <AanbevolenActie
-              title="Start matching proces"
-              explanation="Beoordeling is compleet. Systeem heeft 3 potentiële matches geïdentificeerd."
+              title="Start matching"
+              explanation="Beoordeling compleet. 3 matches klaar."
               actionLabel="Start matching"
               confidence="high"
               onAction={() => console.log("Start matching")}
@@ -264,7 +263,7 @@ export function AIComponentShowcase() {
               <div className="col-span-4">
                 <div className="premium-card p-5">
                   <h3 className="text-sm font-semibold text-foreground mb-4">
-                    Casus informatie
+                    Casusinfo
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div>
@@ -286,11 +285,11 @@ export function AIComponentShowcase() {
               {/* Center: Summary + Work Area (5 cols) */}
               <div className="col-span-5 space-y-4">
                 <Samenvatting
-                  title="Casus samenvatting"
+                  title="Samenvatting"
                   items={[
                     { text: "15 jaar, woonachtig in Amsterdam", type: "default" },
                     { text: "Zorgvraag: Intensieve Ambulante Begeleiding", type: "info" },
-                    { text: "Hoge urgentie - spoedtraject vereist", type: "warning" }
+                    { text: "Hoge urgentie", type: "warning" }
                   ]}
                 />
 
@@ -304,7 +303,7 @@ export function AIComponentShowcase() {
                     Werkgebied
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Main workflow content here...
+                    Workflow-inhoud hier.
                   </p>
                 </div>
               </div>
@@ -324,7 +323,7 @@ export function AIComponentShowcase() {
 
                   <div className="premium-card p-4">
                     <h3 className="text-sm font-semibold text-foreground mb-3">
-                      Procesvoortgang
+                      Voortgang
                     </h3>
                     <div className="space-y-2 text-xs">
                       <div className="flex justify-between">
