@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Building2, ChevronDown, ChevronUp, Clock3 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CanonicalPhaseBadge,
   CareDominantStatus,
@@ -9,10 +10,8 @@ import {
   CareMetaChip,
   CareFilterTabButton,
   CareFilterTabGroup,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
   normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
@@ -24,6 +23,7 @@ import {
   getCaseDecisionState,
   type CaseDecisionRole,
   type WorkflowBoardColumn,
+  type WorkflowCaseView,
 } from "../../lib/workflowUi";
 import { classifyCasusWorkboardState, type CasusWorkboardSection } from "./casusWorkboardClassification";
 
@@ -230,18 +230,15 @@ export function WorkloadPage({
   ];
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="worklist"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title="Werkvoorraad"
-          subtitle="Beheer en stuur casussen"
-          metric={
-            <CareMetricBadge>
-              {filteredItems.length} casussen — {attentionCount} vragen aandacht
-            </CareMetricBadge>
-          }
-        />
+      title="Werkvoorraad"
+      subtitle="Beheer en stuur casussen"
+      metric={
+        <CareMetricBadge>
+          {filteredItems.length} casussen — {attentionCount} vragen aandacht
+        </CareMetricBadge>
       }
       filters={
         <CareSearchFiltersBar
@@ -451,6 +448,6 @@ export function WorkloadPage({
           })}
         </div>
       )}
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }
