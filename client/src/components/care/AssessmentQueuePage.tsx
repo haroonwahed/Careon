@@ -2,12 +2,11 @@ import { useMemo, useState } from "react";
 import { ArrowRight, ClipboardCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareContextHint,
   CareMetricBadge,
-  CarePageTemplate,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
 } from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
@@ -33,17 +32,14 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
   }, [cases, providers, selectedUrgency]);
 
   return (
-    <CarePageTemplate
-      header={
-        <CareUnifiedHeader
-          title="Beoordeling door aanbieder"
-          subtitle="Open voor besluit."
-          metric={
-            <CareMetricBadge>
-              {queueCases.length} {queueCases.length === 1 ? "casus in wachtrij" : "casussen in wachtrij"}
-            </CareMetricBadge>
-          }
-        />
+    <CarePageScaffold
+      archetype="worklist"
+      title="Beoordeling door aanbieder"
+      subtitle="Open voor besluit."
+      metric={
+        <CareMetricBadge>
+          {queueCases.length} {queueCases.length === 1 ? "casus in wachtrij" : "casussen in wachtrij"}
+        </CareMetricBadge>
       }
       filters={
         <CareSearchFiltersBar
@@ -136,6 +132,6 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         title="Zelfde casusflow"
         copy="Beoordeling blijft aan de casus gekoppeld."
       />
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }

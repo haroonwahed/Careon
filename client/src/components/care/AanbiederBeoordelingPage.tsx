@@ -41,14 +41,13 @@ import {
 } from "../ui/alert-dialog";
 import { cn } from "../ui/utils";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareDominantStatus,
   CareMetricBadge,
   CareMetaChip,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
 } from "./CareUnifiedPage";
 import { useCases } from "../../hooks/useCases";
@@ -253,17 +252,14 @@ function GemeenteView({
   const acceptedCount = reviewCases.filter(c => c.status === "plaatsing").length;
 
   return (
-    <CarePageTemplate
-      header={
-        <CareUnifiedHeader
-          title="Wacht op aanbieder"
-          subtitle="Gemeente volgt. Aanbieder beslist."
-          metric={
-            <CareMetricBadge>
-              {pendingCount} wacht · {acceptedCount} geaccepteerd · {reviewCases.length} totaal
-            </CareMetricBadge>
-          }
-        />
+    <CarePageScaffold
+      archetype="worklist"
+      title="Wacht op aanbieder"
+      subtitle="Gemeente volgt. Aanbieder beslist."
+      metric={
+        <CareMetricBadge>
+          {pendingCount} wacht · {acceptedCount} geaccepteerd · {reviewCases.length} totaal
+        </CareMetricBadge>
       }
       filters={
         <CareSearchFiltersBar
@@ -339,7 +335,7 @@ function GemeenteView({
         </CarePrimaryList>
       )}
 
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }
 
@@ -933,20 +929,17 @@ function ProviderView({
         />
       )}
 
-      <CarePageTemplate
-        header={
-          <CareUnifiedHeader
-            title="Beoordeling door aanbieder"
-            subtitle="Afwijzing zonder reden = systeemfout. Gestructureerde feedback verbetert matching en beslissingen."
-            metric={
-              <CareMetricBadge>
-                {activeQueue.length} open
-                {activeQueue.length > 0
-                  ? ` · gem. ${Math.round(activeQueue.reduce((sum, c) => sum + c.wachttijd, 0) / activeQueue.length)}d in wachtrij`
-                  : ""}
-              </CareMetricBadge>
-            }
-          />
+      <CarePageScaffold
+        archetype="worklist"
+        title="Beoordeling door aanbieder"
+        subtitle="Afwijzing zonder reden = systeemfout. Gestructureerde feedback verbetert matching en beslissingen."
+        metric={
+          <CareMetricBadge>
+            {activeQueue.length} open
+            {activeQueue.length > 0
+              ? ` · gem. ${Math.round(activeQueue.reduce((sum, c) => sum + c.wachttijd, 0) / activeQueue.length)}d in wachtrij`
+              : ""}
+          </CareMetricBadge>
         }
         filters={
           <CareSearchFiltersBar
@@ -1042,7 +1035,7 @@ function ProviderView({
             )}
           </div>
         )}
-      </CarePageTemplate>
+      </CarePageScaffold>
     </>
   );
 }

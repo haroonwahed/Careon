@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CanonicalPhaseBadge,
   CareAttentionBar,
@@ -11,10 +12,8 @@ import {
   CareFilterTabGroup,
   CareMetricBadge,
   CareMetaChip,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
   normalizeBoardColumnToPhaseId,
 } from "./CareUnifiedPage";
@@ -76,18 +75,15 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
   };
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="worklist"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title="Plaatsingen"
-          subtitle="Van bevestiging tot intake — één lijn door de keten."
-          metric={
-            <CareMetricBadge>
-              {placementCases.length} plaatsingen in flow
-            </CareMetricBadge>
-          }
-        />
+      title="Plaatsingen"
+      subtitle="Van bevestiging tot intake — één lijn door de keten."
+      metric={
+        <CareMetricBadge>
+          {placementCases.length} plaatsingen in flow
+        </CareMetricBadge>
       }
       filters={
         <CareSearchFiltersBar
@@ -179,6 +175,6 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
         title="Volgt uit matching"
         copy="Plaatsing en intake horen bij elkaar; gebruik de casus voor de volgende beslissing."
       />
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }

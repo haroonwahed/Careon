@@ -44,6 +44,7 @@ If startup still fails:
 
 - confirm `DATABASE_URL` starts with `postgresql://` or `postgres://`
 - confirm the password portion is percent-encoded if it contains reserved characters like `,`, `@`, `:` or `*`
+- if you use Supabase's session pooler, confirm the username is `postgres.<project-ref>` rather than plain `postgres`
 - confirm the database host is reachable from Render
 - confirm `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` include the actual Render URL
 - confirm `DEFAULT_FROM_EMAIL` is not the local placeholder

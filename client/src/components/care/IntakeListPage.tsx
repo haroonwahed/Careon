@@ -4,12 +4,11 @@ import { apiClient } from "../../lib/apiClient";
 import { useCases, type SpaCase } from "../../hooks/useCases";
 import { Button } from "../ui/button";
 import { CareEmptyState } from "./CareSurface";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareContextHint,
   CareMetricBadge,
-  CarePageTemplate,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
 } from "./CareUnifiedPage";
 import { UrgencyBadge } from "./UrgencyBadge";
 
@@ -100,20 +99,17 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   };
 
   return (
-    <CarePageTemplate
-      header={
-        <CareUnifiedHeader
-          title={summary.title}
-          subtitle={summary.description}
-          metric={
-            <CareMetricBadge>
-              {visibleCases.length} zichtbaar · {pendingRequests.length} open{" "}
-              {pendingRequests.length === 1 ? "aanvraag" : "aanvragen"} · {intakeCases.length} plaatsing/intake
-            </CareMetricBadge>
-          }
-        />
+    <CarePageScaffold
+      archetype="worklist"
+      title={summary.title}
+      subtitle={summary.description}
+      metric={
+        <CareMetricBadge>
+          {visibleCases.length} zichtbaar · {pendingRequests.length} open{" "}
+          {pendingRequests.length === 1 ? "aanvraag" : "aanvragen"} · {intakeCases.length} plaatsing/intake
+        </CareMetricBadge>
       }
-      attention={
+      dominantAction={
         <div className="grid grid-cols-1 gap-3 px-1 md:grid-cols-3">
           <div className="rounded-xl border border-border/70 bg-card/60 p-4">
             <div className="mb-1 flex items-center justify-between">
@@ -240,6 +236,6 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
         title="Workflow"
         copy="Accepteren zet door naar plaatsing en intake. Afwijzen stuurt terug naar matching."
       />
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }

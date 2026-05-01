@@ -7,15 +7,14 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
+import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareDominantStatus,
   CareFilterTabButton,
   CareFilterTabGroup,
   CareMetaChip,
-  CarePageTemplate,
   CarePrimaryList,
   CareSearchFiltersBar,
-  CareUnifiedHeader,
   CareWorkRow,
 } from "./CareUnifiedPage";
 import { CareEmptyState } from "./CareSurface";
@@ -345,14 +344,11 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   };
 
   return (
-    <CarePageTemplate
+    <CarePageScaffold
+      archetype="signal-action"
       className="pb-8"
-      header={
-        <CareUnifiedHeader
-          title="Signalen"
-          subtitle={`Automatische detectie van problemen en afwijkingen · ${loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}`}
-        />
-      }
+      title="Signalen"
+      subtitle={`Automatische detectie van problemen en afwijkingen · ${loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}`}
       filters={
         <CareSearchFiltersBar
           tabs={
@@ -428,6 +424,6 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
           />
         )}
       </div>
-    </CarePageTemplate>
+    </CarePageScaffold>
   );
 }

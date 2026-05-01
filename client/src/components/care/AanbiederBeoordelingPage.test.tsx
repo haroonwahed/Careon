@@ -61,3 +61,20 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
     expect(screen.getByRole("button", { name: "Bekijk status" })).toBeInTheDocument();
   });
 });
+
+describe("AanbiederBeoordelingPage (zorgaanbieder)", () => {
+  it("renders scaffold header, search, and active review when a case is pending", () => {
+    mockUseCases.mockReturnValue({
+      cases: [makeCase({ id: "C-Z1", title: "Te beoordelen" })],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<AanbiederBeoordelingPage role="zorgaanbieder" onCaseClick={vi.fn()} />);
+
+    expect(screen.getByRole("heading", { name: "Beoordeling door aanbieder" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Zoek op casus-ID, regio/i)).toBeInTheDocument();
+    expect(screen.getByText("Actieve beoordeling")).toBeInTheDocument();
+  });
+});
