@@ -2,9 +2,15 @@ import re
 from datetime import date, timedelta
 from unittest.mock import patch
 
+from django.conf import settings as django_settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+_MIDDLEWARE_WITHOUT_SPA_SHELL = [
+    m for m in django_settings.MIDDLEWARE
+    if m != 'contracts.middleware.SpaShellMigrationMiddleware'
+]
 
 from contracts.models import (
     CaseIntakeProcess,
@@ -26,6 +32,7 @@ class _FakeDecision:
         return self._payload
 
 
+@override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
 class PlaatsingenOperationalContractRegressionTests(TestCase):
     @classmethod
     def setUpTestData(cls):

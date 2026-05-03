@@ -364,6 +364,19 @@ export async function installCareApiStubs(page: Page, options?: { regiekamerOver
         body: JSON.stringify(body),
       });
 
+    if (pathNoTrailing === "/care/api/me" || pathNoTrailing === "/care/api/me/") {
+      await fulfill({
+        id: 1,
+        email: "e2e@example.com",
+        fullName: "E2E Gemeente",
+        username: "e2e_gemeente",
+        workflowRole: "gemeente",
+        organization: { id: 1, name: "Utrecht" },
+        permissions: { allowRoleSwitch: true },
+        flags: { pilotUi: true, spaOnlyWorkflow: false },
+      });
+      return;
+    }
     if (pathNoTrailing === "/care/api/cases") {
       await fulfill(casesPayload);
       return;

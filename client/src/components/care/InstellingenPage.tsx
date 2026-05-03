@@ -259,7 +259,7 @@ export function InstellingenPage() {
         </div>
         <div className="grid gap-3 md:grid-cols-3">
           <AccessCard title="Regisseurs" count={14} description="Case triage, matching en plaatsing" />
-          <AccessCard title="Beoordelaars" count={9} description="Beoordeling door aanbieder, acceptatie / afwijzing en kwaliteitscontrole" />
+          <AccessCard title="Beoordelaars" count={9} description="Aanbieder beoordeling: acceptatie / afwijzing en kwaliteitscontrole" />
           <AccessCard title="Admins" count={3} description="Platformbeheer en autorisaties" />
         </div>
       </section>

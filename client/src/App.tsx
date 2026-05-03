@@ -6,7 +6,7 @@ import { PUBLIC_LANDING_URL } from "./lib/routes";
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") {
-      return "dark";
+      return "light";
     }
 
     const storedTheme = window.localStorage.getItem("careon-theme");
@@ -16,9 +16,8 @@ export default function App() {
       return storedTheme;
     }
 
-    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-    if (prefersDark) document.documentElement.classList.add("dark");
-    return prefersDark ? "dark" : "light";
+    document.documentElement.classList.remove("dark");
+    return "light";
   });
   const [isDashboardView] = useState(() => new URLSearchParams(window.location.search).get("view") === "dashboard");
   const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL);

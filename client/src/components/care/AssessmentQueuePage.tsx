@@ -34,7 +34,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
   return (
     <CarePageScaffold
       archetype="worklist"
-      title="Beoordeling door aanbieder"
+      title="Aanbieder beoordeling"
       subtitle="Open voor besluit."
       metric={
         <CareMetricBadge>

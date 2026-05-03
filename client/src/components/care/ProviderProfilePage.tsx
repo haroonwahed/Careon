@@ -87,7 +87,7 @@ export function ProviderProfilePage({
       
       {/* Top Bar */}
       <div className="border-b border-border bg-card sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="w-full px-0 py-4">
           <div className="flex items-center justify-between">
             <Button 
               variant="ghost" 
@@ -119,7 +119,7 @@ export function ProviderProfilePage({
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="w-full px-0 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* LEFT COLUMN (2/3) */}

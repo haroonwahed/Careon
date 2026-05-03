@@ -5252,6 +5252,10 @@ def matching_dashboard(request):
 @login_required
 @require_POST
 def case_matching_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+
+        return HttpResponseRedirect('/care/matching')
     org = get_user_organization(request.user)
     intake = get_object_or_404(
         scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),

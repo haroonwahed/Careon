@@ -31,7 +31,7 @@ export function CaseStatusBadge({ status, showIcon = true, size = "md" }: CaseSt
       icon: FileText
     },
     assessment: {
-      label: "Beoordeling door aanbieder",
+      label: "Aanbieder beoordeling",
       color: "text-[#3B82F6]",
       bg: "bg-[rgba(59,130,246,0.1)]",
       border: "border-[rgba(59,130,246,0.3)]",

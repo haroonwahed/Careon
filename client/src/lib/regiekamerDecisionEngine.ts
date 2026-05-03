@@ -332,9 +332,9 @@ export function buildRegiekamerDecisionSummary(
     },
     {
       key: "wacht_op_aanbieder",
-      title: "Wacht op aanbieder",
+      title: "Aanbieder beoordeling",
       value: issue_buckets.wacht_op_aanbieder,
-      subtitle: "Verzoek verstuurd, wacht op reactie",
+      subtitle: "Verzoek verstuurd — wacht op reactie van de aanbieder",
       severity: issue_buckets.wacht_op_aanbieder > 0 ? "info" : "good",
       action: { target_view: "plaatsingen", target_filter: "aanbieder_wacht", label: "Bekijk aanbiederreacties" },
     },

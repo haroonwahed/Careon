@@ -3,9 +3,22 @@
  * Shows list view → detail view workflow
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MatchingPageWithMap } from "./MatchingPageWithMap";
 import { MatchingQueuePage } from "./MatchingQueuePage";
+
+function readOpenCaseFromSearch(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  const raw = new URLSearchParams(window.location.search).get("openCase");
+  const trimmed = raw?.trim() ?? "";
+  // Numeric CareCase.pk in production; E2E stubs may use slug ids (e.g. e2e-matching-1).
+  if (!trimmed || !/^[A-Za-z0-9_-]{1,128}$/.test(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}
 
 interface MatchingPageWrapperProps {
   onNavigateToCasussen?: () => void;
@@ -19,8 +32,21 @@ export function MatchingPageWrapper({
   onNavigateToBeoordelingen,
   onNavigateToCaseDetail,
 }: MatchingPageWrapperProps) {
-  const [selectedCase, setSelectedCase] = useState<string | null>(null);
+  const [selectedCase, setSelectedCase] = useState<string | null>(() => readOpenCaseFromSearch());
   const [matchConfirmed, setMatchConfirmed] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has("openCase")) {
+      return;
+    }
+    url.searchParams.delete("openCase");
+    const next = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState(window.history.state, "", next);
+  }, []);
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);

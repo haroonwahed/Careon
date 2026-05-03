@@ -96,13 +96,13 @@ function deriveStatusFromCase(caseItem: SpaCase): {
 } {
   switch (caseItem.status) {
     case "provider_beoordeling":
-      return { label: "Wacht op aanbieder", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Aanbieder beoordeling", colorClass: "text-amber-400", icon: Clock };
     case "plaatsing":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     case "afgerond":
       return { label: "Geaccepteerd", colorClass: "text-green-400", icon: CheckCircle2 };
     default:
-      return { label: "Wacht op aanbieder", colorClass: "text-amber-400", icon: Clock };
+      return { label: "Aanbieder beoordeling", colorClass: "text-amber-400", icon: Clock };
   }
 }
 
@@ -254,8 +254,8 @@ function GemeenteView({
   return (
     <CarePageScaffold
       archetype="worklist"
-      title="Wacht op aanbieder"
-      subtitle="Gemeente volgt. Aanbieder beslist."
+      title="Aanbieder beoordeling"
+      subtitle="Gemeente volgt. Wacht op reactie van de aanbieder; aanbieder beslist."
       metric={
         <CareMetricBadge>
           {pendingCount} wacht · {acceptedCount} geaccepteerd · {reviewCases.length} totaal
@@ -271,7 +271,7 @@ function GemeenteView({
     >
       {/* States */}
       {loading && (
-        <CareEmptyState title="Wacht op aanbieder laden…" copy="De lijst wordt opgebouwd." />
+        <CareEmptyState title="Aanbieder beoordeling laden…" copy="De lijst wordt opgebouwd." />
       )}
 
       {!loading && error && (
@@ -931,7 +931,7 @@ function ProviderView({
 
       <CarePageScaffold
         archetype="worklist"
-        title="Beoordeling door aanbieder"
+        title="Aanbieder beoordeling"
         subtitle="Afwijzing zonder reden = systeemfout. Gestructureerde feedback verbetert matching en beslissingen."
         metric={
           <CareMetricBadge>

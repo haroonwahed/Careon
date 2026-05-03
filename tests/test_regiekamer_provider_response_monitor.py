@@ -1,8 +1,10 @@
 from datetime import date, timedelta
 
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 from django.utils import timezone
 
 from contracts.models import (
@@ -19,6 +21,7 @@ from contracts.models import (
 from contracts.views import build_provider_response_monitor
 
 
+@override_settings(MIDDLEWARE=middleware_without_spa_shell())
 class RegiekamerProviderResponseMonitorTests(TestCase):
     def setUp(self):
         self.client = Client()

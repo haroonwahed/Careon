@@ -73,7 +73,7 @@ const FLOW_STEPS = [
   { id: "samenvatting", label: "Samenvatting", owner: "Systeem" },
   { id: "matching", label: "Matching", owner: "Gemeente" },
   { id: "gemeente_validatie", label: "Gemeente Validatie", owner: "Gemeente" },
-  { id: "aanbieder_beoordeling", label: "Beoordeling door aanbieder", owner: "Zorgaanbieder" },
+  { id: "aanbieder_beoordeling", label: "Aanbieder beoordeling", owner: "Zorgaanbieder" },
   { id: "plaatsing", label: "Plaatsing", owner: "Gemeente" },
   { id: "intake", label: "Intake", owner: "Zorgaanbieder" },
 ] as const;
@@ -140,7 +140,7 @@ function phaseDecisionEyebrow(stepId: FlowStepId): string {
     samenvatting: "Samenvatting",
     matching: "Matching",
     gemeente_validatie: "Gemeente validatie",
-    aanbieder_beoordeling: "Beoordeling door aanbieder",
+    aanbieder_beoordeling: "Aanbieder beoordeling",
     plaatsing: "Plaatsing",
     intake: "Intake",
   };
@@ -156,7 +156,7 @@ function phaseDecisionTitle(stepId: FlowStepId, blockerIsMissingSummary: boolean
     samenvatting: "Samenvatting vereist",
     matching: "Matching resultaat",
     gemeente_validatie: "Matchadvies controleren",
-    aanbieder_beoordeling: "Wacht op aanbieder",
+    aanbieder_beoordeling: "Aanbieder beoordeling",
     plaatsing: "Plaatsing afronden",
     intake: "Intake starten",
   };
@@ -275,10 +275,11 @@ function CaseWorkflowTimeline({
                   : isCurrent && dwellPressure === "elevated"
                     ? "text-orange-700 dark:text-orange-300"
                     : isCurrent && dwellPressure === "warn"
-                      ? "text-amber-800 dark:text-amber-300"
-                      : isCurrent
+                    ? "text-amber-800 dark:text-amber-300"
+                    : isCurrent
                         ? "text-foreground"
                         : "text-muted-foreground";
+            const detailText = isCurrent ? (compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]) : null;
 
             return (
               <div key={step.id} className="relative min-w-0 px-0.5 pt-0 md:px-1.5 md:pt-10">
@@ -299,13 +300,13 @@ function CaseWorkflowTimeline({
                   <div className="hidden md:block" />
                 </div>
                 <p className={`text-[14px] font-semibold ${isCurrent ? "text-foreground" : "text-foreground/90"}`}>{step.label}</p>
-                <p className="mt-0.5 text-[12px] text-muted-foreground">{step.owner}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {isCurrent ? <p className="mt-0.5 text-[12px] text-muted-foreground">{step.owner}</p> : null}
+                <div className={`mt-1 flex flex-wrap items-center gap-1.5 ${!isCurrent ? "md:mt-1.5" : ""}`}>
                   <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ${hintTone}`}>
                     {stateText}
                   </span>
                 </div>
-                <p className={`mt-1 text-[11px] leading-snug ${hintTone}`}>{compactHint[step.id] ?? STEP_REQUIREMENTS[step.id]}</p>
+                {detailText ? <p className={`mt-1 text-[11px] leading-snug ${hintTone}`}>{detailText}</p> : null}
               </div>
             );
           })}
@@ -751,10 +752,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const hoursInFlowState = decisionEvaluation?.decision_context?.hours_in_current_state ?? null;
   const timelineActiveStepId = FLOW_STEPS[workflowIndex]?.id;
   const timelineCompactHint: Record<string, string> = { ...processCompactHint };
-  if (timelineActiveStepId && typeof hoursInFlowState === "number" && hoursInFlowState >= 24) {
-    const base = timelineCompactHint[timelineActiveStepId] ?? STEP_REQUIREMENTS[timelineActiveStepId as FlowStepId];
-    timelineCompactHint[timelineActiveStepId] = `${base} · ${Math.round(hoursInFlowState)}u in deze stap`;
-  }
 
   const flowProgress = (
     <CaseWorkflowTimeline

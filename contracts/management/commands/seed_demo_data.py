@@ -788,6 +788,9 @@ class Command(BaseCommand):
         case_record.save(update_fields=['status', 'case_phase', 'content', 'service_region', 'risk_level', 'start_date', 'end_date', 'created_by', 'updated_at'])
 
         if spec['assessment_status'] is not None:
+            ws_context = (spec.get('summary') or spec.get('description') or 'Demo samenvatting voor pilot.').strip()
+            if len(ws_context) < 24:
+                ws_context = f'{ws_context} — aangevuld voor minimale samenvattingslengte.'
             assessment = CaseAssessment.objects.update_or_create(
                 due_diligence_process=intake,
                 defaults={
@@ -796,6 +799,13 @@ class Command(BaseCommand):
                     'reason_not_ready': '' if spec['matching_ready'] else 'Ontbrekende informatie.',
                     'notes': spec['summary'] or spec['description'],
                     'assessed_by': demo_user,
+                    'workflow_summary': {
+                        'context': ws_context,
+                        'urgency': str(spec['urgency']),
+                        'risks': [str(p) for p in spec.get('problematiek', [])],
+                        'missing_information': str(spec.get('missing_information', '') or ''),
+                        'risks_none_ack': len(spec.get('problematiek', [])) == 0,
+                    },
                 },
             )[0]
             assessment.save()

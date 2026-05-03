@@ -71,7 +71,7 @@ const urgencyConfig: Record<UrgencyLevel, {
 
 const statusConfig: Record<CaseStatus, { label: string; color: string }> = {
   intake: { label: "Casus", color: "careon-badge-purple" },
-  beoordeling: { label: "Beoordeling door aanbieder", color: "careon-badge-blue" },
+  beoordeling: { label: "Aanbieder beoordeling", color: "careon-badge-blue" },
   matching: { label: "Matching", color: "careon-badge-yellow" },
   plaatsing: { label: "Plaatsing", color: "bg-green-light text-green-base border border-green-border" },
   afgerond: { label: "Afgerond", color: "bg-slate-500/20 text-slate-300 border border-slate-500/30" }

@@ -900,6 +900,13 @@ class CaseAssessment(models.Model):
         help_text='Vrije notities bij beoordeling'
     )
 
+    # Structured pilot summary (Casus → Samenvatting); keys: context, urgency, risks, missing_information
+    workflow_summary = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name='Gestructureerde samenvatting',
+    )
+
     # Track who performed assessment
     assessed_by = models.ForeignKey(
         User,
@@ -1246,6 +1253,7 @@ class CaseDecisionLog(models.Model):
         SLA_ESCALATION = 'SLA_ESCALATION', 'SLA state transition'
         CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
         STATE_TRANSITION = 'STATE_TRANSITION', 'Workflow state transition'
+        GEMEENTE_VALIDATION = 'GEMEENTE_VALIDATION', 'Gemeente validatie matching'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.

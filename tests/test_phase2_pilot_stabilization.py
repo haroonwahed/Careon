@@ -1,9 +1,15 @@
 import json
 from datetime import date, timedelta
 
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+_MIDDLEWARE_WITHOUT_SPA_SHELL = [
+    m for m in django_settings.MIDDLEWARE
+    if m != 'contracts.middleware.SpaShellMigrationMiddleware'
+]
 
 from contracts.models import (
     CaseAssessment,
@@ -18,6 +24,7 @@ from contracts.models import (
 )
 
 
+@override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
 class Phase2PilotStabilizationTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -102,10 +109,17 @@ class Phase2PilotStabilizationTests(TestCase):
         intake.status = status
         intake.save(update_fields=['status', 'updated_at'])
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.owner,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
         return intake
 
@@ -116,6 +130,8 @@ class Phase2PilotStabilizationTests(TestCase):
             status=CareProvider.Status.ACTIVE,
             created_by=self.owner,
         )
+        provider.responsible_coordinator = self.provider_actor
+        provider.save(update_fields=['responsible_coordinator', 'updated_at'])
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,

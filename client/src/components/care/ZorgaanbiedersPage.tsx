@@ -247,7 +247,7 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
   };
 
   return (
-      <div className="mx-auto flex w-full max-w-[1650px] min-w-0 flex-col gap-4 lg:gap-5">
+      <div className="flex w-full min-w-0 flex-col gap-4 lg:gap-5">
         <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)] sm:px-6 dark:border-slate-800 dark:bg-slate-900">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
             <div>

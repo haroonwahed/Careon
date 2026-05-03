@@ -180,7 +180,7 @@ export function WorkloadPage({
 
   const sectionHeaders: Record<SectionKey, string> = {
     attention: "⚠ Vraagt aandacht",
-    "waiting-provider": "⏳ Wacht op aanbieder",
+    "waiting-provider": "⏳ Aanbieder beoordeling",
     stable: "✓ Stabiel",
   };
 
@@ -195,7 +195,7 @@ export function WorkloadPage({
     if (item.isBlocked || item.missingDataItems.length > 0) return "Blokkade";
     if (problem.includes("urgentie")) return "Blokkade";
     if (problem.includes("samenvatting")) return "Blokkade";
-    if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Wacht op aanbieder";
+    if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Aanbieder beoordeling";
     return decision.requiresCurrentUserAction ? "Actie vereist" : "Geen actie nodig";
   };
 
@@ -224,7 +224,7 @@ export function WorkloadPage({
     { value: "samenvatting", label: "Samenvatting" },
     { value: "matching", label: "Matching" },
     { value: "gemeente-validatie", label: "Gemeente Validatie" },
-    { value: "aanbieder-beoordeling", label: "Wacht op aanbieder" },
+    { value: "aanbieder-beoordeling", label: "Aanbieder beoordeling" },
     { value: "plaatsing", label: "Plaatsing" },
     { value: "intake", label: "Intake" },
   ];
@@ -247,7 +247,7 @@ export function WorkloadPage({
               {[
                 { key: "all" as const, label: "Alles" },
                 { key: "my-actions" as const, label: "Mijn acties" },
-                { key: "waiting-provider" as const, label: "Wacht op aanbieder" },
+                { key: "waiting-provider" as const, label: "Aanbieder beoordeling" },
                 { key: "blocked" as const, label: "Geblokkeerd" },
               ].map((tab) => (
                 <CareFilterTabButton key={tab.key} selected={focusChip === tab.key} onClick={() => setFocusChip(tab.key)}>

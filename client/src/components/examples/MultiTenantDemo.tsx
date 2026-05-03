@@ -29,9 +29,11 @@ import { DocumentenPage } from "../care/DocumentenPage";
 import { AudittrailPage } from "../care/AudittrailPage";
 import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
+import { CareAppFrame } from "../care/CareAppFrame";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
+import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { countOpenCareTasks } from "../../lib/actiesTaskSemantics";
 import { buildWorkflowCases } from "../../lib/workflowUi";
 
@@ -240,6 +242,7 @@ interface MultiTenantDemoProps {
 }
 
 export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) {
+  const { me } = useCurrentUser();
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
   const [currentPage, setCurrentPage] = useState<Page>(() =>
     normalizePageForRole(
@@ -364,6 +367,25 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     goToPage("zorgaanbieders");
   };
 
+  /** Pilot / production: lock shell to Django session role when API disables switching. */
+  useEffect(() => {
+    if (!me || me.permissions.allowRoleSwitch) {
+      return;
+    }
+    const subtitle =
+      me.workflowRole === "zorgaanbieder"
+        ? "Zorgaanbieder"
+        : me.workflowRole === "admin"
+          ? "Administrator"
+          : "Gemeente";
+    setCurrentContext({
+      id: `session-${me.id}`,
+      type: me.workflowRole,
+      name: me.organization?.name ?? me.fullName,
+      subtitle,
+    });
+  }, [me]);
+
   const handleOpenEntityFromAudit = (entry: any) => {
     if (entry.entityType === "casus" && entry.entityId) {
       handleCaseClick(entry.entityId);
@@ -397,12 +419,13 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           currentContext={currentContext}
           availableContexts={availableContexts}
           onContextSwitch={handleContextSwitch}
-          notificationCount={7}
+          showRoleSwitcher={me?.permissions.allowRoleSwitch ?? true}
+          notificationCount={0}
           onNotificationClick={() => {
             goToPage("acties");
           }}
           onSearch={() => undefined}
-          userName="Jane Doe"
+          userName={me?.fullName ?? "Jane Doe"}
           userRole="Regisseur"
           onProfileClick={() => {
             goToPage("instellingen");
@@ -422,7 +445,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
         {/* CONTENT */}
         <main data-testid="care-app-main" className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-5">
+          <div className="flex-1 overflow-y-auto">
+            <CareAppFrame className="min-h-full">
             {selectedCase ? (
               <CaseExecutionPage
                 caseId={selectedCase}
@@ -695,6 +719,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
               </>
             )}
+            </CareAppFrame>
           </div>
         </main>
       </div>

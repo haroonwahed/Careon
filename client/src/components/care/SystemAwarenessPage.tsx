@@ -29,7 +29,6 @@ import {
   buildRegiekamerNbaInstrumentationPayload,
   emitRegiekamerNbaEvent,
   shouldEmitRegiekamerNbaShown,
-  type RegiekamerNbaInsightSource,
 } from "../../lib/regiekamerNbaInstrumentation";
 
 interface SystemAwarenessPageProps {
@@ -162,7 +161,7 @@ const PHASE_LABELS: Record<string, string> = {
   samenvatting: "Samenvatting",
   matching: "Matching",
   gemeente_validatie: "Gemeente validatie",
-  aanbieder_beoordeling: "Wacht op aanbieder",
+  aanbieder_beoordeling: "Aanbieder beoordeling",
   plaatsing: "Plaatsing",
   intake: "Intake",
 };
@@ -526,7 +525,7 @@ function dominantMetricKey(totals: {
 export type RegiekamerUiMode = RegiekamerNbaUiMode;
 
 const FLOW_CHAIN_LABEL =
-  "Casus → Samenvatting → Matching → Gemeente validatie → Wacht op aanbieder → Plaatsing → Intake";
+  "Casus → Samenvatting → Matching → Gemeente validatie → Aanbieder beoordeling → Plaatsing → Intake";
 
 function CompactMetricStrip({
   totals,
@@ -952,7 +951,6 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       buildRegiekamerNbaInstrumentationPayload({
         actionKey: regiekamerNba.primaryAction.actionKey,
         uiMode,
-        title: regiekamerNba.title,
         reasonCount: regiekamerNba.reasons.length,
       }),
     );
@@ -967,7 +965,6 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
         buildRegiekamerNbaInstrumentationPayload({
           actionKey: secondary.actionKey,
           uiMode,
-          title: regiekamerNba.title,
           reasonCount: regiekamerNba.reasons.length,
         }),
       );
@@ -981,7 +978,6 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       buildRegiekamerNbaInstrumentationPayload({
         actionKey: regiekamerNba.primaryAction.actionKey,
         uiMode,
-        title: regiekamerNba.title,
         reasonCount: regiekamerNba.reasons.length,
       }),
     );
@@ -1001,34 +997,28 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       buildRegiekamerNbaInstrumentationPayload({
         actionKey: regiekamerNba.primaryAction.actionKey,
         uiMode,
-        title: regiekamerNba.title,
         reasonCount: regiekamerNba.reasons.length,
       }),
     );
   }, [hasActiveData, regiekamerNba, uiMode]);
 
-  const emitInsightOpened = useCallback(
-    (source: RegiekamerNbaInsightSource) => {
-      emitRegiekamerNbaEvent(
-        "nba_insight_opened",
-        buildRegiekamerNbaInstrumentationPayload({
-          actionKey: regiekamerNba.primaryAction.actionKey,
-          uiMode,
-          title: regiekamerNba.title,
-          reasonCount: regiekamerNba.reasons.length,
-          source,
-        }),
-      );
-    },
-    [regiekamerNba, uiMode],
-  );
+  const emitInsightOpened = useCallback(() => {
+    emitRegiekamerNbaEvent(
+      "nba_insight_opened",
+      buildRegiekamerNbaInstrumentationPayload({
+        actionKey: regiekamerNba.primaryAction.actionKey,
+        uiMode,
+        reasonCount: regiekamerNba.reasons.length,
+      }),
+    );
+  }, [regiekamerNba, uiMode]);
 
   const onInsightWhyToggle = useCallback(
     (e: ToggleEvent<HTMLDetailsElement>) => {
       if (!e.currentTarget.open) {
         return;
       }
-      emitInsightOpened("why");
+      emitInsightOpened();
     },
     [emitInsightOpened],
   );
@@ -1038,7 +1028,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       if (!e.currentTarget.open) {
         return;
       }
-      emitInsightOpened("flow");
+      emitInsightOpened();
     },
     [emitInsightOpened],
   );
@@ -1081,7 +1071,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       rows.push({
         key: "stock",
         title: "Open de werkvoorraad voor detail en prioriteit",
-        cta: "Bekijk werkvoorraad",
+        cta: "Prioriteer werkvoorraad",
         onClick: () => onAppNavigate?.("/casussen"),
       });
       return rows;
@@ -1089,13 +1079,13 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     rows.push({
       key: "reports",
       title: "Rapportages en trends voor ketenverbetering",
-      cta: "Analyseer prestaties",
+      cta: "Analyseer doorstroom",
       onClick: () => onAppNavigate?.("/rapportages"),
     });
     rows.push({
       key: "stock",
       title: "Casussen blijven de bron voor dagelijkse regie",
-      cta: "Bekijk werkvoorraad",
+      cta: "Prioriteer werkvoorraad",
       onClick: () => onAppNavigate?.("/casussen"),
     });
     return rows;
@@ -1157,7 +1147,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
               supplementalLink={
                 regiekamerNba.panel.showCasesLink && regiekamerNba.panel.linkCount > 0
                   ? {
-                      label: `Bekijk casussen (${regiekamerNba.panel.linkCount})`,
+                      label: `Toon gefilterde casussen (${regiekamerNba.panel.linkCount})`,
                       onClick: applyModeCasesLink,
                       testId: "regiekamer-dominant-cases-link",
                     }
@@ -1204,7 +1194,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
                     <p className="mt-3 text-sm font-medium leading-snug text-foreground">
                       Grootste knelpunt: {flowHotspot.label}
                       {flowHotspot.phase === "aanbieder_beoordeling"
-                        ? " — casussen blijven hangen vóór beoordeling."
+                        ? " — casussen blijven hangen vóór beoordeling (wacht op aanbieder)."
                         : ` — ${flowHotspot.count} casussen in deze fase.`}
                     </p>
                   )}
@@ -1373,11 +1363,31 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       )}
 
       {!loading && !error && !hasActiveData && (
-        <CareEmptyState title="Geen actieve casussen." copy="Zodra er casussen zijn, verschijnen ze hier met signalen en volgende stappen." />
+        <CareEmptyState
+          title="Geen actieve casussen."
+          copy="Zodra er casussen zijn, verschijnen ze hier met signalen en volgende stappen. Open de werkvoorraad om bestaande dossiers te bekijken of nieuwe regie op te pakken."
+          action={
+            onAppNavigate ? (
+              <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
+                Open casussen
+              </Button>
+            ) : undefined
+          }
+        />
       )}
 
       {!loading && !error && hasActiveData && !hasAnySignals && (
-        <CareEmptyState title="Geen signalen." copy="De keten loopt zonder blokkades." />
+        <CareEmptyState
+          title="Geen signalen."
+          copy="Er zijn actieve casussen, maar geen regie-signalen op dit moment. Controleer de werkvoorraad voor detail, prioriteit en volgende stappen in de keten."
+          action={
+            onAppNavigate ? (
+              <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
+                Prioriteer werkvoorraad
+              </Button>
+            ) : undefined
+          }
+        />
       )}
 
       {!loading && !error && hasActiveData && hasAnySignals && visibleItems.length === 0 && (

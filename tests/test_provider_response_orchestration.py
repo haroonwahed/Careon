@@ -1,8 +1,14 @@
 from datetime import date, timedelta
 
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+_MIDDLEWARE_WITHOUT_SPA_SHELL = [
+    m for m in django_settings.MIDDLEWARE
+    if m != 'contracts.middleware.SpaShellMigrationMiddleware'
+]
 from django.utils import timezone
 
 from contracts.models import (
@@ -19,6 +25,7 @@ from contracts.models import (
 from contracts.workflow_state_machine import WorkflowState
 
 
+@override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
 class ProviderResponseOrchestrationTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -65,6 +72,8 @@ class ProviderResponseOrchestrationTests(TestCase):
             status=CareProvider.Status.ACTIVE,
             created_by=self.owner,
         )
+        self.provider.responsible_coordinator = self.provider_actor
+        self.provider.save(update_fields=['responsible_coordinator', 'updated_at'])
         self.intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Provider Orchestration Intake',
@@ -78,10 +87,16 @@ class ProviderResponseOrchestrationTests(TestCase):
             client_age_category=CaseIntakeProcess.AgeCategory.ADULT,
         )
         CaseAssessment.objects.create(
-            intake=self.intake,
+            due_diligence_process=self.intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.owner,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
         self.placement = PlacementRequest.objects.create(
             due_diligence_process=self.intake,

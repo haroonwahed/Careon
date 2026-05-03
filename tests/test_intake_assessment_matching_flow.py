@@ -27,6 +27,13 @@ from contracts.models import (
 )
 from contracts.views import sync_case_flow_state
 
+MINIMAL_WORKFLOW_SUMMARY = {
+    'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+    'risks': ['test_risk'],
+    'missing_information': '',
+    'risks_none_ack': False,
+}
+
 
 class IntakeAssessmentMatchingFlowTests(TestCase):
     def setUp(self):
@@ -75,11 +82,13 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             target_completion_date=date.today() + timedelta(days=7),
             case_coordinator=self.user,
         )
+        intake.ensure_case_record(created_by=self.user)
         assessment = CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         assessment_list_response = self.client.get(reverse('careon:assessment_list'))
@@ -142,11 +151,13 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             target_completion_date=date.today() + timedelta(days=7),
             case_coordinator=self.user,
         )
+        intake.ensure_case_record(created_by=self.user)
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.DRAFT,
             matching_ready=False,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.post(
@@ -341,12 +352,13 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         )
         case_record = intake.ensure_case_record(created_by=self.user)
         assessment = CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.NEEDS_INFO,
             matching_ready=False,
             reason_not_ready='Aanvullende informatie nodig.',
             notes='Wacht op aanvullende gezinssituatie.',
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.get(
@@ -387,6 +399,16 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
                 'urgency': CaseIntakeProcess.Urgency.HIGH,
                 'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
                 'constraints': ['DROPOUT_RISK'],
+                'workflow_summary': {
+                    'context': (
+                        'Klaar om door te sturen naar matching — pilot samenvatting '
+                        'met voldoende lengte voor de gate.'
+                    ),
+                    'urgency': CaseIntakeProcess.Urgency.HIGH,
+                    'risks': ['DROPOUT_RISK'],
+                    'missing_information': '',
+                    'risks_none_ack': False,
+                },
             }),
             content_type='application/json',
         )
@@ -419,11 +441,13 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             target_completion_date=date.today() + timedelta(days=7),
             case_coordinator=self.user,
         )
+        intake.ensure_case_record(created_by=self.user)
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.DRAFT,
             matching_ready=False,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
@@ -448,11 +472,13 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             target_completion_date=date.today() + timedelta(days=7),
             case_coordinator=self.user,
         )
+        intake.ensure_case_record(created_by=self.user)
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
@@ -643,10 +669,11 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             contract=case_record,
         )
         assessment = CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         assign_response = self.client.post(
@@ -831,10 +858,11 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         action_response = self.client.post(
@@ -1078,10 +1106,11 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.post(
@@ -1206,10 +1235,11 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             case_coordinator=self.user,
         )
         assessment = CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         response = self.client.get(reverse('careon:assessment_detail', kwargs={'pk': assessment.pk}))
@@ -1242,10 +1272,11 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             case_coordinator=self.user,
         )
         assessment = CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=MINIMAL_WORKFLOW_SUMMARY,
         )
 
         self.client.post(

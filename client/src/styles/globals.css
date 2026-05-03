@@ -4,32 +4,32 @@
   --font-size: 16px;
 
   /* Careon design system tokens */
-  --bg-base: #F7F8FA;
+  --bg-base: #F5F7FC;
   --bg-surface: #FFFFFF;
-  --bg-subtle: #F1F3F6;
-  --border-default: #E5E7EB;
-  --border-strong: #D1D5DB;
+  --bg-subtle: #EDF1F8;
+  --border-default: #D8E0EB;
+  --border-strong: #BEC8D6;
   --primary-hover: #6D4BFF;
-  --primary-light: #EEE9FF;
+  --primary-light: #E5DEFF;
   --red-base: #EF4444;
-  --red-light: #FEF2F2;
-  --red-border: #FCA5A5;
+  --red-light: #FFE3E3;
+  --red-border: #F87171;
   --yellow-base: #F59E0B;
-  --yellow-light: #FFFBEB;
-  --yellow-border: #FCD34D;
+  --yellow-light: #FFF0CC;
+  --yellow-border: #F59E0B;
   --blue-base: #3B82F6;
-  --blue-light: #EFF6FF;
-  --blue-border: #93C5FD;
+  --blue-light: #DDEBFF;
+  --blue-border: #60A5FA;
   --green-base: #10B981;
-  --green-light: #ECFDF5;
-  --green-border: #6EE7B7;
-  --badge-red-bg: #FEE2E2;
+  --green-light: #DDF7EA;
+  --green-border: #34D399;
+  --badge-red-bg: #FECACA;
   --badge-red-text: #B91C1C;
-  --badge-yellow-bg: #FEF3C7;
+  --badge-yellow-bg: #FDE68A;
   --badge-yellow-text: #92400E;
-  --badge-blue-bg: #DBEAFE;
+  --badge-blue-bg: #BFDBFE;
   --badge-blue-text: #1E40AF;
-  --badge-purple-bg: #EDE9FE;
+  --badge-purple-bg: #DDD6FE;
   --badge-purple-text: #5B21B6;
   
   /* Modern Light Theme */
@@ -62,9 +62,9 @@
   --chart-3: var(--green-base);
   --chart-4: var(--yellow-base);
   --chart-5: var(--red-base);
-  --chart-1-soft: rgba(124, 92, 255, 0.24);
-  --chart-2-soft: rgba(59, 130, 246, 0.22);
-  --chart-4-soft: rgba(245, 158, 11, 0.24);
+  --chart-1-soft: rgba(124, 92, 255, 0.28);
+  --chart-2-soft: rgba(59, 130, 246, 0.26);
+  --chart-4-soft: rgba(245, 158, 11, 0.28);
   --radius: 0.75rem;
   
   /* Sidebar */
@@ -496,24 +496,24 @@ html {
 
 /* Priority card gradients — light mode */
 .priority-card-gradient-critical {
-  background: linear-gradient(135deg, rgba(254,242,242,0.96), rgba(255,255,255,1) 45%, rgba(255,251,235,0.88));
+  background: linear-gradient(135deg, rgba(254,226,226,0.98), rgba(255,255,255,1) 42%, rgba(255,240,204,0.94));
 }
 .priority-card-gradient-warning {
-  background: linear-gradient(135deg, rgba(255,251,235,0.96), rgba(255,255,255,1) 45%, rgba(239,246,255,0.88));
+  background: linear-gradient(135deg, rgba(255,240,204,0.98), rgba(255,255,255,1) 42%, rgba(221,235,255,0.94));
 }
 .priority-card-gradient-info {
-  background: linear-gradient(135deg, rgba(239,246,255,0.96), rgba(255,255,255,1) 45%, rgba(238,233,255,0.88));
+  background: linear-gradient(135deg, rgba(221,235,255,0.98), rgba(255,255,255,1) 42%, rgba(229,222,255,0.94));
 }
 
 /* Command center bar gradients */
 .command-bar-gradient-critical {
-  background: linear-gradient(135deg, rgba(255, 247, 237, 0.94), rgba(255, 255, 255, 0.98) 48%, rgba(254, 242, 242, 0.9));
+  background: linear-gradient(135deg, rgba(255, 240, 204, 0.98), rgba(255, 255, 255, 0.98) 46%, rgba(254, 226, 226, 0.94));
 }
 .command-bar-gradient-warning {
-  background: linear-gradient(135deg, rgba(255, 251, 235, 0.95), rgba(255, 255, 255, 0.98) 48%, rgba(239, 246, 255, 0.88));
+  background: linear-gradient(135deg, rgba(255, 240, 204, 0.98), rgba(255, 255, 255, 0.98) 46%, rgba(221, 235, 255, 0.92));
 }
 .command-bar-gradient-info {
-  background: linear-gradient(135deg, rgba(239, 246, 255, 0.94), rgba(255, 255, 255, 0.98) 48%, rgba(238, 233, 255, 0.9));
+  background: linear-gradient(135deg, rgba(221, 235, 255, 0.98), rgba(255, 255, 255, 0.98) 46%, rgba(229, 222, 255, 0.94));
 }
 
 /* Priority card gradients — dark mode */

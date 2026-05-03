@@ -61,6 +61,8 @@ class RegiekamerDecisionOverviewTests(TestCase):
             status=CareProvider.Status.ACTIVE,
             created_by=self.admin,
         )
+        self.provider_a.responsible_coordinator = self.provider_user
+        self.provider_a.save(update_fields=['responsible_coordinator', 'updated_at'])
         ProviderProfile.objects.create(
             client=self.provider_a,
             offers_outpatient=True,
@@ -142,6 +144,12 @@ class RegiekamerDecisionOverviewTests(TestCase):
                 assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
                 matching_ready=True,
                 assessed_by=self.admin,
+                workflow_summary={
+                    'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                    'risks': ['test_risk'],
+                    'missing_information': '',
+                    'risks_none_ack': False,
+                },
             )
 
         if provider is not None:

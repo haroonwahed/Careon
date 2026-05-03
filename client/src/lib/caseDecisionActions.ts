@@ -135,13 +135,17 @@ export async function executeCaseAction(
         decision: "matching",
         shortDescription: "Casus doorgestuurd naar matching vanuit casusdetail.",
       });
-      return { kind: "mutation", message: "Matching gestart." };
+      return {
+        kind: "navigate",
+        message: "Matching gestart.",
+        href: `/care/matching?openCase=${encodeURIComponent(caseIdString)}`,
+      };
 
     case "VALIDATE_MATCHING":
       return {
         kind: "navigate",
         message: "Matching wordt geopend.",
-        href: `/care/cases/${caseIdString}/?tab=matching`,
+        href: `/care/matching?openCase=${encodeURIComponent(caseIdString)}`,
       };
 
     case "SEND_TO_PROVIDER":
@@ -149,7 +153,14 @@ export async function executeCaseAction(
         throw new Error("Geen geselecteerde aanbieder beschikbaar om te versturen.");
       }
       await requestJson(`/care/api/cases/${caseIdString}/matching/action/`, {
-        action: "assign",
+        action: "confirm_validation",
+        provider_id: selectedProviderId,
+        validation_context:
+          (options.decisionEvaluation.decision_context as { matching_validation_context?: Record<string, unknown> })
+            ?.matching_validation_context ?? {},
+      });
+      await requestJson(`/care/api/cases/${caseIdString}/matching/action/`, {
+        action: "send_to_provider",
         provider_id: selectedProviderId,
       });
       return { kind: "mutation", message: "Casus verstuurd naar aanbieder." };

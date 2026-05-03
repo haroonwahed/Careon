@@ -21,9 +21,11 @@ Run:
 
 import datetime
 
-from django.test import TestCase
-from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 
 from contracts.models import (
     CareCase,
@@ -38,9 +40,13 @@ from contracts.models import (
     PlacementRequest,
     Budget,
     CaseIntakeProcess,
+    UserProfile,
 )
 
 User = get_user_model()
+
+
+_DJANGO_HTML_WS = override_settings(MIDDLEWARE=middleware_without_spa_shell())
 
 
 # ---------------------------------------------------------------------------
@@ -184,6 +190,7 @@ class CrossTenantFixtureMixin:
 # 1. Direct org-FK models: CareCase, Document, Client, CareConfiguration
 # ===========================================================================
 
+@_DJANGO_HTML_WS
 class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
     """CareCase records carry organization FK and must stay tenant-scoped."""
 
@@ -195,12 +202,21 @@ class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertIn('Intake', body)
         self.assertNotIn('Alpha NDA', body)
 
-    def test_detail_cross_org_returns_404(self):
+    def test_cases_api_excludes_other_org_contracts(self):
+        """API is source of truth for pilot workspace; must not leak other-tenant cases."""
         self.client.login(username='user_b', password='passB1234!')
-        url = reverse('careon:case_detail', kwargs={'pk': self.contract_a.pk})
-        response = self.client.get(url)
-        self.assertEqual(response.status_code, 404,
-                         'Accessing another org case detail must return 404')
+        response = self.client.get(reverse('careon:cases_api'))
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        ids = {row['id'] for row in payload.get('contracts', [])}
+        self.assertNotIn(str(self.contract_a.pk), ids)
+        self.assertIn(str(self.contract_b.pk), ids)
+
+    def test_case_detail_api_cross_org_returns_404(self):
+        """Dossier HTML may be SPA-shelled; API must still return 404 for wrong tenant."""
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:case_detail_api', kwargs={'case_id': self.contract_a.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
 
     def test_update_cross_org_returns_404(self):
         self.client.login(username='user_b', password='passB1234!')
@@ -210,6 +226,126 @@ class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
                          'Accessing another org configuration update must return 404')
 
 
+@_DJANGO_HTML_WS
+class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCase):
+    """
+    When gemeente and zorgaanbieder share an organization, list/detail APIs must not
+    expose all org cases to the provider—only those with a placement row pointing at
+    the provider's staffed Client (responsible_coordinator).
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.provider_user = User.objects.create_user(
+            username='provider_same_org', password='passP1234!',
+        )
+        OrganizationMembership.objects.create(
+            organization=self.org_a,
+            user=self.provider_user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.create(user=self.provider_user, role=UserProfile.Role.CLIENT)
+
+        self.provider_client = Client.objects.create(
+            organization=self.org_a,
+            name='Staffed Provider',
+            client_type=Client.ClientType.CORPORATION,
+            responsible_coordinator=self.provider_user,
+        )
+        self.other_provider = Client.objects.create(
+            organization=self.org_a,
+            name='Other Provider Same Org',
+            client_type=Client.ClientType.CORPORATION,
+        )
+
+        self.contract_linked = CareCase.objects.create(
+            organization=self.org_a,
+            title='Placement-linked Case',
+            contract_type='NDA',
+            status='ACTIVE',
+            created_by=self.user_a,
+        )
+        self.intake_linked = CaseIntakeProcess.objects.create(
+            organization=self.org_a,
+            contract=self.contract_linked,
+            title='Linked Intake',
+            start_date=datetime.date.today(),
+            target_completion_date=datetime.date.today() + datetime.timedelta(days=30),
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=self.intake_linked,
+            mark_text='L',
+            description='d',
+            goods_services='s',
+            filing_basis='f',
+            client=self.client_a,
+            proposed_provider=self.provider_client,
+            selected_provider=self.provider_client,
+        )
+
+        self.contract_other = CareCase.objects.create(
+            organization=self.org_a,
+            title='Same-org Other-provider Case',
+            contract_type='NDA',
+            status='ACTIVE',
+            created_by=self.user_a,
+        )
+        self.intake_other = CaseIntakeProcess.objects.create(
+            organization=self.org_a,
+            contract=self.contract_other,
+            title='Other Intake',
+            start_date=datetime.date.today(),
+            target_completion_date=datetime.date.today() + datetime.timedelta(days=30),
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=self.intake_other,
+            mark_text='O',
+            description='d',
+            goods_services='s',
+            filing_basis='f',
+            client=self.client_a,
+            proposed_provider=self.other_provider,
+            selected_provider=self.other_provider,
+        )
+
+    def test_provider_cases_api_lists_only_placement_linked_cases(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        response = self.client.get(reverse('careon:cases_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('contracts', [])}
+        self.assertIn(str(self.contract_linked.pk), ids)
+        self.assertNotIn(str(self.contract_other.pk), ids)
+
+    def test_gemeente_owner_cases_api_still_lists_all_org_cases(self):
+        self.client.login(username='user_a', password='passA1234!')
+        response = self.client.get(reverse('careon:cases_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('contracts', [])}
+        self.assertIn(str(self.contract_linked.pk), ids)
+        self.assertIn(str(self.contract_other.pk), ids)
+        self.assertIn(str(self.contract_a.pk), ids)
+
+    def test_provider_case_detail_blocked_for_unlinked_same_org_case(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_detail_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_case_detail_allowed_when_placement_targets_provider(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_detail_api', kwargs={'case_id': self.contract_linked.pk})
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_cross_tenant_cases_api_unchanged(self):
+        """Other-tenant isolation remains strict (existing behaviour)."""
+        self.client.login(username='user_b', password='passB1234!')
+        response = self.client.get(reverse('careon:cases_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('contracts', [])}
+        self.assertNotIn(str(self.contract_linked.pk), ids)
+
+
+@_DJANGO_HTML_WS
 class DocumentIsolationTest(CrossTenantFixtureMixin, TestCase):
     """Documents carry organization FK."""
 
@@ -232,6 +368,7 @@ class DocumentIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class ClientIsolationTest(CrossTenantFixtureMixin, TestCase):
     """Clients carry organization FK."""
 
@@ -254,6 +391,7 @@ class ClientIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class CareConfigurationIsolationTest(CrossTenantFixtureMixin, TestCase):
     """CareConfiguration records carry organization FK."""
 
@@ -273,6 +411,7 @@ class CareConfigurationIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class GlobalSearchIsolationTest(CrossTenantFixtureMixin, TestCase):
     """Global search must only return organization-scoped records for the active user."""
 
@@ -318,6 +457,7 @@ class GlobalSearchIsolationTest(CrossTenantFixtureMixin, TestCase):
 # 2. Related-field isolated models (no direct org FK – filtered via FK chain)
 # ===========================================================================
 
+@_DJANGO_HTML_WS
 class DeadlineIsolationTest(CrossTenantFixtureMixin, TestCase):
     """
     Deadline has no direct organization FK. Isolation is enforced in
@@ -344,6 +484,7 @@ class DeadlineIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.post(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class CareTaskIsolationTest(CrossTenantFixtureMixin, TestCase):
     """
     CareTask has no direct organization FK. Isolation enforced via
@@ -364,6 +505,7 @@ class CareTaskIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class CareSignalIsolationTest(CrossTenantFixtureMixin, TestCase):
     """
     CareSignal has no direct organization FK. Isolation enforced via
@@ -385,6 +527,7 @@ class CareSignalIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class PlacementRequestIsolationTest(CrossTenantFixtureMixin, TestCase):
     """
     PlacementRequest has no direct organization FK. Isolation enforced via
@@ -448,6 +591,7 @@ class UnauthenticatedAccessTest(TestCase):
 # 4. Previously-known gaps — now fixed via migration 0005
 # ===========================================================================
 
+@_DJANGO_HTML_WS
 class BudgetIsolationTest(CrossTenantFixtureMixin, TestCase):
     """Budget cross-tenant isolation – enforced via organization FK (migration 0005)."""
 
@@ -487,6 +631,7 @@ class BudgetIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.assertEqual(self.client.get(url).status_code, 404)
 
 
+@_DJANGO_HTML_WS
 class CaseIntakeProcessIsolationTest(CrossTenantFixtureMixin, TestCase):
     """CaseIntakeProcess cross-tenant isolation via organization FK (migration 0005)."""
 

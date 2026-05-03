@@ -239,7 +239,7 @@ export const ALL_PHASES: { id: CasusPhase; label: string; shortLabel: string }[]
   { id: "casus",               label: "Casus",                 shortLabel: "Casus"      },
   { id: "matching",            label: "Matching",              shortLabel: "Matching"   },
   { id: "aanbieder_selectie",  label: "Aanbieder selecteren",  shortLabel: "Selectie"   },
-  { id: "provider_beoordeling",label: "Beoordeling door aanbieder",  shortLabel: "Beoordeling door aanbieder"},
+  { id: "provider_beoordeling", label: "Aanbieder beoordeling", shortLabel: "Aanbieder beoordeling" },
   { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: "Intake"     },
   { id: "afgerond",            label: "Afgerond",              shortLabel: "Afgerond"   },
 ];
@@ -305,8 +305,8 @@ function computeNextAction(casus: Casus): { label: string; detail: string; type:
         };
       }
       return {
-        label:  "Wacht op aanbiedersreactie",
-        detail: "Plaatsingsverzoek is verstuurd. De aanbieder beoordeelt momenteel de casus.",
+        label:  "Aanbieder beoordeling",
+        detail: "Wacht op aanbiedersreactie — plaatsingsverzoek is verstuurd; de aanbieder beoordeelt de casus.",
         type:   "info",
       };
     }

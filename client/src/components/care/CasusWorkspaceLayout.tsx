@@ -45,7 +45,7 @@ export function CasusWorkspaceLayout({
   contextStack,
 }: CasusWorkspaceLayoutProps) {
   return (
-    <div className="w-full max-w-5xl space-y-6 bg-background px-0 pb-12 pt-0 text-foreground">
+    <div className="w-full min-w-0 space-y-6 bg-background px-0 pb-12 pt-0 text-foreground">
       <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
         <Button
           variant="ghost"

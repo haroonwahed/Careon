@@ -73,6 +73,8 @@ class WorkflowFoundationLockTests(TestCase):
             status=CareProvider.Status.ACTIVE,
             created_by=self.gemeente_user,
         )
+        self.provider.responsible_coordinator = self.provider_user
+        self.provider.save(update_fields=['responsible_coordinator', 'updated_at'])
 
     def _create_matching_ready_case(self):
         intake = CaseIntakeProcess.objects.create(
@@ -94,6 +96,13 @@ class WorkflowFoundationLockTests(TestCase):
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.gemeente_user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
         return intake
 
@@ -138,8 +147,9 @@ class WorkflowFoundationLockTests(TestCase):
             content_type='application/json',
         )
 
-        self.assertEqual(response.status_code, 400)
-        self.assertIn('Nog geen plaatsing beschikbaar', response.json().get('error', ''))
+        # No placement link to this provider: API must not reveal the case (404), not 200.
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('niet gevonden', (response.json().get('error') or '').lower())
 
     def test_bulk_update_rejects_workflow_fields(self):
         intake = self._create_matching_ready_case()

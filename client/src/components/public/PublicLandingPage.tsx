@@ -26,7 +26,7 @@ const featureCards = [
   {
     icon: Users,
     title: "Aanbieder beoordeling",
-    copy: "Beoordeling door aanbieder op fit, capaciteit en risico, met redencodes vastgelegd.",
+    copy: "Fit, capaciteit en risico; redencodes en traceerbare besluitvorming (wacht op aanbiederreactie waar van toepassing).",
   },
   {
     icon: CheckCircle2,
@@ -150,7 +150,7 @@ export function PublicLandingPage({
                     { step: "1", title: "Casus", copy: "Minimale intake en bron van waarheid." },
                     { step: "2", title: "Samenvatting", copy: "Context, urgentie en hiaten zichtbaar." },
                     { step: "3", title: "Matching", copy: "Verklaarbare aanbevelingen per aanbieder." },
-                    { step: "4", title: "Aanbieder beoordeling", copy: "Beoordeling door aanbieder op fit, capaciteit en risico." },
+                    { step: "4", title: "Aanbieder beoordeling", copy: "Fit, capaciteit en risico — redencodes vastgelegd; wacht op aanbiederreactie waar nodig." },
                     { step: "5", title: "Plaatsing", copy: "Pas na acceptatie en bevestigde overdracht." },
                     { step: "6", title: "Intake", copy: "Start van het zorgtraject na plaatsing." },
                   ].map((item) => (

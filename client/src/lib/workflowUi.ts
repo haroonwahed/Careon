@@ -135,7 +135,7 @@ function boardColumnLabel(column: WorkflowBoardColumn): string {
     case "gemeente-validatie":
       return "Gemeente Validatie";
     case "aanbieder-beoordeling":
-      return "Wacht op aanbieder";
+      return "Aanbieder beoordeling";
     case "plaatsing":
       return "Plaatsing";
     case "intake":
@@ -298,7 +298,7 @@ function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn,
     case "gemeente-validatie":
       return "Gemeente validatie";
     case "aanbieder-beoordeling":
-      return "Wacht op aanbieder";
+      return "Aanbieder beoordeling";
     case "plaatsing":
       return "Plaatsing";
     case "intake":

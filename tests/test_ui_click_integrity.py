@@ -4,10 +4,11 @@ import re
 from urllib.parse import urlparse
 
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import Resolver404, resolve, reverse
 
 from contracts.models import CareCase, Organization, OrganizationMembership
+from tests.test_utils import middleware_without_spa_shell
 
 
 class _InteractiveElementParser(HTMLParser):
@@ -93,6 +94,7 @@ class _LabelAssociationParser(HTMLParser):
             self._current_label_text = []
 
 
+@override_settings(MIDDLEWARE=middleware_without_spa_shell())
 class UIButtonAndFlowIntegrityTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(

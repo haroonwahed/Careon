@@ -154,7 +154,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   {item.recommendedProvidersCount} aanbieders
                 </CareMetaChip>
               }
-              actionLabel={item.primaryActionEnabled ? "Start matching" : "Controleer matchadvies"}
+              actionLabel={item.primaryActionEnabled ? "Vergelijk aanbieders" : "Controleer matchadvies"}
               actionVariant={item.primaryActionEnabled ? "primary" : "ghost"}
               onOpen={() => onCaseClick(item.id)}
               onAction={(event) => {

@@ -92,7 +92,7 @@ const CANONICAL_PHASE_LABELS: Record<string, string> = {
   samenvatting: "Samenvatting",
   matching: "Matching",
   gemeente_validatie: "Gemeente validatie",
-  aanbieder_beoordeling: "Wacht op aanbieder",
+  aanbieder_beoordeling: "Aanbieder beoordeling",
   plaatsing: "Plaatsing",
   intake: "Intake",
 };
@@ -391,7 +391,7 @@ export type CareWorkRowProps = {
 
 /**
  * Operational work list row: shared grid, density, and interaction pattern for
- * Regiekamer, Casussen, Matching, Plaatsingen, Wacht op aanbieder, Acties, etc.
+ * Regiekamer, Casussen, Matching, Plaatsingen, Aanbieder beoordeling, Acties, etc.
  */
 export function CareWorkRow({
   title,

@@ -1,10 +1,12 @@
 from django.contrib.auth.models import User
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 from contracts.models import AuditLog, Organization, OrganizationInvitation, OrganizationMembership
+from tests.test_utils import middleware_without_spa_shell
 
 
+@override_settings(MIDDLEWARE=middleware_without_spa_shell())
 class OrganizationInvitationTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(

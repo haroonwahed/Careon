@@ -5,7 +5,13 @@
  * @see DESIGN_SYSTEM_TESTING.md at repository root.
  */
 import { expect, test, type Page } from "@playwright/test";
-import { goSidebar, installCareApiStubs, SPA_BASE } from "./helpers/careSpaApiStubs";
+import {
+  E2E_MATCHING_CASE_ID,
+  goSidebar,
+  installCareApiStubs,
+  SPA_BASE,
+  SPA_ORIGIN,
+} from "./helpers/careSpaApiStubs";
 
 test.describe.configure({ mode: "serial", timeout: 90_000 });
 
@@ -60,7 +66,7 @@ test.describe("Care design system (SPA)", () => {
       { nav: "Signalen", heading: /^Signalen$/i },
       { nav: "Zorgaanbieders", heading: /Zorgaanbieders/i },
       { nav: "Regio's", heading: "Regio's" },
-      { nav: "Wacht op aanbieder", heading: /Wacht op aanbieder/i },
+      { nav: "Aanbieder beoordeling", heading: /Aanbieder beoordeling/i },
       { nav: "Plaatsingen", heading: /Plaatsingen/i },
     ];
 
@@ -276,7 +282,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     });
   }
 
-  test("stable: insights collapsed by default + Bekijk werkvoorraad", async ({ page }) => {
+  test("stable: insights collapsed by default + Prioriteer werkvoorraad", async ({ page }) => {
     await darkTheme(page);
     await installCareApiStubs(page, {
       regiekamerOverview: {
@@ -296,7 +302,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     const panel = page.getByTestId("regiekamer-dominant-action");
     await expect(panel).toHaveCount(1);
     await expect(panel).toHaveAttribute("data-regiekamer-mode", "stable");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Bekijk werkvoorraad/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Prioriteer werkvoorraad/);
     await expect(page.getByTestId("regiekamer-insight-why")).toBeVisible();
     await expect(page.getByTestId("regiekamer-insight-flow")).toBeVisible();
     expect(await page.getByTestId("regiekamer-insight-why").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
@@ -306,7 +312,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await expect(page.getByTestId("regiekamer-action-queue")).toBeVisible();
   });
 
-  test("optimization: Analyseer prestaties + insights", async ({ page }) => {
+  test("optimization: Analyseer doorstroom + insights", async ({ page }) => {
     await darkTheme(page);
     await installCareApiStubs(page, {
       regiekamerOverview: {
@@ -325,14 +331,14 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
     const panel = page.getByTestId("regiekamer-dominant-action");
     await expect(panel).toHaveAttribute("data-regiekamer-mode", "optimization");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Analyseer prestaties/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Analyseer doorstroom/);
     await expect(page.getByTestId("regiekamer-insight-why")).toBeVisible();
     expect(await page.getByTestId("regiekamer-insight-flow").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
     await page.getByTestId("regiekamer-insight-flow").locator("summary").click();
     expect(await page.getByTestId("regiekamer-insight-flow").evaluate((el) => (el as HTMLDetailsElement).open)).toBe(true);
   });
 
-  test("intervention: matching zwak — Herstart matching, geen insight-secties", async ({ page }) => {
+  test("intervention: matching zwak — Bekijk matching-urgenties, geen insight-secties", async ({ page }) => {
     await darkTheme(page);
     await installCareApiStubs(page, {
       regiekamerOverview: {
@@ -377,8 +383,25 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Herstart matching/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Bekijk matching-urgenties/);
     await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
     await expect(page.getByTestId("regiekamer-action-queue")).toBeVisible();
+  });
+});
+
+test.describe("Matching openCase deep link (SPA)", () => {
+  test("opens map workspace for the case in the query string", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem("careon-theme", "dark");
+    });
+    await installCareApiStubs(page);
+    await page.goto(
+      `${SPA_ORIGIN.replace(/\/$/, "")}/care/matching?openCase=${encodeURIComponent(E2E_MATCHING_CASE_ID)}`,
+      { waitUntil: "domcontentloaded" },
+    );
+    await expect(page.getByTestId("care-app-shell")).toBeVisible({ timeout: 45_000 });
+    await expect(
+      page.getByRole("heading", { name: new RegExp(`Matching — Casus ${E2E_MATCHING_CASE_ID}`, "i") }),
+    ).toBeVisible({ timeout: 30_000 });
   });
 });

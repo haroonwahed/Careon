@@ -31,7 +31,7 @@ export interface CasusWorkboardClassification {
  * 1) Vraagt aandacht:
  *    - workflow blocked OR primary action disabled OR missing required data
  *    - OR immediate action is required from current role
- * 2) Wacht op aanbieder:
+ * 2) Aanbieder beoordeling (wacht op aanbieder):
  *    - no immediate/blocking issue
  *    - responsible actor is provider
  *    - case is in provider review/response phase

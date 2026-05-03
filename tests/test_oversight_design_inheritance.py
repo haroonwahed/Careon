@@ -3,9 +3,12 @@ Tests for Gemeenten / Zorgregio oversight workspace design inheritance.
 Validates MEDIUM intensity design patterns: aggregated signals, calm strategic framing,
 no command bars, no case-level triage, safe empty/partial states.
 """
-from django.test import TestCase, Client as TestClient
-from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.test import TestCase, override_settings
+from django.test import Client as DjangoTestClient
+from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 
 from contracts.models import (
     Organization,
@@ -24,7 +27,10 @@ from contracts.oversight_workspace import (
 
 User = get_user_model()
 
+_DJANGO_HTML_WS = override_settings(MIDDLEWARE=middleware_without_spa_shell())
 
+
+@_DJANGO_HTML_WS
 class OversightDesignInheritanceTests(TestCase):
     """Validate MEDIUM-intensity design constraints for oversight pages."""
 
@@ -88,7 +94,7 @@ class OversightDesignInheritanceTests(TestCase):
         self.municipality_a.linked_providers.add(self.provider)
         self.region.linked_providers.add(self.provider)
 
-        self.client = TestClient()
+        self.client = DjangoTestClient()
         self.client.login(username="oversightuser", password="testpass")
 
     # ------------------------------------------------------------------

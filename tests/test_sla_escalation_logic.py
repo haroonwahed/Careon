@@ -2,8 +2,10 @@ from datetime import date, datetime, timedelta
 import unittest
 
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 from django.utils import timezone
 
 from contracts.case_intelligence import (
@@ -334,6 +336,7 @@ class SlaIntelligenceIntegrationTests(unittest.TestCase):
         self.assertEqual(rejected_owner["next_action"], "rematch")
 
 
+@override_settings(MIDDLEWARE=middleware_without_spa_shell())
 class SlaMonitorExposureTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -444,8 +447,8 @@ class SlaMonitorExposureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Providerreactie monitor")
-        self.assertContains(response, "Open reacties")
-        self.assertContains(response, "Geen cap.")
+        self.assertContains(response, "open reacties")
+        self.assertContains(response, "geen cap")
         self.assertContains(response, "SLA Provider")
         self.assertContains(response, "frequent delays")
 
@@ -479,7 +482,7 @@ class SlaMonitorExposureTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "SLA Provider")
-        self.assertContains(response, "Geen cap.")
+        self.assertContains(response, "geen cap")
         self.assertNotContains(response, "Filter Provider")
 
 

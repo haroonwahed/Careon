@@ -2,9 +2,12 @@
 Tests for Zorgaanbieders (provider capacity) workspace design inheritance implementation.
 Validates LOW-MEDIUM intensity design patterns, subtle operational signals, and safe states.
 """
-from django.test import TestCase, Client as TestClient
-from django.urls import reverse
 from django.contrib.auth import get_user_model
+from django.test import Client as DjangoTestClient
+from django.test import TestCase, override_settings
+from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 
 from contracts.models import Client, Organization, ProviderProfile, RegionalConfiguration
 from contracts.provider_workspace import build_provider_workspace_summary, build_provider_workspace_rows
@@ -13,7 +16,10 @@ from contracts.views import _provider_profile_match_surface
 
 User = get_user_model()
 
+_DJANGO_HTML_WS = override_settings(MIDDLEWARE=middleware_without_spa_shell())
 
+
+@_DJANGO_HTML_WS
 class ZorgaanbiedersDesignInheritanceTests(TestCase):
     """Verify Zorgaanbieders follows design system LOW-MEDIUM intensity."""
 
@@ -215,7 +221,7 @@ class ZorgaanbiedersDesignInheritanceTests(TestCase):
 
     def test_client_list_view_returns_200_with_context(self):
         """ClientListView should render with proper context."""
-        client = TestClient()
+        client = DjangoTestClient()
         client.login(username='testuser', password='testpass')
 
         response = client.get(reverse('careon:client_list'))
@@ -242,7 +248,7 @@ class ZorgaanbiedersDesignInheritanceTests(TestCase):
 
     def test_filtering_preserves_design_context(self):
         """Filters should work without breaking design context."""
-        client = TestClient()
+        client = DjangoTestClient()
         client.login(username='testuser', password='testpass')
 
         # Test with basic request
@@ -282,6 +288,7 @@ class ZorgaanbiedersDesignInheritanceTests(TestCase):
                 )
 
 
+@_DJANGO_HTML_WS
 class ZorgaanbiedersLowMediumIntensityTests(TestCase):
     """Verify LOW-MEDIUM intensity constraints are enforced."""
 

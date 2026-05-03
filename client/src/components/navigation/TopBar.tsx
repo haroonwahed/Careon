@@ -40,6 +40,8 @@ interface TopBarProps {
   currentContext: Context;
   availableContexts: Context[];
   onContextSwitch: (contextId: string) => void;
+  /** When false, role is session-fixed (pilot); dropdown hidden. */
+  showRoleSwitcher?: boolean;
   notificationCount?: number;
   onNotificationClick?: () => void;
   onSearch?: (query: string) => void;
@@ -94,6 +96,7 @@ export function TopBar({
   currentContext,
   availableContexts,
   onContextSwitch,
+  showRoleSwitcher = true,
   notificationCount = 0,
   onNotificationClick,
   onSearch,
@@ -104,6 +107,7 @@ export function TopBar({
   onSettingsClick,
   onLogout
 }: TopBarProps) {
+  const canSwitchRole = showRoleSwitcher && availableContexts.length > 1;
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -164,7 +168,8 @@ export function TopBar({
       <div className="shrink-0">
         <div className="relative">
           <button
-            onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+            type="button"
+            onClick={() => canSwitchRole && setRoleDropdownOpen(!roleDropdownOpen)}
             className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/30 transition-colors group"
           >
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
@@ -176,7 +181,7 @@ export function TopBar({
                 <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                   {getRoleLabel(currentContext.type)}
                 </span>
-                {availableContexts.length > 1 && (
+                {canSwitchRole && (
                   <ChevronDown 
                     size={14} 
                     className={`text-muted-foreground transition-transform ${
@@ -192,7 +197,7 @@ export function TopBar({
           </button>
 
           {/* Role Dropdown */}
-          {roleDropdownOpen && availableContexts.length > 1 && (
+          {roleDropdownOpen && canSwitchRole && (
             <>
               {/* Backdrop */}
               <div 

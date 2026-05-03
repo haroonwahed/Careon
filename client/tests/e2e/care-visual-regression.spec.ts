@@ -185,9 +185,9 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(rows.first()).toBeVisible();
   });
 
-  test("Wacht op aanbieder: rows or empty", async ({ page }) => {
-    await goSidebar(page, "Wacht op aanbieder");
-    await expect(page.getByRole("heading", { name: /Wacht op aanbieder/i })).toBeVisible({ timeout: 30_000 });
+  test("Aanbieder beoordeling: rows or empty", async ({ page }) => {
+    await goSidebar(page, "Aanbieder beoordeling");
+    await expect(page.getByRole("heading", { name: /Aanbieder beoordeling/i })).toBeVisible({ timeout: 30_000 });
     await maybeDump(page, "beoordeling-desktop");
     const rows = page.locator('article[data-density="compact"]');
     if ((await rows.count()) === 0) {

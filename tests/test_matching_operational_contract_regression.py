@@ -62,6 +62,13 @@ class MatchingOperationalContractRegressionTests(TestCase):
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'HIGH',
+                'risks': ['contract_test'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
         return intake, assessment
 

@@ -1,4 +1,5 @@
 import logging
+import re
 
 from django.conf import settings
 from django.db import DatabaseError
@@ -134,6 +135,12 @@ class SpaShellMigrationMiddleware:
         '/settings/',
         '/care/',
     )
+    # Pilot SPA shells: keep serving the React index even when the path contains /pk/.
+    # Tenancy and forbidden access for these routes are enforced by /care/api/... .
+    SPA_SHELL_PK_EXCEPTION_PREFIXES = (
+        '/care/casussen/',
+        '/care/cases/',
+    )
 
     def __init__(self, get_response):
         self.get_response = get_response
@@ -162,7 +169,27 @@ class SpaShellMigrationMiddleware:
         if self._is_excluded(path):
             return False
 
-        return any(path.startswith(prefix) for prefix in self.SHELL_PREFIXES)
+        if not any(path.startswith(prefix) for prefix in self.SHELL_PREFIXES):
+            return False
+
+        # Legacy Django list/detail/edit URLs under /care/ must reach views so queryset
+        # scoping can return real 404/403 (cross-tenant, missing object). Pilot dossier
+        # URLs above remain SPA-first; those flows rely on API source of truth.
+        if self._legacy_care_path_should_bypass_spa_shell(path):
+            return False
+
+        return True
+
+    def _legacy_care_path_should_bypass_spa_shell(self, path: str) -> bool:
+        """True when path looks like a numeric PK route outside SPA dossier shells."""
+        if not path.startswith('/care/'):
+            return False
+        if not re.search(r'/\d+(?:/|$)', path):
+            return False
+        for prefix in self.SPA_SHELL_PK_EXCEPTION_PREFIXES:
+            if path.startswith(prefix):
+                return False
+        return True
 
     def __call__(self, request):
         user = getattr(request, 'user', None)

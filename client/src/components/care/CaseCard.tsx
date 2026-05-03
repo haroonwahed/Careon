@@ -107,7 +107,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
   const getStatusLabel = (s: CaseStatus): string => {
     const labels: Record<CaseStatus, string> = {
       intake: "Casus",
-      beoordeling: "Beoordeling door aanbieder",
+      beoordeling: "Aanbieder beoordeling",
       matching: "Matching",
       plaatsing: "Plaatsing",
       afgerond: "Afgerond"

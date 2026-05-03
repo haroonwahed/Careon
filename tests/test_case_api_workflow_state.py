@@ -18,6 +18,13 @@ from contracts.workflow_state_machine import WorkflowState
 
 User = get_user_model()
 
+_MIN_WS = {
+    "context": "Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.",
+    "risks": ["test_risk"],
+    "missing_information": "",
+    "risks_none_ack": False,
+}
+
 
 class CaseApiWorkflowStateTests(TestCase):
     def setUp(self):
@@ -49,10 +56,11 @@ class CaseApiWorkflowStateTests(TestCase):
             workflow_state=workflow_state,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=_MIN_WS,
         )
         return intake.ensure_case_record(created_by=self.user).pk
 
@@ -162,10 +170,11 @@ class CaseApiWorkflowStateTests(TestCase):
             workflow_state=WorkflowState.PLACEMENT_CONFIRMED,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=_MIN_WS,
         )
         case_id = intake.ensure_case_record(created_by=self.user).pk
         CareCase.objects.filter(pk=case_id).update(case_phase=CareCase.CasePhase.PLAATSING)

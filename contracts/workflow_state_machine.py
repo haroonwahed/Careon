@@ -269,4 +269,5 @@ def log_transition_event(
             'timestamp': intake.updated_at.isoformat() if intake.updated_at else '',
         },
         optional_reason=reason or '',
+        strict=True,
     )

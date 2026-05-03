@@ -273,6 +273,10 @@ STATICFILES_DIRS = []
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Feature Flags
+# Pilot: server-driven UI (hide demo role switch) and optional single SPA workflow rail
+CAREON_PILOT_UI = _bool_env('CAREON_PILOT_UI', False)
+CAREON_PILOT_SPA_ONLY = _bool_env('CAREON_PILOT_SPA_ONLY', False)
+
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'

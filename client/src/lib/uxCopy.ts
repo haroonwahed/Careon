@@ -2,7 +2,7 @@ const STATUS_LABELS: Record<string, string> = {
   DRAFT_CASE: "Casus",
   SUMMARY_READY: "Samenvatting",
   MATCHING_READY: "Matching",
-  PROVIDER_REVIEW_PENDING: "Wacht op aanbieder",
+  PROVIDER_REVIEW_PENDING: "Aanbieder beoordeling",
   PROVIDER_ACCEPTED: "Aanbieder akkoord",
   PROVIDER_REJECTED: "Aanbieder afwijzing",
   PLACEMENT_CONFIRMED: "Plaatsing",
@@ -20,7 +20,7 @@ const REASON_PATTERNS: Array<[RegExp, string]> = [
   [/intake.*nog niet gestart/i, "Intake nog niet gestart"],
   [/plaatsing.*bevestigd/i, "Plaatsing bevestigd"],
   [/afgewezen/i, "Afgewezen"],
-  [/wacht op aanbieder/i, "Wacht op aanbieder"],
+  [/wacht op aanbieder/i, "Aanbieder beoordeling"],
   [/beoordeling door aanbieder/i, "Beoordeling"],
   [/volgende beste actie/i, "Actie"],
 ];

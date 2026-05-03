@@ -1,4 +1,6 @@
 import type { RegiekamerNbaActionKey, RegiekamerNbaUiMode } from "./regiekamerNextBestAction";
+import { trackNbaEvent } from "./telemetryAdapter";
+import type { RegiekamerNbaTelemetryEvent } from "./telemetrySchema";
 
 export const REGIEKAMER_NBA_ROUTE = "/regiekamer" as const;
 
@@ -9,42 +11,49 @@ export type RegiekamerNbaInstrumentationEventName =
   | "nba_cases_link_clicked"
   | "nba_insight_opened";
 
-/** Which Regiekamer insight `<details>` opened (`nba_insight_opened` only). */
+/** Which Regiekamer insight `<details>` opened (`nba_insight_opened` only) — UI only; not sent in telemetry v1. */
 export type RegiekamerNbaInsightSource = "why" | "flow";
 
+/** Internal context for building telemetry (no title — privacy). */
 export type RegiekamerNbaInstrumentationPayload = {
   actionKey: RegiekamerNbaActionKey;
   uiMode: RegiekamerNbaUiMode;
-  title: string;
   reasonCount: number;
-  timestamp: string;
   route: typeof REGIEKAMER_NBA_ROUTE;
-  /** Present for `nba_insight_opened` — extend with more literals when disclosures grow */
-  source?: RegiekamerNbaInsightSource;
+  /** For deterministic unit tests */
+  now?: Date;
 };
 
 export function buildRegiekamerNbaInstrumentationPayload(args: {
   actionKey: RegiekamerNbaActionKey;
   uiMode: RegiekamerNbaUiMode;
-  title: string;
   reasonCount: number;
   /** For deterministic unit tests */
   now?: Date;
-  source?: RegiekamerNbaInsightSource;
 }): RegiekamerNbaInstrumentationPayload {
-  const t = args.now ?? new Date();
-  const base: RegiekamerNbaInstrumentationPayload = {
+  return {
     actionKey: args.actionKey,
     uiMode: args.uiMode,
-    title: args.title,
     reasonCount: args.reasonCount,
-    timestamp: t.toISOString(),
     route: REGIEKAMER_NBA_ROUTE,
+    ...(args.now !== undefined ? { now: args.now } : {}),
   };
-  if (args.source !== undefined) {
-    base.source = args.source;
-  }
-  return base;
+}
+
+function toTelemetryEvent(
+  event: RegiekamerNbaInstrumentationEventName,
+  payload: RegiekamerNbaInstrumentationPayload,
+): RegiekamerNbaTelemetryEvent {
+  const ts = (payload.now ?? new Date()).getTime();
+  return {
+    event,
+    route: payload.route,
+    uiMode: payload.uiMode,
+    actionKey: payload.actionKey,
+    reasonCount: payload.reasonCount,
+    timestamp: ts,
+    schema_version: "v1",
+  };
 }
 
 let lastShownDedupe: { fingerprint: string; at: number } | null = null;
@@ -71,35 +80,12 @@ export function resetRegiekamerNbaShownDedupeForTests(): void {
   lastShownDedupe = null;
 }
 
-type RegiekamerNbaTrackFn = (
-  event: RegiekamerNbaInstrumentationEventName,
-  payload: RegiekamerNbaInstrumentationPayload,
-) => void;
-
-function getOptionalTrack(): RegiekamerNbaTrackFn | undefined {
-  if (typeof window === "undefined") {
-    return undefined;
-  }
-  const w = window as Window & { __REGIEKAMER_NBA_TRACK__?: RegiekamerNbaTrackFn };
-  return typeof w.__REGIEKAMER_NBA_TRACK__ === "function" ? w.__REGIEKAMER_NBA_TRACK__ : undefined;
-}
-
 /**
- * Frontend-only hook: logs in development; optional `window.__REGIEKAMER_NBA_TRACK__`
- * for staging/analytics wiring later (same payload shape).
+ * Frontend-only: delegates to `trackNbaEvent` (see `telemetryAdapter.ts`).
  */
 export function emitRegiekamerNbaEvent(
   event: RegiekamerNbaInstrumentationEventName,
   payload: RegiekamerNbaInstrumentationPayload,
 ): void {
-  const track = getOptionalTrack();
-  if (track) {
-    track(event, payload);
-    return;
-  }
-  if (!import.meta.env.DEV) {
-    return;
-  }
-  // eslint-disable-next-line no-console -- intentional dev-only instrumentation
-  console.debug("[regiekamer-nba]", event, payload);
+  trackNbaEvent(toTelemetryEvent(event, payload));
 }

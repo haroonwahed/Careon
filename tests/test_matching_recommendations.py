@@ -67,10 +67,17 @@ class MatchingRecommendationsTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
@@ -114,10 +121,17 @@ class MatchingRecommendationsTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))
@@ -136,10 +150,17 @@ class MatchingRecommendationsTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
 
         matching_provider = CareProvider.objects.create(
@@ -212,10 +233,17 @@ class MatchingRecommendationsTests(TestCase):
             case_coordinator=self.user,
         )
         CaseAssessment.objects.create(
-            intake=intake,
+            due_diligence_process=intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
 
         response = self.client.get(reverse('careon:matching_dashboard'))

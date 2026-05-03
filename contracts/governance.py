@@ -11,6 +11,10 @@ from contracts.models import CaseDecisionLog, GovernanceLogImmutableError, Syste
 
 logger = logging.getLogger(__name__)
 
+
+class AuditLoggingError(Exception):
+    """Raised when strict workflow audit logging cannot persist (must block or surface)."""
+
 _POLICY_BOOL_TRUE = {'1', 'true', 'yes', 'on'}
 _POLICY_BOOL_FALSE = {'0', 'false', 'no', 'off'}
 
@@ -175,13 +179,16 @@ def log_case_decision_event(
     recommended_value: Dict[str, Any] | None = None,
     actual_value: Dict[str, Any] | None = None,
     optional_reason: str | None = None,
+    strict: bool = False,
 ) -> bool:
-    """Append a CaseDecisionLog row and never raise to callers.
+    """Append a CaseDecisionLog row.
 
-    Logging is intentionally best-effort so operational actions are never
-    blocked by audit-write failures.
+    Non-workflow callers use ``strict=False`` (legacy best-effort behaviour).
+    Workflow state transitions must pass ``strict=True`` so failures propagate.
     """
     if not case_id:
+        if strict:
+            raise AuditLoggingError('CaseDecisionLog requires case_id.')
         return False
 
     resolved_actor_kind = str(actor_kind or '').strip().lower()
@@ -214,12 +221,14 @@ def log_case_decision_event(
             actual_value=actual_value,
             optional_reason=optional_reason or '',
         )
-    except Exception:
+    except Exception as exc:
         logger.exception('Failed to append CaseDecisionLog event', extra={
             'case_id': case_id,
             'placement_id': placement_id,
             'event_type': event_type,
         })
+        if strict:
+            raise AuditLoggingError('Kan auditlog voor deze workflowactie niet vastleggen.') from exc
         return False
     return True
 

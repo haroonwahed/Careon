@@ -312,7 +312,8 @@ describe("SystemAwarenessPage", () => {
     expect(screen.getByText("Casus B")).toBeInTheDocument();
   });
 
-  it("renders the no-data empty state", () => {
+  it("renders the no-data empty state with werkvoorraad CTA when navigation is available", () => {
+    const onAppNavigate = vi.fn();
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
@@ -330,12 +331,18 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
     expect(screen.getByText("Geen actieve casussen.")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Open de werkvoorraad om bestaande dossiers te bekijken/i),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Open casussen" }));
+    expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
   });
 
-  it("renders the no-issues empty state", () => {
+  it("renders the no-issues empty state with next-step copy and werkvoorraad CTA", () => {
+    const onAppNavigate = vi.fn();
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
@@ -348,6 +355,8 @@ describe("SystemAwarenessPage", () => {
         },
         items: [
           makeItem({
+            phase: "plaatsing",
+            urgency: "low",
             priority_score: 0,
             top_blocker: null,
             top_risk: null,
@@ -358,6 +367,8 @@ describe("SystemAwarenessPage", () => {
             case_id: 104,
             case_reference: "#104",
             title: "Casus D",
+            phase: "plaatsing",
+            urgency: "low",
             priority_score: 0,
             top_blocker: null,
             top_risk: null,
@@ -371,10 +382,135 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
     expect(screen.getByText("Geen signalen.")).toBeInTheDocument();
-    expect(screen.getByText("De keten loopt zonder blokkades.")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Er zijn actieve casussen, maar geen regie-signalen op dit moment/i),
+    ).toBeInTheDocument();
+    const noSignalsCard = screen.getByText("Geen signalen.").closest(".border-dashed");
+    expect(noSignalsCard).toBeTruthy();
+    fireEvent.click(
+      within(noSignalsCard as HTMLElement).getByRole("button", { name: "Prioriteer werkvoorraad" }),
+    );
+    expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
+  });
+
+  it("uses canonical Aanbieder beoordeling in flow chain and phase filter", async () => {
+    const user = userEvent.setup();
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview({
+        totals: {
+          active_cases: 5,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          repeated_rejections: 0,
+          intake_delays: 0,
+        },
+        items: [
+          makeItem({
+            case_id: 901,
+            case_reference: "#901",
+            title: "Rustige keten",
+            phase: "plaatsing",
+            current_state: "PLACEMENT_CONFIRMED",
+            urgency: "low",
+            top_blocker: null,
+            top_risk: null,
+            top_alert: null,
+            priority_score: 22,
+            blocker_count: 0,
+            risk_count: 0,
+            alert_count: 0,
+            issue_tags: [],
+          }),
+        ],
+      }),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "stable");
+    expect(
+      screen.getByText(
+        /Casus → Samenvatting → Matching → Gemeente validatie → Aanbieder beoordeling → Plaatsing → Intake/,
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /Meer filters/i }));
+    expect(screen.getByRole("option", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
+  });
+
+  it("renders crisis dominant NBA with Los blokkades op", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview(),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "crisis");
+    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
+  });
+
+  it("supplemental NBA link describes in-page filters, not navigation to /casussen", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview(),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    expect(screen.getByTestId("regiekamer-dominant-cases-link")).toHaveTextContent(
+      /Toon gefilterde casussen \(1\)/,
+    );
+  });
+
+  it("matching-urgenties tier uses filter-aligned primary label (no execution verbs)", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview({
+        totals: {
+          active_cases: 1,
+          critical_blockers: 0,
+          high_priority_alerts: 0,
+          provider_sla_breaches: 0,
+          repeated_rejections: 0,
+          intake_delays: 0,
+        },
+        items: [
+          makeItem({
+            case_id: 501,
+            case_reference: "#501",
+            title: "Matching urgent",
+            phase: "matching",
+            urgency: "high",
+            top_blocker: null,
+            blocker_count: 0,
+            risk_count: 0,
+            alert_count: 1,
+            issue_tags: ["alerts"],
+            priority_score: 90,
+          }),
+        ],
+      }),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    const primary = screen.getByTestId("regiekamer-dominant-primary-cta");
+    expect(primary).toHaveTextContent(/Bekijk matching-urgenties/i);
+    expect(primary.textContent?.toLowerCase() ?? "").not.toMatch(/herstart/);
   });
 
   it("opens the existing case detail overlay by notifying the parent", () => {

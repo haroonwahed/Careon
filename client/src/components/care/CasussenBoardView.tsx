@@ -33,7 +33,7 @@ export function CasussenBoardView({ cases, onViewCase, onTakeAction }: CasussenB
     color: string;
   }> = [
     { status: "intake", label: "Intake", color: "rgba(139, 92, 246, 0.2)" },
-    { status: "assessment", label: "Beoordeling door aanbieder", color: "rgba(59, 130, 246, 0.2)" },
+    { status: "assessment", label: "Aanbieder beoordeling", color: "rgba(59, 130, 246, 0.2)" },
     { status: "matching", label: "Matching", color: "rgba(245, 158, 11, 0.2)" },
     { status: "placement", label: "Plaatsing", color: "rgba(34, 211, 238, 0.2)" },
     { status: "completed", label: "Afgerond", color: "rgba(16, 185, 129, 0.2)" }

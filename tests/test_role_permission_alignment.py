@@ -1,8 +1,14 @@
 from datetime import date, timedelta
 
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+_MIDDLEWARE_WITHOUT_SPA_SHELL = [
+    m for m in django_settings.MIDDLEWARE
+    if m != 'contracts.middleware.SpaShellMigrationMiddleware'
+]
 
 from contracts.models import (
     CareCase,
@@ -19,6 +25,7 @@ from contracts.models import (
 )
 
 
+@override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
 class RolePermissionAlignmentTests(TestCase):
     def setUp(self):
         self.client = Client()
@@ -88,10 +95,16 @@ class RolePermissionAlignmentTests(TestCase):
         )
 
         self.assessment = CaseAssessment.objects.create(
-            intake=self.intake,
+            due_diligence_process=self.intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.owner,
+            workflow_summary={
+                'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
         )
 
         self.provider = CareProvider.objects.create(

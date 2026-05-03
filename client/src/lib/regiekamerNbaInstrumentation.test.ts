@@ -8,40 +8,20 @@ import {
 } from "./regiekamerNbaInstrumentation";
 
 describe("buildRegiekamerNbaInstrumentationPayload", () => {
-  it("builds the canonical payload shape", () => {
+  it("builds the canonical payload shape (no title — telemetry privacy)", () => {
     const fixed = new Date("2026-05-01T12:00:00.000Z");
     const p = buildRegiekamerNbaInstrumentationPayload({
       actionKey: "FOCUS_SLA",
       uiMode: "crisis",
-      title: "2 SLA-signal(en) vragen directe regie",
       reasonCount: 1,
       now: fixed,
     });
     expect(p).toEqual({
       actionKey: "FOCUS_SLA",
       uiMode: "crisis",
-      title: "2 SLA-signal(en) vragen directe regie",
       reasonCount: 1,
-      timestamp: "2026-05-01T12:00:00.000Z",
       route: REGIEKAMER_NBA_ROUTE,
-    });
-  });
-
-  it("includes source for insight-opened payloads", () => {
-    const fixed = new Date("2026-05-01T12:00:00.000Z");
-    const p = buildRegiekamerNbaInstrumentationPayload({
-      actionKey: "OPEN_REPORTS",
-      uiMode: "optimization",
-      title: "Volume hoog genoeg voor ketenanalyse",
-      reasonCount: 1,
       now: fixed,
-      source: "flow",
-    });
-    expect(p.source).toBe("flow");
-    expect(p).toMatchObject({
-      actionKey: "OPEN_REPORTS",
-      source: "flow",
-      route: REGIEKAMER_NBA_ROUTE,
     });
   });
 });
@@ -77,22 +57,33 @@ describe("shouldEmitRegiekamerNbaShown", () => {
 });
 
 describe("emitRegiekamerNbaEvent", () => {
+  const fixed = new Date("2026-05-01T12:00:00.000Z");
   const payload = buildRegiekamerNbaInstrumentationPayload({
     actionKey: "REVIEW_STABLE",
     uiMode: "stable",
-    title: "Keten stabiel",
     reasonCount: 0,
-    now: new Date("2026-05-01T12:00:00.000Z"),
+    now: fixed,
   });
+
+  const expectedTelemetry = {
+    event: "nba_shown" as const,
+    route: REGIEKAMER_NBA_ROUTE,
+    uiMode: "stable",
+    actionKey: "REVIEW_STABLE",
+    reasonCount: 0,
+    timestamp: fixed.getTime(),
+    schema_version: "v1" as const,
+  };
 
   afterEach(() => {
     delete (window as unknown as { __REGIEKAMER_NBA_TRACK__?: unknown }).__REGIEKAMER_NBA_TRACK__;
   });
 
-  it("invokes window.__REGIEKAMER_NBA_TRACK__ when set", () => {
+  it("invokes window.__REGIEKAMER_NBA_TRACK__ with RegiekamerNbaTelemetryEvent when set", () => {
     const fn = vi.fn();
     (window as unknown as { __REGIEKAMER_NBA_TRACK__: typeof fn }).__REGIEKAMER_NBA_TRACK__ = fn;
     emitRegiekamerNbaEvent("nba_shown", payload);
-    expect(fn).toHaveBeenCalledWith("nba_shown", payload);
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledWith(expectedTelemetry);
   });
 });

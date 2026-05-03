@@ -8,6 +8,7 @@ app_name = 'careon'
 
 urlpatterns = [
     # API
+    path('api/me/', api_views.current_user_api, name='current_user_api'),
     path('api/cases/', api_views.contracts_api, name='cases_api'),
     path('api/cases/bulk-update/', api_views.cases_bulk_update_api, name='cases_bulk_update_api'),
     path('api/cases/intake-form/', api_views.intake_form_options_api, name='intake_form_options_api'),

@@ -208,6 +208,8 @@ export function MatchingPageWithMap({
   type RankedMatchRow = (typeof rankedMatches)[number];
   const [selectionConfirmMatch, setSelectionConfirmMatch] = useState<RankedMatchRow | null>(null);
   const [waitlistTargetMatch, setWaitlistTargetMatch] = useState<RankedMatchRow | null>(null);
+  const [matchSubmitting, setMatchSubmitting] = useState(false);
+  const [matchSubmitError, setMatchSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     setWaitlistModalOpen(false);
@@ -355,15 +357,44 @@ export function MatchingPageWithMap({
     setSelectionConfirmMatch(match);
   };
 
-  const handleConfirmSelectionChoice = () => {
+  const handleConfirmSelectionChoice = async () => {
     const match = selectionConfirmMatch;
     if (!match) return;
     setSelectionConfirmMatch(null);
-    if (match.provider.availableSpots > 0) {
-      void onConfirmMatch(match.provider.id);
+    if (match.provider.availableSpots <= 0) {
+      handleOpenWaitlistModal(match);
       return;
     }
-    handleOpenWaitlistModal(match);
+    setMatchSubmitting(true);
+    setMatchSubmitError(null);
+    try {
+      const pid = Number(match.provider.id);
+      if (Number.isNaN(pid)) {
+        throw new Error("Ongeldige aanbieder-id.");
+      }
+      const validation_context = {
+        totaalscore: match.score,
+        confidenceLabel: match.confidenceLabel,
+        tradeOffs: match.tradeOffs,
+        warnings: match.warnings,
+        whyMatch: match.whyMatch,
+      };
+      await apiClient.post<Record<string, unknown>>(`/care/api/cases/${caseId}/matching/action/`, {
+        action: "confirm_validation",
+        provider_id: pid,
+        validation_context,
+      });
+      await apiClient.post<Record<string, unknown>>(`/care/api/cases/${caseId}/matching/action/`, {
+        action: "send_to_provider",
+        provider_id: pid,
+      });
+      await onConfirmMatch(match.provider.id);
+    } catch (err) {
+      const raw = err instanceof Error ? err.message : "Versturen mislukt.";
+      setMatchSubmitError(raw);
+    } finally {
+      setMatchSubmitting(false);
+    }
   };
 
   const scrollToFocusZone = () => {
@@ -406,9 +437,9 @@ export function MatchingPageWithMap({
           className={`${mapView === "full" ? "hidden min-[1200px]:hidden" : "block"} min-h-0 overflow-hidden min-[1200px]:h-full`}
         >
           <div className="flex h-full min-h-0 flex-col">
-            {submitError && (
+            {(submitError || matchSubmitError) && (
               <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                {submitError}
+                {matchSubmitError ?? submitError}
               </div>
             )}
 
@@ -799,10 +830,10 @@ export function MatchingPageWithMap({
               <Button
                 type="button"
                 className="bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={isSubmittingMatch}
-                onClick={() => handleConfirmSelectionChoice()}
+                disabled={isSubmittingMatch || matchSubmitting}
+                onClick={() => void handleConfirmSelectionChoice()}
               >
-                {isSubmittingMatch ? "Bezig..." : "Bevestigen"}
+                {isSubmittingMatch || matchSubmitting ? "Bezig..." : "Bevestigen"}
                 <ArrowRight className="ml-1 size-4" aria-hidden />
               </Button>
             </DialogFooter>

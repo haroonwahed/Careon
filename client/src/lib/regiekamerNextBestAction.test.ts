@@ -167,6 +167,19 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.reasons).toEqual(["3 zonder passende kandidaat"]);
   });
 
+  it("FOCUS_MATCHING label describes triage (filter/focus), not workflow execution", () => {
+    const r = computeRegiekamerNextBestAction({
+      totals: baseTotals(),
+      activeCases: 3,
+      noMatchUrgentCount: 2,
+    });
+    expect(r.primaryAction.actionKey).toBe("FOCUS_MATCHING");
+    const labelLower = r.primaryAction.label.toLowerCase();
+    expect(labelLower).not.toMatch(/herstart/);
+    expect(labelLower).not.toMatch(/(?:^|\s)start(?:\s|$)/);
+    expect(labelLower).not.toMatch(/trigger/);
+  });
+
   it("allows SLA overdue count override via explain", () => {
     const r = computeRegiekamerNextBestAction({
       totals: {

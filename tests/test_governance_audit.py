@@ -1,9 +1,15 @@
 from datetime import date, timedelta
 from unittest.mock import patch
 
+from django.conf import settings as django_settings
 from django.contrib.auth.models import User
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+_MIDDLEWARE_WITHOUT_SPA_SHELL = [
+    m for m in django_settings.MIDDLEWARE
+    if m != 'contracts.middleware.SpaShellMigrationMiddleware'
+]
 from django.utils import timezone
 
 from contracts.case_intelligence import calculate_provider_response_sla
@@ -24,6 +30,13 @@ from contracts.models import (
     PlacementRequest,
     SystemPolicyConfig,
 )
+
+_MIN_WS = {
+    'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
+    'risks': ['test_risk'],
+    'missing_information': '',
+    'risks_none_ack': False,
+}
 
 
 class GovernanceAuditTests(TestCase):
@@ -69,10 +82,11 @@ class GovernanceAuditTests(TestCase):
             client_age_category=CaseIntakeProcess.AgeCategory.ADULT,
         )
         CaseAssessment.objects.create(
-            intake=self.intake,
+            due_diligence_process=self.intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=_MIN_WS,
         )
         self.placement = PlacementRequest.objects.create(
             due_diligence_process=self.intake,
@@ -115,6 +129,7 @@ class GovernanceAuditTests(TestCase):
         ]
 
     @patch('contracts.views._build_matching_suggestions_for_intake')
+    @override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
     def test_matching_dashboard_creates_match_recommendation_log(self, mock_suggestions):
         mock_suggestions.return_value = self._matching_suggestions()
 
@@ -658,10 +673,11 @@ class SLATransitionGovernanceTests(TestCase):
             client_age_category=CaseIntakeProcess.AgeCategory.ADULT,
         )
         CaseAssessment.objects.create(
-            intake=self.intake,
+            due_diligence_process=self.intake,
             assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
             matching_ready=True,
             assessed_by=self.user,
+            workflow_summary=_MIN_WS,
         )
         self.placement = PlacementRequest.objects.create(
             due_diligence_process=self.intake,

@@ -12,7 +12,7 @@ describe("executeCaseAction", () => {
     expect(result).toEqual({
       kind: "navigate",
       message: "Matching wordt geopend.",
-      href: "/care/cases/98/?tab=matching",
+      href: "/care/matching?openCase=98",
     });
   });
 });

@@ -277,18 +277,6 @@ def build_regiekamer_decision_overview(
         actor_role = resolve_actor_role(user=actor, organization=organization)
     actor_role = actor_role or WorkflowRole.GEMEENTE
 
-    provider_client_ids: set[int] = set()
-    provider_client_names: set[str] = set()
-    if actor_role == WorkflowRole.ZORGAANBIEDER and organization is not None:
-        from contracts.models import Client
-
-        provider_clients = Client.objects.filter(
-            organization=organization,
-            client_type='CORPORATION',
-        ).values("id", "name")
-        provider_client_ids = {int(row["id"]) for row in provider_clients}
-        provider_client_names = {str(row["name"]).strip().casefold() for row in provider_clients if row.get("name")}
-
     totals = {
         "active_cases": 0,
         "critical_blockers": 0,
@@ -301,19 +289,6 @@ def build_regiekamer_decision_overview(
 
     for case in cases:
         evaluation = evaluate_case(case, actor=actor, actor_role=actor_role)
-        if provider_client_ids:
-            selected_provider_id = evaluation.get("decision_context", {}).get("selected_provider_id")
-            selected_provider_name = evaluation.get("decision_context", {}).get("selected_provider_name")
-            try:
-                selected_provider_id_int = int(selected_provider_id) if selected_provider_id is not None else None
-            except (TypeError, ValueError):
-                selected_provider_id_int = None
-            provider_name_matches = (
-                bool(selected_provider_name)
-                and str(selected_provider_name).strip().casefold() in provider_client_names
-            )
-            if selected_provider_id_int not in provider_client_ids and not provider_name_matches:
-                continue
 
         item = _build_regiekamer_overview_item(case=case, evaluation=evaluation)
         items.append(item)

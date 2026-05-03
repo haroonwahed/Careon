@@ -11,7 +11,7 @@ interface CaseTableRowProps {
 
 const PHASE_LABELS: Record<CasusPhase, string> = {
   intake_initial: "Casus",
-  beoordeling: "Beoordeling door aanbieder",
+  beoordeling: "Aanbieder beoordeling",
   matching: "Matching",
   plaatsing: "Plaatsing",
   intake_provider: "Intake",

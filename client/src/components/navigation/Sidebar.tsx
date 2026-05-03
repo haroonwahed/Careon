@@ -86,7 +86,6 @@ const gemeenteNavigation: NavSection[] = [
         id: "acties",
         label: "Acties",
         icon: CheckSquare,
-        badge: 12,
         href: "/acties",
         surfaceStatus: "ACTIVE_PRODUCT",
       }
@@ -99,7 +98,7 @@ const gemeenteNavigation: NavSection[] = [
     items: [
       {
         id: "beoordelingen",
-        label: "Wacht op aanbieder",
+        label: "Aanbieder beoordeling",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -147,13 +146,12 @@ const zorgaanbiederNavigation: NavSection[] = [
         id: "intake",
         label: "Intake",
         icon: ClipboardList,
-        badge: 3,
         href: "/intake",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "beoordelingen",
-        label: "Beoordeling door aanbieder",
+        label: "Aanbieder beoordeling",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -208,7 +206,6 @@ const adminNavigation: NavSection[] = [
         id: "acties",
         label: "Acties",
         icon: CheckSquare,
-        badge: 12,
         href: "/acties",
         surfaceStatus: "ACTIVE_PRODUCT",
       }
@@ -251,7 +248,6 @@ const adminNavigation: NavSection[] = [
         id: "signalen",
         label: "Signalen",
         icon: AlertTriangle,
-        badge: 5,
         href: "/signalen",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
@@ -332,7 +328,6 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
         id: "signalen",
         label: "Signalen",
         icon: AlertTriangle,
-        badge: 5,
         href: "/signalen",
         surfaceStatus: "ACTIVE_PRODUCT",
       }

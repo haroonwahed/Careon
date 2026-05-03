@@ -46,7 +46,7 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
 }
 
 describe("AanbiederBeoordelingPage (gemeente)", () => {
-  it("shows Wacht op aanbieder title and Bekijk status CTA", () => {
+  it("shows Aanbieder beoordeling title and Bekijk status CTA", () => {
     mockUseCases.mockReturnValue({
       cases: [makeCase({ id: "C-G1", title: "Monitor casus" })],
       loading: false,
@@ -56,8 +56,10 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
 
     render(<AanbiederBeoordelingPage role="gemeente" onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Wacht op aanbieder" })).toBeInTheDocument();
-    expect(screen.getByText(/Gemeente volgt\. Aanbieder beslist\./)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
+    expect(
+      screen.getByText(/Gemeente volgt\. Wacht op reactie van de aanbieder; aanbieder beslist\./),
+    ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bekijk status" })).toBeInTheDocument();
   });
 });
@@ -73,7 +75,7 @@ describe("AanbiederBeoordelingPage (zorgaanbieder)", () => {
 
     render(<AanbiederBeoordelingPage role="zorgaanbieder" onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Beoordeling door aanbieder" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Zoek op casus-ID, regio/i)).toBeInTheDocument();
     expect(screen.getByText("Actieve beoordeling")).toBeInTheDocument();
   });

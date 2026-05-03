@@ -445,7 +445,7 @@ export function PlacementPage({
 
       {/* Sticky Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-background/95 backdrop-blur-sm z-50 ml-[240px]">
-        <div className="max-w-[1400px] mx-auto px-6 py-4">
+        <div className="w-full px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               {providerAccepted && allValid && !hasErrors ? (

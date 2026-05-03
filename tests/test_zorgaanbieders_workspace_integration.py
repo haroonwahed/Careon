@@ -1,6 +1,8 @@
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase
+from django.test import Client, TestCase, override_settings
 from django.urls import reverse
+
+from tests.test_utils import middleware_without_spa_shell
 
 from contracts.models import (
     Client as CareProvider,
@@ -15,6 +17,7 @@ from contracts.models import (
 User = get_user_model()
 
 
+@override_settings(MIDDLEWARE=middleware_without_spa_shell())
 class ZorgaanbiedersWorkspaceIntegrationTests(TestCase):
     @classmethod
     def setUpTestData(cls):

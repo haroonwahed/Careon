@@ -97,7 +97,7 @@ describe("WorkloadPage", () => {
     expect(screen.getByText("Beheer en stuur casussen")).toBeInTheDocument();
     expect(screen.getByText(/casussen — .* vragen aandacht/i)).toBeInTheDocument();
     expect(screen.getByText(/⚠ Vraagt aandacht/)).toBeInTheDocument();
-    expect(screen.getByText(/⏳ Wacht op aanbieder/)).toBeInTheDocument();
+    expect(screen.getByText(/⏳ Aanbieder beoordeling/)).toBeInTheDocument();
     expect(screen.getByText(/✓ Stabiel/)).toBeInTheDocument();
     expect(container.innerHTML).not.toContain("#0F172A");
     expect(container.innerHTML).not.toContain("#111c31");
@@ -117,7 +117,7 @@ describe("WorkloadPage", () => {
     expect(screen.getByPlaceholderText("Zoek op client, casus, regio of zorgvraag")).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Alles" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Mijn acties" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Wacht op aanbieder" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Geblokkeerd" })).toBeInTheDocument();
     expect(screen.getByText("Casus triage")).toBeInTheDocument();
     expect(container.querySelectorAll("[data-care-work-row-cta]").length).toBeGreaterThan(0);
@@ -140,7 +140,7 @@ describe("WorkloadPage", () => {
 
     expect(screen.getByRole("tab", { name: "Alles" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Mijn acties" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Wacht op aanbieder" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Geblokkeerd" })).toBeInTheDocument();
     expect(screen.queryByText("Verantwoordelijke")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Meer filters/i }));
@@ -168,7 +168,7 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanbieder" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Aanbieder beoordeling" }));
 
     expect(screen.getByText("Lang wachtend")).toBeInTheDocument();
     expect(screen.queryByText("Geblokkeerde intake")).not.toBeInTheDocument();
@@ -182,7 +182,7 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanbieder" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Aanbieder beoordeling" }));
 
     expect(screen.getByText("1 casussen — 0 vragen aandacht")).toBeInTheDocument();
   });
@@ -195,7 +195,7 @@ describe("WorkloadPage", () => {
     ]);
 
     render(<WorkloadPage onCaseClick={onCaseClick} role="gemeente" onNavigateToWorkflow={onNavigateToWorkflow} />);
-    fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanbieder" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Aanbieder beoordeling" }));
     fireEvent.click(screen.getByRole("button", { name: "Bekijk status" }));
 
     expect(onNavigateToWorkflow).toHaveBeenCalledWith("beoordelingen");

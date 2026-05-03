@@ -6,6 +6,7 @@ import json
 import logging
 from datetime import date
 
+from django.conf import settings
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
@@ -21,9 +22,11 @@ from contracts.domain.contracts import CareCaseData, ListParams, ListResult
 from contracts.forms import CaseIntakeProcessForm
 from contracts.middleware import log_action
 from contracts.decision_engine import build_regiekamer_decision_overview, evaluate_case
+from contracts.governance import AuditLoggingError, log_case_decision_event
 from contracts.models import (
     CareCase,
     CaseAssessment,
+    CaseDecisionLog,
     PlacementRequest,
     CareSignal,
     CareTask,
@@ -43,7 +46,12 @@ from contracts.tenancy import (
     scope_queryset_for_organization,
     set_organization_on_instance,
 )
-from contracts.permissions import CaseAction, can_access_case_action
+from contracts.permissions import (
+    CaseAction,
+    can_access_case_action,
+    ensure_provider_case_visible_or_404,
+    filter_care_cases_for_provider_actor,
+)
 from contracts.provider_workspace import build_provider_workspace_summary
 from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
 from contracts.views import _assign_provider_to_intake, _prepare_waitlist_proposal_for_intake
@@ -60,6 +68,82 @@ from contracts.workflow_state_machine import (
 )
 
 logger = logging.getLogger(__name__)
+
+MIN_SUMMARY_CONTEXT_LEN = 24
+
+
+def _workflow_summary_complete(*, assessment: CaseAssessment | None, intake: CaseIntakeProcess) -> tuple[bool, str]:
+    """Pilot samenvatting gate vóór matching (structured summary + urgency)."""
+    if assessment is None:
+        return False, 'Casusbeoordeling ontbreekt.'
+    ws = assessment.workflow_summary or {}
+    context = (ws.get('context') or '').strip()
+    if len(context) < MIN_SUMMARY_CONTEXT_LEN:
+        return False, (
+            f'Samenvatting (context) moet minstens {MIN_SUMMARY_CONTEXT_LEN} tekens bevatten vóór matching.'
+        )
+    if not (intake.urgency or '').strip():
+        return False, 'Urgentie is verplicht op de casus.'
+    if 'risks' not in ws:
+        return False, 'Vul het veld risico\'s in (of vink aan: geen aanvullende risico\'s).'
+    risks = ws.get('risks')
+    if not isinstance(risks, list):
+        return False, 'Risico\'s moeten als lijst worden aangeleverd.'
+    if len(risks) == 0 and not ws.get('risks_none_ack'):
+        return False, 'Voeg risico\'s toe of bevestig expliciet dat er geen aanvullende risico\'s zijn.'
+    return True, ''
+
+
+def _draft_validation_placement(*, request, intake, provider, validation_context):
+    """Persist DRAFT placement after gemeente validatie (vóór verzenden naar aanbieder)."""
+    notes_payload = json.dumps(
+        {
+            'kind': 'gemeente_validatie_concept',
+            'provider_id': provider.pk,
+            'match': validation_context or {},
+        },
+        ensure_ascii=False,
+    )
+    placement, created = PlacementRequest.objects.get_or_create(
+        due_diligence_process=intake,
+        defaults={
+            'status': PlacementRequest.Status.DRAFT,
+            'proposed_provider': provider,
+            'selected_provider': provider,
+            'care_form': intake.preferred_care_form or PlacementRequest.CareForm.OUTPATIENT,
+            'decision_notes': notes_payload,
+            'provider_response_status': PlacementRequest.ProviderResponseStatus.PENDING,
+        },
+    )
+    if not created:
+        placement.proposed_provider = provider
+        placement.selected_provider = provider
+        placement.status = PlacementRequest.Status.DRAFT
+        placement.decision_notes = notes_payload
+        placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
+        if not placement.care_form:
+            placement.care_form = intake.preferred_care_form or PlacementRequest.CareForm.OUTPATIENT
+        placement.save(
+            update_fields=[
+                'proposed_provider',
+                'selected_provider',
+                'care_form',
+                'status',
+                'provider_response_status',
+                'decision_notes',
+                'updated_at',
+            ]
+        )
+    log_action(
+        request.user,
+        AuditLog.Action.APPROVE,
+        'GemeenteValidatieConcept',
+        object_id=placement.id,
+        object_repr=f'{intake.title} -> {provider.name} (concept)',
+        changes={'intake_id': intake.id, 'provider_id': provider.id},
+        request=request,
+    )
+    return placement
 
 
 def _internal_server_error(*, context):
@@ -103,7 +187,7 @@ def _case_workflow_state(case):
     return WorkflowState.DRAFT_CASE
 
 
-def _get_intake_for_case_api_id(case_id, organization, *, lock=False, select_related=None):
+def _get_intake_for_case_api_id(case_id, organization, *, lock=False, select_related=None, user=None):
     """
     URLs under /care/api/cases/<case_id>/ use the CareCase primary key for assessment,
     decision evaluation, and SPA calls. Resolve CaseIntakeProcess via CareCase.contract back-ref,
@@ -114,6 +198,8 @@ def _get_intake_for_case_api_id(case_id, organization, *, lock=False, select_rel
         organization,
         pk=case_id,
     )
+    if user is not None:
+        ensure_provider_case_visible_or_404(user, case_record)
     base_rel = ('contract', 'organization')
     extra = tuple(select_related) if select_related else ()
     qs = CaseIntakeProcess.objects.select_related(*base_rel, *extra)
@@ -328,6 +414,7 @@ def contracts_api(request):
             ),
             organization,
         ).exclude(lifecycle_stage='ARCHIVED')
+        queryset = filter_care_cases_for_provider_actor(queryset, request.user, organization)
 
         if params.q:
             queryset = queryset.filter(
@@ -389,11 +476,14 @@ def case_detail_api(request, contract_id=None, case_id=None):
             organization,
             pk=record_id,
         )
+        ensure_provider_case_visible_or_404(request.user, case)
 
         payload = _build_case_data(case, include_geo=True)
         payload['decision_evaluation'] = evaluate_case(case, actor=request.user)
         return JsonResponse(payload)
 
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     except Exception:
         return _internal_server_error(context='case_detail_api_failed')
 
@@ -424,6 +514,7 @@ def regiekamer_decision_overview_api(request):
         ).exclude(
             Q(lifecycle_stage='ARCHIVED') | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
         )
+        cases = filter_care_cases_for_provider_actor(cases, request.user, organization)
 
         payload = build_regiekamer_decision_overview(
             cases,
@@ -466,6 +557,7 @@ def cases_bulk_update_api(request):
             CareCase.objects.filter(id__in=case_ids).exclude(lifecycle_stage='ARCHIVED'),
             organization,
         )
+        queryset = filter_care_cases_for_provider_actor(queryset, request.user, organization)
         result = queryset.update(**updates)
 
         return JsonResponse({'success': True, 'updated_count': result})
@@ -607,6 +699,36 @@ def _build_match_context_from_intake(intake, organization):
 
 @login_required
 @require_http_methods(["GET"])
+def current_user_api(request):
+    """Session-backed actor for SPA shell (no client-side role switching)."""
+    organization = get_user_organization(request.user)
+    workflow_role = resolve_actor_role(user=request.user, organization=organization)
+    pilot_ui = bool(getattr(settings, 'CAREON_PILOT_UI', False))
+    payload = {
+        'id': request.user.pk,
+        'email': getattr(request.user, 'email', '') or '',
+        'fullName': (request.user.get_full_name() or '').strip() or request.user.username,
+        'username': request.user.username,
+        'workflowRole': workflow_role,
+        'organization': None,
+        'permissions': {
+            'allowRoleSwitch': not pilot_ui,
+        },
+        'flags': {
+            'pilotUi': pilot_ui,
+            'spaOnlyWorkflow': bool(getattr(settings, 'CAREON_PILOT_SPA_ONLY', False)),
+        },
+    }
+    if organization is not None:
+        payload['organization'] = {
+            'id': organization.pk,
+            'name': getattr(organization, 'name', str(organization.pk)),
+        }
+    return JsonResponse(payload)
+
+
+@login_required
+@require_http_methods(["GET"])
 def matching_candidates_api(request, case_id):
     organization = get_user_organization(request.user)
     if organization is None:
@@ -618,11 +740,17 @@ def matching_candidates_api(request, case_id):
             organization,
             lock=False,
             select_related=('regio', 'preferred_region', 'gemeente'),
+            user=request.user,
         )
     except Http404:
         return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return JsonResponse({'error': 'Casus is gearchiveerd.'}, status=400)
+
+    assessment = getattr(intake, 'case_assessment', None)
+    ok, err = _workflow_summary_complete(assessment=assessment, intake=intake)
+    if not ok:
+        return JsonResponse({'error': err, 'code': 'SUMMARY_INCOMPLETE'}, status=400)
 
     ctx = _build_match_context_from_intake(intake, organization)
     limit = int(request.GET.get('limit', 10) or 10)
@@ -703,6 +831,7 @@ def _assessment_decision_payload(*, case_record, intake, assessment):
     elif assessment.assessment_status == CaseAssessment.AssessmentStatus.UNDER_REVIEW:
         decision_key = 'under_review'
 
+    ws = assessment.workflow_summary or {}
     return {
         'caseId': str(case_record.pk),
         'assessmentId': str(assessment.pk),
@@ -711,6 +840,13 @@ def _assessment_decision_payload(*, case_record, intake, assessment):
             'urgency': intake.urgency,
             'zorgtype': intake.zorgvorm_gewenst or intake.preferred_care_form,
             'shortDescription': assessment.notes or intake.assessment_summary or '',
+            'workflowSummary': {
+                'context': ws.get('context', ''),
+                'urgency': ws.get('urgency', '') or intake.urgency or '',
+                'risks': ws.get('risks', []) if isinstance(ws.get('risks'), list) else [],
+                'missing_information': ws.get('missing_information', ''),
+                'risks_none_ack': bool(ws.get('risks_none_ack')),
+            },
         },
         'summary': {
             'title': intake.title,
@@ -748,12 +884,16 @@ def _require_workflow_role(*, user, organization, allowed_roles: set[str]):
 @require_http_methods(["GET", "POST"])
 def assessment_decision_api(request, case_id):
     organization = get_user_organization(request.user)
-    case_record = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
-    intake = get_scoped_object_or_404(
-        CaseIntakeProcess.objects.select_related('organization', 'contract'),
-        organization,
-        contract=case_record,
-    )
+    try:
+        case_record = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+        ensure_provider_case_visible_or_404(request.user, case_record)
+        intake = get_scoped_object_or_404(
+            CaseIntakeProcess.objects.select_related('organization', 'contract'),
+            organization,
+            contract=case_record,
+        )
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     assessment = getattr(intake, 'case_assessment', None)
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return JsonResponse({'error': 'Casus is gearchiveerd.'}, status=400)
@@ -788,6 +928,23 @@ def assessment_decision_api(request, case_id):
     zorgtype = (payload.get('zorgtype') or intake.zorgvorm_gewenst or intake.preferred_care_form or '').strip()
     constraints = payload.get('constraints') or []
 
+    raw_ws = payload.get('workflow_summary')
+    if isinstance(raw_ws, dict):
+        risks_in = raw_ws.get('risks')
+        risks_list: list[str] = []
+        if isinstance(risks_in, list):
+            risks_list = [str(x).strip() for x in risks_in if str(x).strip()]
+        u_ws = str(raw_ws.get('urgency', '') or '').strip()
+        assessment.workflow_summary = {
+            'context': str(raw_ws.get('context', '')).strip(),
+            'urgency': u_ws or str(urgency or intake.urgency or '').strip(),
+            'risks': risks_list,
+            'missing_information': str(raw_ws.get('missing_information', '')).strip(),
+            'risks_none_ack': bool(raw_ws.get('risks_none_ack')),
+        }
+        if u_ws:
+            urgency = u_ws
+
     previous_state = derive_workflow_state(intake=intake, assessment=assessment)
 
     if urgency:
@@ -799,6 +956,10 @@ def assessment_decision_api(request, case_id):
         intake.preferred_care_form = zorgtype
 
     if decision == 'matching':
+        ok_sum, err_sum = _workflow_summary_complete(assessment=assessment, intake=intake)
+        if not ok_sum:
+            return JsonResponse({'ok': False, 'error': err_sum, 'code': 'SUMMARY_INCOMPLETE'}, status=400)
+
         transition = evaluate_transition(
             current_state=previous_state,
             target_state=WorkflowState.MATCHING_READY,
@@ -859,15 +1020,18 @@ def assessment_decision_api(request, case_id):
 
     new_state = WorkflowState.MATCHING_READY if decision == 'matching' else WorkflowState.SUMMARY_READY
     action = WorkflowAction.START_MATCHING if decision == 'matching' else WorkflowAction.COMPLETE_SUMMARY
-    log_transition_event(
-        intake=intake,
-        actor_user=request.user,
-        actor_role=actor_role,
-        old_state=previous_state,
-        new_state=new_state,
-        action=action,
-        source='assessment_decision_api',
-    )
+    try:
+        log_transition_event(
+            intake=intake,
+            actor_user=request.user,
+            actor_role=actor_role,
+            old_state=previous_state,
+            new_state=new_state,
+            action=action,
+            source='assessment_decision_api',
+        )
+    except AuditLoggingError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
 
     return JsonResponse({
         'ok': True,
@@ -881,6 +1045,15 @@ def assessment_decision_api(request, case_id):
 @login_required
 @require_http_methods(["POST"])
 def matching_action_api(request, case_id):
+    try:
+        return _matching_action_api_inner(request, case_id)
+    except Http404:
+        return JsonResponse({'ok': False, 'error': 'Casus niet gevonden.'}, status=404)
+    except AuditLoggingError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+
+def _matching_action_api_inner(request, case_id):
     organization = get_user_organization(request.user)
     actor_role, role_error = _require_workflow_role(
         user=request.user,
@@ -898,7 +1071,7 @@ def matching_action_api(request, case_id):
     action = (payload.get('action') or '').strip().lower()
 
     with transaction.atomic():
-        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True, user=request.user)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -909,6 +1082,12 @@ def matching_action_api(request, case_id):
 
         assessment = getattr(intake, 'case_assessment', None)
         previous_state = derive_workflow_state(intake=intake, assessment=assessment)
+
+        actions_need_summary = {'prepare_waitlist_proposal', 'confirm_validation', 'send_to_provider', 'assign'}
+        if action in actions_need_summary:
+            ok_s, err_s = _workflow_summary_complete(assessment=assessment, intake=intake)
+            if not ok_s:
+                return JsonResponse({'ok': False, 'error': err_s, 'code': 'SUMMARY_INCOMPLETE'}, status=400)
 
         if action == 'prepare_waitlist_proposal':
             active_for_block = (
@@ -982,85 +1161,210 @@ def matching_action_api(request, case_id):
                 'caseId': str(intake.pk),
             })
 
-        if action != 'assign':
-            return JsonResponse({'ok': False, 'error': 'Unsupported action.'}, status=400)
-
-        validation_transition = evaluate_transition(
-            current_state=previous_state,
-            target_state=WorkflowState.GEMEENTE_VALIDATED,
-            actor_role=actor_role,
-            action=WorkflowAction.VALIDATE_MATCHING,
-        )
-        if not validation_transition.allowed:
-            return JsonResponse({'ok': False, 'error': validation_transition.reason}, status=400)
-
-        send_to_provider_transition = evaluate_transition(
-            current_state=WorkflowState.GEMEENTE_VALIDATED,
-            target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
-            actor_role=actor_role,
-            action=WorkflowAction.SEND_TO_PROVIDER,
-        )
-        if not send_to_provider_transition.allowed:
-            return JsonResponse({'ok': False, 'error': send_to_provider_transition.reason}, status=400)
-
-        if intake.workflow_state != WorkflowState.GEMEENTE_VALIDATED:
+        if action == 'confirm_validation':
+            active_in_review = (
+                PlacementRequest.objects.filter(
+                    due_diligence_process=intake,
+                    status=PlacementRequest.Status.IN_REVIEW,
+                ).exists()
+            )
+            if active_in_review:
+                return JsonResponse({'ok': False, 'error': 'Deze casus staat al bij de aanbieder in beoordeling.'}, status=400)
+            if previous_state != WorkflowState.MATCHING_READY:
+                return JsonResponse({'ok': False, 'error': 'Gemeente-validatie is alleen mogelijk wanneer matching gereed is.'}, status=400)
+            validation_transition = evaluate_transition(
+                current_state=WorkflowState.MATCHING_READY,
+                target_state=WorkflowState.GEMEENTE_VALIDATED,
+                actor_role=actor_role,
+                action=WorkflowAction.VALIDATE_MATCHING,
+            )
+            if not validation_transition.allowed:
+                return JsonResponse({'ok': False, 'error': validation_transition.reason}, status=400)
+            validation_context = payload.get('validation_context')
+            if not isinstance(validation_context, dict):
+                validation_context = {}
+            placement = _draft_validation_placement(
+                request=request,
+                intake=intake,
+                provider=provider,
+                validation_context=validation_context,
+            )
             intake.workflow_state = WorkflowState.GEMEENTE_VALIDATED
             intake.save(update_fields=['workflow_state', 'updated_at'])
+            case_record_cv = intake.case_record
+            if case_record_cv is not None and case_record_cv.case_phase != CareCase.CasePhase.MATCHING:
+                case_record_cv.case_phase = CareCase.CasePhase.MATCHING
+                case_record_cv.save(update_fields=['case_phase', 'updated_at'])
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state=previous_state,
+                new_state=WorkflowState.GEMEENTE_VALIDATED,
+                action=WorkflowAction.VALIDATE_MATCHING,
+                placement=placement,
+                source='matching_action_api_confirm_validation',
+            )
+            log_case_decision_event(
+                case_id=intake.pk,
+                placement_id=placement.pk,
+                event_type=CaseDecisionLog.EventType.GEMEENTE_VALIDATION,
+                recommendation_context={
+                    'validation_context': validation_context,
+                    'actor_role': actor_role,
+                },
+                user_action='gemeente_validate_matching',
+                actor_user_id=request.user.id,
+                action_source='matching_action_api_confirm_validation',
+                provider_id=provider.pk,
+                strict=True,
+            )
+            return JsonResponse({
+                'ok': True,
+                'step': 'gemeente_validatie',
+                'nextPage': 'matching',
+                'providerId': str(provider.pk),
+                'placementId': str(placement.pk),
+                'caseId': str(intake.pk),
+            })
 
-        try:
-            placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='matching_api')
-        except ValidationError as exc:
-            return JsonResponse({'ok': False, 'error': '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.'}, status=400)
+        if action == 'send_to_provider':
+            if previous_state != WorkflowState.GEMEENTE_VALIDATED:
+                return JsonResponse({'ok': False, 'error': 'Bevestig eerst de gemeente-validatie (stap vóór verzenden).'}, status=400)
+            placement_row = (
+                PlacementRequest.objects.filter(due_diligence_process=intake)
+                .order_by('-updated_at')
+                .first()
+            )
+            if placement_row is None or placement_row.status != PlacementRequest.Status.DRAFT:
+                return JsonResponse({'ok': False, 'error': 'Geen gevalideerde concept-plaatsing; voer validatie opnieuw uit.'}, status=400)
+            if placement_row.proposed_provider_id != provider.pk:
+                return JsonResponse({'ok': False, 'error': 'Aanbieder komt niet overeen met de gevalideerde keuze.'}, status=400)
+            send_to_provider_transition = evaluate_transition(
+                current_state=WorkflowState.GEMEENTE_VALIDATED,
+                target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
+                actor_role=actor_role,
+                action=WorkflowAction.SEND_TO_PROVIDER,
+            )
+            if not send_to_provider_transition.allowed:
+                return JsonResponse({'ok': False, 'error': send_to_provider_transition.reason}, status=400)
+            try:
+                placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='matching_api_send')
+            except ValidationError as exc:
+                return JsonResponse({'ok': False, 'error': '; '.join(exc.messages) or 'Verzenden mislukt.'}, status=400)
+            update_fields = ['updated_at']
+            if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
+                intake.status = CaseIntakeProcess.ProcessStatus.DECISION
+                update_fields.append('status')
+            if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
+                intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+                update_fields.append('workflow_state')
+            case_record_sp = intake.case_record
+            if case_record_sp is not None and case_record_sp.case_phase != CareCase.CasePhase.PROVIDER_BEOORDELING:
+                case_record_sp.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+                case_record_sp.save(update_fields=['case_phase', 'updated_at'])
+            intake.save(update_fields=list(dict.fromkeys(update_fields)))
+            new_state = derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state=WorkflowState.GEMEENTE_VALIDATED,
+                new_state=new_state,
+                action=WorkflowAction.SEND_TO_PROVIDER,
+                placement=placement,
+                source='matching_action_api_send_to_provider',
+            )
+            return JsonResponse({
+                'ok': True,
+                'nextPage': 'casussen',
+                'providerId': str(provider.pk),
+                'placementId': str(placement.pk),
+                'caseId': str(intake.pk),
+            })
 
-        update_fields = ['updated_at']
-        if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
-            intake.status = CaseIntakeProcess.ProcessStatus.DECISION
-            update_fields.append('status')
-        if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
-            intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
-            update_fields.append('workflow_state')
+        if action == 'assign':
+            validation_transition = evaluate_transition(
+                current_state=previous_state,
+                target_state=WorkflowState.GEMEENTE_VALIDATED,
+                actor_role=actor_role,
+                action=WorkflowAction.VALIDATE_MATCHING,
+            )
+            if not validation_transition.allowed:
+                return JsonResponse({'ok': False, 'error': validation_transition.reason}, status=400)
 
-        case_record = intake.case_record
-        if case_record is not None and case_record.case_phase != CareCase.CasePhase.PROVIDER_BEOORDELING:
-            case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
-            case_record.save(update_fields=['case_phase', 'updated_at'])
+            send_to_provider_transition = evaluate_transition(
+                current_state=WorkflowState.GEMEENTE_VALIDATED,
+                target_state=WorkflowState.PROVIDER_REVIEW_PENDING,
+                actor_role=actor_role,
+                action=WorkflowAction.SEND_TO_PROVIDER,
+            )
+            if not send_to_provider_transition.allowed:
+                return JsonResponse({'ok': False, 'error': send_to_provider_transition.reason}, status=400)
 
-        intake.save(update_fields=list(dict.fromkeys(update_fields)))
-        new_state = derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
-        log_transition_event(
-            intake=intake,
-            actor_user=request.user,
-            actor_role=actor_role,
-            old_state=previous_state,
-            new_state=WorkflowState.GEMEENTE_VALIDATED,
-            action=WorkflowAction.VALIDATE_MATCHING,
-            source='matching_action_api',
-        )
-        log_transition_event(
-            intake=intake,
-            actor_user=request.user,
-            actor_role=actor_role,
-            old_state=WorkflowState.GEMEENTE_VALIDATED,
-            new_state=new_state,
-            action=WorkflowAction.SEND_TO_PROVIDER,
-            placement=placement,
-            source='matching_action_api',
-        )
+            if intake.workflow_state != WorkflowState.GEMEENTE_VALIDATED:
+                intake.workflow_state = WorkflowState.GEMEENTE_VALIDATED
+                intake.save(update_fields=['workflow_state', 'updated_at'])
 
-        return JsonResponse({
-            'ok': True,
-            'nextPage': 'casussen',
-            'providerId': str(provider.pk),
-            'placementId': str(placement.pk),
-            'caseId': str(intake.pk),
-        })
+            try:
+                placement = _assign_provider_to_intake(request=request, intake=intake, provider=provider, source='matching_api')
+            except ValidationError as exc:
+                return JsonResponse({'ok': False, 'error': '; '.join(exc.messages) or 'Matching kan nog niet worden gestart.'}, status=400)
+
+            update_fields = ['updated_at']
+            if intake.status != CaseIntakeProcess.ProcessStatus.DECISION:
+                intake.status = CaseIntakeProcess.ProcessStatus.DECISION
+                update_fields.append('status')
+            if intake.workflow_state != WorkflowState.PROVIDER_REVIEW_PENDING:
+                intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
+                update_fields.append('workflow_state')
+
+            case_record = intake.case_record
+            if case_record is not None and case_record.case_phase != CareCase.CasePhase.PROVIDER_BEOORDELING:
+                case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+                case_record.save(update_fields=['case_phase', 'updated_at'])
+
+            intake.save(update_fields=list(dict.fromkeys(update_fields)))
+            new_state = derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state=previous_state,
+                new_state=WorkflowState.GEMEENTE_VALIDATED,
+                action=WorkflowAction.VALIDATE_MATCHING,
+                source='matching_action_api',
+            )
+            log_transition_event(
+                intake=intake,
+                actor_user=request.user,
+                actor_role=actor_role,
+                old_state=WorkflowState.GEMEENTE_VALIDATED,
+                new_state=new_state,
+                action=WorkflowAction.SEND_TO_PROVIDER,
+                placement=placement,
+                source='matching_action_api',
+            )
+
+            return JsonResponse({
+                'ok': True,
+                'nextPage': 'casussen',
+                'providerId': str(provider.pk),
+                'placementId': str(placement.pk),
+                'caseId': str(intake.pk),
+            })
+
+        return JsonResponse({'ok': False, 'error': 'Unsupported action.'}, status=400)
 
 
 @login_required
 @require_http_methods(["GET"])
 def case_placement_detail_api(request, case_id):
     organization = get_user_organization(request.user)
-    intake = _get_intake_for_case_api_id(case_id, organization, lock=False)
+    try:
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=False, user=request.user)
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
         return JsonResponse({'caseId': str(intake.pk), 'placement': {}, 'error': 'Casus is gearchiveerd.'}, status=400)
     placement = (
@@ -1091,6 +1395,15 @@ def case_placement_detail_api(request, case_id):
 @login_required
 @require_http_methods(["POST"])
 def provider_decision_api(request, case_id):
+    try:
+        return _provider_decision_api_inner(request, case_id)
+    except Http404:
+        return JsonResponse({'ok': False, 'error': 'Casus niet gevonden.'}, status=404)
+    except AuditLoggingError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+
+def _provider_decision_api_inner(request, case_id):
     organization = get_user_organization(request.user)
     actor_role, role_error = _require_workflow_role(
         user=request.user,
@@ -1110,7 +1423,7 @@ def provider_decision_api(request, case_id):
     reason_code = str(payload.get('rejection_reason_code') or payload.get('reason_code') or '').strip().upper()
 
     with transaction.atomic():
-        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True, user=request.user)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -1260,6 +1573,15 @@ def provider_decision_api(request, case_id):
 @login_required
 @require_http_methods(["POST"])
 def placement_action_api(request, case_id):
+    try:
+        return _placement_action_api_inner(request, case_id)
+    except Http404:
+        return JsonResponse({'ok': False, 'error': 'Casus niet gevonden.'}, status=404)
+    except AuditLoggingError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+
+def _placement_action_api_inner(request, case_id):
     organization = get_user_organization(request.user)
     actor_role, role_error = _require_workflow_role(
         user=request.user,
@@ -1277,7 +1599,7 @@ def placement_action_api(request, case_id):
     requested_status = str(payload.get('status') or '').strip().upper()
     note = (payload.get('note') or payload.get('comment') or '').strip()
     with transaction.atomic():
-        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True, user=request.user)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -1378,6 +1700,15 @@ def placement_action_api(request, case_id):
 @login_required
 @require_http_methods(["POST"])
 def intake_action_api(request, case_id):
+    try:
+        return _intake_action_api_inner(request, case_id)
+    except Http404:
+        return JsonResponse({'ok': False, 'error': 'Casus niet gevonden.'}, status=404)
+    except AuditLoggingError as exc:
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
+
+
+def _intake_action_api_inner(request, case_id):
     organization = get_user_organization(request.user)
     actor_role, role_error = _require_workflow_role(
         user=request.user,
@@ -1388,7 +1719,7 @@ def intake_action_api(request, case_id):
         return role_error
 
     with transaction.atomic():
-        intake = _get_intake_for_case_api_id(case_id, organization, lock=True)
+        intake = _get_intake_for_case_api_id(case_id, organization, lock=True, user=request.user)
         if intake.status == CaseIntakeProcess.ProcessStatus.ARCHIVED:
             return JsonResponse({'ok': False, 'error': 'Casus is gearchiveerd.'}, status=400)
 
@@ -2109,6 +2440,7 @@ def regions_health_api(request):
             'id', 'service_region', 'status', 'case_phase', 'risk_level', 'preferred_provider',
             'phase_entered_at', 'updated_at', 'created_at',
         )
+        cases_qs = filter_care_cases_for_provider_actor(cases_qs, request.user, organization)
         all_cases = list(cases_qs)
 
         provider_clients = list(
@@ -2196,6 +2528,7 @@ def dashboard_summary_api(request):
     organization = get_user_organization(request.user)
     try:
         cases_qs = scope_queryset_for_organization(CareCase.objects.all(), organization).exclude(lifecycle_stage='ARCHIVED')
+        cases_qs = filter_care_cases_for_provider_actor(cases_qs, request.user, organization)
         signals_qs = CareSignal.objects.for_organization(organization).exclude(
             Q(case_record__lifecycle_stage='ARCHIVED')
             | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)

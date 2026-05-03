@@ -14,34 +14,42 @@
 
 ### Location
 
-- **Module:** `client/src/lib/regiekamerNbaInstrumentation.ts`
+- **Modules:** `client/src/lib/regiekamerNbaInstrumentation.ts` (emit + dedupe), `client/src/lib/telemetryAdapter.ts` (central sink), `client/src/lib/telemetrySchema.ts` (v1 envelope type).
 - **Call sites:** Regiekamer / system-awareness UI (e.g. `SystemAwarenessPage.tsx`) invokes `emitRegiekamerNbaEvent` and related helpers.
 
 ### Payload structure
 
-The **event name** is the first argument to `emitRegiekamerNbaEvent`; it is **not** duplicated inside the payload object.
-
-**Type `RegiekamerNbaInstrumentationPayload` (authoritative in source):**
+Emitted telemetry is **`RegiekamerNbaTelemetryEvent`** (`schema_version: "v1"`). **Raw NBA title strings are not included** (privacy minimisation).
 
 | Field | Description |
 |--------|-------------|
-| `actionKey` | Which NBA action variant is active (`RegiekamerNbaActionKey`). |
-| `uiMode` | Presentation mode of the strip (`RegiekamerNbaUiMode`). |
-| `title` | Human-readable title string shown with the NBA (may carry operational context). |
-| `reasonCount` | Count of structured reasons attached to the NBA at emission time. |
-| `timestamp` | ISO 8601 timestamp (UTC) at build time. |
-| `route` | Fixed route segment for Regiekamer NBA (`REGIEKAMER_NBA_ROUTE`, currently `"/regiekamer"`). |
-| `source` | Optional; only for `nba_insight_opened` — which disclosure opened (`"why"` \| `"flow"`). |
+| `event` | Instrumentation event name (e.g. `nba_shown`, `nba_primary_clicked`). |
+| `route` | Regiekamer NBA route (`REGIEKAMER_NBA_ROUTE`, `"/regiekamer"`). |
+| `uiMode` | Presentation mode (`RegiekamerNbaUiMode`). |
+| `actionKey` | Optional in type; always set for current Regiekamer emissions (`RegiekamerNbaActionKey`). |
+| `reasonCount` | Count of structured reasons at emission time. |
+| `timestamp` | Unix epoch milliseconds (`number`). |
+| `schema_version` | Literal `"v1"`. |
 
-**There is no `case_id` or placement identifier in this payload.** Correlation to cases is not implemented at the telemetry layer.
+Internal builder input **`RegiekamerNbaInstrumentationPayload`** carries `actionKey`, `uiMode`, `reasonCount`, `route`, and optional `now` (tests only). It does **not** carry title or case identifiers.
 
-### Emission behavior (`emitRegiekamerNbaEvent`)
+`emitRegiekamerNbaEvent` maps to `trackNbaEvent` in `telemetryAdapter.ts`.
+
+### Emission behavior (`trackNbaEvent`)
 
 Execution order:
 
-1. **If** `typeof window.__REGIEKAMER_NBA_TRACK__ === "function"`: invoke `__REGIEKAMER_NBA_TRACK__(eventName, payload)` and **return**. No `console` output on this path.
-2. **Else if** `import.meta.env.DEV` is true: `console.debug("[regiekamer-nba]", eventName, payload)`.
+1. **If** `typeof window.__REGIEKAMER_NBA_TRACK__ === "function"`: invoke `__REGIEKAMER_NBA_TRACK__(telemetryEvent)` **once per emission** and **return**. No `console` output on this path.
+2. **Else if** `import.meta.env.DEV` is true: `console.debug("[NBA_EVENT]", telemetryEvent)`.
 3. **Else** (production build, no hook): **no-op** — nothing is logged and nothing is sent.
+
+**External hook contract:** staging or analytics must assign a **single-argument** callback:
+
+```ts
+window.__REGIEKAMER_NBA_TRACK__ = (event) => { ... };
+```
+
+`event` is a `RegiekamerNbaTelemetryEvent` (see `client/src/lib/telemetrySchema.ts`). The **previous two-argument** shape `(eventName, payload)` is **no longer supported**.
 
 `nba_shown` may be suppressed by `shouldEmitRegiekamerNbaShown` (short-window deduplication for identical snapshots; see module docstring).
 
@@ -62,7 +70,7 @@ Canonical names are the union **`RegiekamerNbaInstrumentationEventName`** in `re
 | `nba_primary_clicked` | Primary intent | User activated the **primary** CTA on the NBA strip. |
 | `nba_secondary_clicked` | Secondary intent | User activated the **secondary** CTA. |
 | `nba_cases_link_clicked` | Navigation | User followed the link toward casussen / case work from NBA context. |
-| `nba_insight_opened` | Disclosure | User expanded an insight panel (`source`: `why` or `flow`). |
+| `nba_insight_opened` | Disclosure | User expanded an insight panel (telemetry v1 does not encode which panel — minimisation). |
 
 ---
 
@@ -110,7 +118,7 @@ Zorg OS distinguishes three classes of recorded signals. **Confusing them corrup
 
 **`AuditLog` is model-centric:** each row targets `model_name`, `object_id`, `object_repr`, and optional `changes` JSON describing **persisted entity** effects.
 
-**NBA telemetry is UI-centric:** events are keyed by **interaction** and **NBA snapshot metadata** (`actionKey`, `uiMode`, `title`, …), not by a stable domain primary key for a mutation.
+**NBA telemetry is UI-centric:** events are keyed by **interaction** and **NBA snapshot metadata** (`actionKey`, `uiMode`, `reasonCount`, …). **Title text is not stored** in v1 telemetry. Signals are not domain mutation records.
 
 Forcing NBA events into `AuditLog` implies:
 
@@ -148,7 +156,7 @@ Authenticated operators generate events tied (at minimum) to **session / account
 | Factor | Risk |
 |--------|------|
 | Absence of `case_id` in payload | Reduces **direct** case linkage from the payload alone; does **not** remove identification via account metadata. |
-| `title` and `actionKey` | May encode **operational context** (care domain semantics). Treat as potentially sensitive in aggregation and retention. |
+| `actionKey` (enum-like strings) | May encode **operational context** (care domain semantics). Treat as potentially sensitive in aggregation and retention. |
 | Interaction patterns | **Sequences** of clicks and timings can **fingerprint** individuals or roles within small teams. |
 
 ### Obligations before any production storage
@@ -217,13 +225,20 @@ Body (conceptual):
 
 ## 12. Verification
 
-- **This change is documentation-only:** `docs/REGIEKAMER_NBA_TELEMETRY.md`.
-- **No code changes.** No behavior changes.
-- **Developers must treat this file as normative** alongside backend workflow rules in `AGENTS.md`.
+Normative text in this document must stay aligned with `telemetrySchema.ts`, `telemetryAdapter.ts`, and `regiekamerNbaInstrumentation.ts`.
+
+**Developers must treat this file as normative** alongside backend workflow rules in `AGENTS.md`.
 
 ---
 
 ## Enforcement
+
+**Pull-request / architecture gate**
+
+- **Any use of `AuditLog` or `CaseDecisionLog` for NBA telemetry is forbidden.**
+- **Any pull request that does so must be rejected** during review.
+- **This is a blocking architecture violation** — not a style preference.
+- **Automated guard:** `client/src/lib/regiekamerNbaTelemetryBoundary.test.ts` fails if any file under `client/src/` contains both `nba_` and any of `AuditLog`, `CaseDecisionLog`, or `/audit-log` (documentation under `docs/` is excluded by design). The guard file itself is skipped during scanning because it embeds those matcher strings.
 
 Violations (writing NBA telemetry to `AuditLog` / `CaseDecisionLog`, or extending audit APIs for telemetry) are **architecture defects** and must be blocked in code review. Correct remediation is a **dedicated telemetry pipeline** approved under Section 10.
 
