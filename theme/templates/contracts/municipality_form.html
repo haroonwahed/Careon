@@ -5,7 +5,7 @@
 <div class="ds-detail-shell">
 
 <nav class="">
-        <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
+        <a class="" href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/">Regiekamer</a>
         <span> / </span>
         <a class="" href="{% url 'careon:municipality_list' %}">Gemeenten</a>
         {% if municipality %}

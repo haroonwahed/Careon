@@ -29,6 +29,7 @@ urlpatterns = [
     path('api/signals/', api_views.signals_api, name='signals_api'),
     path('api/tasks/', api_views.tasks_api, name='tasks_api'),
     path('api/documents/', api_views.documents_api, name='documents_api'),
+    path('api/documents/<int:document_id>/', api_views.document_detail_api, name='document_detail_api'),
     path('api/audit-log/', api_views.audit_log_api, name='audit_log_api'),
     path('api/providers/', api_views.providers_api, name='providers_api'),
     path('api/municipalities/', api_views.municipalities_api, name='municipalities_api'),

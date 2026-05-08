@@ -8,7 +8,7 @@
  * - Platform-level multi-tenancy
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TopBar } from "../navigation/TopBar";
 import { Sidebar } from "../navigation/Sidebar";
 import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
@@ -30,6 +30,8 @@ import { AudittrailPage } from "../care/AudittrailPage";
 import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
 import { CareAppFrame } from "../care/CareAppFrame";
+import { tokens } from "../../design/tokens";
+import { SPA_DASHBOARD_URL } from "../../lib/routes";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
@@ -47,6 +49,12 @@ interface Context {
 }
 
 const availableContexts: Context[] = [
+  {
+    id: "gemeente-demo",
+    type: "gemeente",
+    name: "Gemeente Demo",
+    subtitle: "Demo gemeente",
+  },
   {
     id: "gemeente-utrecht",
     type: "gemeente",
@@ -94,7 +102,7 @@ type Page =
   | "gebruikers";
 
 const PAGE_TO_HREF: Record<Page, string> = {
-  regiekamer: "/regiekamer",
+  regiekamer: SPA_DASHBOARD_URL,
   casussen: "/casussen",
   "nieuwe-casus": "/casussen/nieuw",
   beoordelingen: "/beoordelingen",
@@ -143,9 +151,13 @@ const ADMIN_PAGES: readonly Page[] = [
   "matching",
   "plaatsingen",
   "acties",
+  "zorgaanbieders",
+  "gemeenten",
   "signalen",
+  "audittrail",
   "nieuwe-casus",
   "rapportages",
+  "documenten",
   "instellingen",
 ];
 
@@ -196,11 +208,15 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
   if (path.startsWith("/care/regio")) {
     return { page: "regios", caseId: null };
   }
+  if (path.startsWith("/care/signalen")) {
+    return { page: "signalen", caseId: null };
+  }
   if (path.startsWith("/settings")) {
     return { page: "instellingen", caseId: null };
   }
 
   const shellMap: Record<string, Page> = {
+    "/dashboard": "regiekamer",
     "/regiekamer": "regiekamer",
     "/casussen": "casussen",
     "/casussen/nieuw": "nieuwe-casus",
@@ -268,6 +284,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       signalen: wf.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 7).length,
     };
   }, [cases, providers, careTasks]);
+
+  /** Alleen gemeente en admin mogen een nieuwe casus starten vanuit shell (niet zorgaanbieder). */
+  const workspaceAllowsNewCasus = currentContext.type === "gemeente" || currentContext.type === "admin";
 
   const goToPage = useCallback(
     (page: Page) => {
@@ -367,9 +386,35 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     goToPage("zorgaanbieders");
   };
 
-  /** Pilot / production: lock shell to Django session role when API disables switching. */
+  /**
+   * Align shell role with `/care/api/me/` (Django session).
+   * - Pilot (`allowRoleSwitch: false`): always mirror session (no demo switching).
+   * - Demo (`allowRoleSwitch: true`): mirror only when session identity/role changes (login),
+   *   so manual TopBar switches are not overwritten on every render.
+   */
+  const sessionMeKeyRef = useRef<string | null>(null);
+  const demoContextId = useMemo(() => {
+    if (!me) {
+      return null;
+    }
+    const orgSlug = me.organization?.slug?.toLowerCase() ?? "";
+    const orgName = me.organization?.name?.toLowerCase() ?? "";
+    const email = me.email.toLowerCase();
+    // Only pin the demo gemeente context for actual gemeente sessions. Org names like
+    // "Pilot Demo …" match `includes("demo")` for providers too — that incorrectly forced
+    // gemeente UI after login as zorgaanbieder (e.g. golden-path E2E).
+    if (
+      me.workflowRole === "gemeente"
+      && (orgSlug === "gemeente-demo" || orgName.includes("demo") || email === "test@gemeente-demo.nl")
+    ) {
+      return "gemeente-demo";
+    }
+    return me.organization?.slug ?? null;
+  }, [me]);
+
   useEffect(() => {
-    if (!me || me.permissions.allowRoleSwitch) {
+    if (!me) {
+      sessionMeKeyRef.current = null;
       return;
     }
     const subtitle =
@@ -378,13 +423,48 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         : me.workflowRole === "admin"
           ? "Administrator"
           : "Gemeente";
-    setCurrentContext({
+    const nextContext: Context = {
       id: `session-${me.id}`,
       type: me.workflowRole,
       name: me.organization?.name ?? me.fullName,
       subtitle,
-    });
-  }, [me]);
+    };
+    if (!me.permissions.allowRoleSwitch) {
+      setCurrentContext(nextContext);
+      return;
+    }
+    const key = `${me.id}:${me.workflowRole}`;
+    if (sessionMeKeyRef.current === key) {
+      return;
+    }
+    sessionMeKeyRef.current = key;
+    if (demoContextId) {
+      const matched = availableContexts.find((context) => context.id === demoContextId);
+      setCurrentContext(matched ?? nextContext);
+    } else {
+      setCurrentContext(nextContext);
+    }
+  }, [demoContextId, me]);
+
+  /** When shell role changes (e.g. login as zorgaanbieder), drop pages that do not exist for that actor. */
+  useEffect(() => {
+    setCurrentPage((p) => normalizePageForRole(p, currentContext.type));
+  }, [currentContext.type]);
+
+  useEffect(() => {
+    if (!me || !demoContextId) {
+      return;
+    }
+    const matched = availableContexts.find((context) => context.id === demoContextId);
+    if (!matched) {
+      return;
+    }
+    if (currentContext.id !== matched.id) {
+      setCurrentContext(matched);
+      setCurrentPage(normalizePageForRole("regiekamer", matched.type));
+      window.history.replaceState({}, "", pageToHref("regiekamer", null));
+    }
+  }, [currentContext.id, demoContextId, me]);
 
   const handleOpenEntityFromAudit = (entry: any) => {
     if (entry.entityType === "casus" && entry.entityId) {
@@ -407,7 +487,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         role={currentContext.type}
         activeItemId={currentPage === "nieuwe-casus" ? "casussen" : currentPage}
         onNavigate={handleNavigate}
-        badgeOverrides={currentContext.type === "gemeente" ? queueCounts : undefined}
+        badgeOverrides={
+          currentContext.type === "gemeente" || currentContext.type === "admin" ? queueCounts : undefined
+        }
       />
 
       {/* MAIN AREA */}
@@ -446,17 +528,27 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         {/* CONTENT */}
         <main data-testid="care-app-main" className="flex-1 flex flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto">
-            <CareAppFrame className="min-h-full">
+            <CareAppFrame
+              className="min-h-full"
+              layoutMaxWidth={currentPage === "regiekamer" ? tokens.layout.regiekamerWorkspaceMaxWidth : undefined}
+            >
             {selectedCase ? (
               <CaseExecutionPage
                 caseId={selectedCase}
                 role={currentContext.type}
                 onBack={handleCloseCaseDetail}
               />
-            ) : currentContext.type === "gemeente" ? (
+            ) : currentContext.type === "gemeente" || currentContext.type === "admin" ? (
               <>
                 {currentPage === "regiekamer" && (
-                  <SystemAwarenessPage onCaseClick={handleCaseClick} onAppNavigate={handleAppNavigate} />
+                  <SystemAwarenessPage
+                    onCaseClick={handleCaseClick}
+                    onAppNavigate={handleAppNavigate}
+                    canCreateCase={workspaceAllowsNewCasus}
+                    onCreateCase={() => {
+                      goToPage("nieuwe-casus");
+                    }}
+                  />
                 )}
 
                 {currentPage === "casussen" && (
@@ -465,7 +557,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     onCreateCase={() => {
                       goToPage("nieuwe-casus");
                     }}
-                    canCreateCase
+                    canCreateCase={workspaceAllowsNewCasus}
                     role={currentContext.type}
                     onNavigateToWorkflow={(page) => {
                       goToPage(page as Page);
@@ -486,7 +578,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
                 {currentPage === "beoordelingen" && (
                   <AanbiederBeoordelingPage
-                    role="gemeente"
+                    role={currentContext.type === "admin" ? "admin" : "gemeente"}
                     onCaseClick={handleCaseClick}
                     onNavigateToMatching={() => {
                       goToPage("matching");
@@ -523,11 +615,21 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "acties" && (
-                  <ActiesPage onCaseClick={handleCaseClick} />
+                  <ActiesPage
+                    onCaseClick={handleCaseClick}
+                    onNavigateToCasussen={() => {
+                      goToPage("casussen");
+                    }}
+                  />
                 )}
 
                 {currentPage === "zorgaanbieders" && (
-                  <ZorgaanbiedersPage theme={theme} />
+                  <ZorgaanbiedersPage
+                    theme={theme}
+                    onNavigateToMatching={() => {
+                      goToPage("matching");
+                    }}
+                  />
                 )}
 
                 {currentPage === "gemeenten" && (
@@ -539,6 +641,12 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     onRegionClick={handleRegionClick}
                     onViewGemeenten={handleViewGemeenten}
                     onViewProviders={handleViewProviders}
+                    onNavigateToSignalen={() => {
+                      goToPage("signalen");
+                    }}
+                    onNavigateToMatching={() => {
+                      goToPage("matching");
+                    }}
                   />
                 )}
 
@@ -578,6 +686,44 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 {currentPage === "instellingen" && (
                   <InstellingenPage />
                 )}
+
+                {currentContext.type === "admin" && currentPage === "gebruikers" && (
+                  <div className="space-y-6">
+                    <div>
+                      <h1 className="text-3xl font-bold text-foreground mb-2">
+                        Gebruikers
+                      </h1>
+                      <p className="text-sm text-muted-foreground">
+                        Gebruikers en toegang
+                      </p>
+                    </div>
+
+                    <div className="premium-card p-12 text-center">
+                      <p className="mb-4 text-lg font-bold text-foreground">
+                        Alleen beheerder
+                      </p>
+                      <p className="mb-8 text-muted-foreground">
+                        Alleen voor beheerders.<br />
+                        Beheer gebruikers, rechten en toegang.
+                      </p>
+
+                      <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+                        <div className="premium-card p-6">
+                          <p className="mb-2 text-3xl font-bold text-foreground">24</p>
+                          <p className="text-sm text-muted-foreground">Gemeente</p>
+                        </div>
+                        <div className="premium-card p-6">
+                          <p className="mb-2 text-3xl font-bold text-foreground">18</p>
+                          <p className="text-sm text-muted-foreground">Zorgaanbieder</p>
+                        </div>
+                        <div className="premium-card p-6">
+                          <p className="mb-2 text-3xl font-bold text-primary">3</p>
+                          <p className="text-sm text-muted-foreground">Admins</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </>
             ) : currentContext.type === "zorgaanbieder" ? (
               <>
@@ -612,113 +758,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <DocumentenPage />
                 )}
               </>
-            ) : (
-              <>
-                {currentPage === "regiekamer" && (
-                  <SystemAwarenessPage onCaseClick={handleCaseClick} onAppNavigate={handleAppNavigate} />
-                )}
-
-                {currentPage === "regios" && (
-                  <RegiosPage
-                    onRegionClick={handleRegionClick}
-                    onViewGemeenten={handleViewGemeenten}
-                    onViewProviders={handleViewProviders}
-                  />
-                )}
-
-                {currentPage === "gebruikers" && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Gebruikers
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Gebruikers en toegang
-                      </p>
-                    </div>
-
-                    <div className="premium-card p-12 text-center">
-                      <p className="mb-4 text-lg font-bold text-foreground">
-                        Alleen beheerder
-                      </p>
-                      <p className="mb-8 text-muted-foreground">
-                        Alleen voor beheerders.<br />
-                        Beheer gebruikers, rechten en toegang.
-                      </p>
-
-                      <div className="mx-auto grid max-w-2xl grid-cols-1 gap-4 md:grid-cols-3">
-                        <div className="premium-card p-6">
-                          <p className="mb-2 text-3xl font-bold text-foreground">24</p>
-                          <p className="text-sm text-muted-foreground">Gemeente</p>
-                        </div>
-                        <div className="premium-card p-6">
-                          <p className="mb-2 text-3xl font-bold text-foreground">18</p>
-                          <p className="text-sm text-muted-foreground">Zorgaanbieder</p>
-                        </div>
-                        <div className="premium-card p-6">
-                          <p className="mb-2 text-3xl font-bold text-primary">3</p>
-                          <p className="text-sm text-muted-foreground">Admins</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {currentPage === "beoordelingen" && (
-                  <AanbiederBeoordelingPage
-                    role="admin"
-                    onCaseClick={handleCaseClick}
-                    onNavigateToMatching={() => {
-                      goToPage("matching");
-                    }}
-                    onNavigateToPlaatsingen={() => {
-                      goToPage("plaatsingen");
-                    }}
-                    onNavigateToCasussen={() => {
-                      goToPage("casussen");
-                    }}
-                  />
-                )}
-
-                {(currentPage === "casussen" || currentPage === "matching" || currentPage === "plaatsingen" || currentPage === "acties" || currentPage === "signalen") && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="mb-2 text-3xl font-bold text-foreground">
-                        {currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Admin view - all organizations
-                      </p>
-                    </div>
-
-                    <div className="premium-card p-12 text-center">
-                      <p className="text-muted-foreground">
-                        Admin page - showing data across all organizations
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {currentPage === "nieuwe-casus" && (
-                  <NieuweCasusPage
-                    onCancel={() => {
-                      goToPage("casussen");
-                    }}
-                    onCreated={() => {
-                      goToPage("casussen");
-                    }}
-                  />
-                )}
-
-                {currentPage === "rapportages" && (
-                  <RapportagesPage />
-                )}
-
-                {currentPage === "instellingen" && (
-                  <InstellingenPage />
-                )}
-              </>
-            )}
+            ) : null}
             </CareAppFrame>
           </div>
         </main>

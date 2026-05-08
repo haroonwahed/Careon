@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArrowLeft, MapPin, Users, Star, Clock } from "lucide-react";
 import { Button } from "../ui/button";
 import { mockCases, mockProviders } from "../../lib/casesData";
+import { CareAppFrame } from "../care/CareAppFrame";
 
 // AI Components
 import { 
@@ -64,7 +65,7 @@ export function MatchingPageWithAI({
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <CareAppFrame className="space-y-6 pb-24">
       {/* Back Button */}
       <button
         onClick={onBack}
@@ -265,6 +266,6 @@ export function MatchingPageWithAI({
           )}
         </div>
       </div>
-    </div>
+    </CareAppFrame>
   );
 }

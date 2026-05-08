@@ -9,6 +9,7 @@ import { CaseStatusBadge } from "../care/CaseStatusBadge";
 import { UrgencyBadge } from "../care/UrgencyBadge";
 import { RiskBadge } from "../care/RiskBadge";
 import { mockCases } from "../../lib/casesData";
+import { CareAppFrame } from "../care/CareAppFrame";
 
 // AI Components
 import { 
@@ -127,7 +128,7 @@ export function CaseDetailWithAI({
   const summary = getSummary();
 
   return (
-    <div className="space-y-6 pb-24">
+    <CareAppFrame className="space-y-6 pb-24">
       {/* Back Button */}
       <Button 
         variant="ghost" 
@@ -288,6 +289,6 @@ export function CaseDetailWithAI({
           </AIInsightPanel>
         </div>
       </div>
-    </div>
+    </CareAppFrame>
   );
 }

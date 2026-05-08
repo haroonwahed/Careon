@@ -1,4 +1,17 @@
 import { expect, test } from "@playwright/test";
+import {
+  E2E_BASE_URL,
+  E2E_DEMO_CASE_TITLE,
+  E2E_MUNICIPALITY_NAME,
+  E2E_PROVIDER_ONE_NAME,
+  E2E_PROVIDER_TWO_NAME,
+  E2E_REGION_NAME,
+  pilotDemoGemeentePassword,
+  pilotDemoGemeenteUsername,
+  pilotDemoProviderOneUsername,
+  pilotDemoProviderPassword,
+  pilotDemoProviderTwoUsername,
+} from "./pilotEnv";
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -52,16 +65,17 @@ type RegiekamerOverviewResponse = {
   }>;
 };
 
-const PASSWORD = process.env.E2E_PASSWORD || "pilot_demo_pass_123";
-const GEMEENTE_USERNAME = process.env.E2E_GEMEENTE_USERNAME || "demo_gemeente";
-const PROVIDER_ONE_USERNAME = process.env.E2E_PROVIDER_ONE_USERNAME || "demo_provider_brug";
-const PROVIDER_TWO_USERNAME = process.env.E2E_PROVIDER_TWO_USERNAME || "demo_provider_kompas";
-const PROVIDER_ONE_NAME = process.env.E2E_PROVIDER_ONE_NAME || "Jeugdzorg De Brug";
-const PROVIDER_TWO_NAME = process.env.E2E_PROVIDER_TWO_NAME || "Kompas Jeugdzorg";
-const MUNICIPALITY_NAME = process.env.E2E_MUNICIPALITY_NAME || "Gemeente Utrecht";
-const REGION_NAME = process.env.E2E_REGION_NAME || "Regio Utrecht";
-const CASE_TITLE = process.env.E2E_DEMO_CASE_TITLE || "Pilot demo casus: urgente jeugdzorg";
-const BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:8010";
+const BASE_URL = E2E_BASE_URL;
+const GEMEENTE_USERNAME = pilotDemoGemeenteUsername();
+const PROVIDER_ONE_USERNAME = pilotDemoProviderOneUsername();
+const PROVIDER_TWO_USERNAME = pilotDemoProviderTwoUsername();
+const PROVIDER_ONE_NAME = E2E_PROVIDER_ONE_NAME;
+const PROVIDER_TWO_NAME = E2E_PROVIDER_TWO_NAME;
+const MUNICIPALITY_NAME = E2E_MUNICIPALITY_NAME;
+const REGION_NAME = E2E_REGION_NAME;
+const CASE_TITLE = E2E_DEMO_CASE_TITLE;
+const GEMEENTE_PASSWORD = pilotDemoGemeentePassword();
+const PROVIDER_PASSWORD = pilotDemoProviderPassword();
 
 async function apiFetch<T>(
   page: import("@playwright/test").Page,
@@ -163,7 +177,11 @@ async function loginAs(page: import("@playwright/test").Page, username: string, 
   await page.getByLabel("Wachtwoord").fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForLoadState("networkidle");
-  await expect(page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.")).toHaveCount(0);
+  const loginError = page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.");
+  await expect(
+    loginError,
+    "Login failed. Run ./scripts/prepare_pilot_e2e.sh then Django with settings_rehearsal; set E2E_DEMO_PASSWORD / E2E_GEMEENTE_USERNAME if needed. See docs/E2E_RUNBOOK.md.",
+  ).toHaveCount(0);
   await expect(page).not.toHaveURL(/\/login\/?$/);
 }
 
@@ -226,7 +244,7 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
   await page.goto(BASE_URL);
   await expect(page).toHaveTitle(/SaaS Careon|CareOn - Zorgregieplatform/i);
 
-  await loginAs(page, GEMEENTE_USERNAME, PASSWORD);
+  await loginAs(page, GEMEENTE_USERNAME, GEMEENTE_PASSWORD);
 
   const bootstrap = await apiFetch<IntakeFormResponse>(page, "/care/api/cases/intake-form/");
   expect(bootstrap.ok, "Expected intake form bootstrap").toBeTruthy();
@@ -280,6 +298,14 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
       shortDescription: "Samenvatting gereed voor matching in de pilotdemo.",
       urgency: "HIGH",
       zorgtype: "OUTPATIENT",
+      workflow_summary: {
+        context:
+          "Pilot E2E: jeugd met thuiszitproblematiek, gezinsstress en hoge urgentie; voldoende context vóór matching.",
+        urgency: "HIGH",
+        risks: ["FAMILY_STRESS"],
+        missing_information: "",
+        risks_none_ack: false,
+      },
     },
   );
   expect(summaryResponse.ok, `Expected summary step to succeed: ${summaryResponse.text}`).toBeTruthy();
@@ -322,7 +348,7 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
   expect(evaluation.next_best_action?.action).toBe("WAIT_PROVIDER_RESPONSE");
 
   await logout(page);
-  await loginAs(page, PROVIDER_ONE_USERNAME, PASSWORD);
+  await loginAs(page, PROVIDER_ONE_USERNAME, PROVIDER_PASSWORD);
 
   const rejectResponse = await postJson<{ ok: boolean }>(
     page,
@@ -336,7 +362,7 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
   expect(rejectResponse.ok, `Expected provider rejection to succeed: ${rejectResponse.text}`).toBeTruthy();
 
   await logout(page);
-  await loginAs(page, GEMEENTE_USERNAME, PASSWORD);
+  await loginAs(page, GEMEENTE_USERNAME, GEMEENTE_PASSWORD);
 
   const overview = await apiFetch<RegiekamerOverviewResponse>(page, "/care/api/regiekamer/decision-overview/");
   expect(overview.ok, "Expected Regiekamer overview to load").toBeTruthy();
@@ -349,7 +375,7 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
 
   await page.goto(new URL("/dashboard/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
-  await expect(page.getByTestId("regiekamer-summary-active")).toBeVisible();
+  await expect(page.getByTestId("regiekamer-dominant-action")).toBeVisible();
   await expect(page.getByTestId("regiekamer-worklist-item").filter({ hasText: CASE_TITLE }).first()).toBeVisible();
 
   const worklistRow = page.getByTestId("regiekamer-worklist-item").filter({ hasText: CASE_TITLE }).first();
@@ -361,7 +387,7 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Regiekam
 
 test("pilot demo part 2 rematches, accepts, confirms placement, and starts intake", async ({ page }) => {
   await page.goto(BASE_URL);
-  await loginAs(page, GEMEENTE_USERNAME, PASSWORD);
+  await loginAs(page, GEMEENTE_USERNAME, GEMEENTE_PASSWORD);
   const caseId = await getCaseId(page, CASE_TITLE);
 
   const providers = await apiFetch<{ providers: Array<{ id: string; name: string }> }>(page, "/care/api/providers/");
@@ -386,7 +412,7 @@ test("pilot demo part 2 rematches, accepts, confirms placement, and starts intak
   expect(evaluation.next_best_action?.action).toBe("WAIT_PROVIDER_RESPONSE");
 
   await logout(page);
-  await loginAs(page, PROVIDER_TWO_USERNAME, PASSWORD);
+  await loginAs(page, PROVIDER_TWO_USERNAME, PROVIDER_PASSWORD);
 
   const acceptResponse = await postJson<{ ok: boolean }>(
     page,
@@ -403,7 +429,7 @@ test("pilot demo part 2 rematches, accepts, confirms placement, and starts intak
   expect(evaluation.next_best_action?.action).toBe("CONFIRM_PLACEMENT");
 
   await logout(page);
-  await loginAs(page, GEMEENTE_USERNAME, PASSWORD);
+  await loginAs(page, GEMEENTE_USERNAME, GEMEENTE_PASSWORD);
 
   const placementResponse = await postJson<{ ok: boolean }>(
     page,
@@ -420,7 +446,7 @@ test("pilot demo part 2 rematches, accepts, confirms placement, and starts intak
   expect(evaluation.next_best_action?.action).toBe("START_INTAKE");
 
   await logout(page);
-  await loginAs(page, PROVIDER_TWO_USERNAME, PASSWORD);
+  await loginAs(page, PROVIDER_TWO_USERNAME, PROVIDER_PASSWORD);
 
   const intakeResponse = await postJson<{ ok: boolean }>(page, `/care/api/cases/${caseId}/intake-action/`, {});
   expect(intakeResponse.ok, `Expected intake start to succeed: ${intakeResponse.text}`).toBeTruthy();

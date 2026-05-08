@@ -45,13 +45,13 @@ export function IntakeBriefing({ caseData }: IntakeBriefingProps) {
   };
 
   return (
-    <div className="premium-card p-6">
-      <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+    <div className="panel-surface p-4">
+      <h2 className="text-xl font-bold text-foreground mb-3 flex items-center gap-2">
         <FileText size={24} className="text-primary" />
         Intake briefing
       </h2>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Probleemschets */}
         <section>
           <h3 className="text-base font-semibold text-foreground mb-3 flex items-center gap-2">

@@ -109,9 +109,9 @@ describe("MatchingPageWithMap", () => {
       <MatchingPageWithMap caseId="C-MATCH-1" onBack={() => {}} onConfirmMatch={() => {}} />,
     );
 
-    expect(await screen.findByRole("heading", { name: /Top 3 aanbevelingen/i })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: /Matching voor Casus/i })).toBeVisible();
 
-    const selectButtons = screen.getAllByRole("button", { name: /Selecteer/i });
+    const selectButtons = screen.getAllByRole("button", { name: /Selecteer & verzoek/i });
     expect(selectButtons.length).toBeGreaterThanOrEqual(1);
     await user.click(selectButtons[0]);
 

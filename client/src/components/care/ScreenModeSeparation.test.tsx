@@ -218,9 +218,9 @@ describe("Screen mode separation", () => {
 
   it("enforces screen mode separation across core pages", async () => {
     render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
-    const metricStrip = screen.getByTestId("metric-strip");
-    expect(metricStrip).toBeInTheDocument();
-    expect(metricStrip).toHaveAttribute("data-density", "compact");
+    const regiekamerDominant = screen.getByTestId("regiekamer-dominant-action");
+    expect(regiekamerDominant).toBeInTheDocument();
+    expect(regiekamerDominant).toHaveAttribute("data-regiekamer-mode", "crisis");
     expect(screen.queryByTestId("next-best-action")).not.toBeInTheDocument();
     cleanup();
 
@@ -228,7 +228,7 @@ describe("Screen mode separation", () => {
     const worklist = screen.getByTestId("worklist");
     expect(worklist).toBeInTheDocument();
     expect(worklist).toHaveAttribute("data-density", "compact");
-    expect(screen.queryByTestId("metric-strip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("regiekamer-dominant-action")).not.toBeInTheDocument();
     cleanup();
 
     render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
@@ -237,7 +237,7 @@ describe("Screen mode separation", () => {
     expect(nextBestAction).toHaveAttribute("data-priority", "primary");
     const processTimeline = screen.getByTestId("case-process-timeline");
     expect(processTimeline).toHaveAttribute("data-density", "compact");
-    expect(screen.queryByTestId("metric-strip")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("regiekamer-dominant-action")).not.toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
   });
 });

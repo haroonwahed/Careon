@@ -42,7 +42,7 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
       tabIndex={0}
       onClick={() => onOpen(item.id)}
       onKeyDown={handleKeyDown}
-      className={`w-full rounded-3xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+      className={`w-full rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
         item.isBlocked ? "border-red-500/25 bg-red-500/5" : "border-border bg-card"
       }`}
     >

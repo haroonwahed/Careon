@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { cn } from "../ui/utils";
+import { tokens } from "../../design/tokens";
+import { CareInfoPopover } from "./CareUnifiedPage";
 
 type CareTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 
@@ -40,6 +42,8 @@ export function CarePageHeader({
   eyebrow,
   title,
   subtitle,
+  subtitleAriaLabel,
+  subtitleInfoTestId,
   actions,
   meta,
   className,
@@ -47,6 +51,8 @@ export function CarePageHeader({
   eyebrow?: ReactNode;
   title: ReactNode;
   subtitle?: ReactNode;
+  subtitleAriaLabel?: string;
+  subtitleInfoTestId?: string;
   actions?: ReactNode;
   meta?: ReactNode;
   className?: string;
@@ -61,8 +67,19 @@ export function CarePageHeader({
             </div>
           )}
           <div className="space-y-2">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">{title}</h1>
-            {subtitle && <p className="max-w-3xl text-sm leading-6 text-muted-foreground">{subtitle}</p>}
+            <h1 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-3xl font-semibold tracking-tight text-foreground">
+              <span className="min-w-0">{title}</span>
+              {subtitle ? (
+                <CareInfoPopover
+                  ariaLabel={subtitleAriaLabel ?? "Pagina-uitleg"}
+                  testId={subtitleInfoTestId ?? "care-hero-header-subtitle-info"}
+                >
+                  <div className="leading-6 text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
+                    {subtitle}
+                  </div>
+                </CareInfoPopover>
+              ) : null}
+            </h1>
           </div>
           {meta && <div>{meta}</div>}
         </div>
@@ -101,7 +118,14 @@ export function CareInsightBanner({
         <div className="space-y-1.5">
           <p className={cn(compact ? "text-xs font-semibold uppercase tracking-[0.12em]" : "text-sm font-semibold uppercase tracking-[0.12em]", styles.note)}>Operatieve aandacht</p>
           <h2 className={cn(compact ? "text-base font-semibold text-foreground" : "text-lg font-semibold text-foreground")}>{title}</h2>
-          {copy && <p className={cn("max-w-4xl leading-6 text-muted-foreground", compact ? "text-xs" : "text-sm")}>{copy}</p>}
+          {copy && (
+            <p
+              className={cn("leading-6 text-muted-foreground", compact ? "text-xs" : "text-sm")}
+              style={{ maxWidth: tokens.layout.contentMeasure }}
+            >
+              {copy}
+            </p>
+          )}
         </div>
         {action && <div className="shrink-0">{action}</div>}
       </div>
@@ -139,14 +163,14 @@ export function CareMetricCard({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "group relative flex min-h-[120px] flex-col justify-between rounded-xl border p-4 text-left transition-colors duration-200",
+        "care-hover-card group relative flex min-h-[120px] flex-col justify-between rounded-xl border p-4 text-left transition-colors duration-200",
         styles.shell,
         onClick && "cursor-pointer hover:border-border/90",
         active && "ring-2 ring-primary/30",
         className,
       )}
     >
-      {active && <span className="absolute right-4 top-4 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_6px_rgba(139,92,246,0.15)]" />}
+      {active && <span className="absolute right-4 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_6px_rgba(139,92,246,0.15)]" style={{ top: tokens.layout.edgeZero }} />}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-3">
           {icon && (
@@ -168,24 +192,39 @@ export function CareMetricCard({
 export function CareSectionCard({
   title,
   subtitle,
+  subtitleAriaLabel,
+  subtitleInfoTestId,
   actions,
   children,
   className,
 }: {
   title?: ReactNode;
   subtitle?: ReactNode;
+  subtitleAriaLabel?: string;
+  subtitleInfoTestId?: string;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
-    <section className={cn("rounded-xl border border-border/70 bg-card/35 p-4", className)}>
+    <section className={cn("care-hover-card rounded-xl border border-border/70 bg-card/35 p-4", className)}>
       {(title || subtitle || actions) && (
         <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-1">
-            {title && <h2 className="text-base font-semibold text-foreground">{title}</h2>}
-            {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
-          </div>
+          {(title || subtitle) ? (
+            <div className="min-w-0 space-y-1">
+              <h2 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-base font-semibold text-foreground">
+                {title ? <span className="min-w-0">{title}</span> : null}
+                {subtitle ? (
+                  <CareInfoPopover
+                    ariaLabel={subtitleAriaLabel ?? "Sectie-uitleg"}
+                    testId={subtitleInfoTestId ?? "care-section-card-subtitle-info"}
+                  >
+                    <div className="text-sm text-muted-foreground">{subtitle}</div>
+                  </CareInfoPopover>
+                ) : null}
+              </h2>
+            </div>
+          ) : null}
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
       )}

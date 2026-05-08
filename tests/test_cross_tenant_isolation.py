@@ -29,6 +29,7 @@ from tests.test_utils import middleware_without_spa_shell
 
 from contracts.models import (
     CareCase,
+    CaseAssessment,
     Organization,
     OrganizationMembership,
     Client,
@@ -343,6 +344,212 @@ class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCa
         self.assertEqual(response.status_code, 200)
         ids = {row['id'] for row in response.json().get('contracts', [])}
         self.assertNotIn(str(self.contract_linked.pk), ids)
+
+
+@_DJANGO_HTML_WS
+class DocumentsApiProviderVisibilityTest(ProviderSameOrganizationCaseVisibilityTest):
+    """documents_api / document_detail_api placement-scope matches cases_api for zorgaanbieder."""
+
+    def setUp(self):
+        super().setUp()
+        self.doc_linked = Document.objects.create(
+            organization=self.org_a,
+            title='Provider Visible Doc',
+            contract=self.contract_linked,
+            uploaded_by=self.user_a,
+        )
+        self.doc_other = Document.objects.create(
+            organization=self.org_a,
+            title='Provider Hidden Doc',
+            contract=self.contract_other,
+            uploaded_by=self.user_a,
+        )
+        self.doc_orphan = Document.objects.create(
+            organization=self.org_a,
+            title='Org Doc No Case',
+            uploaded_by=self.user_a,
+        )
+
+    def test_provider_documents_api_lists_only_placement_linked_case_documents(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        response = self.client.get(reverse('careon:documents_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('documents', [])}
+        self.assertIn(str(self.doc_linked.id), ids)
+        self.assertNotIn(str(self.doc_other.id), ids)
+        self.assertNotIn(str(self.doc_orphan.id), ids)
+        self.assertNotIn(str(self.document_a.id), ids)
+
+    def test_gemeente_documents_api_lists_all_org_documents(self):
+        self.client.login(username='user_a', password='passA1234!')
+        response = self.client.get(reverse('careon:documents_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('documents', [])}
+        self.assertIn(str(self.doc_linked.id), ids)
+        self.assertIn(str(self.doc_other.id), ids)
+        self.assertIn(str(self.doc_orphan.id), ids)
+        self.assertIn(str(self.document_a.id), ids)
+
+    def test_documents_api_cross_tenant_excludes_other_org(self):
+        self.client.login(username='user_b', password='passB1234!')
+        response = self.client.get(reverse('careon:documents_api'))
+        self.assertEqual(response.status_code, 200)
+        ids = {row['id'] for row in response.json().get('documents', [])}
+        self.assertNotIn(str(self.doc_linked.id), ids)
+        self.assertNotIn(str(self.doc_other.id), ids)
+        self.assertIn(str(self.document_b.id), ids)
+
+    def test_provider_document_detail_404_for_unlinked_case_document(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:document_detail_api', kwargs={'document_id': self.doc_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_document_detail_200_for_linked_case_document(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:document_detail_api', kwargs={'document_id': self.doc_linked.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json().get('name'), 'Provider Visible Doc')
+
+    def test_provider_document_detail_404_for_org_only_document(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:document_detail_api', kwargs={'document_id': self.doc_orphan.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_document_detail_api_cross_tenant_returns_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:document_detail_api', kwargs={'document_id': self.doc_linked.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+
+@_DJANGO_HTML_WS
+class ProviderListApisVisibilityTest(ProviderSameOrganizationCaseVisibilityTest):
+    """assessments_api, placements_api, signals_api, tasks_api, audit_log_api — placement scope."""
+
+    def setUp(self):
+        super().setUp()
+        self.assessment_linked = CaseAssessment.objects.create(
+            due_diligence_process=self.intake_linked,
+            assessment_status=CaseAssessment.AssessmentStatus.UNDER_REVIEW,
+            matching_ready=False,
+            notes='assessment linked',
+            assessed_by=self.user_a,
+            workflow_summary={},
+        )
+        self.assessment_other = CaseAssessment.objects.create(
+            due_diligence_process=self.intake_other,
+            assessment_status=CaseAssessment.AssessmentStatus.UNDER_REVIEW,
+            matching_ready=False,
+            notes='assessment other',
+            assessed_by=self.user_a,
+            workflow_summary={},
+        )
+        self.signal_linked = CareSignal.objects.create(
+            title='Signal Linked',
+            description='d',
+            case_record=self.contract_linked,
+            created_by=self.user_a,
+        )
+        self.signal_other = CareSignal.objects.create(
+            title='Signal Other',
+            description='d',
+            case_record=self.contract_other,
+            created_by=self.user_a,
+        )
+        self.task_linked = CareTask.objects.create(
+            title='Task Linked',
+            description='d',
+            due_date=datetime.date.today(),
+            case_record=self.contract_linked,
+            assigned_to=self.user_a,
+        )
+        self.task_other = CareTask.objects.create(
+            title='Task Other',
+            description='d',
+            due_date=datetime.date.today(),
+            case_record=self.contract_other,
+            assigned_to=self.user_a,
+        )
+        self.placement_linked = PlacementRequest.objects.filter(
+            due_diligence_process=self.intake_linked,
+        ).order_by('-updated_at').first()
+        self.placement_other = PlacementRequest.objects.filter(
+            due_diligence_process=self.intake_other,
+        ).order_by('-updated_at').first()
+
+    def test_provider_assessments_api_only_linked_case(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:assessments_api'))
+        self.assertEqual(r.status_code, 200)
+        ids = {row['id'] for row in r.json().get('assessments', [])}
+        self.assertIn(str(self.assessment_linked.id), ids)
+        self.assertNotIn(str(self.assessment_other.id), ids)
+
+    def test_provider_placements_api_only_linked_case(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:placements_api'))
+        self.assertEqual(r.status_code, 200)
+        ids = {row['id'] for row in r.json().get('placements', [])}
+        self.assertIn(str(self.placement_linked.id), ids)
+        self.assertNotIn(str(self.placement_other.id), ids)
+
+    def test_provider_signals_api_only_linked_case(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:signals_api'))
+        self.assertEqual(r.status_code, 200)
+        ids = {row['id'] for row in r.json().get('signals', [])}
+        self.assertIn(str(self.signal_linked.id), ids)
+        self.assertNotIn(str(self.signal_other.id), ids)
+
+    def test_provider_tasks_api_only_linked_case(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:tasks_api'))
+        self.assertEqual(r.status_code, 200)
+        ids = {row['id'] for row in r.json().get('tasks', [])}
+        self.assertIn(str(self.task_linked.id), ids)
+        self.assertNotIn(str(self.task_other.id), ids)
+
+    def test_gemeente_assessments_and_list_apis_org_wide(self):
+        self.client.login(username='user_a', password='passA1234!')
+        a = self.client.get(reverse('careon:assessments_api')).json()
+        a_ids = {row['id'] for row in a.get('assessments', [])}
+        self.assertIn(str(self.assessment_linked.id), a_ids)
+        self.assertIn(str(self.assessment_other.id), a_ids)
+        p = self.client.get(reverse('careon:placements_api')).json()
+        p_ids = {row['id'] for row in p.get('placements', [])}
+        self.assertIn(str(self.placement_linked.id), p_ids)
+        self.assertIn(str(self.placement_other.id), p_ids)
+        s = self.client.get(reverse('careon:signals_api')).json()
+        s_ids = {row['id'] for row in s.get('signals', [])}
+        self.assertIn(str(self.signal_linked.id), s_ids)
+        self.assertIn(str(self.signal_other.id), s_ids)
+        t = self.client.get(reverse('careon:tasks_api')).json()
+        t_ids = {row['id'] for row in t.get('tasks', [])}
+        self.assertIn(str(self.task_linked.id), t_ids)
+        self.assertIn(str(self.task_other.id), t_ids)
+
+    def test_provider_audit_log_api_forbidden(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:audit_log_api'))
+        self.assertEqual(r.status_code, 403)
+        self.assertFalse(r.json().get('ok', True))
+
+    def test_gemeente_audit_log_api_allowed(self):
+        self.client.login(username='user_a', password='passA1234!')
+        r = self.client.get(reverse('careon:audit_log_api'))
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('entries', r.json())
+
+    def test_list_apis_cross_tenant_no_org_a_leak(self):
+        self.client.login(username='user_b', password='passB1234!')
+        a = self.client.get(reverse('careon:assessments_api')).json()
+        self.assertNotIn(str(self.assessment_linked.id), {x['id'] for x in a.get('assessments', [])})
+        p = self.client.get(reverse('careon:placements_api')).json()
+        self.assertNotIn(str(self.placement_linked.id), {x['id'] for x in p.get('placements', [])})
+        s = self.client.get(reverse('careon:signals_api')).json()
+        self.assertNotIn(str(self.signal_linked.id), {x['id'] for x in s.get('signals', [])})
+        t = self.client.get(reverse('careon:tasks_api')).json()
+        self.assertNotIn(str(self.task_linked.id), {x['id'] for x in t.get('tasks', [])})
 
 
 @_DJANGO_HTML_WS

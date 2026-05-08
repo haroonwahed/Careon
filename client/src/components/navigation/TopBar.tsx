@@ -7,7 +7,7 @@
  * Critical: Role switcher makes system feel like a platform
  */
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { 
   Search,
   Bell,
@@ -114,6 +114,26 @@ export function TopBar({
   const [searchQuery, setSearchQuery] = useState("");
   const recentNotifications = NOTIFICATIONS.slice(0, 5);
 
+  const globalSearchShortcut = useMemo(() => {
+    if (typeof navigator === "undefined") {
+      return "⌘K";
+    }
+    return /Mac|iPhone|iPad|iPod/.test(navigator.platform ?? "") ? "⌘K" : "Ctrl+K";
+  }, []);
+
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const onGlobalKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onGlobalKey);
+    return () => window.removeEventListener("keydown", onGlobalKey);
+  }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     onSearch?.(e.target.value);
@@ -206,7 +226,7 @@ export function TopBar({
               />
               
               {/* Dropdown */}
-              <div className="absolute top-full left-0 mt-2 w-72 premium-card p-2 shadow-xl z-50">
+              <div className="absolute top-full left-0 mt-2 w-72 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="space-y-1">
                   {availableContexts.map((context) => {
                     const Icon = getRoleIcon(context.type);
@@ -273,16 +293,24 @@ export function TopBar({
       <div className="flex-1 max-w-xl mx-8">
         <div className="relative">
           <Search 
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" 
+            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" 
             size={18} 
           />
           <Input
+            ref={searchInputRef}
             type="search"
-            placeholder="Zoek casussen, cliënten, aanbieders..."
+            placeholder="Zoek casussen, cliënten, aanbieders…"
             value={searchQuery}
             onChange={handleSearchChange}
-            className="pl-10 bg-muted/20 border-muted/30 focus:bg-muted/30"
+            className="bg-muted/20 pl-10 pr-[4.5rem] border-muted/30 focus:bg-muted/30"
+            aria-keyshortcuts={globalSearchShortcut.includes("⌘") ? "Meta+K" : "Control+K"}
           />
+          <span
+            className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-border/50 bg-background/80 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-muted-foreground sm:inline-flex"
+            aria-hidden
+          >
+            {globalSearchShortcut}
+          </span>
         </div>
       </div>
 
@@ -323,7 +351,7 @@ export function TopBar({
                 onClick={() => setNotificationsOpen(false)}
               />
 
-              <div className="absolute top-full right-0 mt-2 w-96 premium-card p-2 shadow-xl z-50">
+              <div className="absolute top-full right-0 mt-2 w-96 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="px-3 py-3 border-b border-border mb-2 flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-bold text-foreground">Notifications</p>
@@ -435,7 +463,7 @@ export function TopBar({
               />
               
               {/* Dropdown */}
-              <div className="absolute top-full right-0 mt-2 w-56 premium-card p-2 shadow-xl z-50">
+              <div className="absolute top-full right-0 mt-2 w-56 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="px-3 py-2 border-b border-border mb-2">
                   <p className="text-sm font-bold text-foreground">
                     {userName}

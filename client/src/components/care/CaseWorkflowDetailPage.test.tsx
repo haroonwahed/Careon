@@ -152,20 +152,18 @@ describe("CaseExecutionPage workspace", () => {
     vi.clearAllMocks();
   });
 
-  it("renders control room structure with hero, process status, context, and audit", async () => {
+  it("renders focused decision workspace structure", async () => {
     setupCase(makeDecisionEvaluation());
     const { container } = render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Terug naar casussen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Meer acties" })).toBeInTheDocument();
     expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
-    expect(await screen.findByText("Processtatus")).toBeInTheDocument();
+    expect(await screen.findByText("Voortgang")).toBeInTheDocument();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Naar aanbieder/i })).toBeInTheDocument();
-    expect(screen.getByText("Bewijs (overzicht)")).toBeInTheDocument();
-    expect(screen.getByText("Verificatie & context")).toBeInTheDocument();
-    expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(2);
-    expect(screen.getByText("Activiteit & historie")).toBeInTheDocument();
+    expect(screen.getByText(/Gemeente · 8 dagen · Zorgaanbieder A/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(1);
     expect(container.innerHTML).not.toContain("mx-auto max-w-[1440px]");
     expect(container.innerHTML).not.toContain("#111827");
     expect(container.innerHTML).not.toContain("#080E1A");
@@ -187,10 +185,10 @@ describe("CaseExecutionPage workspace", () => {
 
     expectCasusDetailMode();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
-    expect(screen.getByText("Processtatus")).toBeInTheDocument();
-    expect(await screen.findByText("Blokkade")).toBeInTheDocument();
-    expect(screen.getAllByText("Samenvatting").length).toBeGreaterThan(0);
-    expect(screen.getByText("Verificatie & context")).toBeInTheDocument();
+    expect(screen.getByText("Voortgang")).toBeInTheDocument();
+    expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Vul casus aan om matching te starten")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Vul casus aan/i })).toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
 
     expect(screen.queryByText("Casussen")).not.toBeInTheDocument();
@@ -198,7 +196,7 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.queryByText("Alerts")).not.toBeInTheDocument();
     expect(screen.queryByText("SLA")).not.toBeInTheDocument();
     expect(screen.queryByText("Afwijzingen")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Intake")).toHaveLength(1);
+    expect(screen.getByText("Plaatsing & intake")).toBeInTheDocument();
   });
 
   it("shows dominant blocked state and missing-summary guidance", async () => {
@@ -214,7 +212,7 @@ describe("CaseExecutionPage workspace", () => {
       ],
       next_best_action: {
         action: "GENERATE_SUMMARY",
-        label: "Samenvatting genereren",
+        label: "Vul casus aan",
         priority: "high",
         reason: "Samenvatting ontbreekt.",
       },
@@ -222,11 +220,11 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect((await screen.findAllByText("Samenvatting ontbreekt")).length).toBeGreaterThan(0);
-    expect(await screen.findByText("Blokkade")).toBeInTheDocument();
+    expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
+    expect(screen.getByText("Vul casus aan om matching te starten")).toBeInTheDocument();
   });
 
-  it("shows decision context evidence for low-confidence and repeated rejection signals", async () => {
+  it("keeps metadata row visible for decision context cases", async () => {
     setupCase(makeDecisionEvaluation({
       confidence_score: 0.52,
       confidence_reason: "Confidence is laag.",
@@ -250,9 +248,7 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect(await screen.findByText("Verificatie & context")).toBeInTheDocument();
-    expect(screen.getAllByText("52%").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Confidence is laag.").length).toBeGreaterThan(0);
+    expect(await screen.findByText(/Gemeente · 8 dagen · Zorgaanbieder A/i)).toBeInTheDocument();
   });
 
   it("keeps primary action wired to existing action executor", async () => {

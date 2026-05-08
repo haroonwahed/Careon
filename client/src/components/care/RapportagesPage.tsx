@@ -3,6 +3,8 @@ import { ChevronDown, Download, Eye, FileBarChart2, Filter, Search, TrendingUp, 
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner@2.0.3";
+import { tokens } from "../../design/tokens";
+import { CareAttentionBar, CareInfoPopover, CarePageScaffold } from "./CareDesignPrimitives";
 
 type ReportCategory = "doorstroom" | "kwaliteit" | "compliance";
 
@@ -124,6 +126,7 @@ export function RapportagesPage() {
   }, [searchQuery, selectedCategory]);
 
   const readyCount = reportTemplates.filter((report) => report.status === "ready").length;
+  const firstReadyReport = filteredReports.find((report) => report.status === "ready") ?? reportTemplates.find((report) => report.status === "ready") ?? null;
 
   const formatExportedNow = () => {
     const now = new Date();
@@ -195,75 +198,100 @@ export function RapportagesPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="mb-2 text-3xl font-semibold text-foreground">Rapportages</h1>
-        <p className="text-sm text-muted-foreground">
-          Genereer stuurinformatie voor doorstroom, kwaliteit en compliance.
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/6 px-4 py-3 text-sm text-foreground">
-        Interne rapportages. De exportvoorbeelden op deze pagina zijn voorlopig nog frontend-gegenereerd en niet de bron van waarheid voor operationele sturing.
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="premium-card p-5">
-          <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-            <FileBarChart2 size={16} />
-            <span className="text-xs font-semibold uppercase tracking-[0.08em]">Actieve templates</span>
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{reportTemplates.length}</p>
-        </div>
-        <div className="premium-card p-5">
-          <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-            <TrendingUp size={16} />
-            <span className="text-xs font-semibold uppercase tracking-[0.08em]">Direct beschikbaar</span>
-          </div>
-          <p className="text-2xl font-semibold text-foreground">{readyCount}</p>
-        </div>
-        <div className="premium-card p-5">
-          <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-            <CalendarClock size={16} />
-            <span className="text-xs font-semibold uppercase tracking-[0.08em]">Laatste run</span>
-          </div>
-          <p className="text-2xl font-semibold text-foreground">Vandaag</p>
-        </div>
-      </div>
-
-      <section className="rounded-2xl border border-border bg-muted/35 p-4">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Zoek rapportage..."
-              className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter size={15} className="text-muted-foreground" />
-            <div className="relative">
-            <select
-              value={selectedCategory}
-              onChange={(event) => setSelectedCategory(event.target.value as ReportCategory | "all")}
-              className="h-10 appearance-none rounded-xl border border-border bg-card pl-3 pr-8 text-sm text-foreground"
+    <CarePageScaffold
+      archetype="worklist"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Rapportages
+          <CareInfoPopover ariaLabel="Uitleg rapportages" testId="rapportages-page-info">
+            <p className="text-muted-foreground">Genereer stuurinformatie voor doorstroom, kwaliteit en compliance.</p>
+          </CareInfoPopover>
+        </span>
+      }
+      actions={
+        <Button variant="ghost" onClick={() => handleViewTemplate(firstReadyReport ?? reportTemplates[0])} className="gap-2">
+          <Eye size={16} />
+          Voorvertoning
+        </Button>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone="info"
+          message={readyCount > 0 ? `${readyCount} rapporten klaar voor export.` : "Geen rapporten klaar voor export."}
+          action={
+            <Button
+              size="sm"
+              className="gap-2"
+              disabled={!firstReadyReport}
+              onClick={() => firstReadyReport && handleDownloadTemplate(firstReadyReport)}
             >
-              <option value="all">Alle categorieen</option>
-              <option value="doorstroom">Doorstroom</option>
-              <option value="kwaliteit">Kwaliteit</option>
-              <option value="compliance">Compliance</option>
-            </select>
-            <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Download size={14} />
+              {firstReadyReport ? `Download ${firstReadyReport.title}` : "Geen export beschikbaar"}
+            </Button>
+          }
+        />
+      }
+      kpiStrip={
+        <div className="grid gap-3 md:grid-cols-3">
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+              <FileBarChart2 size={16} />
+              <span className="text-xs font-semibold uppercase tracking-[0.08em]">Actieve templates</span>
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{reportTemplates.length}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+              <TrendingUp size={16} />
+              <span className="text-xs font-semibold uppercase tracking-[0.08em]">Direct beschikbaar</span>
+            </div>
+            <p className="text-2xl font-semibold text-foreground">{readyCount}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <div className="mb-2 flex items-center gap-2 text-muted-foreground">
+              <CalendarClock size={16} />
+              <span className="text-xs font-semibold uppercase tracking-[0.08em]">Laatste run</span>
+            </div>
+            <p className="text-2xl font-semibold text-foreground">Vandaag</p>
+          </div>
+        </div>
+      }
+      filters={
+        <section className="rounded-xl border border-border/70 bg-card/45 p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+            <div className="relative flex-1">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Zoek rapportage..."
+                className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter size={15} className="text-muted-foreground" />
+              <div className="relative">
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value as ReportCategory | "all")}
+                  className="h-10 appearance-none rounded-xl border border-border bg-card pl-3 pr-8 text-sm text-foreground"
+                >
+                  <option value="all">Alle categorieën</option>
+                  <option value="doorstroom">Doorstroom</option>
+                  <option value="kwaliteit">Kwaliteit</option>
+                  <option value="compliance">Compliance</option>
+                </select>
+                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              </div>
             </div>
           </div>
-        </div>
-      </section>
-
+        </section>
+      }
+    >
       <section className="grid gap-4 xl:grid-cols-3">
         {filteredReports.map((report) => (
-          <article key={report.id} className="premium-card p-5">
+          <article key={report.id} className="rounded-xl border border-border/70 bg-card/55 p-4">
             <div className="mb-3 flex items-center justify-between">
               <span className="rounded-full border border-border bg-card px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {report.category}
@@ -319,7 +347,7 @@ export function RapportagesPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="sm:max-w-none" style={{ maxWidth: tokens.layout.dialogNarrowMaxWidth }}>
           {previewReport && (
             <>
               <DialogHeader>
@@ -327,7 +355,7 @@ export function RapportagesPage() {
                 <DialogDescription>Bron: {previewSource}</DialogDescription>
               </DialogHeader>
 
-              <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground leading-6">
+              <div className="rounded-xl border border-border bg-card p-3 text-sm text-muted-foreground leading-6">
                 <p><span className="text-foreground font-medium">Categorie:</span> {previewReport.category}</p>
                 <p><span className="text-foreground font-medium">Laatste run:</span> {previewReport.lastRun}</p>
                 <p><span className="text-foreground font-medium">Frequentie:</span> {previewReport.frequency}</p>
@@ -354,12 +382,12 @@ export function RapportagesPage() {
       </Dialog>
 
       {filteredReports.length === 0 && (
-        <div className="premium-card p-10 text-center text-sm text-muted-foreground">
+        <div className="rounded-xl border border-border/70 bg-card/55 p-4 text-center text-sm text-muted-foreground">
           Geen rapportages gevonden voor de huidige filters.
         </div>
       )}
 
-      <section className="premium-card p-5">
+      <section className="rounded-xl border border-border/70 bg-card/55 p-4">
         <div className="mb-3 flex items-center gap-2">
           <ShieldCheck size={16} className="text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Exportgeschiedenis</h3>
@@ -399,6 +427,6 @@ export function RapportagesPage() {
           ))}
         </div>
       </section>
-    </div>
+    </CarePageScaffold>
   );
 }

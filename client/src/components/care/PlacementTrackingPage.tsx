@@ -1,22 +1,26 @@
 import { useMemo, useState } from "react";
 import { CheckCircle2 } from "lucide-react";
 import { Button } from "../ui/button";
-import { CareEmptyState } from "./CareSurface";
-import { CarePageScaffold } from "./CarePageScaffold";
 import {
-  CanonicalPhaseBadge,
   CareAttentionBar,
   CareContextHint,
   CareDominantStatus,
   CareFilterTabButton,
   CareFilterTabGroup,
   CareMetricBadge,
+  CareInfoPopover,
   CareMetaChip,
+  CarePageScaffold,
   CarePrimaryList,
   CareSearchFiltersBar,
   CareWorkRow,
+  EmptyState,
+  ErrorState,
+  FlowPhaseBadge,
+  LoadingState,
+  PrimaryActionButton,
   normalizeBoardColumnToPhaseId,
-} from "./CareUnifiedPage";
+} from "./CareDesignPrimitives";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import {
@@ -78,8 +82,14 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
     <CarePageScaffold
       archetype="worklist"
       className="pb-8"
-      title="Plaatsingen"
-      subtitle="Van bevestiging tot intake — één lijn door de keten."
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Plaatsingen
+          <CareInfoPopover ariaLabel="Uitleg plaatsingen" testId="plaatsingen-page-info">
+            <p className="text-muted-foreground">Van bevestiging tot intake — één lijn door de keten.</p>
+          </CareInfoPopover>
+        </span>
+      }
       metric={
         <CareMetricBadge>
           {placementCases.length} plaatsingen in flow
@@ -117,16 +127,16 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
         message={`${intakeStallCount} plaatsing${intakeStallCount === 1 ? "" : "en"} staat${intakeStallCount === 1 ? "" : "en"} ≥5 dagen in plaatsing zonder duidelijke intake — plan intake of escaleer via Regiekamer.`}
       />
 
-      {loading && <CareEmptyState title="Plaatsingen laden…" copy="De lijst wordt opgebouwd." />}
+      {loading && <LoadingState title="Plaatsingen laden…" copy="De lijst wordt opgebouwd." />}
       {!loading && error && (
-        <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+        <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && visibleCases.length === 0 && (
-        <CareEmptyState
+        <EmptyState
           title="Geen plaatsingen in dit overzicht"
           copy={emptyCopy[activeTab]}
-          action={<Button onClick={() => onNavigateToMatching?.()}>Naar matching</Button>}
+          action={<PrimaryActionButton onClick={() => onNavigateToMatching?.()}>Naar matching</PrimaryActionButton>}
         />
       )}
 
@@ -138,7 +148,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
             return (
             <CareWorkRow
               key={item.id}
-              leading={<CanonicalPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
+              leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
               title={item.clientLabel}
               context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
               status={<CareDominantStatus>{placementTrackingRowStatusLabel(item)}</CareDominantStatus>}
@@ -173,7 +183,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
       <CareContextHint
         icon={<CheckCircle2 className="text-primary" size={20} />}
         title="Volgt uit matching"
-        copy="Plaatsing en intake horen bij elkaar; gebruik de casus voor de volgende beslissing."
+        copy="Plaatsing & intake horen bij elkaar; gebruik de casus voor de volgende beslissing."
       />
     </CarePageScaffold>
   );

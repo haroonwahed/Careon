@@ -46,7 +46,7 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
 }
 
 describe("AanbiederBeoordelingPage (gemeente)", () => {
-  it("shows Aanbieder beoordeling title and Bekijk status CTA", () => {
+  it("shows case-detail monitoring layout with provider rows and primary CTAs", () => {
     mockUseCases.mockReturnValue({
       cases: [makeCase({ id: "C-G1", title: "Monitor casus" })],
       loading: false,
@@ -57,10 +57,12 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
     render(<AanbiederBeoordelingPage role="gemeente" onCaseClick={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
-    expect(
-      screen.getByText(/Gemeente volgt\. Wacht op reactie van de aanbieder; aanbieder beslist\./),
-    ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk status" })).toBeInTheDocument();
+    expect(screen.getByTestId("aanbieder-beoordeling-gemeente-root")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Terug naar casus" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Herinner aanbieders" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk profiel" })).toBeInTheDocument();
+    expect(screen.getByText(/Levvel Jeugd & Opvoedhulp/)).toBeInTheDocument();
+    expect(screen.getByText(/De beoordelingsperiode duurt maximaal 72 uur/)).toBeInTheDocument();
   });
 });
 
@@ -78,5 +80,6 @@ describe("AanbiederBeoordelingPage (zorgaanbieder)", () => {
     expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Zoek op casus-ID, regio/i)).toBeInTheDocument();
     expect(screen.getByText("Actieve beoordeling")).toBeInTheDocument();
+    expect(screen.getByTestId("provider-review-idle-hint")).toBeInTheDocument();
   });
 });

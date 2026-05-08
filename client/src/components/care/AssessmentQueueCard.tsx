@@ -46,7 +46,7 @@ export function AssessmentQueueCard({
 
   return (
     <article className={`
-      premium-card queue-row transition-colors
+      panel-surface queue-row transition-colors
       ${hasErrors ? "border-red-border" : ""}
       ${hasWarnings && !hasErrors ? "border-yellow-border" : ""}
     `}>

@@ -41,7 +41,7 @@ export function SelectedProviderCard({
   const fastResponse = provider.responseTime <= 6;
 
   return (
-    <div className="premium-card p-6 border careon-alert-primary">
+    <div className="panel-surface p-4 border careon-alert-primary">
       {/* Selected Badge */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />

@@ -14,7 +14,7 @@ const CARE_DIR = join(dirname(fileURLToPath(import.meta.url)), "../components/ca
 /** Empty: no care route may use `CarePageTemplate` directly without migrating to `CarePageScaffold`. */
 const DIRECT_CARE_PAGE_TEMPLATE_EXCEPTIONS: ReadonlyMap<string, string> = new Map();
 
-const IGNORE_FILES = new Set(["CareUnifiedPage.tsx", "CarePageScaffold.tsx"]);
+const IGNORE_FILES = new Set(["CareUnifiedPage.tsx", "CarePageScaffold.tsx", "CareDesignPrimitives.tsx"]);
 
 function fileUsesCarePageTemplate(source: string): boolean {
   return /\bCarePageTemplate\b/.test(source);

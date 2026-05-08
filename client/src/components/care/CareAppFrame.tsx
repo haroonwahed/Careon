@@ -11,18 +11,21 @@ import { tokens } from "../../design/tokens";
 export function CareAppFrame({
   children,
   className,
+  /** When set, overrides the default `tokens.layout.pageMaxWidth` (e.g. Regiekamer + right rail). */
+  layoutMaxWidth,
 }: {
   children: ReactNode;
   className?: string;
+  layoutMaxWidth?: string;
 }) {
   return (
     <div
       data-testid="care-app-frame"
       className={cn(
-        "mx-auto flex w-full min-w-0 max-w-full flex-col gap-6 px-4 py-4 md:px-6 md:py-5",
+        "mx-auto flex w-full min-w-0 max-w-full flex-col gap-4 px-4 py-3 md:px-5 md:py-4",
         className,
       )}
-      style={{ maxWidth: tokens.layout.pageMaxWidth }}
+      style={{ maxWidth: layoutMaxWidth ?? tokens.layout.pageMaxWidth }}
     >
       {children}
     </div>

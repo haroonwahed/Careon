@@ -42,7 +42,7 @@ function DropdownMenuContent({
         data-slot="dropdown-menu-content"
         sideOffset={sideOffset}
         className={cn(
-          "bg-popover text-popover-foreground data-[state=open]:animate-subtle-in data-[state=closed]:animate-subtle-out z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border p-1 shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] dark:border-primary/20",
+          "bg-popover text-popover-foreground data-[state=open]:animate-subtle-in data-[state=closed]:animate-subtle-out z-50 max-h-(--radix-dropdown-menu-content-available-height) min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-x-hidden overflow-y-auto rounded-xl border border-border/80 p-1 shadow-xl backdrop-blur-none dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] dark:border-primary/20",
           className,
         )}
         {...props}
@@ -229,8 +229,8 @@ function DropdownMenuSubContent({
   return (
     <DropdownMenuPrimitive.SubContent
       data-slot="dropdown-menu-sub-content"
-      className={cn(
-        "bg-popover text-popover-foreground data-[state=open]:animate-subtle-in data-[state=closed]:animate-subtle-out z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border p-1 shadow-lg dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] dark:border-primary/20",
+        className={cn(
+        "bg-popover text-popover-foreground data-[state=open]:animate-subtle-in data-[state=closed]:animate-subtle-out z-50 min-w-[8rem] origin-(--radix-dropdown-menu-content-transform-origin) overflow-hidden rounded-md border border-border/80 p-1 shadow-xl backdrop-blur-none dark:shadow-[0_4px_20px_rgba(0,0,0,0.4)] dark:border-primary/20",
         className,
       )}
       {...props}

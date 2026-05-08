@@ -4,7 +4,7 @@
 <div class="ds-detail-shell">
 
 <nav class="mb-4">
-    <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
+    <a class="" href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/">Regiekamer</a>
     <span class="mx-2">/</span>
     <a class="" href="{% url 'careon:waittime_list' %}">Wachttijden</a>
     <span class="mx-2">/</span>

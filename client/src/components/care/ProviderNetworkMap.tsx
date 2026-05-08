@@ -1,14 +1,19 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl from "maplibre-gl";
 import Map, { Marker, NavigationControl, type MapRef } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { SpaProvider } from "../../hooks/useProviders";
+import { tokens } from "../../design/tokens";
+import { Button } from "../ui/button";
+import { cn } from "../ui/utils";
 
 interface ProviderNetworkMapProps {
   providers: SpaProvider[];
   selectedProviderId: string | null;
   hoveredProviderId: string | null;
   onSelectProvider: (providerId: string) => void;
+  /** Opent Matching in de shell — knop verschijnt onder de geselecteerde marker. */
+  onNavigateToMatching?: () => void;
   theme: "light" | "dark";
 }
 
@@ -79,6 +84,7 @@ export function ProviderNetworkMap({
   selectedProviderId,
   hoveredProviderId,
   onSelectProvider,
+  onNavigateToMatching,
   theme,
 }: ProviderNetworkMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -305,63 +311,81 @@ export function ProviderNetworkMap({
           const scale = isSelected ? 1.06 : isHovered ? 1.03 : 1;
 
           return (
-            <Marker
-              key={provider.id}
-              longitude={lng}
-              latitude={lat}
-              anchor="center"
-              onClick={() => handleMarkerClick(provider.id, lng, lat)}
-            >
-              <span
-                title={provider.name}
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  minHeight: 34,
-                  padding: "0 12px",
-                  borderRadius: 9999,
-                  background: isDark ? "rgba(15, 23, 42, 0.92)" : "rgba(255, 255, 255, 0.94)",
-                  color: isDark ? "#e2e8f0" : "#0f172a",
-                  border: `1px solid ${
-                    isSelected
-                      ? isDark
-                        ? "rgba(139,92,246,0.68)"
-                        : "rgba(124,92,255,0.58)"
-                      : isDark
-                        ? "rgba(71,85,105,0.9)"
-                        : "rgba(148,163,184,0.5)"
-                  }`,
-                  boxShadow: isSelected
-                    ? isDark
-                      ? "0 16px 30px rgba(2,6,23,.5), 0 0 0 4px rgba(139,92,246,.22)"
-                      : "0 14px 28px rgba(15,23,42,.24), 0 0 0 4px rgba(124,92,255,.2)"
-                    : isDark
-                      ? "0 12px 24px rgba(2,6,23,.46)"
-                      : "0 10px 20px rgba(15,23,42,.16)",
-                  cursor: "pointer",
-                  transform: `translateZ(0) scale(${scale})`,
-                  transition: "transform .15s ease, box-shadow .15s ease, border-color .15s ease",
-                  whiteSpace: "nowrap",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: ".01em",
-                }}
-              >
+            <Fragment key={provider.id}>
+              <Marker longitude={lng} latitude={lat} anchor="center" onClick={() => handleMarkerClick(provider.id, lng, lat)}>
                 <span
+                  title={provider.name}
                   style={{
-                    display: "inline-block",
-                    width: 8,
-                    height: 8,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    minHeight: 34,
+                    padding: "0 12px",
                     borderRadius: 9999,
-                    background: color,
-                    marginRight: 8,
-                    boxShadow: `0 0 0 3px ${color}22`,
+                    background: isDark ? "rgba(15, 23, 42, 0.92)" : "rgba(255, 255, 255, 0.94)",
+                    color: isDark ? "#e2e8f0" : "#0f172a",
+                    border: `1px solid ${
+                      isSelected
+                        ? isDark
+                          ? "rgba(139,92,246,0.68)"
+                          : "rgba(124,92,255,0.58)"
+                        : isDark
+                          ? "rgba(71,85,105,0.9)"
+                          : "rgba(148,163,184,0.5)"
+                    }`,
+                    boxShadow: isSelected
+                      ? isDark
+                        ? "0 16px 30px rgba(2,6,23,.5), 0 0 0 4px rgba(139,92,246,.22)"
+                        : "0 14px 28px rgba(15,23,42,.24), 0 0 0 4px rgba(124,92,255,.2)"
+                      : isDark
+                        ? "0 12px 24px rgba(2,6,23,.46)"
+                        : "0 10px 20px rgba(15,23,42,.16)",
+                    cursor: "pointer",
+                    transform: `translateZ(0) scale(${scale})`,
+                    transition: "transform .15s ease, box-shadow .15s ease, border-color .15s ease",
+                    whiteSpace: "nowrap",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    letterSpacing: ".01em",
                   }}
-                />
-                {capacityLabel(provider.availableSpots)}
-              </span>
-            </Marker>
+                >
+                  <span
+                    style={{
+                      display: "inline-block",
+                      width: 8,
+                      height: 8,
+                      borderRadius: 9999,
+                      background: color,
+                      marginRight: 8,
+                      boxShadow: `0 0 0 3px ${color}22`,
+                    }}
+                  />
+                  {capacityLabel(provider.availableSpots)}
+                </span>
+              </Marker>
+
+              {isSelected && onNavigateToMatching && (
+                <Marker longitude={lng} latitude={lat} anchor="top" offset={[0, 44]}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    data-testid="zorgaanbieders-map-naar-matching"
+                    className={cn(
+                      "pointer-events-auto h-8 shrink-0 px-3 text-xs font-semibold shadow-lg",
+                      isDark
+                        ? "border border-violet-400/50 bg-violet-600 text-white hover:bg-violet-500"
+                        : "border border-violet-500/40 bg-violet-600 text-white hover:bg-violet-500",
+                    )}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onNavigateToMatching();
+                    }}
+                  >
+                    Naar Matching
+                  </Button>
+                </Marker>
+              )}
+            </Fragment>
           );
         })}
       </Map>
@@ -370,7 +394,7 @@ export function ProviderNetworkMap({
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.16),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.06),rgba(30,41,59,0.14))]" />
       )}
 
-      <div className="pointer-events-none absolute left-4 top-4 rounded-2xl border border-slate-200 bg-white/94 px-4 py-3 shadow-[0_14px_32px_-20px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-800/86 dark:shadow-[0_18px_34px_-22px_rgba(2,6,23,0.68)]">
+      <div className="pointer-events-none absolute left-4 rounded-2xl border border-slate-200 bg-white/94 px-4 py-3 shadow-[0_14px_32px_-20px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-800/86 dark:shadow-[0_18px_34px_-22px_rgba(2,6,23,0.68)]" style={{ top: tokens.layout.edgeZero }}>
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Kaartweergave</p>
         <p className="text-[11px] text-slate-600 dark:text-slate-300">
           {mappedProviders.length} van {providers.length} aanbieders zichtbaar

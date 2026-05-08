@@ -25,6 +25,7 @@ from contracts.models import (
     MunicipalityConfiguration,
     RegionalConfiguration,
 )
+from contracts.governance import AuditLoggingError
 from contracts.views import sync_case_flow_state
 
 MINIMAL_WORKFLOW_SUMMARY = {
@@ -238,10 +239,8 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         case_titles = [item['title'] for item in cases_response.json()['contracts']]
         self.assertIn('API Intake Visible In Casussen', case_titles)
 
-    @patch('contracts.api.views.logger.exception')
-    @patch('contracts.api.views.log_transition_event', side_effect=RuntimeError('transition log store unavailable'))
     @patch('contracts.api.views.log_action', side_effect=RuntimeError('audit log store unavailable'))
-    def test_intake_create_api_still_succeeds_when_logging_fails(self, _mock_log_action, _mock_log_transition, _mock_log_exception):
+    def test_intake_create_api_returns_503_and_rollbacks_when_create_audit_fails(self, _mock_log_action):
         municipality = MunicipalityConfiguration.objects.create(
             organization=self.organization,
             municipality_name='Utrecht',
@@ -260,10 +259,10 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(bootstrap_response.status_code, 200)
         payload = bootstrap_response.json()['initial_values']
         payload.update({
-            'title': 'API Intake Logging Failure Tolerated',
+            'title': 'API Intake Logging Failure Rollback',
             'target_completion_date': str(date.today() + timedelta(days=7)),
             'assessment_summary': 'Nieuwe intake via API',
-            'description': 'Mag niet falen op logging.',
+            'description': 'Audit verplicht; geen casus zonder audit.',
             'postcode': '3511AB',
             'latitude': 52.0907,
             'longitude': 5.1214,
@@ -276,17 +275,78 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'case_coordinator': str(self.user.pk),
         })
 
+        before = CaseIntakeProcess.objects.count()
+
         response = self.client.post(
             reverse('careon:intake_create_api'),
             data=json.dumps(payload),
             content_type='application/json',
         )
 
-        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertEqual(response.status_code, 503, response.content.decode())
         body = response.json()
-        intake = CaseIntakeProcess.objects.get(pk=body['id'])
-        self.assertIsNotNone(intake.contract_id)
-        self.assertEqual(body['case_id'], str(intake.contract_id))
+        self.assertFalse(body['ok'])
+        self.assertIn('Kan auditlog voor nieuwe casus niet vastleggen', body['error'])
+        self.assertEqual(CaseIntakeProcess.objects.count(), before)
+        self.assertFalse(
+            CaseIntakeProcess.objects.filter(title='API Intake Logging Failure Rollback').exists()
+        )
+
+    @patch(
+        'contracts.api.views.log_transition_event',
+        side_effect=AuditLoggingError('Kan auditlog voor deze workflowactie niet vastleggen.'),
+    )
+    def test_intake_create_api_returns_503_and_rollbacks_when_transition_audit_fails(self, _mock_log_transition):
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Utrecht',
+            municipality_code='UTR',
+            created_by=self.user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Utrecht',
+            region_code='RU',
+            created_by=self.user,
+        )
+        region.served_municipalities.add(municipality)
+
+        bootstrap_response = self.client.get(reverse('careon:intake_form_options_api'))
+        self.assertEqual(bootstrap_response.status_code, 200)
+        payload = bootstrap_response.json()['initial_values']
+        payload.update({
+            'title': 'API Intake Transition Audit Rollback',
+            'target_completion_date': str(date.today() + timedelta(days=7)),
+            'assessment_summary': 'Nieuwe intake via API',
+            'description': 'Workflow-audit verplicht.',
+            'postcode': '3511AB',
+            'latitude': 52.0907,
+            'longitude': 5.1214,
+            'urgency': CaseIntakeProcess.Urgency.HIGH,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': region.region_type,
+            'preferred_region': str(region.pk),
+            'gemeente': str(municipality.pk),
+            'case_coordinator': str(self.user.pk),
+        })
+
+        before = CaseIntakeProcess.objects.count()
+
+        response = self.client.post(
+            reverse('careon:intake_create_api'),
+            data=json.dumps(payload),
+            content_type='application/json',
+        )
+
+        self.assertEqual(response.status_code, 503, response.content.decode())
+        body = response.json()
+        self.assertFalse(body['ok'])
+        self.assertIn('Kan auditlog voor deze workflowactie niet vastleggen', body['error'])
+        self.assertEqual(CaseIntakeProcess.objects.count(), before)
+        self.assertFalse(
+            CaseIntakeProcess.objects.filter(title='API Intake Transition Audit Rollback').exists()
+        )
 
     @patch('contracts.api.views.logger.exception')
     @patch.object(CaseIntakeProcess, 'ensure_case_record', side_effect=RuntimeError('case bootstrap failed'))

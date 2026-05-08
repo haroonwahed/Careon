@@ -10,7 +10,7 @@
     </div>
 
     <nav class="text-sm mb-2">
-        <a class="" href="{% url 'dashboard' %}">Regiekamer</a>
+        <a class="" href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/">Regiekamer</a>
         <span class="mx-2">/</span>
         {% if form.instance.pk and form.instance.intake %}
         <a class="" href="{% url 'careon:case_detail' form.instance.intake.pk %}">{{ form.instance.intake.title }}</a>

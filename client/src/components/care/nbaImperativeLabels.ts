@@ -3,8 +3,8 @@
  * Used by Regiekamer and casus execution; must stay aligned with API action codes.
  */
 export const NBA_IMPERATIVE_LABELS: Record<string, string> = {
-  COMPLETE_CASE_DATA: "Vul casusgegevens aan",
-  GENERATE_SUMMARY: "Genereer samenvatting",
+  COMPLETE_CASE_DATA: "Vul casus aan",
+  GENERATE_SUMMARY: "Vul casus aan",
   START_MATCHING: "Start matching",
   VALIDATE_MATCHING: "Valideer matching",
   SEND_TO_PROVIDER: "Stuur naar aanbieder",

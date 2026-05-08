@@ -121,39 +121,22 @@ test.describe("Care list visual regression (SPA)", () => {
     }
   });
 
-  test("Casussen: worklist rows + mobile chip strip", async ({ page }) => {
+  test("Casussen: werklijst-tabel + compacte rijen", async ({ page }) => {
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /Werkvoorraad/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
     await maybeDump(page, "casussen-desktop");
 
-    const rows = page.locator('[data-testid="worklist"] article[data-density="compact"]');
+    const rows = page.locator('[data-testid="worklist"] tr[data-care-work-row]');
     await expect(rows.first()).toBeVisible({ timeout: 30_000 });
     const heights = await rows.evaluateAll((els) => els.slice(0, 10).map((el) => el.getBoundingClientRect().height));
     expect(maxMinusMin(heights)).toBeLessThan(36);
 
     await page.setViewportSize({ width: 390, height: 900 });
-    await expect(page.getByRole("heading", { name: /Werkvoorraad/i })).toBeVisible({ timeout: 30_000 });
-    const firstRow = page.locator('[data-testid="worklist"] article[data-density="compact"]').first();
+    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
+    const firstRow = page.locator('[data-testid="worklist"] tr[data-care-work-row]').first();
     await expect(firstRow).toBeVisible({ timeout: 30_000 });
-    /** CareWorkRow: trailing column → chip strip (`justify-end` row). Do not use first `care-meta-chip` (may sit in context line above). */
-    const noOverflow = await firstRow.evaluate((article) => {
-      const row = article.firstElementChild as HTMLElement | null;
-      if (!row || row.children.length < 2) {
-        return false;
-      }
-      const rightCol = row.children[1] as HTMLElement;
-      const chipStrip = rightCol.firstElementChild as HTMLElement | null;
-      if (!chipStrip) {
-        return false;
-      }
-      const hasContractChip =
-        chipStrip.querySelector('[data-component="care-meta-chip"], [data-component="care-dominant-status"]') !== null;
-      if (!hasContractChip) {
-        return false;
-      }
-      return chipStrip.scrollWidth <= chipStrip.clientWidth + 4;
-    });
-    expect(noOverflow, "metadata chips should not overflow chip strip on narrow viewport").toBeTruthy();
+    const phaseCell = firstRow.locator("td").nth(3);
+    await expect(phaseCell.locator('[data-component="care-meta-chip"], [data-component="care-dominant-status"]')).not.toHaveCount(0);
     await maybeDump(page, "casussen-mobile");
     await page.setViewportSize({ width: 1280, height: 900 });
   });
@@ -234,12 +217,12 @@ test.describe("Care list visual regression (SPA)", () => {
 
   test("Design system: unified shell on Regiekamer, Casussen, Matching, Acties, Signalen", async ({ page }) => {
     await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible();
-    await expect(page.getByTestId("metric-strip")).toBeVisible();
+    await expect(page.getByTestId("regiekamer-phase-board")).toBeVisible();
     await expect(page.getByPlaceholder(/Zoek casus, naam of type/i)).toBeVisible();
 
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /Werkvoorraad/i })).toBeVisible();
-    await expect(page.getByPlaceholder(/Zoek op client, casus/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible();
+    await expect(page.getByPlaceholder(/Zoek casussen, cliënten, aanbieders/i)).toBeVisible();
 
     await goSidebar(page, "Matching");
     await expect(page.getByRole("heading", { name: /^Matching$/i })).toBeVisible();

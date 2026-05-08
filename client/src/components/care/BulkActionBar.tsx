@@ -20,12 +20,12 @@ export function BulkActionBar({
 
   return (
     <div 
-      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 premium-card p-4 shadow-2xl"
+      className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 panel-surface p-4 shadow-2xl"
       style={{
-        minWidth: "500px"
+        minWidth: "460px"
       }}
     >
-      <div className="flex items-center justify-between gap-6">
+      <div className="flex items-center justify-between gap-4">
         {/* Selection Info */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center">

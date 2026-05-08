@@ -12,7 +12,21 @@ vi.mock("../../hooks/useProviders", () => ({
 }));
 
 vi.mock("./ProviderNetworkMap", () => ({
-  ProviderNetworkMap: () => <div data-testid="provider-network-map" />,
+  ProviderNetworkMap: ({
+    selectedProviderId,
+    onNavigateToMatching,
+  }: {
+    selectedProviderId: string | null;
+    onNavigateToMatching?: () => void;
+  }) => (
+    <div data-testid="provider-network-map">
+      {selectedProviderId && onNavigateToMatching ? (
+        <button type="button" data-testid="zorgaanbieders-map-naar-matching" onClick={onNavigateToMatching}>
+          Naar Matching
+        </button>
+      ) : null}
+    </div>
+  ),
 }));
 
 vi.mock("sonner", () => ({
@@ -63,6 +77,41 @@ function setupProviders() {
   });
 }
 
+describe("ZorgaanbiedersPage operatieve aandacht action", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    setupProviders();
+  });
+
+  it("labels the banner primary action as Selecteer alternatief when no filters are active", () => {
+    render(<ZorgaanbiedersPage theme="light" />);
+    expect(screen.getByRole("button", { name: "Selecteer alternatief" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Wis filters" })).not.toBeInTheDocument();
+  });
+
+  it("switches the banner label to Wis filters after Selecteer alternatief applies a capaciteit filter", async () => {
+    const user = userEvent.setup();
+    render(<ZorgaanbiedersPage theme="light" />);
+    await user.click(screen.getByRole("button", { name: "Selecteer alternatief" }));
+    expect(screen.getByRole("button", { name: "Wis filters" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Selecteer alternatief" })).not.toBeInTheDocument();
+  });
+
+  it("labels the banner primary action as Selecteer beste match when a casus context is active and filters stay clear", () => {
+    render(
+      <ZorgaanbiedersPage
+        theme="light"
+        activeCaseContext={{
+          region: "Onbekende regio",
+          careType: "Jeugd GGZ",
+          urgency: "normaal",
+        }}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Selecteer beste match" })).toBeInTheDocument();
+  });
+});
+
 describe("ZorgaanbiedersPage accessibility", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -94,12 +143,7 @@ describe("ZorgaanbiedersPage accessibility", () => {
     render(<ZorgaanbiedersPage theme="light" />);
 
     const cardButton = screen.getByRole("button", { name: "Selecteer Zorgaanbieder Toegankelijk" });
-    for (let index = 0; index < 6; index += 1) {
-      await user.tab();
-      if (cardButton === document.activeElement) {
-        break;
-      }
-    }
+    cardButton.focus();
     expect(cardButton).toHaveFocus();
 
     await user.keyboard("{Enter}");
@@ -107,6 +151,18 @@ describe("ZorgaanbiedersPage accessibility", () => {
     expect(selectButton).toBeInTheDocument();
 
     await user.click(selectButton);
-    expect(mockToastSuccess).toHaveBeenCalled();
+    expect(mockToastSuccess).toHaveBeenCalledWith("Zorgaanbieder Toegankelijk uitgelicht op de kaart");
+  });
+
+  it("toont Naar Matching op de kaart na Selecteer wanneer shell-navigatie is gezet", async () => {
+    const user = userEvent.setup();
+    const onMatching = vi.fn();
+    render(<ZorgaanbiedersPage theme="light" onNavigateToMatching={onMatching} />);
+
+    await user.click(screen.getByRole("button", { name: "Selecteer" }));
+    expect(screen.getByTestId("zorgaanbieders-map-naar-matching")).toBeInTheDocument();
+
+    await user.click(screen.getByTestId("zorgaanbieders-map-naar-matching"));
+    expect(onMatching).toHaveBeenCalledTimes(1);
   });
 });

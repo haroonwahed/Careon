@@ -35,18 +35,24 @@ export function MatchingPageWrapper({
   const [selectedCase, setSelectedCase] = useState<string | null>(() => readOpenCaseFromSearch());
   const [matchConfirmed, setMatchConfirmed] = useState(false);
 
+  /** Keep URL in sync with list vs case workspace so the address bar matches what you see (and `/matching` means queue). */
   useEffect(() => {
     if (typeof window === "undefined") {
       return;
     }
     const url = new URL(window.location.href);
-    if (!url.searchParams.has("openCase")) {
-      return;
+    const next = new URL(url.href);
+    if (selectedCase) {
+      next.searchParams.set("openCase", selectedCase);
+    } else {
+      next.searchParams.delete("openCase");
     }
-    url.searchParams.delete("openCase");
-    const next = `${url.pathname}${url.search}${url.hash}`;
-    window.history.replaceState(window.history.state, "", next);
-  }, []);
+    const serialized = `${next.pathname}${next.search}${next.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (serialized !== current) {
+      window.history.replaceState(window.history.state, "", serialized);
+    }
+  }, [selectedCase]);
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);

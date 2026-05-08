@@ -21,15 +21,22 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
+  CareAttentionBar,
   CareFilterTabButton,
   CareFilterTabGroup,
+  CareInfoPopover,
+  CareMetaChip,
+  CarePageScaffold,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
   CareSearchFiltersBar,
-} from "./CareUnifiedPage";
-
-// AI Components
-import { SystemInsight } from "../ai";
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useMunicipalities } from "../../hooks/useMunicipalities";
-import { Loader2 } from "lucide-react";
 
 
 interface GemeentenPageProps {
@@ -100,70 +107,83 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+    <CarePageScaffold
+      archetype="worklist"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
           Gemeenten
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {municipalities.length} gemeenten in het netwerk
-        </p>
-      </div>
-
-      {/* STATS ROW */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="premium-card p-6">
-          <p className="text-sm text-muted-foreground mb-2">Totaal casussen</p>
-          <p className="text-3xl font-bold text-foreground">{totals.totalCases}</p>
-        </div>
-        <div className="premium-card p-6">
-          <p className="text-sm text-muted-foreground mb-2">Urgente casussen</p>
-          <p className="text-3xl font-bold text-red-500">{totals.totalUrgent}</p>
-        </div>
-        <div className="premium-card p-6">
-          <p className="text-sm text-muted-foreground mb-2">Geblokkeerde casussen</p>
-          <p className="text-3xl font-bold text-amber-500">{totals.totalBlocked}</p>
-        </div>
-        <div className="premium-card p-6">
-          <p className="text-sm text-muted-foreground mb-2">Gem. wachttijd</p>
-          <p className="text-3xl font-bold text-foreground">{totals.avgWaitTime}d</p>
-        </div>
-      </div>
-
-      {/* AI INSIGHT */}
-      <SystemInsight
-        message="3 gemeenten hebben capaciteitstekort. Utrecht en Amsterdam tonen stijgende trend in urgente casussen. Overweeg regionale samenwerking."
-        type="warning"
-      />
-
-      {/* SEARCH & FILTERS */}
-      <CareSearchFiltersBar
-        tabs={
-          <CareFilterTabGroup aria-label="Status gemeenten">
-            <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => setSelectedStatus("all")}>
-              Alle
-            </CareFilterTabButton>
-            <CareFilterTabButton selected={selectedStatus === "shortage"} onClick={() => setSelectedStatus("shortage")}>
-              Tekort
-            </CareFilterTabButton>
-            <CareFilterTabButton selected={selectedStatus === "urgent"} onClick={() => setSelectedStatus("urgent")}>
-              Urgent
-            </CareFilterTabButton>
-            <CareFilterTabButton selected={selectedStatus === "blocked"} onClick={() => setSelectedStatus("blocked")}>
-              Geblokkeerd
-            </CareFilterTabButton>
-          </CareFilterTabGroup>
-        }
-        searchValue={searchQuery}
-        onSearchChange={setSearchQuery}
-        searchPlaceholder="Zoek gemeente of regio..."
-      />
-
-      {/* GEMEENTEN TABLE */}
-      <div className="premium-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
+          <CareInfoPopover ariaLabel="Uitleg gemeentenoverzicht" testId="gemeenten-page-info">
+            <p className="text-muted-foreground">Verdeling van casussen en druk per gemeente — voor regie en capaciteit.</p>
+          </CareInfoPopover>
+        </span>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={totals.totalBlocked > 0 || totals.totalUrgent > 5 ? "critical" : "warning"}
+          icon={<Building2 size={16} />}
+          message={
+            totals.totalBlocked > 0
+              ? `${totals.totalBlocked} casussen zijn geblokkeerd`
+              : totals.totalUrgent === 1
+                ? "1 urgente casus — opvolging nodig"
+                : `${totals.totalUrgent} urgente casussen — opvolging nodig`
+          }
+          action={
+            <PrimaryActionButton onClick={() => setSelectedStatus(totals.totalBlocked > 0 ? "blocked" : "urgent")}>
+              {totals.totalBlocked > 0 ? "Open blokkades" : "Open urgentie"}
+            </PrimaryActionButton>
+          }
+        />
+      }
+    >
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          meta={<CareMetaChip>{filteredGemeenten.length} zichtbaar · {totals.totalCases} casussen · {totals.avgWaitTime}d</CareMetaChip>}
+        />
+        <CareSectionBody className="space-y-4">
+          <CareSearchFiltersBar
+            tabs={
+              <CareFilterTabGroup aria-label="Status gemeenten">
+                <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => setSelectedStatus("all")}>
+                  Alle
+                </CareFilterTabButton>
+                <CareFilterTabButton selected={selectedStatus === "shortage"} onClick={() => setSelectedStatus("shortage")}>
+                  Tekort
+                </CareFilterTabButton>
+                <CareFilterTabButton selected={selectedStatus === "urgent"} onClick={() => setSelectedStatus("urgent")}>
+                  Urgent
+                </CareFilterTabButton>
+                <CareFilterTabButton selected={selectedStatus === "blocked"} onClick={() => setSelectedStatus("blocked")}>
+                  Geblokkeerd
+                </CareFilterTabButton>
+              </CareFilterTabGroup>
+            }
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoeken op gemeente of regio..."
+          />
+      {loading && (
+        <LoadingState title="Gemeenten laden…" copy="Overzicht wordt opgebouwd." />
+      )}
+      {!loading && error && (
+        <ErrorState
+          title="Kon gemeenten niet laden"
+          copy={error}
+          action={<Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>}
+        />
+      )}
+      {!loading && !error && filteredGemeenten.length === 0 && (
+        <EmptyState
+          title="Geen gemeenten"
+          copy="Er zijn geen gemeenten die passen bij de huidige filters."
+        />
+      )}
+      {!loading && !error && filteredGemeenten.length > 0 && (
+        <div className="panel-surface overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
             <thead>
               <tr className="border-b border-border">
                 <th className="text-left p-4 text-sm font-semibold text-muted-foreground">
@@ -188,9 +208,10 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
                   Status
                 </th>
                 <th className="text-right p-4 text-sm font-semibold text-muted-foreground">
-                  Trend
+                  Wacht op
                 </th>
-                <th className="text-right p-4"></th>
+                <th className="text-right p-4 text-sm font-semibold text-muted-foreground">Eigenaar</th>
+                <th className="text-right p-4 text-sm font-semibold text-muted-foreground">Volgende stap</th>
               </tr>
             </thead>
             <tbody>
@@ -251,41 +272,43 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
                   </td>
                   <td className="p-4">
                     <div className="flex justify-end">
-                      {getTrendIcon(gemeente.trend)}
+                      <span className="text-xs text-muted-foreground">
+                        {gemeente.blockedCases > 0
+                          ? "Blokkades oplossen"
+                          : gemeente.urgentCases > 0
+                            ? "Urgente opvolging"
+                            : "Reguliere doorstroom"}
+                      </span>
                     </div>
                   </td>
                   <td className="p-4">
-                    <ChevronRight className="text-muted-foreground" size={18} />
+                    <div className="flex justify-end text-xs text-muted-foreground">
+                      {gemeente.blockedCases > 0 ? "Gemeente" : "Gemeente + aanbieder"}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        variant={gemeente.blockedCases > 0 || gemeente.urgentCases > 0 ? "default" : "ghost"}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onGemeenteClick?.(gemeente.id);
+                        }}
+                      >
+                        Open
+                      </Button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Empty state */}
-      {loading && (
-        <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-          <Loader2 size={18} className="animate-spin" />
-          <span>Gemeenten laden…</span>
+            </table>
+          </div>
         </div>
       )}
-      {error && (
-        <div className="premium-card p-6 text-center text-destructive space-y-2">
-          <p>Kon gemeenten niet laden: {error}</p>
-          <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
-        </div>
-      )}
-      {!loading && !error && filteredGemeenten.length === 0 && (
-        <div className="premium-card p-12 text-center">
-          <MapPin className="mx-auto mb-4 text-muted-foreground" size={48} />
-          <p className="text-lg font-semibold text-foreground mb-2">Geen gemeenten gevonden</p>
-          <p className="text-sm text-muted-foreground">
-            Probeer een andere zoekopdracht of pas de filters aan
-          </p>
-        </div>
-      )}
-    </div>
+      </CareSectionBody>
+      </CareSection>
+    </CarePageScaffold>
   );
 }

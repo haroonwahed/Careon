@@ -2,8 +2,13 @@ import type { ReactNode } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
+import {
+  CasusWorkspaceStatusBadges,
+  FlowPhaseBadge,
+  type CasusWorkspaceStatusVariant,
+} from "./CareDesignPrimitives";
 
-export type CasusWorkspaceStatusVariant = "active" | "blocked" | "progress";
+export type { CasusWorkspaceStatusVariant };
 
 /**
  * Full-page casus workspace: flow bar → identity → hero (problem + primary CTA) →
@@ -15,8 +20,11 @@ export interface CasusWorkspaceLayoutProps {
   /** Canonical flow progress (always visible, top of scroll story). */
   flowProgress?: ReactNode;
   title: string;
-  metaLine: string;
+  metaLine?: string;
+  /** Human label — used when `phaseId` is omitted (legacy callers). */
   phaseLabel: string;
+  /** Canonical keten id — when set, shows `FlowPhaseBadge` aligned with lists/boards. */
+  phaseId?: string;
   statusVariant: CasusWorkspaceStatusVariant;
   statusHint?: string | null;
   headerActions?: ReactNode;
@@ -36,6 +44,7 @@ export function CasusWorkspaceLayout({
   title,
   metaLine,
   phaseLabel,
+  phaseId,
   statusVariant,
   statusHint,
   headerActions,
@@ -45,7 +54,7 @@ export function CasusWorkspaceLayout({
   contextStack,
 }: CasusWorkspaceLayoutProps) {
   return (
-    <div className="w-full min-w-0 space-y-6 bg-background px-0 pb-12 pt-0 text-foreground">
+    <div className="w-full min-w-0 space-y-4 bg-background px-0 pb-8 pt-0 text-foreground">
       <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
         <Button
           variant="ghost"
@@ -65,36 +74,24 @@ export function CasusWorkspaceLayout({
       ) : null}
 
       <header className="space-y-3 border-b border-border/70 pb-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
           <div className="min-w-0 space-y-2">
             <h1 className="text-[20px] font-semibold leading-tight tracking-tight text-foreground md:text-[22px]">
               {title}
             </h1>
-            <p className="text-[13px] text-muted-foreground md:text-[14px]">{metaLine}</p>
+            {metaLine ? <p className="text-[13px] text-muted-foreground md:text-[14px]">{metaLine}</p> : null}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="border-border/60 bg-background/70 text-[12px] font-medium text-foreground shadow-sm">
-                Fase: {phaseLabel}
-              </Badge>
-              {statusVariant === "blocked" && (
-                <Badge className="border-destructive/30 bg-destructive/10 text-[12px] font-semibold text-destructive">
-                  Geblokkeerd
+              {phaseId ? (
+                <span className="inline-flex items-center gap-1.5" title={`Stap: ${phaseLabel}`}>
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Stap</span>
+                  <FlowPhaseBadge phaseId={phaseId} />
+                </span>
+              ) : phaseLabel ? (
+                <Badge className="border-border/60 bg-background/70 text-[12px] font-medium text-foreground shadow-sm">
+                  Stap: {phaseLabel}
                 </Badge>
-              )}
-              {statusVariant === "active" && (
-                <Badge className="border-emerald-500/30 bg-emerald-500/10 text-[12px] font-semibold text-emerald-300">
-                  Actief
-                </Badge>
-              )}
-              {statusVariant === "progress" && (
-                <Badge className="border-primary/30 bg-primary/10 text-[12px] font-semibold text-primary">
-                  In behandeling
-                </Badge>
-              )}
-              {statusHint && statusVariant === "blocked" && (
-                <Badge className="border-destructive/30 bg-destructive/10 text-[12px] font-semibold text-destructive">
-                  {statusHint}
-                </Badge>
-              )}
+              ) : null}
+              <CasusWorkspaceStatusBadges variant={statusVariant} hint={statusHint} />
             </div>
           </div>
           {updatedAtLabel ? (
@@ -106,11 +103,11 @@ export function CasusWorkspaceLayout({
         </div>
       </header>
 
-      <section data-testid="casus-hero-band" className="rounded-2xl border border-border/80 bg-card/60 p-4 shadow-sm md:p-5">
+      <section data-testid="casus-hero-band" className="rounded-xl border border-border/80 bg-card/60 p-4 shadow-sm md:p-5">
         {caseHero}
       </section>
 
-      <section data-testid="casus-decision-panel" className="rounded-2xl border border-primary/25 bg-primary/5 p-4 md:p-5">
+      <section data-testid="casus-decision-panel" className="rounded-xl border border-primary/25 bg-primary/5 p-4 md:p-5">
         {decisionPanel}
       </section>
 

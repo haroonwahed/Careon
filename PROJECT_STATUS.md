@@ -12,6 +12,8 @@ The live product is usable for a constrained pilot or demo, and the core workflo
 
 Phase 2 stabilization added safe casus archiving, hidden archived cases from default active lists, and labeled the remaining reporting surface as internal rather than customer-facing. Phase 3 now adds a passing Playwright browser smoke harness with a seeded pilot journey that exercises login, dashboard, case detail, summary, matching, provider decisions, placement, intake, archive, and logout. The browser proof is still release-oriented smoke coverage, not a full end-to-end automated product test suite.
 
+**Pilot E2E (rehearsal):** The canonical verified stack for `settings_rehearsal` + Playwright is documented in **[docs/PILOT_E2E_STATUS.md](docs/PILOT_E2E_STATUS.md)** (commands, green table, hygiene rules). Operational contract: **[docs/E2E_RUNBOOK.md](docs/E2E_RUNBOOK.md)**.
+
 ### Readiness verdict
 
 - Demo-ready: yes

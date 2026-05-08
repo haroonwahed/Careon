@@ -280,6 +280,19 @@ CAREON_PILOT_SPA_ONLY = _bool_env('CAREON_PILOT_SPA_ONLY', False)
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
+SPA_ORIGIN = os.getenv('SPA_ORIGIN', 'http://127.0.0.1:3000').rstrip('/')
+OIDC_REDIRECT_ALLOWED_HOSTS = [
+    host
+    for host in _csv_env(
+        'OIDC_REDIRECT_ALLOWED_HOSTS',
+        default=[
+            urlparse(SPA_ORIGIN).netloc,
+            'localhost:3000',
+            '127.0.0.1:3000',
+        ],
+    )
+    if host
+]
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@careon.local')
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = os.getenv('EMAIL_HOST', '')

@@ -545,7 +545,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
   if (loading) {
     return (
-      <div className="premium-card flex min-h-[320px] items-center justify-center rounded-[28px] border border-border/70 p-8">
+      <div className="panel-surface flex min-h-[320px] items-center justify-center rounded-[28px] border border-border/70 p-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Loader2 size={18} className="animate-spin" />
           Intakeformulier laden...
@@ -556,7 +556,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
   if (loadError || !formState || !options) {
     return (
-      <div className="premium-card rounded-[28px] border border-red-500/20 p-8">
+      <div className="panel-surface rounded-[28px] border border-red-500/20 p-4">
         <div className="flex items-start gap-3 text-red-300">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <div>
@@ -569,7 +569,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
@@ -628,8 +628,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
       )}
 
-      <section className="premium-card rounded-[28px] border border-border/70 p-5">
-        <div className="mb-5">
+      <section className="panel-surface rounded-[28px] border border-border/70 p-4">
+        <div className="mb-4">
           <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <span>Stap {currentStep} van 3</span>
             <span>{Math.round((currentStep / 3) * 100)}%</span>
@@ -662,7 +662,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
 
         {currentStep === 1 && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SectionHeader step="1" title="Basisinformatie" copy="Leg de kern vast." />
 
             <div>
@@ -709,7 +709,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         )}
 
         {currentStep === 2 && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             <SectionHeader step="2" title="Zorgvraag" copy="Maak de vraag concreet." />
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -814,7 +814,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         )}
 
         {currentStep === 3 && (
-          <div className="space-y-5">
+          <div className="space-y-3">
             <SectionHeader step="3" title="Randvoorwaarden" copy="Bepaal de zoekruimte." />
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -913,7 +913,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
       )}
 
-      <div className="premium-card rounded-[24px] border border-border/70 bg-card/60 p-4">
+      <div className="panel-surface rounded-[24px] border border-border/70 bg-card/60 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Button variant="outline" className="gap-2" onClick={() => onCancel?.()}>
             <ArrowLeft size={15} />

@@ -2,7 +2,7 @@
 {% block title %}{% if form.instance.pk %}Bewerk{% else %}Nieuwe{% endif %} opvolgtaak - Careon{% endblock %}
 {% block content %}
 <div class="ds-detail-shell">
-    <nav class=""><a class="" href="{% url 'dashboard' %}">Regiekamer</a><span class="ds-muted-label"> / </span><span class="">Formulier</span></nav>
+    <nav class=""><a class="" href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/">Regiekamer</a><span class="ds-muted-label"> / </span><span class="">Formulier</span></nav>
     <div class="ds-detail-header">
         <div class="ds-detail-meta">
             <span class="ds-detail-indicator">Formulier</span>

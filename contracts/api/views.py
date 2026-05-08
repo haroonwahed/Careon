@@ -51,6 +51,11 @@ from contracts.permissions import (
     can_access_case_action,
     ensure_provider_case_visible_or_404,
     filter_care_cases_for_provider_actor,
+    filter_care_signals_for_provider_actor,
+    filter_care_tasks_for_provider_actor,
+    filter_documents_for_provider_actor,
+    filter_placement_requests_for_provider_actor,
+    visible_provider_scoped_care_cases,
 )
 from contracts.provider_workspace import build_provider_workspace_summary
 from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
@@ -722,6 +727,7 @@ def current_user_api(request):
     if organization is not None:
         payload['organization'] = {
             'id': organization.pk,
+            'slug': organization.slug,
             'name': getattr(organization, 'name', str(organization.pk)),
         }
     return JsonResponse(payload)
@@ -1795,29 +1801,32 @@ def intake_create_api(request):
         return JsonResponse({'errors': _flatten_form_errors(form)}, status=400)
 
     try:
-        set_organization_on_instance(form.instance, organization)
-        if not form.instance.start_date:
-            form.instance.start_date = date.today()
-        form.instance.workflow_state = WorkflowState.DRAFT_CASE
+        with transaction.atomic():
+            set_organization_on_instance(form.instance, organization)
+            if not form.instance.start_date:
+                form.instance.start_date = date.today()
+            form.instance.workflow_state = WorkflowState.DRAFT_CASE
 
-        intake = form.save()
-        case_record = intake.ensure_case_record(created_by=request.user)
-        try:
-            log_action(
-                request.user,
-                'CREATE',
-                'CaseIntakeProcess',
-                intake.id,
-                str(intake),
-                request=request,
-            )
-        except Exception:
-            logger.exception(
-                "Intake create audit logging failed for intake_id=%s user_id=%s",
-                intake.id,
-                getattr(request.user, "id", None),
-            )
-        try:
+            intake = form.save()
+            case_record = intake.ensure_case_record(created_by=request.user)
+            try:
+                log_action(
+                    request.user,
+                    'CREATE',
+                    'CaseIntakeProcess',
+                    intake.id,
+                    str(intake),
+                    request=request,
+                )
+            except Exception as exc:
+                logger.exception(
+                    "Intake create CREATE audit log failed for intake_id=%s user_id=%s",
+                    intake.id,
+                    getattr(request.user, "id", None),
+                )
+                raise AuditLoggingError(
+                    'Kan auditlog voor nieuwe casus niet vastleggen.'
+                ) from exc
             log_transition_event(
                 intake=intake,
                 actor_user=request.user,
@@ -1826,12 +1835,6 @@ def intake_create_api(request):
                 new_state=WorkflowState.DRAFT_CASE,
                 action=WorkflowAction.CREATE_CASE,
                 source='intake_create_api',
-            )
-        except Exception:
-            logger.exception(
-                "Intake create transition logging failed for intake_id=%s user_id=%s",
-                intake.id,
-                getattr(request.user, "id", None),
             )
 
         case_pk = case_record.pk if case_record else intake.pk
@@ -1842,6 +1845,12 @@ def intake_create_api(request):
             'case_id': str(case_record.pk) if case_record else '',
             'redirect_url': f'/care/cases/{case_pk}/',
         })
+    except AuditLoggingError as exc:
+        logger.exception(
+            "Intake create blocked: audit logging required intake_create_api user_id=%s",
+            getattr(request.user, "id", None),
+        )
+        return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
     except Exception:
         logger.exception(
             "Intake create failed for user_id=%s org_id=%s payload_keys=%s",
@@ -1867,7 +1876,13 @@ def intake_create_api(request):
 def assessments_api(request):
     organization = get_user_organization(request.user)
     try:
-        intakes = CaseIntakeProcess.objects.filter(organization=organization).exclude(status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
+        intakes = CaseIntakeProcess.objects.filter(organization=organization).exclude(
+            status=CaseIntakeProcess.ProcessStatus.ARCHIVED
+        )
+        if resolve_actor_role(user=request.user, organization=organization) == WorkflowRole.ZORGAANBIEDER:
+            intakes = intakes.filter(
+                contract_id__in=visible_provider_scoped_care_cases(request.user, organization).values('pk')
+            )
         qs = CaseAssessment.objects.filter(due_diligence_process__in=intakes).select_related(
             'due_diligence_process', 'assessed_by'
         )
@@ -1915,11 +1930,13 @@ def placements_api(request):
         ).select_related(
             'due_diligence_process', 'proposed_provider', 'selected_provider'
         )
+        qs = filter_placement_requests_for_provider_actor(qs, request.user, organization)
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(
                 Q(due_diligence_process__title__icontains=q) | Q(description__icontains=q)
             )
+        qs = qs.order_by('-updated_at', '-id')
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         paginator = Paginator(qs, page_size)
@@ -1959,12 +1976,14 @@ def signals_api(request):
         ).select_related(
             'case_record', 'assigned_to', 'created_by'
         )
+        qs = filter_care_signals_for_provider_actor(qs, request.user, organization)
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
         status_filter = request.GET.get('status', '')
         if status_filter:
             qs = qs.filter(status=status_filter)
+        qs = qs.order_by('-created_at', '-id')
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         paginator = Paginator(qs, page_size)
@@ -2003,12 +2022,14 @@ def tasks_api(request):
         ).select_related(
             'case_record', 'assigned_to'
         )
+        qs = filter_care_tasks_for_provider_actor(qs, request.user, organization)
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
         status_filter = request.GET.get('status', '')
         if status_filter:
             qs = qs.filter(status=status_filter)
+        qs = qs.order_by('-created_at', '-id')
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 50))
         paginator = Paginator(qs, page_size)
@@ -2020,6 +2041,9 @@ def tasks_api(request):
             due = t.due_date
             if t.status in ('COMPLETED', 'CANCELLED'):
                 action_status = 'completed'
+            elif due is None:
+                # DB-should-not-happen guard: comparing None to date raises TypeError → 500.
+                action_status = 'upcoming'
             elif due < today:
                 action_status = 'overdue'
             elif due == today:
@@ -2048,6 +2072,24 @@ def tasks_api(request):
 # Documents
 # ---------------------------------------------------------------------------
 
+def _serialize_document_row(d):
+    return {
+        'id': str(d.id),
+        'name': d.title,
+        'type': d.document_type,
+        'status': d.status,
+        'description': d.description,
+        'linkedCaseId': str(d.contract_id) if d.contract_id else '',
+        'linkedCaseName': d.contract.title if d.contract else '',
+        'uploadedBy': d.uploaded_by.get_full_name() if d.uploaded_by else '',
+        'uploadDate': d.created_at.isoformat(),
+        'fileSize': d.file_size,
+        'mimeType': d.mime_type,
+        'version': d.version,
+        'isConfidential': d.is_confidential,
+    }
+
+
 @login_required
 @require_http_methods(["GET"])
 def documents_api(request):
@@ -2056,6 +2098,7 @@ def documents_api(request):
         qs = Document.objects.filter(organization=organization).select_related(
             'uploaded_by', 'contract'
         )
+        qs = filter_documents_for_provider_actor(qs, request.user, organization)
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q) | Q(tags__icontains=q))
@@ -2063,26 +2106,35 @@ def documents_api(request):
         page_size = int(request.GET.get('page_size', 50))
         paginator = Paginator(qs, page_size)
         page_obj = paginator.get_page(page)
-        data = []
-        for d in page_obj:
-            data.append({
-                'id': str(d.id),
-                'name': d.title,
-                'type': d.document_type,
-                'status': d.status,
-                'description': d.description,
-                'linkedCaseId': str(d.contract_id) if d.contract_id else '',
-                'linkedCaseName': d.contract.title if d.contract else '',
-                'uploadedBy': d.uploaded_by.get_full_name() if d.uploaded_by else '',
-                'uploadDate': d.created_at.isoformat(),
-                'fileSize': d.file_size,
-                'mimeType': d.mime_type,
-                'version': d.version,
-                'isConfidential': d.is_confidential,
-            })
+        data = [_serialize_document_row(d) for d in page_obj]
         return JsonResponse({'documents': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
         return _internal_server_error(context='documents_api_failed')
+
+
+@login_required
+@require_http_methods(["GET"])
+def document_detail_api(request, document_id):
+    """Single document metadata; zorgaanbieder requires placement-linked case visibility."""
+    organization = get_user_organization(request.user)
+    try:
+        doc = Document.objects.select_related('uploaded_by', 'contract').get(
+            pk=document_id,
+            organization=organization,
+        )
+    except Document.DoesNotExist:
+        return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    actor_role = resolve_actor_role(user=request.user, organization=organization)
+    if actor_role == WorkflowRole.ZORGAANBIEDER:
+        if doc.contract_id is None:
+            return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+        try:
+            ensure_provider_case_visible_or_404(request.user, doc.contract)
+        except Http404:
+            return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    return JsonResponse(_serialize_document_row(doc))
 
 
 # ---------------------------------------------------------------------------
@@ -2094,6 +2146,15 @@ def documents_api(request):
 def audit_log_api(request):
     organization = get_user_organization(request.user)
     try:
+        actor_role = resolve_actor_role(user=request.user, organization=organization)
+        if actor_role == WorkflowRole.ZORGAANBIEDER:
+            return JsonResponse(
+                {
+                    'ok': False,
+                    'error': 'Auditlog is niet beschikbaar voor deze rol.',
+                },
+                status=403,
+            )
         qs = AuditLog.objects.select_related('user')
         if organization:
             from django.contrib.auth import get_user_model
@@ -2139,7 +2200,7 @@ def providers_api(request):
         qs = Client.objects.filter(
             organization=organization,
             client_type='CORPORATION',
-        ).select_related('provider_profile').prefetch_related(
+        ).order_by('name', 'id').select_related('provider_profile').prefetch_related(
             'provider_profile__served_regions__served_municipalities',
             'provider_profile__secondary_served_regions',
         )
@@ -2533,9 +2594,11 @@ def dashboard_summary_api(request):
             Q(case_record__lifecycle_stage='ARCHIVED')
             | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
         )
+        signals_qs = filter_care_signals_for_provider_actor(signals_qs, request.user, organization)
         tasks_qs = CareTask.objects.for_organization(organization).exclude(
             Q(case_record__lifecycle_stage='ARCHIVED')
         )
+        tasks_qs = filter_care_tasks_for_provider_actor(tasks_qs, request.user, organization)
 
         total_cases = cases_qs.count()
         active_cases = cases_qs.filter(

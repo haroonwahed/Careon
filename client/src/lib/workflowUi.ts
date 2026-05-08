@@ -1,6 +1,7 @@
 import type { CasusAction, CasusSignal, CasusTimelineEvent, ComputedCaseState } from "./phaseEngine";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
+import { CARE_TERMS } from "./terminology";
 import {
   canRoleExecuteAction,
   isCanonicalWorkflowState,
@@ -127,19 +128,19 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
 function boardColumnLabel(column: WorkflowBoardColumn): string {
   switch (column) {
     case "casus":
-      return "Casus";
+      return CARE_TERMS.workflow.casus;
     case "samenvatting":
-      return "Samenvatting";
+      return CARE_TERMS.workflow.samenvatting;
     case "matching":
-      return "Matching";
+      return CARE_TERMS.workflow.matching;
     case "gemeente-validatie":
-      return "Gemeente Validatie";
+      return CARE_TERMS.workflow.gemeenteValidatie;
     case "aanbieder-beoordeling":
-      return "Aanbieder beoordeling";
+      return CARE_TERMS.workflow.aanbiederBeoordeling;
     case "plaatsing":
-      return "Plaatsing";
+      return CARE_TERMS.workflow.plaatsing;
     case "intake":
-      return "Intake";
+      return CARE_TERMS.workflow.intake;
   }
 }
 
@@ -287,7 +288,7 @@ function resolveBoardColumnWithFallback(spaCase: SpaCase, missingDataItems: stri
 
 function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn, summaryAvailable: boolean): string {
   if (column === "samenvatting") {
-    return summaryAvailable ? "Samenvatting klaar" : "Samenvatting nodig";
+    return summaryAvailable ? `${CARE_TERMS.workflow.samenvatting} klaar` : `${CARE_TERMS.workflow.samenvatting} nodig`;
   }
 
   switch (column) {
@@ -296,13 +297,15 @@ function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn,
     case "matching":
       return "Matchopties";
     case "gemeente-validatie":
-      return "Gemeente validatie";
+      return CARE_TERMS.workflow.gemeenteValidatie;
     case "aanbieder-beoordeling":
-      return "Aanbieder beoordeling";
+      return CARE_TERMS.workflow.aanbiederBeoordeling;
     case "plaatsing":
-      return "Plaatsing";
+      return CARE_TERMS.workflow.plaatsing;
     case "intake":
-      return spaCase.status === "afgerond" ? "Intake afgerond" : "Intake uitvoeren";
+      return spaCase.status === "afgerond"
+        ? `${CARE_TERMS.workflow.intake} afgerond`
+        : `${CARE_TERMS.workflow.intake} uitvoeren`;
   }
 }
 
@@ -310,11 +313,11 @@ function resolveResponsibility(column: WorkflowBoardColumn): string {
   switch (column) {
     case "aanbieder-beoordeling":
     case "intake":
-      return "Zorgaanbieder";
+      return CARE_TERMS.roles.zorgaanbieder;
     case "gemeente-validatie":
-      return "Gemeente";
+      return CARE_TERMS.roles.gemeente;
     default:
-      return "Gemeente";
+      return CARE_TERMS.roles.gemeente;
   }
 }
 
@@ -369,14 +372,20 @@ function resolvePrimaryAction(
   column: WorkflowBoardColumn,
   summaryAvailable: boolean,
   providerCount: number,
+  hasMissingData: boolean,
 ): { label: string; enabled: boolean; reason: string | null } {
   switch (column) {
     case "casus":
-      return { label: "Vul aan", enabled: true, reason: null };
+      if (hasMissingData) {
+        return { label: "Vul casus aan", enabled: true, reason: null };
+      }
+      return summaryAvailable
+        ? { label: "Start matching", enabled: true, reason: null }
+        : { label: "Wacht op samenvatting", enabled: false, reason: "Samenvatting wordt automatisch verwerkt." };
     case "samenvatting":
       return summaryAvailable
         ? { label: "Bevestig", enabled: true, reason: null }
-        : { label: "Genereer", enabled: true, reason: null };
+        : { label: "Wacht op samenvatting", enabled: false, reason: "Samenvatting wordt automatisch verwerkt." };
     case "matching":
       return providerCount > 0
         ? { label: "Controleer matchadvies", enabled: true, reason: null }
@@ -579,7 +588,7 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
   const matchConfidence = boardColumn === "matching" ? buildMatchConfidence(regionalMatches.length, spaCase.urgency) : null;
   const providerStatus = resolveProviderStatusLabel(boardColumn, firstProvider?.name ?? null);
   const whyInThisStep = resolveWhyInThisStep(spaCase, boardColumn, missingDataItems, summaryAvailable, regionalMatches.length);
-  const primaryAction = resolvePrimaryAction(boardColumn, summaryAvailable, regionalMatches.length);
+  const primaryAction = resolvePrimaryAction(boardColumn, summaryAvailable, regionalMatches.length, missingDataItems.length > 0);
   const isBlocked = !primaryAction.enabled || (boardColumn === "casus" && missingDataItems.length > 0);
   const blockReason = !primaryAction.enabled
     ? primaryAction.reason
@@ -750,13 +759,17 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
   switch (item.boardColumn) {
     case "casus":
       responsibleParty = "Gemeente";
-      nextActionLabel = item.missingDataItems.length > 0 ? "Vul aan" : "Genereer";
+      nextActionLabel = item.missingDataItems.length > 0
+        ? "Vul casus aan"
+        : item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting")
+          ? "Wacht op samenvatting"
+          : "Start matching";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;
     case "samenvatting":
-      responsibleParty = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Systeem" : "Gemeente";
-      nextActionLabel = item.primaryActionLabel.toLowerCase().includes("genereer") ? "Genereer" : "Bevestig";
+      responsibleParty = item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting") ? "Systeem" : "Gemeente";
+      nextActionLabel = item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting") ? "Wacht op samenvatting" : "Bevestig";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;

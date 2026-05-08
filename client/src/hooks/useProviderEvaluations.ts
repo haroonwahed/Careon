@@ -12,6 +12,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '../lib/apiClient';
 
 // ─── Evaluation status types ──────────────────────────────────────────────────
@@ -101,6 +102,16 @@ export interface EvaluationDecisionPayload {
   information_request_comment?: string;
 }
 
+function decisionSuccessToastMessage(payload: EvaluationDecisionPayload): string {
+  if (payload.status === 'ACCEPTED') {
+    return 'Beoordeling verzonden. De gemeente kan nu plaatsing inplannen.';
+  }
+  if (payload.status === 'REJECTED') {
+    return 'Afwijzing geregistreerd. De casus gaat terug naar matching.';
+  }
+  return 'Verzoek om aanvullende informatie is verstuurd naar de gemeente.';
+}
+
 // ─── API response shape ───────────────────────────────────────────────────────
 
 interface ApiEvaluationsResponse {
@@ -178,6 +189,7 @@ export function useProviderEvaluations(): UseProviderEvaluationsResult {
           `/care/api/cases/${caseId}/provider-decision/`,
           payload,
         );
+        toast.success(decisionSuccessToastMessage(payload));
         refetch();
       } catch {
         // Fallback: keep placement endpoint compatibility during rollout.
@@ -191,13 +203,15 @@ export function useProviderEvaluations(): UseProviderEvaluationsResult {
             comment: payload.provider_comment ?? payload.information_request_comment,
             info_type: payload.information_request_type,
           });
+          toast.success(decisionSuccessToastMessage(payload));
           refetch();
         } catch (fallbackErr) {
-          setSubmitError(
+          const msg =
             fallbackErr instanceof Error
               ? fallbackErr.message
-              : 'De beslissing kon niet worden verwerkt. Probeer het opnieuw.',
-          );
+              : 'De beslissing kon niet worden verwerkt. Probeer het opnieuw.';
+          setSubmitError(msg);
+          toast.error(msg);
           throw fallbackErr;
         }
       } finally {

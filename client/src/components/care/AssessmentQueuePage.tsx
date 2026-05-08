@@ -1,16 +1,21 @@
 import { useMemo, useState } from "react";
 import { ArrowRight, ClipboardCheck } from "lucide-react";
 import { Button } from "../ui/button";
-import { CareEmptyState } from "./CareSurface";
-import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareContextHint,
+  CareInfoPopover,
   CareMetricBadge,
+  CarePageScaffold,
   CareSearchFiltersBar,
-} from "./CareUnifiedPage";
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { buildWorkflowCases } from "../../lib/workflowUi";
+import { tokens } from "../../design/tokens";
 
 interface AssessmentQueuePageProps {
   onCaseClick?: (caseId: string) => void;
@@ -34,8 +39,15 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
   return (
     <CarePageScaffold
       archetype="worklist"
-      title="Aanbieder beoordeling"
-      subtitle="Open voor besluit."
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Aanbieder beoordeling
+          <CareInfoPopover ariaLabel="Uitleg wachtrij aanbieder beoordeling" testId="aanbieder-beoordeling-queue-info">
+            <p className="text-muted-foreground">Open voor besluit.</p>
+          </CareInfoPopover>
+        </span>
+      }
       metric={
         <CareMetricBadge>
           {queueCases.length} {queueCases.length === 1 ? "casus in wachtrij" : "casussen in wachtrij"}
@@ -49,7 +61,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
           showSecondaryFilters={showSecondaryFilters}
           onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
           secondaryFilters={
-            <label className="block max-w-xs text-xs text-muted-foreground">
+            <label className="block text-xs text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasureTight }}>
               <span className="mb-1 block font-medium uppercase tracking-[0.08em]">Urgentie</span>
               <select
                 value={selectedUrgency}
@@ -67,17 +79,17 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         />
       }
     >
-      {loading && <CareEmptyState title="Casussen laden…" copy="De beoordelingswachtrij wordt opgebouwd." />}
+      {loading && <LoadingState title="Casussen laden…" copy="De beoordelingswachtrij wordt opgebouwd." />}
 
       {!loading && error && (
-        <CareEmptyState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+        <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
       {!loading && !error && queueCases.length === 0 && (
-        <CareEmptyState
+        <EmptyState
           title="Geen open beoordelingen"
           copy="Zodra casussen intake of aanbieder-beoordeling ingaan, verschijnen ze hier."
-          action={<Button onClick={() => onNavigateToCasussen?.()}>Ga naar werkvoorraad</Button>}
+          action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Ga naar werkvoorraad</PrimaryActionButton>}
         />
       )}
 

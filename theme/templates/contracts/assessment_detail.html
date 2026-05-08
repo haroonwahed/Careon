@@ -4,7 +4,7 @@
 <div class="page-wrap page-stack">
 
 <nav class="ds-breadcrumb">
-    <a href="{% url 'dashboard' %}" class="ds-breadcrumb-link">Regiekamer</a>
+    <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="ds-breadcrumb-link">Regiekamer</a>
     <span class="mx-2">/</span>
     <a href="{% url 'careon:case_list' %}" class="ds-breadcrumb-link">Casussen</a>
     <span class="mx-2">/</span>

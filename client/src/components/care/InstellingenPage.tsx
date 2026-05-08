@@ -1,28 +1,68 @@
-import { useEffect, useState } from "react";
-import { Bell, Building2, CheckCircle2, ChevronDown, Save, Shield, UserCog, Workflow } from "lucide-react";
-import { Button } from "../ui/button";
+import { useCallback, useEffect, useState } from "react";
+import { InstellingenSettingsExperience } from "./settings/InstellingenSettingsExperience";
+import { DEFAULT_SETTINGS_SECTION, type SettingsSectionId } from "./settings/instellingenNav";
+import {
+  persistPreferences,
+  persistSectionToUrlAndStorage,
+  readInitialSettingsSection,
+  readSectionFromSearch,
+  readStoredPreferences,
+  type SettingsPreferencesSnapshot,
+} from "../../lib/settingsWorkspace";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
 
+function initialPrefs(): Partial<SettingsPreferencesSnapshot> | null {
+  return typeof window !== "undefined" ? readStoredPreferences() : null;
+}
+
 export function InstellingenPage() {
-  const [organizationName, setOrganizationName] = useState("Gemeente Utrecht");
-  const [defaultRegion, setDefaultRegion] = useState("Utrecht");
-  const [dailyDigest, setDailyDigest] = useState(true);
-  const [criticalAlerts, setCriticalAlerts] = useState(true);
-  const [mfaRequired, setMfaRequired] = useState(true);
-  const [autoEscalation, setAutoEscalation] = useState(true);
+  const stored = initialPrefs();
+
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>(() => readInitialSettingsSection());
+  const [organizationName, setOrganizationName] = useState(
+    () => stored?.organizationName ?? "Gemeente Utrecht",
+  );
+  const [defaultRegion, setDefaultRegion] = useState(() => stored?.defaultRegion ?? "Utrecht");
+  const [dailyDigest, setDailyDigest] = useState(() => stored?.dailyDigest ?? true);
+  const [criticalAlerts, setCriticalAlerts] = useState(() => stored?.criticalAlerts ?? true);
+  const [mfaRequired, setMfaRequired] = useState(() => stored?.mfaRequired ?? true);
+  const [autoEscalation, setAutoEscalation] = useState(() => stored?.autoEscalation ?? true);
   const [designMode, setDesignMode] = useState<"spa">("spa");
   const [designModeSaving, setDesignModeSaving] = useState(false);
   const [designModeMessage, setDesignModeMessage] = useState<string | null>(null);
+  const [orgSaveMessage, setOrgSaveMessage] = useState<string | null>(null);
 
   const systemStateStrip = !criticalAlerts
-    ? { label: "Kritieke signalen uit", warn: true }
+    ? { label: "Kritieke signalen uit — het team ziet blokkades niet direct.", warn: true }
     : autoEscalation
-      ? { label: "Automatisering actief", warn: false }
-      : { label: "Escalatie gedeeltelijk actief", warn: false };
+      ? { label: "Automatische escalatie staat aan; stilstand in de keten wordt beperkt.", warn: false }
+      : { label: "Escalatie deels handmatig — controleer eigenaarschap in de regiekamer.", warn: false };
 
-  const digestStateText = dailyDigest ? "Actief" : "Uitgeschakeld";
-  const criticalSignalsStateText = criticalAlerts ? "Geen recente signalen" : "Signalen staan uit";
-  const escalationStateText = autoEscalation ? "Laatste escalatie: onbekend" : "Handmatige opvolging";
+  const activeToggles = [dailyDigest, criticalAlerts, mfaRequired, autoEscalation].filter(Boolean).length;
+
+  useEffect(() => {
+    persistSectionToUrlAndStorage(activeSection);
+  }, [activeSection]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const fromUrl = readSectionFromSearch(window.location.search);
+      setActiveSection(fromUrl ?? DEFAULT_SETTINGS_SECTION);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
+  useEffect(() => {
+    persistPreferences({
+      organizationName,
+      defaultRegion,
+      dailyDigest,
+      criticalAlerts,
+      mfaRequired,
+      autoEscalation,
+    });
+  }, [organizationName, defaultRegion, dailyDigest, criticalAlerts, mfaRequired, autoEscalation]);
 
   useEffect(() => {
     let ignore = false;
@@ -93,7 +133,7 @@ export function InstellingenPage() {
         // Ignore storage failures.
       }
 
-      setDesignModeMessage("Ontwerpmodus opgeslagen. Workspace wordt bijgewerkt...");
+      setDesignModeMessage("Workspace vastgelegd. Bezig met verversen…");
       window.location.href = SPA_DASHBOARD_URL;
     } catch {
       setDesignModeMessage("Opslaan is mislukt. Probeer opnieuw.");
@@ -101,210 +141,48 @@ export function InstellingenPage() {
     }
   };
 
+  const handleOrgProfileSave = () => {
+    const label = organizationName.trim() || "de organisatie";
+    setOrgSaveMessage(
+      `Ketenvoorkeuren voor ${label} zijn in deze browser vastgelegd (sessie): o.a. organisatie/regio, meldingen, MFA en escalatie waar van toepassing. Server-side opslag volgt wanneer de API beschikbaar is.`,
+    );
+  };
+
+  const handleSectionChange = useCallback((id: SettingsSectionId) => {
+    setActiveSection(id);
+  }, []);
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="mb-2 text-3xl font-semibold text-foreground">Instellingen</h1>
-          <p className="text-sm text-muted-foreground">
-            Beheer organisatievoorkeuren, meldingen, beveiliging en workflowregels.
-          </p>
-        </div>
-        <Button className="gap-2">
-          <Save size={15} />
-          Wijzigingen opslaan
-        </Button>
-      </div>
-
-      <div className={`rounded-xl border px-4 py-2 flex items-center gap-2 ${
-        systemStateStrip.warn
-          ? "border-amber-500/25 bg-amber-500/5 text-amber-600 dark:text-amber-400"
-          : "border-border bg-muted/35 text-muted-foreground"
-      }`}>
-        <CheckCircle2 size={13} className="flex-shrink-0" />
-        <p className="text-xs font-medium">{systemStateStrip.label}</p>
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-2">
-        <section className="premium-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Workflow size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Ontwerpmodus</h2>
-          </div>
-
-          <p className="mb-3 text-xs text-muted-foreground">
-            De moderne workspace is de standaardinterface voor je werkruimte.
-          </p>
-
-          <label className="mb-3 block">
-            <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actieve modus</span>
-            <div className="h-10 w-full rounded-xl border border-border bg-muted/50 px-3 text-sm text-foreground flex items-center">
-              Modern workspace (SPA)
-            </div>
-          </label>
-
-          <Button onClick={handleDesignModeSave} disabled={designModeSaving} className="gap-2">
-            <Save size={15} />
-            {designModeSaving ? "Opslaan..." : "Ontwerpmodus toepassen"}
-          </Button>
-
-          {designModeMessage && (
-            <p className="mt-3 text-xs text-muted-foreground">{designModeMessage}</p>
-          )}
-        </section>
-
-        <section className="premium-card p-5 border-border/80 bg-card/95">
-          <div className="mb-4 flex items-center gap-2">
-            <Building2 size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Organisatie</h2>
-          </div>
-
-          <div className="space-y-3">
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Naam</span>
-              <input
-                value={organizationName}
-                onChange={(event) => setOrganizationName(event.target.value)}
-                className="h-10 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground"
-              />
-            </label>
-
-            <label className="block">
-              <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Standaard regio</span>
-              <div className="relative">
-              <select
-                value={defaultRegion}
-                onChange={(event) => setDefaultRegion(event.target.value)}
-                className="h-10 w-full appearance-none rounded-xl border border-border bg-card pl-3 pr-8 text-sm text-foreground"
-              >
-                <option>Utrecht</option>
-                <option>Amsterdam</option>
-                <option>Rotterdam</option>
-                <option>Den Haag</option>
-              </select>
-              <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </label>
-
-            <p className="text-xs text-muted-foreground">Stabiele configuratie, zelden gewijzigd.</p>
-          </div>
-        </section>
-
-        <section className="premium-card p-5 border-border/90 bg-card/98">
-          <div className="mb-4 flex items-center gap-2">
-            <Bell size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Meldingen</h2>
-          </div>
-          <div className="space-y-3">
-            <ToggleRow
-              title="Dagelijkse samenvatting"
-              description="Dagelijks overzicht bij start"
-              context={digestStateText}
-              checked={dailyDigest}
-              onChange={setDailyDigest}
-            />
-            <ToggleRow
-              title="Kritieke signalen direct"
-              description="Direct bij blokkades"
-              context={criticalSignalsStateText}
-              checked={criticalAlerts}
-              onChange={setCriticalAlerts}
-            />
-          </div>
-        </section>
-
-        <section className="premium-card p-5 border-blue-border/40 bg-blue-light/20">
-          <div className="mb-4 flex items-center gap-2">
-            <Shield size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Beveiliging</h2>
-          </div>
-          <div className="space-y-3">
-            <ToggleRow
-              title="MFA verplichten"
-              description="Veilige toegang gegarandeerd"
-              context={mfaRequired ? "Actief voor alle gebruikers" : "Niet verplicht"}
-              checked={mfaRequired}
-              onChange={setMfaRequired}
-            />
-            <div className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-              Laatste wachtwoordbeleid update: 10 april 2026
-            </div>
-          </div>
-        </section>
-
-        <section className="premium-card border-primary/35 bg-primary/5 p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Workflow size={16} className="text-primary" />
-            <h2 className="text-sm font-semibold text-foreground">Workflow</h2>
-          </div>
-          <div className="space-y-3">
-            <ToggleRow
-              title="Automatische escalatie"
-              description="Voorkomt vastlopen"
-              context={escalationStateText}
-              checked={autoEscalation}
-              onChange={setAutoEscalation}
-            />
-            <div className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-              Escalatie-eigenaar: Regisseur dienstdoende
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section className="premium-card p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <UserCog size={16} className="text-primary" />
-          <h3 className="text-sm font-semibold text-foreground">Toegangsprofielen</h3>
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          <AccessCard title="Regisseurs" count={14} description="Case triage, matching en plaatsing" />
-          <AccessCard title="Beoordelaars" count={9} description="Aanbieder beoordeling: acceptatie / afwijzing en kwaliteitscontrole" />
-          <AccessCard title="Admins" count={3} description="Platformbeheer en autorisaties" />
-        </div>
-      </section>
-    </div>
-  );
-}
-
-interface ToggleRowProps {
-  title: string;
-  description: string;
-  context?: string;
-  checked: boolean;
-  onChange: (value: boolean) => void;
-}
-
-function ToggleRow({ title, description, context, checked, onChange }: ToggleRowProps) {
-  return (
-    <label className="flex cursor-pointer items-start justify-between gap-3 rounded-xl border border-border bg-card px-3 py-2">
-      <div>
-        <p className="text-sm font-medium text-foreground">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-        {context && <p className="mt-1 text-xs text-muted-foreground/90">{context}</p>}
-      </div>
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(event) => onChange(event.target.checked)}
-        className="mt-1 h-4 w-4 accent-primary"
+    <div
+      data-testid="instellingen-page-root"
+      className="w-full min-w-0 rounded-2xl border border-border/25 bg-gradient-to-b from-card/[0.08] via-background/20 to-background/40 p-4 shadow-[0_24px_80px_-48px_rgba(124,92,255,0.35)] md:p-6"
+    >
+      <InstellingenSettingsExperience
+        activeSection={activeSection}
+        onSectionChange={handleSectionChange}
+        organizationName={organizationName}
+        onOrganizationNameChange={setOrganizationName}
+        defaultRegion={defaultRegion}
+        onDefaultRegionChange={setDefaultRegion}
+        themeLabel="Donker (operationeel)"
+        languageLabel="Nederlands (NL)"
+        timezoneLabel="Europe/Amsterdam"
+        dailyDigest={dailyDigest}
+        onDailyDigestChange={setDailyDigest}
+        criticalAlerts={criticalAlerts}
+        onCriticalAlertsChange={setCriticalAlerts}
+        mfaRequired={mfaRequired}
+        onMfaRequiredChange={setMfaRequired}
+        autoEscalation={autoEscalation}
+        onAutoEscalationChange={setAutoEscalation}
+        designModeSaving={designModeSaving}
+        designModeMessage={designModeMessage}
+        onDesignModeSave={handleDesignModeSave}
+        orgSaveMessage={orgSaveMessage}
+        onOrgProfileSave={handleOrgProfileSave}
+        systemStrip={systemStateStrip}
+        activeToggles={activeToggles}
       />
-    </label>
-  );
-}
-
-interface AccessCardProps {
-  title: string;
-  count: number;
-  description: string;
-}
-
-function AccessCard({ title, count, description }: AccessCardProps) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{title}</p>
-          <p className="mt-1 text-xl font-semibold text-foreground">{count} <span className="text-xs font-medium text-muted-foreground">actief</span></p>
-      <p className="mt-1 text-xs text-muted-foreground">{description}</p>
     </div>
   );
 }

@@ -34,7 +34,7 @@ export function ActionPanel({
   return (
     <div className="space-y-4">
       {/* Next Actions */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <h3 className="text-base font-semibold text-foreground mb-4">
           Volgende acties
         </h3>
@@ -85,7 +85,7 @@ export function ActionPanel({
       </div>
 
       {/* Contact Information */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
           <Phone size={16} className="text-muted-foreground" />
           Contact informatie
@@ -177,7 +177,7 @@ export function ActionPanel({
       </div>
 
       {/* Quick Tips */}
-      <div className="premium-card p-5 border careon-alert-info">
+      <div className="panel-surface p-4 border careon-alert-info">
         <h3 className="text-sm font-semibold text-blue-base mb-3">
           Tips voor intake
         </h3>

@@ -1,17 +1,47 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowRight, Building2, ChevronDown, ChevronUp, Clock3, RefreshCw, Siren } from "lucide-react";
-import { DominantActionPanel } from "../design/DominantActionPanel";
-import { Button } from "../ui/button";
-import { cn } from "../ui/utils";
-import { CareEmptyState } from "./CareSurface";
-import { CarePageScaffold } from "./CarePageScaffold";
 import {
-  CanonicalPhaseBadge,
+  AlertCircle,
+  Building2,
+  ChevronDown,
+  ChevronRight,
+  Clock3,
+  FileText,
+  FolderOpen,
+  Home,
+  PanelRight,
+  RefreshCw,
+  SquarePen,
+  UserCheck,
+  Users,
+} from "lucide-react";
+import { Button } from "../ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "../ui/sheet";
+import { cn } from "../ui/utils";
+import { CareInfoPopover } from "./CareUnifiedPage";
+import {
   CareMetaChip,
+  CarePageScaffold,
+  CareAlertCard,
+  CareFlowBoard,
+  CareFlowStepCard,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
   CareSearchFiltersBar,
-  CareWorkRow,
-} from "./CareUnifiedPage";
+  CareWorkListCard,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
+import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import type {
@@ -26,21 +56,41 @@ import {
   type RegiekamerNbaUiMode,
 } from "../../lib/regiekamerNextBestAction";
 import {
+  derivePhaseBoard,
+  getDominantPhaseColumn,
+  type PhaseBoardColumn,
+  type RegiekamerListFilter,
+  type RegiekamerFlowPhase,
+} from "../../lib/regiekamerCommandCenter";
+import { tokens } from "../../design/tokens";
+import {
   buildRegiekamerNbaInstrumentationPayload,
   emitRegiekamerNbaEvent,
   shouldEmitRegiekamerNbaShown,
 } from "../../lib/regiekamerNbaInstrumentation";
+import {
+  DECISION_UI_PHASE_IDS,
+  DECISION_UI_PHASE_LABELS,
+  isDecisionUiPhaseId,
+  mapApiPhaseToDecisionUiPhase,
+  normalizeRegiekamerPhaseQueryParam,
+  type DecisionUiPhaseId,
+} from "../../lib/decisionPhaseUi";
 
 interface SystemAwarenessPageProps {
   onCaseClick: (caseId: string) => void;
   /** Shell navigation (e.g. metric strip → Casussen). Optional in standalone demos/tests. */
   onAppNavigate?: (path: string) => void;
+  /** Same rules as Casussen werkvoorraad — shows “Nieuwe casus” on empty Regiekamer when true. */
+  canCreateCase?: boolean;
+  onCreateCase?: () => void;
 }
 
 type PriorityFilter = "all" | "critical" | "high" | "medium";
 type IssueFilter = "all" | "blockers" | "risks" | "alerts" | "SLA" | "rejection" | "intake";
 type PhaseFilter =
   | "all"
+  | DecisionUiPhaseId
   | "casus"
   | "samenvatting"
   | "matching"
@@ -49,14 +99,13 @@ type PhaseFilter =
   | "plaatsing"
   | "intake";
 type OwnershipFilter = "all" | RegiekamerOwnershipRole;
-const SECTION_STACK_CLASS = "space-y-1.5";
-
 const REGIEKAMER_PATH = "/regiekamer";
 
 const PRIORITY_PARAM_VALUES = new Set<PriorityFilter>(["all", "critical", "high", "medium"]);
 const ISSUE_PARAM_VALUES = new Set<IssueFilter>(["all", "blockers", "risks", "alerts", "SLA", "rejection", "intake"]);
 const PHASE_PARAM_VALUES = new Set<PhaseFilter>([
   "all",
+  ...DECISION_UI_PHASE_IDS,
   "casus",
   "samenvatting",
   "matching",
@@ -92,8 +141,11 @@ function filtersFromSearchString(search: string): {
   const priorityFilter = PRIORITY_PARAM_VALUES.has(pr) ? pr : "all";
   const ir = params.get("issue") as IssueFilter;
   const issueFilter = ISSUE_PARAM_VALUES.has(ir) ? ir : "all";
-  const ph = params.get("phase") as PhaseFilter;
-  const phaseFilter = PHASE_PARAM_VALUES.has(ph) ? ph : "all";
+  const phaseKey = normalizeRegiekamerPhaseQueryParam(params.get("phase"));
+  const phaseFilter: PhaseFilter =
+    phaseKey && PHASE_PARAM_VALUES.has(phaseKey as PhaseFilter)
+      ? (phaseKey as PhaseFilter)
+      : "all";
   const ow = params.get("ownership") as OwnershipFilter;
   const ownershipFilter = OWNERSHIP_PARAM_VALUES.has(ow) ? ow : "all";
   return { searchQuery, priorityFilter, issueFilter, phaseFilter, ownershipFilter };
@@ -154,33 +206,20 @@ function buildRegiekamerUrl(parts: {
   return qs ? `${REGIEKAMER_PATH}?${qs}` : REGIEKAMER_PATH;
 }
 
-type MetricNav = { kind: "cases" } | { kind: "issue"; issue: IssueFilter };
-
-const PHASE_LABELS: Record<string, string> = {
-  casus: "Casus",
-  samenvatting: "Samenvatting",
-  matching: "Matching",
-  gemeente_validatie: "Gemeente validatie",
-  aanbieder_beoordeling: "Aanbieder beoordeling",
-  plaatsing: "Plaatsing",
-  intake: "Intake",
-};
-
-/** Canonieke keten voor doorloop-funnel (Regiekamer). */
-const FLOW_PIPELINE_PHASES: PhaseFilter[] = [
-  "casus",
-  "samenvatting",
-  "matching",
-  "gemeente_validatie",
-  "aanbieder_beoordeling",
-  "plaatsing",
-  "intake",
-];
+function itemMatchesPhaseFilter(itemPhase: string, phaseFilter: PhaseFilter): boolean {
+  if (phaseFilter === "all") {
+    return true;
+  }
+  if (isDecisionUiPhaseId(phaseFilter)) {
+    return mapApiPhaseToDecisionUiPhase(itemPhase) === phaseFilter;
+  }
+  return itemPhase === phaseFilter;
+}
 
 /** NBA action codes from API → korte Nederlandse label voor Regiekamer (alleen weergave). */
 const NBA_ACTION_CODE_LABELS: Record<string, string> = {
-  COMPLETE_CASE_DATA: "Casusgegevens aanvullen",
-  GENERATE_SUMMARY: "Samenvatting genereren",
+  COMPLETE_CASE_DATA: "Vul casus aan",
+  GENERATE_SUMMARY: "Vul casus aan",
   START_MATCHING: "Matching starten",
   VALIDATE_MATCHING: "Matching valideren",
   SEND_TO_PROVIDER: "Naar aanbieder sturen",
@@ -200,7 +239,7 @@ const PRIORITY_LABELS: Record<PriorityFilter, string> = {
   all: "Alles",
   critical: "Kritiek",
   high: "Hoog",
-  medium: "Middel",
+  medium: "Gemiddeld",
 };
 
 const ISSUE_LABELS: Record<IssueFilter, string> = {
@@ -240,7 +279,7 @@ function priorityLabel(score: number): string {
     case "high":
       return "Hoog";
     case "medium":
-      return "Middel";
+      return "Gemiddeld";
     default:
       return "Laag";
   }
@@ -273,12 +312,210 @@ function severityBadgeClasses(severity?: string | null) {
   }
 }
 
+function phaseCardIcon(phase: RegiekamerFlowPhase) {
+  switch (phase) {
+    case "casus_gestart":
+      return FolderOpen;
+    case "klaar_voor_matching":
+      return Users;
+    case "in_beoordeling":
+      return UserCheck;
+    case "plaatsing_intake":
+      return Home;
+    default:
+      return FileText;
+  }
+}
+
+function renderQuickPhaseIcon(phase: RegiekamerFlowPhase) {
+  const Icon = phaseCardIcon(phase);
+  return <Icon size={16} className="text-muted-foreground" aria-hidden />;
+}
+
+type PhaseBoardDetail = {
+  label: string;
+  tone: "blocked" | "waiting" | "ready" | "in_progress";
+};
+
+function phaseBoardDetails(phase: RegiekamerFlowPhase): PhaseBoardDetail[] {
+  switch (phase) {
+    case "casus_gestart":
+      return [
+        { label: "Geblokkeerd", tone: "blocked" },
+      ];
+    case "klaar_voor_matching":
+      return [{ label: "Klaar", tone: "ready" }];
+    case "in_beoordeling":
+      return [{ label: "Wacht", tone: "waiting" }];
+    case "plaatsing_intake":
+      return [{ label: "Lopend", tone: "in_progress" }];
+    default:
+      return [];
+  }
+}
+
+function phasePillClasses(tone: PhaseBoardDetail["tone"]): string {
+  switch (tone) {
+    case "blocked":
+      return "border-red-500/35 bg-red-500/10 text-red-100";
+    case "waiting":
+      return "border-amber-500/35 bg-amber-500/10 text-amber-100";
+    case "ready":
+      return "border-sky-500/35 bg-sky-500/10 text-sky-100";
+    case "in_progress":
+      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-100";
+    default:
+      return "border-border bg-muted/30 text-foreground";
+  }
+}
+
 function imperativeCtaLabel(item: RegiekamerDecisionOverviewItem): string | null {
   const nba = item.next_best_action;
   if (!nba) {
     return null;
   }
   return imperativeLabelForActionCode(nba.action, nba.label);
+}
+
+function summaryWorkflowState(item: RegiekamerDecisionOverviewItem): {
+  statusLabel: string;
+  actionLabel: string | null;
+  processing: boolean;
+} | null {
+  const blockerCode = item.top_blocker?.code?.toUpperCase() ?? "";
+  const actionCode = item.next_best_action?.action?.toUpperCase() ?? "";
+  const summaryRelated =
+    blockerCode === "MISSING_SUMMARY" ||
+    actionCode === "GENERATE_SUMMARY" ||
+    actionCode === "VIEW_SUMMARY";
+  if (!summaryRelated) {
+    return null;
+  }
+
+  const summaryText = [
+    item.top_blocker?.message,
+    item.top_blocker?.title,
+    item.top_alert?.message,
+    item.top_alert?.title,
+    item.next_best_action?.reason,
+    item.next_best_action?.label,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(" ")
+    .toLowerCase();
+
+  const processing = /(wordt|wacht op).*(gemaakt|verwerkt)|automatisch|verwerking/.test(summaryText);
+  if (processing) {
+    return {
+      statusLabel: "Samenvatting wordt automatisch verwerkt",
+      actionLabel: null,
+      processing: true,
+    };
+  }
+
+  if (actionCode === "VIEW_SUMMARY") {
+    return {
+      statusLabel: "Samenvatting gereed",
+      actionLabel: null,
+      processing: false,
+    };
+  }
+
+  return {
+    statusLabel: "Casusgegevens onvolledig",
+    actionLabel: "Vul casus aan",
+    processing: false,
+  };
+}
+
+function normalizeWorklistActionLabel(item: RegiekamerDecisionOverviewItem, label: string | null): string | null {
+  if (!label) {
+    return null;
+  }
+  const actionCode = (item.next_best_action?.action ?? "").toUpperCase();
+  const summaryState = summaryWorkflowState(item);
+  const lower = label.toLowerCase();
+  const summaryRelated = lower.includes("samenvatting") || actionCode === "GENERATE_SUMMARY";
+
+  if (summaryState?.processing) {
+    return null;
+  }
+  if (summaryState) {
+    if (summaryState.actionLabel == null) {
+      return null;
+    }
+    return summaryState.actionLabel;
+  }
+  if (actionCode === "START_MATCHING") {
+    return "Start matching";
+  }
+  if (actionCode === "VALIDATE_MATCHING") {
+    return "Beoordeel matches";
+  }
+  if (actionCode === "SEND_TO_PROVIDER") {
+    return "Stuur naar aanbieder";
+  }
+  if (actionCode === "WAIT_PROVIDER_RESPONSE" || actionCode === "FOLLOW_UP_PROVIDER") {
+    return "Volg aanbieder op";
+  }
+  if (actionCode === "PROVIDER_REQUEST_INFO") {
+    return "Vraag informatie op";
+  }
+  if (actionCode === "CONFIRM_PLACEMENT") {
+    return "Rond plaatsing af";
+  }
+  if (actionCode === "START_INTAKE") {
+    return "Plan intake";
+  }
+  if (actionCode === "MONITOR_CASE") {
+    return "Bekijk status";
+  }
+  if (summaryRelated) {
+    return "Vul casus aan";
+  }
+
+  if (lower.includes("samenvatting")) {
+    return "Vul casus aan";
+  }
+  if (lower.includes("intake") || lower.includes("matching") || lower.includes("start")) {
+    return `Start ${label.replace(/^(start|starten)\s+/i, "").trim()}`.trim();
+  }
+  if (lower.includes("beoord")) {
+    return "Beoordeel casus";
+  }
+  if (lower.startsWith("stuur") || lower.startsWith("volg")) {
+    return "Geef opvolging";
+  }
+  return `Bekijk ${label.replace(/^bekijk\s+/i, "").trim()}`.trim();
+}
+
+function actionableProblemLabel(item: RegiekamerDecisionOverviewItem): string {
+  const code = item.top_blocker?.code ?? item.top_alert?.code ?? item.top_risk?.code ?? "";
+  const nextAction = (item.next_best_action?.action ?? "").toUpperCase();
+  const summaryState = summaryWorkflowState(item);
+  if (summaryState) {
+    return summaryState.statusLabel;
+  }
+  switch (code) {
+    case "MISSING_SUMMARY":
+      return "Casusgegevens onvolledig";
+    case "GEMEENTE_VALIDATION_REQUIRED":
+      return "Matching wacht op gemeente";
+    case "NO_MATCH_AVAILABLE":
+      if (nextAction === "START_MATCHING") {
+        return "Klaar voor matching";
+      }
+      return "🟡 Geen aanbieder toegewezen";
+    case "PROVIDER_REVIEW_PENDING_SLA":
+      return "🟡 Wacht op aanbieder";
+    case "REPEATED_PROVIDER_REJECTIONS":
+      return "🔴 Herhaalde afwijzingen";
+    case "INTAKE_NOT_STARTED":
+    case "INTAKE_DELAYED":
+      return "🟡 Wacht op intake";
+    default:
+      return `🟡 ${getShortReasonLabel(primaryProblemText(item), 28)}`;
+  }
 }
 
 function formatHours(hours: number | null) {
@@ -289,19 +526,6 @@ function formatHours(hours: number | null) {
     return `${Math.round(hours)} uur`;
   }
   return `${Math.round(hours / 24)} dagen`;
-}
-
-function issueText(item: RegiekamerDecisionOverviewItem) {
-  if (item.top_blocker) {
-    return item.top_blocker.message ?? item.top_blocker.title ?? item.top_blocker.code;
-  }
-  if (item.top_risk) {
-    return item.top_risk.message ?? item.top_risk.title ?? item.top_risk.code;
-  }
-  if (item.top_alert) {
-    return item.top_alert.message ?? item.top_alert.title ?? item.top_alert.code;
-  }
-  return "Geen actieve blokkade";
 }
 
 function issueTone(item: RegiekamerDecisionOverviewItem) {
@@ -315,34 +539,6 @@ function issueTone(item: RegiekamerDecisionOverviewItem) {
     return item.top_risk.severity;
   }
   return "low";
-}
-
-function issueTypeLabel(item: RegiekamerDecisionOverviewItem) {
-  if (item.top_blocker) {
-    return "Blokkade";
-  }
-  if (item.top_risk) {
-    return "Risico";
-  }
-  if (item.top_alert) {
-    return "Alert";
-  }
-  return "Status";
-}
-
-/** Decision-system problem class (uppercase, scannable). */
-function issueTypeLabelUpper(item: RegiekamerDecisionOverviewItem): string {
-  const t = issueTypeLabel(item);
-  if (t === "Blokkade") {
-    return "BLOKKADE";
-  }
-  if (t === "Risico") {
-    return "RISICO";
-  }
-  if (t === "Alert") {
-    return "ALERT";
-  }
-  return "STATUS";
 }
 
 function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
@@ -367,48 +563,12 @@ function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
   if (item.top_risk?.title) {
     return item.top_risk.title;
   }
-  return "Geen expliciet signaal vastgelegd; open detail om te controleren.";
-}
-
-function impactLine(item: RegiekamerDecisionOverviewItem): string {
-  const hours = item.hours_in_current_state;
-  const urg = (item.urgency || "").toLowerCase();
-  const parts: string[] = [];
-  if (hours != null && !Number.isNaN(hours) && hours >= 168) {
-    parts.push(`Casus staat al ${formatHours(hours)} in dezelfde stap; doorlooptijd loopt vast.`);
-  } else if (hours != null && !Number.isNaN(hours) && hours >= 72) {
-    parts.push(`Langere stilstand (${formatHours(hours)}) vergroot vertragingsrisico.`);
-  } else if (hours != null && !Number.isNaN(hours) && hours >= 24) {
-    parts.push(`Stap duurt ${formatHours(hours)}; bewaak opvolging.`);
-  }
-  if (urg === "critical" || urg === "crisis" || urg === "high") {
-    parts.push("Verhoogde urgentie vraagt snellere regie.");
-  }
-  if (item.priority_score >= 120) {
-    parts.push("Hoge prioriteit in dit overzicht.");
-  }
-  if (parts.length === 0) {
-    return "Geen acute doorloop-impact gemeld; blijf signalen monitoren.";
-  }
-  return parts.join(" ");
+  return "Geen signaal vastgelegd — open de casus.";
 }
 
 function ownerLabel(item: RegiekamerDecisionOverviewItem): string {
   const role = (item.responsible_role ?? "regie") as OwnershipFilter;
   return OWNERSHIP_LABELS[role] ?? "Regie";
-}
-
-function recommendedActionLine(item: RegiekamerDecisionOverviewItem): string {
-  const nba = item.next_best_action;
-  if (nba?.label) {
-    const reason = (nba.reason || "").trim();
-    return reason ? `${nba.label} — ${reason}` : nba.label;
-  }
-  const code = item.top_alert?.recommended_action;
-  if (code) {
-    return NBA_ACTION_CODE_LABELS[code] ?? code;
-  }
-  return "Geen automatische vervolgstap; bekijk casusdetail.";
 }
 
 function matchesIssueFilter(item: RegiekamerDecisionOverviewItem, filter: IssueFilter) {
@@ -425,225 +585,8 @@ function matchesOwnershipFilter(item: RegiekamerDecisionOverviewItem, filter: Ow
   return (item.responsible_role ?? "regie") === filter;
 }
 
-function filterLabelFromItem(item: RegiekamerDecisionOverviewItem) {
-  const responsibleRole = item.responsible_role ?? "regie";
-  const nextAction = item.next_best_action?.label ?? "Geen vervolgstap";
-  return `${OWNERSHIP_LABELS[responsibleRole]} · ${nextAction}`;
-}
-
-function metricNavForItemKey(key: string): MetricNav {
-  if (key === "cases") {
-    return { kind: "cases" };
-  }
-  if (key === "blockers") {
-    return { kind: "issue", issue: "blockers" };
-  }
-  if (key === "alerts") {
-    return { kind: "issue", issue: "alerts" };
-  }
-  if (key === "sla") {
-    return { kind: "issue", issue: "SLA" };
-  }
-  if (key === "rejections") {
-    return { kind: "issue", issue: "rejection" };
-  }
-  if (key === "intake") {
-    return { kind: "issue", issue: "intake" };
-  }
-  return { kind: "issue", issue: "all" };
-}
-
-function countByPhase(items: RegiekamerDecisionOverviewItem[]): Record<string, number> {
-  const m: Record<string, number> = {};
-  for (const it of items) {
-    const p = (it.phase || "").trim() || "onbekend";
-    m[p] = (m[p] ?? 0) + 1;
-  }
-  return m;
-}
-
-function dominantFlowPhase(
-  items: RegiekamerDecisionOverviewItem[],
-): { phase: PhaseFilter; count: number; label: string } | null {
-  if (items.length === 0) {
-    return null;
-  }
-  const counts = countByPhase(items);
-  let best: PhaseFilter | "onbekend" = "casus";
-  let bestN = -1;
-  for (const ph of FLOW_PIPELINE_PHASES) {
-    const n = counts[ph] ?? 0;
-    if (n > bestN) {
-      bestN = n;
-      best = ph;
-    }
-  }
-  if (bestN <= 0) {
-    return null;
-  }
-  return { phase: best as PhaseFilter, count: bestN, label: PHASE_LABELS[best] ?? best };
-}
-
-function failureShareLines(items: RegiekamerDecisionOverviewItem[]): { label: string; pct: number }[] {
-  if (items.length === 0) {
-    return [];
-  }
-  const total = items.length;
-  const rows = FLOW_PIPELINE_PHASES.map((ph) => ({
-    label: PHASE_LABELS[ph] ?? ph,
-    pct: Math.round(((countByPhase(items)[ph] ?? 0) / total) * 100),
-  })).sort((a, b) => b.pct - a.pct);
-  return rows.filter((r) => r.pct > 0).slice(0, 3);
-}
-
-function dominantMetricKey(totals: {
-  critical_blockers: number;
-  high_priority_alerts: number;
-  provider_sla_breaches: number;
-  intake_delays: number;
-  repeated_rejections: number;
-}): string | null {
-  if (totals.critical_blockers > 0) {
-    return "blockers";
-  }
-  if (totals.high_priority_alerts > 0) {
-    return "alerts";
-  }
-  if (totals.provider_sla_breaches > 0) {
-    return "sla";
-  }
-  if (totals.intake_delays > 0) {
-    return "intake";
-  }
-  if (totals.repeated_rejections > 0) {
-    return "rejections";
-  }
-  return null;
-}
-
 /** UI-only Regiekamer modes — computed via `computeRegiekamerNextBestAction` (deterministic). */
 export type RegiekamerUiMode = RegiekamerNbaUiMode;
-
-const FLOW_CHAIN_LABEL =
-  "Casus → Samenvatting → Matching → Gemeente validatie → Aanbieder beoordeling → Plaatsing → Intake";
-
-function CompactMetricStrip({
-  totals,
-  onMetricNavigate,
-}: {
-  totals: {
-    active_cases: number;
-    critical_blockers: number;
-    high_priority_alerts: number;
-    provider_sla_breaches: number;
-    intake_delays: number;
-  };
-  onMetricNavigate: (nav: MetricNav) => void;
-}) {
-  const dom = dominantMetricKey({
-    critical_blockers: totals.critical_blockers,
-    high_priority_alerts: totals.high_priority_alerts,
-    provider_sla_breaches: totals.provider_sla_breaches,
-    intake_delays: totals.intake_delays,
-    repeated_rejections: 0,
-  });
-  type MetricTone = "neutral" | "critical" | "warning" | "success";
-  const slaBreaches = totals.provider_sla_breaches;
-  const items: Array<{
-    key: string;
-    testId: string;
-    label: string;
-    value: string | number;
-    tone: MetricTone;
-    dominant: boolean;
-  }> = [
-    {
-      key: "cases",
-      testId: "regiekamer-summary-active",
-      label: "Actief",
-      value: totals.active_cases,
-      tone: "neutral",
-      dominant: false,
-    },
-    {
-      key: "blockers",
-      testId: "regiekamer-summary-critical",
-      label: "Geblokkeerd",
-      value: totals.critical_blockers,
-      tone: totals.critical_blockers > 0 ? "critical" : "neutral",
-      dominant: dom === "blockers",
-    },
-    {
-      key: "alerts",
-      testId: "regiekamer-summary-alerts",
-      label: "Risico's",
-      value: totals.high_priority_alerts,
-      tone: totals.high_priority_alerts > 0 ? "warning" : "neutral",
-      dominant: dom === "alerts",
-    },
-    {
-      key: "sla",
-      testId: "regiekamer-summary-sla",
-      label: "SLA",
-      value: slaBreaches === 0 ? "OK" : `${slaBreaches} te laat`,
-      tone: slaBreaches === 0 ? "success" : "warning",
-      dominant: dom === "sla",
-    },
-    {
-      key: "intake",
-      testId: "regiekamer-summary-intake",
-      label: "Intake vertraagd",
-      value: totals.intake_delays,
-      tone: totals.intake_delays > 0 ? "warning" : "neutral",
-      dominant: dom === "intake",
-    },
-  ];
-
-  const toneClass = (tone: MetricTone) => {
-    if (tone === "critical") {
-      return "border-red-500/25 bg-red-500/[0.07] text-red-100/95";
-    }
-    if (tone === "warning") {
-      return "border-amber-500/25 bg-amber-500/[0.07] text-amber-100/95";
-    }
-    if (tone === "success") {
-      return "border-emerald-500/25 bg-emerald-500/[0.07] text-emerald-100/95";
-    }
-    return "border-border/50 bg-muted/10 text-foreground";
-  };
-
-  return (
-    <section data-testid="metric-strip" data-density="compact" className="w-full rounded-xl border border-border/50 bg-card/50 p-2">
-      <p className="sr-only">
-        Filters op het overzicht. Elke tegel past het casuslijst-filter aan of opent de werkvoorraad bij Actief.
-      </p>
-      <div className="grid w-full grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-5">
-        {items.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            data-testid={item.testId}
-            data-metric-supports-dominant={item.dominant ? "true" : undefined}
-            aria-label={`Filter: ${item.label}, waarde ${item.value}.`}
-            onClick={() => {
-              onMetricNavigate(metricNavForItemKey(item.key));
-            }}
-            className={cn(
-              "flex h-11 w-full min-w-0 cursor-pointer flex-col items-stretch justify-center gap-0.5 rounded-lg border px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 sm:px-3",
-              toneClass(item.tone),
-              item.dominant && "border-l-2 border-l-primary/55 pl-2",
-            )}
-          >
-            <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{item.label}</span>
-            <span className="truncate text-right text-[15px] font-semibold tabular-nums leading-none">
-              {item.value}
-            </span>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function searchText(item: RegiekamerDecisionOverviewItem) {
   return [
@@ -663,8 +606,14 @@ function searchText(item: RegiekamerDecisionOverviewItem) {
     .toLowerCase();
 }
 
-export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwarenessPageProps) {
+export function SystemAwarenessPage({
+  onCaseClick,
+  onAppNavigate,
+  canCreateCase = false,
+  onCreateCase,
+}: SystemAwarenessPageProps) {
   const { data, loading, error, refetch } = useRegiekamerDecisionOverview();
+  const { me } = useCurrentUser();
   const initialFromUrl = readFiltersFromUrl();
   const [searchQuery, setSearchQuery] = useState(initialFromUrl.searchQuery);
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>(initialFromUrl.priorityFilter);
@@ -672,8 +621,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   const [phaseFilter, setPhaseFilter] = useState<PhaseFilter>(initialFromUrl.phaseFilter);
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>(initialFromUrl.ownershipFilter);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
-  const [deepDiveOpen, setDeepDiveOpen] = useState(false);
-  const [regieActionsExpanded, setRegieActionsExpanded] = useState(false);
+  const [railSheetOpen, setRailSheetOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -712,29 +660,32 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     return () => window.removeEventListener("popstate", onPop);
   }, []);
 
-  const handleMetricNavigate = useCallback(
-    (nav: MetricNav) => {
-      if (nav.kind === "cases") {
-        onAppNavigate?.("/casussen");
-        return;
-      }
-      setIssueFilter(nav.issue);
-      if (typeof window === "undefined") {
-        return;
-      }
-      if (!isRegiekamerPath(window.location.pathname)) {
-        return;
-      }
-      const next = buildRegiekamerUrl({
-        searchQuery,
-        priorityFilter,
-        issueFilter: nav.issue,
-        phaseFilter,
-        ownershipFilter,
-      });
-      window.history.pushState(window.history.state, "", next);
+  const applyListFilterSnapshot = useCallback(
+    (snapshot: RegiekamerListFilter) => {
+      setSearchQuery("");
+      setPriorityFilter((snapshot.priority === "all" ? "all" : snapshot.priority) as PriorityFilter);
+      setIssueFilter(snapshot.issue as IssueFilter);
+      setPhaseFilter(snapshot.phase as PhaseFilter);
+      setOwnershipFilter("all");
     },
-    [onAppNavigate, ownershipFilter, phaseFilter, priorityFilter, searchQuery],
+    [],
+  );
+
+  const applyPhaseBoardFilter = useCallback(
+    (phase: RegiekamerFlowPhase) => {
+      applyListFilterSnapshot({ issue: "all", phase, priority: "all" });
+      if (typeof window !== "undefined" && isRegiekamerPath(window.location.pathname)) {
+        const next = buildRegiekamerUrl({
+          searchQuery: "",
+          priorityFilter: "all",
+          issueFilter: "all",
+          phaseFilter: phase as PhaseFilter,
+          ownershipFilter: "all",
+        });
+        window.history.pushState(window.history.state, "", next);
+      }
+    },
+    [applyListFilterSnapshot],
   );
 
   const visibleItems = useMemo(() => {
@@ -749,7 +700,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
         if (priorityFilter !== "all" && priorityBand(item.priority_score) !== priorityFilter) {
           return false;
         }
-        if (phaseFilter !== "all" && item.phase !== phaseFilter) {
+        if (!itemMatchesPhaseFilter(item.phase, phaseFilter)) {
           return false;
         }
         if (!matchesIssueFilter(item, issueFilter)) {
@@ -771,7 +722,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       });
   }, [data?.items, issueFilter, ownershipFilter, phaseFilter, priorityFilter, searchQuery]);
 
-  const generatedAtLabel = useMemo(() => {
+  const lastUpdateLabel = useMemo(() => {
     if (!data?.generated_at) {
       return "";
     }
@@ -781,20 +732,64 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       return "";
     }
 
-    const datePart = new Intl.DateTimeFormat("nl-NL", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    }).format(date);
+    const now = new Date();
+    const isToday =
+      date.getDate() === now.getDate()
+      && date.getMonth() === now.getMonth()
+      && date.getFullYear() === now.getFullYear();
     const timePart = new Intl.DateTimeFormat("nl-NL", {
       hour: "2-digit",
       minute: "2-digit",
       hour12: false,
     }).format(date);
-    return `${datePart}, ${timePart}`;
+    if (isToday) {
+      return `Laatste update: vandaag ${timePart}`;
+    }
+    const datePart = new Intl.DateTimeFormat("nl-NL", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(date);
+    return `Laatste update: ${datePart} ${timePart}`;
   }, [data?.generated_at]);
 
-  const hasAnySignals = Boolean(data?.items?.some((item) => item.priority_score > 0));
+  const avgDoorloopDays = useMemo(() => {
+    const items = data?.items ?? [];
+    if (items.length === 0) {
+      return 0;
+    }
+    const sumHours = items.reduce((acc, row) => acc + (row.age_hours ?? 0), 0);
+    return Math.max(1, Math.round(sumHours / items.length / 24));
+  }, [data?.items]);
+
+  const slaRiskTotal = useMemo(() => {
+    const t = data?.totals;
+    if (!t) {
+      return 0;
+    }
+    return Math.max(0, (t.provider_sla_breaches ?? 0) + (t.high_priority_alerts ?? 0));
+  }, [data?.totals]);
+
+  const gemeenteDisplayName = me?.organization?.name?.trim() || "Gemeente";
+
+  const applyCriticalDrillFilter = useCallback(() => {
+    setPriorityFilter("critical");
+    setIssueFilter("blockers");
+    setPhaseFilter("all");
+    setOwnershipFilter("all");
+    setSearchQuery("");
+    if (typeof window !== "undefined" && isRegiekamerPath(window.location.pathname)) {
+      const next = buildRegiekamerUrl({
+        searchQuery: "",
+        priorityFilter: "critical",
+        issueFilter: "blockers",
+        phaseFilter: "all",
+        ownershipFilter: "all",
+      });
+      window.history.pushState(window.history.state, "", next);
+    }
+  }, []);
+
   const hasActiveData = (data?.totals.active_cases ?? 0) > 0;
   const filtersActive =
     searchQuery.trim() !== "" ||
@@ -802,8 +797,6 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     issueFilter !== "all" ||
     phaseFilter !== "all" ||
     ownershipFilter !== "all";
-  const urgentItems = visibleItems.filter((item) => item.urgency === "critical" || item.urgency === "warning");
-  const calmerItems = visibleItems.filter((item) => item.urgency !== "critical" && item.urgency !== "warning");
   const criticalBlockers = data?.totals.critical_blockers ?? 0;
   const highPriorityAlerts = data?.totals.high_priority_alerts ?? 0;
   const providerSlaBreaches = data?.totals.provider_sla_breaches ?? 0;
@@ -819,9 +812,9 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       ).length,
     [allOverviewItems],
   );
-  const failureLines = useMemo(() => failureShareLines(allOverviewItems), [allOverviewItems]);
-  const flowHotspot = useMemo(() => dominantFlowPhase(allOverviewItems), [allOverviewItems]);
-  const phaseCountsMap = useMemo(() => countByPhase(allOverviewItems), [allOverviewItems]);
+  const phaseBoardColumns = useMemo(() => derivePhaseBoard(allOverviewItems, 3), [allOverviewItems]);
+  const dominantPhaseColumn = useMemo(() => getDominantPhaseColumn(phaseBoardColumns), [phaseBoardColumns]);
+
   const noMatchDrillItems = useMemo(
     () =>
       allOverviewItems.filter(
@@ -880,7 +873,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     setSearchQuery("");
     setPriorityFilter("all");
     setIssueFilter("SLA");
-    setPhaseFilter("aanbieder_beoordeling");
+    setPhaseFilter("in_beoordeling");
     setOwnershipFilter("all");
   }, []);
 
@@ -888,7 +881,7 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     setSearchQuery("");
     setPriorityFilter("all");
     setIssueFilter("alerts");
-    setPhaseFilter("matching");
+    setPhaseFilter("klaar_voor_matching");
     setOwnershipFilter("all");
   }, []);
 
@@ -1002,98 +995,16 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
     );
   }, [hasActiveData, regiekamerNba, uiMode]);
 
-  const emitInsightOpened = useCallback(() => {
-    emitRegiekamerNbaEvent(
-      "nba_insight_opened",
-      buildRegiekamerNbaInstrumentationPayload({
-        actionKey: regiekamerNba.primaryAction.actionKey,
-        uiMode,
-        reasonCount: regiekamerNba.reasons.length,
-      }),
-    );
-  }, [regiekamerNba, uiMode]);
-
-  const onInsightWhyToggle = useCallback(
-    (e: ToggleEvent<HTMLDetailsElement>) => {
-      if (!e.currentTarget.open) {
-        return;
-      }
-      emitInsightOpened();
-    },
-    [emitInsightOpened],
-  );
-
-  const onInsightFlowToggle = useCallback(
-    (e: ToggleEvent<HTMLDetailsElement>) => {
-      if (!e.currentTarget.open) {
-        return;
-      }
-      emitInsightOpened();
-    },
-    [emitInsightOpened],
-  );
-
   const dominantPanelDescription = formatRegiekamerDominantDescription(regiekamerNba);
-
-  const showInsightSections = uiMode === "stable" || uiMode === "optimization";
-
-  const insightWhyBullets = useMemo(() => {
-    const bullets: string[] = [];
-    for (const row of failureLines) {
-      bullets.push(`${row.pct}% van de casussen staat in ${row.label}.`);
-    }
-    return bullets.slice(0, 3);
-  }, [failureLines]);
-
-  const regieActionDefs = useMemo(() => {
-    const rows: { key: string; title: string; cta: string; onClick: () => void }[] = [];
-    if (uiMode === "crisis") {
-      return rows;
-    }
-    if (uiMode === "intervention") {
-      rows.push({
-        key: "align-dominant",
-        title: "Zelfde prioriteit als het paneel hierboven",
-        cta: regiekamerNba.primaryAction.label,
-        onClick: runModePrimary,
-      });
-      if (regiekamerNba.secondaryAction) {
-        rows.push({
-          key: "align-secondary",
-          title: "Alternatieve vervolgstap",
-          cta: regiekamerNba.secondaryAction.label,
-          onClick: runModeSecondary,
-        });
-      }
-      return rows;
-    }
-    if (uiMode === "stable") {
-      rows.push({
-        key: "stock",
-        title: "Open de werkvoorraad voor detail en prioriteit",
-        cta: "Prioriteer werkvoorraad",
-        onClick: () => onAppNavigate?.("/casussen"),
-      });
-      return rows;
-    }
-    rows.push({
-      key: "reports",
-      title: "Rapportages en trends voor ketenverbetering",
-      cta: "Analyseer doorstroom",
-      onClick: () => onAppNavigate?.("/rapportages"),
-    });
-    rows.push({
-      key: "stock",
-      title: "Casussen blijven de bron voor dagelijkse regie",
-      cta: "Prioriteer werkvoorraad",
-      onClick: () => onAppNavigate?.("/casussen"),
-    });
-    return rows;
-  }, [onAppNavigate, regiekamerNba.primaryAction.label, regiekamerNba.secondaryAction, runModePrimary, runModeSecondary, uiMode]);
-
-  const regieVisibleCap = regieActionsExpanded ? 3 : 2;
-  const regieVisibleActions = regieActionDefs.slice(0, regieVisibleCap);
-  const regieHasMore = regieActionDefs.length > regieVisibleCap;
+  const dominantMetric = Math.max(criticalBlockers, regiekamerNba.panel.linkCount || criticalBlockers);
+  const dominantAlertTitle = uiMode === "crisis" ? "Kritieke blokkades actief" : regiekamerNba.title;
+  const gemeenteActieLine =
+    dominantMetric === 1 ? "1 casus — gemeentelijke actie nodig" : `${dominantMetric} casussen — gemeentelijke actie nodig`;
+  const dominantAlertDescription =
+    uiMode === "crisis" ? gemeenteActieLine : dominantPanelDescription;
+  const dominantPrimaryLabel = regiekamerNba.primaryAction.label;
+  const dominantSecondaryLabel = regiekamerNba.secondaryAction?.label;
+  const dominantCasesLinkLabel = uiMode === "crisis" ? "Bekijk kritieke casussen" : "Open werkvoorraad";
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -1104,258 +1015,185 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
   };
 
   return (
-    <CarePageScaffold
-      archetype="decision"
-      className="pb-8"
-      title={<span className="inline-flex items-center gap-2"><Siren size={16} className="text-primary" />Regiekamer</span>}
-      subtitle="Waar moet je nu ingrijpen? Alleen signalen die regie-actie vragen."
-      actions={(
-        <>
-          <Button variant="outline" onClick={refetch} className="gap-2">
-            <RefreshCw size={14} />
-            Ververs
-          </Button>
-          {generatedAtLabel && <p className="text-xs text-muted-foreground">Bijgewerkt op {generatedAtLabel}</p>}
-          {filtersActive && (
-            <Button variant="ghost" onClick={clearFilters} className="gap-2">
-              Filters wissen
-            </Button>
+    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-10">
+      <div className="min-w-0 flex-1">
+        <CarePageScaffold
+          archetype="decision"
+          className="pb-8"
+          title={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              Regiekamer
+              <CareInfoPopover ariaLabel="Uitleg Regiekamer" testId="regiekamer-page-info">
+                <div className="space-y-2 text-muted-foreground">
+                  <p>
+                    De Regiekamer prioriteert blokkades, eigenaarschap en de eerstvolgende veilige stap — niet losse
+                    statistieken.
+                  </p>
+                  <p>Overzicht van wat aandacht nodig heeft en hoe de stroom verloopt.</p>
+                </div>
+              </CareInfoPopover>
+            </span>
+          }
+          actions={(
+            <div className="flex flex-col items-start gap-1 md:items-end">
+              <div className="flex flex-wrap items-center gap-2">
+                {filtersActive && (
+                  <Button variant="outline" onClick={clearFilters} className="gap-2">
+                    Wis filters
+                  </Button>
+                )}
+                <Button variant="outline" onClick={refetch} className="gap-2">
+                  <RefreshCw size={14} />
+                  Ververs
+                </Button>
+              </div>
+              {lastUpdateLabel ? (
+                <p className="text-xs text-muted-foreground">{lastUpdateLabel}</p>
+              ) : null}
+            </div>
           )}
-        </>
-      )}
-      dominantAction={
-        <div className={SECTION_STACK_CLASS}>
+          dominantAction={
+            <div className="space-y-3">
           {hasActiveData && (
-            <DominantActionPanel
-              tone={regiekamerNba.panel.tone}
-              title={regiekamerNba.title}
-              description={dominantPanelDescription}
-              primaryAction={{
-                label: regiekamerNba.primaryAction.label,
-                onClick: runModePrimary,
-                testId: "regiekamer-dominant-primary-cta",
-              }}
+            <CareAlertCard
+              testId="regiekamer-dominant-action"
+              data-regiekamer-mode={uiMode}
+              className="shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]"
+              tone={
+                regiekamerNba.panel.tone === "urgent"
+                  ? "critical"
+                  : regiekamerNba.panel.tone === "attention"
+                    ? "warning"
+                    : "info"
+              }
+              icon={<AlertCircle size={24} />}
+              metric={dominantMetric}
+              title={dominantAlertTitle}
+              description={dominantAlertDescription}
+              supportingLink={
+                regiekamerNba.panel.showCasesLink && regiekamerNba.panel.linkCount > 0 ? (
+                  <button
+                    type="button"
+                    className="text-left text-sm font-medium text-primary underline-offset-4 hover:underline"
+                    onClick={applyModeCasesLink}
+                    data-testid="regiekamer-dominant-cases-link"
+                    >
+                    {dominantCasesLinkLabel} ({regiekamerNba.panel.linkCount})
+                  </button>
+                ) : undefined
+              }
+              primaryAction={
+                <Button
+                  type="button"
+                  size="lg"
+                  className="h-11 rounded-xl px-5 text-[14px] font-semibold shadow-md"
+                  onClick={runModePrimary}
+                  data-testid="regiekamer-dominant-primary-cta"
+                >
+                  {dominantPrimaryLabel}
+                  <ChevronRight size={16} className="ml-2" aria-hidden />
+                </Button>
+              }
               secondaryAction={
-                regiekamerNba.secondaryAction
-                  ? {
-                      label: regiekamerNba.secondaryAction.label,
-                      onClick: runModeSecondary,
-                      testId: "regiekamer-dominant-secondary-cta",
-                    }
-                  : undefined
+                regiekamerNba.secondaryAction ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    className="h-11 rounded-xl border-border/70 px-5 text-[14px]"
+                    onClick={runModeSecondary}
+                    data-testid="regiekamer-dominant-secondary-cta"
+                  >
+                    {dominantSecondaryLabel}
+                  </Button>
+                ) : undefined
               }
-              supplementalLink={
-                regiekamerNba.panel.showCasesLink && regiekamerNba.panel.linkCount > 0
-                  ? {
-                      label: `Toon gefilterde casussen (${regiekamerNba.panel.linkCount})`,
-                      onClick: applyModeCasesLink,
-                      testId: "regiekamer-dominant-cases-link",
-                    }
-                  : undefined
-              }
-              panelTestId="regiekamer-dominant-action"
-              rootDataset={{ "data-regiekamer-mode": uiMode }}
             />
           )}
 
-          <CompactMetricStrip
-            totals={{
-              active_cases: data?.totals.active_cases ?? 0,
-              critical_blockers: criticalBlockers,
-              high_priority_alerts: highPriorityAlerts,
-              provider_sla_breaches: providerSlaBreaches,
-              intake_delays: data?.totals.intake_delays ?? 0,
-            }}
-            onMetricNavigate={handleMetricNavigate}
-          />
-
-          {hasActiveData && allOverviewItems.length > 0 && showInsightSections && (
-            <>
-              <details
-                data-testid="regiekamer-insight-why"
-                className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
-                onToggle={onInsightWhyToggle}
+          {hasActiveData &&
+            criticalBlockers === 0 &&
+            providerSlaBreaches === 0 &&
+            intakeDelaysTotal === 0 &&
+            (data?.totals.repeated_rejections ?? 0) === 0 &&
+            noMatchUrgentCount === 0 &&
+            highPriorityAlerts === 0 && (
+              <div
+                data-testid="regiekamer-calm-state"
+                className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-foreground"
               >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
-                  Waarom gebeurt dit?
-                  <ChevronDown size={18} className="shrink-0 text-muted-foreground transition-transform" aria-hidden />
-                </summary>
-                <div className="border-t border-border/40 px-4 pb-4 pt-3">
-                  {insightWhyBullets.length > 0 ? (
-                    <ul className="list-disc space-y-1.5 pl-4 text-sm leading-snug text-foreground/95">
-                      {insightWhyBullets.map((line) => (
-                        <li key={line}>{line}</li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Geen aanvullende verdeling beschikbaar.</p>
-                  )}
-                  {flowHotspot && flowHotspot.count > 0 && (
-                    <p className="mt-3 text-sm font-medium leading-snug text-foreground">
-                      Grootste knelpunt: {flowHotspot.label}
-                      {flowHotspot.phase === "aanbieder_beoordeling"
-                        ? " — casussen blijven hangen vóór beoordeling (wacht op aanbieder)."
-                        : ` — ${flowHotspot.count} casussen in deze fase.`}
-                    </p>
-                  )}
-                </div>
-              </details>
-
-              <details
-                data-testid="regiekamer-insight-flow"
-                className="rounded-xl border border-border/50 bg-card/35 open:[&_summary_svg]:rotate-180"
-                onToggle={onInsightFlowToggle}
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-semibold text-foreground [&::-webkit-details-marker]:hidden">
-                  Bekijk doorloop in de keten
-                  <ChevronDown size={18} className="shrink-0 text-muted-foreground transition-transform" aria-hidden />
-                </summary>
-                <div className="border-t border-border/40 px-4 pb-4 pt-3">
-                  <p className="text-xs leading-relaxed text-muted-foreground">{FLOW_CHAIN_LABEL}</p>
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {FLOW_PIPELINE_PHASES.map((ph) => {
-                      const n = phaseCountsMap[ph] ?? 0;
-                      return (
-                        <div
-                          key={ph}
-                          className="flex min-w-[3.75rem] flex-1 flex-col items-center rounded-md border border-border/50 bg-background/30 px-1.5 py-1.5 text-center"
-                        >
-                          <span className="text-base font-bold tabular-nums leading-none text-foreground">{n}</span>
-                          <span className="mt-0.5 line-clamp-2 text-[9px] font-semibold uppercase leading-tight text-muted-foreground">
-                            {PHASE_LABELS[ph] ?? ph}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </details>
-            </>
-          )}
-
-          {hasActiveData && uiMode !== "crisis" && regieVisibleActions.length > 0 && (
-            <section
-              data-testid="regiekamer-action-queue"
-              className="rounded-xl border border-border/50 bg-card/30 px-4 py-3"
-            >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-                Regie-acties nu
-              </p>
-              <ol className="mt-2 space-y-2.5 text-sm text-foreground">
-                {regieVisibleActions.map((row, idx) => (
-                  <li
-                    key={row.key}
-                    className={cn(
-                      "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between",
-                      idx < regieVisibleActions.length - 1 && "border-b border-border/40 pb-2.5",
-                    )}
-                  >
-                    <span>
-                      <span className="font-semibold tabular-nums">{idx + 1}.</span> {row.title}
-                    </span>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      className="h-9 shrink-0 gap-1.5"
-                      data-testid={idx === 0 ? "regiekamer-regie-action-primary" : undefined}
-                      onClick={row.onClick}
-                    >
-                      {row.cta}
-                      <ArrowRight size={14} />
-                    </Button>
-                  </li>
-                ))}
-              </ol>
-              {regieHasMore && (
+                <p className="font-medium">Geen operationele blokkades</p>
+                <p className="mt-1 text-xs text-muted-foreground">Geen spoedsignalen in dit overzicht.</p>
+              </div>
+            )}
+        </div>
+      }
+      kpiStrip={
+        !loading && !error && hasActiveData && allOverviewItems.length > 0 ? (
+          <CareSection testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
+            <CareSectionHeader
+              title="De regiestroom"
+              action={
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  data-testid="regiekamer-regie-actions-more"
-                  className="mt-2 h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  onClick={() => setRegieActionsExpanded((current) => !current)}
+                  className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                  onClick={() => onAppNavigate?.("/casussen")}
+                  data-testid="regiekamer-doorstroom-open-werkvoorraad"
                 >
-                  {regieActionsExpanded ? "Minder acties" : "Toon meer acties"}
+                  Bekijk gehele stroom
+                  <ChevronRight size={14} aria-hidden />
                 </Button>
-              )}
-            </section>
-          )}
-        </div>
-      }
-      filters={
-        <CareSearchFiltersBar
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek casus, naam of type..."
-          showSecondaryFilters={showSecondaryFilters}
-          onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-          secondaryFilters={
-            <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                <label className="text-xs text-muted-foreground">
-                  Prioriteit
-                  <select
-                    aria-label="Prioriteit"
-                    value={priorityFilter}
-                    onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-                    className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                  >
-                    {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-xs text-muted-foreground">
-                  Type
-                  <select
-                    aria-label="Type"
-                    value={issueFilter}
-                    onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
-                    className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                  >
-                    {Object.entries(ISSUE_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-xs text-muted-foreground">
-                  Fase
-                  <select
-                    aria-label="Fase"
-                    value={phaseFilter}
-                    onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
-                    className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                  >
-                    <option value="all">Alles</option>
-                    {Object.entries(PHASE_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="text-xs text-muted-foreground">
-                  Rol
-                  <select
-                    aria-label="Rol"
-                    value={ownershipFilter}
-                    onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
-                    className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                  >
-                    {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            }
-        />
+              }
+            />
+            <CareSectionBody>
+              <CareFlowBoard testId="regiekamer-flow-board" variant="pipeline">
+                {phaseBoardColumns.map((col) => {
+                  const isBottleneck =
+                    dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
+                  const Icon = phaseCardIcon(col.phase);
+                  const details = phaseBoardDetails(col.phase);
+                  const status = details[0];
+                  return (
+                    <div key={col.phase} className="relative">
+                      <CareFlowStepCard
+                        testId={`regiekamer-phase-column-${col.phase}`}
+                        onClick={() => applyPhaseBoardFilter(col.phase)}
+                        active={isBottleneck}
+                        icon={<Icon size={18} className="text-current" />}
+                        metric={col.count}
+                        title={col.label}
+                        subStatusLines={
+                          status
+                            ? [
+                              <span
+                                key={`${col.phase}-status`}
+                                className={cn(
+                                  "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
+                                  phasePillClasses(status.tone),
+                                )}
+                              >
+                                {status.label}
+                              </span>,
+                            ]
+                            : []
+                        }
+                      />
+                    </div>
+                  );
+                })}
+              </CareFlowBoard>
+            </CareSectionBody>
+          </CareSection>
+        ) : undefined
       }
     >
       {loading && (
-        <CareEmptyState title="Regiekamer laden…" copy="Overzicht wordt opgebouwd." />
+        <LoadingState title="Regiekamer laden…" copy="Gegevens worden geladen." />
       )}
 
       {!loading && error && (
-        <CareEmptyState
+        <ErrorState
           title="Regiekamer kon niet worden geladen"
           copy={error}
           action={<Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>}
@@ -1363,11 +1201,28 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
       )}
 
       {!loading && !error && !hasActiveData && (
-        <CareEmptyState
+        <EmptyState
           title="Geen actieve casussen."
-          copy="Zodra er casussen zijn, verschijnen ze hier met signalen en volgende stappen. Open de werkvoorraad om bestaande dossiers te bekijken of nieuwe regie op te pakken."
+          copy={
+            canCreateCase && onCreateCase
+              ? "Open de werkvoorraad voor bestaande dossiers of maak een nieuwe casus aan."
+              : "Open de werkvoorraad voor bestaande dossiers of wacht op nieuwe casussen."
+          }
           action={
-            onAppNavigate ? (
+            canCreateCase && onCreateCase && onAppNavigate ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <PrimaryActionButton type="button" onClick={onCreateCase}>
+                  Nieuwe casus
+                </PrimaryActionButton>
+                <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
+                  Open casussen
+                </Button>
+              </div>
+            ) : canCreateCase && onCreateCase ? (
+              <PrimaryActionButton type="button" onClick={onCreateCase}>
+                Nieuwe casus
+              </PrimaryActionButton>
+            ) : onAppNavigate ? (
               <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
                 Open casussen
               </Button>
@@ -1376,161 +1231,452 @@ export function SystemAwarenessPage({ onCaseClick, onAppNavigate }: SystemAwaren
         />
       )}
 
-      {!loading && !error && hasActiveData && !hasAnySignals && (
-        <CareEmptyState
-          title="Geen signalen."
-          copy="Er zijn actieve casussen, maar geen regie-signalen op dit moment. Controleer de werkvoorraad voor detail, prioriteit en volgende stappen in de keten."
-          action={
-            onAppNavigate ? (
-              <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
-                Prioriteer werkvoorraad
-              </Button>
-            ) : undefined
-          }
-        />
-      )}
-
-      {!loading && !error && hasActiveData && hasAnySignals && visibleItems.length === 0 && (
-        <CareEmptyState
-          title="Geen casussen."
-          copy="Pas filters aan."
-          action={<Button variant="outline" onClick={clearFilters}>Filters wissen</Button>}
+      {!loading &&
+        !error &&
+        hasActiveData &&
+        visibleItems.length === 0 &&
+        (data?.items?.length ?? 0) > 0 && (
+        <EmptyState
+          title="Geen casussen in dit filter."
+          copy="Wis filters of kies een andere stap."
+          action={<Button variant="outline" onClick={clearFilters}>Wis filters</Button>}
         />
       )}
 
       {!loading && !error && visibleItems.length > 0 && (
-        <div className="space-y-4 px-1">
-          {/* 5 — Verdieping: geen-match casussen (optioneel) */}
-          {noMatchDrillItems.length > 0 && (
-            <section className="rounded-xl border border-border/70 bg-card/30 px-3 py-3">
-              <button
-                type="button"
-                className="flex w-full items-center justify-between gap-2 text-left"
-                onClick={() => setDeepDiveOpen(o => !o)}
-                aria-expanded={deepDiveOpen}
-              >
-                <span className="text-sm font-semibold text-foreground">
-                  Verdieping: casussen zonder match (hoog urgent) ({noMatchDrillItems.length})
+        <CareSection testId="regiekamer-uitvoerlijst" aria-labelledby="regiekamer-uitvoerlijst-heading">
+          <CareSectionHeader
+            title={
+              <span id="regiekamer-uitvoerlijst-heading" className="flex flex-wrap items-baseline gap-3">
+                <span>Werkvoorraad</span>
+                <span className="text-base font-medium tabular-nums text-muted-foreground">
+                  {visibleItems.length} casussen
                 </span>
-                {deepDiveOpen ? <ChevronUp size={18} className="shrink-0 text-muted-foreground" /> : <ChevronDown size={18} className="shrink-0 text-muted-foreground" />}
-              </button>
-              {deepDiveOpen && (
-                <div className="mt-3 space-y-3 border-t border-border/60 pt-3">
-                  <ul className="space-y-2 text-sm text-foreground/90">
-                    {noMatchDrillItems.slice(0, 12).map((item) => (
-                      <li key={String(item.case_id)} className="flex flex-wrap items-baseline gap-x-2">
-                        <button
-                          type="button"
-                          className="font-mono text-xs font-semibold text-primary hover:underline"
-                          onClick={() => onCaseClick(String(item.case_id))}
+              </span>
+            }
+            meta={
+              <div className="w-full min-w-0">
+                <CareSearchFiltersBar
+                  className="px-0"
+                  searchValue={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Zoek casussen, cliënten, aanbieders…"
+                  showSecondaryFilters={showSecondaryFilters}
+                  onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+                  secondaryFiltersLabel="Filters"
+                  secondaryFilters={(
+                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
+                      <label className="text-xs text-muted-foreground">
+                        Prioriteit
+                        <select
+                          aria-label="Prioriteit"
+                          value={priorityFilter}
+                          onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
+                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
-                          {item.case_reference}
-                        </button>
-                        <span className="text-muted-foreground">→</span>
-                        <span className="min-w-0">{primaryProblemText(item)}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-xs text-amber-100/95">
-                    <span className="font-semibold">Aanbeveling: </span>
-                    verruim regio of herzie zorgtype; controleer capaciteit en escaleer bij herhaalde afwijzingen.
-                  </div>
+                          {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Type
+                        <select
+                          aria-label="Type"
+                          value={issueFilter}
+                          onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
+                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        >
+                          {Object.entries(ISSUE_LABELS).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Stap
+                        <select
+                          aria-label="Stap in de keten"
+                          value={phaseFilter}
+                          onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
+                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        >
+                          <option value="all">Alles</option>
+                          {DECISION_UI_PHASE_IDS.map((id) => (
+                            <option key={id} value={id}>{DECISION_UI_PHASE_LABELS[id]}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="text-xs text-muted-foreground">
+                        Rol
+                        <select
+                          aria-label="Rol"
+                          value={ownershipFilter}
+                          onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
+                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        >
+                          {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
+                            <option key={key} value={key}>{label}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  )}
+                />
+              </div>
+            }
+          />
+          <CareSectionBody>
+            <CareWorkListCard
+              header={(
+                <div className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
+                  <span>Prioriteit</span>
+                  <span>Casus</span>
+                  <span>Blokkade / aandacht</span>
+                  <span>Eigenaar</span>
+                  <span>Wachttijd</span>
+                  <span>Volgende actie</span>
                 </div>
               )}
-            </section>
-          )}
-
-          {urgentItems.length > 0 && (
-            <section className="space-y-1.5">
-              <h2 className="text-[15px] font-semibold tracking-tight">Direct actie nodig ({urgentItems.length})</h2>
-              <div className="space-y-1.5">
-                {urgentItems.map((item) => (
-                  <RegiekamerWorkItemCard key={item.case_id} item={item} onCaseClick={onCaseClick} urgent />
+            >
+              <div className="divide-y divide-border/45">
+                {visibleItems.map((item) => (
+                  <RegiekamerWorkItemCard
+                    key={item.case_id}
+                    item={item}
+                    onCaseClick={onCaseClick}
+                  />
                 ))}
               </div>
-            </section>
-          )}
-
-          {calmerItems.length > 0 && (
-            <section className="space-y-1.5">
-              <h2 className="text-[15px] font-semibold">Casussen in behandeling ({calmerItems.length})</h2>
-              <div className="space-y-1.5">
-                {calmerItems.map((item) => (
-                  <RegiekamerWorkItemCard key={item.case_id} item={item} onCaseClick={onCaseClick} />
-                ))}
+            </CareWorkListCard>
+            {onAppNavigate ? (
+              <div className="flex justify-center pt-5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => onAppNavigate("/casussen")}
+                  data-testid="regiekamer-bekijk-alle-casussen"
+                >
+                  Bekijk alle {visibleItems.length} casussen
+                  <ChevronDown size={16} aria-hidden />
+                </Button>
               </div>
-            </section>
-          )}
-        </div>
+            ) : null}
+          </CareSectionBody>
+        </CareSection>
       )}
-    </CarePageScaffold>
+        </CarePageScaffold>
+      </div>
+
+      {!loading && !error && hasActiveData ? (
+        <>
+          <aside
+            data-testid="regiekamer-right-rail"
+            className="hidden w-[300px] shrink-0 space-y-4 pt-1 xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
+            style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
+          >
+            <RegiekamerInsightsPanels
+              gemeenteDisplayName={gemeenteDisplayName}
+              activeCasesTotal={activeCasesTotal}
+              avgDoorloopDays={avgDoorloopDays}
+              slaRiskTotal={slaRiskTotal}
+              criticalBlockers={criticalBlockers}
+              phaseBoardColumns={phaseBoardColumns}
+              onCriticalClick={applyCriticalDrillFilter}
+              onPhaseClick={applyPhaseBoardFilter}
+              onNavigateCasussen={() => {
+                onAppNavigate?.("/casussen");
+              }}
+            />
+          </aside>
+
+          <div className="contents xl:hidden">
+            <Button
+              type="button"
+              variant="default"
+              size="lg"
+              className="fixed right-5 z-40 h-12 gap-2 rounded-full px-5 shadow-lg md:right-6"
+              style={{
+                bottom: "max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem))",
+              }}
+              aria-expanded={railSheetOpen}
+              aria-controls="regiekamer-rail-sheet"
+              data-testid="regiekamer-rail-open"
+              onClick={() => setRailSheetOpen(true)}
+            >
+              <PanelRight size={18} aria-hidden />
+              Regie-paneel
+            </Button>
+
+            <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
+              <SheetContent
+                id="regiekamer-rail-sheet"
+                side="right"
+                data-testid="regiekamer-rail-sheet"
+                className="flex w-full max-w-md flex-col gap-0 border-border/60 p-0 sm:max-w-md"
+              >
+                <SheetHeader className="shrink-0 space-y-1 border-b border-border/50 px-4 py-4">
+                  <SheetTitle>Regie-paneel</SheetTitle>
+                  <SheetDescription className="sr-only">
+                    Regie-overzicht, snelle filters en notities voor deze pagina.
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+                  <div className="space-y-4">
+                    <RegiekamerInsightsPanels
+                      gemeenteDisplayName={gemeenteDisplayName}
+                      activeCasesTotal={activeCasesTotal}
+                      avgDoorloopDays={avgDoorloopDays}
+                      slaRiskTotal={slaRiskTotal}
+                      criticalBlockers={criticalBlockers}
+                      phaseBoardColumns={phaseBoardColumns}
+                      onCriticalClick={applyCriticalDrillFilter}
+                      onPhaseClick={applyPhaseBoardFilter}
+                      onNavigateCasussen={() => {
+                        onAppNavigate?.("/casussen");
+                      }}
+                      onAfterAction={() => setRailSheetOpen(false)}
+                    />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+function RegiekamerInsightsPanels({
+  gemeenteDisplayName,
+  activeCasesTotal,
+  avgDoorloopDays,
+  slaRiskTotal,
+  criticalBlockers,
+  phaseBoardColumns,
+  onCriticalClick,
+  onPhaseClick,
+  onNavigateCasussen,
+  onAfterAction,
+}: {
+  gemeenteDisplayName: string;
+  activeCasesTotal: number;
+  avgDoorloopDays: number;
+  slaRiskTotal: number;
+  criticalBlockers: number;
+  phaseBoardColumns: PhaseBoardColumn[];
+  onCriticalClick: () => void;
+  onPhaseClick: (phase: RegiekamerFlowPhase) => void;
+  onNavigateCasussen: () => void;
+  onAfterAction?: () => void;
+}) {
+  const done = onAfterAction;
+
+  return (
+    <>
+      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background/40">
+            <Building2 size={18} className="text-primary" aria-hidden />
+          </div>
+          <div className="min-w-0 space-y-3">
+            <p className="text-sm font-semibold leading-tight text-foreground">{gemeenteDisplayName}</p>
+            <dl className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Actieve casussen</dt>
+                <dd className="tabular-nums font-semibold text-foreground">{activeCasesTotal}</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Gem. doorlooptijd</dt>
+                <dd className="tabular-nums font-semibold text-foreground">{avgDoorloopDays} dagen</dd>
+              </div>
+              <div className="flex justify-between gap-3">
+                <dt className="text-muted-foreground">Doorlooptijd {'>'} SLA</dt>
+                <dd className={cn("tabular-nums font-semibold", slaRiskTotal > 0 ? "text-red-400" : "text-foreground")}>
+                  {slaRiskTotal}
+                </dd>
+              </div>
+            </dl>
+            <button
+              type="button"
+              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
+              onClick={() => {
+                onNavigateCasussen();
+                done?.();
+              }}
+              data-testid="regiekamer-bekijk-regiemetrics"
+            >
+              Bekijk regiemetrics
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Snel naar</p>
+        <ul className="mt-3 space-y-2">
+          <li>
+            <button
+              type="button"
+              data-testid="regiekamer-quick-critical"
+              onClick={() => {
+                onCriticalClick();
+                done?.();
+              }}
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+            >
+              <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
+                Kritieke casussen
+              </span>
+              <span className="tabular-nums font-semibold text-foreground">{criticalBlockers}</span>
+            </button>
+          </li>
+          {phaseBoardColumns.map((col) => (
+            <li key={col.phase}>
+              <button
+                type="button"
+                data-testid={`regiekamer-quick-phase-${col.phase}`}
+                onClick={() => {
+                  onPhaseClick(col.phase);
+                  done?.();
+                }}
+                className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+              >
+                <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                  <span className="shrink-0 opacity-90">{renderQuickPhaseIcon(col.phase)}</span>
+                  <span className="truncate">{col.label}</span>
+                </span>
+                <span className="tabular-nums font-semibold text-foreground">{col.count}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          className="mt-3 w-full text-left text-sm font-semibold text-primary underline-offset-4 hover:underline"
+          onClick={() => {
+            onNavigateCasussen();
+            done?.();
+          }}
+          data-testid="regiekamer-quick-werkvoorraad-link"
+        >
+          Bekijk werkvoorraad
+        </button>
+      </section>
+
+      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Regie-notitie</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          Leg een regieafspraak of aandachtspunt vast voor je team.
+        </p>
+        <Button variant="outline" className="mt-4 w-full gap-2 rounded-xl border-primary/40 text-primary" type="button">
+          <SquarePen size={16} aria-hidden />
+          Nieuwe notitie
+        </Button>
+      </section>
+    </>
   );
 }
 
 function RegiekamerWorkItemCard({
   item,
   onCaseClick,
-  urgent = false,
 }: {
   item: RegiekamerDecisionOverviewItem;
   onCaseClick: (caseId: string) => void;
-  urgent?: boolean;
 }) {
   const primaryAction = imperativeCtaLabel(item);
-  const hasPrimaryNba = primaryAction != null && primaryAction.trim() !== "";
-  const blockerLine = getShortReasonLabel(primaryProblemText(item), 56);
-  const consequenceLine = getShortReasonLabel(impactLine(item), 110);
+  const normalizedPrimaryAction = normalizeWorklistActionLabel(item, primaryAction);
+  const summaryState = summaryWorkflowState(item);
+  const hasPrimaryNba = normalizedPrimaryAction != null && normalizedPrimaryAction.trim() !== "" && !summaryState?.processing;
+  const blockerDetail = actionableProblemLabel(item);
   return (
-    <CareWorkRow
-      testId="regiekamer-worklist-item"
-      leading={<CanonicalPhaseBadge phaseId={item.phase} />}
-      title={item.title}
-      context={
-        <span className="text-[12px] text-muted-foreground">
-          <span className="font-mono text-[11px] text-muted-foreground/90">{item.case_reference}</span>
-          {" · "}
-          {ownerLabel(item)}
-        </span>
-      }
-      status={
-        <div className="flex max-w-full flex-col gap-1 md:items-center">
-          <span className="text-[10px] font-bold tracking-[0.16em] text-foreground/90">
-            {issueTypeLabelUpper(item)}
-          </span>
-          <p className="max-w-[20rem] text-[11px] font-medium leading-snug text-muted-foreground">
-            {consequenceLine}
-          </p>
-          <CareMetaChip
-            className={cn(
-              "max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
-              severityBadgeClasses(issueTone(item)),
-            )}
-          >
-            <span className="line-clamp-2">{blockerLine}</span>
-          </CareMetaChip>
+    <div
+      data-testid="regiekamer-worklist-item"
+      className={cn(
+        "group grid gap-y-3 gap-x-4 px-4 py-3.5 transition-colors md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:items-center md:px-5",
+        "hover:bg-background/35",
+      )}
+      role="button"
+      tabIndex={0}
+      onClick={() => onCaseClick(String(item.case_id))}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onCaseClick(String(item.case_id));
+        }
+      }}
+      aria-label={`Open casus ${item.title}`}
+    >
+      <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
+        <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", priorityBadgeClasses(item.priority_score))}>
+          {priorityLabel(item.priority_score)}
+        </CareMetaChip>
+      </div>
+
+      <div className="min-w-0">
+        <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.title}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
+          <span className="font-mono text-[11px] text-muted-foreground/80">{item.case_reference}</span>
         </div>
-      }
-      time={
-        <CareMetaChip>
+      </div>
+
+      <div className="min-w-0 space-y-1.5">
+        <CareMetaChip
+          className={cn(
+            "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
+            severityBadgeClasses(issueTone(item)),
+          )}
+        >
+          <span className="line-clamp-2">{blockerDetail}</span>
+        </CareMetaChip>
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-[14px] font-medium leading-tight text-foreground/95">{ownerLabel(item)}</p>
+      </div>
+
+      <div className="md:justify-self-start">
+        <CareMetaChip className="h-8">
           <Clock3 size={12} />
           {formatHours(item.hours_in_current_state)}
         </CareMetaChip>
-      }
-      contextInfo={
-        <CareMetaChip title={item.assigned_provider || "Nog geen aanbieder"} className="opacity-90">
-          <Building2 size={12} />
-          <span className="max-w-[140px] truncate">{item.assigned_provider || "Nog geen aanbieder"}</span>
-        </CareMetaChip>
-      }
-      actionLabel={hasPrimaryNba ? primaryAction! : ""}
-      actionVariant="primary"
-      hideAction={!hasPrimaryNba}
-      onOpen={() => onCaseClick(String(item.case_id))}
-      onAction={(event) => {
-        event.stopPropagation();
-        onCaseClick(String(item.case_id));
-      }}
-      accentTone={urgent ? "critical" : "neutral"}
-    />
+      </div>
+
+      <div className="min-w-0 md:justify-self-start">
+        {summaryState && summaryState.actionLabel == null ? (
+          <CareMetaChip className="h-8 max-w-full whitespace-normal text-left leading-tight">
+            {summaryState.statusLabel}
+          </CareMetaChip>
+        ) : hasPrimaryNba ? (
+          <Button
+            variant="default"
+            size="sm"
+            className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCaseClick(String(item.case_id));
+            }}
+          >
+            <span className="whitespace-nowrap text-center">{normalizedPrimaryAction}</span>
+          </Button>
+        ) : (
+          <Button
+            variant="secondary"
+            size="sm"
+            className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
+            onClick={(event) => {
+              event.stopPropagation();
+              onCaseClick(String(item.case_id));
+            }}
+          >
+            Bekijk casus
+          </Button>
+        )}
+      </div>
+
+    </div>
   );
 }

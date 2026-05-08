@@ -62,7 +62,7 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Board Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-foreground">
@@ -74,7 +74,7 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
       </div>
 
       {/* Kanban Board */}
-      <div className="grid grid-cols-5 gap-4 overflow-x-auto pb-4">
+      <div className="grid grid-cols-5 gap-3 overflow-x-auto pb-4">
         {columns.map(column => {
           const columnCases = getCasesByStatus(column.status);
           const Icon = column.icon;
@@ -119,7 +119,7 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
               {/* Column Cards */}
               <div className="space-y-3">
                 {columnCases.length === 0 ? (
-                  <div className="p-6 rounded-lg border border-dashed border-border bg-muted/20 text-center">
+                  <div className="p-4 rounded-lg border border-dashed border-border bg-muted/20 text-center">
                     <p className="text-sm text-muted-foreground">
                       Geen casussen
                     </p>
@@ -162,7 +162,7 @@ function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
   return (
     <div
       className={`
-        premium-card p-4 cursor-pointer
+        panel-surface p-4 cursor-pointer
         transition-all duration-200 hover:shadow-md
         ${getUrgencyIndicator()}
       `}

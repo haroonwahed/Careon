@@ -1,10 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Building2, ChevronDown, ChevronRight, Loader2, Maximize2, Search, SlidersHorizontal } from "lucide-react";
+import { Building2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
-import { Input } from "../ui/input";
-import { useProviders } from "../../hooks/useProviders";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
+import { cn } from "../ui/utils";
+import { useProviders, type SpaProvider } from "../../hooks/useProviders";
+import { tokens } from "../../design/tokens";
 import { ProviderNetworkMap } from "./ProviderNetworkMap";
+import {
+  CareAttentionBar,
+  CareInfoPopover,
+  CareMetaChip,
+  CarePageScaffold,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
+  CareSearchFiltersBar,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 
 type ProviderSortOption = "best-match" | "shortest-wait" | "most-capacity" | "nearby";
 
@@ -23,12 +39,24 @@ function inferTypeFilterFromCaseType(careType: string): "all" | "residentieel" |
   return "all";
 }
 
+const selectTriggerClass =
+  "border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30";
+
+/** Aligns with CareSection shells — avoids global `.panel-surface` hairlines (hardcoded rgba) stacking with Tailwind borders. */
+const networkResultsShell = "rounded-xl border border-border/55 bg-card/30";
+
 interface ZorgaanbiedersPageProps {
   theme: "light" | "dark";
   activeCaseContext?: ActiveCaseContext | null;
+  /** Shell: opent Matching — knop staat op de kaart bij de geselecteerde marker. */
+  onNavigateToMatching?: () => void;
 }
 
-export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersPageProps) {
+export function ZorgaanbiedersPage({
+  theme,
+  activeCaseContext,
+  onNavigateToMatching,
+}: ZorgaanbiedersPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
@@ -150,7 +178,9 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
   }, [providers]);
 
   const regionOptions = useMemo(() => {
-    const dynamicRegions = Array.from(new Set(providers.map((provider) => provider.region).filter(Boolean))).sort((left, right) => left.localeCompare(right));
+    const dynamicRegions = Array.from(new Set(providers.map((provider) => provider.region).filter(Boolean))).sort((left, right) =>
+      left.localeCompare(right),
+    );
     return ["all", ...dynamicRegions];
   }, [providers]);
 
@@ -167,6 +197,13 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
   const resultHeaderText = hasActiveFilters
     ? `${sortedProviders.length} resultaten voor jouw filters`
     : `${sortedProviders.length} zorgaanbieders beschikbaar`;
+
+  /** Must match `onClick`: clear when filters exist; otherwise narrow to beschikbare capaciteit (no case) or focus beste match (case). */
+  const dominantActionLabel = hasActiveFilters
+    ? "Wis filters"
+    : activeCaseContext
+      ? "Selecteer beste match"
+      : "Selecteer alternatief";
 
   useEffect(() => {
     if (!activeCaseContext) return;
@@ -210,9 +247,9 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
   };
 
   const getCapacityTone = (spots: number) => {
-    if (spots > 2) return "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-900/35 dark:border-emerald-700/50";
-    if (spots > 0) return "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-900/35 dark:border-amber-700/50";
-    return "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-900/35 dark:border-rose-700/50";
+    if (spots > 2) return "text-emerald-700 bg-emerald-500/10 border-emerald-500/30 dark:text-emerald-300";
+    if (spots > 0) return "text-amber-700 bg-amber-500/10 border-amber-500/30 dark:text-amber-300";
+    return "text-rose-700 bg-rose-500/10 border-rose-500/30 dark:text-rose-300";
   };
 
   const getCapacityLabel = (spots: number) => {
@@ -246,229 +283,190 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
     return "Match op basis van zorgvorm en regionale dekking";
   };
 
+  /** Kaart + uitklapdetails — zonder toast (verkennen). */
+  const highlightProviderOnMap = (providerId: string) => {
+    setSelectedProvider(providerId);
+  };
+
+  /** Expliciete koppel-keuze — zelfde state als highlight + bevestiging aan gebruiker. */
+  const confirmProviderSelection = (provider: SpaProvider, event: React.MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
+    setSelectedProvider(provider.id);
+    toast.success(`${provider.name} uitgelicht op de kaart`);
+  };
+
   return (
-      <div className="flex w-full min-w-0 flex-col gap-4 lg:gap-5">
-        <div className="rounded-3xl border border-slate-200 bg-white px-5 py-4 shadow-[0_14px_38px_-30px_rgba(15,23,42,0.45)] sm:px-6 dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Zorgaanbieders</h1>
-              <p className="mt-1 text-sm font-medium text-slate-600 dark:text-slate-300">Selecteer een aanbieder voor deze casus</p>
-              {activeCaseContext && (
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Regio: {activeCaseContext.region} • Zorgtype: {activeCaseContext.careType} • Urgentie: {activeCaseContext.urgency}
-                </p>
-              )}
-            </div>
-
-            {!loading && stats.total > 0 && (
-              <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <strong className="text-slate-800 dark:text-slate-100">{availableCapacityValue}</strong> capaciteit
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                  <strong className="text-slate-800 dark:text-slate-100">{waitDaysLabel}</strong> gem. wachttijd
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-                  <strong className="text-slate-800 dark:text-slate-100">{visibleCountValue}</strong> zichtbaar
-                </span>
-                <span className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-900/35 dark:text-emerald-300">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  <strong>Live</strong> 30s{lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
-                </span>
+    <CarePageScaffold
+      archetype="worklist"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Zorgaanbieders
+          <CareInfoPopover ariaLabel="Uitleg zorgaanbiedersnetwerk" testId="zorgaanbieders-page-info">
+            <p className="text-muted-foreground">
+              Capaciteit en regionale dekking — voorkeur in de keten leg je vast via Matching bij een casus.
+            </p>
+          </CareInfoPopover>
+        </span>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={activeCaseContext ? "info" : "warning"}
+          icon={<Building2 size={16} />}
+          message={
+            activeCaseContext
+              ? `${activeCaseContext.region} · ${activeCaseContext.careType} · ${activeCaseContext.urgency}`
+              : `${sortedProviders.length} aanbieders in beeld · gebruik filters om de volgende actie te vinden`
+          }
+          action={
+            <PrimaryActionButton onClick={hasActiveFilters ? resetFilters : showBestAlternatives}>
+              {dominantActionLabel}
+            </PrimaryActionButton>
+          }
+        />
+      }
+    >
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          meta={
+            <CareMetaChip>
+              {visibleCountValue} zichtbaar · {availableCapacityValue} plekken · {waitDaysLabel}
+              {lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
+            </CareMetaChip>
+          }
+        />
+        <CareSectionBody className="space-y-4">
+          <CareSearchFiltersBar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoeken op naam, specialisatie of regio..."
+            showSecondaryFilters={showFilters}
+            onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
+            secondaryFiltersLabel="Filters"
+            secondaryFilters={
+              <div className="grid grid-cols-1 gap-3 pt-1 md:grid-cols-3">
+                <div>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Regio</label>
+                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                      <SelectValue placeholder="Alle regio's" />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground">
+                      {regionOptions.map((region) => (
+                        <SelectItem
+                          key={region}
+                          className="text-foreground focus:bg-muted focus:text-foreground"
+                          value={region}
+                        >
+                          {region === "all" ? "Alle regio's" : region}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Type zorg</label>
+                  <Select value={selectedType} onValueChange={setSelectedType}>
+                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                      <SelectValue placeholder="Alle types" />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground">
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle types</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="residentieel">Residentieel</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="ambulant">Ambulant</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="dagbehandeling">Dagbehandeling</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="crisis">Crisis</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Capaciteit</label>
+                  <Select value={selectedCapacity} onValueChange={setSelectedCapacity}>
+                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                      <SelectValue placeholder="Alle niveaus" />
+                    </SelectTrigger>
+                    <SelectContent className="border-border bg-card text-foreground">
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle niveaus</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="available">Beschikbaar (3+)</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="limited">Beperkt (1-2)</SelectItem>
+                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="full">Vol</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            )}
+            }
+            rightAction={
+              <>
+                <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProviderSortOption)}>
+                  <SelectTrigger className={cn("h-10 min-w-[170px]", selectTriggerClass)}>
+                    <SelectValue placeholder="Sorteer op" />
+                  </SelectTrigger>
+                  <SelectContent className="border-border bg-card text-foreground">
+                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="best-match">Beste match</SelectItem>
+                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="shortest-wait">Kortste wachttijd</SelectItem>
+                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="most-capacity">Meeste capaciteit</SelectItem>
+                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="nearby">Dichtbij</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-10 shrink-0 border-border"
+                  onClick={() => setMapView((current) => (current === "split" ? "full" : "split"))}
+                >
+                  <Maximize2 size={16} className="mr-2" />
+                  {mapView === "split" ? "Kaart" : "Split view"}
+                </Button>
+              </>
+            }
+          />
+      {mapView === "full" ? (
+        <div className={cn(networkResultsShell, "overflow-hidden")}>
+          <div className="border-b border-border/50 bg-muted/40 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kaartweergave</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Volledige kaartmodus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
+            </p>
+          </div>
+          <div className="h-[calc(100vh-12rem)] min-h-[32rem]">
+            <ProviderNetworkMap
+              providers={sortedProviders}
+              selectedProviderId={selectedProvider}
+              hoveredProviderId={hoveredProvider}
+              onSelectProvider={setSelectedProvider}
+              onNavigateToMatching={onNavigateToMatching}
+              theme={theme}
+            />
           </div>
         </div>
-
-        <div
-          data-testid="zorgaanbieders-filter-panel"
-          className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.35)] sm:p-4 dark:border-slate-800 dark:bg-slate-900"
-        >
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-          <div className="min-w-0 flex-1 rounded-2xl bg-slate-50/85 p-3 dark:bg-slate-800/80">
-            <div className="flex items-center gap-2">
-              <Search className="text-slate-400 dark:text-slate-500" size={18} />
-              <Input
-                type="text"
-                placeholder="Zoek op naam, specialisatie of regio..."
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                className="h-8 border-0 bg-transparent p-0 text-sm text-slate-700 shadow-none focus-visible:ring-0 dark:text-slate-200"
-              />
-            </div>
-          </div>
-
-          <div className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:flex-nowrap">
-            <Button
-              type="button"
-              variant={showFilters ? "default" : "outline"}
-              onClick={() => setShowFilters((current) => !current)}
-              className={`justify-center ${showFilters ? "shadow-sm" : "border-slate-300/70 bg-slate-100/85 text-slate-700 hover:bg-slate-100 dark:border-slate-700/70 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-700"}`}
-            >
-              <SlidersHorizontal size={16} className="mr-2" />
-              Filters
-            </Button>
-
-            <div className="flex items-center gap-2 rounded-xl bg-slate-50 px-2.5 py-1.5 dark:bg-slate-800">
-              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Gesorteerd op:</span>
-              <div className="relative min-w-[170px]">
-                <select
-                  value={sortBy}
-                  onChange={(event) => setSortBy(event.target.value as ProviderSortOption)}
-                  className="w-full appearance-none rounded-lg bg-transparent px-2 py-1 pr-7 text-sm text-slate-700 dark:text-slate-200"
-                >
-                  <option value="best-match">Beste match</option>
-                  <option value="shortest-wait">Kortste wachttijd</option>
-                  <option value="most-capacity">Meeste capaciteit</option>
-                  <option value="nearby">Dichtbij</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-1.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-              </div>
-            </div>
-
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setMapView((current) => (current === "split" ? "full" : "split"))}
-              className="justify-center text-slate-600 hover:bg-slate-100/70 dark:text-slate-300 dark:hover:bg-slate-800/70"
-            >
-              <Maximize2 size={16} className="mr-2" />
-              {mapView === "split" ? "Kaart" : "Split view"}
-            </Button>
-          </div>
-          </div>
-        </div>
-
-        {showFilters && (
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-[0_12px_32px_-28px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-900">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Regio</label>
-                <div className="relative">
-                <select
-                  value={selectedRegion}
-                  onChange={(event) => setSelectedRegion(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
-                >
-                  {regionOptions.map((region) => (
-                    <option key={region} value={region}>
-                      {region === "all" ? "Alle regio's" : region}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Type zorg</label>
-                <div className="relative">
-                <select
-                  value={selectedType}
-                  onChange={(event) => setSelectedType(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <option value="all">Alle types</option>
-                  <option value="residentieel">Residentieel</option>
-                  <option value="ambulant">Ambulant</option>
-                  <option value="dagbehandeling">Dagbehandeling</option>
-                  <option value="crisis">Crisis</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Capaciteit</label>
-                <div className="relative">
-                <select
-                  value={selectedCapacity}
-                  onChange={(event) => setSelectedCapacity(event.target.value)}
-                  className="w-full appearance-none rounded-xl bg-slate-50 px-3 py-2.5 pr-8 text-sm text-slate-700 shadow-[0_1px_0_rgba(15,23,42,0.04)] dark:bg-slate-800 dark:text-slate-200"
-                >
-                  <option value="all">Alle niveaus</option>
-                  <option value="available">Beschikbaar (3+)</option>
-                  <option value="limited">Beperkt (1-2)</option>
-                  <option value="full">Vol</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {mapView === "full" ? (
-          <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_16px_36px_-30px_rgba(15,23,42,0.45)] dark:border-slate-800 dark:bg-slate-900">
-            <div className="border-b border-slate-200 bg-slate-50/90 px-4 py-3 dark:border-slate-800 dark:bg-slate-800/80">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Kaartweergave</p>
-              <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
-                Volledige kaartmodus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
-              </p>
-            </div>
-            <div className="h-[calc(100vh-12rem)] min-h-[32rem]">
-              <ProviderNetworkMap
-                providers={sortedProviders}
-                selectedProviderId={selectedProvider}
-                hoveredProviderId={hoveredProvider}
-                onSelectProvider={setSelectedProvider}
-                theme={theme}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_24px_46px_-34px_rgba(15,23,42,0.42)] sm:p-4 dark:border-slate-800 dark:bg-slate-900">
-            <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(480px,0.92fr)] 2xl:gap-5 2xl:items-start">
-              <div className="order-1 min-w-0 space-y-3 2xl:min-h-[calc(100vh-15rem)] 2xl:overflow-y-auto 2xl:pr-2">
+      ) : (
+          <div className="grid grid-cols-1 gap-4 2xl:grid-cols-[minmax(0,1.08fr)_minmax(480px,0.92fr)] 2xl:gap-4 2xl:items-start">
+            <div className="order-1 min-w-0 space-y-3 2xl:min-h-[calc(100vh-15rem)] 2xl:overflow-y-auto 2xl:pr-2">
               {!loading && !error && (
-                <div className="space-y-1 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-800/80">
-                  <p className="text-2xl font-semibold text-slate-900 dark:text-slate-100">{resultHeaderText}</p>
-                  <p className="text-sm text-slate-500 dark:text-slate-400">Split view toont resultaten links en de kaart rechts.</p>
+                <div className="space-y-1 rounded-xl border border-border/55 bg-muted/25 px-3 py-2.5">
+                  <p className="text-2xl font-semibold text-foreground">{resultHeaderText}</p>
+                  <p className="text-sm text-muted-foreground">Split view toont resultaten links en de kaart rechts.</p>
                 </div>
               )}
 
-              {loading && (
-                <div className="flex min-h-[220px] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  <Loader2 size={16} className="mr-2 animate-spin" />
-                  Aanbieders laden...
-                </div>
-              )}
+              {loading && <LoadingState title="Aanbieders laden…" copy="Het netwerk wordt opgebouwd." />}
 
               {!loading && error && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center dark:border-slate-700 dark:bg-slate-800">
-                  <p className="text-base font-semibold text-foreground">Aanbieders konden niet geladen worden</p>
-                  <p className="mt-2 text-sm text-muted-foreground">{error}</p>
-                  <Button variant="outline" className="mt-4 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600" onClick={refetch}>
-                    Opnieuw proberen
-                  </Button>
-                </div>
+                <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
               )}
 
               {!loading && !error && sortedProviders.length === 0 && (
-                <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center dark:border-slate-700 dark:bg-slate-800">
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-700">
-                    <Building2 size={22} className="text-muted-foreground" />
-                  </div>
-                  <p className="text-lg font-semibold text-foreground">Geen directe match gevonden</p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    {hiddenProvidersCount > 0
-                      ? "Er zijn aanbieders buiten de huidige filters."
-                      : "Er zijn momenteel geen zichtbare aanbieders in deze selectie."}
-                  </p>
-                  <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    <Button onClick={showBestAlternatives}>Toon beste alternatieven</Button>
-                    <Button
-                      variant="outline"
-                      className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-                      onClick={() => (hasActiveFilters ? resetFilters() : setShowFilters(true))}
-                    >
-                      {hasActiveFilters ? "Filters wissen" : "Filters openen"}
-                    </Button>
-                  </div>
-                </div>
+                <EmptyState
+                  title="Geen directe match gevonden"
+                  copy={hiddenProvidersCount > 0 ? "Er zijn aanbieders buiten de huidige filters." : "Er zijn geen zichtbare aanbieders in deze selectie."}
+                  action={
+                    <PrimaryActionButton onClick={hasActiveFilters ? resetFilters : showBestAlternatives}>
+                      {hasActiveFilters ? "Wis filters" : "Selecteer alternatief"}
+                    </PrimaryActionButton>
+                  }
+                />
               )}
 
               {!loading && !error && sortedProviders.length > 0 && (
@@ -482,114 +480,121 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                         key={provider.id}
                         onMouseEnter={() => setHoveredProvider(provider.id)}
                         onMouseLeave={() => setHoveredProvider(null)}
-                        className={`rounded-2xl border bg-white p-3 text-left shadow-[0_8px_24px_-22px_rgba(15,23,42,0.34)] transition-all hover:-translate-y-0.5 hover:border-primary/45 hover:shadow-[0_16px_34px_-24px_rgba(124,92,255,0.28)] dark:bg-slate-800 ${
-                          isSelected ? "border-primary/50 bg-primary-light/30 ring-2 ring-primary/20 dark:bg-primary/20" : "border-slate-200 dark:border-slate-700"
-                        }`}
+                        className={cn(
+                          "rounded-xl border bg-card/35 p-4 text-left transition-colors hover:border-primary/35",
+                          isSelected ? "border-primary/50 bg-primary/5 ring-2 ring-primary/20" : "border-border/60",
+                        )}
                       >
                         <button
                           type="button"
                           aria-label={`Selecteer ${provider.name}`}
                           aria-pressed={isSelected}
-                          onClick={() => setSelectedProvider(provider.id)}
-                          className="w-full rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-800"
+                          onClick={() => highlightProviderOnMap(provider.id)}
+                          className="w-full rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         >
-                        <div className="mb-2.5 flex items-start justify-between gap-3">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <h3 className="text-[15px] font-semibold text-slate-900 dark:text-slate-100">{provider.name}</h3>
-                              {recommendation && (
-                                <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/35 dark:text-violet-300">
-                                  {recommendation}
-                                </span>
-                              )}
+                          <div className="mb-2.5 flex items-start justify-between gap-3">
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h3 className="text-[15px] font-semibold text-foreground">{provider.name}</h3>
+                                {recommendation && (
+                                  <span className="rounded-full border border-primary/35 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
+                                    {recommendation}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-sm text-muted-foreground">{provider.type}</p>
                             </div>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">{provider.type}</p>
-                          </div>
-                          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getCapacityTone(provider.availableSpots)}`}>
-                            {getCapacityLabel(provider.availableSpots)}
-                          </span>
-                        </div>
-
-                        <div className="mb-2.5 flex flex-wrap gap-1.5">
-                          {provider.specializations.slice(0, 3).map((specialization) => (
-                            <span key={specialization} className="rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                              {specialization}
+                            <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${getCapacityTone(provider.availableSpots)}`}>
+                              {getCapacityLabel(provider.availableSpots)}
                             </span>
-                          ))}
-                        </div>
+                          </div>
 
-                        <div className="mb-2.5 rounded-xl border border-violet-200/70 bg-violet-50/70 px-2.5 py-2 text-xs font-medium text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/35 dark:text-violet-300">
-                          {reasoningLine}
-                        </div>
+                          <div className="mb-2.5 flex flex-wrap gap-1.5">
+                            {provider.specializations.slice(0, 3).map((specialization) => (
+                              <span
+                                key={specialization}
+                                className="rounded-full border border-border bg-muted/50 px-2 py-0.5 text-xs text-foreground"
+                              >
+                                {specialization}
+                              </span>
+                            ))}
+                          </div>
 
-                        <div className="grid grid-cols-3 gap-2 border-t border-slate-200 pt-2.5 text-xs dark:border-slate-700">
-                          <div>
-                            <p className="text-slate-500 dark:text-slate-400">Regio</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{provider.region}</p>
+                          <div className="mb-2.5 rounded-xl border border-border/50 bg-muted/35 px-2.5 py-2 text-xs font-medium text-foreground">
+                            {reasoningLine}
                           </div>
-                          <div>
-                            <p className="text-slate-500 dark:text-slate-400">Wachttijd</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{provider.averageWaitDays ?? 0} dgn</p>
+
+                          <div className="grid grid-cols-3 gap-2 border-t border-border/45 pt-2.5 text-xs">
+                            <div>
+                              <p className="text-muted-foreground">Regio</p>
+                              <p className="mt-1 text-sm font-medium text-foreground">{provider.region}</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Wachttijd</p>
+                              <p className="mt-1 text-sm font-medium text-foreground">{provider.averageWaitDays ?? 0} dgn</p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground">Wachtlijst</p>
+                              <p className="mt-1 text-sm font-medium text-foreground">{provider.waitingListLength}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-slate-500 dark:text-slate-400">Wachtlijst</p>
-                            <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{provider.waitingListLength}</p>
-                          </div>
-                        </div>
                         </button>
 
-                        <div className="mt-3 flex gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                        <div className="mt-3 flex gap-2 border-t border-border/45 pt-3">
                           <Button
+                            type="button"
                             size="sm"
                             className="flex-1"
-                            onClick={() => {
-                              setSelectedProvider(provider.id);
-                              toast.success(`${provider.name} geselecteerd voor koppeling`);
-                            }}
+                            onClick={(event) => confirmProviderSelection(provider, event)}
                           >
                             Selecteer
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-200 dark:hover:bg-slate-600"
-                            onClick={() => toast.info(`Profiel van ${provider.name} openen — coming soon`)}
-                          >
-                            Bekijk profiel
                           </Button>
                         </div>
 
                         {isSelected && (
-                          <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+                          <div className="mt-3 space-y-3 border-t border-border/45 pt-3">
                             <div className="grid grid-cols-2 gap-2 text-xs">
                               <div>
-                                <p className="text-slate-500 dark:text-slate-400">Stad</p>
-                                <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">{provider.city || provider.region}</p>
+                                <p className="text-muted-foreground">Stad</p>
+                                <p className="mt-1 font-medium text-foreground">{provider.city || provider.region}</p>
                               </div>
                               <div>
-                                <p className="text-slate-500 dark:text-slate-400">Capaciteit</p>
-                                <p className="mt-1 font-medium text-slate-800 dark:text-slate-200">{provider.currentCapacity} / {provider.maxCapacity} bezet</p>
+                                <p className="text-muted-foreground">Capaciteit</p>
+                                <p className="mt-1 font-medium text-foreground">
+                                  {provider.currentCapacity} / {provider.maxCapacity} bezet
+                                </p>
                               </div>
                             </div>
 
                             {(provider.offersOutpatient || provider.offersDayTreatment || provider.offersResidential || provider.offersCrisis) && (
                               <div>
-                                <p className="mb-1.5 text-xs text-slate-500 dark:text-slate-400">Zorgvormen</p>
+                                <p className="mb-1.5 text-xs text-muted-foreground">Zorgvormen</p>
                                 <div className="flex flex-wrap gap-1.5">
-                                  {provider.offersOutpatient && <span className="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs text-blue-700 dark:border-blue-700/50 dark:bg-blue-900/35 dark:text-blue-300">Ambulant</span>}
-                                  {provider.offersDayTreatment && <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/35 dark:text-violet-300">Dagbehandeling</span>}
-                                  {provider.offersResidential && <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700 dark:border-amber-700/50 dark:bg-amber-900/35 dark:text-amber-300">Residentieel</span>}
-                                  {provider.offersCrisis && <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs text-rose-700 dark:border-rose-700/50 dark:bg-rose-900/35 dark:text-rose-300">Crisis</span>}
+                                  {provider.offersOutpatient && (
+                                    <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground">Ambulant</span>
+                                  )}
+                                  {provider.offersDayTreatment && (
+                                    <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-primary">Dagbehandeling</span>
+                                  )}
+                                  {provider.offersResidential && (
+                                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200">
+                                      Residentieel
+                                    </span>
+                                  )}
+                                  {provider.offersCrisis && (
+                                    <span className="rounded-full border border-destructive/30 bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
+                                      Crisis
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             )}
 
-                            {provider.specialFacilities && (
-                              <p className="text-xs text-muted-foreground">{provider.specialFacilities}</p>
-                            )}
+                            {provider.specialFacilities && <p className="text-xs text-muted-foreground">{provider.specialFacilities}</p>}
 
-                            <p className="rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-700 dark:text-slate-300">
-                              Kaart en kaartmarker zijn gesynchroniseerd met deze selectie.
+                            <p className="rounded-xl border border-border/50 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
+                              Kaart en kaartmarker zijn gesynchroniseerd. Bij een geselecteerde aanbieder verschijnt{" "}
+                              <span className="font-medium text-foreground">Naar Matching</span> op de kaart bij de marker.
                             </p>
                           </div>
                         )}
@@ -598,43 +603,49 @@ export function ZorgaanbiedersPage({ theme, activeCaseContext }: ZorgaanbiedersP
                   })}
                 </div>
               )}
-              </div>
+            </div>
 
-              <div className="order-2 min-w-0 2xl:sticky 2xl:top-6">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/60 dark:border-slate-700 dark:bg-slate-800/65">
-                  <div className="border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-900">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 dark:text-slate-400">Kaartweergave</p>
-                        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">Aanbieders op de kaart</p>
-                      </div>
-                      <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-[11px] font-semibold text-violet-700 dark:border-violet-700/50 dark:bg-violet-900/35 dark:text-violet-300">
-                        Live sync
-                      </span>
+            <div className="order-2 min-w-0 2xl:sticky" style={{ top: tokens.layout.edgeZero }}>
+              <div className={cn(networkResultsShell, "overflow-hidden bg-muted/20")}>
+                <div className="border-b border-border/50 bg-card px-4 py-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kaartweergave</p>
+                      <p className="mt-1 text-sm font-medium text-foreground">Aanbieders op de kaart</p>
                     </div>
-                    <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">Live sync</span>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Split modus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-emerald-700 dark:border-emerald-700/50 dark:bg-emerald-900/35 dark:text-emerald-300">Veel capaciteit</span>
-                      <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-amber-700 dark:border-amber-700/50 dark:bg-amber-900/35 dark:text-amber-300">Beperkt</span>
-                      <span className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-rose-700 dark:border-rose-700/50 dark:bg-rose-900/35 dark:text-rose-300">Vol</span>
-                    </div>
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                    <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-emerald-800 dark:text-emerald-200">
+                      Veel capaciteit
+                    </span>
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-amber-800 dark:text-amber-200">
+                      Beperkt
+                    </span>
+                    <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-rose-800 dark:text-rose-200">
+                      Vol
+                    </span>
                   </div>
-                  <div className="h-[18rem] sm:h-[22rem] 2xl:h-[calc(100vh-11rem)] 2xl:min-h-[33rem]">
-                    <ProviderNetworkMap
-                      providers={sortedProviders}
-                      selectedProviderId={selectedProvider}
-                      hoveredProviderId={hoveredProvider}
-                      onSelectProvider={setSelectedProvider}
-                      theme={theme}
-                    />
-                  </div>
+                </div>
+                <div className="h-[18rem] sm:h-[22rem] 2xl:h-[calc(100vh-11rem)] 2xl:min-h-[33rem]">
+                  <ProviderNetworkMap
+                    providers={sortedProviders}
+                    selectedProviderId={selectedProvider}
+                    hoveredProviderId={hoveredProvider}
+                    onSelectProvider={setSelectedProvider}
+                    onNavigateToMatching={onNavigateToMatching}
+                    theme={theme}
+                  />
                 </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+      )}
+        </CareSectionBody>
+      </CareSection>
+    </CarePageScaffold>
   );
 }

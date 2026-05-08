@@ -42,7 +42,7 @@ export function SimpleCasusCard({
   return (
     <div 
       className={`
-        premium-card p-4 cursor-pointer
+        panel-surface p-4 cursor-pointer
         hover:border-primary/40 transition-all
         group
         ${isSelected ? "ring-2 ring-primary" : ""}

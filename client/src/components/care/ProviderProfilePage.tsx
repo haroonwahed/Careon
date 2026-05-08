@@ -35,6 +35,8 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Provider } from "../../lib/casesData";
+import { tokens } from "../../design/tokens";
+import { CareAttentionBar, CareInfoPopover, CarePageScaffold } from "./CareDesignPrimitives";
 
 // AI Components
 import { 
@@ -82,51 +84,95 @@ export function ProviderProfilePage({
     capacityStatus === "limited" ? "1-2 weken" :
     "2-4 weken";
 
-  return (
-    <div className="min-h-screen bg-background">
-      
-      {/* Top Bar */}
-      <div className="border-b border-border bg-card sticky top-0 z-30">
-        <div className="w-full px-0 py-4">
-          <div className="flex items-center justify-between">
-            <Button 
-              variant="ghost" 
-              onClick={onBack}
-              className="gap-2 hover:bg-primary/10 hover:text-primary"
-            >
-              <ArrowLeft size={16} />
-              {context === "matching" ? "Terug naar matching" : "Terug naar overzicht"}
-            </Button>
+  const matchingMode = context === "matching" && Boolean(onSelectProvider);
+  const attentionTone: "warning" | "info" | "critical" =
+    capacityStatus === "available" ? "info" : capacityStatus === "limited" ? "warning" : "critical";
 
-            {context === "matching" && (
-              <div className="flex items-center gap-3">
-                {caseId && (
-                  <span className="text-sm text-muted-foreground">
-                    Matching voor {caseId}
-                  </span>
-                )}
-                {matchScore && (
-                  <div className="px-3 py-1 rounded-lg border-2 border-green-500/30 bg-green-500/10">
-                    <span className="text-lg font-bold text-green-400">
-                      {matchScore}%
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+  return (
+    <CarePageScaffold
+      archetype="decision"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {provider.name}
+          <CareInfoPopover ariaLabel="Aanbiedercontext" testId="provider-profile-page-info">
+            <p className="text-muted-foreground">
+              {context === "matching" ? `Matching voor ${caseId ?? provider.region}` : `${provider.region} · ${provider.type}`}
+            </p>
+          </CareInfoPopover>
+        </span>
+      }
+      actions={
+        <div className="flex items-center gap-3">
+          {context === "matching" && (
+            <div className="flex items-center gap-3">
+              {caseId && <span className="text-sm text-muted-foreground">Matching voor {caseId}</span>}
+              {matchScore && (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-1">
+                  <span className="text-lg font-bold text-emerald-400">{matchScore}%</span>
+                </div>
+              )}
+            </div>
+          )}
+          <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
+            <ArrowLeft size={16} />
+            {context === "matching" ? "Terug naar matching" : "Terug naar overzicht"}
+          </Button>
+        </div>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={attentionTone}
+          message={
+            capacityStatus === "available"
+              ? `Capaciteit beschikbaar: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
+              : capacityStatus === "limited"
+                ? `Beperkte capaciteit: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
+                : `Wachtlijst actief: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
+          }
+          action={
+            matchingMode ? (
+              <Button className="bg-primary hover:bg-primary/90" onClick={onSelectProvider}>
+                Selecteer aanbieder
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={() => toggleSection("zorgaanbod")}>
+                Bekijk zorgaanbod
+              </Button>
+            )
+          }
+        />
+      }
+      kpiStrip={
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Capaciteit</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">
+              {provider.availableSpots}/{provider.capacity}
+            </p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wachttijd</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{estimatedWaitTime}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Reactietijd</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">Binnen {provider.responseTime} uur</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Score</p>
+            <p className="mt-2 text-2xl font-semibold text-foreground">{provider.rating.toFixed(1)}</p>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="w-full px-0 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      }
+    >
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           
           {/* LEFT COLUMN (2/3) */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-2 lg:col-span-2">
             
             {/* PROVIDER HEADER */}
-            <div className="premium-card p-6">
+            <div className="panel-surface p-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <h1 className="text-3xl font-bold text-foreground mb-2">
@@ -213,7 +259,7 @@ export function ProviderProfilePage({
 
             {/* WHY THIS PROVIDER (DECISION SUPPORT) */}
             {context === "matching" && matchScore && (
-              <div className="premium-card p-6">
+              <div className="panel-surface p-4">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
                   <Target size={20} className="text-primary" />
                   Waarom deze aanbieder?
@@ -249,7 +295,7 @@ export function ProviderProfilePage({
               expanded={expandedSections.includes("zorgaanbod")}
               onToggle={() => toggleSection("zorgaanbod")}
             >
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground mb-2">
                     Type zorg
@@ -315,7 +361,7 @@ export function ProviderProfilePage({
               expanded={expandedSections.includes("doelgroepen")}
               onToggle={() => toggleSection("doelgroepen")}
             >
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground mb-2">
                     Leeftijdsgroepen
@@ -355,7 +401,7 @@ export function ProviderProfilePage({
               expanded={expandedSections.includes("werkwijze")}
               onToggle={() => toggleSection("werkwijze")}
             >
-              <div className="space-y-4">
+              <div className="space-y-2">
                 <div>
                   <h4 className="text-sm font-semibold text-foreground mb-2">
                     Intake proces
@@ -403,16 +449,16 @@ export function ProviderProfilePage({
           </div>
 
           {/* RIGHT COLUMN (SIDEBAR - 1/3) */}
-          <div className="space-y-6">
+          <div className="space-y-2">
             
             {/* CAPACITY & AVAILABILITY */}
-            <div className="premium-card p-5 sticky top-24">
+            <div className="panel-surface p-4 sticky" style={{ top: tokens.layout.edgeZero }}>
               <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <Calendar size={16} />
                 Beschikbaarheid
               </h3>
 
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {/* Current Status */}
                 <div>
                   <p className="text-xs text-muted-foreground mb-1">
@@ -476,7 +522,7 @@ export function ProviderProfilePage({
             </div>
 
             {/* LOCATION */}
-            <div className="premium-card p-5">
+            <div className="panel-surface p-4">
               <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
                 <MapPin size={16} />
                 Locatie
@@ -517,7 +563,7 @@ export function ProviderProfilePage({
             </div>
 
             {/* CONTACT */}
-            <div className="premium-card p-5">
+            <div className="panel-surface p-4">
               <h3 className="text-sm font-bold text-foreground mb-4">
                 Contact & Verwijzing
               </h3>
@@ -567,7 +613,7 @@ export function ProviderProfilePage({
             </div>
 
             {/* DOCUMENTS */}
-            <div className="premium-card p-5">
+            <div className="panel-surface p-4">
               <h3 className="text-sm font-bold text-foreground mb-4">
                 Documenten
               </h3>
@@ -602,18 +648,14 @@ export function ProviderProfilePage({
         </div>
       </div>
 
-      {/* Sticky Bottom Action Bar (Mobile) */}
       {context === "matching" && onSelectProvider && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-card border-t border-border">
-          <Button 
-            className="w-full bg-primary hover:bg-primary/90"
-            onClick={onSelectProvider}
-          >
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 border-t border-border bg-card p-4">
+          <Button className="w-full bg-primary hover:bg-primary/90" onClick={onSelectProvider}>
             Selecteer deze aanbieder
           </Button>
         </div>
       )}
-    </div>
+    </CarePageScaffold>
   );
 }
 
@@ -635,10 +677,10 @@ function CollapsibleSection({
   children 
 }: CollapsibleSectionProps) {
   return (
-    <div className="premium-card overflow-hidden">
+    <div className="panel-surface overflow-hidden">
       <button
         onClick={onToggle}
-        className="w-full p-6 flex items-center justify-between hover:bg-muted/20 transition-colors"
+        className="w-full p-4 flex items-center justify-between hover:bg-muted/20 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="text-primary">{icon}</div>

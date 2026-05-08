@@ -1,4 +1,9 @@
 import { expect, test } from "@playwright/test";
+import {
+  E2E_BASE_URL,
+  pilotSmokePassword,
+  pilotSmokeUsername,
+} from "./pilotEnv";
 
 type ApiResponse<T> = {
   ok: boolean;
@@ -9,10 +14,10 @@ type ApiResponse<T> = {
 
 const ACCEPT_CASE_TITLE = process.env.E2E_ACCEPT_CASE_TITLE || "E2E Pilot Accept Path";
 const REJECT_CASE_TITLE = process.env.E2E_REJECT_CASE_TITLE || "E2E Pilot Reject Path";
-const E2E_PASSWORD = process.env.E2E_PASSWORD || "e2e_pass_123";
-const E2E_USERNAME = process.env.E2E_USERNAME || "e2e_owner";
+const BASE_URL = E2E_BASE_URL;
+const E2E_USERNAME = pilotSmokeUsername();
+const E2E_PASSWORD = pilotSmokePassword();
 const PROVIDER_NAME = process.env.E2E_PROVIDER_NAME || "E2E Provider";
-const BASE_URL = process.env.E2E_BASE_URL || "http://127.0.0.1:8010";
 
 async function apiFetch<T>(
   page: import("@playwright/test").Page,
@@ -104,7 +109,13 @@ async function registerTempUser(page: import("@playwright/test").Page) {
   await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
   await page.getByLabel("Bevestig wachtwoord").fill(password);
   await page.getByRole("button", { name: "Account aanmaken" }).click();
-  await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
+  /** SignUpView logs the user in and redirects to `/dashboard/` (MultiTenantDemo shell). */
+  await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
+  await expect(
+    page.getByTestId("care-sidebar"),
+    "SPA bundle/static shell did not mount. Build SPA and collect static before running pilot E2E. Run ./scripts/prepare_pilot_e2e.sh (docs/E2E_RUNBOOK.md).",
+  ).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
 }
 
 async function loginAs(page: import("@playwright/test").Page, username: string, password: string) {
@@ -114,6 +125,10 @@ async function loginAs(page: import("@playwright/test").Page, username: string, 
   await page.getByLabel("Wachtwoord").fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForLoadState("networkidle");
+  await expect(
+    page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw."),
+    "Login failed. Run ./scripts/prepare_pilot_e2e.sh (seeds e2e_owner); set E2E_SMOKE_PASSWORD / E2E_USERNAME. See docs/E2E_RUNBOOK.md.",
+  ).toHaveCount(0);
 }
 
 async function logout(page: import("@playwright/test").Page) {
@@ -125,7 +140,7 @@ async function logout(page: import("@playwright/test").Page) {
 async function openDashboard(page: import("@playwright/test").Page) {
   await page.goto(new URL("/dashboard/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
-  await expect(page.getByTestId("regiekamer-summary-active")).toBeVisible();
+  await expect(page.getByTestId("care-sidebar")).toBeVisible();
 }
 
 async function openCasus(page: import("@playwright/test").Page, caseTitle: string) {
@@ -195,7 +210,6 @@ test("pilot smoke covers login, register, Regiekamer, and casus detail", async (
   await logout(page);
   await loginAs(page, E2E_USERNAME, E2E_PASSWORD);
   await openDashboard(page);
-  await expect(page.getByTestId("regiekamer-summary-active")).toBeVisible();
 
   const worklistItems = page.getByTestId("regiekamer-worklist-item");
   if (await worklistItems.count()) {

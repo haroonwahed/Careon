@@ -112,7 +112,7 @@ describe("MatchingQueuePage", () => {
     render(<MatchingQueuePage onCaseClick={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Zoek casus, client of regio/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Zoek casussen, cliënten, aanbieders/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vergelijk aanbieders" })).toBeInTheDocument();
     expect(screen.queryByText(/Operatieve aandacht/i)).not.toBeInTheDocument();
   });

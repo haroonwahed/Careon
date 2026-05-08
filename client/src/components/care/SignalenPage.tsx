@@ -3,27 +3,35 @@ import {
   AlertTriangle,
   Info,
   XCircle,
-  Loader2,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
-import { CarePageScaffold } from "./CarePageScaffold";
 import {
   CareDominantStatus,
   CareFilterTabButton,
   CareFilterTabGroup,
+  CareInfoPopover,
   CareMetaChip,
+  CareMetricBadge,
+  CarePageScaffold,
   CarePrimaryList,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
   CareSearchFiltersBar,
   CareWorkRow,
-} from "./CareUnifiedPage";
-import { CareEmptyState } from "./CareSurface";
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useAssessments } from "../../hooks/useAssessments";
 import { useRegions } from "../../hooks/useRegions";
 import { buildWorkflowCases } from "../../lib/workflowUi";
 import type { WorkflowCaseView } from "../../lib/workflowUi";
+import { tokens } from "../../design/tokens";
 
 type SignalSeverity = "critical" | "warning" | "info";
 
@@ -78,6 +86,24 @@ function dominantToneClass(severity: SignalSeverity): string {
   }
 }
 
+/** Statusregel onder de paginatitel — zelfde patroon als Casussen (CareMetricBadge onder titel). */
+function signalenPageMetricLabel(
+  loading: boolean,
+  error: string | null,
+  filteredCount: number,
+  totalSignals: number,
+  filteredCriticalCount: number,
+): string {
+  if (loading) return "Laden…";
+  if (error) return "Lijst niet beschikbaar";
+  if (filteredCount === 0 && totalSignals > 0) {
+    return `Geen resultaat · ${totalSignals} actief in totaal`;
+  }
+  if (totalSignals === 0) return "Geen actieve signalen";
+  if (filteredCount === 1) return `1 signaal in deze weergave · ${filteredCriticalCount} kritiek`;
+  return `${filteredCount} signalen in deze weergave · ${filteredCriticalCount} kritiek`;
+}
+
 function SignalSeverityIcon({ severity }: { severity: SignalSeverity }) {
   switch (severity) {
     case "critical":
@@ -122,7 +148,7 @@ function SignalWorkRow({
       time={
         signal.casusReference ? (
           <CareMetaChip title={signal.casusReference}>
-            <span className="max-w-[200px] truncate">Casus: {signal.casusReference}</span>
+            <span className="truncate" style={{ maxWidth: tokens.layout.chipMeasureWide }}>Casus: {signal.casusReference}</span>
           </CareMetaChip>
         ) : undefined
       }
@@ -323,6 +349,8 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     return haystack.includes(query);
   });
 
+  const filteredCriticalCount = filteredSignals.filter((s) => s.severity === "critical").length;
+
   const runAction = (action: ActionSignal["actions"][number]) => {
     if (action.kind === "open_case") {
       onOpenCase?.(action.caseId);
@@ -334,6 +362,13 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
   const criticalCount = signals.filter((s) => s.severity === "critical").length;
   const warningCount = signals.filter((s) => s.severity === "warning").length;
   const infoCount = signals.filter((s) => s.severity === "info").length;
+  const dominantActionSeverity: SignalSeverity = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : "info";
+  const dominantActionLabel =
+    dominantActionSeverity === "critical"
+      ? "Bekijk kritiek"
+      : dominantActionSeverity === "warning"
+        ? "Bekijk waarschuwingen"
+        : "Bekijk info";
 
   const toggleSeverityFilter = (key: SignalSeverity | "all") => {
     if (key === "all") {
@@ -343,87 +378,117 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     setSelectedSeverity((current) => (current === key ? "all" : key));
   };
 
+  const headerActions =
+    !loading && !error && signals.length > 0 ? (
+      <PrimaryActionButton type="button" onClick={() => toggleSeverityFilter(dominantActionSeverity)}>
+        {dominantActionLabel}
+      </PrimaryActionButton>
+    ) : undefined;
+
   return (
     <CarePageScaffold
       archetype="signal-action"
       className="pb-8"
       title="Signalen"
-      subtitle={`Automatische detectie van problemen en afwijkingen · ${loading ? "…" : `${criticalCount} kritiek · ${warningCount} waarschuwing`}`}
-      filters={
-        <CareSearchFiltersBar
-          tabs={
-            <CareFilterTabGroup aria-label="Ernst signalen">
-              <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
-                Alles
-              </CareFilterTabButton>
-              <CareFilterTabButton
-                selected={selectedSeverity === "critical"}
-                onClick={() => toggleSeverityFilter("critical")}
-              >
-                Kritiek ({loading ? "—" : criticalCount})
-              </CareFilterTabButton>
-              <CareFilterTabButton
-                selected={selectedSeverity === "warning"}
-                onClick={() => toggleSeverityFilter("warning")}
-              >
-                Waarschuwing ({loading ? "—" : warningCount})
-              </CareFilterTabButton>
-              <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
-                Info ({loading ? "—" : infoCount})
-              </CareFilterTabButton>
-            </CareFilterTabGroup>
-          }
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek signalen..."
-          showSecondaryFilters={showSecondaryFilters}
-          onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-          secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
-        />
+      subtitleInfoTestId="signalen-page-uitleg"
+      subtitleAriaLabel="Uitleg signalenoverzicht"
+      subtitle={
+        <>
+          <p className="mb-2 font-semibold text-foreground">Hoe dit overzicht werkt</p>
+          <p>
+            Signalen worden afgeleid van doorlooptijd, capaciteit en casusstatus. Dit is het regie-overzicht; sidebar
+            Acties blijft de aparte takenlijst.
+          </p>
+          <p>Filter op ernst of zoek op tekst; open een rij voor de primaire vervolgstap.</p>
+        </>
       }
+      metric={
+        <span
+          title="Telling voor je huidige tabblad en zoekfilter — geen knop, alleen status."
+          className="inline-flex"
+        >
+          <CareMetricBadge>
+            {signalenPageMetricLabel(loading, error, filteredSignals.length, signals.length, filteredCriticalCount)}
+          </CareMetricBadge>
+        </span>
+      }
+      actions={headerActions}
     >
-      <div className="space-y-3">
-        {loading && (
-          <div className="flex items-center justify-center gap-2 py-12 text-muted-foreground">
-            <Loader2 size={18} className="animate-spin" />
-            <span>Signalen laden…</span>
-          </div>
-        )}
-
-        {error && (
-          <CareEmptyState
-            title="Kon signalen niet laden"
-            copy={error}
-            action={(
-              <Button variant="outline" size="sm" onClick={refetch}>
-                Opnieuw proberen
-              </Button>
-            )}
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          description="Tabbladen filteren op ernst (kritiek, waarschuwing, info). Zoekveld doorzoekt titel en toelichting."
+        />
+        <CareSectionBody className="space-y-3">
+          <CareSearchFiltersBar
+            tabs={
+              <CareFilterTabGroup aria-label="Ernst signalen">
+                <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
+                  Alles
+                </CareFilterTabButton>
+                <CareFilterTabButton
+                  selected={selectedSeverity === "critical"}
+                  onClick={() => toggleSeverityFilter("critical")}
+                >
+                  Kritiek ({loading ? "—" : criticalCount})
+                </CareFilterTabButton>
+                <CareFilterTabButton
+                  selected={selectedSeverity === "warning"}
+                  onClick={() => toggleSeverityFilter("warning")}
+                >
+                  Waarschuwing ({loading ? "—" : warningCount})
+                </CareFilterTabButton>
+                <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
+                  Info ({loading ? "—" : infoCount})
+                </CareFilterTabButton>
+              </CareFilterTabGroup>
+            }
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoek signalen..."
+            showSecondaryFilters={showSecondaryFilters}
+            onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+            secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
           />
-        )}
+          {loading && (
+            <LoadingState title="Signalen laden…" copy="Overzicht wordt opgebouwd." />
+          )}
 
-        {!loading && !error && filteredSignals.length > 0 && (
-          <div data-testid="signalen-worklist">
-            <CarePrimaryList>
-              {filteredSignals.map((signal) => (
-                <SignalWorkRow key={signal.id} signal={signal} onRunAction={runAction} />
-              ))}
-            </CarePrimaryList>
-          </div>
-        )}
+          {!loading && error && (
+            <ErrorState
+              title="Kon signalen niet laden"
+              copy={error}
+              action={(
+                <Button variant="outline" size="sm" onClick={refetch}>
+                  Opnieuw proberen
+                </Button>
+              )}
+            />
+          )}
 
-        {!loading && !error && filteredSignals.length === 0 && (
-          <CareEmptyState
-            title="Geen actieve signalen op dit moment"
-            copy="De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging."
-            action={(
-              <Button className="mt-2" onClick={() => onNavigateToWorkflow?.("casussen")}>
-                Ga naar casussen
-              </Button>
-            )}
-          />
-        )}
-      </div>
+          {!loading && !error && filteredSignals.length > 0 && (
+            <div data-testid="signalen-worklist">
+              <CarePrimaryList>
+                {filteredSignals.map((signal) => (
+                  <SignalWorkRow key={signal.id} signal={signal} onRunAction={runAction} />
+                ))}
+              </CarePrimaryList>
+            </div>
+          )}
+
+          {!loading && !error && filteredSignals.length === 0 && (
+            <EmptyState
+              title="Geen actieve signalen op dit moment"
+              copy="De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging."
+              action={(
+                <PrimaryActionButton className="mt-2" onClick={() => onNavigateToWorkflow?.("casussen")}>
+                  Ga naar casussen
+                </PrimaryActionButton>
+              )}
+            />
+          )}
+        </CareSectionBody>
+      </CareSection>
     </CarePageScaffold>
   );
 }

@@ -8,7 +8,7 @@
  */
 
 import { useState } from "react";
-import { 
+import {
   LayoutDashboard,
   FileText,
   CheckSquare,
@@ -26,8 +26,10 @@ import {
   Users,
   FileCheck,
   MapPinned,
-  CheckCircle
+  CheckCircle,
+  Shield,
 } from "lucide-react";
+import { SPA_DASHBOARD_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 type SurfaceStatus =
@@ -65,7 +67,7 @@ const gemeenteNavigation: NavSection[] = [
         id: "regiekamer",
         label: "Regiekamer",
         icon: LayoutDashboard,
-        href: "/regiekamer",
+        href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
@@ -73,13 +75,6 @@ const gemeenteNavigation: NavSection[] = [
         label: "Casussen",
         icon: FileText,
         href: "/casussen",
-        surfaceStatus: "ACTIVE_PRODUCT",
-      },
-      {
-        id: "matching",
-        label: "Matching",
-        icon: MapPinned,
-        href: "/matching",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
@@ -93,9 +88,16 @@ const gemeenteNavigation: NavSection[] = [
   },
   {
     id: "flow-status",
-    label: "FLOW STATUS",
+    label: "KETEN",
     color: "amber",
     items: [
+      {
+        id: "matching",
+        label: "Matching",
+        icon: MapPinned,
+        href: "/matching",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
       {
         id: "beoordelingen",
         label: "Aanbieder beoordeling",
@@ -125,12 +127,47 @@ const gemeenteNavigation: NavSection[] = [
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
+        id: "gemeenten",
+        label: "Gemeenten",
+        icon: MapPin,
+        href: "/gemeenten",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
         id: "regios",
         label: "Regio's",
         icon: Map,
         href: "/regios",
         surfaceStatus: "ACTIVE_PRODUCT",
       }
+    ]
+  },
+  {
+    id: "beheer",
+    label: "BEHEER",
+    color: "muted",
+    items: [
+      {
+        id: "documenten",
+        label: "Documenten",
+        icon: FolderOpen,
+        href: "/documenten",
+        surfaceStatus: "SUPPORTING_INTERNAL",
+      },
+      {
+        id: "audittrail",
+        label: "Audittrail",
+        icon: History,
+        href: "/audittrail",
+        surfaceStatus: "SUPPORTING_INTERNAL",
+      },
+      {
+        id: "instellingen",
+        label: "Instellingen",
+        icon: Settings,
+        href: "/instellingen",
+        surfaceStatus: "SUPPORTING_INTERNAL",
+      },
     ]
   }
 ];
@@ -181,7 +218,7 @@ const zorgaanbiederNavigation: NavSection[] = [
   }
 ];
 
-// ADMIN - Full access + extras
+// ADMIN — same keten + netwerk coverage as gemeente, plus gebruikers (shell parity with ADMIN_PAGES).
 const adminNavigation: NavSection[] = [
   {
     id: "regie",
@@ -192,7 +229,7 @@ const adminNavigation: NavSection[] = [
         id: "regiekamer",
         label: "Regiekamer",
         icon: LayoutDashboard,
-        href: "/regiekamer",
+        href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
@@ -209,6 +246,34 @@ const adminNavigation: NavSection[] = [
         href: "/acties",
         surfaceStatus: "ACTIVE_PRODUCT",
       }
+    ]
+  },
+  {
+    id: "flow-status",
+    label: "KETEN",
+    color: "amber",
+    items: [
+      {
+        id: "matching",
+        label: "Matching",
+        icon: MapPinned,
+        href: "/matching",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
+        id: "beoordelingen",
+        label: "Aanbieder beoordeling",
+        icon: FileCheck,
+        href: "/beoordelingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
+        id: "plaatsingen",
+        label: "Plaatsingen",
+        icon: CheckCircle,
+        href: "/plaatsingen",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
     ]
   },
   {
@@ -256,21 +321,28 @@ const adminNavigation: NavSection[] = [
         label: "Rapportages",
         icon: BarChart3,
         href: "/rapportages",
-        surfaceStatus: "DEMO_ONLY",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]
   },
   {
     id: "beheer",
     label: "BEHEER",
-    color: "red",
+    color: "muted",
     items: [
+      {
+        id: "documenten",
+        label: "Documenten",
+        icon: FolderOpen,
+        href: "/documenten",
+        surfaceStatus: "SUPPORTING_INTERNAL",
+      },
       {
         id: "gebruikers",
         label: "Gebruikers",
         icon: Users,
         href: "/gebruikers",
-        surfaceStatus: "LEGACY",
+        surfaceStatus: "SUPPORTING_INTERNAL",
       },
       {
         id: "audittrail",
@@ -344,11 +416,16 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
       `}
     >
       {/* LOGO / HEADER */}
-      <div className="h-16 flex items-center justify-between px-5 border-b border-border">
+      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         {!collapsed && (
-          <div>
-            <h1 className="text-lg font-bold text-foreground">Careon</h1>
-            <p className="text-xs text-muted-foreground">Zorgregie</p>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-[0_0_0_1px_rgba(124,92,255,0.05)]">
+              <Shield size={20} />
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-foreground">CareOn</h1>
+              <p className="text-xs text-muted-foreground">Zorg OS</p>
+            </div>
           </div>
         )}
         

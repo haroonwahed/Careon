@@ -14,9 +14,14 @@ export type CarePageScaffoldProps = {
   subtitle?: ReactNode;
   /** Small label above the title row (optional). */
   eyebrow?: ReactNode;
+  titleClassName?: string;
+  subtitleClassName?: string;
+  /** Optional test id for the page subtitle info trigger (when `subtitle` is set). */
+  subtitleInfoTestId?: string;
+  subtitleAriaLabel?: string;
   /** Right column on `CareUnifiedHeader` (refresh, etc.). */
   actions?: ReactNode;
-  /** Inline metric under subtitle (e.g. `CareMetricBadge`) — same as `CareUnifiedHeader.metric`. */
+  /** Status/metric row below the title row (e.g. `CareMetricBadge`) — same as `CareUnifiedHeader.metric`. */
   metric?: ReactNode;
   /** Page-level NBA / attention (e.g. `DominantActionPanel`) — above `kpiStrip`. */
   dominantAction?: ReactNode;
@@ -43,6 +48,10 @@ export function CarePageScaffold({
   title,
   subtitle,
   eyebrow,
+  titleClassName,
+  subtitleClassName,
+  subtitleInfoTestId,
+  subtitleAriaLabel,
   actions,
   metric,
   dominantAction,
@@ -64,7 +73,16 @@ export function CarePageScaffold({
       {eyebrow ? (
         <div className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</div>
       ) : null}
-      <CareUnifiedHeader title={title} subtitle={subtitle} metric={metric} actions={actions} />
+      <CareUnifiedHeader
+        title={title}
+        subtitle={subtitle}
+        metric={metric}
+        actions={actions}
+        titleClassName={titleClassName}
+        subtitleClassName={subtitleClassName}
+        subtitleInfoTestId={subtitleInfoTestId}
+        subtitleAriaLabel={subtitleAriaLabel}
+      />
     </div>
   );
 

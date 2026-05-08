@@ -101,54 +101,59 @@ function manualVendorChunks(id: string) {
       open: true,
       proxy: {
         '/care/api/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
         },
         '/static/css/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
         },
         '/static/js/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
         },
         '/static/spa/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
+          changeOrigin: true,
+          secure: false,
+        },
+        '/oidc/': {
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
         },
         '/logout/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8000',
-            referer: 'http://127.0.0.1:8000/logout/',
+            origin: 'http://127.0.0.1:8010',
+            referer: 'http://127.0.0.1:8010/logout/',
           },
         },
         '/login/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8000',
-            referer: 'http://127.0.0.1:8000/login/',
+            origin: 'http://127.0.0.1:8010',
+            referer: 'http://127.0.0.1:8010/login/',
           },
         },
         '/register/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8000',
-            referer: 'http://127.0.0.1:8000/register/',
+            origin: 'http://127.0.0.1:8010',
+            referer: 'http://127.0.0.1:8010/register/',
           },
         },
         '/settings/': {
-          target: 'http://127.0.0.1:8000',
+          target: 'http://127.0.0.1:8010',
           changeOrigin: true,
           secure: false,
         },

@@ -22,7 +22,7 @@
         <nav class="sidebar-container" id="sidebar">
             <div class="sidebar-shell">
                 <div class="sidebar-brand-block">
-                    <a href="{% url 'dashboard' %}" class="brand-link sidebar-brand-link">
+                    <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="brand-link sidebar-brand-link">
                         <div class="brand-mark-grid" aria-hidden="true">
                             <span class="brand-dot brand-dot-pink"></span>
                             <span class="brand-dot brand-dot-blue"></span>
@@ -37,7 +37,7 @@
                 </div>
 
                 <div class="base-nav-stack">
-                <a href="{% url 'dashboard' %}" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
                     Dashboard
                 </a>

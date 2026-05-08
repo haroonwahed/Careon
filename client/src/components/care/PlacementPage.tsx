@@ -8,6 +8,8 @@ import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { apiClient } from "../../lib/apiClient";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
+import { tokens } from "../../design/tokens";
+import { CareAttentionBar, CareInfoPopover, CarePageScaffold, PrimaryActionButton } from "./CareDesignPrimitives";
 
 interface PlacementPageProps {
   caseId: string;
@@ -96,7 +98,7 @@ export function PlacementPage({
 
   if (casesError || providersError || placementDetailError) {
     return (
-      <div className="premium-card p-6 text-center text-destructive">
+      <div className="panel-surface p-4 text-center text-destructive">
         Kon plaatsingsgegevens niet laden: {casesError ?? providersError ?? placementDetailError}
       </div>
     );
@@ -104,7 +106,7 @@ export function PlacementPage({
 
   if (!caseData || !provider) {
     return (
-      <div className="premium-card p-6 text-center text-muted-foreground">
+      <div className="panel-surface p-4 text-center text-muted-foreground">
         Casus of aanbieder niet gevonden.
       </div>
     );
@@ -198,8 +200,28 @@ export function PlacementPage({
   // Success state
   if (isConfirmed) {
     return (
-      <div className="space-y-6">
-      <div className="premium-card p-12 text-center">
+      <CarePageScaffold
+        archetype="decision"
+        className="pb-8"
+        title={
+          <span className="inline-flex flex-wrap items-center gap-2">
+            Plaatsing
+            <CareInfoPopover ariaLabel="Uitleg plaatsing" testId="placement-confirmed-page-info">
+              <p className="text-muted-foreground">Plaatsing bevestigd. De intake kan nu worden gepland.</p>
+            </CareInfoPopover>
+          </span>
+        }
+        dominantAction={
+          <CareAttentionBar
+            tone="info"
+            icon={<PartyPopper size={16} />}
+            message={`Plaatsing van ${caseData.clientName} is bevestigd`}
+            action={<PrimaryActionButton onClick={onBack}>Terug naar plaatsingen</PrimaryActionButton>}
+          />
+        }
+      >
+      <div className="space-y-3">
+      <div className="panel-surface p-4 text-center">
         <div className="w-24 h-24 rounded-full mx-auto mb-6 flex items-center justify-center border-2 careon-alert-success">
           <PartyPopper size={48} className="text-green-base" />
         </div>
@@ -207,28 +229,28 @@ export function PlacementPage({
           <h1 className="text-3xl font-bold text-foreground mb-3">
             Plaatsing bevestigd
           </h1>
-          <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          <p className="mx-auto mb-8 text-lg text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
             De casus van <strong className="text-foreground">{caseData.clientName}</strong> is 
             door <strong className="text-foreground">{provider.name}</strong> geaccepteerd.
             De intake kan nu worden ingepland vanuit de plaatsingsstap.
           </p>
 
-          <div className="grid grid-cols-3 gap-6 max-w-3xl mx-auto mb-8">
-            <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
+          <div className="mx-auto mb-6 grid grid-cols-3 gap-4" style={{ maxWidth: tokens.layout.contentMeasure }}>
+            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Casus-ID</p>
               <p className="text-xl font-bold text-foreground">{caseData.id}</p>
             </div>
-            <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
+            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Aanbieder</p>
           <p className="text-lg font-bold text-foreground">{provider.name}</p>
             </div>
-            <div className="p-6 rounded-xl bg-muted/30 border border-muted-foreground/20">
+            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
               <p className="text-sm text-muted-foreground mb-2">Status</p>
               <p className="text-lg font-bold text-green-base">Plaatsing bevestigd</p>
             </div>
           </div>
 
-          <div className="p-6 rounded-xl border careon-alert-info mb-8 max-w-2xl mx-auto">
+          <div className="mx-auto mb-6 rounded-xl border careon-alert-info p-4" style={{ maxWidth: tokens.layout.contentMeasure }}>
             <h3 className="text-base font-semibold text-foreground mb-3">
               Volgende stappen
             </h3>
@@ -270,11 +292,53 @@ export function PlacementPage({
           </div>
         </div>
       </div>
+      </CarePageScaffold>
     );
   }
 
   return (
-    <div className="space-y-6 pb-24">
+    <CarePageScaffold
+      archetype="decision"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Plaatsing
+          <CareInfoPopover ariaLabel="Status plaatsing" testId="placement-flow-page-info">
+            <p className="text-muted-foreground">
+              {providerAccepted ? "Plaatsing kan nu worden bevestigd." : "Wacht op akkoord van de aanbieder."}
+            </p>
+          </CareInfoPopover>
+        </span>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={providerAccepted ? "info" : "warning"}
+          icon={<CheckCircle2 size={16} />}
+          message={providerAccepted ? "Alleen bevestigen als de plaatsing klopt" : "Plaatsing volgt pas na akkoord van de aanbieder"}
+          action={
+            <PrimaryActionButton onClick={handleConfirmClick} disabled={!providerAccepted || !allValid || hasErrors}>
+              Bevestig plaatsing
+            </PrimaryActionButton>
+          }
+        />
+      }
+      kpiStrip={
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+          {[
+            { label: "Akkoord", value: providerAccepted ? "Ja" : "Nee", detail: "Van aanbieder" },
+            { label: "Validaties", value: `${validationItems.filter(item => item.status === "complete").length}/${validationItems.length}`, detail: "Klaar voor bevestiging" },
+            { label: "Risico's", value: riskSignals.length, detail: "Aandachtspunten" },
+            { label: "Status", value: isConfirmed ? "Bevestigd" : "Open", detail: "Plaatsing" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.label}</p>
+              <div className="mt-1.5 text-[20px] font-semibold leading-none text-foreground">{item.value}</div>
+              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{item.detail}</p>
+            </div>
+          ))}
+        </div>
+      }
+    >
       {/* Back Button */}
       <button
         onClick={onBack}
@@ -285,8 +349,8 @@ export function PlacementPage({
       </button>
 
       {/* TOP DECISION HEADER */}
-      <div className="premium-card p-6 border-2 border-primary/40">
-        <div className="flex items-start justify-between gap-6">
+      <div className="panel-surface p-4 border-2 border-primary/40">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
@@ -350,10 +414,10 @@ export function PlacementPage({
       </div>
 
       {/* Main Layout: 3 Panels */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-4">
         {/* LEFT PANEL: Case Summary */}
         <div className="col-span-3">
-          <div className="premium-card p-4 sticky top-24">
+      <div className="panel-surface p-4 sticky" style={{ top: tokens.layout.edgeZero }}>
             <h3 className="text-sm font-semibold text-foreground mb-4">
               Samenvatting
             </h3>
@@ -409,7 +473,7 @@ export function PlacementPage({
         </div>
 
         {/* CENTER PANEL: Selected Provider + Validation */}
-        <div className="col-span-6 space-y-6">
+        <div className="col-span-6 space-y-3">
           {/* Selected Provider Card */}
           <SelectedProviderCard
             provider={provider}
@@ -437,7 +501,7 @@ export function PlacementPage({
 
         {/* RIGHT PANEL: Handover Info */}
         <div className="col-span-3">
-          <div className="sticky top-24">
+          <div className="sticky" style={{ top: tokens.layout.edgeZero }}>
             <HandoverInfoPanel riskSignals={riskSignals} />
           </div>
         </div>
@@ -502,8 +566,8 @@ export function PlacementPage({
       {/* Confirmation Modal */}
       {showConfirmationModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="premium-card p-8 max-w-2xl w-full mx-4">
-            <div className="flex items-start justify-between mb-6">
+          <div className="panel-surface mx-4 w-full p-4" style={{ maxWidth: tokens.layout.dialogWideMaxWidth }}>
+          <div className="flex items-start justify-between mb-5">
               <div>
                 <h2 className="text-2xl font-bold text-foreground mb-2">
                   Bevestig
@@ -520,7 +584,7 @@ export function PlacementPage({
               </button>
             </div>
 
-            <div className="space-y-4 mb-8">
+            <div className="space-y-3 mb-6">
               {placementConfirmError && (
                 <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                   {placementConfirmError}
@@ -586,6 +650,6 @@ export function PlacementPage({
           </div>
         </div>
       )}
-    </div>
+    </CarePageScaffold>
   );
 }

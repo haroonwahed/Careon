@@ -51,7 +51,7 @@ export function DocumentSection({
 }: DocumentSectionProps) {
   if (documents.length === 0) {
     return (
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <h3 className="text-base font-semibold text-foreground mb-4">
           Documenten & bestanden
         </h3>
@@ -72,7 +72,7 @@ export function DocumentSection({
   }
 
   return (
-    <div className="premium-card p-5">
+    <div className="panel-surface p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-base font-semibold text-foreground">
           Documenten & bestanden

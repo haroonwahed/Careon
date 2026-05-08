@@ -70,6 +70,7 @@ import {
   type ActionType,
   type MatchResult,
 } from "../../lib/phaseEngine";
+import { tokens } from "../../design/tokens";
 
 // ─── Decision strip colors ────────────────────────────────────────────────────
 
@@ -269,7 +270,7 @@ function DecisionStrip({
 
   return (
     <div className={`${colors.wrap} rounded-xl px-6 py-5 shadow-lg`}>
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-4">
         <div className="shrink-0 hidden sm:flex">
           <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
             <Icon size={22} className="text-white" />
@@ -313,7 +314,7 @@ function PhaseBar({ currentPhase }: { currentPhase: CasusPhase }) {
   const isBlocked = currentPhase === "geblokkeerd";
 
   return (
-    <div className="premium-card px-5 py-4">
+    <div className="panel-surface px-4 py-3">
       <div className="flex items-center">
         {fullPhases.map((phase, idx) => {
           const isCompleted = !isBlocked && idx < currentIndex;
@@ -371,9 +372,9 @@ function ContextPanel({ casus }: { casus: Casus }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Client */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Cliënt</p>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -398,7 +399,7 @@ function ContextPanel({ casus }: { casus: Casus }) {
       </div>
 
       {/* Status */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Status</p>
         <div className="space-y-2">
           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border ${urgencyColors[casus.urgency]}`}>
@@ -411,7 +412,7 @@ function ContextPanel({ casus }: { casus: Casus }) {
 
       {/* Assessment mini-summary */}
       {casus.assessment.notes && (
-        <div className="premium-card p-5">
+        <div className="panel-surface p-4">
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Samenvatting</p>
           <p className="text-sm text-muted-foreground leading-relaxed">
             {casus.assessment.notes.length > 110 ? `${casus.assessment.notes.slice(0, 107).trim()}…` : casus.assessment.notes}
@@ -467,8 +468,8 @@ function IntakeInitialPanel({
   const primaryAction = state.allowedActions.find(a => a.priority === "primary");
 
   return (
-    <div className="space-y-4">
-      <div className="premium-card p-5">
+    <div className="space-y-3">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<FileText size={16} className="text-primary" />} title="Intake" />
         <div className="space-y-3">
           <Row label="Type zorg" value={casus.careType} />
@@ -478,7 +479,7 @@ function IntakeInitialPanel({
         </div>
       </div>
 
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<Zap size={16} className="text-primary" />} title="Volgende stap" />
         <p className="text-sm text-muted-foreground mb-4">Beoordeling nodig voor matching.</p>
         <details className="mb-4 rounded-lg border border-border/80 bg-background/60 px-3 py-2 text-sm">
@@ -492,7 +493,7 @@ function IntakeInitialPanel({
         )}
       </div>
 
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<FileText size={16} className="text-muted-foreground" />} title="Overige acties" />
         <div className="space-y-2">
           {state.allowedActions.filter(a => a.priority !== "primary").map(a => (
@@ -527,7 +528,7 @@ function AanbiederBeoordelingPanel({
   const secondaryActions = state.allowedActions.filter(a => a.priority !== "primary");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {isOverdue && (
         <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm">
           <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
@@ -542,10 +543,10 @@ function AanbiederBeoordelingPanel({
         </div>
       )}
 
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<ClipboardCheck size={16} className="text-primary" />} title="Beoordeling" />
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <div>
             <label className="text-sm font-medium mb-1.5 block">Urgentie *</label>
             <select
@@ -645,9 +646,9 @@ function MatchingPanel({
   const noProviders = matchResults.length === 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {noProviders ? (
-        <div className="premium-card p-5">
+        <div className="panel-surface p-4">
           <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-4">
             <XCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
             <div className="text-sm">
@@ -669,7 +670,7 @@ function MatchingPanel({
           </div>
         </div>
       ) : (
-        <div className="premium-card p-5">
+        <div className="panel-surface p-4">
           <SectionHeader
             icon={<TrendingUp size={16} className="text-primary" />}
             title="Aanbieders"
@@ -799,9 +800,9 @@ function PlaatsingPanel({
   const score = matchResult?.score ?? 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Selected provider */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Geselecteerde aanbieder" />
         <div className="flex items-center gap-4 mb-4">
           <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -826,7 +827,7 @@ function PlaatsingPanel({
       </div>
 
       {/* Validation checklist */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
@@ -906,9 +907,9 @@ function IntakeProviderPanel({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Handover summary */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Overdracht" />
         <div className="space-y-3 text-sm mb-4">
           <Row label="Aanbieder" value={placement.providerName ?? "—"} />
@@ -931,7 +932,7 @@ function IntakeProviderPanel({
 
       {/* Gemeente actions */}
       {(role === "gemeente" || role === "admin") && (
-        <div className="premium-card p-5">
+        <div className="panel-surface p-4">
           <SectionHeader icon={<Phone size={16} className="text-primary" />} title="Gemeente" />
           <div className="space-y-2">
             {gemeenteActions.map(a => (
@@ -943,7 +944,7 @@ function IntakeProviderPanel({
 
       {/* Provider actions */}
       {(role === "zorgaanbieder" || role === "admin") && (
-        <div className="premium-card p-5">
+        <div className="panel-surface p-4">
           <SectionHeader icon={<CalendarPlus size={16} className="text-primary" />} title="Aanbieder" />
           <div className="space-y-3">
             {!intake.plannedAt && (
@@ -973,8 +974,8 @@ function IntakeProviderPanel({
 
 function AfgerondPanel({ casus }: { casus: Casus }) {
   return (
-    <div className="space-y-4">
-      <div className="premium-card p-5">
+    <div className="space-y-3">
+      <div className="panel-surface p-4">
         <div className="flex flex-col items-center py-6 text-center gap-3">
           <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
             <CheckCircle2 size={28} className="text-emerald-500" />
@@ -994,16 +995,9 @@ function AfgerondPanel({ casus }: { casus: Casus }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <ActionButton
-          action={{ id: "act-archive", type: "archive_case", label: "Archiveren", priority: "secondary", assignedTo: null, dueAt: null }}
-          onClick={() => {}}
-        />
-        <ActionButton
-          action={{ id: "act-review", type: "review_outcome", label: "Uitkomst", priority: "secondary", assignedTo: null, dueAt: null }}
-          onClick={() => {}}
-        />
-      </div>
+      <p className="border-t border-border pt-4 text-center text-xs text-muted-foreground" role="status">
+        Na afronding volgen archief en officiële rapportages het zaaksysteem van uw organisatie — niet vanuit dit werkoverzicht.
+      </p>
     </div>
   );
 }
@@ -1024,7 +1018,7 @@ function GeblokkerdPanel({
   const secondaryActions = state.allowedActions.filter(a => a.priority !== "primary");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-sm">
         <Siren size={16} className="text-red-500 mt-0.5 shrink-0" />
         <div>
@@ -1038,7 +1032,7 @@ function GeblokkerdPanel({
         </div>
       </div>
 
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <SectionHeader icon={<ShieldAlert size={16} className="text-red-500" />} title="Escalatie" />
         <div className="space-y-3">
           <label className="text-sm font-medium mb-1 block">Notitie</label>
@@ -1083,9 +1077,9 @@ function IntelligencePanel({
   const isBlocked = currentPhase === "geblokkeerd";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Progress */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Fase</p>
         <div className="space-y-0">
           {visiblePhases.map((phase, idx) => {
@@ -1136,7 +1130,7 @@ function IntelligencePanel({
       </div>
 
       {/* Signals */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Signalen {state.signals.length > 0 && (
             <span className="ml-2 text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full">
@@ -1156,7 +1150,7 @@ function IntelligencePanel({
       </div>
 
       {/* Timeline */}
-      <div className="premium-card p-5">
+      <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Tijdlijn</p>
         <div className="space-y-0">
           {state.timelineEvents.map((event, idx) => (
@@ -1244,7 +1238,7 @@ export function CasusControlCenter({
 
   if (casesError || providersError) {
     return (
-      <div className="premium-card p-6 text-center text-destructive">
+      <div className="panel-surface p-4 text-center text-destructive">
         Kon casusgegevens niet laden: {casesError ?? providersError}
       </div>
     );
@@ -1252,7 +1246,7 @@ export function CasusControlCenter({
 
   if (!casus) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-[320px]">
         <div className="text-center space-y-3">
           <p className="text-muted-foreground">Casus niet gevonden: {caseId}</p>
           <Button variant="outline" onClick={onBack}>Terug naar Regiekamer</Button>
@@ -1272,7 +1266,7 @@ export function CasusControlCenter({
   };
 
   return (
-    <div className="space-y-5 pb-8">
+    <div className="space-y-3 pb-8">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-sm text-muted-foreground">
         <button
@@ -1300,9 +1294,9 @@ export function CasusControlCenter({
       <PhaseBar currentPhase={currentPhase} />
 
       {/* ③ Three-column layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_280px] gap-5">
+      <div className="grid grid-cols-1 xl:grid-cols-[260px_1fr_280px] gap-4">
         {/* Left: Stable context */}
-        <div className="xl:sticky xl:top-5 xl:self-start">
+        <div className="xl:sticky xl:self-start" style={{ top: tokens.layout.edgeZero }}>
           <ContextPanel casus={casus} />
         </div>
 
@@ -1312,7 +1306,7 @@ export function CasusControlCenter({
         </div>
 
         {/* Right: Intelligence */}
-        <div className="xl:sticky xl:top-5 xl:self-start">
+        <div className="xl:sticky xl:self-start" style={{ top: tokens.layout.edgeZero }}>
           <IntelligencePanel
             casus={casus}
             state={state}

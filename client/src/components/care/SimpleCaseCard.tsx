@@ -111,7 +111,7 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
   return (
     <div
       className={`
-        relative premium-card border-l-4 ${urgencyConfig.borderColor}
+        relative panel-surface border-l-4 ${urgencyConfig.borderColor}
         transition-all duration-200 hover:shadow-lg hover:bg-card/80 cursor-pointer
       `}
       onClick={onClick}

@@ -14,7 +14,7 @@
         <input id="search-query" class="" type="search" name="q" value="{{ q }}" placeholder="Zoek op titel, casus-ID of aanbieder" autofocus>
         <div class="ds-list-actions">
             <button type="submit" class="btn btn-primary">Zoeken</button>
-            <a href="{% url 'dashboard' %}" class="btn btn-secondary">Terug naar dashboard</a>
+            <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="btn btn-secondary">Terug naar dashboard</a>
         </div>
     </form>
 
@@ -83,7 +83,7 @@
             <p class="sub-quiet">Controleer de zoekterm of probeer een andere casusnaam, aanbieder of documenttitel.</p>
             <div class="ds-list-actions">
                 <a href="{% url 'careon:case_list' %}" class="btn btn-primary">Terug naar casussen</a>
-                <a href="{% url 'dashboard' %}" class="btn btn-secondary">Terug naar dashboard</a>
+                <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="btn btn-secondary">Terug naar dashboard</a>
             </div>
         </section>
         {% endif %}

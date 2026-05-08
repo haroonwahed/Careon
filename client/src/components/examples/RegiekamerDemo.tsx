@@ -6,6 +6,7 @@
 
 import { useState } from "react";
 import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
+import { CareAppFrame } from "../care/CareAppFrame";
 
 export function RegiekamerDemo() {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
@@ -20,26 +21,29 @@ export function RegiekamerDemo() {
 
   return (
     <div className="min-h-screen bg-background">
-      {selectedCase && (
-        <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-card/95 backdrop-blur max-w-sm">
-          <p className="text-xs font-semibold text-muted-foreground uppercase mb-1">
-            Navigatie
-          </p>
-          <p className="text-sm font-bold text-primary">
-            Casus: {selectedCase}
-          </p>
-          <button
-            onClick={() => setSelectedCase(null)}
-            className="text-xs text-muted-foreground hover:text-foreground mt-2"
-          >
-            Sluiten
-          </button>
-        </div>
-      )}
-
-      <div className="max-w-[1920px] mx-auto p-6">
+      <CareAppFrame>
+        {selectedCase && (
+          <div className="rounded-xl border border-border/70 bg-card/80 px-4 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                  Navigatie
+                </p>
+                <p className="truncate text-sm font-semibold text-primary">
+                  Casus: {selectedCase}
+                </p>
+              </div>
+              <button
+                onClick={() => setSelectedCase(null)}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                Sluiten
+              </button>
+            </div>
+          </div>
+        )}
         <SystemAwarenessPage onCaseClick={handleCaseClick} />
-      </div>
+      </CareAppFrame>
     </div>
   );
 }

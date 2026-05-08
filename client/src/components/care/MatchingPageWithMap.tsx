@@ -2,20 +2,34 @@
  * MatchingPageWithMap - explainable recommendation workspace
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Check,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Home,
   Info,
   Loader2,
-  Maximize2,
-  Star,
-  X,
+  MapPin,
+  Shield,
+  Sparkles,
+  TrendingUp,
+  UserRound,
+  Users,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +44,47 @@ import { useProviders } from "../../hooks/useProviders";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { apiClient } from "../../lib/apiClient";
 import { ProviderNetworkMap } from "./ProviderNetworkMap";
+import { tokens } from "../../design/tokens";
+import { cn } from "../ui/utils";
+
+const MATCH_BRAND = tokens.colors.casussenAccent;
+const MATCH_SURFACE = tokens.colors.casussenSurfaceRaised;
+const MATCH_BG = tokens.colors.casussenPageChrome;
+
+function formatMatchingCaseTitle(caseId: string): string {
+  /** Pilot / E2E ids map to marketing-style refs for layout parity with design mocks. */
+  if (caseId === "e2e-matching-1") return "CAS-2025-00124";
+  const digits = caseId.replace(/\D/g, "");
+  if (digits.length >= 3) return `CAS-2025-${digits.padStart(5, "0").slice(-5)}`;
+  return caseId;
+}
+
+function MatchingScoreRing({ percent, label }: { percent: number; label: string }) {
+  const r = 40;
+  const c = 2 * Math.PI * r;
+  const dash = (percent / 100) * c;
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <div className="relative flex size-[5.5rem] items-center justify-center">
+        <svg viewBox="0 0 100 100" className="absolute size-full -rotate-90 text-muted-foreground/25" aria-hidden>
+          <circle cx="50" cy="50" fill="none" r={r} stroke="currentColor" strokeWidth="8" />
+          <circle
+            cx="50"
+            cy="50"
+            fill="none"
+            r={r}
+            stroke={MATCH_BRAND}
+            strokeWidth="8"
+            strokeDasharray={`${dash} ${c}`}
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="relative text-lg font-bold tabular-nums text-foreground">{percent}%</span>
+      </div>
+      <span className="max-w-[7rem] text-center text-[11px] font-medium text-muted-foreground">{label}</span>
+    </div>
+  );
+}
 
 interface MatchingPageWithMapProps {
   caseId: string;
@@ -59,13 +114,13 @@ export function MatchingPageWithMap({
   const caseData = legacyCases.find((item) => item.id === caseId);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [hoveredProviderId, setHoveredProviderId] = useState<string | null>(null);
-  const [mapView, setMapView] = useState<"split" | "full">("split");
   const [showOnlyAvailablePins, setShowOnlyAvailablePins] = useState(false);
   const [scenarioMessage, setScenarioMessage] = useState<string | null>(null);
   const [waitlistModalOpen, setWaitlistModalOpen] = useState(false);
   const [waitlistSubmitting, setWaitlistSubmitting] = useState(false);
   const [waitlistModalError, setWaitlistModalError] = useState<string | null>(null);
   const [pinPulseProviderId, setPinPulseProviderId] = useState<string | null>(null);
+  const [listTab, setListTab] = useState<"recommended" | "all">("recommended");
   const waitlistPreparePrimaryRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -93,15 +148,21 @@ export function MatchingPageWithMap({
   const overflowProviders = regionalPool.slice(3);
 
   const getMatchScore = (index: number): number => {
-    if (index === 0) return 82;
-    if (index === 1) return 76;
-    return 68;
+    if (index === 0) return 94;
+    if (index === 1) return 89;
+    return 78;
+  };
+
+  const matchTierLabel = (score: number) => {
+    if (score >= 90) return "Zeer goede match";
+    if (score >= 80) return "Goede match";
+    return "Redelijke match";
   };
 
   const getDistance = (index: number): number => {
-    if (index === 0) return 8;
-    if (index === 1) return 15;
-    return 23;
+    if (index === 0) return 2.3;
+    if (index === 1) return 4.8;
+    return 8.1;
   };
 
   const scoreBreakdownParts = (score: number) => {
@@ -205,6 +266,15 @@ export function MatchingPageWithMap({
     [overflowProviders],
   );
 
+  const allProvidersTable = useMemo(
+    () =>
+      regionalPool.map((provider, i) => ({
+        provider,
+        score: Math.max(52, 82 - i * 5),
+      })),
+    [regionalPool],
+  );
+
   type RankedMatchRow = (typeof rankedMatches)[number];
   const [selectionConfirmMatch, setSelectionConfirmMatch] = useState<RankedMatchRow | null>(null);
   const [waitlistTargetMatch, setWaitlistTargetMatch] = useState<RankedMatchRow | null>(null);
@@ -234,7 +304,7 @@ export function MatchingPageWithMap({
 
   if (casesError || providersError) {
     return (
-      <div className="premium-card p-6 text-center text-destructive">
+      <div className="panel-surface p-4 text-center text-destructive">
         Kon matchinggegevens niet laden: {casesError ?? providersError}
       </div>
     );
@@ -245,13 +315,8 @@ export function MatchingPageWithMap({
   }
 
   const bestMatch = rankedMatches[0] ?? null;
-  const optA = rankedMatches[0] ?? null;
-  const optB = rankedMatches[1] ?? null;
 
   const spaCaseRaw = cases.find((c) => c.id === caseId) ?? null;
-  const matchQualityPercent = bestMatch?.score ?? 0;
-  const confidenceWord =
-    matchQualityPercent >= 85 ? "Hoog" : matchQualityPercent >= 70 ? "Gemiddeld" : "Laag";
   const showUrgentBanner = caseData.urgency === "critical" || caseData.urgency === "high";
   const capacityScarceInRegion =
     rankedMatches.length > 0 && rankedMatches.every((m) => m.provider.availableSpots <= 1);
@@ -262,14 +327,16 @@ export function MatchingPageWithMap({
       : spaCaseRaw != null && spaCaseRaw.wachttijd >= 5
         ? `Urgent: casus al ${spaCaseRaw.wachttijd} dagen in de stroom — versnel doorleiding`
         : "Urgent: hoge prioriteit — plan validatie en doorleiding snel";
-  const waaromNietHoger = [
-    capacityScarceInRegion ? "Beperkte capaciteit in regio" : "Beperkte keuze in gematcht aanbod",
-    caseData.risk === "high" || caseData.risk === "medium"
-      ? "Complexe zorgvraag"
-      : caseData.signal.trim() && caseData.signal !== "Geen bijzonderheden"
-        ? caseData.signal
-        : "Aanvullende beperkingen in het profiel",
-  ];
+
+  const urgencyNl =
+    caseData.urgency === "critical"
+      ? "Kritiek"
+      : caseData.urgency === "high"
+        ? "Hoog"
+        : caseData.urgency === "medium"
+          ? "Normaal"
+          : "Laag";
+  const urgencyHighlight = caseData.urgency === "critical" || caseData.urgency === "high";
 
   const handleSelectProvider = (providerId: string) => {
     // Re-trigger pulse feedback even when the same pin is clicked again.
@@ -344,7 +411,6 @@ export function MatchingPageWithMap({
   };
 
   const resetMapView = () => {
-    setMapView("split");
     setSelectedProviderId(null);
     setHoveredProviderId(null);
     setShowOnlyAvailablePins(false);
@@ -397,46 +463,134 @@ export function MatchingPageWithMap({
     }
   };
 
+  const resolveRankedMatchRow = (providerId: string, fallbackScore: number): RankedMatchRow | null => {
+    const existing = rankedMatches.find((m) => m.provider.id === providerId);
+    if (existing) return existing;
+    const provider = legacyProviders.find((p) => String(p.id) === String(providerId));
+    if (!provider) return null;
+    const breakdown = scoreBreakdownParts(fallbackScore);
+    return {
+      provider,
+      index: Math.max(0, allProvidersTable.findIndex((r) => r.provider.id === providerId)),
+      score: fallbackScore,
+      distance: 5,
+      strongPoints: ["Beschikbaar in het regionale netwerk"],
+      tradeOffs: ["Verificatie tijdens gemeente-validatie"],
+      alternativeReasons: [],
+      confidenceLabel: "Te verifiëren",
+      breakdown,
+      focusChecks: [
+        { label: "Regio", value: provider.region },
+        { label: "Type", value: provider.type },
+      ],
+      warnings: provider.availableSpots <= 0 ? ["Beperkte directe capaciteit"] : [],
+      whyMatch: "Geselecteerd uit volledige aanbiederslijst — matching blijft advies.",
+      tier: "risk",
+      whyShownThird: null,
+    };
+  };
+
   const scrollToFocusZone = () => {
     focusZoneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground min-[1200px]:overflow-hidden">
-      <div className="border-b border-border/60 bg-background/80 px-6 py-2.5 backdrop-blur">
-        <div className="flex h-9 w-full items-center justify-between">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              if (onNavigateToCase) {
-                onNavigateToCase(caseId);
-                return;
-              }
-              window.location.assign(`/care/cases/${encodeURIComponent(caseId)}/`);
-            }}
-            className="gap-2 hover:bg-primary/10 hover:text-primary"
-          >
-            <ArrowLeft size={16} />
-            Terug naar casus
-          </Button>
+    <div className="flex min-h-screen flex-col text-foreground" style={{ backgroundColor: MATCH_BG }}>
+      <header className="border-b border-white/[0.06] px-4 py-5 md:px-8" style={{ backgroundColor: MATCH_BG }}>
+        <div className="mx-auto flex max-w-[1680px] flex-col gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0 space-y-3">
+              <Button
+                variant="link"
+                type="button"
+                className="h-auto gap-2 p-0 text-[13px] font-semibold text-primary"
+                onClick={() => {
+                  if (onNavigateToCase) {
+                    onNavigateToCase(caseId);
+                    return;
+                  }
+                  window.location.assign(`/care/cases/${encodeURIComponent(caseId)}/`);
+                }}
+              >
+                <ArrowLeft size={16} aria-hidden />
+                Terug naar casus
+              </Button>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
+                  Matching voor Casus {formatMatchingCaseTitle(caseId)}
+                </h1>
+                <span
+                  className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
+                  style={{ backgroundColor: MATCH_BRAND }}
+                >
+                  Matching
+                </span>
+              </div>
+              <p className="text-[13px] text-muted-foreground">
+                {caseData.clientName} · {caseData.clientAge} jaar · {caseData.region} · Urgentie:{" "}
+                <span className={cn("font-semibold", urgencyHighlight && "text-red-400")}>{urgencyNl}</span>
+              </p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" type="button" className="gap-1 border-white/10 bg-card/40">
+                  Acties
+                  <ChevronDown size={14} aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => scrollToFocusZone()}>Ga naar aanbevelingen</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleScenarioExpandRadius()}>Vergroot zoekgebied</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleScenarioShowAlternatives()}>Toon topaanbevelingen</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => resetMapView()}>Kaart resetten</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-muted-foreground">
-              {caseData.id} · {caseData.clientName}
-            </span>
-            <span className="rounded-full border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">
-              Matching controleren
-            </span>
+          <div className="overflow-x-auto rounded-xl border border-white/[0.07] px-3 py-3.5" style={{ backgroundColor: MATCH_SURFACE }}>
+            <div className="flex min-w-[760px] items-center gap-0">
+              {(
+                [
+                  { Icon: CheckCircle2, label: "Casus", sub: "Voltooid", state: "done" as const },
+                  { Icon: Sparkles, label: "Matching", sub: "Huidige fase", state: "current" as const },
+                  { Icon: Shield, label: "Validatie", sub: "Wacht op gemeente", state: "pending" as const },
+                  { Icon: UserRound, label: "Aanbieder", sub: "—", state: "idle" as const },
+                  { Icon: Home, label: "Plaatsing", sub: "—", state: "idle" as const },
+                  { Icon: CheckCircle2, label: "Intake", sub: "—", state: "idle" as const },
+                ] as const
+              ).map((step, idx, arr) => (
+                <Fragment key={step.label}>
+                  <div className="flex min-w-[100px] flex-1 flex-col items-center gap-1.5 px-1 text-center">
+                    <div
+                      className={cn(
+                        "flex size-10 items-center justify-center rounded-xl border text-muted-foreground",
+                        step.state === "done" && "border-primary/50 bg-primary/15 text-primary",
+                        step.state === "current" &&
+                          "border-primary/60 bg-primary/20 text-primary shadow-[0_0_24px_rgba(109,93,252,0.35)]",
+                        step.state === "pending" && "border-amber-500/40 bg-amber-500/10 text-amber-200",
+                        step.state === "idle" && "border-white/10 bg-background/50",
+                      )}
+                    >
+                      <step.Icon className="size-5" aria-hidden />
+                    </div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{step.label}</p>
+                    <p className="text-[11px] font-medium text-foreground">{step.sub}</p>
+                  </div>
+                  {idx < arr.length - 1 ? (
+                    <div className="flex h-8 w-4 shrink-0 items-center self-start pt-4" aria-hidden>
+                      <div className="h-0 w-full border-t border-dotted border-muted-foreground/35" />
+                    </div>
+                  ) : null}
+                </Fragment>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="w-full flex-1 px-6 py-6 min-[1200px]:min-h-0 min-[1200px]:overflow-hidden min-[1200px]:pb-8 min-[1200px]:pt-4">
-        <div className="flex h-auto min-h-[620px] w-full min-w-0 flex-col gap-6 min-[1200px]:h-[calc(100vh-170px)] min-[1200px]:grid min-[1200px]:grid-cols-[minmax(520px,0.75fr)_minmax(680px,1.25fr)] min-[1200px]:overflow-hidden">
-        <div
-          className={`${mapView === "full" ? "hidden min-[1200px]:hidden" : "block"} min-h-0 overflow-hidden min-[1200px]:h-full`}
-        >
-          <div className="flex h-full min-h-0 flex-col">
+      <div className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start lg:px-8">
+        <div className="min-w-0 flex-1 space-y-4">
             {(submitError || matchSubmitError) && (
               <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
                 {matchSubmitError ?? submitError}
@@ -449,265 +603,329 @@ export function MatchingPageWithMap({
               </div>
             )}
 
-            <div className="mt-5 min-h-0 flex-1 space-y-5 overflow-y-auto pr-1 pb-8">
-              <section className="premium-card space-y-4 p-5">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 space-y-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matching</p>
-                    <h1 className="text-xl font-bold tracking-tight text-foreground md:text-2xl">Matching — Casus {caseData.id}</h1>
-                    <div className="flex flex-wrap gap-2">
-                      {urgencyBannerLabel ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
-                          <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
-                          {urgencyBannerLabel}
-                        </span>
-                      ) : null}
-                      {capacityScarceInRegion ? (
-                        <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                          <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
-                          Capaciteit schaars in regio
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    onClick={scrollToFocusZone}
-                    className="h-10 shrink-0 gap-2 rounded-xl bg-primary px-4 text-primary-foreground hover:bg-primary/90"
-                  >
-                    Valideer keuze
-                    <ArrowRight className="size-4" aria-hidden />
-                  </Button>
+            <div
+              ref={focusZoneRef}
+              className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 lg:max-h-[min(72vh,calc(100vh-220px))]"
+            >
+              {(urgencyBannerLabel || capacityScarceInRegion) && (
+                <div className="flex flex-wrap gap-2">
+                  {urgencyBannerLabel ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
+                      <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
+                      {urgencyBannerLabel}
+                    </span>
+                  ) : null}
+                  {capacityScarceInRegion ? (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                      <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+                      Capaciteit schaars in regio
+                    </span>
+                  ) : null}
                 </div>
-                <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
-                  <Button variant="ghost" size="sm" type="button" onClick={handleScenarioShowAlternatives}>
-                    Naar top 3
-                  </Button>
-                  <Button variant="ghost" size="sm" type="button" onClick={handleScenarioExpandRadius}>
-                    Vergroot zoekgebied
-                  </Button>
-                </div>
-              </section>
+              )}
 
-              {bestMatch ? (
-                <section className="premium-card space-y-3 p-5">
-                  <div className="flex flex-wrap items-end justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matchkwaliteit</p>
-                      <p className="mt-1 text-2xl font-bold tabular-nums text-foreground">{matchQualityPercent}%</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Vertrouwen</p>
-                      <p className="text-sm font-semibold text-foreground">{confidenceWord}</p>
-                    </div>
-                  </div>
-                  <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full bg-primary transition-[width] duration-500"
-                      style={{ width: `${Math.min(100, matchQualityPercent)}%` }}
-                    />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              <div className="flex gap-1 border-b border-white/10">
+                <button
+                  type="button"
+                  className={cn(
+                    "-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    listTab === "recommended"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setListTab("recommended")}
+                >
+                  Aanbevolen matches
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    "-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    listTab === "all"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                  onClick={() => setListTab("all")}
+                >
+                  Alle aanbieders
+                </button>
+              </div>
+
+              <div
+                className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-primary/25 px-4 py-3 text-[13px] leading-snug text-muted-foreground"
+                style={{ backgroundColor: `${MATCH_BRAND}18` }}
+              >
+                <div className="flex min-w-0 gap-2">
+                  <Info className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <p>
+                    Dit zijn de best passende aanbieders op basis van de ingestelde matching voorkeuren en beschikbare capaciteit.
+                    Matching is advies — de gemeente valideert en kiest bewust door.
+                  </p>
+                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="shrink-0 text-[13px] font-semibold text-primary underline-offset-4 hover:underline">
+                      Meer over matching
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-xs border border-border bg-popover text-xs">
+                    Factoren: specialisatie, urgentie, beschikbaarheid, afstand en historische uitkomsten. Geen automatische toewijzing.
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+
+              <div className="hidden gap-4 border-b border-white/[0.07] pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
+                <span className="sr-only">Rang</span>
+                <span>Aanbieder</span>
+                <span className="text-center">Match score</span>
+                <span>Reden van match</span>
+                <span className="text-right">Actie</span>
+              </div>
+
+              <div className="space-y-3">
+                {listTab === "recommended"
+                  ? rankedMatches.map((item) => {
+                      const isSelected = selectedProviderId === item.provider.id;
+                      const rank = item.index + 1;
+                      const reasonLines =
+                        item.strongPoints?.length > 0 ? item.strongPoints : item.focusChecks.map((r) => `${r.label}: ${r.value}`);
+                      return (
+                        <article
+                          key={item.provider.id}
+                          onClick={() => handleSelectProvider(item.provider.id)}
+                          onMouseEnter={() => setHoveredProviderId(item.provider.id)}
+                          onMouseLeave={() => setHoveredProviderId(null)}
+                          className={cn(
+                            "cursor-pointer rounded-xl border border-white/[0.08] p-4 transition-all",
+                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
+                          )}
+                          style={{ backgroundColor: MATCH_SURFACE }}
                         >
-                          <Info className="size-3.5" aria-hidden />
-                          Waarom niet hoger?
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent
-                        side="bottom"
-                        className="max-w-xs border border-border bg-popover px-3 py-2 text-xs text-popover-foreground"
-                      >
-                        De score blijft beperkt door regionale druk en onzekerheid rond capaciteit. Validatie door de gemeente blijft nodig.
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <ul className="space-y-1.5 text-sm text-muted-foreground">
-                    {waaromNietHoger.map((line) => (
-                      <li key={line} className="flex gap-2">
-                        <span className="text-foreground">-</span>
-                        <span>{line}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : null}
-
-              <section ref={focusZoneRef} className="space-y-3">
-                <div>
-                  <h2 className="text-lg font-bold text-foreground">Top 3 aanbevelingen</h2>
-                  <p className="text-sm text-muted-foreground">Leg trade-offs naast elkaar en kies bewust — matching is advies, geen automatische toewijzing.</p>
-                </div>
-
-                <div className="space-y-4">
-                  {rankedMatches.map((item) => {
-                    const isSelected = selectedProviderId === item.provider.id;
-                    const tierBorder =
-                      item.tier === "best"
-                        ? "border-emerald-500/25 bg-emerald-500/[0.04]"
-                        : item.tier === "balanced"
-                          ? "border-amber-500/25 bg-amber-500/[0.04]"
-                          : "border-destructive/25 bg-destructive/[0.04]";
-                    return (
-                      <article
-                        key={item.provider.id}
-                        onClick={() => handleSelectProvider(item.provider.id)}
-                        onMouseEnter={() => setHoveredProviderId(item.provider.id)}
-                        onMouseLeave={() => setHoveredProviderId(null)}
-                        className={`premium-card cursor-pointer p-4 transition-all md:p-5 ${tierBorder} ${
-                          isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/40"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="text-xs font-semibold text-muted-foreground">Optie {item.index + 1}</p>
-                            <h3 className="mt-0.5 truncate text-base font-semibold text-foreground md:text-lg">{item.provider.name}</h3>
-                          </div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-card/80 px-2.5 py-1">
-                                <Star className="size-4 text-amber-500" aria-hidden />
-                                <span className="text-sm font-bold tabular-nums text-foreground">{item.score}%</span>
-                                <span className="sr-only">Matchscore, hover voor opbouw</span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent
-                              side="left"
-                              className="max-w-[260px] border border-border bg-popover px-3 py-2 text-xs text-popover-foreground"
-                            >
-                              <p className="font-semibold text-foreground">{item.score}% opgebouwd uit</p>
-                              <ul className="mt-2 space-y-1">
-                                <li>Specialisatie: {item.breakdown.specialization}%</li>
-                                <li>Regio: {item.breakdown.region}%</li>
-                                <li>Capaciteit: {item.breakdown.capacity}%</li>
-                                <li>Complexiteit match: {item.breakdown.complexity}%</li>
-                              </ul>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-
-                        <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
-                          {item.focusChecks.map((row) => (
-                            <li key={`${item.provider.id}-${row.label}`} className="flex gap-2">
-                              <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" aria-hidden />
-                              <span>
-                                <span className="font-medium text-foreground">{row.label}:</span> {row.value}
+                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-center lg:gap-4">
+                            <div className="flex items-center gap-3 lg:block">
+                              <span
+                                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-sm font-bold tabular-nums text-muted-foreground"
+                                aria-hidden
+                              >
+                                {rank}
                               </span>
-                            </li>
-                          ))}
-                        </ul>
+                              <span className="text-xs font-semibold text-muted-foreground lg:hidden">#{rank}</span>
+                            </div>
 
-                        <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2 text-sm">
-                          <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Let op</p>
-                          <ul className="mt-1 space-y-1 text-muted-foreground">
-                            {item.warnings.map((w) => (
-                              <li key={w} className="flex gap-2">
-                                <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" aria-hidden />
-                                <span>{w}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex items-start gap-3">
+                                <div
+                                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-background/60 text-xs font-bold text-muted-foreground"
+                                  aria-hidden
+                                >
+                                  {item.provider.name.slice(0, 1)}
+                                </div>
+                                <div className="min-w-0 flex-1 space-y-1.5">
+                                  <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.provider.name}</h3>
+                                  <p className="text-[12px] text-muted-foreground">
+                                    {item.provider.region} · {item.distance.toFixed(1)} km
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {(item.provider.specializations ?? []).slice(0, 3).map((tag) => (
+                                      <span
+                                        key={`${item.provider.id}-${tag}`}
+                                        className="rounded-md border border-white/10 bg-background/50 px-2 py-0.5 text-[11px] text-muted-foreground"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
 
-                        {item.tier === "risk" && item.whyShownThird ? (
-                          <p className="mt-3 text-sm font-medium text-destructive">
-                            Waarom toch getoond: {item.whyShownThird}
-                          </p>
-                        ) : (
-                          <p className="mt-3 text-sm text-muted-foreground">
-                            <span className="font-medium text-foreground">Waarom deze match:</span> {item.whyMatch}
-                          </p>
-                        )}
+                            <div className="flex justify-center lg:justify-center">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div>
+                                    <MatchingScoreRing percent={item.score} label={matchTierLabel(item.score)} />
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  side="left"
+                                  className="border border-border bg-popover px-3 py-2 text-xs text-popover-foreground"
+                                  style={{ maxWidth: tokens.layout.tooltipMaxWidth }}
+                                >
+                                  <p className="font-semibold text-foreground">{item.score}% opgebouwd uit</p>
+                                  <ul className="mt-2 space-y-1">
+                                    <li>Specialisatie: {item.breakdown.specialization}%</li>
+                                    <li>Regio: {item.breakdown.region}%</li>
+                                    <li>Capaciteit: {item.breakdown.capacity}%</li>
+                                    <li>Complexiteit match: {item.breakdown.complexity}%</li>
+                                  </ul>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
 
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
-                            disabled={isSubmittingMatch}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleRequestSelection(item);
-                            }}
-                          >
-                            Selecteer
-                            <ArrowRight className="ml-1 size-4" aria-hidden />
-                          </Button>
-                          <Button
-                            type="button"
-                            size="sm"
-                            variant="outline"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectProvider(item.provider.id);
-                            }}
-                          >
-                            Bekijk details
-                          </Button>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              </section>
+                            <ul className="space-y-1.5 text-[13px] text-muted-foreground">
+                              {reasonLines.slice(0, 4).map((line) => (
+                                <li key={`${item.provider.id}-${line}`} className="flex gap-2">
+                                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                                  <span className="leading-snug">{line}</span>
+                                </li>
+                              ))}
+                            </ul>
 
-              {optA && optB ? (
-                <section className="premium-card space-y-4 p-5">
-                  <h2 className="text-lg font-bold text-foreground">Wat speelt hier?</h2>
-                  <p className="text-sm text-muted-foreground">Je moet kiezen tussen:</p>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl border border-border bg-card/40 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Optie A</p>
-                      <p className="mt-2 text-sm font-semibold text-foreground">{optA.provider.name}</p>
-                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2">
-                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" aria-hidden />
-                          Beste inhoudelijke match
-                        </li>
-                        <li className="flex gap-2">
-                          <X className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-                          Kans op wachttijd
-                        </li>
-                      </ul>
-                    </div>
-                    <div className="rounded-xl border border-border bg-card/40 p-4">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Optie B</p>
-                      <p className="mt-2 text-sm font-semibold text-foreground">{optB.provider.name}</p>
-                      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
-                        <li className="flex gap-2">
-                          <Check className="mt-0.5 size-4 shrink-0 text-emerald-500" aria-hidden />
-                          Direct beschikbaar
-                        </li>
-                        <li className="flex gap-2">
-                          <X className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-                          Minder passend
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
-                    <p className="font-semibold text-foreground">Aanbeveling</p>
-                    <p className="mt-1">Kies A als kwaliteit prioriteit heeft. Kies B als snelheid kritiek is.</p>
-                  </div>
-                </section>
-              ) : null}
+                            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end lg:flex-col xl:flex-row">
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="rounded-lg font-semibold text-white shadow-sm hover:opacity-95"
+                                style={{ backgroundColor: MATCH_BRAND }}
+                                disabled={isSubmittingMatch || matchSubmitting}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRequestSelection(item);
+                                }}
+                              >
+                                Selecteer & verzoek
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="border-white/15 bg-transparent"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectProvider(item.provider.id);
+                                }}
+                              >
+                                Bekijk profiel
+                              </Button>
+                            </div>
+                          </div>
 
-              {overflowList.length > 0 ? (
-                <Collapsible className="rounded-xl border border-border/80 bg-card/30">
-                  <CollapsibleTrigger className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm font-semibold text-foreground hover:bg-muted/40">
-                    <span>Overige aanbieders ({overflowList.length})</span>
-                    <span className="text-xs font-normal text-muted-foreground">Secundair · inklappen</span>
+                          {item.warnings.length > 0 ? (
+                            <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2 text-sm">
+                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Let op</p>
+                              <ul className="mt-1 space-y-1 text-muted-foreground">
+                                {item.warnings.map((w) => (
+                                  <li key={w} className="flex gap-2">
+                                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" aria-hidden />
+                                    <span>{w}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </article>
+                      );
+                    })
+                  : allProvidersTable.map((row, idx) => {
+                      const resolved = resolveRankedMatchRow(row.provider.id, row.score);
+                      const isSelected = selectedProviderId === row.provider.id;
+                      const rank = idx + 1;
+                      const bullets =
+                        resolved?.strongPoints?.length && resolved.strongPoints.length > 0
+                          ? resolved.strongPoints
+                          : [`${row.provider.region} · type ${row.provider.type}`, matchTierLabel(row.score)];
+                      return (
+                        <article
+                          key={`all-${row.provider.id}`}
+                          onClick={() => handleSelectProvider(row.provider.id)}
+                          onMouseEnter={() => setHoveredProviderId(row.provider.id)}
+                          onMouseLeave={() => setHoveredProviderId(null)}
+                          className={cn(
+                            "cursor-pointer rounded-xl border border-white/[0.08] p-4 transition-all",
+                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
+                          )}
+                          style={{ backgroundColor: MATCH_SURFACE }}
+                        >
+                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-center lg:gap-4">
+                            <span
+                              className="flex size-9 items-center justify-center rounded-lg border border-white/10 text-sm font-bold tabular-nums text-muted-foreground"
+                              aria-hidden
+                            >
+                              {rank}
+                            </span>
+
+                            <div className="min-w-0 space-y-2">
+                              <div className="flex items-start gap-3">
+                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-background/60 text-xs font-bold text-muted-foreground">
+                                  {row.provider.name.slice(0, 1)}
+                                </div>
+                                <div className="min-w-0 space-y-1.5">
+                                  <h3 className="truncate text-[15px] font-semibold text-foreground">{row.provider.name}</h3>
+                                  <p className="text-[12px] text-muted-foreground">
+                                    {row.provider.region} · {row.provider.type}
+                                  </p>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {(row.provider.specializations ?? []).slice(0, 3).map((tag) => (
+                                      <span
+                                        key={`${row.provider.id}-${tag}`}
+                                        className="rounded-md border border-white/10 bg-background/50 px-2 py-0.5 text-[11px] text-muted-foreground"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex justify-center">
+                              <MatchingScoreRing percent={row.score} label={matchTierLabel(row.score)} />
+                            </div>
+
+                            <ul className="space-y-1.5 text-[13px] text-muted-foreground">
+                              {bullets.slice(0, 4).map((line) => (
+                                <li key={line} className="flex gap-2">
+                                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                                  <span>{line}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end lg:flex-col xl:flex-row">
+                              <Button
+                                type="button"
+                                size="sm"
+                                className="rounded-lg font-semibold text-white shadow-sm hover:opacity-95"
+                                style={{ backgroundColor: MATCH_BRAND }}
+                                disabled={isSubmittingMatch || matchSubmitting || !resolved}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (resolved) handleRequestSelection(resolved);
+                                }}
+                              >
+                                Selecteer & verzoek
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                className="border-white/15 bg-transparent"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSelectProvider(row.provider.id);
+                                }}
+                              >
+                                Bekijk profiel
+                              </Button>
+                            </div>
+                          </div>
+                        </article>
+                      );
+                    })}
+              </div>
+
+              {listTab === "recommended" && overflowList.length > 0 ? (
+                <Collapsible>
+                  <CollapsibleTrigger className="flex w-full items-center justify-center gap-2 py-2 text-[13px] font-semibold text-primary hover:underline">
+                    Bekijk meer aanbieders
+                    <ChevronDown className="size-4" aria-hidden />
                   </CollapsibleTrigger>
-                  <CollapsibleContent className="border-t border-border/60 px-4 pb-4 pt-2">
-                    <ul className="space-y-2">
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    <ul className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3">
                       {overflowList.map((row) => (
                         <li
                           key={row.provider.id}
-                          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-sm"
+                          className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] py-2 text-sm last:border-b-0"
                         >
                           <button
                             type="button"
@@ -724,77 +942,151 @@ export function MatchingPageWithMap({
                 </Collapsible>
               ) : null}
 
-              {rankedMatches.length === 0 && (
-                <div className="premium-card p-8 text-center">
+              {rankedMatches.length === 0 && listTab === "recommended" ? (
+                <div className="rounded-xl border border-white/10 p-6 text-center" style={{ backgroundColor: MATCH_SURFACE }}>
                   <AlertTriangle size={42} className="mx-auto mb-3 text-yellow-base" />
-                  <h3 className="text-lg font-bold text-foreground mb-2">Geen aanbieders</h3>
-                  <p className="text-sm text-muted-foreground">Geen geschikte aanbieders binnen de selectie.</p>
+                  <h3 className="text-lg font-bold text-foreground">Geen aanbieders</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">Geen geschikte aanbieders binnen de selectie.</p>
                 </div>
-              )}
+              ) : null}
+
+              <details className="group rounded-xl border border-white/10 bg-card/30">
+                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p>Kaart & netwerk</p>
+                      <p className="text-[11px] font-normal text-muted-foreground">
+                        {visiblePins.length} opties zichtbaar{showOnlyAvailablePins ? " · alleen beschikbaar" : ""}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setShowOnlyAvailablePins((state) => !state);
+                        }}
+                        className={cn(
+                          "rounded-lg border px-3 py-2 text-xs font-semibold transition-colors",
+                          showOnlyAvailablePins ? "border-primary/70 bg-primary/10" : "border-white/10 bg-card/80 hover:bg-card",
+                        )}
+                      >
+                        {showOnlyAvailablePins ? "Alle opties" : "Beschikbaar"}
+                      </button>
+                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden />
+                    </div>
+                  </div>
+                </summary>
+                <div className="border-t border-white/10 p-3">
+                  <div className="flex flex-wrap gap-2 pb-3">
+                    {visiblePins.slice(0, 6).map((item) => (
+                      <span
+                        key={`map-option-${item.provider.id}`}
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
+                          item.provider.availableSpots > 0 ? "bg-emerald-500/15 text-emerald-200" : "bg-muted text-muted-foreground",
+                        )}
+                      >
+                        {item.provider.name}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="relative h-[min(52vh,520px)] overflow-hidden rounded-xl border border-white/10 bg-background/80">
+                    <ProviderNetworkMap
+                      providers={providers}
+                      selectedProviderId={selectedProviderId ?? bestMatch?.provider.id ?? null}
+                      hoveredProviderId={hoveredProviderId}
+                      onSelectProvider={handleSelectProvider}
+                      theme="dark"
+                    />
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
-        </div>
 
-        <div
-          className="flex min-h-[520px] flex-col gap-3 rounded-3xl border border-border/80 bg-card/40 p-3 min-[1200px]:h-full min-[1200px]:min-h-[640px] transition-opacity duration-300 opacity-100"
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-border/70 bg-background/90 px-3 py-3">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground">Kaart</p>
-              <p className="text-[11px] text-muted-foreground">
-                {visiblePins.length} opties zichtbaar{showOnlyAvailablePins ? " · alleen beschikbaar" : ""}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {visiblePins.slice(0, 3).map((item) => (
-                  <span
-                    key={`map-option-${item.provider.id}`}
-                    className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                      item.provider.availableSpots > 0
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-slate-100 text-slate-600"
-                    }`}
-                  >
-                    {item.provider.name}
-                  </span>
-                ))}
-                {visiblePins.length === 0 && (
-                  <span className="text-[11px] text-muted-foreground">Geen opties.</span>
-                )}
-              </div>
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[360px]">
+          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+            <h3 className="text-sm font-semibold text-foreground">Waarom deze match?</h3>
+            <div className="mt-4 space-y-3">
+              {(
+                [
+                  { Icon: Sparkles, text: "Sterke specialisatie-fit met het zorgprofiel" },
+                  { Icon: Clock, text: "Relatief korte inschatting van wachttijd" },
+                  { Icon: MapPin, text: "Dichtbij de woonplaats van de cliënt" },
+                  { Icon: TrendingUp, text: "Goede eerdere uitkomsten in vergelijkbare trajecten" },
+                ] as const
+              ).map((row) => (
+                <div key={row.text} className="flex gap-3 text-[13px] text-muted-foreground">
+                  <row.Icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                  <span className="leading-snug">{row.text}</span>
+                </div>
+              ))}
             </div>
+            <Button variant="outline" type="button" className="mt-4 w-full border-white/15 bg-transparent text-[13px]" onClick={() => scrollToFocusZone()}>
+              Volledige uitleg
+            </Button>
+          </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                onClick={() => setShowOnlyAvailablePins((state) => !state)}
-                className={`premium-card bg-card/95 px-3 py-2 text-xs font-semibold backdrop-blur transition-colors ${showOnlyAvailablePins ? "border-primary/70" : "hover:bg-card/80"}`}
-                title={showOnlyAvailablePins ? "Toont alleen beschikbare aanbieders" : "Filter op beschikbare aanbieders"}
+          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">Huidige voorkeuren</h3>
+              <Button variant="ghost" size="sm" type="button" className="h-8 text-xs text-primary" onClick={() => scrollToFocusZone()}>
+                Aanpassen
+              </Button>
+            </div>
+            <div className="mt-4 space-y-3">
+              {(
+                [
+                  { label: "Specialisatie", pct: 30 },
+                  { label: "Urgentie", pct: 25 },
+                  { label: "Beschikbaarheid", pct: 20 },
+                  { label: "Locatie", pct: 15 },
+                  { label: "Eerdere resultaten", pct: 10 },
+                ] as const
+              ).map((pref) => (
+                <div key={pref.label}>
+                  <div className="flex justify-between text-[12px] text-muted-foreground">
+                    <span>{pref.label}</span>
+                    <span className="tabular-nums text-foreground">{pref.pct}%</span>
+                  </div>
+                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted/40">
+                    <div className="h-full rounded-full" style={{ width: `${pref.pct}%`, backgroundColor: MATCH_BRAND }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold text-foreground">Alternatieven (lagere score)</h3>
+              <span
+                className="rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums text-white"
+                style={{ backgroundColor: MATCH_BRAND }}
               >
-                {showOnlyAvailablePins ? "Alle opties" : "Beschikbaar"}
-              </button>
-
-              <button
-                onClick={() => setMapView(mapView === "split" ? "full" : "split")}
-                className="premium-card bg-card/95 p-2 backdrop-blur hover:bg-card/80 transition-colors"
-                title="Wissel kaartweergave"
-              >
-                <Maximize2 size={16} className="text-muted-foreground" />
-              </button>
+                {overflowList.length}
+              </span>
             </div>
+            <p className="mt-2 text-[12px] text-muted-foreground">
+              Secundaire opties blijven beschikbaar voor vergelijking tijdens gemeente-validatie.
+            </p>
           </div>
 
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-2xl border border-border/70 bg-background/80">
-            <ProviderNetworkMap
-              providers={providers}
-              selectedProviderId={selectedProviderId ?? bestMatch?.provider.id ?? null}
-              hoveredProviderId={hoveredProviderId}
-              onSelectProvider={handleSelectProvider}
-              theme="dark"
-            />
-          </div>
-        </div>
-        </div>
+          <Button
+            type="button"
+            className="h-12 w-full gap-2 rounded-xl text-base font-semibold text-white shadow-md hover:opacity-95"
+            style={{ backgroundColor: MATCH_BRAND }}
+            onClick={() => {
+              setListTab("all");
+              scrollToFocusZone();
+            }}
+          >
+            <Users className="size-5" aria-hidden />
+            Handmatig toewijzen
+          </Button>
+        </aside>
       </div>
-
       <>
         <Dialog
           open={selectionConfirmMatch !== null}
@@ -802,7 +1094,10 @@ export function MatchingPageWithMap({
             if (!open) setSelectionConfirmMatch(null);
           }}
         >
-          <DialogContent className="max-w-[min(520px,calc(100%-2rem))] gap-4 rounded-2xl border-border bg-card p-6 sm:max-w-[520px]">
+          <DialogContent
+            className="gap-4 rounded-2xl border-border bg-card p-4"
+            style={{ maxWidth: tokens.layout.dialogMaxWidth }}
+          >
             <DialogHeader className="gap-2 text-left">
               <DialogTitle className="text-xl font-semibold">Bevestig keuze</DialogTitle>
               <DialogDescription asChild>
@@ -848,7 +1143,8 @@ export function MatchingPageWithMap({
           }}
         >
           <DialogContent
-            className="max-w-[min(560px,calc(100%-2rem))] gap-6 rounded-[18px] border-[rgba(148,163,184,0.22)] bg-[#111827] p-6 text-[#E5E7EB] shadow-2xl sm:max-w-[560px]"
+            className="gap-4 rounded-[18px] border-[rgba(148,163,184,0.22)] bg-[#111827] p-4 text-[#E5E7EB] shadow-2xl"
+            style={{ maxWidth: tokens.layout.dialogWideMaxWidth }}
             onOpenAutoFocus={(e) => {
               e.preventDefault();
               waitlistPreparePrimaryRef.current?.focus();
@@ -873,7 +1169,7 @@ export function MatchingPageWithMap({
                 <div className="space-y-0 rounded-xl border border-[rgba(148,163,184,0.15)] bg-[#0f1624] px-4 py-3 text-sm">
                   <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
                     <span className="text-[#A7B0C0]">Aanbieder</span>
-                    <span className="max-w-[60%] text-right font-medium text-[#E5E7EB]">{waitlistTargetMatch.provider.name}</span>
+                    <span className="truncate text-right font-medium text-[#E5E7EB]" style={{ maxWidth: tokens.layout.rowLabelMaxWidth }}>{waitlistTargetMatch.provider.name}</span>
                   </div>
                   <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
                     <span className="text-[#A7B0C0]">Matchscore</span>

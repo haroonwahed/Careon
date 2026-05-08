@@ -46,7 +46,7 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
   const hasWarnings = items.some(item => item.status === "warning");
 
   return (
-    <div className="premium-card p-5">
+    <div className="panel-surface p-4">
       <div className="mb-4">
         <h3 className="text-base font-semibold text-foreground mb-1">
           Validatie checklist

@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock
 } from "lucide-react";
+import { tokens } from "../../design/tokens";
 
 interface TimelineEvent {
   id: string;
@@ -54,12 +55,12 @@ const eventConfig = {
 
 export function CaseTimeline({ events }: CaseTimelineProps) {
   return (
-    <div className="premium-card p-5">
+    <div className="panel-surface p-4">
       <h3 className="text-base font-semibold text-foreground mb-4">
         Case historie
       </h3>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {events.map((event, idx) => {
           const config = eventConfig[event.type];
           const Icon = config.icon;
@@ -101,9 +102,9 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
 
               {/* Connecting Line */}
               {!isLast && (
-                <div 
-                  className="absolute left-5 top-10 w-0.5 h-full bg-muted-foreground/20"
-                  style={{ transform: 'translateX(-1px)' }}
+                <div
+                  className="absolute left-5 w-0.5 h-full bg-muted-foreground/20"
+                  style={{ top: tokens.layout.timelineConnectorTop, transform: 'translateX(-1px)' }}
                 />
               )}
             </div>

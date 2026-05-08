@@ -126,7 +126,7 @@ describe("getCaseDecisionState", () => {
     );
     const state = getCaseDecisionState(item, "gemeente");
 
-    expect(state.nextActionLabel).toBe("Vul aan");
+    expect(state.nextActionLabel).toBe("Vul casus aan");
     expect(state.responsibleParty).toBe("Gemeente");
   });
 });

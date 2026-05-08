@@ -74,7 +74,7 @@ export function CasussenBoardView({ cases, onViewCase, onTakeAction }: CasussenB
             {/* Column Cases */}
             <div className="space-y-3 max-h-[calc(100vh-320px)] overflow-y-auto scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
               {columnCases.length === 0 ? (
-                <div className="premium-card p-8 text-center">
+                <div className="panel-surface p-4 text-center">
                   <p className="text-sm text-muted-foreground">
                     Geen casussen in deze fase
                   </p>

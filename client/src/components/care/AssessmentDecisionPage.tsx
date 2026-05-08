@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { AlertTriangle, ArrowLeft, CalendarClock, CheckCircle2, Clock3, Loader2, MapPin, ShieldAlert, Sparkles } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useAssessmentDecision } from '../../hooks/useAssessmentDecision';
+import { tokens } from '../../design/tokens';
+import { CareAttentionBar, CareInfoPopover, CarePageScaffold } from './CareDesignPrimitives';
 
 interface AssessmentDecisionPageProps {
   caseId: string;
@@ -108,17 +110,17 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
   };
 
   if (loading) {
-    return <div className="rounded-2xl border bg-card p-10 text-center text-muted-foreground">Aanbieder beoordeling laden…</div>;
+    return <div className="rounded-2xl border bg-card p-4 text-center text-muted-foreground">Aanbieder beoordeling laden…</div>;
   }
 
   if (error || !data || !formState) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-1.5">
         <Button variant="ghost" onClick={onBack} className="gap-2">
           <ArrowLeft size={16} />
           Terug naar casussen
         </Button>
-        <div className="rounded-2xl border bg-card p-10 text-center space-y-3">
+        <div className="rounded-xl border bg-card p-4 text-center space-y-3">
           <p className="text-lg font-semibold text-foreground">Aanbieder beoordeling niet beschikbaar</p>
           <p className="text-sm text-muted-foreground">{error ?? 'Deze casus kon niet geladen worden.'}</p>
           <Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>
@@ -128,20 +130,64 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
-        <ArrowLeft size={16} />
-        Terug naar casussen
-      </Button>
-
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_360px]">
-        <div className="space-y-6">
-          <section className="rounded-3xl border border-border bg-card p-5">
+    <CarePageScaffold
+      archetype="decision"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Aanbieder beoordeling
+          <CareInfoPopover ariaLabel="Uitleg beslissing" testId="assessment-decision-page-info">
+            <p className="text-muted-foreground">Kies de volgende stap voor deze casus.</p>
+          </CareInfoPopover>
+        </span>
+      }
+      actions={
+        <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
+          <ArrowLeft size={16} />
+          Terug naar casussen
+        </Button>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={formState.decision ? "info" : "warning"}
+          message={
+            formState.decision
+              ? `Geselecteerd: ${data.consequences[formState.decision]?.title ?? 'Beslissing gereed'}`
+              : "Selecteer eerst een beslissing om verder te gaan."
+          }
+        />
+      }
+      kpiStrip={
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Casus</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{data.summary.caseId}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Regio</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{data.summary.region}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zorgtype</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{data.summary.careType}</p>
+          </div>
+          <div className="rounded-xl border border-border/70 bg-card/55 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Wachttijd</p>
+            <p className="mt-2 text-lg font-semibold text-foreground">{data.summary.waitDays} dagen</p>
+          </div>
+        </div>
+      }
+    >
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.45fr)_360px]">
+        <div className="space-y-1.5">
+          <section className="rounded-xl border border-border bg-card p-3">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-primary">Samenvatting</p>
                 <h1 className="mt-1.5 text-2xl font-semibold text-foreground">Aanbieder beoordeling</h1>
-                <p className="mt-1.5 max-w-2xl text-xs leading-5 text-muted-foreground">Controleer of deze casus klaar is voor acceptatie of afwijzing. Vul alleen de informatie in die nodig is om die stap verantwoord te zetten.</p>
+                <p className="mt-1.5 text-xs leading-5 text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
+                  Controleer of deze casus klaar is voor acceptatie of afwijzing. Vul alleen de informatie in die nodig is om die stap verantwoord te zetten.
+                </p>
               </div>
               <div className="rounded-2xl border border-border bg-muted/20 px-3 py-2.5 text-right">
                 <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Casus</p>
@@ -180,13 +226,13 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             )}
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-6">
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="mb-5">
               <h2 className="text-lg font-semibold text-foreground">Beoordelingsinformatie</h2>
               <p className="mt-1 text-sm text-muted-foreground">Compact invoeren, direct bruikbaar voor het besluit.</p>
             </div>
 
-            <div className="grid gap-5 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zorgtype</label>
                 <select value={formState.zorgtype} onChange={(event) => updateField('zorgtype', event.target.value)} className={fieldClass}>
@@ -280,7 +326,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             )}
           </section>
 
-          <div className="sticky bottom-4 z-20 rounded-3xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
+          <div className="sticky bottom-4 z-20 rounded-xl border border-border bg-card/95 p-4 shadow-lg backdrop-blur">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <p className="text-sm font-semibold text-foreground">Bevestig</p>
@@ -295,8 +341,8 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           </div>
         </div>
 
-        <aside className="space-y-4 xl:sticky xl:top-6 xl:self-start">
-          <section className="rounded-3xl border border-border bg-card p-5">
+        <aside className="space-y-1.5 xl:sticky xl:self-start" style={{ top: tokens.layout.edgeZero }}>
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <MapPin size={16} className="text-primary" />
               <h2 className="text-base font-semibold text-foreground">Samenvatting</h2>
@@ -337,12 +383,12 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-primary" />
               <h2 className="text-base font-semibold text-foreground">Hints</h2>
             </div>
-            <div className="mt-4 space-y-4 text-sm">
+            <div className="mt-4 space-y-1.5 text-sm">
               <div className="rounded-2xl border border-border bg-muted/20 p-3">
                 <p className="text-xs uppercase tracking-[0.08em] text-muted-foreground">Voorgestelde urgentie</p>
                 <p className="mt-1 font-semibold text-foreground">{data.hints.suggestedUrgency.label}</p>
@@ -356,7 +402,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <ShieldAlert size={16} className="text-primary" />
               <h2 className="text-base font-semibold text-foreground">Signalen</h2>
@@ -377,7 +423,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             </div>
           </section>
 
-          <section className="rounded-3xl border border-border bg-card p-5">
+          <section className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-center gap-2">
               <CalendarClock size={16} className="text-primary" />
               <h2 className="text-base font-semibold text-foreground">Timeline</h2>
@@ -398,6 +444,6 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
           </section>
         </aside>
       </div>
-    </div>
+    </CarePageScaffold>
   );
 }

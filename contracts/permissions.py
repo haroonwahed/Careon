@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Exists, OuterRef, Q
 from django.http import Http404
 
-from .models import Client, OrganizationMembership, PlacementRequest
+from .models import CareCase, Client, OrganizationMembership, PlacementRequest
 from .workflow_state_machine import WorkflowRole, resolve_actor_role
 
 User = get_user_model()
@@ -103,6 +103,72 @@ def filter_care_cases_for_provider_actor(queryset, user, organization):
         Q(proposed_provider_id__in=ids) | Q(selected_provider_id__in=ids)
     )
     return queryset.filter(Exists(placement_qs))
+
+
+def visible_provider_scoped_care_cases(user, organization):
+    """
+    CareCase queryset visible to the workflow actor: full org for gemeente/admin;
+    placement-scoped for zorgaanbieder (same rule as cases_api).
+    """
+    if organization is None:
+        return CareCase.objects.none()
+    return filter_care_cases_for_provider_actor(
+        CareCase.objects.filter(organization=organization),
+        user,
+        organization,
+    )
+
+
+def filter_placement_requests_for_provider_actor(queryset, user, organization):
+    """PlacementRequest rows whose intake's CareCase is visible to the provider."""
+    if organization is None:
+        return queryset.none()
+    if resolve_actor_role(user=user, organization=organization) != WorkflowRole.ZORGAANBIEDER:
+        return queryset
+    visible = visible_provider_scoped_care_cases(user, organization)
+    return queryset.filter(due_diligence_process__contract_id__in=visible.values('pk'))
+
+
+def filter_care_signals_for_provider_actor(queryset, user, organization):
+    """
+    Signals tied to a visible CareCase (via case_record or intake.contract).
+    Rows only linked to configuration / orphan paths are excluded for providers.
+    """
+    if organization is None:
+        return queryset.none()
+    if resolve_actor_role(user=user, organization=organization) != WorkflowRole.ZORGAANBIEDER:
+        return queryset
+    visible = visible_provider_scoped_care_cases(user, organization)
+    vid = visible.values('pk')
+    return queryset.filter(
+        Q(case_record_id__in=vid) | Q(due_diligence_process__contract_id__in=vid)
+    )
+
+
+def filter_care_tasks_for_provider_actor(queryset, user, organization):
+    """CareTask rows with case_record in visible CareCases (configuration-only tasks excluded)."""
+    if organization is None:
+        return queryset.none()
+    if resolve_actor_role(user=user, organization=organization) != WorkflowRole.ZORGAANBIEDER:
+        return queryset
+    visible = visible_provider_scoped_care_cases(user, organization)
+    return queryset.filter(case_record_id__in=visible.values('pk'))
+
+
+def filter_documents_for_provider_actor(queryset, user, organization):
+    """
+    Restrict Document rows for zorgaanbieder users to documents whose CareCase (contract)
+    is visible via PlacementRequest + responsible_coordinator (same rule as cases).
+
+    Documents without a contract FK are excluded for providers (not linked to a visible case).
+    Gemeente/admin: unchanged (organization-scoped queryset expected upstream).
+    """
+    if organization is None:
+        return queryset.none()
+    if resolve_actor_role(user=user, organization=organization) != WorkflowRole.ZORGAANBIEDER:
+        return queryset
+    visible_cases = visible_provider_scoped_care_cases(user, organization)
+    return queryset.filter(contract_id__in=visible_cases.values('pk'))
 
 
 def can_access_case_action(user, case, action=CaseAction.VIEW):

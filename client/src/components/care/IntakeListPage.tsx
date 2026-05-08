@@ -3,14 +3,20 @@ import { CheckCircle2, Clock3, Loader2, Send, XCircle } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { useCases, type SpaCase } from "../../hooks/useCases";
 import { Button } from "../ui/button";
-import { CareEmptyState } from "./CareSurface";
-import { CarePageScaffold } from "./CarePageScaffold";
 import {
+  CareAttentionBar,
   CareContextHint,
+  CareInfoPopover,
   CareMetricBadge,
+  CarePageScaffold,
   CareSearchFiltersBar,
-} from "./CareUnifiedPage";
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { UrgencyBadge } from "./UrgencyBadge";
+import { tokens } from "../../design/tokens";
 
 interface IntakeListPageProps {
   onCaseClick: (caseId: string) => void;
@@ -101,8 +107,15 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   return (
     <CarePageScaffold
       archetype="worklist"
-      title={summary.title}
-      subtitle={summary.description}
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          {summary.title}
+          <CareInfoPopover ariaLabel="Intake-overzicht" testId="intake-page-info">
+            <p className="text-muted-foreground">{summary.description}</p>
+          </CareInfoPopover>
+        </span>
+      }
       metric={
         <CareMetricBadge>
           {visibleCases.length} zichtbaar · {pendingRequests.length} open{" "}
@@ -110,31 +123,39 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
         </CareMetricBadge>
       }
       dominantAction={
-        <div className="grid grid-cols-1 gap-3 px-1 md:grid-cols-3">
-          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">Open aanvragen</p>
-              <Send size={16} className="text-primary" />
+        <CareAttentionBar
+          tone={pendingRequests.length > 0 ? "warning" : "info"}
+          icon={<Send size={16} />}
+          message={
+            pendingRequests.length > 0
+              ? pendingRequests.length === 1
+                ? "1 open aanvraag — beoordeling nodig"
+                : `${pendingRequests.length} open aanvragen — beoordeling nodig`
+              : "Geen open aanvragen"
+          }
+          action={
+            visibleCases.length > 0 ? (
+              <PrimaryActionButton onClick={() => onCaseClick(visibleCases[0].id)}>
+                Bekijk eerste casus
+              </PrimaryActionButton>
+            ) : undefined
+          }
+        />
+      }
+      kpiStrip={
+        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+          {[
+            { label: "Open aanvragen", value: pendingRequests.length, detail: "Beoordelen" },
+            { label: "In plaatsing", value: intakeCases.length, detail: "Volgende stap" },
+            { label: "Gem. wachttijd", value: `${avgWaitDays}d`, detail: "Op huidige filters" },
+            { label: "Zichtbaar", value: visibleCases.length, detail: "In dit overzicht" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.label}</p>
+              <div className="mt-1.5 text-[20px] font-semibold leading-none text-foreground">{item.value}</div>
+              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{item.detail}</p>
             </div>
-            <p className="text-2xl font-semibold text-foreground">{pendingRequests.length}</p>
-          </div>
-          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">In plaatsing / intake</p>
-              <CheckCircle2 size={16} className="text-emerald-400" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">{intakeCases.length}</p>
-          </div>
-          <div className="rounded-xl border border-border/70 bg-card/60 p-4">
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">Gem. wachttijd (filter)</p>
-              <Clock3 size={16} className="text-amber-400" />
-            </div>
-            <p className="text-2xl font-semibold text-foreground">
-              {avgWaitDays}
-              <span className="ml-1 text-sm font-medium text-muted-foreground">dagen</span>
-            </p>
-          </div>
+          ))}
         </div>
       }
       filters={
@@ -151,10 +172,10 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
         </div>
       )}
 
-      {loading && <CareEmptyState title="Laden…" copy="Intake-overzicht wordt opgebouwd." />}
+      {loading && <LoadingState title="Laden…" copy="Intake-overzicht wordt opgebouwd." />}
 
       {!loading && error && (
-        <CareEmptyState
+        <ErrorState
           title="Fout bij laden"
           copy={error}
           action={<Button variant="outline" onClick={() => void refetch()}>Opnieuw</Button>}
@@ -162,7 +183,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
       )}
 
       {!loading && !error && visibleCases.length === 0 && (
-        <CareEmptyState
+        <EmptyState
           title={view === "requests" ? "Geen open verzoeken" : "Geen casussen in dit overzicht"}
           copy={view === "requests" ? "Pas de zoekopdracht of kom later terug." : "Geen plaatsingen of intakes die aan dit filter voldoen."}
         />
@@ -177,7 +198,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
             return (
               <div
                 key={caseItem.id}
-                className="premium-card p-6 transition-all hover:bg-card/80"
+                className="panel-surface p-4 transition-all hover:bg-card/80"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
@@ -193,7 +214,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                       Casus #{caseItem.id} · {caseItem.regio || "Onbekende regio"} · {caseItem.zorgtype || "Onbekend zorgtype"}
                     </p>
 
-                    <p className="max-w-3xl text-sm text-foreground/85">
+                    <p className="text-sm text-foreground/85" style={{ maxWidth: tokens.layout.contentMeasure }}>
                       {caseItem.systemInsight || "Geen toelichting."}
                     </p>
 

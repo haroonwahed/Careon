@@ -10,7 +10,7 @@
  * This is NOT a workflow page - it's a structural overview.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   MapPin,
   Users,
@@ -23,23 +23,44 @@ import {
   Activity,
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { CareSearchFiltersBar } from "./CareUnifiedPage";
+import {
+  CareAttentionBar,
+  CareInfoPopover,
+  CareMetaChip,
+  CarePageScaffold,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
+  CareSearchFiltersBar,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 import { useRegions, type SpaRegion } from "../../hooks/useRegions";
-import { Loader2 } from "lucide-react";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
+
+/** Token-aligned shells — avoids global `.panel-surface` light hairlines on dark backgrounds. */
+const regionOverviewShell = "rounded-xl border border-border/55 bg-card/30";
 
 interface RegiosPageProps {
   onRegionClick: (regionId: string) => void;
   onViewGemeenten: (regionId: string) => void;
   onViewProviders: (regionId: string) => void;
+  /** SPA shell: navigate to Signalen without full reload. Falls back to `/signalen` if omitted. */
+  onNavigateToSignalen?: () => void;
+  /** SPA shell: navigate to Matching (kritieke belasting → herverdeling). Falls back to `/matching` if omitted. */
+  onNavigateToMatching?: () => void;
 }
 
 export function RegiosPage({ 
   onRegionClick,
   onViewGemeenten,
-  onViewProviders
+  onViewProviders,
+  onNavigateToSignalen,
+  onNavigateToMatching,
 }: RegiosPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [capacityFilter, setCapacityFilter] = useState<"all" | "stabiel" | "druk" | "tekort" | "kritiek">("all");
@@ -47,13 +68,21 @@ export function RegiosPage({
 
   const { regions, loading, error, refetch } = useRegions({ q: searchQuery });
 
-  const openCasussen = () => {
-    window.location.href = "/care/casussen/";
-  };
+  const openSignalen = useCallback(() => {
+    if (onNavigateToSignalen) {
+      onNavigateToSignalen();
+      return;
+    }
+    window.location.assign("/signalen");
+  }, [onNavigateToSignalen]);
 
-  const openSignalen = () => {
-    window.location.href = "/care/signalen/";
-  };
+  const openMatching = useCallback(() => {
+    if (onNavigateToMatching) {
+      onNavigateToMatching();
+      return;
+    }
+    window.location.assign("/matching");
+  }, [onNavigateToMatching]);
 
   const openZorgaanbieders = () => {
     if (regions.length > 0) {
@@ -106,7 +135,7 @@ export function RegiosPage({
         id: "critical-health",
         message: `${systemState.criticalRegions.length} regio${systemState.criticalRegions.length === 1 ? "" : "'s"} heeft kritieke belasting`,
         actionLabel: "Naar matching",
-        onAction: () => openSignalen(),
+        onAction: openMatching,
       });
     }
 
@@ -114,7 +143,7 @@ export function RegiosPage({
       signals.push({
         id: "near-limit",
         message: `${systemState.nearLimitRegions.length} regio${systemState.nearLimitRegions.length === 1 ? "" : "'s"} onder capaciteitsdruk`,
-        actionLabel: "Bekijk regio's",
+        actionLabel: "Open regio's",
         onAction: () => setCapacityFilter("druk"),
       });
     }
@@ -138,7 +167,7 @@ export function RegiosPage({
     }
 
     return signals.slice(0, 3);
-  }, [systemState, regions]);
+  }, [systemState, regions, openSignalen, openMatching]);
 
   // Filter and sort regions
   const filteredRegions = useMemo(() => {
@@ -167,116 +196,80 @@ export function RegiosPage({
   }, [regions, searchQuery, capacityFilter, sortBy]);
 
   return (
-    <div className="space-y-6 pb-24">
-      
-      {/* HEADER */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-2">
-          Regio's
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Overzicht van capaciteit en casussen per regio
-        </p>
-      </div>
-
-      {/* SYSTEM-LEVEL STATS */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="premium-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Totaal casussen</p>
-          <p className="text-2xl font-bold text-foreground">{systemState.totalCases}</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {regions.length} regio's
-          </p>
-        </div>
-        
-        <div className="premium-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Systeem bezetting</p>
-          <p className="text-2xl font-bold text-foreground">{systemState.systemUtilization}%</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {systemState.totalUsed} / {systemState.totalCapacity}
-          </p>
-        </div>
-        
-        <div className="premium-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Regio's met tekort</p>
-          <p className={`text-2xl font-bold ${systemState.shortageRegions.length > 0 ? "text-red-400" : "text-emerald-400"}`}>
-            {systemState.shortageRegions.length}
-          </p>
-          <p className={`text-xs mt-1 ${systemState.shortageRegions.length > 0 ? "text-red-400" : "text-emerald-400"}`}>
-            {systemState.shortageRegions.length > 0 ? "Actie vereist" : "Geen knelpunten"}
-          </p>
-          {systemState.shortageRegions.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setCapacityFilter("tekort")}
-              className="mt-2 text-xs text-primary hover:text-primary/80"
-            >
-              Bekijk regio's
-            </button>
-          )}
-        </div>
-        
-        <div className="premium-card p-4">
-          <p className="text-xs text-muted-foreground mb-1">Hoge wachttijd</p>
-          <p className={`text-2xl font-bold ${systemState.highWaitRegions.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-            {systemState.highWaitRegions.length}
-          </p>
-          <p className={`text-xs mt-1 ${systemState.highWaitRegions.length > 0 ? "text-amber-400" : "text-emerald-400"}`}>
-            {systemState.highWaitRegions.length > 0 ? "Boven norm" : "Binnen norm"}
-          </p>
-          {systemState.highWaitRegions.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setSortBy("waittime")}
-              className="mt-2 text-xs text-primary hover:text-primary/80"
-            >
-              Bekijk regio's
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* REGIE SIGNALS */}
-      <div className="premium-card p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-foreground">Regie inzicht</h2>
-          <button
-            type="button"
-            onClick={openSignalen}
-            className="text-xs text-primary hover:text-primary/80"
-          >
+    <CarePageScaffold
+      archetype="worklist"
+      className="pb-8"
+      title="Regio's"
+      subtitleInfoTestId="regios-page-info"
+      subtitleAriaLabel="Uitleg regio-overzicht"
+      subtitle="Regionale balans van casussen en capaciteit — voor planning en signalen."
+      dominantAction={
+        <CareAttentionBar
+          tone={systemState.criticalRegions.length > 0 || systemState.shortageRegions.length > 0 ? "critical" : "warning"}
+          icon={<Activity size={16} />}
+          message={
+            systemState.criticalRegions.length > 0
+              ? systemState.criticalRegions.length === 1
+                ? "1 regio met kritieke druk — bekijk signalen en capaciteit"
+                : `${systemState.criticalRegions.length} regio's met kritieke druk — bekijk signalen en capaciteit`
+              : systemState.shortageRegions.length > 0
+                ? `${systemState.shortageRegions.length} regio's hebben tekort`
+                : `${systemState.highWaitRegions.length} regio's hebben hogere wachttijd`
+          }
+          action={
+            <PrimaryActionButton onClick={openSignalen}>
+              Ga naar signalen
+            </PrimaryActionButton>
+          }
+        />
+      }
+    >
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          meta={<CareMetaChip>{filteredRegions.length} zichtbaar · {systemState.totalCases} casussen · {systemState.systemUtilization}% bezetting</CareMetaChip>}
+        />
+        <CareSectionBody className="space-y-4">
+      <div className={`${regionOverviewShell} p-4`}>
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 className="text-sm font-semibold text-foreground">Signalen</h2>
+          <Button type="button" variant="outline" size="sm" className="h-8 shrink-0 text-xs" onClick={openSignalen}>
             Ga naar signalen
-          </button>
+          </Button>
         </div>
 
         {regieSignals.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Geen capaciteitsproblemen gedetecteerd</p>
+          <p className="text-sm text-muted-foreground">Geen signalen in dit overzicht.</p>
         ) : (
           <div className="space-y-2">
             {regieSignals.map((signal) => (
-              <div key={signal.id} className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card/35 px-3 py-2">
-                <p className="text-sm text-foreground">{signal.message}</p>
-                {signal.onAction && signal.actionLabel && (
-                  <button
+              <div
+                key={signal.id}
+                className="flex flex-col gap-2 rounded-lg border border-border/55 bg-muted/15 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"
+              >
+                <p className="min-w-0 flex-1 text-sm text-foreground">{signal.message}</p>
+                {signal.onAction && signal.actionLabel ? (
+                  <Button
                     type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-8 w-full shrink-0 px-3 text-xs sm:w-auto"
                     onClick={signal.onAction}
-                    className="text-xs text-primary hover:text-primary/80"
                   >
                     {signal.actionLabel}
-                  </button>
-                )}
+                  </Button>
+                ) : null}
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {/* SEARCH + FILTERS */}
       <div className="space-y-3">
         <CareSearchFiltersBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek regio..."
+          searchPlaceholder="Zoeken op regio..."
         />
         <div className="flex flex-col gap-3 px-1 sm:flex-row sm:flex-wrap sm:items-center">
           <Select value={capacityFilter} onValueChange={setCapacityFilter}>
@@ -305,8 +298,7 @@ export function RegiosPage({
         </div>
       </div>
 
-      {/* VISUALIZATION - HEAT INDICATORS */}
-      <div className="premium-card p-6">
+      <div className={`${regionOverviewShell} p-4`}>
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-sm font-bold text-foreground">Capaciteit verdeling</h2>
@@ -331,14 +323,11 @@ export function RegiosPage({
         </div>
 
         {filteredRegions.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card/30 p-6 text-center">
-            <p className="text-sm font-medium text-foreground">Nog geen capaciteitsdata beschikbaar</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Zodra aanbieders en casussen gekoppeld zijn aan regio's, tonen we hier de bezettingsverdeling.
-            </p>
+          <div className="rounded-xl border border-border/55 bg-card/30 p-4 text-center">
+            <p className="text-sm font-medium text-foreground">Geen capaciteitsdata</p>
+            <p className="mt-1 text-xs text-muted-foreground">Koppel aanbieders om de verdeling te tonen.</p>
             <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
               <Button variant="outline" size="sm" onClick={openZorgaanbieders}>Ga naar zorgaanbieders</Button>
-              <Button variant="outline" size="sm" onClick={openCasussen}>Ga naar casussen</Button>
             </div>
           </div>
         ) : (
@@ -378,7 +367,6 @@ export function RegiosPage({
         )}
       </div>
 
-      {/* REGION CARDS */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold text-foreground">
@@ -402,40 +390,38 @@ export function RegiosPage({
         </div>
 
         {loading && (
-          <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-            <Loader2 size={18} className="animate-spin" />
-            <span>Regio's laden…</span>
-          </div>
+          <LoadingState title="Regio's laden…" copy="Overzicht wordt opgebouwd." />
         )}
-        {error && (
-          <div className="premium-card p-6 text-center text-destructive space-y-2">
-            <p>Kon regio's niet laden: {error}</p>
-            <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
-          </div>
+        {!loading && error && (
+          <ErrorState
+            title="Kon regio's niet laden"
+            copy={error}
+            action={<Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>}
+          />
         )}
         {!loading && !error && filteredRegions.length === 0 && (
-          <div className="premium-card p-12 text-center">
-            <p className="text-base font-semibold text-foreground">
-              Geen regio's beschikbaar
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Er zijn nog geen regio's met gekoppelde casussen of capaciteit.
-            </p>
+          <EmptyState
+            title="Geen regio's"
+            copy="Er zijn geen regio's die passen bij de huidige filters."
+            action={(
             <Button
               variant="outline"
               size="sm"
-              className="mt-4"
+              className="mt-2"
               onClick={() => {
                 setSearchQuery("");
                 setCapacityFilter("all");
               }}
             >
-              Filters wissen
+              Wis filters
             </Button>
-          </div>
+            )}
+          />
         )}
       </div>
-    </div>
+      </CareSectionBody>
+      </CareSection>
+    </CarePageScaffold>
   );
 }
 
@@ -484,7 +470,7 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
   const hasWaitData = region.gemiddelde_wachttijd_dagen > 0;
 
   return (
-    <div className="premium-card p-5 hover:bg-muted/20 transition-all group">
+    <div className={`${regionOverviewShell} p-4 transition-all hover:bg-muted/15 group`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
@@ -549,7 +535,7 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
         </div>
       </div>
 
-      <div className="mb-4 rounded-lg border border-border bg-card/35 p-3">
+      <div className="mb-4 rounded-lg border border-border/55 bg-card/35 p-3">
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div>
             <p className="text-muted-foreground">Beschikbaar</p>
@@ -591,23 +577,9 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
         </p>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-2 pt-4 border-t border-border">
-        <button
-          onClick={onViewGemeenten}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-muted/30 transition-colors"
-        >
-          <MapPin size={14} className="text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground">Gemeenten</span>
-        </button>
-        
-        <button
-          onClick={onViewProviders}
-          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-border hover:bg-muted/30 transition-colors"
-        >
-          <Building2 size={14} className="text-muted-foreground" />
-          <span className="text-xs font-semibold text-foreground">Aanbieders</span>
-        </button>
+      <div className="flex gap-2 border-t border-border/50 pt-4">
+        <Button onClick={onClick} className="flex-1">Open regio</Button>
+        <Button variant="ghost" onClick={onViewProviders} className="flex-1">Aanbieders</Button>
       </div>
     </div>
   );

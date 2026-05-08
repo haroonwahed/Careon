@@ -12,13 +12,15 @@ import {
   SystemInsight,
   AIInsightPanel
 } from "../ai";
+import { CareAppFrame } from "../care/CareAppFrame";
+import { tokens } from "../../design/tokens";
 
 export function AIComponentShowcase() {
   return (
-    <div className="min-h-screen bg-background p-8 space-y-12">
+    <CareAppFrame className="min-h-screen space-y-12">
       
       {/* Header */}
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <h1 className="text-3xl font-bold text-foreground mb-2">
           AI overzicht
         </h1>
@@ -27,7 +29,7 @@ export function AIComponentShowcase() {
         </p>
       </div>
 
-      <div className="max-w-7xl mx-auto space-y-12">
+      <div className="w-full space-y-12">
         
         {/* Section 1: Aanbevolen Actie */}
         <section>
@@ -209,7 +211,7 @@ export function AIComponentShowcase() {
             Korte feedbackstroken.
           </p>
           
-          <div className="space-y-3 max-w-2xl">
+          <div className="space-y-3" style={{ maxWidth: tokens.layout.contentMeasure }}>
             <SystemInsight
               type="info"
               message="Beoordeling gepland op 18 april"
@@ -386,6 +388,6 @@ export function AIComponentShowcase() {
         </section>
 
       </div>
-    </div>
+    </CareAppFrame>
   );
 }

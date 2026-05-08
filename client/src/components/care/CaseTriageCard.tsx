@@ -8,6 +8,7 @@ import {
   Users
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { tokens } from "../../design/tokens";
 
 type UrgencyLevel = "critical" | "warning" | "normal" | "stable";
 type CaseStatus = "intake" | "beoordeling" | "matching" | "plaatsing" | "afgerond";
@@ -118,7 +119,7 @@ export function CaseTriageCard({
     >
       {/* Selection Checkbox */}
       {onSelect && (
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute left-4 z-10" style={{ top: tokens.layout.edgeZero }}>
           <input
             type="checkbox"
             checked={isSelected}
@@ -129,7 +130,7 @@ export function CaseTriageCard({
         </div>
       )}
 
-      <div className={`p-5 ${onSelect ? "pl-12" : ""}`}>
+      <div className={`p-4 ${onSelect ? "pl-12" : ""}`}>
         {/* HEADER: Urgency + Title */}
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1">

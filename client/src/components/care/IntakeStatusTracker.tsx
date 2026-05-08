@@ -54,7 +54,7 @@ export function IntakeStatusTracker({
   const currentIndex = statuses.indexOf(currentStatus);
 
   return (
-    <div className="premium-card p-5">
+    <div className="panel-surface p-4">
       <h3 className="text-base font-semibold text-foreground mb-4">
         Intake status
       </h3>

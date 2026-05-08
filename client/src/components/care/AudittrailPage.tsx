@@ -28,9 +28,22 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { CareSearchFiltersBar } from "./CareUnifiedPage";
+import {
+  CareAttentionBar,
+  CareInfoPopover,
+  CareMetaChip,
+  CarePageScaffold,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
+  CareSearchFiltersBar,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useAuditLog } from "../../hooks/useAuditLog";
-import { Loader2 } from "lucide-react";
+import { tokens } from "../../design/tokens";
 
 type EntityType = "casus" | "beoordeling" | "matching" | "plaatsing" | "intake" | "document" | "gebruiker" | "instellingen";
 type ActionType = "aangemaakt" | "gewijzigd" | "verwijderd" | "bevestigd" | "toegewezen" | "geupload" | "bekeken";
@@ -166,26 +179,56 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
 
   const groupedEntries = groupByDate(filteredEntries);
   const totalEntries = filteredEntries.length;
+  const todayCount = groupedEntries["Vandaag"].length;
+  const yesterdayCount = groupedEntries["Gisteren"].length;
+  const distinctUsers = new Set(filteredEntries.map((entry) => entry.userId).filter(Boolean)).size;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-semibold text-foreground mb-1">
+    <CarePageScaffold
+      archetype="exception"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
           Audittrail
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {totalEntries} activiteiten geregistreerd
-        </p>
-      </div>
-
-      {/* Search & Filters */}
-      <div className="premium-card p-4">
+          <CareInfoPopover ariaLabel="Uitleg audittrail" testId="audittrail-page-info">
+            <p className="text-muted-foreground">Traceerbare gebeurtenissen voor compliance en onderzoek — alleen-lezen.</p>
+          </CareInfoPopover>
+        </span>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={totalEntries === 0 ? "warning" : "info"}
+          icon={<Clock size={16} />}
+          message={
+            totalEntries === 0
+              ? "Geen activiteiten voor deze selectie"
+              : `${totalEntries} activiteiten zijn traceerbaar`
+          }
+          action={
+            <PrimaryActionButton onClick={() => {
+              setSearchQuery("");
+              setTypeFilter("all");
+              setActionFilter("all");
+              setUserFilter("all");
+            }}
+            >
+              Wis filters
+            </PrimaryActionButton>
+          }
+        />
+      }
+    >
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          meta={<CareMetaChip>{totalEntries} activiteiten · {todayCount} vandaag · {distinctUsers} gebruikers</CareMetaChip>}
+        />
+        <CareSectionBody className="space-y-4">
         <CareSearchFiltersBar
-          className="!px-0"
+          className="px-0"
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek op casus ID, gebruiker, actie..."
+          searchPlaceholder="Zoeken op casus ID, gebruiker of actie..."
           showSecondaryFilters={showFilters}
           onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
           secondaryFiltersLabel="Filters"
@@ -244,24 +287,19 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
             </div>
           }
         />
-      </div>
 
-      {/* Activity List */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Main List */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className={selectedEntry ? "xl:col-span-2" : "xl:col-span-3"}>
-          <div className="premium-card overflow-hidden">
+          <div className="panel-surface overflow-hidden">
             {loading && (
-              <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-                <Loader2 size={18} className="animate-spin" />
-                <span>Auditlog laden…</span>
-              </div>
+              <LoadingState title="Auditlog laden…" copy="Activiteitenlijst wordt opgebouwd." />
             )}
-            {error && (
-              <div className="p-6 text-center text-destructive space-y-2">
-                <p>Kon auditlog niet laden: {error}</p>
-                <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
-              </div>
+            {!loading && error && (
+              <ErrorState
+                title="Kon auditlog niet laden"
+                copy={error}
+                action={<Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>}
+              />
             )}
             {!loading && !error && (<>
             {Object.entries(groupedEntries).map(([group, entries]) => {
@@ -291,21 +329,16 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
               );
             })}
 
-            {/* Empty State */}
             {totalEntries === 0 && (
-              <div className="p-12 text-center">
-                <AlertCircle size={48} className="mx-auto text-muted-foreground/30 mb-4" />
-                <h3 className="font-semibold mb-2">Geen activiteiten gevonden</h3>
-                <p className="text-sm text-muted-foreground">
-                  Geen activiteiten gevonden binnen deze selectie
-                </p>
-              </div>
+              <EmptyState
+                title="Geen activiteiten"
+                copy="Er zijn geen auditregels die passen bij de huidige filters."
+              />
             )}
           </>)}
           </div>
         </div>
 
-        {/* Detail Panel */}
         {selectedEntry && (
           <div className="xl:col-span-1">
             <AuditDetailPanel
@@ -316,7 +349,9 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
           </div>
         )}
       </div>
-    </div>
+      </CareSectionBody>
+      </CareSection>
+    </CarePageScaffold>
   );
 }
 
@@ -432,7 +467,7 @@ function AuditDetailPanel({
   };
 
   return (
-    <div className="premium-card p-5 space-y-4 sticky top-6">
+    <div className="panel-surface p-4 space-y-3 sticky" style={{ top: tokens.layout.edgeZero }}>
       {/* Header */}
       <div className="flex items-start justify-between">
         <h3 className="font-semibold">Activiteit details</h3>

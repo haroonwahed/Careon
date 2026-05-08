@@ -57,7 +57,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
   return (
     <div 
       className="
-        premium-card p-4 cursor-pointer
+        panel-surface p-4 cursor-pointer
         hover:border-primary/40 transition-all
         group
       "

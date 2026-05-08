@@ -18,6 +18,8 @@
  *   Municipality-side provider review is REMOVED as a workflow gate.
  */
 
+import { CARE_TERMS } from "./terminology";
+
 // ─── Phase & Status types ─────────────────────────────────────────────────────
 
 export type CasusPhase =
@@ -236,11 +238,11 @@ export function statusToPhase(status: CasusStatus): CasusPhase {
 }
 
 export const ALL_PHASES: { id: CasusPhase; label: string; shortLabel: string }[] = [
-  { id: "casus",               label: "Casus",                 shortLabel: "Casus"      },
-  { id: "matching",            label: "Matching",              shortLabel: "Matching"   },
+  { id: "casus",               label: CARE_TERMS.workflow.casus,                 shortLabel: CARE_TERMS.workflow.casus      },
+  { id: "matching",            label: CARE_TERMS.workflow.matching,              shortLabel: CARE_TERMS.workflow.matching   },
   { id: "aanbieder_selectie",  label: "Aanbieder selecteren",  shortLabel: "Selectie"   },
-  { id: "provider_beoordeling", label: "Aanbieder beoordeling", shortLabel: "Aanbieder beoordeling" },
-  { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: "Intake"     },
+  { id: "provider_beoordeling", label: CARE_TERMS.workflow.aanbiederBeoordeling, shortLabel: CARE_TERMS.workflow.aanbiederBeoordeling },
+  { id: "intake_provider",     label: "Intake aanbieder",      shortLabel: CARE_TERMS.workflow.intake     },
   { id: "afgerond",            label: "Afgerond",              shortLabel: "Afgerond"   },
 ];
 

@@ -51,7 +51,7 @@ export function CareKPICard({
   const style = urgencyStyles[urgency];
 
   return (
-    <div className={`premium-card kpi-card p-5 ${style.border} ${style.glow}`}>
+    <div className={`panel-surface kpi-card care-hover-card p-4 ${style.border} ${style.glow}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>

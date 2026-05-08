@@ -332,6 +332,59 @@ html {
 }
 
 @layer utilities {
+  .care-hover-card {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease;
+    will-change: transform;
+  }
+
+  .care-hover-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(167, 139, 250, 0.38) !important;
+    box-shadow: 0 8px 22px rgba(76, 29, 149, 0.18);
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .care-hover-card:focus-visible {
+    outline: 2px solid rgba(167, 139, 250, 0.45);
+    outline-offset: 2px;
+  }
+
+  /* Alias kept for landing usage. */
+  .landing-hover-card {
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 220ms ease,
+      background-color 220ms ease,
+      box-shadow 220ms ease;
+    will-change: transform;
+  }
+
+  .landing-hover-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(167, 139, 250, 0.38) !important;
+    box-shadow: 0 8px 22px rgba(76, 29, 149, 0.18);
+    background-color: rgba(255, 255, 255, 0.06) !important;
+  }
+
+  .landing-hover-card:focus-visible {
+    outline: 2px solid rgba(167, 139, 250, 0.45);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .care-hover-card,
+    .care-hover-card:hover,
+    .landing-hover-card,
+    .landing-hover-card:hover {
+      transform: none;
+      transition: border-color 120ms ease, background-color 120ms ease, box-shadow 120ms ease;
+    }
+  }
+
   .careon-alert-error {
     @apply bg-red-light border-red-border text-red-base;
   }
@@ -491,7 +544,22 @@ html {
 .premium-card {
   @apply border border-border/70 rounded-xl bg-card/55;
   box-shadow: none;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.premium-card,
+.kpi-card,
+.queue-row,
+.case-row {
+  border-color: color-mix(in srgb, var(--border-default) 88%, transparent) !important;
+  background-color: color-mix(in srgb, var(--card) 92%, var(--background) 8%) !important;
+}
+
+.premium-card:hover,
+.kpi-card:hover,
+.queue-row:hover,
+.case-row:hover {
+  background-color: color-mix(in srgb, var(--card) 88%, var(--muted) 12%) !important;
 }
 
 /* Priority card gradients — light mode */
@@ -558,14 +626,14 @@ html {
   box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.25), 0 0 16px rgba(245, 158, 11, 0.16);
 }
 
-/* Panel surface — replaces bg-white/72 pattern */
+/* Panel surface — soft fill only (no hairline); avoids stacking with CareSection/work rows on list pages. */
 .panel-surface {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.70);
+  border: none !important;
+  background-color: color-mix(in srgb, var(--card) 92%, var(--background) 8%) !important;
 }
 .dark .panel-surface {
-  background: rgba(55, 65, 81, 0.6);
-  border-color: rgba(209, 213, 219, 0.12);
+  border: none !important;
+  background-color: color-mix(in srgb, var(--card) 88%, var(--background) 12%) !important;
 }
 
 /* Icon surface — replaces bg-white/70 pattern inside colored panels */
@@ -579,10 +647,6 @@ html {
 /* Keep the legacy class but flatten it into the source design language. */
 .dark .premium-card {
   background-color: rgba(17, 24, 39, 0.46);
-}
-
-.premium-card:hover {
-  background-color: color-mix(in srgb, var(--card) 92%, var(--muted) 8%);
 }
 
 .dark .premium-card:hover {

@@ -9,7 +9,7 @@ export interface CurrentUserMe {
   fullName: string;
   username: string;
   workflowRole: WorkflowRole;
-  organization: { id: number; name: string } | null;
+  organization: { id: number; slug: string; name: string } | null;
   permissions: { allowRoleSwitch: boolean };
   flags: { pilotUi: boolean; spaOnlyWorkflow: boolean };
 }

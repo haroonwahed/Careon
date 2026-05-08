@@ -21,6 +21,7 @@ client/node_modules/
 *.z06
 *.zip
 .env
+client/.env.e2e
 .aider*
 !.aider.conf.yml
 *.pid
@@ -41,3 +42,6 @@ venv/
 
 # SPA build output
 theme/static/spa/assets/
+
+# Disposable local UI screenshots (manual visual checks)
+client/*-visual-check.png

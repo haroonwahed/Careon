@@ -55,6 +55,28 @@ class PublicAuthFlowTests(TestCase):
         self.assertEqual(login_response.status_code, 302)
         self.assertEqual(login_response['Location'], '/dashboard/')
 
+    def test_current_user_api_exposes_organization_slug(self):
+        demo_user = User.objects.create_user(
+            username='demo-api-user',
+            password='testpass123',
+            email='test@gemeente-demo.nl',
+        )
+        organization = Organization.objects.create(name='Gemeente Demo API', slug='gemeente-demo-api')
+        OrganizationMembership.objects.create(
+            organization=organization,
+            user=demo_user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        self.client.force_login(demo_user)
+
+        response = self.client.get('/care/api/me/')
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload['organization']['slug'], 'gemeente-demo-api')
+        self.assertEqual(payload['organization']['name'], 'Gemeente Demo API')
+
     def test_logout_returns_to_public_landing(self):
         self.client.force_login(self.user)
 

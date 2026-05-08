@@ -1,4 +1,5 @@
 import type { Casus } from "./phaseEngine";
+import { CARE_TERMS } from "./terminology";
 
 export type RegiekamerSeverity = "critical" | "warning" | "info" | "good";
 export type RegiekamerViewTarget = "matching" | "casussen" | "plaatsingen" | "signalen";
@@ -332,7 +333,7 @@ export function buildRegiekamerDecisionSummary(
     },
     {
       key: "wacht_op_aanbieder",
-      title: "Aanbieder beoordeling",
+      title: CARE_TERMS.workflow.aanbiederBeoordeling,
       value: issue_buckets.wacht_op_aanbieder,
       subtitle: "Verzoek verstuurd — wacht op reactie van de aanbieder",
       severity: issue_buckets.wacht_op_aanbieder > 0 ? "info" : "good",

@@ -9,6 +9,7 @@
 
 import { useState } from "react";
 import { RegiosPage } from "../care/RegiosPage";
+import { CareAppFrame } from "../care/CareAppFrame";
 
 type View = "overview" | "detail";
 
@@ -59,30 +60,26 @@ export function RegiosDemo() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Demo Controls */}
-      <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-card/95 backdrop-blur space-y-3">
-        <p className="text-xs font-semibold text-muted-foreground uppercase">
-          Demo
-        </p>
-        
-        <div className="text-xs text-muted-foreground">
-          <p>View:</p>
-          <p className="font-semibold text-foreground mt-1">
-            {currentView === "overview" ? "Overzicht" : `Detail: ${selectedRegion}`}
-          </p>
+      <CareAppFrame>
+        <div className="rounded-xl border border-border/70 bg-card/80 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs text-muted-foreground">
+              <p className="font-semibold uppercase tracking-[0.08em]">Demo</p>
+              <p className="mt-1 text-foreground">
+                View: {currentView === "overview" ? "Overzicht" : `Detail: ${selectedRegion}`}
+              </p>
+            </div>
+            {currentView === "detail" && (
+              <button
+                onClick={handleBack}
+                className="text-xs text-primary hover:underline"
+              >
+                ← Terug
+              </button>
+            )}
+          </div>
         </div>
 
-        {currentView === "detail" && (
-          <button
-            onClick={handleBack}
-            className="text-xs text-primary hover:underline"
-          >
-            ← Terug
-          </button>
-        )}
-      </div>
-
-      <div className="max-w-[1920px] mx-auto p-6">
         {currentView === "overview" ? (
           <RegiosPage
             onRegionClick={handleRegionClick}
@@ -99,7 +96,7 @@ export function RegiosDemo() {
             </button>
           </div>
         )}
-      </div>
+      </CareAppFrame>
     </div>
   );
 }

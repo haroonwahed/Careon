@@ -129,7 +129,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
   return (
     <div
       className={`
-        relative premium-card border-l-4 ${urgencyConfig.borderColor} ${urgencyConfig.bgColor}
+        relative panel-surface border-l-4 ${urgencyConfig.borderColor} ${urgencyConfig.bgColor}
         transition-all duration-200 hover:shadow-lg
         ${isSelected ? "ring-2 ring-primary/40" : ""}
       `}

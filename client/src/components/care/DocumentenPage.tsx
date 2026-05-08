@@ -26,9 +26,22 @@ import {
   ExternalLink
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { CareSearchFiltersBar } from "./CareUnifiedPage";
+import {
+  CareAttentionBar,
+  CareInfoPopover,
+  CareMetaChip,
+  CarePageScaffold,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
+  CareSearchFiltersBar,
+  EmptyState,
+  ErrorState,
+  LoadingState,
+  PrimaryActionButton,
+} from "./CareDesignPrimitives";
 import { useDocuments } from "../../hooks/useDocuments";
-import { Loader2 } from "lucide-react";
+import { tokens } from "../../design/tokens";
 
 type DocumentType = "intake" | "contract" | "rapport" | "beoordeling" | "overig";
 type LinkedEntity = "casus" | "aanbieder" | "gemeente" | "geen";
@@ -121,6 +134,12 @@ export function DocumentenPage() {
   });
 
   const activeCount = documents.filter(d => d.status === "actief").length;
+  const linkedCount = documents.filter(d => d.linkedTo.type !== "geen").length;
+  const recentCount = apiDocuments.filter(d => {
+    const uploaded = new Date(d.uploadDate);
+    const diffDays = Math.floor((Date.now() - uploaded.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays <= 7;
+  }).length;
 
   const handleView = (document: Document) => {
     setSelectedDocument(document);
@@ -165,39 +184,53 @@ export function DocumentenPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-semibold text-foreground mb-2">
-            Documenten
-          </h1>
-          <p className="text-muted-foreground">
-            Beheer en bekijk documenten · {activeCount} actief · {filteredDocuments.length} resultaten
-          </p>
-        </div>
-        <Button
-          className="bg-primary hover:bg-primary/90 gap-2"
-          onClick={() => setLastActionMessage("Uploaddialoog volgt in volgende integratiestap")}
-        >
-          <Upload size={16} />
-          Upload document
-        </Button>
-      </div>
+    <CarePageScaffold
+      archetype="worklist"
+      className="pb-8"
+      title={
+        <span className="inline-flex flex-wrap items-center gap-2">
+          Documenten
+          <CareInfoPopover ariaLabel="Uitleg documenten" testId="documenten-page-info">
+            <p className="text-muted-foreground">Zoek en beheer dossierdocumenten en koppelingen naar casussen.</p>
+          </CareInfoPopover>
+        </span>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone={activeCount === 0 ? "warning" : "info"}
+          icon={<FileText size={16} />}
+          message={
+            activeCount === 0
+              ? "Geen actieve documenten gevonden"
+              : activeCount === 1
+                ? "1 actief document — controle nodig"
+                : `${activeCount} actieve documenten — controle nodig`
+          }
+          action={
+            <PrimaryActionButton onClick={() => setShowFilters((current) => !current)}>
+              Upload
+            </PrimaryActionButton>
+          }
+        />
+      }
+    >
 
       {lastActionMessage && (
         <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
           {lastActionMessage}
         </div>
       )}
-
-      {/* Search & Filters */}
-      <div className="premium-card p-4">
+      <CareSection>
+        <CareSectionHeader
+          title="Werklijst"
+          meta={<CareMetaChip>{filteredDocuments.length} resultaten · {activeCount} actief · {linkedCount} gekoppeld · {recentCount} recent</CareMetaChip>}
+        />
+        <CareSectionBody className="space-y-4">
         <CareSearchFiltersBar
-          className="!px-0"
+          className="px-0"
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek documenten, casus ID, cliënt..."
+          searchPlaceholder="Zoeken op document, casus ID of gebruiker..."
           showSecondaryFilters={showFilters}
           onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
           secondaryFiltersLabel="Filters"
@@ -249,14 +282,10 @@ export function DocumentenPage() {
             </div>
           }
         />
-      </div>
 
-      {/* Document List */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Table */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className={selectedDocument ? "xl:col-span-2" : "xl:col-span-3"}>
-          <div className="premium-card overflow-hidden">
-            {/* Table Header */}
+          <div className="panel-surface overflow-hidden">
             <div className="grid grid-cols-12 gap-4 p-4 border-b border-border bg-muted/30">
               <div className="col-span-4 text-xs font-semibold text-muted-foreground uppercase">
                 Document
@@ -275,7 +304,6 @@ export function DocumentenPage() {
               </div>
             </div>
 
-            {/* Table Rows */}
             <div className="divide-y divide-border">
               {filteredDocuments.map((doc) => (
                 <DocumentRow
@@ -291,32 +319,36 @@ export function DocumentenPage() {
               ))}
             </div>
 
-            {/* Empty State */}
             {loading && (
-              <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
-                <Loader2 size={18} className="animate-spin" />
-                <span>Documenten laden…</span>
-              </div>
+              <LoadingState title="Documenten laden…" copy="Bestandenlijst wordt opgebouwd." />
             )}
-            {error && (
-              <div className="p-6 text-center text-destructive space-y-2">
-                <p>Kon documenten niet laden: {error}</p>
-                <button className="text-sm underline" onClick={refetch}>Opnieuw proberen</button>
-              </div>
+            {!loading && error && (
+              <ErrorState
+                title="Kon documenten niet laden"
+                copy={error}
+                action={<Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>}
+              />
             )}
             {!loading && !error && filteredDocuments.length === 0 && (
-              <div className="p-12 text-center">
-                <FileText size={48} className="mx-auto text-muted-foreground/30 mb-4" />
-                <h3 className="font-semibold mb-2">Geen documenten gevonden</h3>
-                <p className="text-sm text-muted-foreground">
-                  Pas je filters aan of upload een nieuw document
-                </p>
-              </div>
+              <EmptyState
+                  title="Geen documenten"
+                  copy="Er zijn geen documenten die passen bij de huidige filters."
+                  action={(
+                    <Button variant="outline" onClick={() => {
+                      setSearchQuery("");
+                      setTypeFilter("all");
+                      setLinkedToFilter("all");
+                      setStatusFilter("all");
+                    }}
+                    >
+                      Wis filters
+                    </Button>
+                  )}
+              />
             )}
           </div>
         </div>
 
-        {/* Preview Panel */}
         {selectedDocument && (
           <div className="xl:col-span-1">
             <DocumentPreview
@@ -329,7 +361,9 @@ export function DocumentenPage() {
           </div>
         )}
       </div>
-    </div>
+      </CareSectionBody>
+      </CareSection>
+    </CarePageScaffold>
   );
 }
 
@@ -489,10 +523,10 @@ function DocumentPreview({
   const linkedConfig = linkedEntityConfig[document.linkedTo.type];
 
   return (
-    <div className="premium-card p-5 space-y-4 sticky top-6">
+    <div className="panel-surface p-4 space-y-3 sticky" style={{ top: tokens.layout.edgeZero }}>
       {/* Header */}
       <div className="flex items-start justify-between">
-        <h3 className="font-semibold">Document preview</h3>
+        <h3 className="font-semibold">Document</h3>
         <Button
           size="sm"
           variant="ghost"
@@ -503,11 +537,10 @@ function DocumentPreview({
         </Button>
       </div>
 
-      {/* Preview (Mock) */}
       <div className="aspect-[3/4] bg-muted/30 rounded-lg border border-border flex items-center justify-center">
         <div className="text-center">
           <FileText size={48} className="mx-auto text-muted-foreground/30 mb-2" />
-          <p className="text-sm text-muted-foreground">PDF Preview</p>
+          <p className="text-sm text-muted-foreground">Documentweergave</p>
         </div>
       </div>
 
@@ -582,7 +615,7 @@ function DocumentPreview({
         </Button>
         <Button variant="outline" className="w-full gap-2" onClick={onDownload}>
           <ExternalLink size={16} />
-          Open in nieuw tabblad
+          Bekijk in nieuw tabblad
         </Button>
         {document.linkedTo.type === "geen" && (
           <Button variant="outline" className="w-full gap-2" onClick={onLink}>

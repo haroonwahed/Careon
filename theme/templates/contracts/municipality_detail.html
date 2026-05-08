@@ -4,7 +4,7 @@
 <div class="ds-detail-shell">
 
     <nav class="ds-breadcrumb">
-        <a class="ds-breadcrumb-link" href="{% url 'dashboard' %}">Regiekamer</a>
+        <a class="ds-breadcrumb-link" href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/">Regiekamer</a>
         <span class="ds-breadcrumb-sep">/</span>
         <a class="ds-breadcrumb-link" href="{% url 'careon:municipality_list' %}">Gemeenten</a>
         <span class="ds-breadcrumb-sep">/</span>

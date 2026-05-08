@@ -1,8 +1,10 @@
+import { CARE_TERMS } from "./terminology";
+
 const STATUS_LABELS: Record<string, string> = {
   DRAFT_CASE: "Casus",
-  SUMMARY_READY: "Samenvatting",
-  MATCHING_READY: "Matching",
-  PROVIDER_REVIEW_PENDING: "Aanbieder beoordeling",
+  SUMMARY_READY: "Samenvatting gereed",
+  MATCHING_READY: CARE_TERMS.workflow.matching,
+  PROVIDER_REVIEW_PENDING: CARE_TERMS.workflow.aanbiederBeoordeling,
   PROVIDER_ACCEPTED: "Aanbieder akkoord",
   PROVIDER_REJECTED: "Aanbieder afwijzing",
   PLACEMENT_CONFIRMED: "Plaatsing",
@@ -20,7 +22,7 @@ const REASON_PATTERNS: Array<[RegExp, string]> = [
   [/intake.*nog niet gestart/i, "Intake nog niet gestart"],
   [/plaatsing.*bevestigd/i, "Plaatsing bevestigd"],
   [/afgewezen/i, "Afgewezen"],
-  [/wacht op aanbieder/i, "Aanbieder beoordeling"],
+  [/wacht op aanbieder/i, CARE_TERMS.workflow.aanbiederBeoordeling],
   [/beoordeling door aanbieder/i, "Beoordeling"],
   [/volgende beste actie/i, "Actie"],
 ];
@@ -86,7 +88,7 @@ export function getShortActionLabel(value: string | null | undefined): string {
     [/start matching/i, "Match"],
     [/volg beoordeling op/i, "Opvolgen"],
     [/vul casus aan/i, "Vul aan"],
-    [/genereer samenvatting/i, "Genereer"],
+    [/genereer samenvatting/i, "Vul casus aan"],
     [/bevestig samenvatting/i, "Bevestig"],
     [/stuur door naar aanbiederbeoordeling/i, "Naar aanbieder"],
     [/stuur naar aanbieder/i, "Naar aanbieder"],

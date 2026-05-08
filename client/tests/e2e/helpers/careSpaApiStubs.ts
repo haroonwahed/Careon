@@ -449,6 +449,22 @@ export function isMatchingCaseDecisionEvalGet(req: Request): boolean {
   );
 }
 
+/**
+ * SPA shell entry: Vite dev (`:3000`, `:5173`) uses `/?view=dashboard`; Django serves `/dashboard/`.
+ * Use with Playwright `page.goto(spaDashboardPath(baseURL))` so CI and local dev both work.
+ */
+export function spaDashboardPath(baseURL?: string | null): string {
+  const b = baseURL ?? "";
+  if (
+    process.env.E2E_SPA_URL
+    || process.env.PLAYWRIGHT_SPA_URL
+    || /:(3000|5173)\b/.test(b)
+  ) {
+    return "/?view=dashboard";
+  }
+  return "/dashboard/";
+}
+
 /** Sidebar items are `<button>` rows inside `<nav>`. */
 export async function goSidebar(page: Page, label: string) {
   await page.getByRole("button", { name: new RegExp(label, "i") }).first().click();

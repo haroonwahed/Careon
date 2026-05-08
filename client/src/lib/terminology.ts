@@ -1,0 +1,32 @@
+export const CARE_TERMS = {
+  workflow: {
+    casus: "Casus",
+    samenvatting: "Samenvatting",
+    matching: "Matching",
+    gemeenteValidatie: "Gemeente validatie",
+    aanbiederBeoordeling: "Aanbieder beoordeling",
+    plaatsing: "Plaatsing",
+    intake: "Intake",
+    plaatsingEnIntake: "Plaatsing & intake",
+  },
+  roles: {
+    gemeente: "Gemeente",
+    zorgaanbieder: "Zorgaanbieder",
+    admin: "Admin",
+    systeem: "Systeem",
+  },
+  surfaces: {
+    regiekamer: "Regiekamer",
+    casussen: "Casussen",
+    matching: "Matching",
+    acties: "Acties",
+    beoordelingen: "Aanbieder beoordeling",
+    plaatsingen: "Plaatsingen",
+    zorgaanbieders: "Zorgaanbieders",
+    gemeenten: "Gemeenten",
+    regios: "Regio's",
+    documenten: "Documenten",
+    audittrail: "Audittrail",
+    instellingen: "Instellingen",
+  },
+} as const;

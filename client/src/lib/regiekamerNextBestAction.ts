@@ -130,7 +130,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   if (b > 0) {
     const title =
       b === 1 ? "1 kritieke blokkade actief" : `${b} kritieke blokkades actief`;
-    const description = "Zonder oplossing blijft de keten stilstaan.";
+    const description = "Los dit eerst op om de doorstroom te herstellen.";
     const impactHint =
       s > 0
         ? `Daarnaast: ${s} SLA-signal(en) — plan regie zodra de blokkade is opgelost.`
@@ -140,7 +140,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       description,
       reasons: blockerReasons(b, ex),
       primaryAction: { label: "Los blokkades op", actionKey: "FOCUS_BLOCKERS" },
-      secondaryAction: { label: "Prioriteer werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
+      secondaryAction: { label: "Open werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       impactHint,
       panel: {
         tone: "urgent",
@@ -157,8 +157,8 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       title: `${s} SLA-signal(en) vragen directe regie`,
       description: "Reactietijd of capaciteit schuurt tegen de afspraak.",
       reasons: slaReasons(s, ex),
-      primaryAction: { label: "Pak SLA-signalen aan", actionKey: "FOCUS_SLA" },
-      secondaryAction: { label: "Prioriteer werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
+      primaryAction: { label: "Bekijk kritieke casussen", actionKey: "FOCUS_SLA" },
+      secondaryAction: { label: "Open werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {
         tone: "urgent",
         linkCount: s,
@@ -175,7 +175,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       description:
         "Zwak signaal of geen passende match. De primaire knop zet filters op matching-urgenties in de Regiekamer; validatie of her-matching doe je per casus, niet via deze knop.",
       reasons: matchingReasons(m, ex),
-      primaryAction: { label: "Bekijk matching-urgenties", actionKey: "FOCUS_MATCHING" },
+      primaryAction: { label: "Bekijk matchingcasussen", actionKey: "FOCUS_MATCHING" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
         tone: "attention",
@@ -192,7 +192,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       title: `${d} casussen met intake-vertraging`,
       description: "Start van zorg vertraagt na plaatsing.",
       reasons: intakeReasons(d, ex),
-      primaryAction: { label: "Bekijk intake-vertraging", actionKey: "FOCUS_INTAKE" },
+      primaryAction: { label: "Bekijk intakecasussen", actionKey: "FOCUS_INTAKE" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
         tone: "attention",
@@ -209,9 +209,9 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       title: `${risks} casussen met verhoogd risico`,
       description: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
       reasons: [`${risks} casussen met verhoogd risico`],
-      primaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
+      primaryAction: { label: "Bekijk kritieke casussen", actionKey: "FOCUS_RISKS" },
       secondaryAction: {
-        label: "Stuur reminders naar aanbieders",
+        label: "Open SLA-signalen",
         actionKey: "SLA_PROVIDER_REMINDERS",
       },
       panel: {
@@ -229,8 +229,8 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       title: "Volume hoog genoeg voor ketenanalyse",
       description: `${active} actieve casussen — waar kun je tijd of capaciteit winnen?`,
       reasons: [`${active} actieve casussen in keten`],
-      primaryAction: { label: "Analyseer doorstroom", actionKey: "OPEN_REPORTS" },
-      secondaryAction: { label: "Prioriteer werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
+      primaryAction: { label: "Open doorstroomrapport", actionKey: "OPEN_REPORTS" },
+      secondaryAction: { label: "Open werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {
         tone: "calm",
         linkCount: 0,
@@ -244,7 +244,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
     title: "Keten stabiel",
     description: "Geen blokkades of SLA-druk; risico's zijn beperkt.",
     reasons: [],
-    primaryAction: { label: "Prioriteer werkvoorraad", actionKey: "REVIEW_STABLE" },
+    primaryAction: { label: "Open werkvoorraad", actionKey: "REVIEW_STABLE" },
     panel: {
       tone: "calm",
       linkCount: 0,

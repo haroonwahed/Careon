@@ -44,7 +44,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
     <div className="space-y-4">
       {/* Risk Signals */}
       {riskSignals.length > 0 && (
-        <div className="premium-card p-4">
+        <div className="panel-surface p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
             <AlertTriangle size={16} className="text-amber-400" />
             Risicosignalen
@@ -73,7 +73,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
       )}
 
       {/* What Happens Next */}
-      <div className="premium-card p-4">
+      <div className="panel-surface p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3">
           Wat volgt na plaatsing?
         </h3>
@@ -118,7 +118,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
       </div>
 
       {/* Communication Preview - SIMPLIFIED */}
-      <div className="premium-card p-4">
+      <div className="panel-surface p-4">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
           <Bell size={16} className="text-muted-foreground" />
           Notificaties
@@ -146,7 +146,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
       </div>
 
       {/* Responsibility Shift Indicator */}
-      <div className="premium-card p-4 border-2 border-green-500/30 bg-green-500/5">
+      <div className="panel-surface p-4 border-2 border-green-500/30 bg-green-500/5">
         <div className="flex items-start gap-3">
           <ArrowRight size={20} className="text-green-400 flex-shrink-0 mt-0.5" />
           <div className="flex-1">

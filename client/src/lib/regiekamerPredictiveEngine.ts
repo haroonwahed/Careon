@@ -231,7 +231,7 @@ export function buildRegiekamerPredictiveSummary(
     signals.push({
       key: "placement_stall",
       title: "Voorspeld: plaatsingen vertragen",
-      text: `${placementStallIds.length} plaatsingen vragen actieve opvolging`,
+      text: `${placementStallIds.length} plaatsingen vertragen — plan opvolging in plaatsingen`,
       severity: "info",
       affected_case_ids: placementStallIds,
       target_stage: "plaatsingen",

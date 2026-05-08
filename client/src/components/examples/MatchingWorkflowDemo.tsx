@@ -13,6 +13,7 @@
 
 import { useMemo, useState } from "react";
 import { MatchingPageWithMap } from "../care/MatchingPageWithMap";
+import { CareAppFrame } from "../care/CareAppFrame";
 import { useCases } from "../../hooks/useCases";
 import { mockCases } from "../../lib/casesData";
 
@@ -51,21 +52,25 @@ export function MatchingWorkflowDemo() {
   return (
     <div className="min-h-screen bg-background">
       {matchConfirmed && (
-        <div className="fixed top-4 right-4 z-50 premium-card p-4 bg-green-500/10 border-2 border-green-500/30 max-w-sm">
-          <p className="text-sm font-semibold text-green-400">
-            ✓ Bevestigd
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Start plaatsing.
-          </p>
-        </div>
+        <CareAppFrame className="pb-0">
+          <div className="rounded-xl border-2 border-green-500/30 bg-green-500/10 px-4 py-3">
+            <p className="text-sm font-semibold text-green-400">
+              ✓ Bevestigd
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Start plaatsing.
+            </p>
+          </div>
+        </CareAppFrame>
       )}
 
-      <MatchingPageWithMap
-        caseId={selectedCase}
-        onBack={handleBack}
-        onConfirmMatch={handleConfirmMatch}
-      />
+      <CareAppFrame>
+        <MatchingPageWithMap
+          caseId={selectedCase}
+          onBack={handleBack}
+          onConfirmMatch={handleConfirmMatch}
+        />
+      </CareAppFrame>
     </div>
   );
 }

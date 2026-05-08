@@ -107,8 +107,9 @@
                 <span class="text-xs font-semibold uppercase tracking-wide auth-divider-label">of</span>
                 <div class="h-px flex-1 auth-divider-line"></div>
             </div>
-            {% with next_url=request.GET.next|default:'/dashboard/' %}
-            <a href="{% url 'oidc_authentication_init' %}?next={{ next_url|urlencode }}"
+            {% with next_url=SPA_ORIGIN|default:'http://127.0.0.1:3000'|add:'/dashboard/' %}
+            {% url 'oidc_authentication_init' as oidc_authentication_path %}
+            <a href="{{ request.scheme }}://{{ request.get_host }}{{ oidc_authentication_path }}?next={{ next_url|urlencode }}"
                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition-all duration-200 auth-sso-btn"
               >
                 <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -124,8 +125,8 @@
 
             <div class="auth-form-meta">
                 <div class="auth-helper-row">
-                    <p class="auth-form-note">Nog geen account? <a href="/register/" class="auth-link-primary">Maak gratis een account</a></p>
-                    <a href="/" class="auth-page-link">Terug naar home</a>
+                    <p class="auth-form-note">Nog geen account? <a href="http://127.0.0.1:3000/register/" class="auth-link-primary">Maak gratis een account</a></p>
+                    <a href="http://127.0.0.1:3000" class="auth-page-link">Terug naar home</a>
                 </div>
             </div>
         </div>

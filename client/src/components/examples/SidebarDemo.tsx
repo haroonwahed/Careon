@@ -14,11 +14,13 @@ import { Sidebar } from "../navigation/Sidebar";
 import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
 import { RegiosPage } from "../care/RegiosPage";
 import { ProviderProfilePage } from "../care/ProviderProfilePage";
+import { CareAppFrame } from "../care/CareAppFrame";
 import { mockProviders } from "../../lib/casesData";
 
 type Page = 
   | "regiekamer" 
   | "casussen" 
+  | "matching"
   | "acties" 
   | "zorgaanbieders" 
   | "gemeenten" 
@@ -71,12 +73,39 @@ export function SidebarDemo() {
 
       {/* MAIN CONTENT */}
       <main className="flex-1 overflow-y-auto">
-        <div className="max-w-[1920px] mx-auto">
+        <CareAppFrame className="min-h-full">
+          <div className="rounded-xl border border-border/70 bg-card/80 px-4 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+              Current Page
+            </p>
+            <p className="mt-1 text-sm font-semibold text-primary">
+              {currentPage}
+            </p>
+          </div>
           
           {/* REGIEKAMER */}
           {currentPage === "regiekamer" && (
             <div className="p-6">
               <SystemAwarenessPage onCaseClick={handleCaseClick} />
+            </div>
+          )}
+
+          {/* MATCHING */}
+          {currentPage === "matching" && (
+            <div className="p-6">
+              <div className="space-y-6">
+                <div>
+                  <h1 className="text-3xl font-bold text-foreground mb-2">
+                    Matching
+                  </h1>
+                  <p className="text-sm text-muted-foreground">
+                    Demo-placeholder
+                  </p>
+                </div>
+                <div className="premium-card p-12 text-center">
+                  <p className="text-muted-foreground">Nog te bouwen.</p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -180,6 +209,12 @@ export function SidebarDemo() {
                 onRegionClick={handleRegionClick}
                 onViewGemeenten={handleViewGemeenten}
                 onViewProviders={handleViewProviders}
+                onNavigateToSignalen={() => {
+                  setCurrentPage("signalen");
+                }}
+                onNavigateToMatching={() => {
+                  setCurrentPage("matching");
+                }}
               />
             </div>
           )}
@@ -284,18 +319,9 @@ export function SidebarDemo() {
             </div>
           )}
 
-        </div>
+        </CareAppFrame>
       </main>
 
-      {/* DEMO INDICATOR */}
-      <div className="fixed bottom-4 right-4 premium-card p-4 bg-card/95 backdrop-blur z-50">
-        <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">
-          Current Page
-        </p>
-        <p className="text-sm font-bold text-primary">
-          {currentPage}
-        </p>
-      </div>
     </div>
   );
 }

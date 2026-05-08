@@ -49,7 +49,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
   const hasWarnings = validations.some(v => v.level === "warning");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-1">
@@ -62,7 +62,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
 
       {/* Status Summary */}
       {validations.length === 0 && (
-        <div className="premium-card p-4 border careon-alert-success">
+        <div className="panel-surface p-4 border careon-alert-success">
           <div className="flex items-start gap-3">
             <CheckCircle2 size={20} className="text-green-base flex-shrink-0 mt-0.5" />
             <div>
