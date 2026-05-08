@@ -349,14 +349,86 @@ export async function installCareApiStubs(page: Page, options?: { regiekamerOver
     total_count: 1,
   };
 
+  const intakeFormPayload = {
+    initial_values: {
+      title: "",
+      start_date: "",
+      target_completion_date: "",
+      care_category_main: "",
+      care_category_sub: "",
+      assessment_summary: "",
+      gemeente: "",
+      regio: "",
+      urgency: "",
+      complexity: "",
+      urgency_applied: false,
+      urgency_applied_since: "",
+      diagnostiek: [],
+      zorgvorm_gewenst: "",
+      preferred_care_form: "",
+      preferred_region_type: "",
+      preferred_region: "",
+      max_toelaatbare_wachttijd_dagen: "",
+      leeftijd: "",
+      setting_voorkeur: "",
+      contra_indicaties: "",
+      problematiek_types: "",
+      client_age_category: "",
+      family_situation: "",
+      school_work_status: "",
+      case_coordinator: "",
+      description: "",
+    },
+    options: {
+      care_category_main: [{ value: "ggz", label: "GGZ" }],
+      care_category_sub: [{ value: "ggz-jeugd", label: "Jeugd GGZ", mainCategoryId: "ggz" }],
+      gemeente: [{ value: "utrecht", label: "Utrecht" }],
+      regio: [{ value: "utrecht", label: "Utrecht" }],
+      urgency: [
+        { value: "low", label: "Laag" },
+        { value: "medium", label: "Midden" },
+        { value: "high", label: "Hoog" },
+      ],
+      complexity: [
+        { value: "low", label: "Laag" },
+        { value: "medium", label: "Midden" },
+        { value: "high", label: "Hoog" },
+      ],
+      diagnostiek: [{ value: "trauma", label: "Trauma" }],
+      zorgvorm_gewenst: [{ value: "ambulant", label: "Ambulant" }],
+      preferred_care_form: [{ value: "ambulant", label: "Ambulant" }],
+      preferred_region_type: [{ value: "lokaal", label: "Lokaal" }],
+      preferred_region: [{ value: "utrecht", label: "Utrecht" }],
+      client_age_category: [{ value: "jeugd", label: "Jeugd" }],
+      family_situation: [{ value: "thuis", label: "Thuis" }],
+      case_coordinator: [{ value: "gemeente", label: "Gemeente" }],
+    },
+  };
+
   await page.route("**/care/api/**", async (route) => {
-    if (route.request().method() !== "GET") {
+    const method = route.request().method();
+    const pathname = new URL(route.request().url()).pathname.replace(/\/{2,}/g, "/");
+    const pathNoTrailing = pathname.replace(/\/+$/, "") || "/";
+
+    if (method === "POST" && pathNoTrailing === "/care/api/cases/intake-create") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ok: true,
+          id: 99,
+          case_id: "99",
+          title: "CLI-12345",
+          redirect_url: "/care/cases/99/",
+        }),
+      });
+      return;
+    }
+
+    if (method !== "GET") {
       await route.continue();
       return;
     }
-    /** Normalize so matching survives duplicate slashes or trailing slash drift from proxies / fetch URL builders. */
-    const pathname = new URL(route.request().url()).pathname.replace(/\/{2,}/g, "/");
-    const pathNoTrailing = pathname.replace(/\/+$/, "") || "/";
     const fulfill = (body: unknown) =>
       route.fulfill({
         status: 200,
@@ -394,6 +466,10 @@ export async function installCareApiStubs(page: Page, options?: { regiekamerOver
     }
     if (pathNoTrailing === "/care/api/tasks") {
       await fulfill(tasksPayload);
+      return;
+    }
+    if (pathNoTrailing === "/care/api/cases/intake-form") {
+      await fulfill(intakeFormPayload);
       return;
     }
     if (pathNoTrailing === "/care/api/provider-evaluations") {

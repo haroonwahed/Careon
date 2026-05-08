@@ -6,6 +6,7 @@ import {
   Clock
 } from "lucide-react";
 import { tokens } from "../../design/tokens";
+import { CarePanel } from "./CareDesignPrimitives";
 
 interface TimelineEvent {
   id: string;
@@ -55,7 +56,7 @@ const eventConfig = {
 
 export function CaseTimeline({ events }: CaseTimelineProps) {
   return (
-    <div className="panel-surface p-4">
+    <CarePanel className="p-4">
       <h3 className="text-base font-semibold text-foreground mb-4">
         Case historie
       </h3>
@@ -111,6 +112,6 @@ export function CaseTimeline({ events }: CaseTimelineProps) {
           );
         })}
       </div>
-    </div>
+    </CarePanel>
   );
 }

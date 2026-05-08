@@ -3,6 +3,9 @@ import { UrgencyBadge } from "./UrgencyBadge";
 import { RiskBadge } from "./RiskBadge";
 import { Clock, ArrowRight } from "lucide-react";
 import { Button } from "../ui/button";
+import { CareMetaChip, CarePanel } from "./CareDesignPrimitives";
+import { cn } from "../ui/utils";
+import { phaseToneClass } from "./careSemanticTones";
 
 interface CaseTableRowProps {
   case: Casus;
@@ -19,16 +22,6 @@ const PHASE_LABELS: Record<CasusPhase, string> = {
   geblokkeerd: "Geblokkeerd",
 };
 
-const PHASE_COLORS: Record<CasusPhase, { text: string; bg: string; border: string }> = {
-  intake_initial: { text: "text-[#8B5CF6]", bg: "bg-primary/10", border: "border-primary/30" },
-  beoordeling: { text: "text-[#3B82F6]", bg: "bg-[rgba(59,130,246,0.1)]", border: "border-[rgba(59,130,246,0.3)]" },
-  matching: { text: "text-[#F59E0B]", bg: "bg-[rgba(245,158,11,0.1)]", border: "border-[rgba(245,158,11,0.3)]" },
-  plaatsing: { text: "text-[#22D3EE]", bg: "bg-[rgba(34,211,238,0.1)]", border: "border-[rgba(34,211,238,0.3)]" },
-  intake_provider: { text: "text-[#10B981]", bg: "bg-[rgba(16,185,129,0.1)]", border: "border-[rgba(16,185,129,0.3)]" },
-  afgerond: { text: "text-[#6B7280]", bg: "bg-[rgba(107,114,128,0.1)]", border: "border-[rgba(107,114,128,0.3)]" },
-  geblokkeerd: { text: "text-[#EF4444]", bg: "bg-[rgba(239,68,68,0.1)]", border: "border-[rgba(239,68,68,0.3)]" },
-};
-
 export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
   const getNextAction = () => {
     switch (caseData.phase) {
@@ -39,11 +32,11 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
       case "matching":
         return { label: "Match", color: "text-primary" };
       case "geblokkeerd":
-        return { label: "Escaleer", color: "text-[#EF4444]" };
+        return { label: "Escaleer", color: "text-destructive" };
       case "plaatsing":
-        return { label: "Bevestig", color: "text-green-500" };
+        return { label: "Bevestig", color: "text-emerald-300" };
       case "intake_provider":
-        return { label: "Intake plannen", color: "text-[#22D3EE]" };
+        return { label: "Intake plannen", color: "text-cyan-300" };
       case "afgerond":
         return { label: "Afgesloten", color: "text-muted-foreground" };
       default:
@@ -52,13 +45,13 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
   };
 
   const nextAction = getNextAction();
-  const phaseColors = PHASE_COLORS[caseData.phase];
+  const phaseTone = phaseToneClass(caseData.phase);
 
   return (
-    <div 
+    <CarePanel
       className="
-        panel-surface p-4 cursor-pointer
-        hover:border-primary/40 transition-all
+        cursor-pointer p-4
+        transition-all hover:border-primary/40
         group
       "
       onClick={onClick}
@@ -86,9 +79,9 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
         {/* Phase & Urgency */}
         <div className="col-span-2">
           <div className="flex flex-col gap-1.5">
-            <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${phaseColors.text} ${phaseColors.bg} ${phaseColors.border}`}>
+            <CareMetaChip className={cn("text-xs font-medium", phaseTone)}>
               {PHASE_LABELS[caseData.phase]}
-            </span>
+            </CareMetaChip>
             <UrgencyBadge urgency={caseData.urgency} size="sm" />
           </div>
         </div>
@@ -99,9 +92,9 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
             <Clock size={14} className="text-muted-foreground" />
             <span className={
               caseData.waitingDays > 10 
-                ? "text-[#EF4444] font-medium" 
+                ? "text-destructive font-medium"
                 : caseData.waitingDays > 5
-                  ? "text-[#F59E0B] font-medium"
+                  ? "text-amber-300 font-medium"
                   : "text-muted-foreground"
             }>
               {caseData.waitingDays} dagen
@@ -114,7 +107,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
         <div className="col-span-3">
           <div className="text-xs text-muted-foreground mb-1">Volgende actie</div>
           <div className={`text-sm font-semibold ${nextAction.color}`}>
-            👉 {nextAction.label}
+            {nextAction.label}
           </div>
           <div className="text-xs text-muted-foreground mt-1 line-clamp-1">
             {caseData.assignedTo}
@@ -126,12 +119,12 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
           <Button 
             size="sm" 
             variant="ghost"
-            className="group-hover:bg-primary group-hover:text-white transition-all"
+            className="group-hover:bg-primary/20 group-hover:text-foreground transition-all"
           >
             <ArrowRight size={16} />
           </Button>
         </div>
       </div>
-    </div>
+    </CarePanel>
   );
 }

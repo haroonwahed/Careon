@@ -10,6 +10,39 @@
 - Migration impact: `none | backward-compatible | breaking`
 - Data/privacy impact: `none | low | medium | high`
 
+## Doctrine Compliance (Required For UI Changes)
+
+- [ ] This change follows `docs/CAREON_VISUAL_DOCTRINE.md`
+- [ ] This change follows `docs/CAREON_DOCTRINE_ENFORCEMENT_PHASE2.md`
+- [ ] No new primitive was introduced without explicit approval
+- [ ] No canonical primitive was bypassed with a local alternative
+- [ ] No local spacing system was introduced
+- [ ] No hardcoded semantic colors (`#hex`, `rgba(...)`) were introduced
+- [ ] No competing primary actions were introduced in the same operational section
+- [ ] This does not increase dashboard density/noise
+- [ ] This does not reduce operational clarity (state/why/owner/next action)
+- [ ] This does not introduce decorative/non-operational UI
+- [ ] Institutional trust and calmness are preserved
+- [ ] Realism is improved or unchanged
+
+### Doctrine Scoring (0-5 each, required for UI PRs)
+
+- Doctrine alignment:
+- Realism:
+- Operational clarity:
+- Hierarchy discipline:
+- Orchestration clarity:
+- Trustworthiness:
+
+### Violation Tagging (Required)
+
+- [ ] `no violation`
+- [ ] `P2 polish deviation`
+- [ ] `P1 coherence drift`
+- [ ] `P0 critical system violation` (must include mitigation plan)
+
+If unresolved `P0` exists, this PR must not merge.
+
 ## Verification
 
 - [ ] `python manage.py check`

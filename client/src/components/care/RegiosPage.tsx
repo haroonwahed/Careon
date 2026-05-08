@@ -202,7 +202,7 @@ export function RegiosPage({
       title="Regio's"
       subtitleInfoTestId="regios-page-info"
       subtitleAriaLabel="Uitleg regio-overzicht"
-      subtitle="Regionale balans van casussen en capaciteit — voor planning en signalen."
+      subtitle="Structuur- en capaciteitsoverzicht van regio's. Gebruik signalen voor druk, tekort en herverdeling."
       dominantAction={
         <CareAttentionBar
           tone={systemState.criticalRegions.length > 0 || systemState.shortageRegions.length > 0 ? "critical" : "warning"}

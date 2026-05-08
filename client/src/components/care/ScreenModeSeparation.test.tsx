@@ -118,7 +118,7 @@ function setupSharedMocks() {
       items: [
         {
           case_id: 101,
-          case_reference: "#101",
+          case_reference: "C-101",
           title: "Casus A",
           current_state: "MATCHING_READY",
           phase: "matching",

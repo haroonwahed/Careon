@@ -54,24 +54,24 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
       case "urgent":
       case "critical":
         return {
-          borderColor: "border-l-red-base",
-          badgeBg: "careon-badge-red",
-          badgeText: "text-red-base",
+          borderColor: "border-l-destructive",
+          badgeBg: "border border-destructive/30 bg-destructive/10",
+          badgeText: "text-destructive",
           label: "Urgent"
         };
       case "high":
       case "warning":
         return {
-          borderColor: "border-l-yellow-base",
-          badgeBg: "careon-badge-yellow",
-          badgeText: "text-yellow-base",
+          borderColor: "border-l-amber-400",
+          badgeBg: "border border-amber-500/30 bg-amber-500/10",
+          badgeText: "text-amber-300",
           label: "Hoog"
         };
       case "medium":
         return {
-          borderColor: "border-l-blue-base",
-          badgeBg: "careon-badge-blue",
-          badgeText: "text-blue-base",
+          borderColor: "border-l-cyan-400",
+          badgeBg: "border border-cyan-500/30 bg-cyan-500/10",
+          badgeText: "text-cyan-200",
           label: "Medium"
         };
       default:
@@ -89,12 +89,12 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
   // Status styling
   const getStatusColor = (s: string): string => {
     const statusLower = s.toLowerCase();
-    if (statusLower === "intake") return "careon-badge-blue";
-    if (statusLower === "beoordeling" || statusLower === "assessment") return "careon-badge-purple";
-    if (statusLower === "matching") return "careon-badge-yellow";
-    if (statusLower === "plaatsing" || statusLower === "placement") return "bg-green-light text-green-base border border-green-border";
+    if (statusLower === "intake") return "border border-cyan-500/30 bg-cyan-500/10 text-cyan-200";
+    if (statusLower === "beoordeling" || statusLower === "assessment") return "border border-violet-500/30 bg-violet-500/10 text-violet-200";
+    if (statusLower === "matching") return "border border-amber-500/30 bg-amber-500/10 text-amber-200";
+    if (statusLower === "plaatsing" || statusLower === "placement") return "border border-emerald-500/30 bg-emerald-500/10 text-emerald-200";
     if (statusLower === "afgerond" || statusLower === "completed") return "bg-muted text-muted-foreground";
-    if (statusLower === "blocked") return "careon-badge-red";
+    if (statusLower === "blocked") return "border border-destructive/30 bg-destructive/10 text-destructive";
     return "bg-muted text-muted-foreground";
   };
 
@@ -140,7 +140,7 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
               </div>
               <div className="flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
-                <span className={waitingDays > 7 ? "text-red-base font-medium" : ""}>
+                <span className={waitingDays > 7 ? "text-destructive font-medium" : ""}>
                   {waitingDays} {waitingDays === 1 ? "dag" : "dagen"}
                 </span>
               </div>
@@ -155,7 +155,7 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
 
         {/* Case Type */}
         <div className="mb-3">
-          <span className="px-2 py-1 rounded-full careon-badge-purple text-xs font-medium">
+          <span className="px-2 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-200 text-xs font-medium">
             {caseType}
           </span>
         </div>
@@ -163,7 +163,7 @@ export function SimpleCaseCard({ caseData, onClick }: SimpleCaseCardProps) {
         {/* Signal */}
         {signal && (
           <div className="mb-4 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-yellow-base flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-amber-300 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-muted-foreground">{signal}</p>
           </div>
         )}

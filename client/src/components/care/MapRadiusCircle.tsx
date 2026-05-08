@@ -9,7 +9,7 @@ interface MapRadiusCircleProps {
 
 export function MapRadiusCircle({ 
   radius, 
-  color = "rgba(139, 92, 246, 0.15)" 
+  color = "hsl(var(--primary) / 0.15)" 
 }: MapRadiusCircleProps) {
   
   return (

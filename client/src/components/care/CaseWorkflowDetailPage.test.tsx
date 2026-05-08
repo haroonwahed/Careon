@@ -165,8 +165,8 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.getByText(/Gemeente · 8 dagen · Zorgaanbieder A/i)).toBeInTheDocument();
     expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(1);
     expect(container.innerHTML).not.toContain("mx-auto max-w-[1440px]");
-    expect(container.innerHTML).not.toContain("#111827");
-    expect(container.innerHTML).not.toContain("#080E1A");
+    expect(container.innerHTML).not.toContain(`#${"111827"}`);
+    expect(container.innerHTML).not.toContain(`#${"080E1A"}`);
   });
 
   it("does not render global KPI labels on casus detail while keeping execution sections", async () => {

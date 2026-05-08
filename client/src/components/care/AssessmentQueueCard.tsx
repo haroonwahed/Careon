@@ -19,15 +19,15 @@ interface AssessmentQueueCardProps {
 const statusConfig = {
   open: {
     label: "Te doen",
-    color: "careon-badge-blue"
+    color: "border border-cyan-500/30 bg-cyan-500/10 text-cyan-200"
   },
   in_progress: {
     label: "Bezig",
-    color: "careon-badge-yellow"
+    color: "border border-amber-500/30 bg-amber-500/10 text-amber-200"
   },
   completed: {
     label: "Afgerond",
-    color: "bg-green-light text-green-base border border-green-border"
+    color: "border border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
   }
 };
 
@@ -47,8 +47,8 @@ export function AssessmentQueueCard({
   return (
     <article className={`
       panel-surface queue-row transition-colors
-      ${hasErrors ? "border-red-border" : ""}
-      ${hasWarnings && !hasErrors ? "border-yellow-border" : ""}
+      ${hasErrors ? "border-destructive/40" : ""}
+      ${hasWarnings && !hasErrors ? "border-amber-500/40" : ""}
     `}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
@@ -58,8 +58,8 @@ export function AssessmentQueueCard({
             </span>
             {wachttijd > 3 && (
               <div className="flex items-center gap-1.5 ds-badge badge-critical">
-                <Clock size={12} className="text-red-base" />
-                <span className="text-xs font-semibold text-red-base">
+                <Clock size={12} className="text-destructive" />
+                <span className="text-xs font-semibold text-destructive">
                   {wachttijd}d
                 </span>
               </div>
@@ -88,19 +88,19 @@ export function AssessmentQueueCard({
                   className={`
                     flex items-start gap-2 px-3 py-2 rounded-lg border
                     ${info.severity === "error"
-                      ? "careon-alert-error"
-                      : "careon-alert-warning"
+                      ? "border-destructive/30 bg-destructive/10"
+                      : "border-amber-500/30 bg-amber-500/10"
                     }
                   `}
                 >
                   <AlertTriangle
                     size={14}
                     className={`flex-shrink-0 mt-0.5 ${
-                      info.severity === "error" ? "text-red-base" : "text-yellow-base"
+                      info.severity === "error" ? "text-destructive" : "text-amber-300"
                     }`}
                   />
                   <span className={`text-xs ${
-                    info.severity === "error" ? "text-red-base" : "text-yellow-base"
+                    info.severity === "error" ? "text-destructive" : "text-amber-300"
                   }`}>
                     {info.field}
                   </span>
@@ -130,7 +130,7 @@ export function AssessmentQueueCard({
             </p>
           )}
           {status === "in_progress" && (
-            <p className="text-xs text-yellow-base">
+            <p className="text-xs text-amber-300">
               Concept opgeslagen
             </p>
           )}

@@ -8,6 +8,8 @@ import {
   XCircle,
   Activity
 } from "lucide-react";
+import { workflowStatusChipClasses } from "./careSemanticTones";
+import { cn } from "../ui/utils";
 
 interface CaseStatusBadgeProps {
   status: CaseStatus;
@@ -18,58 +20,34 @@ interface CaseStatusBadgeProps {
 export function CaseStatusBadge({ status, showIcon = true, size = "md" }: CaseStatusBadgeProps) {
   const configs: Record<CaseStatus, {
     label: string;
-    color: string;
-    bg: string;
-    border: string;
     icon: any;
   }> = {
     intake: {
       label: "Casus",
-      color: "text-[#8B5CF6]",
-      bg: "bg-primary/10",
-      border: "border-primary/30",
       icon: FileText
     },
     assessment: {
       label: "Aanbieder beoordeling",
-      color: "text-[#3B82F6]",
-      bg: "bg-[rgba(59,130,246,0.1)]",
-      border: "border-[rgba(59,130,246,0.3)]",
       icon: ClipboardList
     },
     matching: {
       label: "Matching",
-      color: "text-[#F59E0B]",
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
       icon: Search
     },
     placement: {
       label: "Plaatsing",
-      color: "text-[#22D3EE]",
-      bg: "bg-[rgba(34,211,238,0.1)]",
-      border: "border-[rgba(34,211,238,0.3)]",
       icon: MapPin
     },
     active: {
       label: "Actief",
-      color: "text-[#10B981]",
-      bg: "bg-[rgba(16,185,129,0.1)]",
-      border: "border-[rgba(16,185,129,0.3)]",
       icon: Activity
     },
     completed: {
       label: "Afgerond",
-      color: "text-[#10B981]",
-      bg: "bg-[rgba(16,185,129,0.1)]",
-      border: "border-[rgba(16,185,129,0.3)]",
       icon: CheckCircle2
     },
     blocked: {
       label: "Geblokkeerd",
-      color: "text-[#EF4444]",
-      bg: "bg-[rgba(239,68,68,0.1)]",
-      border: "border-[rgba(239,68,68,0.3)]",
       icon: XCircle
     }
   };
@@ -88,13 +66,7 @@ export function CaseStatusBadge({ status, showIcon = true, size = "md" }: CaseSt
   };
 
   return (
-    <div 
-      className={`
-        inline-flex items-center rounded-md border font-medium
-        ${config.bg} ${config.border} ${config.color}
-        ${sizeClasses[size]}
-      `}
-    >
+    <div className={cn("inline-flex items-center rounded-md border font-medium", workflowStatusChipClasses(status), sizeClasses[size])}>
       {showIcon && <Icon size={iconSizes[size]} />}
       <span>{config.label}</span>
     </div>

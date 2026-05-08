@@ -8,6 +8,7 @@ import {
   Shield,
   AlertCircle
 } from "lucide-react";
+import { CarePanel } from "./CareDesignPrimitives";
 
 interface Provider {
   id: string;
@@ -41,7 +42,7 @@ export function SelectedProviderCard({
   const fastResponse = provider.responseTime <= 6;
 
   return (
-    <div className="panel-surface p-4 border careon-alert-primary">
+    <CarePanel className="border border-primary/40 bg-primary/10 p-4">
       {/* Selected Badge */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
@@ -61,9 +62,9 @@ export function SelectedProviderCard({
         
         {/* Match Score Badge */}
         <div className="text-center">
-          <div className="px-4 py-2 rounded-xl border careon-alert-success">
+          <div className="px-4 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15">
             <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-green-base">{matchScore}</span>
+              <span className="text-3xl font-bold text-emerald-300">{matchScore}</span>
               <span className="text-sm text-muted-foreground">%</span>
             </div>
             <p className="text-xs text-muted-foreground mt-1">Matchscore</p>
@@ -83,11 +84,11 @@ export function SelectedProviderCard({
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Users size={14} className={hasCapacity ? "text-green-base" : "text-red-base"} />
+            <Users size={14} className={hasCapacity ? "text-emerald-300" : "text-destructive"} />
             <span className="text-xs text-muted-foreground">Capaciteit</span>
           </div>
           <p className={`font-semibold text-sm ${
-            hasCapacity ? "text-green-base" : "text-red-base"
+            hasCapacity ? "text-emerald-300" : "text-destructive"
           }`}>
             {provider.availableSpots}/{provider.capacity}
           </p>
@@ -95,19 +96,19 @@ export function SelectedProviderCard({
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Star size={14} className="text-green-base" />
+            <Star size={14} className="text-emerald-300" />
             <span className="text-xs text-muted-foreground">Rating</span>
           </div>
-          <p className="font-semibold text-sm text-green-base">{provider.rating.toFixed(1)}</p>
+          <p className="font-semibold text-sm text-emerald-300">{provider.rating.toFixed(1)}</p>
         </div>
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Clock size={14} className={fastResponse ? "text-green-base" : "text-yellow-base"} />
+            <Clock size={14} className={fastResponse ? "text-emerald-300" : "text-amber-300"} />
             <span className="text-xs text-muted-foreground">Reactietijd</span>
           </div>
           <p className={`font-semibold text-sm ${
-            fastResponse ? "text-green-base" : "text-yellow-base"
+            fastResponse ? "text-emerald-300" : "text-amber-300"
           }`}>
             {provider.responseTime}u
           </p>
@@ -130,18 +131,18 @@ export function SelectedProviderCard({
       </div>
 
       {/* Why This Provider */}
-      <div className="mb-5 p-4 rounded-lg border careon-alert-info">
+      <div className="mb-5 p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/15">
         <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp size={16} className="text-blue-base" />
+          <TrendingUp size={16} className="text-cyan-300" />
           Waarom deze aanbieder?
         </h3>
         <ul className="space-y-2">
           {reasons.slice(0, 3).map((reason, idx) => (
             <li key={idx} className="flex items-start gap-2.5">
               {reason.positive ? (
-                <CheckCircle2 size={14} className="mt-0.5 text-green-base flex-shrink-0" />
+                <CheckCircle2 size={14} className="mt-0.5 text-emerald-300 flex-shrink-0" />
               ) : (
-                <AlertCircle size={14} className="mt-0.5 text-yellow-base flex-shrink-0" />
+                <AlertCircle size={14} className="mt-0.5 text-amber-300 flex-shrink-0" />
               )}
               <span className="text-xs text-muted-foreground leading-relaxed break-words">
                 {reason.text}
@@ -161,11 +162,11 @@ export function SelectedProviderCard({
           <div className="grid grid-cols-2 gap-4">
             {tradeOffs.pros.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-green-base mb-2">+ Voordelen</p>
+                <p className="text-xs font-semibold text-emerald-300 mb-2">+ Voordelen</p>
                 <ul className="space-y-1.5">
                   {tradeOffs.pros.map((pro, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-green-base text-xs">•</span>
+                      <span className="text-emerald-300 text-xs">•</span>
                       <span className="text-xs text-muted-foreground leading-relaxed break-words">{pro}</span>
                     </li>
                   ))}
@@ -174,11 +175,11 @@ export function SelectedProviderCard({
             )}
             {tradeOffs.cons.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-red-base mb-2">− Aandachtspunten</p>
+                <p className="text-xs font-semibold text-destructive mb-2">− Aandachtspunten</p>
                 <ul className="space-y-1.5">
                   {tradeOffs.cons.map((con, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-red-base text-xs">•</span>
+                      <span className="text-destructive text-xs">•</span>
                       <span className="text-xs text-muted-foreground leading-relaxed break-words">{con}</span>
                     </li>
                   ))}
@@ -188,6 +189,6 @@ export function SelectedProviderCard({
           </div>
         </div>
       )}
-    </div>
+    </CarePanel>
   );
 }

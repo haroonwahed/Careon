@@ -110,6 +110,17 @@ describe("ZorgaanbiedersPage operatieve aandacht action", () => {
     );
     expect(screen.getByRole("button", { name: "Selecteer beste match" })).toBeInTheDocument();
   });
+
+  it("shows the network-overview subtitle instead of workflow language", async () => {
+    const user = userEvent.setup();
+    render(<ZorgaanbiedersPage theme="light" />);
+
+    expect(screen.getByRole("button", { name: "Pagina-uitleg" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Pagina-uitleg" }));
+    expect(
+      screen.getByText("Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."),
+    ).toBeInTheDocument();
+  });
 });
 
 describe("ZorgaanbiedersPage accessibility", () => {

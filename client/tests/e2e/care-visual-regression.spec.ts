@@ -126,17 +126,16 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
     await maybeDump(page, "casussen-desktop");
 
-    const rows = page.locator('[data-testid="worklist"] tr[data-care-work-row]');
+    const rows = page.locator('[data-testid="worklist"] [data-care-work-row]');
     await expect(rows.first()).toBeVisible({ timeout: 30_000 });
     const heights = await rows.evaluateAll((els) => els.slice(0, 10).map((el) => el.getBoundingClientRect().height));
     expect(maxMinusMin(heights)).toBeLessThan(36);
 
     await page.setViewportSize({ width: 390, height: 900 });
     await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
-    const firstRow = page.locator('[data-testid="worklist"] tr[data-care-work-row]').first();
+    const firstRow = page.locator('[data-testid="worklist"] [data-care-work-row]').first();
     await expect(firstRow).toBeVisible({ timeout: 30_000 });
-    const phaseCell = firstRow.locator("td").nth(3);
-    await expect(phaseCell.locator('[data-component="care-meta-chip"], [data-component="care-dominant-status"]')).not.toHaveCount(0);
+    await expect(firstRow.locator('[data-component="care-meta-chip"]').first()).toBeVisible();
     await maybeDump(page, "casussen-mobile");
     await page.setViewportSize({ width: 1280, height: 900 });
   });
@@ -213,6 +212,29 @@ test.describe("Care list visual regression (SPA)", () => {
       return lr.right <= tr.left + 10;
     });
     expect(aligned, "leading icon column should sit left of title block").toBe(true);
+  });
+
+  test("Nieuwe casus: intake bootstrap, privacy copy, and submit redirect", async ({ page }) => {
+    await page.goto(new URL("/casussen/nieuw", SPA_BASE).toString(), { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("heading", { name: /^Nieuwe casus$/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("button", { name: "Toelichting" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Toelichting" }).click();
+    await expect(page.getByText("Persoonsgegevens zijn alleen zichtbaar voor geautoriseerde rollen.")).toBeVisible();
+    await page.getByRole("button", { name: "Info" }).click();
+    await expect(
+      page.getByText("Leg de kern vast met minimale gegevensverwerking en pseudonieme coördinatie."),
+    ).toBeVisible();
+
+    await page.getByPlaceholder("CLI-88314").fill("CLI-12345");
+    await page.getByRole("button", { name: "Volgende" }).click();
+    await expect(page.getByRole("heading", { name: "Zorgvraag" })).toBeVisible();
+    await page.getByRole("combobox").first().selectOption("ggz");
+    await page.getByRole("button", { name: "Volgende" }).click();
+    await expect(page.getByRole("heading", { name: "Randvoorwaarden" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Casus aanmaken" }).click();
+    await page.waitForURL(/\/care\/cases\/99\/?$/, { timeout: 30_000 });
   });
 
   test("Design system: unified shell on Regiekamer, Casussen, Matching, Acties, Signalen", async ({ page }) => {

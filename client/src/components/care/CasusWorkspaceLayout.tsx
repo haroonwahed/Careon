@@ -112,7 +112,9 @@ export function CasusWorkspaceLayout({
       </section>
 
       <div data-testid="casus-context-stack" className="space-y-3">
-        {contextStack}
+        <div data-testid="case-context-panel" className="space-y-3">
+          {contextStack}
+        </div>
       </div>
     </div>
   );

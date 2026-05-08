@@ -20,8 +20,8 @@ const statusConfig: Record<ValidationStatus, {
 }> = {
   complete: {
     icon: CheckCircle2,
-    color: "text-green-base",
-    alertClass: "careon-alert-success"
+    color: "text-emerald-300",
+    alertClass: "border-emerald-500/30 bg-emerald-500/10"
   },
   incomplete: {
     icon: Circle,
@@ -30,13 +30,13 @@ const statusConfig: Record<ValidationStatus, {
   },
   warning: {
     icon: AlertTriangle,
-    color: "text-yellow-base",
-    alertClass: "careon-alert-warning"
+    color: "text-amber-300",
+    alertClass: "border-amber-500/30 bg-amber-500/10"
   },
   error: {
     icon: XCircle,
-    color: "text-red-base",
-    alertClass: "careon-alert-error"
+    color: "text-destructive",
+    alertClass: "border-destructive/30 bg-destructive/10"
   }
 };
 
@@ -96,24 +96,24 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
       <div className="mt-5 pt-4 border-t border-muted-foreground/20">
         {allComplete && (
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 size={16} className="text-green-base" />
-            <span className="font-medium text-green-base">
+            <CheckCircle2 size={16} className="text-emerald-300" />
+            <span className="font-medium text-emerald-300">
               Klaar voor plaatsing
             </span>
           </div>
         )}
         {hasErrors && (
           <div className="flex items-center gap-2 text-sm">
-            <XCircle size={16} className="text-red-base" />
-            <span className="font-medium text-red-base">
+            <XCircle size={16} className="text-destructive" />
+            <span className="font-medium text-destructive">
               Los eerst blokkerende problemen op
             </span>
           </div>
         )}
         {!allComplete && !hasErrors && hasWarnings && (
           <div className="flex items-center gap-2 text-sm">
-            <AlertTriangle size={16} className="text-yellow-base" />
-            <span className="font-medium text-yellow-base">
+            <AlertTriangle size={16} className="text-amber-300" />
+            <span className="font-medium text-amber-300">
               Controleer waarschuwingen voordat plaatsing start
             </span>
           </div>

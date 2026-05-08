@@ -84,7 +84,7 @@ describe("PlacementTrackingPage", () => {
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+    render(<PlacementTrackingPage onCaseClick={vi.fn()} onNavigateToMatching={vi.fn()} />);
 
     expect(screen.getByText(/≥5 dagen in plaatsing/i)).toBeInTheDocument();
   });
@@ -98,9 +98,11 @@ describe("PlacementTrackingPage", () => {
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+    render(<PlacementTrackingPage onCaseClick={vi.fn()} onNavigateToMatching={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
+    expect(screen.getByText(/plaatsingen zijn het gevolg van provideracceptatie/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Naar matching" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: /Te bevestigen ·/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bevestig plaatsing" })).toBeInTheDocument();
   });

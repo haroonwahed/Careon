@@ -1026,10 +1026,10 @@ export function SystemAwarenessPage({
               <CareInfoPopover ariaLabel="Uitleg Regiekamer" testId="regiekamer-page-info">
                 <div className="space-y-2 text-muted-foreground">
                   <p>
-                    De Regiekamer prioriteert blokkades, eigenaarschap en de eerstvolgende veilige stap — niet losse
-                    statistieken.
+                    De Regiekamer is een control tower: blokkades, eigenaarschap en de eerstvolgende veilige stap
+                    krijgen prioriteit, niet losse statistieken.
                   </p>
-                  <p>Overzicht van wat aandacht nodig heeft en hoe de stroom verloopt.</p>
+                  <p>Gebruik dit overzicht om de volgende actie, eigenaar en reden snel te zien.</p>
                 </div>
               </CareInfoPopover>
             </span>
@@ -1058,7 +1058,7 @@ export function SystemAwarenessPage({
             <CareAlertCard
               testId="regiekamer-dominant-action"
               data-regiekamer-mode={uiMode}
-              className="shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]"
+              className="ring-1 ring-border/20"
               tone={
                 regiekamerNba.panel.tone === "urgent"
                   ? "critical"

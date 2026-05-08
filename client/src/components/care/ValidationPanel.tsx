@@ -1,4 +1,6 @@
 import { AlertTriangle, Info, CheckCircle2, Lightbulb } from "lucide-react";
+import { CarePanel } from "./CareDesignPrimitives";
+import { validationToneClasses } from "./careSemanticTones";
 
 type ValidationLevel = "error" | "warning" | "info" | "success";
 
@@ -24,23 +26,19 @@ const levelConfig: Record<ValidationLevel, {
 }> = {
   error: {
     icon: AlertTriangle,
-    text: "text-red-base",
-    alertClass: "careon-alert-error"
+    ...validationToneClasses("error"),
   },
   warning: {
     icon: AlertTriangle,
-    text: "text-yellow-base",
-    alertClass: "careon-alert-warning"
+    ...validationToneClasses("warning"),
   },
   info: {
     icon: Info,
-    text: "text-blue-base",
-    alertClass: "careon-alert-info"
+    ...validationToneClasses("info"),
   },
   success: {
     icon: CheckCircle2,
-    text: "text-green-base",
-    alertClass: "careon-alert-success"
+    ...validationToneClasses("success"),
   }
 };
 
@@ -62,19 +60,19 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
 
       {/* Status Summary */}
       {validations.length === 0 && (
-        <div className="panel-surface p-4 border careon-alert-success">
+        <CarePanel className="p-4 border border-emerald-500/40 bg-emerald-500/15">
           <div className="flex items-start gap-3">
-            <CheckCircle2 size={20} className="text-green-base flex-shrink-0 mt-0.5" />
+            <CheckCircle2 size={20} className="text-emerald-300 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm font-medium text-green-base">
+              <p className="text-sm font-medium text-emerald-300">
                 Samenvatting compleet
               </p>
-              <p className="text-xs text-green-base/80 mt-1">
+              <p className="text-xs text-emerald-300/80 mt-1">
                 Alle vereiste velden zijn ingevuld en gevalideerd.
               </p>
             </div>
           </div>
-        </div>
+        </CarePanel>
       )}
 
       {/* Validation Messages */}
@@ -93,10 +91,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
             return (
               <div
                 key={idx}
-                className={`
-                  p-3 rounded-lg border
-                  ${config.alertClass}
-                `}
+                className={`p-3 rounded-lg border ${config.alertClass}`}
               >
                 <div className="flex items-start gap-2">
                   <Icon size={16} className={`${config.text} flex-shrink-0 mt-0.5`} />
@@ -120,7 +115,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
           {suggestions.map((suggestion, idx) => (
             <div
               key={idx}
-              className="p-3 rounded-lg border careon-alert-primary"
+              className="p-3 rounded-lg border border-primary/40 bg-primary/15"
             >
               <div className="flex items-start gap-2">
                 <Lightbulb size={16} className="text-primary flex-shrink-0 mt-0.5" />
@@ -145,7 +140,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
 
       {/* Completion Requirements */}
       {hasErrors && (
-        <div className="p-3 rounded-lg border careon-alert-warning">
+        <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/15">
           <p className="text-xs text-muted-foreground leading-relaxed">
             <strong className="text-foreground">Let op:</strong> Los alle problemen op voordat je de beoordeling kunt afronden.
           </p>

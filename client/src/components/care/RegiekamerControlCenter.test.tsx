@@ -32,7 +32,7 @@ vi.mock("../../hooks/useCurrentUser", () => ({
 function makeItem(overrides: Partial<RegiekamerDecisionOverview["items"][number]> = {}) {
   return {
     case_id: 101,
-    case_reference: "#101",
+    case_reference: "C-101",
     title: "Casus A",
     current_state: "MATCHING_READY",
     phase: "matching",
@@ -86,7 +86,7 @@ function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): Regi
       makeItem(),
       makeItem({
         case_id: 102,
-        case_reference: "#102",
+        case_reference: "C-102",
         title: "Casus B",
         current_state: "PROVIDER_REVIEW_PENDING",
         phase: "aanbieder_beoordeling",
@@ -123,7 +123,7 @@ function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): Regi
       }),
       makeItem({
         case_id: 103,
-        case_reference: "#103",
+        case_reference: "C-103",
         title: "Casus C",
         current_state: "PLACEMENT_CONFIRMED",
         phase: "plaatsing",
@@ -210,6 +210,23 @@ describe("SystemAwarenessPage", () => {
     expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
   });
 
+  it("describes Regiekamer as the control tower and keeps the dominant action singular", () => {
+    mockUseRegiekamerDecisionOverview.mockReturnValue({
+      data: makeOverview(),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+
+    fireEvent.click(screen.getByTestId("regiekamer-page-info"));
+    expect(screen.getByText(/Regiekamer is een control tower/i)).toBeInTheDocument();
+    expect(screen.getByText(/volgende actie, eigenaar en reden/i)).toBeInTheDocument();
+    expect(screen.getAllByTestId("regiekamer-dominant-primary-cta")).toHaveLength(1);
+    expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
+  });
+
   it("renders the priority worklist in score order", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview(),
@@ -280,7 +297,7 @@ describe("SystemAwarenessPage", () => {
         items: [
           makeItem({
             case_id: 301,
-            case_reference: "#301",
+            case_reference: "C-301",
             title: "Samenvatting beschikbaar",
             top_blocker: null,
             next_best_action: {
@@ -292,7 +309,7 @@ describe("SystemAwarenessPage", () => {
           }),
           makeItem({
             case_id: 302,
-            case_reference: "#302",
+            case_reference: "C-302",
             title: "Samenvatting ontbreekt",
             next_best_action: {
               action: "GENERATE_SUMMARY",
@@ -309,7 +326,7 @@ describe("SystemAwarenessPage", () => {
           }),
           makeItem({
             case_id: 303,
-            case_reference: "#303",
+            case_reference: "C-303",
             title: "Samenvatting in verwerking",
             next_best_action: {
               action: "SEND_TO_PROVIDER",
@@ -354,7 +371,7 @@ describe("SystemAwarenessPage", () => {
         items: [
           makeItem({
             case_id: 201,
-            case_reference: "#201",
+            case_reference: "C-201",
             title: "Casus intake",
             phase: "intake",
             current_state: "INTAKE_PENDING",
@@ -374,7 +391,7 @@ describe("SystemAwarenessPage", () => {
           }),
           makeItem({
             case_id: 202,
-            case_reference: "#202",
+            case_reference: "C-202",
             title: "Casus rustig",
             phase: "plaatsing",
             current_state: "PLACEMENT_CONFIRMED",
@@ -517,7 +534,7 @@ describe("SystemAwarenessPage", () => {
           }),
           makeItem({
             case_id: 104,
-            case_reference: "#104",
+            case_reference: "C-104",
             title: "Casus D",
             phase: "plaatsing",
             urgency: "low",
@@ -560,7 +577,7 @@ describe("SystemAwarenessPage", () => {
         items: [
           makeItem({
             case_id: 901,
-            case_reference: "#901",
+            case_reference: "C-901",
             title: "Rustige keten",
             phase: "plaatsing",
             current_state: "PLACEMENT_CONFIRMED",
@@ -683,7 +700,7 @@ describe("SystemAwarenessPage", () => {
         items: [
           makeItem({
             case_id: 501,
-            case_reference: "#501",
+            case_reference: "C-501",
             title: "Matching urgent",
             phase: "matching",
             urgency: "high",

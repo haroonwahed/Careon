@@ -662,39 +662,47 @@ export function WorkloadPage({
   const brandAccent = tokens.colors.casussenAccent;
   const surfaceRaised = tokens.colors.casussenSurfaceRaised;
 
-  const headerActions =
-    primaryShortcut !== null || (canCreateCase && onCreateCase) ? (
-      <div className="flex flex-col items-start gap-1 md:items-end">
-        <div className="flex flex-wrap items-center justify-end gap-2">
-        {primaryShortcut ? (
-          <PrimaryActionButton
-            type="button"
-            className="h-11 min-h-11 px-5 text-[14px] shadow-md"
-            onClick={primaryShortcut.onClick}
-          >
-            {primaryShortcut.label}
-          </PrimaryActionButton>
-        ) : null}
-          {canCreateCase && onCreateCase ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="h-10 min-h-10 rounded-xl border-border/50 bg-card/40 px-4 text-[13px] font-semibold text-foreground hover:bg-card/60"
-              onClick={onCreateCase}
-            >
-              Nieuwe casus
-            </Button>
-          ) : null}
-        </div>
+  const workloadAttentionMessage =
+    workflowCases.length === 0
+      ? canCreateCase
+        ? "Er zijn nog geen dossiers in beeld; start een nieuwe casus of pas filters aan."
+        : "Er zijn nog geen dossiers in beeld; pas filters aan."
+      : attentionCount > 0
+        ? `${attentionCount} casus${attentionCount === 1 ? "" : "sen"} vragen gemeentelijke actie; blokkades en wachttijd bepalen de volgende eigenaar.`
+        : "De werkvoorraad is rustig; gebruik filters om de volgende casus en stap te vinden.";
+
+  const workloadAttentionAction =
+    primaryShortcut !== null ? (
+      <PrimaryActionButton
+        type="button"
+        className="h-9 min-h-9 px-4 text-[13px] shadow-md"
+        onClick={primaryShortcut.onClick}
+      >
+        {primaryShortcut.label}
+      </PrimaryActionButton>
+    ) : null;
+
+  const headerActions = canCreateCase && onCreateCase ? (
+    <div className="flex flex-col items-start gap-1 md:items-end">
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 min-h-10 rounded-xl border-border/50 bg-card/40 px-4 text-[13px] font-semibold text-foreground hover:bg-card/60"
+          onClick={onCreateCase}
+        >
+          Nieuwe casus
+        </Button>
       </div>
-    ) : undefined;
+    </div>
+  ) : undefined;
 
   /** Tabs + weergave — zelfde verticale ritme als Regiekamer (filters via `CareSearchFiltersBar`). */
   const workloadTabRow = (
     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
       <CareFilterTabGroup
         aria-label="Werkvoorraad-weergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-white/[0.08] p-1 pb-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
         style={{ backgroundColor: surfaceRaised }}
       >
         {(
@@ -724,7 +732,7 @@ export function WorkloadPage({
               type="button"
               variant="outline"
               size="sm"
-              className="h-9 rounded-xl border-white/[0.1] bg-card/30 px-3 text-[13px] font-medium text-foreground hover:bg-card/50"
+              className="h-9 rounded-xl border-border/60 bg-card/30 px-3 text-[13px] font-medium text-foreground hover:bg-card/50"
             >
               <SlidersHorizontal size={14} className="mr-1.5 opacity-80" aria-hidden />
               Weergave
@@ -860,7 +868,16 @@ export function WorkloadPage({
         </span>
       }
       actions={headerActions}
-      kpiStrip={ketenStrip}
+      kpiStrip={
+        <div className="space-y-3">
+          <CareAttentionBar
+            tone={workflowCases.length === 0 ? "warning" : attentionCount > 0 ? "critical" : "info"}
+            message={workloadAttentionMessage}
+            action={workloadAttentionAction}
+          />
+          {ketenStrip}
+        </div>
+      }
     >
       <CareSection testId="casussen-uitvoerlijst" aria-labelledby="casussen-werkvoorraad-heading">
         <CareSectionHeader

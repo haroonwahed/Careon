@@ -77,6 +77,9 @@ type IntakeCreateError = {
   errors?: Record<string, string | string[]>;
 };
 
+type WorkflowPhase = "casus" | "matching" | "aanbieder_beoordeling" | "plaatsing" | "intake";
+type VisibilityRole = "gemeente" | "zorgaanbieder" | "regie";
+
 const baseFieldClass = "h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/50";
 const baseTextareaClass = "w-full rounded-2xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:border-primary/50";
 
@@ -253,6 +256,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [stepError, setStepError] = useState<string | null>(null);
   const [searchRadiusKm, setSearchRadiusKm] = useState<10 | 25 | 50>(25);
+  const [clientReference, setClientReference] = useState("");
+  const [participantLabel, setParticipantLabel] = useState("");
+  const [clientLookup, setClientLookup] = useState("");
+  const [previewPhase, setPreviewPhase] = useState<WorkflowPhase>("casus");
+  const [previewRole, setPreviewRole] = useState<VisibilityRole>("gemeente");
+  const [revealRequested, setRevealRequested] = useState(false);
 
   const stepMeta: Array<{ id: 1 | 2 | 3; title: string }> = [
     { id: 1, title: "Basis" },
@@ -306,6 +315,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         setFormState(withDefaults);
         setOptions(payload.options);
+        const normalizedTitle = (withDefaults.title ?? "").trim();
+        if (/CLI-\d{3,}/i.test(normalizedTitle)) {
+          setClientReference(normalizedTitle.toUpperCase());
+        } else if (normalizedTitle.length > 0) {
+          setParticipantLabel(normalizedTitle);
+        }
       } catch (error) {
         if (!ignore) {
           setLoadError(error instanceof Error ? error.message : "Kon het intakeformulier niet laden.");
@@ -460,7 +475,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     setLoadError(null);
 
     try {
-      const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", formState);
+      const referenceToken = clientReference.trim().toUpperCase();
+      const fallbackPseudo = `CLI-${Date.now().toString().slice(-5)}`;
+      const resolvedReference = referenceToken || fallbackPseudo;
+      const submissionTitle = resolvedReference;
+      const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", {
+        ...formState,
+        title: submissionTitle,
+      });
       const createdCaseId = payload.case_id?.trim();
       setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe casusdossier.`);
       const target =
@@ -506,8 +528,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (step === 1) {
-      if (!formState.title.trim() || !formState.start_date || !formState.target_completion_date) {
-        setStepError("Vul cliënt, startdatum en deadline matching in voordat je doorgaat.");
+      if (!clientReference.trim() || !formState.start_date || !formState.target_completion_date) {
+        setStepError("Vul cliëntreferentie, startdatum en deadline matching in voordat je doorgaat.");
         return false;
       }
     }
@@ -568,6 +590,60 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     );
   }
 
+  const canRevealIdentity = previewPhase === "plaatsing" || previewPhase === "intake";
+  const maskedIdentity = "M•••• A••••";
+  const revealedIdentity = participantLabel.trim() || "Mohammed Ait Tahar";
+  const identityDisplay =
+    previewRole === "zorgaanbieder" && !canRevealIdentity
+      ? maskedIdentity
+      : canRevealIdentity && revealRequested
+        ? revealedIdentity
+        : maskedIdentity;
+
+  const visibilityRows: Array<{
+    phase: WorkflowPhase;
+    label: string;
+    gemeente: string;
+    zorgaanbieder: string;
+    regie: string;
+  }> = [
+    {
+      phase: "casus",
+      label: "Casus",
+      gemeente: "CAS-ID, CLI-ID, zorgvraag, urgentie",
+      zorgaanbieder: "Niet zichtbaar",
+      regie: "Alleen geanonimiseerde metadata",
+    },
+    {
+      phase: "matching",
+      label: "Matching",
+      gemeente: "Leeftijdscategorie, regio, zorgvraag, urgentie",
+      zorgaanbieder: "Leeftijdscategorie + regio (geen NAW)",
+      regie: "Need-to-know risicosignalen",
+    },
+    {
+      phase: "aanbieder_beoordeling",
+      label: "Aanbieder beoordeling",
+      gemeente: "Casuscontext + advies",
+      zorgaanbieder: "Beperkt profiel + pseudoniem",
+      regie: "Processtatus en blokkades",
+    },
+    {
+      phase: "plaatsing",
+      label: "Plaatsing",
+      gemeente: "Gecontroleerde reveal mogelijk",
+      zorgaanbieder: "Reveal op autorisatie + audit",
+      regie: "Audit + toestemmingstatus",
+    },
+    {
+      phase: "intake",
+      label: "Intake",
+      gemeente: "Volledige gegevens voor geautoriseerde rollen",
+      zorgaanbieder: "Volledige gegevens na acceptatie",
+      regie: "Alleen noodzakelijke regievelden",
+    },
+  ];
+
   return (
     <div className="space-y-3">
       <div className="flex items-start justify-between gap-4">
@@ -604,6 +680,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         <div className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
           <p>Vul de kern in. Daarna gaat de casus door naar matching.</p>
           <p>Velden met * zijn verplicht.</p>
+          <p className="text-foreground">Persoonsgegevens zijn alleen zichtbaar voor geautoriseerde rollen.</p>
         </div>
       )}
 
@@ -663,17 +740,41 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         {currentStep === 1 && (
           <div className="space-y-3">
-            <SectionHeader step="1" title="Basisinformatie" copy="Leg de kern vast." />
+            <SectionHeader step="1" title="Basisinformatie" copy="Leg de kern vast met minimale gegevensverwerking en pseudonieme coördinatie." />
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliënt *</label>
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliëntreferentie *</label>
               <input
-                value={formState.title}
-                onChange={(event) => updateField("title", event.target.value)}
+                value={clientReference}
+                onChange={(event) => setClientReference(event.target.value.toUpperCase())}
                 className={baseFieldClass}
-                placeholder="Bijv. Voornaam + initialiteit"
+                placeholder="CLI-88314"
               />
-              <FieldError message={formErrors.title} />
+              <p className="mt-1 text-xs text-muted-foreground">Gebruik een opaque ID. Geen volledige naam als primaire identifier.</p>
+              <FieldError message={formErrors.title ?? formErrors.case_id} />
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Betrokkene</label>
+                <input
+                  value={participantLabel}
+                  onChange={(event) => setParticipantLabel(event.target.value)}
+                  className={baseFieldClass}
+                  placeholder="M•••• A••••"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Alleen voor gecontroleerde reveal in latere fase.</p>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoek cliënt of dossiernummer</label>
+                <input
+                  value={clientLookup}
+                  onChange={(event) => setClientLookup(event.target.value)}
+                  className={baseFieldClass}
+                  placeholder="Zoek op CLI-ID of dossiernummer"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Zoekindex gebruikt alleen referentievelden, geen NAW-gegevens.</p>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -704,6 +805,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Privacy by workflow</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Persoonsgegevens blijven afgeschermd tot formele koppeling. Backend-autorisatie bepaalt altijd veldzichtbaarheid.
+              </p>
             </div>
           </div>
         )}
@@ -810,6 +918,32 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               <p className="font-semibold">Urgentiesuggestie</p>
               <p className="mt-1 text-blue-200/90">{urgencyHint}</p>
             </div>
+
+            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zichtbaarheid per fase</p>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full min-w-[720px] border-separate border-spacing-y-2 text-sm">
+                  <thead>
+                    <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                      <th className="px-3">Fase</th>
+                      <th className="px-3">Gemeente</th>
+                      <th className="px-3">Zorgaanbieder</th>
+                      <th className="px-3">Regie</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibilityRows.map((row) => (
+                      <tr key={row.phase} className="rounded-xl border border-border/60 bg-muted/20">
+                        <td className="px-3 py-2 font-semibold text-foreground">{row.label}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.gemeente}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.zorgaanbieder}</td>
+                        <td className="px-3 py-2 text-muted-foreground">{row.regie}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         )}
 
@@ -885,10 +1019,64 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               <p className="mt-3 text-sm text-muted-foreground">{regionCapacityHint}</p>
             </div>
 
+            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gecontroleerde identity reveal</p>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={previewRole}
+                    onChange={(event) => setPreviewRole(event.target.value as VisibilityRole)}
+                    className="h-9 rounded-xl border border-border/80 bg-background px-2 text-xs text-foreground"
+                    aria-label="Preview rol"
+                  >
+                    <option value="gemeente">Gemeente</option>
+                    <option value="zorgaanbieder">Zorgaanbieder</option>
+                    <option value="regie">Regie</option>
+                  </select>
+                  <select
+                    value={previewPhase}
+                    onChange={(event) => setPreviewPhase(event.target.value as WorkflowPhase)}
+                    className="h-9 rounded-xl border border-border/80 bg-background px-2 text-xs text-foreground"
+                    aria-label="Preview fase"
+                  >
+                    <option value="casus">Casus</option>
+                    <option value="matching">Matching</option>
+                    <option value="aanbieder_beoordeling">Aanbieder beoordeling</option>
+                    <option value="plaatsing">Plaatsing</option>
+                    <option value="intake">Intake</option>
+                  </select>
+                </div>
+              </div>
+              <div className="mt-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+                <p className="text-xs text-muted-foreground">Zichtbare identiteit</p>
+                <p className="mt-1 text-sm font-semibold text-foreground">{identityDisplay}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {canRevealIdentity
+                    ? "Reveal toegestaan in deze fase. Event wordt auditbaar gelogd."
+                    : "Reveal geblokkeerd: alleen pseudoniem zichtbaar op basis van need-to-know."}
+                </p>
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-xl border-border/70 px-3 text-xs font-semibold"
+                  onClick={() => setRevealRequested((current) => !current)}
+                  disabled={!canRevealIdentity}
+                >
+                  {revealRequested ? "Verberg identiteit" : "Reveal identiteit"}
+                </Button>
+                <span className="text-xs text-muted-foreground">
+                  Auditstatus: {revealRequested && canRevealIdentity ? "Reveal aangevraagd (log klaar)" : "Geen reveal event"}
+                </span>
+              </div>
+            </div>
+
             <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
               <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
               <div className="grid gap-3 text-sm text-foreground md:grid-cols-2">
-                <p><span className="text-muted-foreground">Cliënt:</span> {formState.title || "-"}</p>
+                <p><span className="text-muted-foreground">Cliëntreferentie:</span> {clientReference || "-"}</p>
+                <p><span className="text-muted-foreground">Betrokkene:</span> {identityDisplay}</p>
                 <p><span className="text-muted-foreground">Start:</span> {formatDateDisplayValue(formState.start_date)}</p>
                 <p><span className="text-muted-foreground">Deadline:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
                 <p><span className="text-muted-foreground">Hoofd:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>

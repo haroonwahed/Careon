@@ -15,16 +15,16 @@ export function SignalCard({ signal }: SignalCardProps) {
 
   const severityStyles = {
     critical: {
-      bg: "bg-[rgba(239,68,68,0.1)]",
-      border: "border-[rgba(239,68,68,0.3)]",
-      text: "text-[#EF4444]",
-      icon: "text-[#EF4444]"
+      bg: "bg-destructive/10",
+      border: "border-destructive/30",
+      text: "text-destructive",
+      icon: "text-destructive"
     },
     warning: {
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
-      text: "text-[#F59E0B]",
-      icon: "text-[#F59E0B]"
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/30",
+      text: "text-amber-300",
+      icon: "text-amber-300"
     },
     info: {
       bg: "bg-primary/10",

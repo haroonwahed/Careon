@@ -1,4 +1,6 @@
 import { LucideIcon } from "lucide-react";
+import { cn } from "../ui/utils";
+import { CarePanel } from "./CareDesignPrimitives";
 
 interface CareKPICardProps {
   title: string;
@@ -23,35 +25,31 @@ export function CareKPICard({
 }: CareKPICardProps) {
   const urgencyStyles = {
     critical: {
-      icon: "text-[#EF4444]",
-      value: "text-[#EF4444]",
-      border: "border-[rgba(239,68,68,0.3)]",
-      glow: "shadow-[0_0_20px_rgba(239,68,68,0.15)]"
+      icon: "text-destructive",
+      value: "text-destructive",
+      border: "border-destructive/35",
     },
     warning: {
-      icon: "text-[#F59E0B]",
-      value: "text-[#F59E0B]",
-      border: "border-[rgba(245,158,11,0.3)]",
-      glow: "shadow-[0_0_20px_rgba(245,158,11,0.15)]"
+      icon: "text-amber-300",
+      value: "text-amber-200",
+      border: "border-amber-500/35",
     },
     normal: {
       icon: "text-primary",
       value: "text-foreground",
       border: "border-border",
-      glow: ""
     },
     positive: {
-      icon: "text-[#10B981]",
-      value: "text-[#10B981]",
-      border: "border-[rgba(16,185,129,0.3)]",
-      glow: "shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+      icon: "text-emerald-300",
+      value: "text-emerald-200",
+      border: "border-emerald-500/35",
     }
   };
 
   const style = urgencyStyles[urgency];
 
   return (
-    <div className={`panel-surface kpi-card care-hover-card p-4 ${style.border} ${style.glow}`}>
+    <CarePanel className={cn("kpi-card care-hover-card p-4", style.border)}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
@@ -65,12 +63,12 @@ export function CareKPICard({
 
       {trend && (
         <div className="mt-4 flex items-center gap-2 text-xs">
-          <span className={trend.direction === "up" ? "text-[#EF4444]" : "text-[#10B981]"}>
+          <span className={trend.direction === "up" ? "text-destructive" : "text-emerald-300"}>
             {trend.direction === "up" ? "↑" : "↓"} {Math.abs(trend.value)}%
           </span>
           <span className="text-muted-foreground">{trend.label}</span>
         </div>
       )}
-    </div>
+    </CarePanel>
   );
 }

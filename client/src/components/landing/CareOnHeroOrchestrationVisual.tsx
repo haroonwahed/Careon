@@ -49,7 +49,7 @@ export function CareOnHeroOrchestrationVisual() {
             }}
             loading="eager"
             decoding="async"
-            fetchPriority="high"
+            fetchpriority="high"
             draggable="false"
           />
         </div>

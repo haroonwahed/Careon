@@ -1,5 +1,7 @@
 import { UrgencyLevel } from "../../lib/casesData";
 import { AlertTriangle, Clock, AlertCircle, Info } from "lucide-react";
+import { urgencyLevelChipClasses } from "./careSemanticTones";
+import { cn } from "../ui/utils";
 
 interface UrgencyBadgeProps {
   urgency?: UrgencyLevel;
@@ -19,30 +21,18 @@ export function UrgencyBadge({ urgency, level, showIcon = true, size = "md" }: U
   const configs = {
     critical: {
       label: "Kritiek",
-      color: "text-[#EF4444]",
-      bg: "bg-[rgba(239,68,68,0.1)]",
-      border: "border-[rgba(239,68,68,0.3)]",
       icon: AlertCircle
     },
     high: {
       label: "Hoog",
-      color: "text-[#F59E0B]",
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
       icon: AlertTriangle
     },
     medium: {
       label: "Gemiddeld",
-      color: "text-[#3B82F6]",
-      bg: "bg-[rgba(59,130,246,0.1)]",
-      border: "border-[rgba(59,130,246,0.3)]",
       icon: Clock
     },
     low: {
       label: "Laag",
-      color: "text-[#6B7280]",
-      bg: "bg-[rgba(107,114,128,0.1)]",
-      border: "border-[rgba(107,114,128,0.3)]",
       icon: Info
     }
   };
@@ -68,13 +58,7 @@ export function UrgencyBadge({ urgency, level, showIcon = true, size = "md" }: U
   };
 
   return (
-    <div 
-      className={`
-        inline-flex items-center rounded-md border font-medium
-        ${config.bg} ${config.border} ${config.color}
-        ${sizeClasses[size]}
-      `}
-    >
+    <div className={cn("inline-flex items-center rounded-md border font-medium", urgencyLevelChipClasses(urgencyLevel), sizeClasses[size])}>
       {showIcon && <Icon size={iconSizes[size]} />}
       <span>{config.label}</span>
     </div>

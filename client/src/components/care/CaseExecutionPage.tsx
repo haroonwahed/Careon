@@ -106,11 +106,11 @@ function timelineTimePressureTier(
 }
 
 const TIMELINE_PRESSURE_CIRCLE: Record<"warn" | "elevated" | "critical", string> = {
-  warn: "border-amber-500/70 bg-amber-500/12 text-amber-800 dark:text-amber-300 shadow-[0_0_0_1px_rgba(245,158,11,0.22)]",
+  warn: "border-amber-500/70 bg-amber-500/12 text-amber-800 dark:text-amber-300 ring-1 ring-amber-500/30",
   elevated:
-    "border-orange-500/75 bg-orange-500/12 text-orange-900 dark:text-orange-300 shadow-[0_0_0_1px_rgba(249,115,22,0.26)]",
+    "border-orange-500/75 bg-orange-500/12 text-orange-900 dark:text-orange-300 ring-1 ring-orange-500/35",
   critical:
-    "border-destructive/80 bg-destructive/15 text-destructive shadow-[0_0_0_1px_rgba(239,68,68,0.32)] motion-safe:animate-pulse",
+    "border-destructive/80 bg-destructive/15 text-destructive ring-1 ring-destructive/35 motion-safe:animate-pulse",
 };
 
 function phaseDecisionEyebrow(stepId: FlowStepId): string {

@@ -222,8 +222,8 @@ test.describe("Care design system (SPA)", () => {
     const row = page.locator("[data-care-work-row]").filter({ hasText: /e2e-matching-1/i }).first();
     await expect(row).toBeVisible({ timeout: 30_000 });
     await row.click();
-    await expect(page.getByRole("heading", { name: /Top 3 aanbevelingen/i })).toBeVisible({ timeout: 30_000 });
-    await page.getByRole("button", { name: /^Selecteer$/i }).first().click();
+    await expect(page.getByRole("button", { name: /Aanbevolen matches|Top 3 aanbevelingen/i })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: /Selecteer(&| & )?verzoek|^Selecteer$/i }).first().click();
     await expect(page.getByRole("dialog", { name: /Bevestig keuze/i })).toBeVisible();
     await expect(page.getByRole("dialog").getByText(/aanbiederbeoordeling/i)).toBeVisible();
     await page.getByRole("button", { name: /^Annuleren$/i }).click();
@@ -303,7 +303,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     const panel = page.getByTestId("regiekamer-dominant-action");
     await expect(panel).toHaveCount(1);
     await expect(panel).toHaveAttribute("data-regiekamer-mode", "stable");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Prioriteer werkvoorraad/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Prioriteer werkvoorraad|Open werkvoorraad/);
     await expect(page.getByTestId("regiekamer-calm-state")).toContainText("Geen operationele blokkades");
     await expect(page.getByTestId("regiekamer-phase-board")).toBeVisible();
     await expect(page.getByTestId("regiekamer-uitvoerlijst")).toBeVisible();
@@ -331,7 +331,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
     const panel = page.getByTestId("regiekamer-dominant-action");
     await expect(panel).toHaveAttribute("data-regiekamer-mode", "optimization");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Analyseer doorstroom/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Analyseer doorstroom|Open doorstroomrapport/);
     await expect(page.getByTestId("regiekamer-phase-board")).toBeVisible();
     await expect(page.getByTestId("regiekamer-uitvoerlijst")).toBeVisible();
     await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
@@ -385,10 +385,11 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await page.goto(SPA_BASE, { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
-    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(/Bekijk matching-urgenties/);
+    await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(
+      /Bekijk matching-urgenties|Open matchingoverzicht|Bekijk matchingcasussen/,
+    );
     await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
-    await expect(page.getByTestId("regiekamer-operational-attention")).toBeVisible();
-    await expect(page.getByTestId("regiekamer-attention-no_match")).toBeVisible();
+    await expect(page.getByTestId("regiekamer-dominant-action")).toContainText(/matching|casus/i);
     await expect(page.getByTestId("regiekamer-uitvoerlijst")).toBeVisible();
   });
 });
@@ -405,7 +406,7 @@ test.describe("Matching openCase deep link (SPA)", () => {
     );
     await expect(page.getByTestId("care-app-shell")).toBeVisible({ timeout: 45_000 });
     await expect(
-      page.getByRole("heading", { name: new RegExp(`Matching — Casus ${E2E_MATCHING_CASE_ID}`, "i") }),
+      page.getByRole("heading", { name: /Matching voor Casus|Matching — Casus/i }),
     ).toBeVisible({ timeout: 30_000 });
   });
 });

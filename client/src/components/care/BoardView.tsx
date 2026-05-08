@@ -41,10 +41,10 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
 
   const getColumnColor = (color: string) => {
     const colors: Record<string, string> = {
-      blue: "careon-alert-info",
-      purple: "careon-alert-primary",
-      orange: "careon-alert-warning",
-      green: "careon-alert-success",
+      blue: "border-cyan-500/30 bg-cyan-500/10",
+      purple: "border-primary/30 bg-primary/10",
+      orange: "border-amber-500/30 bg-amber-500/10",
+      green: "border-emerald-500/30 bg-emerald-500/10",
       gray: "bg-muted border-border"
     };
     return colors[color] || colors.gray;
@@ -52,10 +52,10 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
 
   const getHeaderColor = (color: string) => {
     const colors: Record<string, string> = {
-      blue: "text-blue-base",
+      blue: "text-cyan-200",
       purple: "text-primary",
-      orange: "text-yellow-base",
-      green: "text-green-base",
+      orange: "text-amber-300",
+      green: "text-emerald-300",
       gray: "text-muted-foreground"
     };
     return colors[color] || colors.gray;
@@ -101,13 +101,13 @@ export function BoardView({ cases, onCaseClick }: BoardViewProps) {
                 {(urgentCount > 0 || warningCount > 0) && (
                   <div className="flex items-center gap-2 text-xs">
                     {urgentCount > 0 && (
-                      <span className="flex items-center gap-1 text-red-base">
+                      <span className="flex items-center gap-1 text-destructive">
                         <AlertTriangle className="w-3 h-3" />
                         {urgentCount} urgent
                       </span>
                     )}
                     {warningCount > 0 && (
-                      <span className="flex items-center gap-1 text-yellow-base">
+                      <span className="flex items-center gap-1 text-amber-300">
                         <Clock className="w-3 h-3" />
                         {warningCount}
                       </span>
@@ -149,11 +149,11 @@ function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
   const getUrgencyIndicator = () => {
     switch (urgency) {
       case "critical":
-        return "border-l-4 border-l-red-base bg-red-light/60";
+        return "border-l-4 border-l-red-base bg-destructive/10";
       case "high":
-        return "border-l-4 border-l-yellow-base bg-yellow-light/60";
+        return "border-l-4 border-l-yellow-base bg-amber-500/10";
       case "medium":
-        return "border-l-4 border-l-green-base bg-green-light/60";
+        return "border-l-4 border-l-green-base bg-emerald-500/10";
       default:
         return "border-l-4 border-l-border";
     }
@@ -177,7 +177,7 @@ function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
       <div className="space-y-1.5 mb-3">
         <div className="flex items-center justify-between text-xs">
           <span className="text-muted-foreground">{regio}</span>
-          <span className={`font-medium ${wachttijd > 7 ? "text-red-base" : "text-muted-foreground"}`}>
+          <span className={`font-medium ${wachttijd > 7 ? "text-destructive" : "text-muted-foreground"}`}>
             {wachttijd}d
           </span>
         </div>
@@ -189,7 +189,7 @@ function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
           {issues.slice(0, 2).map((issue, idx) => (
             <div
               key={idx}
-              className="px-2 py-1 rounded text-xs border careon-alert-error"
+              className="px-2 py-1 rounded text-xs border border-destructive/30 bg-destructive/10"
             >
               {issue}
             </div>
@@ -205,7 +205,7 @@ function BoardCard({ caseData, onCaseClick }: BoardCardProps) {
       {/* Urgency Badge */}
       {urgency === "critical" && (
         <div className="mt-2 pt-2 border-t border-border">
-          <span className="inline-flex items-center gap-1 text-xs font-semibold text-red-base">
+          <span className="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
             <AlertTriangle className="w-3 h-3" />
             Urgent
           </span>

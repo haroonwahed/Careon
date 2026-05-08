@@ -1,5 +1,6 @@
 import { RiskLevel } from "../../lib/casesData";
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
+import { cn } from "../ui/utils";
 
 interface RiskBadgeProps {
   risk?: RiskLevel;
@@ -19,23 +20,23 @@ export function RiskBadge({ risk, level, showIcon = true, size = "md" }: RiskBad
   const configs = {
     high: {
       label: "Hoog risico",
-      color: "text-[#DC2626]",
-      bg: "bg-[rgba(220,38,38,0.1)]",
-      border: "border-[rgba(220,38,38,0.3)]",
+      color: "text-destructive",
+      bg: "bg-destructive/10",
+      border: "border-destructive/30",
       icon: ShieldAlert
     },
     medium: {
       label: "Gemiddeld risico",
-      color: "text-[#F59E0B]",
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
+      color: "text-amber-300",
+      bg: "bg-amber-500/10",
+      border: "border-amber-500/30",
       icon: Shield
     },
     low: {
       label: "Laag risico",
-      color: "text-[#10B981]",
-      bg: "bg-[rgba(16,185,129,0.1)]",
-      border: "border-[rgba(16,185,129,0.3)]",
+      color: "text-emerald-300",
+      bg: "bg-emerald-500/10",
+      border: "border-emerald-500/30",
       icon: ShieldCheck
     },
     none: {
@@ -66,13 +67,7 @@ export function RiskBadge({ risk, level, showIcon = true, size = "md" }: RiskBad
   };
 
   return (
-    <div 
-      className={`
-        inline-flex items-center rounded-md border font-medium
-        ${config.bg} ${config.border} ${config.color}
-        ${sizeClasses[size]}
-      `}
-    >
+    <div className={cn("inline-flex items-center rounded-md border font-medium", config.bg, config.border, config.color, sizeClasses[size])}>
       {showIcon && <Icon size={iconSizes[size]} />}
       <span>{config.label}</span>
     </div>

@@ -1,5 +1,6 @@
 import { Calendar, Phone, Mail, User, Building2 } from "lucide-react";
 import { Button } from "../ui/button";
+import { CarePanel } from "./CareDesignPrimitives";
 
 interface ContactInfo {
   municipality: {
@@ -34,7 +35,7 @@ export function ActionPanel({
   return (
     <div className="space-y-4">
       {/* Next Actions */}
-      <div className="panel-surface p-4">
+      <CarePanel className="p-4">
         <h3 className="text-base font-semibold text-foreground mb-4">
           Volgende acties
         </h3>
@@ -53,7 +54,7 @@ export function ActionPanel({
           {onStartIntake && (
             <Button
               onClick={onStartIntake}
-              className="w-full bg-green-base hover:bg-green-base/90 justify-start"
+              className="w-full justify-start"
             >
               <Calendar size={16} className="mr-2" />
               Start intake proces
@@ -82,10 +83,10 @@ export function ActionPanel({
             </Button>
           )}
         </div>
-      </div>
+      </CarePanel>
 
       {/* Contact Information */}
-      <div className="panel-surface p-4">
+      <CarePanel className="p-4">
         <h3 className="text-base font-semibold text-foreground mb-4 flex items-center gap-2">
           <Phone size={16} className="text-muted-foreground" />
           Contact informatie
@@ -95,8 +96,8 @@ export function ActionPanel({
           {/* Municipality Contact */}
           <div className="p-4 rounded-lg bg-muted/20 border border-muted-foreground/20">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-blue-light flex items-center justify-center flex-shrink-0 border border-blue-border">
-                <Building2 size={16} className="text-blue-base" />
+              <div className="w-8 h-8 rounded-full bg-cyan-500/10 flex items-center justify-center flex-shrink-0 border border-cyan-500/30">
+                <Building2 size={16} className="text-cyan-200" />
               </div>
               <div className="flex-1">
                 <p className="text-sm font-semibold text-foreground mb-1">
@@ -139,7 +140,7 @@ export function ActionPanel({
           {/* Case Owner Contact */}
           <div className="p-4 rounded-lg bg-muted/20 border border-muted-foreground/20">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0 border border-primary/20">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
                 <User size={16} className="text-primary" />
               </div>
               <div className="flex-1">
@@ -174,28 +175,28 @@ export function ActionPanel({
             </div>
           </div>
         </div>
-      </div>
+      </CarePanel>
 
       {/* Quick Tips */}
-      <div className="panel-surface p-4 border careon-alert-info">
-        <h3 className="text-sm font-semibold text-blue-base mb-3">
+      <CarePanel className="p-4 border border-cyan-500/30 bg-cyan-500/10">
+        <h3 className="text-sm font-semibold text-cyan-200 mb-3">
           Tips voor intake
         </h3>
-        <ul className="space-y-2 text-xs text-blue-base">
+        <ul className="space-y-2 text-xs text-cyan-200">
           <li className="flex items-start gap-2">
-            <span className="text-blue-base mt-0.5">•</span>
+            <span className="text-cyan-200 mt-0.5">•</span>
             <span>Neem contact op binnen 24 uur na plaatsing</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-blue-base mt-0.5">•</span>
+            <span className="text-cyan-200 mt-0.5">•</span>
             <span>Beoordeel alle documenten voor de intake</span>
           </li>
           <li className="flex items-start gap-2">
-            <span className="text-blue-base mt-0.5">•</span>
+            <span className="text-cyan-200 mt-0.5">•</span>
             <span>Plan intake binnen 3 werkdagen bij hoge urgentie</span>
           </li>
         </ul>
-      </div>
+      </CarePanel>
     </div>
   );
 }

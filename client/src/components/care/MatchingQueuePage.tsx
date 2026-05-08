@@ -174,7 +174,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
       <CareFilterTabGroup
         aria-label="Matching-weergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-white/[0.08] p-1 pb-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
         style={{ backgroundColor: surfaceRaised }}
       >
         <CareFilterTabButton selected={listTab === "all"} accentSelected={listTab === "all"} accentHex={brandAccent} onClick={() => setListTab("all")}>
@@ -262,20 +262,33 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
       title="Matching"
       subtitleInfoTestId="matching-page-info"
       subtitleAriaLabel="Uitleg matchingwachtrij"
-      subtitle="Overzicht van casussen in de matchingwachtrij — fit, capaciteit en volgende stap."
+      subtitle="Overzicht van casussen in de matchingwachtrij — advies voor de gemeente, met topkandidaten; pas na gemeentelijke validatie gaat de casus door naar aanbiederbeoordeling."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          {onNavigateToCasussen ? (
+            <PrimaryActionButton onClick={onNavigateToCasussen}>Naar casussen</PrimaryActionButton>
+          ) : null}
+          <Button variant="outline" onClick={() => void refetch()}>
+            Ververs
+          </Button>
+        </div>
+      }
       metric={
         <CareMetricBadge>
           {loading ? "Laden…" : `${filteredCases.length} in deze weergave · ${counts.total} totaal`}
         </CareMetricBadge>
       }
       dominantAction={
-        blockedCount > 0 ? (
-          <CareAttentionBar
-            visible
-            tone="warning"
-            message={`${blockedCount} casus${blockedCount === 1 ? "" : "sen"} geblokkeerd — los dit eerst op voordat matching betrouwbaar is.`}
-          />
-        ) : undefined
+        <CareAttentionBar
+          visible
+          tone={blockedCount > 0 ? "warning" : "info"}
+          message={
+            blockedCount > 0
+              ? `${blockedCount} casus${blockedCount === 1 ? "" : "sen"} geblokkeerd — los dit eerst op voordat matching betrouwbaar is.`
+              : "Matching is advisering; de gemeente valideert de selectie voordat een aanbieder de casus beoordeelt."
+          }
+          action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Bekijk casussen</PrimaryActionButton> : undefined}
+        />
       }
       kpiStrip={kpiStrip}
     >
@@ -385,7 +398,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   ? "Zodra samenvatting en voorbereiding klaar zijn, verschijnen casussen hier automatisch."
                   : "Pas tabblad, zoekopdracht of filters aan."
               }
-              action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Terug naar werkvoorraad</PrimaryActionButton>}
+              action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Terug naar casussen</PrimaryActionButton>}
             />
           )}
 

@@ -71,7 +71,7 @@ describe("IntakeListPage", () => {
 
     render(<IntakeListPage onCaseClick={vi.fn()} view="intake" />);
 
-    expect(screen.getByRole("heading", { name: "Plaatsing casus" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CLI-ONBEKEND" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bekijk casus" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Accepteren" })).not.toBeInTheDocument();
   });

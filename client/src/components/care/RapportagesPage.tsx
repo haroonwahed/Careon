@@ -299,8 +299,8 @@ export function RapportagesPage() {
               <span
                 className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                   report.status === "ready"
-                    ? "border border-green-border bg-green-light text-green-base"
-                    : "border border-yellow-border bg-yellow-light text-yellow-base"
+                    ? "border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border border-amber-500/30 bg-amber-500/10 text-amber-300"
                 }`}
               >
                 {report.status === "ready" ? "Klaar" : "Wordt opgebouwd"}

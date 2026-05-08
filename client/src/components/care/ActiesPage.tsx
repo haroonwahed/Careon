@@ -22,11 +22,11 @@ import {
   type TaskPriorityKey,
 } from "../../lib/actiesTaskSemantics";
 import {
+  CareAttentionBar,
   CareDominantStatus,
   CareFilterTabButton,
   CareFilterTabGroup,
   CareMetaChip,
-  CareInfoPopover,
   CareMetricBadge,
   CarePageScaffold,
   CarePrimaryList,
@@ -158,7 +158,7 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
   const { me } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
-  const [listTab, setListTab] = useState<ListTab>("mine");
+  const [listTab, setListTab] = useState<ListTab>("all");
   const [sortMode, setSortMode] = useState<SortMode>("urgency");
   const [dueBucket, setDueBucket] = useState<DueBucketFilter>("all");
   const [prioritySelected, setPrioritySelected] = useState<Set<TaskPriorityKey>>(
@@ -197,6 +197,88 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
     return { urgent, today, waitingOthers };
   }, [openTasks, me?.fullName]);
 
+  const dominantAction = useMemo(() => {
+    if (openTaskTotal === 0) {
+      return null;
+    }
+
+    if (counts.urgent > 0) {
+      return {
+        tone: "critical" as const,
+        icon: <ShieldAlert size={16} aria-hidden />,
+        message: `${counts.urgent} kritieke actie${counts.urgent === 1 ? "" : "s"} staan nu open voor jou; pak de oudste eerst op om de blokkade niet te laten oplopen.`,
+        action: (
+          <Button
+            type="button"
+            variant="default"
+            className="rounded-xl px-4 font-semibold"
+            onClick={() => {
+              setShowSecondaryFilters(true);
+              setDueBucket("overdue");
+            }}
+          >
+            Toon te laat
+          </Button>
+        ),
+      };
+    }
+
+    if (counts.today > 0) {
+      return {
+        tone: "warning" as const,
+        icon: <Clock size={16} aria-hidden />,
+        message: `${counts.today} actie${counts.today === 1 ? "" : "s"} vervalt vandaag; werk deze eerst af voordat je verder filtert.`,
+        action: (
+          <Button
+            type="button"
+            variant="default"
+            className="rounded-xl px-4 font-semibold"
+            onClick={() => {
+              setShowSecondaryFilters(true);
+              setDueBucket("today");
+            }}
+          >
+            Toon vandaag
+          </Button>
+        ),
+      };
+    }
+
+    if (counts.waitingOthers > 0) {
+      return {
+        tone: "info" as const,
+        icon: <ClipboardList size={16} aria-hidden />,
+        message: `${counts.waitingOthers} actie${counts.waitingOthers === 1 ? "" : "s"} wachten op anderen; houd jouw eigen werkvoorraad vooraan.`,
+        action: (
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-xl px-4 font-semibold"
+            onClick={() => setListTab("waiting")}
+          >
+            Wacht op mij
+          </Button>
+        ),
+      };
+    }
+
+    return {
+      tone: "info" as const,
+      icon: <ClipboardList size={16} aria-hidden />,
+      message: `${openTaskTotal} open actie${openTaskTotal === 1 ? "" : "s"} staan klaar; pak ze in urgentie-volgorde op.`,
+      action: onNavigateToCasussen ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="rounded-xl px-4 font-semibold"
+          onClick={onNavigateToCasussen}
+        >
+          Open casussen
+        </Button>
+      ) : undefined,
+    };
+  }, [counts.today, counts.urgent, counts.waitingOthers, openTaskTotal, onNavigateToCasussen]);
+
   const pc = useMemo(() => priorityCounts(openTasks), [openTasks]);
 
   const togglePriority = (key: TaskPriorityKey) => {
@@ -224,7 +306,7 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
     <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
       <CareFilterTabGroup
         aria-label="Actieweergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-white/[0.08] p-1 pb-1 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
         style={{ backgroundColor: surfaceRaised }}
       >
         <CareFilterTabButton selected={listTab === "mine"} accentSelected={listTab === "mine"} accentHex={brandAccent} onClick={() => setListTab("mine")}>
@@ -307,7 +389,29 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
       title="Acties"
       subtitleInfoTestId="acties-page-info"
       subtitleAriaLabel="Uitleg Acties"
-      subtitle="Overzicht van werk dat vandaag aandacht nodig heeft."
+      subtitle="Open taken met eigenaar, verval en volgende stap, zodat je direct weet wat nu aandacht vraagt."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          {onNavigateToCasussen ? (
+            <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={onNavigateToCasussen}>
+              Open casussen
+            </Button>
+          ) : null}
+          <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={() => refetch()}>
+            Ververs
+          </Button>
+        </div>
+      }
+      dominantAction={
+        dominantAction ? (
+          <CareAttentionBar
+            tone={dominantAction.tone}
+            icon={dominantAction.icon}
+            message={dominantAction.message}
+            action={dominantAction.action}
+          />
+        ) : undefined
+      }
       metric={
         <CareMetricBadge>
           {loading ? "Laden…" : `${sortedTasks.length} in deze weergave · ${openTaskTotal} totaal`}
@@ -471,7 +575,7 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
                 copy={
                   searchQuery.trim() || dueBucket !== "all" || prioritySelected.size < PRIORITY_KEYS.length
                     ? `Er zijn ${openTaskTotal} openstaande ${openTaskTotal === 1 ? "taak" : "taken"} in totaal. Pas tabblad, zoekopdracht of filters aan.`
-                    : "Alle taken zijn voltooid."
+                    : "Alle taken zijn voltooid. Er staat nu niets open dat jouw directe aandacht vraagt."
                 }
                 action={
                   onNavigateToCasussen ? (

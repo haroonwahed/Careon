@@ -135,7 +135,7 @@ export function InstellingenSettingsExperience({
             <p
               role="status"
               aria-live="polite"
-              className="mb-6 rounded-xl border border-border/55 bg-card/40 px-3 py-2.5 text-[13px] leading-relaxed text-muted-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              className="mb-6 rounded-xl border border-border/55 bg-card/40 px-3 py-2.5 text-[13px] leading-relaxed text-muted-foreground shadow-sm"
             >
               {orgSaveMessage}
             </p>
@@ -707,7 +707,7 @@ function SettingsSidebar({
                       className={cn(
                         "flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[13px] transition-colors duration-150",
                         active
-                          ? "bg-primary/[0.09] font-medium text-foreground shadow-[inset_0_0_0_1px_rgba(124,92,255,0.22)]"
+                          ? "bg-primary/[0.09] font-medium text-foreground ring-1 ring-primary/30"
                           : "text-muted-foreground hover:bg-muted/30 hover:text-foreground",
                       )}
                     >
@@ -755,7 +755,7 @@ function SettingsSection({ title, lede, primaryAction, children }: SettingsSecti
 
 function SettingsCluster({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/35 bg-card/[0.12] p-4 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] md:p-5">
+    <section className="rounded-2xl border border-border/35 bg-card/[0.12] p-4 shadow-sm md:p-5">
       <div className="mb-4">
         <h3 className="text-[13px] font-semibold text-foreground">{title}</h3>
         {hint ? <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p> : null}
@@ -789,7 +789,7 @@ function ReadOnlyTile({ icon, label, value }: { icon: ReactNode; label: string; 
 
 function GovernanceCallout({ title, copy }: { title: string; copy: string }) {
   return (
-    <div className="rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-4 shadow-[0_0_24px_-12px_rgba(124,92,255,0.35)]">
+    <div className="rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-4 shadow-md">
       <div className="flex gap-3">
         <Shield className="mt-0.5 size-4 shrink-0 text-primary/90" aria-hidden />
         <div>
@@ -897,12 +897,12 @@ function IntegrationTile({
 }) {
   const dot =
     status === "ok"
-      ? "bg-emerald-400/90 shadow-[0_0_8px_rgba(52,211,153,0.35)]"
+      ? "bg-emerald-400/90 ring-2 ring-emerald-400/30"
       : status === "warn"
         ? "bg-amber-400/90"
         : "bg-muted-foreground/40";
   return (
-    <div className="flex flex-col rounded-2xl border border-border/40 bg-card/15 p-4 transition-shadow duration-200 hover:shadow-[0_8px_30px_-18px_rgba(124,92,255,0.25)]">
+    <div className="flex flex-col rounded-2xl border border-border/40 bg-card/15 p-4 transition-shadow duration-200 hover:shadow-md">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-foreground">{name}</p>
@@ -921,7 +921,7 @@ function IntegrationTile({
 function AuditTimelineItem({ time, title, detail }: { time: string; title: string; detail: string }) {
   return (
     <div className="relative pb-8 last:pb-0">
-      <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-primary/40 bg-background shadow-[0_0_0_3px_rgba(124,92,255,0.12)]" />
+      <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-primary/40 bg-background ring-2 ring-primary/20" />
       <time className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{time}</time>
       <p className="mt-1 text-sm font-medium text-foreground">{title}</p>
       <p className="mt-0.5 text-[13px] text-muted-foreground">{detail}</p>

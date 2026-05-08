@@ -38,6 +38,24 @@ interface PlacementTrackingPageProps {
 
 type PlacementTab = "te-bevestigen" | "lopend" | "afgerond";
 
+function formatClientReference(caseId: string): string {
+  const digits = caseId.replace(/\D/g, "");
+  if (digits.length >= 3) {
+    return `CLI-${digits.padStart(5, "0").slice(-5)}`;
+  }
+  return "CLI-ONBEKEND";
+}
+
+function maskParticipantIdentity(label: string): string {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "Betrokkene afgeschermd";
+  }
+  return parts
+    .map((part) => `${part[0] ?? ""}${"•".repeat(Math.max(3, part.length - 1))}`)
+    .join(" ");
+}
+
 export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: PlacementTrackingPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTab, setActiveTab] = useState<PlacementTab>("te-bevestigen");
@@ -90,10 +108,28 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
           </CareInfoPopover>
         </span>
       }
+      subtitle="Plaatsing volgt pas nadat de aanbieder heeft geaccepteerd; daarna plan je intake en bewaak je doorlooptijd."
+      actions={
+        <div className="flex flex-wrap items-center gap-2">
+          {onNavigateToMatching ? (
+            <PrimaryActionButton onClick={onNavigateToMatching}>Naar matching</PrimaryActionButton>
+          ) : null}
+          <Button variant="outline" onClick={() => void refetch()}>
+            Ververs
+          </Button>
+        </div>
+      }
       metric={
         <CareMetricBadge>
           {placementCases.length} plaatsingen in flow
         </CareMetricBadge>
+      }
+      dominantAction={
+        <CareAttentionBar
+          tone="info"
+          message="Plaatsingen zijn het gevolg van provideracceptatie. Gebruik dit overzicht om bevestiging, intake en vertragingen te bewaken."
+          action={onNavigateToMatching ? <PrimaryActionButton onClick={onNavigateToMatching}>Bekijk matching</PrimaryActionButton> : undefined}
+        />
       }
       filters={
         <CareSearchFiltersBar
@@ -149,7 +185,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
             <CareWorkRow
               key={item.id}
               leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
-              title={item.clientLabel}
+              title={formatClientReference(item.id)}
               context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
               status={<CareDominantStatus>{placementTrackingRowStatusLabel(item)}</CareDominantStatus>}
               time={
@@ -159,6 +195,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
               }
               contextInfo={
                 <>
+                  <CareMetaChip>Betrokkene: {maskParticipantIdentity(item.clientLabel || item.id)}</CareMetaChip>
                   <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
                   {ambiguous ? (
                     <CareMetaChip title="Geen workflow/arrangement/placement-record in API — controleer in dossier">
@@ -182,8 +219,8 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
 
       <CareContextHint
         icon={<CheckCircle2 className="text-primary" size={20} />}
-        title="Volgt uit matching"
-        copy="Plaatsing & intake horen bij elkaar; gebruik de casus voor de volgende beslissing."
+        title="Volgt uit provideracceptatie"
+        copy="Plaatsing & intake horen bij elkaar; gebruik de casus voor de volgende beslissing en houd de volgorde vast."
       />
     </CarePageScaffold>
   );

@@ -13,7 +13,6 @@ import {
   Clock,
   Home,
   Info,
-  Loader2,
   MapPin,
   Shield,
   Sparkles,
@@ -46,6 +45,7 @@ import { apiClient } from "../../lib/apiClient";
 import { ProviderNetworkMap } from "./ProviderNetworkMap";
 import { tokens } from "../../design/tokens";
 import { cn } from "../ui/utils";
+import { CarePanel, EmptyState, ErrorState, LoadingState } from "./CareDesignPrimitives";
 
 const MATCH_BRAND = tokens.colors.casussenAccent;
 const MATCH_SURFACE = tokens.colors.casussenSurfaceRaised;
@@ -57,6 +57,30 @@ function formatMatchingCaseTitle(caseId: string): string {
   const digits = caseId.replace(/\D/g, "");
   if (digits.length >= 3) return `CAS-2025-${digits.padStart(5, "0").slice(-5)}`;
   return caseId;
+}
+
+function formatClientReference(caseId: string): string {
+  const digits = caseId.replace(/\D/g, "");
+  if (digits.length >= 3) {
+    return `CLI-${digits.padStart(5, "0").slice(-5)}`;
+  }
+  return "CLI-ONBEKEND";
+}
+
+function maskParticipantIdentity(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (parts.length === 0) {
+    return "Betrokkene afgeschermd";
+  }
+  return parts
+    .map((part) => {
+      const first = part[0] ?? "";
+      return `${first}${"•".repeat(Math.max(3, part.length - 1))}`;
+    })
+    .join(" ");
 }
 
 function MatchingScoreRing({ percent, label }: { percent: number; label: string }) {
@@ -294,24 +318,15 @@ export function MatchingPageWithMap({
   }, [rankedMatches, showOnlyAvailablePins]);
 
   if (casesLoading || providersLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[300px] text-muted-foreground gap-2">
-        <Loader2 size={18} className="animate-spin" />
-        <span>Matching laden...</span>
-      </div>
-    );
+    return <LoadingState title="Matching laden…" copy="Aanbieders en casusinformatie worden opgehaald." />;
   }
 
   if (casesError || providersError) {
-    return (
-      <div className="panel-surface p-4 text-center text-destructive">
-        Kon matchinggegevens niet laden: {casesError ?? providersError}
-      </div>
-    );
+    return <ErrorState title="Matchinggegevens niet beschikbaar" copy={casesError ?? providersError} />;
   }
 
   if (!caseData) {
-    return null;
+    return <EmptyState title="Casus niet gevonden" copy="Deze casus is niet beschikbaar voor matching in de huidige context." />;
   }
 
   const bestMatch = rankedMatches[0] ?? null;
@@ -496,7 +511,7 @@ export function MatchingPageWithMap({
 
   return (
     <div className="flex min-h-screen flex-col text-foreground" style={{ backgroundColor: MATCH_BG }}>
-      <header className="border-b border-white/[0.06] px-4 py-5 md:px-8" style={{ backgroundColor: MATCH_BG }}>
+      <header className="border-b border-border/60 px-4 py-5 md:px-8" style={{ backgroundColor: MATCH_BG }}>
         <div className="mx-auto flex max-w-[1680px] flex-col gap-5">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 space-y-3">
@@ -527,8 +542,11 @@ export function MatchingPageWithMap({
                 </span>
               </div>
               <p className="text-[13px] text-muted-foreground">
-                {caseData.clientName} · {caseData.clientAge} jaar · {caseData.region} · Urgentie:{" "}
-                <span className={cn("font-semibold", urgencyHighlight && "text-red-400")}>{urgencyNl}</span>
+                {formatClientReference(caseId)} · {maskParticipantIdentity(caseData.clientName)} · {caseData.clientAge} jaar · {caseData.region} · Urgentie:{" "}
+                <span className={cn("font-semibold", urgencyHighlight && "text-destructive")}>{urgencyNl}</span>
+              </p>
+              <p className="text-[12px] text-muted-foreground">
+                Identiteit blijft gemaskeerd in matching. Backend-autorisatie bepaalt zichtbaarheid per fase en rol.
               </p>
             </div>
             <DropdownMenu>
@@ -548,7 +566,7 @@ export function MatchingPageWithMap({
             </DropdownMenu>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-white/[0.07] px-3 py-3.5" style={{ backgroundColor: MATCH_SURFACE }}>
+          <div className="overflow-x-auto rounded-xl border border-border/60 px-3 py-3.5" style={{ backgroundColor: MATCH_SURFACE }}>
             <div className="flex min-w-[760px] items-center gap-0">
               {(
                 [
@@ -566,8 +584,7 @@ export function MatchingPageWithMap({
                       className={cn(
                         "flex size-10 items-center justify-center rounded-xl border text-muted-foreground",
                         step.state === "done" && "border-primary/50 bg-primary/15 text-primary",
-                        step.state === "current" &&
-                          "border-primary/60 bg-primary/20 text-primary shadow-[0_0_24px_rgba(109,93,252,0.35)]",
+                        step.state === "current" && "border-primary/60 bg-primary/20 text-primary shadow-md",
                         step.state === "pending" && "border-amber-500/40 bg-amber-500/10 text-amber-200",
                         step.state === "idle" && "border-white/10 bg-background/50",
                       )}
@@ -592,7 +609,7 @@ export function MatchingPageWithMap({
       <div className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start lg:px-8">
         <div className="min-w-0 flex-1 space-y-4">
             {(submitError || matchSubmitError) && (
-              <div className="mb-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              <div className="mb-4 rounded-2xl border border-destructive/40 bg-destructive/15 px-4 py-3 text-sm text-destructive">
                 {matchSubmitError ?? submitError}
               </div>
             )}
@@ -674,7 +691,7 @@ export function MatchingPageWithMap({
                 </Tooltip>
               </div>
 
-              <div className="hidden gap-4 border-b border-white/[0.07] pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
+              <div className="hidden gap-4 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
                 <span className="sr-only">Rang</span>
                 <span>Aanbieder</span>
                 <span className="text-center">Match score</span>
@@ -696,7 +713,7 @@ export function MatchingPageWithMap({
                           onMouseEnter={() => setHoveredProviderId(item.provider.id)}
                           onMouseLeave={() => setHoveredProviderId(null)}
                           className={cn(
-                            "cursor-pointer rounded-xl border border-white/[0.08] p-4 transition-all",
+                            "cursor-pointer rounded-xl border border-border/60 p-4 transition-all",
                             isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
                           )}
                           style={{ backgroundColor: MATCH_SURFACE }}
@@ -831,7 +848,7 @@ export function MatchingPageWithMap({
                           onMouseEnter={() => setHoveredProviderId(row.provider.id)}
                           onMouseLeave={() => setHoveredProviderId(null)}
                           className={cn(
-                            "cursor-pointer rounded-xl border border-white/[0.08] p-4 transition-all",
+                            "cursor-pointer rounded-xl border border-border/60 p-4 transition-all",
                             isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
                           )}
                           style={{ backgroundColor: MATCH_SURFACE }}
@@ -925,7 +942,7 @@ export function MatchingPageWithMap({
                       {overflowList.map((row) => (
                         <li
                           key={row.provider.id}
-                          className="flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.06] py-2 text-sm last:border-b-0"
+                          className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 py-2 text-sm last:border-b-0"
                         >
                           <button
                             type="button"
@@ -943,11 +960,12 @@ export function MatchingPageWithMap({
               ) : null}
 
               {rankedMatches.length === 0 && listTab === "recommended" ? (
-                <div className="rounded-xl border border-white/10 p-6 text-center" style={{ backgroundColor: MATCH_SURFACE }}>
-                  <AlertTriangle size={42} className="mx-auto mb-3 text-yellow-base" />
-                  <h3 className="text-lg font-bold text-foreground">Geen aanbieders</h3>
-                  <p className="mt-2 text-sm text-muted-foreground">Geen geschikte aanbieders binnen de selectie.</p>
-                </div>
+                <CarePanel className="p-2">
+                  <EmptyState
+                    title="Geen aanbieders"
+                    copy="Geen geschikte aanbieders binnen de selectie."
+                  />
+                </CarePanel>
               ) : null}
 
               <details className="group rounded-xl border border-white/10 bg-card/30">
@@ -1006,7 +1024,7 @@ export function MatchingPageWithMap({
           </div>
 
         <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[360px]">
-          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+          <div className="rounded-xl border border-border/60 p-4" style={{ backgroundColor: MATCH_SURFACE }}>
             <h3 className="text-sm font-semibold text-foreground">Waarom deze match?</h3>
             <div className="mt-4 space-y-3">
               {(
@@ -1028,7 +1046,7 @@ export function MatchingPageWithMap({
             </Button>
           </div>
 
-          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+          <div className="rounded-xl border border-border/60 p-4" style={{ backgroundColor: MATCH_SURFACE }}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-foreground">Huidige voorkeuren</h3>
               <Button variant="ghost" size="sm" type="button" className="h-8 text-xs text-primary" onClick={() => scrollToFocusZone()}>
@@ -1058,7 +1076,7 @@ export function MatchingPageWithMap({
             </div>
           </div>
 
-          <div className="rounded-xl border border-white/[0.08] p-4" style={{ backgroundColor: MATCH_SURFACE }}>
+          <div className="rounded-xl border border-border/60 p-4" style={{ backgroundColor: MATCH_SURFACE }}>
             <div className="flex items-center justify-between gap-2">
               <h3 className="text-sm font-semibold text-foreground">Alternatieven (lagere score)</h3>
               <span
@@ -1143,7 +1161,7 @@ export function MatchingPageWithMap({
           }}
         >
           <DialogContent
-            className="gap-4 rounded-[18px] border-[rgba(148,163,184,0.22)] bg-[#111827] p-4 text-[#E5E7EB] shadow-2xl"
+            className="gap-4 rounded-xl border-border/60 bg-card p-4 text-foreground shadow-xl"
             style={{ maxWidth: tokens.layout.dialogWideMaxWidth }}
             onOpenAutoFocus={(e) => {
               e.preventDefault();
@@ -1153,45 +1171,45 @@ export function MatchingPageWithMap({
             {waitlistTargetMatch ? (
               <>
                 <DialogHeader className="gap-3 text-left">
-                  <DialogTitle className="text-xl font-semibold text-[#E5E7EB]">Wachtlijstvoorstel voorbereiden</DialogTitle>
-                  <DialogDescription className="text-sm leading-relaxed text-[#A7B0C0]">
+                  <DialogTitle className="text-xl font-semibold text-foreground">Wachtlijstvoorstel voorbereiden</DialogTitle>
+                  <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
                     Je legt een concept wachtlijstvoorstel vast voor {waitlistTargetMatch.provider.name}. Daarna ga je verder op de
                     casuspagina om te controleren en eventueel naar de aanbieder te sturen — nog geen definitieve plaatsing.
                   </DialogDescription>
                 </DialogHeader>
 
                 {waitlistModalError ? (
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+                  <div className="rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-destructive">
                     {waitlistModalError}
                   </div>
                 ) : null}
 
-                <div className="space-y-0 rounded-xl border border-[rgba(148,163,184,0.15)] bg-[#0f1624] px-4 py-3 text-sm">
-                  <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
-                    <span className="text-[#A7B0C0]">Aanbieder</span>
-                    <span className="truncate text-right font-medium text-[#E5E7EB]" style={{ maxWidth: tokens.layout.rowLabelMaxWidth }}>{waitlistTargetMatch.provider.name}</span>
+                <CarePanel className="space-y-0 border-border/60 bg-background/80 px-4 py-3 text-sm">
+                  <div className="flex justify-between gap-4 border-b border-border/60 py-2 last:border-b-0">
+                    <span className="text-muted-foreground">Aanbieder</span>
+                    <span className="truncate text-right font-medium text-foreground" style={{ maxWidth: tokens.layout.rowLabelMaxWidth }}>{waitlistTargetMatch.provider.name}</span>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
-                    <span className="text-[#A7B0C0]">Matchscore</span>
-                    <span className="font-medium text-[#E5E7EB]">{waitlistTargetMatch.score}%</span>
+                  <div className="flex justify-between gap-4 border-b border-border/60 py-2 last:border-b-0">
+                    <span className="text-muted-foreground">Matchscore</span>
+                    <span className="font-medium text-foreground">{waitlistTargetMatch.score}%</span>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
-                    <span className="text-[#A7B0C0]">Afstand</span>
-                    <span className="font-medium text-[#E5E7EB]">{waitlistTargetMatch.distance} km</span>
+                  <div className="flex justify-between gap-4 border-b border-border/60 py-2 last:border-b-0">
+                    <span className="text-muted-foreground">Afstand</span>
+                    <span className="font-medium text-foreground">{waitlistTargetMatch.distance} km</span>
                   </div>
-                  <div className="flex justify-between gap-4 border-b border-[rgba(148,163,184,0.12)] py-2 last:border-b-0">
-                    <span className="text-[#A7B0C0]">Capaciteit</span>
-                    <span className="font-medium text-[#E5E7EB]">
+                  <div className="flex justify-between gap-4 border-b border-border/60 py-2 last:border-b-0">
+                    <span className="text-muted-foreground">Capaciteit</span>
+                    <span className="font-medium text-foreground">
                       {waitlistTargetMatch.provider.availableSpots}/{waitlistTargetMatch.provider.capacity}
                     </span>
                   </div>
                   <div className="flex justify-between gap-4 py-2">
-                    <span className="text-[#A7B0C0]">Reden</span>
-                    <span className="text-right font-medium text-[#E5E7EB]">Geen directe capaciteit</span>
+                    <span className="text-muted-foreground">Reden</span>
+                    <span className="text-right font-medium text-foreground">Geen directe capaciteit</span>
                   </div>
-                </div>
+                </CarePanel>
 
-                <p className="text-xs leading-snug text-[#9CA3AF]">
+                <p className="text-xs leading-snug text-muted-foreground">
                   Na bevestiging word je doorgestuurd naar de casus om het vastgelegde voorstel te zien.
                 </p>
 
@@ -1204,7 +1222,7 @@ export function MatchingPageWithMap({
                       setWaitlistModalOpen(false);
                       setWaitlistTargetMatch(null);
                     }}
-                    className="border-[rgba(148,163,184,0.35)] bg-transparent text-[#E5E7EB] hover:bg-white/10 hover:text-[#E5E7EB]"
+                    className="border-border/70 bg-transparent text-foreground hover:bg-muted"
                   >
                     Annuleren
                   </Button>

@@ -122,6 +122,24 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
   }
 }
 
+function formatClientReference(caseId: string): string {
+  const digits = caseId.replace(/\D/g, "");
+  if (digits.length >= 3) {
+    return `CLI-${digits.padStart(5, "0").slice(-5)}`;
+  }
+  return "CLI-ONBEKEND";
+}
+
+function maskParticipantIdentity(label: string): string {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "Betrokkene afgeschermd";
+  }
+  return parts
+    .map((part) => `${part[0] ?? ""}${"•".repeat(Math.max(3, part.length - 1))}`)
+    .join(" ");
+}
+
 // ─── Info request modal ───────────────────────────────────────────────────────
 
 interface InfoRequestModalProps {
@@ -341,7 +359,7 @@ function GemeenteBeoordelingStepper({ embedded = false }: { embedded?: boolean }
               className={cn(
                 "mb-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-2 text-[13px] font-semibold",
                 step.state === "done" && "border-primary/50 bg-primary/15 text-primary",
-                step.state === "current" && "border-primary/60 bg-primary/20 text-primary shadow-[0_0_0_3px_rgba(124,58,237,0.15)]",
+                step.state === "current" && "border-primary/60 bg-primary/20 text-primary ring-2 ring-primary/20",
                 step.state === "locked" && "border-border/70 bg-background/80 text-muted-foreground",
               )}
             >
@@ -473,7 +491,7 @@ function GemeenteView({
             shellExtrasReady ? (
               <CareAlertCard
                 testId="aanbieder-beoordeling-dominant"
-                className="shadow-[0_0_0_1px_rgba(255,255,255,0.02)_inset]"
+                className="shadow-sm"
                 tone="info"
                 icon={<Clock size={24} aria-hidden />}
                 metric={3}
@@ -532,11 +550,29 @@ function GemeenteView({
           )}
 
           {!loading && !error && reviewCasesAll.length === 0 && (
-            <EmptyState
-              title="Geen casussen in deze fase"
-              copy="Zodra een casus naar een aanbieder is verzonden, verschijnt die hier."
-              action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Terug naar werkvoorraad</PrimaryActionButton>}
-            />
+            <div className="space-y-3">
+              <CareAttentionBar
+                tone="info"
+                icon={<Info size={16} aria-hidden />}
+                message="Aanbieder beoordeling verschijnt pas nadat de gemeente matching heeft gevalideerd en de casus heeft verzonden."
+                action={
+                  <div className="flex flex-wrap items-center gap-2">
+                    {onNavigateToMatching ? (
+                      <PrimaryActionButton onClick={onNavigateToMatching}>Naar matching</PrimaryActionButton>
+                    ) : null}
+                    {onNavigateToCasussen ? (
+                      <Button variant="outline" onClick={() => onNavigateToCasussen()}>
+                        Terug naar werkvoorraad
+                      </Button>
+                    ) : null}
+                  </div>
+                }
+              />
+              <EmptyState
+                title="Geen casussen in deze fase"
+                copy="Er zijn nu nog geen casussen verzonden naar een aanbieder. Valideer eerst de matching of keer terug naar de werkvoorraad."
+              />
+            </div>
           )}
 
           {!loading && !error && reviewCasesAll.length > 0 && reviewCases.length === 0 && searchQuery.trim() !== "" && (
@@ -691,14 +727,19 @@ function GemeenteView({
                   className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/40 to-primary/10 text-sm font-semibold text-primary-foreground"
                   aria-hidden
                 >
-                  JK
+                  {focusCase ? formatClientReference(focusCase.id).slice(0, 2) : "CL"}
                 </div>
                 <div className="min-w-0 space-y-0.5">
-                  <p className="text-[15px] font-semibold text-foreground">Jayden K.</p>
+                  <p className="text-[15px] font-semibold text-foreground">
+                    {focusCase ? formatClientReference(focusCase.id) : "CLI-ONBEKEND"}
+                  </p>
                   <p className="text-[12px] text-muted-foreground">16 jaar · Amsterdam</p>
                   <p className="text-[12px]">
                     Urgentie:{" "}
                     <span className="font-semibold text-red-400">Hoog</span>
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Betrokkene: {maskParticipantIdentity(focusCase?.title?.trim() || "Betrokkene")}
                   </p>
                 </div>
               </div>
@@ -941,13 +982,16 @@ function ProviderReviewCaseCard({
       >
         <div className="border-b border-border/60 px-4 py-4 sm:px-5">
           <h2 className="text-lg font-semibold tracking-tight text-foreground">
-            {caseItem.title?.trim() || caseItem.id}
+            {formatClientReference(caseItem.id)}
           </h2>
           <p className="mt-1 text-[13px] text-muted-foreground">
-            {caseItem.id} · {caseItem.regio} · {urgencyLabel(caseItem.urgency)} · {caseItem.wachttijd}d · {caseItem.zorgtype}
+            {maskParticipantIdentity(caseItem.title?.trim() || caseItem.id)} · {caseItem.regio} · {urgencyLabel(caseItem.urgency)} · {caseItem.wachttijd}d · {caseItem.zorgtype}
           </p>
           <p className="mt-2 text-[12px] text-muted-foreground">
-            Jouw besluit: acceptatie → gemeenteplaatsing; afwijzing → hermatching.
+            Jouw besluit: acceptatie {"->"} gemeenteplaatsing; afwijzing {"->"} hermatching.
+          </p>
+          <p className="mt-1 text-[12px] text-muted-foreground">
+            Identiteit blijft afgeschermd tot geautoriseerde fase-overgang; reveal wordt auditbaar vastgelegd.
           </p>
         </div>
 

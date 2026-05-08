@@ -46,6 +46,15 @@ test.describe("Instellingen workspace", () => {
       await expect(page.getByTestId("settings-nav-api-developers")).toBeVisible();
       await expect(page.getByTestId("settings-nav-documenten-privacy")).toBeVisible();
     });
+
+    test("profile menu opens the dedicated profiel page and can hand off to instellingen", async ({ page }) => {
+      await page.getByRole("button", { name: /test/i }).click();
+      await page.getByRole("button", { name: "Profiel" }).click();
+      await expect(page.getByRole("heading", { name: "Profiel", level: 1 })).toBeVisible({ timeout: 30_000 });
+      await expect(page.getByText(/persoonlijke accountprofiel/i)).toBeVisible();
+      await page.getByRole("button", { name: "Naar instellingen" }).click();
+      await expect(page.getByRole("heading", { name: /Operationele regie/i })).toBeVisible({ timeout: 30_000 });
+    });
   });
 
   test.describe("diepe link", () => {

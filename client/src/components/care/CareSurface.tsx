@@ -12,7 +12,7 @@ const TONE_STYLES: Record<CareTone, { shell: string; icon: string; note: string 
     note: "text-muted-foreground",
   },
   primary: {
-    shell: "border-primary/20 bg-primary/5 shadow-[0_10px_30px_rgba(139,92,246,0.08)]",
+    shell: "border-primary/20 bg-primary/5 shadow-md",
     icon: "bg-primary/10 text-primary",
     note: "text-primary",
   },
@@ -170,7 +170,7 @@ export function CareMetricCard({
         className,
       )}
     >
-      {active && <span className="absolute right-4 h-2 w-2 rounded-full bg-primary shadow-[0_0_0_6px_rgba(139,92,246,0.15)]" style={{ top: tokens.layout.edgeZero }} />}
+      {active && <span className="absolute right-4 h-2 w-2 rounded-full bg-primary ring-2 ring-primary/20" style={{ top: tokens.layout.edgeZero }} />}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-3">
           {icon && (

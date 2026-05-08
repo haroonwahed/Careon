@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { tokens } from "../../design/tokens";
+import { cn } from "../ui/utils";
+import { urgencyToneClasses, workflowStatusChipClasses } from "./careSemanticTones";
 
 type UrgencyLevel = "critical" | "warning" | "normal" | "stable";
 type CaseStatus = "intake" | "beoordeling" | "matching" | "plaatsing" | "afgerond";
@@ -40,42 +42,42 @@ const urgencyConfig: Record<UrgencyLevel, {
   border: string; 
   text: string; 
   label: string;
-  glow?: string;
 }> = {
   critical: {
-    bg: "bg-red-light",
-    border: "border-red-border",
-    text: "text-red-base",
+    bg: "bg-destructive/10",
+    border: "border-destructive/40",
+    text: "text-destructive",
     label: "Urgent",
-    glow: "shadow-[0_0_20px_rgba(239,68,68,0.08)]"
   },
   warning: {
-    bg: "bg-yellow-light",
-    border: "border-yellow-border",
-    text: "text-yellow-base",
+    bg: "bg-amber-500/10",
+    border: "border-amber-500/40",
+    text: "text-amber-300",
     label: "Aandacht",
-    glow: "shadow-[0_0_15px_rgba(245,158,11,0.06)]"
   },
   normal: {
-    bg: "bg-blue-light",
-    border: "border-blue-border",
-    text: "text-blue-base",
+    bg: "bg-muted/30",
+    border: "border-border/70",
+    text: "text-muted-foreground",
     label: "Normaal"
   },
   stable: {
-    bg: "bg-green-light",
-    border: "border-green-border",
-    text: "text-green-base",
+    bg: "bg-emerald-500/10",
+    border: "border-emerald-500/40",
+    text: "text-emerald-300",
     label: "Stabiel"
   }
 };
 
-const statusConfig: Record<CaseStatus, { label: string; color: string }> = {
-  intake: { label: "Casus", color: "careon-badge-purple" },
-  beoordeling: { label: "Aanbieder beoordeling", color: "careon-badge-blue" },
-  matching: { label: "Matching", color: "careon-badge-yellow" },
-  plaatsing: { label: "Plaatsing", color: "bg-green-light text-green-base border border-green-border" },
-  afgerond: { label: "Afgerond", color: "bg-slate-500/20 text-slate-300 border border-slate-500/30" }
+const statusConfig: Record<
+  CaseStatus,
+  { label: string; tone: "intake" | "assessment" | "matching" | "placement" | "completed" }
+> = {
+  intake: { label: "Casus", tone: "intake" },
+  beoordeling: { label: "Aanbieder beoordeling", tone: "assessment" },
+  matching: { label: "Matching", tone: "matching" },
+  plaatsing: { label: "Plaatsing", tone: "placement" },
+  afgerond: { label: "Afgerond", tone: "completed" },
 };
 
 const problemIcons: Record<Problem["type"], any> = {
@@ -103,6 +105,7 @@ export function CaseTriageCard({
 }: CaseTriageCardProps) {
   const config = urgencyConfig[urgency];
   const statusStyle = statusConfig[status];
+  const urgencyTone = urgencyToneClasses(urgency === "critical" ? "urgent" : urgency === "warning" ? "warning" : urgency === "stable" ? "positive" : "normal");
   
   const isUrgent = urgency === "critical" || urgency === "warning";
 
@@ -112,7 +115,6 @@ export function CaseTriageCard({
         relative group
         rounded-xl border-2 transition-all duration-200
         ${config.border} ${config.bg}
-        ${isUrgent ? config.glow : ""}
         ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
         hover:border-opacity-60 hover:shadow-lg
       `}
@@ -135,13 +137,10 @@ export function CaseTriageCard({
         <div className="flex items-start justify-between gap-4 mb-4">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <span className={`
-                px-2.5 py-0.5 rounded-md text-xs font-semibold uppercase tracking-wide
-                ${config.bg} ${config.text} border ${config.border}
-              `}>
+              <span className={cn("px-2.5 py-0.5 rounded-md border text-xs font-semibold uppercase tracking-wide", urgencyTone.chip)}>
                 {config.label}
               </span>
-              <span className={`px-2.5 py-0.5 rounded-md text-xs font-medium ${statusStyle.color}`}>
+              <span className={cn("px-2.5 py-0.5 rounded-md border text-xs font-medium", workflowStatusChipClasses(statusStyle.tone))}>
                 {statusStyle.label}
               </span>
             </div>
@@ -153,10 +152,10 @@ export function CaseTriageCard({
           {/* Wait Time Indicator */}
           <div className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-            ${wachttijd > 5 ? "bg-red-light border border-red-border" : "bg-muted/50"}
+            ${wachttijd > 5 ? "border border-destructive/40 bg-destructive/10" : "bg-muted/50"}
           `}>
-            <Clock size={14} className={wachttijd > 5 ? "text-red-base" : "text-muted-foreground"} />
-            <span className={`text-sm font-semibold ${wachttijd > 5 ? "text-red-base" : "text-muted-foreground"}`}>
+            <Clock size={14} className={wachttijd > 5 ? "text-destructive" : "text-muted-foreground"} />
+            <span className={`text-sm font-semibold ${wachttijd > 5 ? "text-destructive" : "text-muted-foreground"}`}>
               {wachttijd}d
             </span>
           </div>
@@ -182,10 +181,10 @@ export function CaseTriageCard({
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border careon-alert-error"
+                  className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/15 px-2.5 py-1"
                 >
-                  <Icon size={12} className="text-red-base flex-shrink-0" />
-                  <span className="text-xs font-medium text-red-base">{problem.label}</span>
+                  <Icon size={12} className="text-destructive flex-shrink-0" />
+                  <span className="text-xs font-medium text-destructive">{problem.label}</span>
                 </div>
               );
             })}
@@ -222,7 +221,7 @@ export function CaseTriageCard({
       {/* Urgent Pulse Animation */}
       {urgency === "critical" && (
         <div className="absolute inset-0 rounded-xl pointer-events-none">
-          <div className="absolute inset-0 rounded-xl border-2 border-red-border animate-pulse" />
+          <div className="absolute inset-0 rounded-xl border-2 border-destructive/50 animate-pulse" />
         </div>
       )}
     </div>

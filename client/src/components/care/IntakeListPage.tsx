@@ -25,6 +25,24 @@ interface IntakeListPageProps {
   role?: "gemeente" | "zorgaanbieder" | "admin";
 }
 
+function formatClientReference(caseId: string): string {
+  const digits = caseId.replace(/\D/g, "");
+  if (digits.length >= 3) {
+    return `CLI-${digits.padStart(5, "0").slice(-5)}`;
+  }
+  return "CLI-ONBEKEND";
+}
+
+function maskParticipantIdentity(label: string): string {
+  const parts = label.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "Betrokkene afgeschermd";
+  }
+  return parts
+    .map((part) => `${part[0] ?? ""}${"•".repeat(Math.max(3, part.length - 1))}`)
+    .join(" ");
+}
+
 function matchesSearch(caseItem: SpaCase, query: string): boolean {
   if (!query) {
     return true;
@@ -150,7 +168,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
             { label: "Gem. wachttijd", value: `${avgWaitDays}d`, detail: "Op huidige filters" },
             { label: "Zichtbaar", value: visibleCases.length, detail: "In dit overzicht" },
           ].map((item) => (
-            <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset]">
+            <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3.5 shadow-sm">
               <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.label}</p>
               <div className="mt-1.5 text-[20px] font-semibold leading-none text-foreground">{item.value}</div>
               <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{item.detail}</p>
@@ -203,7 +221,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center gap-3">
-                      <h2 className="text-lg font-semibold text-foreground">{caseItem.title || `Casus ${caseItem.id}`}</h2>
+                      <h2 className="text-lg font-semibold text-foreground">{formatClientReference(caseItem.id)}</h2>
                       <UrgencyBadge urgency={caseItem.urgency} />
                       <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-semibold text-foreground">
                         {isPending ? "IN BEOORDELING" : "INTAKE / PLAATSING"}
@@ -211,7 +229,7 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                      Casus #{caseItem.id} · {caseItem.regio || "Onbekende regio"} · {caseItem.zorgtype || "Onbekend zorgtype"}
+                      Betrokkene: {maskParticipantIdentity(caseItem.title || caseItem.id)} · Casus #{caseItem.id} · {caseItem.regio || "Onbekende regio"} · {caseItem.zorgtype || "Onbekend zorgtype"}
                     </p>
 
                     <p className="text-sm text-foreground/85" style={{ maxWidth: tokens.layout.contentMeasure }}>

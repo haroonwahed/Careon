@@ -62,10 +62,10 @@ function stableOffset(seed: string): [number, number] {
   return [(((hash & 0xff) / 255) - 0.5) * 0.08, ((((hash >> 8) & 0xff) / 255) - 0.5) * 0.12];
 }
 
-function capacityColor(spots: number): string {
-  if (spots > 2) return "#16a34a";
-  if (spots > 0) return "#d97706";
-  return "#dc2626";
+function capacityToneClasses(spots: number): string {
+  if (spots > 2) return "bg-emerald-600 ring-emerald-500/30";
+  if (spots > 0) return "bg-amber-600 ring-amber-500/30";
+  return "bg-destructive ring-destructive/30";
 }
 
 function capacityLabel(spots: number): string {
@@ -232,8 +232,7 @@ export function ProviderNetworkMap({
     >
       <style>{`
         .provider-network-map .maplibregl-ctrl-group {
-          border: 1px solid rgba(148, 163, 184, 0.28);
-          box-shadow: 0 16px 32px -22px rgba(15, 23, 42, 0.42);
+          border: 1px solid hsl(var(--border));
           overflow: hidden;
         }
 
@@ -244,15 +243,15 @@ export function ProviderNetworkMap({
         }
 
         .provider-network-map-light .maplibregl-ctrl-group {
-          background: rgba(255, 255, 255, 0.94);
+          background: hsl(var(--card));
         }
 
         .provider-network-map-light .maplibregl-ctrl-group button {
-          background: rgba(255, 255, 255, 0.94);
+          background: hsl(var(--card));
         }
 
         .provider-network-map-light .maplibregl-ctrl-group button:hover {
-          background: rgba(241, 245, 249, 0.96);
+          background: hsl(var(--muted));
         }
 
         .provider-network-map-light .maplibregl-ctrl button .maplibregl-ctrl-icon {
@@ -260,17 +259,16 @@ export function ProviderNetworkMap({
         }
 
         .provider-network-map-dark .maplibregl-ctrl-group {
-          background: rgba(30, 41, 59, 0.9);
-          border-color: rgba(71, 85, 105, 0.82);
-          box-shadow: 0 20px 36px -22px rgba(2, 6, 23, 0.82);
+          background: hsl(var(--card));
+          border-color: hsl(var(--border));
         }
 
         .provider-network-map-dark .maplibregl-ctrl-group button {
-          background: rgba(30, 41, 59, 0.9);
+          background: hsl(var(--card));
         }
 
         .provider-network-map-dark .maplibregl-ctrl-group button:hover {
-          background: rgba(51, 65, 85, 0.98);
+          background: hsl(var(--muted));
         }
 
         .provider-network-map-dark .maplibregl-ctrl button .maplibregl-ctrl-icon {
@@ -278,16 +276,12 @@ export function ProviderNetworkMap({
         }
 
         .provider-network-map-dark .maplibregl-ctrl-attrib {
-          background: rgba(15, 23, 42, 0.74);
-          color: rgba(203, 213, 225, 0.88);
+          background: hsl(var(--card));
+          color: hsl(var(--muted-foreground));
         }
 
         .provider-network-map-dark .maplibregl-ctrl-attrib a {
-          color: rgba(226, 232, 240, 0.92);
-        }
-
-        .provider-network-map-dark .maplibregl-canvas {
-          filter: brightness(1.14) contrast(0.9) saturate(0.88);
+          color: hsl(var(--foreground));
         }
       `}</style>
       <Map
@@ -307,7 +301,7 @@ export function ProviderNetworkMap({
         {mappedProviders.map(({ provider, lat, lng }) => {
           const isSelected = provider.id === selectedProviderId;
           const isHovered = provider.id === hoveredProviderId;
-          const color = capacityColor(provider.availableSpots);
+          const capacityTone = capacityToneClasses(provider.availableSpots);
           const scale = isSelected ? 1.06 : isHovered ? 1.03 : 1;
 
           return (
@@ -315,50 +309,19 @@ export function ProviderNetworkMap({
               <Marker longitude={lng} latitude={lat} anchor="center" onClick={() => handleMarkerClick(provider.id, lng, lat)}>
                 <span
                   title={provider.name}
+                  className={cn(
+                    "inline-flex min-h-[34px] items-center justify-center whitespace-nowrap rounded-full border px-3 text-xs font-bold tracking-[0.01em] text-foreground transition-[transform,border-color] duration-150",
+                    "bg-card",
+                    isSelected ? "border-primary ring-2 ring-primary/30" : "border-border",
+                  )}
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    minHeight: 34,
-                    padding: "0 12px",
-                    borderRadius: 9999,
-                    background: isDark ? "rgba(15, 23, 42, 0.92)" : "rgba(255, 255, 255, 0.94)",
-                    color: isDark ? "#e2e8f0" : "#0f172a",
-                    border: `1px solid ${
-                      isSelected
-                        ? isDark
-                          ? "rgba(139,92,246,0.68)"
-                          : "rgba(124,92,255,0.58)"
-                        : isDark
-                          ? "rgba(71,85,105,0.9)"
-                          : "rgba(148,163,184,0.5)"
-                    }`,
-                    boxShadow: isSelected
-                      ? isDark
-                        ? "0 16px 30px rgba(2,6,23,.5), 0 0 0 4px rgba(139,92,246,.22)"
-                        : "0 14px 28px rgba(15,23,42,.24), 0 0 0 4px rgba(124,92,255,.2)"
-                      : isDark
-                        ? "0 12px 24px rgba(2,6,23,.46)"
-                        : "0 10px 20px rgba(15,23,42,.16)",
                     cursor: "pointer",
                     transform: `translateZ(0) scale(${scale})`,
-                    transition: "transform .15s ease, box-shadow .15s ease, border-color .15s ease",
-                    whiteSpace: "nowrap",
-                    fontSize: 12,
-                    fontWeight: 700,
-                    letterSpacing: ".01em",
+                    transition: "transform .15s ease, border-color .15s ease",
                   }}
                 >
                   <span
-                    style={{
-                      display: "inline-block",
-                      width: 8,
-                      height: 8,
-                      borderRadius: 9999,
-                      background: color,
-                      marginRight: 8,
-                      boxShadow: `0 0 0 3px ${color}22`,
-                    }}
+                    className={cn("mr-2 inline-block size-2 rounded-full ring-4", capacityTone)}
                   />
                   {capacityLabel(provider.availableSpots)}
                 </span>
@@ -371,10 +334,7 @@ export function ProviderNetworkMap({
                     size="sm"
                     data-testid="zorgaanbieders-map-naar-matching"
                     className={cn(
-                      "pointer-events-auto h-8 shrink-0 px-3 text-xs font-semibold shadow-lg",
-                      isDark
-                        ? "border border-violet-400/50 bg-violet-600 text-white hover:bg-violet-500"
-                        : "border border-violet-500/40 bg-violet-600 text-white hover:bg-violet-500",
+                      "pointer-events-auto h-8 shrink-0 border border-primary/40 bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-md hover:bg-primary/90",
                     )}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -391,17 +351,17 @@ export function ProviderNetworkMap({
       </Map>
 
       {isDark && (
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.16),transparent_34%),linear-gradient(180deg,rgba(15,23,42,0.06),rgba(30,41,59,0.14))]" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-background/20" />
       )}
 
-      <div className="pointer-events-none absolute left-4 rounded-2xl border border-slate-200 bg-white/94 px-4 py-3 shadow-[0_14px_32px_-20px_rgba(15,23,42,0.35)] backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-800/86 dark:shadow-[0_18px_34px_-22px_rgba(2,6,23,0.68)]" style={{ top: tokens.layout.edgeZero }}>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Kaartweergave</p>
-        <p className="text-[11px] text-slate-600 dark:text-slate-300">
+      <div className="pointer-events-none absolute left-4 rounded-2xl border border-border bg-card px-4 py-3 shadow-md backdrop-blur-sm" style={{ top: tokens.layout.edgeZero }}>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Kaartweergave</p>
+        <p className="text-[11px] text-muted-foreground">
           {mappedProviders.length} van {providers.length} aanbieders zichtbaar
         </p>
       </div>
 
-      <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-slate-200 bg-white/94 px-4 py-2 text-[11px] font-medium text-slate-600 shadow-[0_10px_26px_-20px_rgba(15,23,42,0.42)] backdrop-blur-sm dark:border-slate-600/70 dark:bg-slate-800/86 dark:text-slate-300 dark:shadow-[0_16px_28px_-20px_rgba(2,6,23,0.66)]">
+      <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-border bg-card px-4 py-2 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur-sm">
         Klik op een marker voor aanbiederdetails
       </div>
     </div>

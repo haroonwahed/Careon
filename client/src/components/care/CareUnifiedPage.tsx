@@ -44,8 +44,8 @@ export function CarePageTemplate({
 
 export function CareMetricBadge({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full border border-[rgba(125,211,252,0.5)] bg-[rgba(56,189,248,0.16)] px-3 py-1 text-[12px] font-semibold text-[#E0F2FE]">
-      <span className="size-1.5 shrink-0 rounded-full bg-[#7DD3FC]" />
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/50 bg-cyan-500/15 px-3 py-1 text-[12px] font-semibold text-cyan-100">
+      <span className="size-1.5 shrink-0 rounded-full bg-cyan-300" />
       {children}
     </span>
   );
@@ -324,7 +324,7 @@ export function CareFilterTabButton({
   children: ReactNode;
   /** Strong purple selection (Casussen mock-style tabs); default keeps subtle card fill elsewhere. */
   accentSelected?: boolean;
-  /** Optional brand fill when `accentSelected` (e.g. Casussen mock `#6D5DFC` via design tokens). */
+  /** Optional brand fill when `accentSelected` (provided via design tokens). */
   accentHex?: string;
 }) {
   const brandActive = Boolean(selected && accentSelected && accentHex);
@@ -338,7 +338,7 @@ export function CareFilterTabButton({
         brandActive
           ? {
               backgroundColor: accentHex,
-              color: "#FAFAFA",
+              color: "hsl(var(--primary-foreground))",
               borderColor: accentHex,
             }
           : undefined
@@ -401,7 +401,7 @@ export function CareSearchFiltersBar({
 
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
         <div
-          className="flex w-full min-w-0 flex-1 items-center gap-2.5 border border-border/80 bg-background/90 px-3 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.04)]"
+          className="flex w-full min-w-0 flex-1 items-center gap-2.5 border border-border/80 bg-background/90 px-3 shadow-sm"
           style={{
             minHeight: tokens.searchControl.rowMinHeight,
             borderRadius: tokens.searchControl.radius,
@@ -515,7 +515,7 @@ export function CareWorkRow({
       }}
       style={{ minHeight: tokens.density.worklistRowHeight }}
       className={cn(
-        "cursor-pointer rounded-2xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 shadow-[0_1px_0_rgba(255,255,255,0.03)_inset] transition-all hover:border-border/90 hover:bg-card/90 hover:shadow-[0_6px_18px_rgba(15,23,42,0.08)]",
+        "cursor-pointer rounded-2xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 shadow-sm transition-all hover:border-border/90 hover:bg-card/90 hover:shadow-md",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         accentClass,
         className,

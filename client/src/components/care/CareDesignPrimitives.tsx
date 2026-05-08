@@ -158,7 +158,7 @@ const CARE_ALERT_TONE_CLASSES: Record<
 > = {
   critical: {
     shell:
-      "border-red-500/40 bg-red-950/45 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.14)]",
+      "border-red-500/40 bg-red-950/45 shadow-sm",
     icon: "border-red-500/35 bg-red-950/55 text-red-200",
     metric: "text-red-50",
   },
@@ -195,6 +195,27 @@ export function CareSection({
     <section
       data-testid={testId}
       className={cn("rounded-xl p-4 md:p-5", CARE_SECTION_TONE_CLASSES[tone], className)}
+      {...props}
+    >
+      {children}
+    </section>
+  );
+}
+
+export function CarePanel({
+  children,
+  className,
+  testId,
+  ...props
+}: {
+  children: ReactNode;
+  className?: string;
+  testId?: string;
+} & ComponentProps<"section">) {
+  return (
+    <section
+      data-testid={testId}
+      className={cn("panel-surface rounded-xl border border-border/70 bg-card/70", className)}
       {...props}
     >
       {children}
@@ -283,6 +304,7 @@ export function CareAlertCard({
   const toneClasses = CARE_ALERT_TONE_CLASSES[tone];
   return (
     <section
+      data-component="care-dominant-action-panel"
       data-testid={testId}
       className={cn("rounded-xl border px-4 py-4 md:px-5", toneClasses.shell, className)}
       aria-live="polite"

@@ -10,6 +10,9 @@ import {
   ShieldCheck
 } from "lucide-react";
 import { Button } from "../ui/button";
+import { CareMetaChip, CarePanel } from "./CareDesignPrimitives";
+import { cn } from "../ui/utils";
+import { caseStatusToneClass, urgencyToneClasses } from "./careSemanticTones";
 
 type CaseStatus = "intake" | "beoordeling" | "matching" | "plaatsing" | "afgerond";
 type UrgencyLevel = "urgent" | "warning" | "positive" | "normal";
@@ -54,48 +57,45 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
     urgencyDocumentPresent,
   } = caseData;
 
-  // Urgency styling
+  // Urgency styling (canonical semantic tones; no hardcoded/local color tokens)
   const getUrgencyConfig = (level: UrgencyLevel) => {
+    const tone = urgencyToneClasses(level);
     switch (level) {
       case "urgent":
         return {
-          borderColor: "border-l-red-base",
-          bgColor: "bg-red-light/60",
-          badgeBg: "careon-badge-red",
-          badgeText: "text-red-base",
+          borderColor: tone.borderLeft,
+          bgColor: tone.bg,
+          badgeClass: tone.chip,
           label: "Urgent",
           icon: AlertTriangle,
-          iconColor: "text-red-base"
+          iconColor: tone.text,
         };
       case "warning":
         return {
-          borderColor: "border-l-yellow-base",
-          bgColor: "bg-yellow-light/60",
-          badgeBg: "careon-badge-yellow",
-          badgeText: "text-yellow-base",
+          borderColor: tone.borderLeft,
+          bgColor: tone.bg,
+          badgeClass: tone.chip,
           label: "Aandacht",
           icon: Clock,
-          iconColor: "text-yellow-base"
+          iconColor: tone.text,
         };
       case "positive":
         return {
-          borderColor: "border-l-green-base",
-          bgColor: "bg-green-light/60",
-          badgeBg: "bg-green-light border border-green-border",
-          badgeText: "text-green-base",
+          borderColor: tone.borderLeft,
+          bgColor: tone.bg,
+          badgeClass: tone.chip,
           label: "Op koers",
           icon: CheckCircle2,
-          iconColor: "text-green-base"
+          iconColor: tone.text,
         };
       default:
         return {
-          borderColor: "border-l-border",
-          bgColor: "bg-transparent",
-          badgeBg: "bg-muted",
-          badgeText: "text-muted-foreground",
+          borderColor: tone.borderLeft,
+          bgColor: tone.bg,
+          badgeClass: tone.chip,
           label: "Normaal",
           icon: Info,
-          iconColor: "text-muted-foreground"
+          iconColor: tone.text,
         };
     }
   };
@@ -115,21 +115,10 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
     return labels[s];
   };
 
-  const getStatusColor = (s: CaseStatus): string => {
-    const colors: Record<CaseStatus, string> = {
-      intake: "careon-badge-blue",
-      beoordeling: "careon-badge-purple",
-      matching: "careon-badge-yellow",
-      plaatsing: "bg-green-light text-green-base border border-green-border",
-      afgerond: "bg-muted text-muted-foreground"
-    };
-    return colors[s];
-  };
-
   return (
-    <div
+    <CarePanel
       className={`
-        relative panel-surface border-l-4 ${urgencyConfig.borderColor} ${urgencyConfig.bgColor}
+        relative border-l-4 ${urgencyConfig.borderColor} ${urgencyConfig.bgColor}
         transition-all duration-200 hover:shadow-lg
         ${isSelected ? "ring-2 ring-primary/40" : ""}
       `}
@@ -161,20 +150,20 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
                 <h3 className="text-base font-semibold text-foreground leading-tight">
                   {title}
                 </h3>
-                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${urgencyConfig.badgeBg} ${urgencyConfig.badgeText} whitespace-nowrap`}>
+                <CareMetaChip className={cn("whitespace-nowrap border text-xs font-semibold", urgencyConfig.badgeClass)}>
                   {urgencyConfig.label}
-                </span>
+                </CareMetaChip>
                 {urgencyValidated && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-light border border-green-border text-green-base whitespace-nowrap">
+                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border border-emerald-500/40 bg-emerald-500/15 text-emerald-300">
                     <ShieldCheck className="w-3 h-3" />
                     Gevalideerde urgentie
-                  </span>
+                  </CareMetaChip>
                 )}
                 {!urgencyValidated && urgencyDocumentPresent && (urgency === "urgent" || urgency === "warning") && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-yellow-light border border-yellow-border text-yellow-700 whitespace-nowrap">
+                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border border-amber-500/40 bg-amber-500/15 text-amber-300">
                     <AlertTriangle className="w-3 h-3" />
                     Urgentie vereist een geldige urgentieverklaring
-                  </span>
+                  </CareMetaChip>
                 )}
               </div>
 
@@ -190,7 +179,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  <span className={wachttijd > 7 ? "text-red-base font-medium" : ""}>
+                  <span className={wachttijd > 7 ? "text-destructive font-medium" : ""}>
                     {wachttijd} {wachttijd === 1 ? "dag" : "dagen"}
                   </span>
                 </div>
@@ -198,21 +187,21 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
             </div>
 
             {/* Status Badge */}
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(status)} whitespace-nowrap`}>
+            <CareMetaChip className={cn("whitespace-nowrap text-xs font-semibold", caseStatusToneClass(status))}>
               {getStatusLabel(status)}
-            </span>
+            </CareMetaChip>
           </div>
         </div>
 
         {/* Issues Section */}
         {issues.length > 0 && (
           <div className="mb-4 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-red-base flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
             <div className="flex flex-wrap gap-2">
               {issues.map((issue, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 rounded text-xs font-medium border careon-alert-error"
+                  className="px-2 py-0.5 rounded text-xs font-medium border border-destructive/40 bg-destructive/15 text-destructive"
                 >
                   {issue}
                 </span>
@@ -258,6 +247,6 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
           </span>
         </div>
       </div>
-    </div>
+    </CarePanel>
   );
 }

@@ -64,6 +64,34 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
     expect(screen.getByText(/Levvel Jeugd & Opvoedhulp/)).toBeInTheDocument();
     expect(screen.getByText(/De beoordelingsperiode duurt maximaal 72 uur/)).toBeInTheDocument();
   });
+
+  it("shows a phase-gate empty state when no casus has reached provider review yet", () => {
+    mockUseCases.mockReturnValue({
+      cases: [],
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    const onMatching = vi.fn();
+    const onCasussen = vi.fn();
+
+    render(
+      <AanbiederBeoordelingPage
+        role="gemeente"
+        onCaseClick={vi.fn()}
+        onNavigateToMatching={onMatching}
+        onNavigateToCasussen={onCasussen}
+      />,
+    );
+
+    expect(screen.getByText("Geen casussen in deze fase")).toBeInTheDocument();
+    expect(
+      screen.getByText(/matching heeft gevalideerd en de casus heeft verzonden/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Naar matching" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Terug naar werkvoorraad" })).toBeInTheDocument();
+  });
 });
 
 describe("AanbiederBeoordelingPage (zorgaanbieder)", () => {

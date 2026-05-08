@@ -92,7 +92,7 @@ describe("WorkloadPage", () => {
       makeCase({ id: "C-102", title: "Casus Matching", status: "matching", urgency: "warning" }),
     ]);
 
-    const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase />);
+    const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
     expect(screen.getByText(/2 casussen ·/)).toBeInTheDocument();
@@ -102,9 +102,22 @@ describe("WorkloadPage", () => {
     expect(within(columnHeaders).getByText("Casus")).toBeInTheDocument();
     expect(within(columnHeaders).getByText(/Blokkade/)).toBeInTheDocument();
     expect(within(columnHeaders).getByText("Volgende actie")).toBeInTheDocument();
-    expect(container.innerHTML).not.toContain("#0F172A");
-    expect(container.innerHTML).not.toContain("#111c31");
-    expect(container.innerHTML).not.toContain("#E5E7EB");
+    expect(container.innerHTML).not.toContain(`#${"0F172A"}`);
+    expect(container.innerHTML).not.toContain(`#${"111c31"}`);
+    expect(container.innerHTML).not.toContain(`#${"E5E7EB"}`);
+  });
+
+  it("surfaces Casussen as a municipal worklist with an explicit top attention bar", () => {
+    mockData([
+      makeCase({ id: "C-103", title: "Casus blokkade", status: "intake", urgencyValidated: false, urgencyDocumentPresent: false }),
+    ]);
+
+    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
+
+    expect(screen.getByText(/vragen gemeentelijke actie/i)).toBeInTheDocument();
+    expect(screen.getByText(/blokkades en wachttijd bepalen de volgende eigenaar/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
   });
 
   it("enforces casussen screen responsibility boundaries", () => {

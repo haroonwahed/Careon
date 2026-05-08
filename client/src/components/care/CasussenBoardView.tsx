@@ -30,13 +30,13 @@ export function CasussenBoardView({ cases, onViewCase, onTakeAction }: CasussenB
   const columns: Array<{
     status: CaseStatus;
     label: string;
-    color: string;
+    tone: string;
   }> = [
-    { status: "intake", label: "Intake", color: "rgba(139, 92, 246, 0.2)" },
-    { status: "assessment", label: "Aanbieder beoordeling", color: "rgba(59, 130, 246, 0.2)" },
-    { status: "matching", label: "Matching", color: "rgba(245, 158, 11, 0.2)" },
-    { status: "placement", label: "Plaatsing", color: "rgba(34, 211, 238, 0.2)" },
-    { status: "completed", label: "Afgerond", color: "rgba(16, 185, 129, 0.2)" }
+    { status: "intake", label: "Intake", tone: "border-primary/35 bg-primary/10" },
+    { status: "assessment", label: "Aanbieder beoordeling", tone: "border-blue-500/35 bg-blue-500/10" },
+    { status: "matching", label: "Matching", tone: "border-amber-500/35 bg-amber-500/10" },
+    { status: "placement", label: "Plaatsing", tone: "border-cyan-500/35 bg-cyan-500/10" },
+    { status: "completed", label: "Afgerond", tone: "border-emerald-500/35 bg-emerald-500/10" }
   ];
 
   const getCasesForColumn = (status: CaseStatus) => {
@@ -55,11 +55,7 @@ export function CasussenBoardView({ cases, onViewCase, onTakeAction }: CasussenB
           >
             {/* Column Header */}
             <div 
-              className="mb-4 p-3 rounded-lg border"
-              style={{
-                backgroundColor: column.color,
-                borderColor: column.color
-              }}
+              className={`mb-4 rounded-lg border p-3 ${column.tone}`}
             >
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-foreground">

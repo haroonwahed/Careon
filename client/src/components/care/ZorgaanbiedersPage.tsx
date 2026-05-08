@@ -309,6 +309,7 @@ export function ZorgaanbiedersPage({
           </CareInfoPopover>
         </span>
       }
+      subtitle="Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."
       dominantAction={
         <CareAttentionBar
           tone={activeCaseContext ? "info" : "warning"}
@@ -316,7 +317,7 @@ export function ZorgaanbiedersPage({
           message={
             activeCaseContext
               ? `${activeCaseContext.region} · ${activeCaseContext.careType} · ${activeCaseContext.urgency}`
-              : `${sortedProviders.length} aanbieders in beeld · gebruik filters om de volgende actie te vinden`
+              : `${sortedProviders.length} aanbieders in beeld · verken capaciteit, dekking en de beste vervolgroute`
           }
           action={
             <PrimaryActionButton onClick={hasActiveFilters ? resetFilters : showBestAlternatives}>
@@ -337,13 +338,14 @@ export function ZorgaanbiedersPage({
           }
         />
         <CareSectionBody className="space-y-4">
-          <CareSearchFiltersBar
+          <div data-testid="zorgaanbieders-filter-panel">
+            <CareSearchFiltersBar
             searchValue={searchQuery}
             onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoeken op naam, specialisatie of regio..."
+            searchPlaceholder="Zoek op naam, specialisatie of regio..."
             showSecondaryFilters={showFilters}
             onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
-            secondaryFiltersLabel="Filters"
+            secondaryFiltersLabel="Meer filters"
             secondaryFilters={
               <div className="grid grid-cols-1 gap-3 pt-1 md:grid-cols-3">
                 <div>
@@ -421,7 +423,8 @@ export function ZorgaanbiedersPage({
                 </Button>
               </>
             }
-          />
+            />
+          </div>
       {mapView === "full" ? (
         <div className={cn(networkResultsShell, "overflow-hidden")}>
           <div className="border-b border-border/50 bg-muted/40 px-4 py-3">

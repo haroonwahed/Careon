@@ -65,7 +65,7 @@ export function BulkActionBar({
             size="sm"
             variant="outline"
             onClick={onEscalate}
-            className="gap-2 border-[#EF4444]/30 text-[#EF4444] hover:bg-[#EF4444]/10"
+            className="gap-2 border-destructive/30 text-destructive hover:bg-destructive/10"
           >
             <AlertOctagon size={16} />
             Escaleren

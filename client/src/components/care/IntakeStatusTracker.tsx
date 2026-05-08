@@ -24,20 +24,20 @@ const statusConfig: Record<IntakeStatus, {
   "planned": {
     label: "Intake gepland",
     icon: Calendar,
-    color: "text-blue-base",
-    alertClass: "careon-alert-info"
+    color: "text-cyan-200",
+    alertClass: "border-cyan-500/30 bg-cyan-500/10"
   },
   "in-progress": {
     label: "Intake gestart",
     icon: Clock,
-    color: "text-yellow-base",
-    alertClass: "careon-alert-warning"
+    color: "text-amber-300",
+    alertClass: "border-amber-500/30 bg-amber-500/10"
   },
   "completed": {
     label: "Intake afgerond",
     icon: CheckCircle2,
-    color: "text-green-base",
-    alertClass: "careon-alert-success"
+    color: "text-emerald-300",
+    alertClass: "border-emerald-500/30 bg-emerald-500/10"
   }
 };
 
@@ -98,17 +98,17 @@ export function IntakeStatusTracker({
                 <div className={`
                   w-8 h-8 rounded-full flex items-center justify-center border-2 transition-all
                   ${isCurrent ? statusConf.alertClass : ""}
-                  ${isPast ? "bg-green-light border-green-border" : ""}
+                  ${isPast ? "bg-emerald-500/10 border-emerald-500/30" : ""}
                   ${isFuture ? "bg-muted/20 border-muted-foreground/30" : ""}
                 `}>
-                  {isPast && <CheckCircle2 size={16} className="text-green-base" />}
+                  {isPast && <CheckCircle2 size={16} className="text-emerald-300" />}
                   {isCurrent && <StatusIcon size={16} className={statusConf.color} />}
                   {isFuture && <Circle size={16} className="text-muted-foreground" />}
                 </div>
                 
                 <span className={`text-sm font-medium ${
                   isCurrent ? statusConf.color : 
-                  isPast ? "text-green-base" : 
+                  isPast ? "text-emerald-300" : 
                   "text-muted-foreground"
                 }`}>
                   {statusConf.label}
@@ -119,7 +119,7 @@ export function IntakeStatusTracker({
               {idx < statuses.length - 1 && (
                 <div className={`
                   w-0.5 h-6 ml-4 mt-1 transition-all
-                  ${isPast ? "bg-green-border" : "bg-muted-foreground/30"}
+                  ${isPast ? "bg-emerald-500/30" : "bg-muted-foreground/30"}
                 `} />
               )}
             </div>
@@ -135,7 +135,7 @@ export function IntakeStatusTracker({
             {currentStatus === "not-started" && (
               <button
                 onClick={() => onStatusChange("planned")}
-                className="w-full px-3 py-2 rounded-lg border careon-alert-info text-sm font-medium hover:bg-blue-light/80 transition-colors"
+                className="w-full px-3 py-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-sm font-medium hover:bg-cyan-500/15 transition-colors"
               >
                 Markeer als gepland
               </button>
@@ -143,7 +143,7 @@ export function IntakeStatusTracker({
             {currentStatus === "planned" && (
               <button
                 onClick={() => onStatusChange("in-progress")}
-                className="w-full px-3 py-2 rounded-lg border careon-alert-warning text-sm font-medium hover:bg-yellow-light/80 transition-colors"
+                className="w-full px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm font-medium hover:bg-amber-500/15 transition-colors"
               >
                 Start intake
               </button>
@@ -151,7 +151,7 @@ export function IntakeStatusTracker({
             {currentStatus === "in-progress" && (
               <button
                 onClick={() => onStatusChange("completed")}
-                className="w-full px-3 py-2 rounded-lg border careon-alert-success text-sm font-medium hover:bg-green-light/80 transition-colors"
+                className="w-full px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm font-medium hover:bg-emerald-500/15 transition-colors"
               >
                 Markeer als afgerond
               </button>

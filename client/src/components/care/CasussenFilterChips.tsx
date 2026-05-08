@@ -1,4 +1,6 @@
 import { XCircle, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { cn } from "../ui/utils";
+import { quickFilterToneClasses } from "./careSemanticTones";
 
 export type QuickFilter = "no-match" | "delayed" | "high-risk" | "ready-placement" | null;
 
@@ -28,44 +30,28 @@ export function CasussenFilterChips({
       id: "no-match" as QuickFilter,
       label: "Zonder match",
       icon: XCircle,
-      color: "text-[#EF4444]",
-      bg: "bg-[rgba(239,68,68,0.1)]",
-      border: "border-[rgba(239,68,68,0.3)]",
-      activeBg: "bg-[rgba(239,68,68,0.15)]",
-      activeBorder: "border-[rgba(239,68,68,0.5)]",
+      ...quickFilterToneClasses("no-match"),
       count: counts.noMatch
     },
     {
       id: "delayed" as QuickFilter,
       label: "Wacht > 3 dagen",
       icon: Clock,
-      color: "text-[#F59E0B]",
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
-      activeBg: "bg-[rgba(245,158,11,0.15)]",
-      activeBorder: "border-[rgba(245,158,11,0.5)]",
+      ...quickFilterToneClasses("delayed"),
       count: counts.delayed
     },
     {
       id: "high-risk" as QuickFilter,
       label: "Hoog risico",
       icon: AlertTriangle,
-      color: "text-[#F59E0B]",
-      bg: "bg-[rgba(245,158,11,0.1)]",
-      border: "border-[rgba(245,158,11,0.3)]",
-      activeBg: "bg-[rgba(245,158,11,0.15)]",
-      activeBorder: "border-[rgba(245,158,11,0.5)]",
+      ...quickFilterToneClasses("high-risk"),
       count: counts.highRisk
     },
     {
       id: "ready-placement" as QuickFilter,
       label: "Klaar voor plaatsing",
       icon: CheckCircle2,
-      color: "text-[#10B981]",
-      bg: "bg-[rgba(16,185,129,0.1)]",
-      border: "border-[rgba(16,185,129,0.3)]",
-      activeBg: "bg-[rgba(16,185,129,0.15)]",
-      activeBorder: "border-[rgba(16,185,129,0.5)]",
+      ...quickFilterToneClasses("ready-placement"),
       count: counts.readyPlacement
     }
   ];
@@ -80,24 +66,19 @@ export function CasussenFilterChips({
           <button
             key={filter.id}
             onClick={() => onFilterChange(isActive ? null : filter.id)}
-            className={`
-              inline-flex items-center gap-2 px-3 py-2 rounded-lg border font-medium text-sm
-              transition-all duration-200
-              ${isActive 
-                ? `${filter.activeBg} ${filter.activeBorder} ${filter.color} shadow-sm` 
-                : `${filter.bg} ${filter.border} ${filter.color} hover:${filter.activeBg}`
-              }
-            `}
+            className={cn(
+              "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-all duration-200",
+              isActive
+                ? `${filter.activeBg} ${filter.activeBorder} ${filter.color} shadow-sm`
+                : `${filter.bg} ${filter.border} ${filter.color}`,
+            )}
           >
             <Icon size={16} />
             <span>{filter.label}</span>
-            <span className={`
-              ml-1 px-1.5 py-0.5 rounded text-xs font-semibold
-              ${isActive 
-                ? 'bg-background/40 text-foreground' 
-                : 'bg-background/30 text-foreground/80'
-              }
-            `}>
+            <span className={cn(
+              "ml-1 rounded px-1.5 py-0.5 text-xs font-semibold",
+              isActive ? "bg-background/40 text-foreground" : "bg-background/30 text-foreground/80",
+            )}>
               {filter.count}
             </span>
           </button>
