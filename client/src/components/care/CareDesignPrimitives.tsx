@@ -73,7 +73,15 @@ export function CasusWorkspaceStatusBadges({
         <Badge className="border-primary/30 bg-primary/10 text-[12px] font-semibold text-primary">In behandeling</Badge>
       )}
       {hint && variant === "blocked" ? (
-        <Badge className="max-w-[min(100%,20rem)] truncate border-destructive/30 bg-destructive/10 text-[12px] font-semibold text-destructive" title={hint}>
+        <Badge
+          className={cn(
+            "max-w-[min(100%,20rem)] truncate text-[12px] font-semibold",
+            /matching/i.test(hint)
+              ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+              : "border-destructive/30 bg-destructive/10 text-destructive",
+          )}
+          title={hint}
+        >
           {hint}
         </Badge>
       ) : null}
@@ -144,7 +152,7 @@ type CareSectionTone = "default" | "muted";
 type CareAlertTone = "critical" | "warning" | "info" | "success";
 
 const CARE_SECTION_TONE_CLASSES: Record<CareSectionTone, string> = {
-  default: "bg-card/35",
+  default: "bg-card border border-border/60 shadow-sm",
   muted: "bg-muted/20",
 };
 
@@ -157,25 +165,24 @@ const CARE_ALERT_TONE_CLASSES: Record<
   }
 > = {
   critical: {
-    shell:
-      "border-red-500/40 bg-red-950/45 shadow-sm",
-    icon: "border-red-500/35 bg-red-950/55 text-red-200",
-    metric: "text-red-50",
+    shell: "border-destructive/30 bg-destructive/10 shadow-sm",
+    icon: "border-destructive/30 bg-destructive/10 text-destructive",
+    metric: "text-destructive",
   },
   warning: {
-    shell: "border-amber-500/35 bg-amber-500/8",
-    icon: "border-amber-500/30 bg-amber-500/10 text-amber-300",
-    metric: "text-amber-100",
+    shell: "border-amber-500/30 bg-amber-500/10",
+    icon: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    metric: "text-amber-200",
   },
   info: {
-    shell: "border-cyan-500/35 bg-cyan-500/8",
-    icon: "border-cyan-500/30 bg-cyan-500/10 text-cyan-200",
-    metric: "text-cyan-100",
+    shell: "border-sky-500/30 bg-sky-500/10",
+    icon: "border-sky-500/30 bg-sky-500/10 text-sky-200",
+    metric: "text-sky-200",
   },
   success: {
-    shell: "border-emerald-500/35 bg-emerald-500/8",
+    shell: "border-emerald-500/30 bg-emerald-500/10",
     icon: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-    metric: "text-emerald-100",
+    metric: "text-emerald-200",
   },
 };
 
@@ -318,7 +325,7 @@ export function CareAlertCard({
           {icon}
         </div>
         <div data-testid={testId ? `${testId}-content` : undefined} className="min-w-0 max-w-full self-center">
-          <h3 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[22px] font-medium leading-tight text-foreground">
+          <h2 className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[22px] font-medium leading-tight text-foreground">
             <span
               data-testid={testId ? `${testId}-metric` : undefined}
               className={cn("text-[30px] font-semibold leading-none tracking-[-0.04em]", toneClasses.metric)}
@@ -326,7 +333,7 @@ export function CareAlertCard({
               {metric}
             </span>
             <span>{title}</span>
-          </h3>
+          </h2>
           <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
         <div
@@ -365,7 +372,7 @@ export function CareFlowStepCard({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "group flex h-full min-h-[138px] w-full flex-col gap-2 rounded-xl border border-border/60 bg-card/55 p-4 text-left transition hover:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        "group flex h-full min-h-[138px] w-full flex-col gap-2 rounded-xl border border-border/60 bg-bg-subtle p-4 text-left transition hover:bg-card hover:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
         active && "ring-2 ring-primary/30",
       )}
     >

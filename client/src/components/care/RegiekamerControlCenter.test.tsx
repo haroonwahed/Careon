@@ -468,13 +468,13 @@ describe("SystemAwarenessPage", () => {
 
     expect(screen.getByText("Geen actieve casussen.")).toBeInTheDocument();
     expect(
-      screen.getByText(/Open de werkvoorraad voor bestaande dossiers/i),
+      screen.getByText(/Open de werkvoorraad voor lopende casussen/i),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Open casussen" }));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
   });
 
-  it("renders Nieuwe casus on empty state when canCreateCase", () => {
+  it("renders Start regiecasus on empty state when canCreateCase", () => {
     const onCreateCase = vi.fn();
     const onAppNavigate = vi.fn();
     mockUseRegiekamerDecisionOverview.mockReturnValue({
@@ -503,8 +503,10 @@ describe("SystemAwarenessPage", () => {
       />,
     );
 
-    expect(screen.getByText(/maak een nieuwe casus aan/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Nieuwe casus" }));
+    // Empty-state copy now reinforces "regietraject" naming; the button label
+    // ("Start regiecasus") still reads as the imperative for casus-creation.
+    expect(screen.getByText(/start een nieuw regietraject/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Start regiecasus" }));
     expect(onCreateCase).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Open casussen" }));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
@@ -560,6 +562,11 @@ describe("SystemAwarenessPage", () => {
       within(screen.getByTestId("regiekamer-phase-board")).getByRole("button", { name: /Bekijk gehele stroom/i }),
     );
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
+    // The button should hand off a "pipeline" focus hint so the worklist opens
+    // operationally distinct from a plain /casussen navigation and from the
+    // critical-cases shortcut. (One-shot, scoped to sessionStorage.)
+    expect(window.sessionStorage.getItem("careon.casussen.preferredFocus")).toBe("pipeline");
+    window.sessionStorage.removeItem("careon.casussen.preferredFocus");
   });
 
   it("uses canonical Aanbieder beoordeling in flow chain and phase filter", async () => {
@@ -651,7 +658,7 @@ describe("SystemAwarenessPage", () => {
     const workSection = screen.getByTestId("regiekamer-uitvoerlijst");
     expect(within(workSection).getByText("Werkvoorraad")).toBeInTheDocument();
     expect(within(workSection).getByTestId("care-search-control-stack")).toBeInTheDocument();
-    expect(within(workSection).getByRole("searchbox", { name: /Zoek casussen, cliënten, aanbieders/i })).toBeInTheDocument();
+    expect(within(workSection).getByRole("searchbox", { name: /Zoek casussen, regio's, aanbieders/i })).toBeInTheDocument();
     expect(within(workSection).getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
   });
 
@@ -671,7 +678,7 @@ describe("SystemAwarenessPage", () => {
     expect(within(casusCard).queryByText("Klaar voor matching")).not.toBeInTheDocument();
   });
 
-  it("supplemental NBA link describes in-page filters, not navigation to /casussen", () => {
+  it("supplemental NBA link navigates to /casussen with a critical focus hand-off", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -679,11 +686,25 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    const onAppNavigate = vi.fn();
+    try {
+      window.sessionStorage.removeItem("careon.casussen.preferredFocus");
+    } catch {
+      // sessionStorage may be unavailable in some environments; ignore.
+    }
 
-    expect(screen.getByTestId("regiekamer-dominant-cases-link")).toHaveTextContent(
-      /Bekijk kritieke casussen \(1\)/,
-    );
+    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
+
+    const link = screen.getByTestId("regiekamer-dominant-cases-link");
+    expect(link).toHaveTextContent(/Bekijk kritieke casussen \(1\)/);
+
+    fireEvent.click(link);
+
+    expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
+    expect(window.sessionStorage.getItem("careon.casussen.preferredFocus")).toBe("critical");
+
+    // Cleanup so subsequent tests start without lingering hand-off.
+    window.sessionStorage.removeItem("careon.casussen.preferredFocus");
   });
 
   it("matching-urgenties tier uses filter-aligned primary label (no execution verbs)", () => {
@@ -737,7 +758,7 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={onCaseClick} />);
 
     const firstWorklistRow = screen.getAllByTestId("regiekamer-worklist-item")[0];
-    fireEvent.click(firstWorklistRow);
+    fireEvent.click(within(firstWorklistRow).getAllByRole("button")[0]);
 
     expect(onCaseClick).toHaveBeenCalledWith("101");
   });

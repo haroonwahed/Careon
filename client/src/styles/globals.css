@@ -31,7 +31,9 @@
   --badge-blue-text: #1E40AF;
   --badge-purple-bg: #DDD6FE;
   --badge-purple-text: #5B21B6;
-  
+  --badge-green-bg: #D1FAE5;
+  --badge-green-text: #065F46;
+
   /* Modern Light Theme */
   --background: var(--bg-base);
   --foreground: #111827;
@@ -168,6 +170,8 @@
   --badge-blue-text: #93C5FD;
   --badge-purple-bg: rgba(124, 92, 255, 0.18);
   --badge-purple-text: #C4B5FD;
+  --badge-green-bg: rgba(16, 185, 129, 0.18);
+  --badge-green-text: #6EE7B7;
 }
 
 @theme inline {
@@ -329,6 +333,37 @@
 
 html {
   font-size: var(--font-size);
+}
+
+/*
+ * Native <select> normalisation.
+ * Replaces the inconsistent OS chevron with a Lucide-style ChevronDown,
+ * positioned with comfortable inset from the right edge and reserved
+ * padding so option text never collides with the icon.
+ *
+ * Unlayered so this consistently beats Tailwind's utility-layer padding
+ * classes (e.g. `px-3`) on the trailing edge — the leading-edge padding
+ * from `px-*` still applies as authored.
+ *
+ * Radix `Select` uses a <button>, so it is unaffected.
+ */
+select:not([multiple]):not([size]) {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.875rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2.5rem;
+}
+
+.dark select:not([multiple]):not([size]) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D1D5DB' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+select:not([multiple]):not([size]):disabled {
+  opacity: 0.6;
 }
 
 @layer utilities {
@@ -536,6 +571,322 @@ html {
   .border-purple-500\/20,
   .border-purple-500\/30,
   .border-purple-500\/40 {
+    border-color: color-mix(in srgb, var(--primary) 32%, transparent) !important;
+  }
+
+  /* ---------------------------------------------------------------------
+   * Light-mode remap for dark-mode-first utility classes.
+   *
+   * Many components were built dark-mode-first and use Tailwind's
+   * near-white text shades (50/100/200) and very dark background shades
+   * (700/800/900/950). On a light page these become invisible (text)
+   * or muddy (bg). These rules route them to the existing bidirectional
+   * design tokens so they stay readable in light mode without affecting
+   * dark mode. Scoped via html:not(.dark) so any explicit dark: variants
+   * still win in dark mode.
+   * --------------------------------------------------------------------- */
+
+  /* Light text shades → readable token color (light mode only). */
+  html:not(.dark) .text-red-50,
+  html:not(.dark) .text-red-100,
+  html:not(.dark) .text-red-200,
+  html:not(.dark) .text-rose-50,
+  html:not(.dark) .text-rose-100,
+  html:not(.dark) .text-rose-200,
+  html:not(.dark) .text-pink-50,
+  html:not(.dark) .text-pink-100,
+  html:not(.dark) .text-pink-200 {
+    color: var(--badge-red-text) !important;
+  }
+
+  html:not(.dark) .text-amber-50,
+  html:not(.dark) .text-amber-100,
+  html:not(.dark) .text-amber-200,
+  html:not(.dark) .text-yellow-50,
+  html:not(.dark) .text-yellow-100,
+  html:not(.dark) .text-yellow-200,
+  html:not(.dark) .text-orange-50,
+  html:not(.dark) .text-orange-100,
+  html:not(.dark) .text-orange-200 {
+    color: var(--badge-yellow-text) !important;
+  }
+
+  html:not(.dark) .text-blue-50,
+  html:not(.dark) .text-blue-100,
+  html:not(.dark) .text-blue-200,
+  html:not(.dark) .text-sky-50,
+  html:not(.dark) .text-sky-100,
+  html:not(.dark) .text-sky-200,
+  html:not(.dark) .text-cyan-50,
+  html:not(.dark) .text-cyan-100,
+  html:not(.dark) .text-cyan-200 {
+    color: var(--badge-blue-text) !important;
+  }
+
+  html:not(.dark) .text-green-50,
+  html:not(.dark) .text-green-100,
+  html:not(.dark) .text-green-200,
+  html:not(.dark) .text-emerald-50,
+  html:not(.dark) .text-emerald-100,
+  html:not(.dark) .text-emerald-200 {
+    color: var(--badge-green-text) !important;
+  }
+
+  html:not(.dark) .text-purple-50,
+  html:not(.dark) .text-purple-100,
+  html:not(.dark) .text-purple-200,
+  html:not(.dark) .text-violet-50,
+  html:not(.dark) .text-violet-100,
+  html:not(.dark) .text-violet-200,
+  html:not(.dark) .text-indigo-50,
+  html:not(.dark) .text-indigo-100,
+  html:not(.dark) .text-indigo-200 {
+    color: var(--badge-purple-text) !important;
+  }
+
+  /* Dark background shades (700/800/900/950 with any opacity) → pastel fill
+     in light mode. Substring match catches any /opacity Tailwind generated. */
+  html:not(.dark) [class*="bg-red-700/"],
+  html:not(.dark) [class*="bg-red-800/"],
+  html:not(.dark) [class*="bg-red-900/"],
+  html:not(.dark) [class*="bg-red-950/"],
+  html:not(.dark) [class*="bg-rose-700/"],
+  html:not(.dark) [class*="bg-rose-800/"],
+  html:not(.dark) [class*="bg-rose-900/"],
+  html:not(.dark) [class*="bg-rose-950/"],
+  html:not(.dark) [class*="bg-pink-700/"],
+  html:not(.dark) [class*="bg-pink-800/"],
+  html:not(.dark) [class*="bg-pink-900/"],
+  html:not(.dark) [class*="bg-pink-950/"] {
+    background-color: var(--red-light) !important;
+  }
+
+  html:not(.dark) [class*="bg-amber-700/"],
+  html:not(.dark) [class*="bg-amber-800/"],
+  html:not(.dark) [class*="bg-amber-900/"],
+  html:not(.dark) [class*="bg-amber-950/"],
+  html:not(.dark) [class*="bg-yellow-700/"],
+  html:not(.dark) [class*="bg-yellow-800/"],
+  html:not(.dark) [class*="bg-yellow-900/"],
+  html:not(.dark) [class*="bg-yellow-950/"],
+  html:not(.dark) [class*="bg-orange-700/"],
+  html:not(.dark) [class*="bg-orange-800/"],
+  html:not(.dark) [class*="bg-orange-900/"],
+  html:not(.dark) [class*="bg-orange-950/"] {
+    background-color: var(--yellow-light) !important;
+  }
+
+  html:not(.dark) [class*="bg-blue-700/"],
+  html:not(.dark) [class*="bg-blue-800/"],
+  html:not(.dark) [class*="bg-blue-900/"],
+  html:not(.dark) [class*="bg-blue-950/"],
+  html:not(.dark) [class*="bg-sky-700/"],
+  html:not(.dark) [class*="bg-sky-800/"],
+  html:not(.dark) [class*="bg-sky-900/"],
+  html:not(.dark) [class*="bg-sky-950/"],
+  html:not(.dark) [class*="bg-cyan-700/"],
+  html:not(.dark) [class*="bg-cyan-800/"],
+  html:not(.dark) [class*="bg-cyan-900/"],
+  html:not(.dark) [class*="bg-cyan-950/"] {
+    background-color: var(--blue-light) !important;
+  }
+
+  html:not(.dark) [class*="bg-green-700/"],
+  html:not(.dark) [class*="bg-green-800/"],
+  html:not(.dark) [class*="bg-green-900/"],
+  html:not(.dark) [class*="bg-green-950/"],
+  html:not(.dark) [class*="bg-emerald-700/"],
+  html:not(.dark) [class*="bg-emerald-800/"],
+  html:not(.dark) [class*="bg-emerald-900/"],
+  html:not(.dark) [class*="bg-emerald-950/"] {
+    background-color: var(--green-light) !important;
+  }
+
+  html:not(.dark) [class*="bg-purple-700/"],
+  html:not(.dark) [class*="bg-purple-800/"],
+  html:not(.dark) [class*="bg-purple-900/"],
+  html:not(.dark) [class*="bg-purple-950/"],
+  html:not(.dark) [class*="bg-violet-700/"],
+  html:not(.dark) [class*="bg-violet-800/"],
+  html:not(.dark) [class*="bg-violet-900/"],
+  html:not(.dark) [class*="bg-violet-950/"],
+  html:not(.dark) [class*="bg-indigo-700/"],
+  html:not(.dark) [class*="bg-indigo-800/"],
+  html:not(.dark) [class*="bg-indigo-900/"],
+  html:not(.dark) [class*="bg-indigo-950/"] {
+    background-color: var(--primary-light) !important;
+  }
+
+  /* Missing color families added to the 300-600 sweep (mode-agnostic — base
+     colors are tuned to read on both light and dark surfaces). */
+  .text-sky-300,
+  .text-sky-400,
+  .text-sky-500,
+  .text-sky-600,
+  .text-cyan-300,
+  .text-cyan-400,
+  .text-cyan-500,
+  .text-cyan-600 {
+    color: var(--blue-base) !important;
+  }
+
+  .text-emerald-300,
+  .text-emerald-400,
+  .text-emerald-500,
+  .text-emerald-600 {
+    color: var(--green-base) !important;
+  }
+
+  .text-rose-300,
+  .text-rose-400,
+  .text-rose-500,
+  .text-rose-600,
+  .text-pink-300,
+  .text-pink-400,
+  .text-pink-500,
+  .text-pink-600 {
+    color: var(--red-base) !important;
+  }
+
+  .text-violet-300,
+  .text-violet-400,
+  .text-violet-500,
+  .text-violet-600,
+  .text-indigo-300,
+  .text-indigo-400,
+  .text-indigo-500,
+  .text-indigo-600 {
+    color: var(--primary) !important;
+  }
+
+  .text-yellow-300,
+  .text-yellow-400,
+  .text-yellow-500,
+  .text-yellow-600 {
+    color: var(--yellow-base) !important;
+  }
+
+  /* Missing color families: 500/{5,10,12,15,20} backgrounds. */
+  .bg-sky-500\/5,
+  .bg-sky-500\/10,
+  .bg-sky-500\/12,
+  .bg-sky-500\/15,
+  .bg-sky-500\/20,
+  .bg-cyan-500\/5,
+  .bg-cyan-500\/10,
+  .bg-cyan-500\/12,
+  .bg-cyan-500\/15,
+  .bg-cyan-500\/20 {
+    background-color: var(--blue-light) !important;
+  }
+
+  .bg-emerald-500\/5,
+  .bg-emerald-500\/10,
+  .bg-emerald-500\/12,
+  .bg-emerald-500\/15,
+  .bg-emerald-500\/20 {
+    background-color: var(--green-light) !important;
+  }
+
+  .bg-rose-500\/5,
+  .bg-rose-500\/10,
+  .bg-rose-500\/12,
+  .bg-rose-500\/15,
+  .bg-rose-500\/20,
+  .bg-pink-500\/5,
+  .bg-pink-500\/10,
+  .bg-pink-500\/15,
+  .bg-pink-500\/20 {
+    background-color: var(--red-light) !important;
+  }
+
+  .bg-violet-500\/5,
+  .bg-violet-500\/10,
+  .bg-violet-500\/15,
+  .bg-violet-500\/20,
+  .bg-indigo-500\/5,
+  .bg-indigo-500\/10,
+  .bg-indigo-500\/15,
+  .bg-indigo-500\/20 {
+    background-color: var(--primary-light) !important;
+  }
+
+  .bg-yellow-500\/5,
+  .bg-yellow-500\/10,
+  .bg-yellow-500\/15,
+  .bg-yellow-500\/20 {
+    background-color: var(--yellow-light) !important;
+  }
+
+  /* Borders: extra opacity steps (/8, /12, /25, /35) used by dark-mode-first
+     chip styles, plus the missing color families. */
+  .border-red-500\/8,
+  .border-red-500\/12,
+  .border-red-500\/25,
+  .border-red-500\/35,
+  .border-rose-500\/20,
+  .border-rose-500\/30,
+  .border-rose-500\/35,
+  .border-rose-500\/40,
+  .border-pink-500\/20,
+  .border-pink-500\/30,
+  .border-pink-500\/35,
+  .border-pink-500\/40 {
+    border-color: var(--red-border) !important;
+  }
+
+  .border-amber-500\/8,
+  .border-amber-500\/12,
+  .border-amber-500\/25,
+  .border-amber-500\/35,
+  .border-yellow-500\/20,
+  .border-yellow-500\/30,
+  .border-yellow-500\/35,
+  .border-yellow-500\/40,
+  .border-orange-500\/20,
+  .border-orange-500\/35,
+  .border-orange-500\/40 {
+    border-color: var(--yellow-border) !important;
+  }
+
+  .border-blue-500\/8,
+  .border-blue-500\/12,
+  .border-blue-500\/25,
+  .border-blue-500\/35,
+  .border-sky-500\/20,
+  .border-sky-500\/30,
+  .border-sky-500\/35,
+  .border-sky-500\/40,
+  .border-cyan-500\/20,
+  .border-cyan-500\/30,
+  .border-cyan-500\/35,
+  .border-cyan-500\/40 {
+    border-color: var(--blue-border) !important;
+  }
+
+  .border-green-500\/8,
+  .border-green-500\/12,
+  .border-green-500\/25,
+  .border-green-500\/35,
+  .border-emerald-500\/20,
+  .border-emerald-500\/30,
+  .border-emerald-500\/35,
+  .border-emerald-500\/40 {
+    border-color: var(--green-border) !important;
+  }
+
+  .border-purple-500\/8,
+  .border-purple-500\/12,
+  .border-purple-500\/25,
+  .border-purple-500\/35,
+  .border-violet-500\/20,
+  .border-violet-500\/30,
+  .border-violet-500\/35,
+  .border-violet-500\/40,
+  .border-indigo-500\/20,
+  .border-indigo-500\/30,
+  .border-indigo-500\/35,
+  .border-indigo-500\/40 {
     border-color: color-mix(in srgb, var(--primary) 32%, transparent) !important;
   }
 }

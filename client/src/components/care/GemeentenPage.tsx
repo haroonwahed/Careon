@@ -25,7 +25,6 @@ import {
   CareFilterTabButton,
   CareFilterTabGroup,
   CareInfoPopover,
-  CareMetaChip,
   CarePageScaffold,
   CareSection,
   CareSectionBody,
@@ -139,31 +138,39 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
     >
       <CareSection>
         <CareSectionHeader
-          title="Werklijst"
-          meta={<CareMetaChip>{filteredGemeenten.length} zichtbaar · {totals.totalCases} casussen · {totals.avgWaitTime}d</CareMetaChip>}
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
+          meta={(
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredGemeenten.length} zichtbaar · {totals.totalCases} casussen · {totals.avgWaitTime}d
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                tabs={
+                  <CareFilterTabGroup aria-label="Status gemeenten">
+                    <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => setSelectedStatus("all")}>
+                      Alle
+                    </CareFilterTabButton>
+                    <CareFilterTabButton selected={selectedStatus === "shortage"} onClick={() => setSelectedStatus("shortage")}>
+                      Tekort
+                    </CareFilterTabButton>
+                    <CareFilterTabButton selected={selectedStatus === "urgent"} onClick={() => setSelectedStatus("urgent")}>
+                      Urgent
+                    </CareFilterTabButton>
+                    <CareFilterTabButton selected={selectedStatus === "blocked"} onClick={() => setSelectedStatus("blocked")}>
+                      Geblokkeerd
+                    </CareFilterTabButton>
+                  </CareFilterTabGroup>
+                }
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoeken op gemeente of regio..."
+              />
+            </div>
+          )}
         />
         <CareSectionBody className="space-y-4">
-          <CareSearchFiltersBar
-            tabs={
-              <CareFilterTabGroup aria-label="Status gemeenten">
-                <CareFilterTabButton selected={selectedStatus === "all"} onClick={() => setSelectedStatus("all")}>
-                  Alle
-                </CareFilterTabButton>
-                <CareFilterTabButton selected={selectedStatus === "shortage"} onClick={() => setSelectedStatus("shortage")}>
-                  Tekort
-                </CareFilterTabButton>
-                <CareFilterTabButton selected={selectedStatus === "urgent"} onClick={() => setSelectedStatus("urgent")}>
-                  Urgent
-                </CareFilterTabButton>
-                <CareFilterTabButton selected={selectedStatus === "blocked"} onClick={() => setSelectedStatus("blocked")}>
-                  Geblokkeerd
-                </CareFilterTabButton>
-              </CareFilterTabGroup>
-            }
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoeken op gemeente of regio..."
-          />
       {loading && (
         <LoadingState title="Gemeenten laden…" copy="Overzicht wordt opgebouwd." />
       )}

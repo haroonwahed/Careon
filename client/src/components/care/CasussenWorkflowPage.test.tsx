@@ -117,7 +117,7 @@ describe("WorkloadPage", () => {
     expect(screen.getByText(/vragen gemeentelijke actie/i)).toBeInTheDocument();
     expect(screen.getByText(/blokkades en wachttijd bepalen de volgende eigenaar/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start regiecasus" })).toBeInTheDocument();
   });
 
   it("enforces casussen screen responsibility boundaries", () => {
@@ -130,11 +130,8 @@ describe("WorkloadPage", () => {
 
     expectCasussenMode();
     expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Zoek casussen, cliënten, aanbieders…")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Alle casussen/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Mijn werkvoorraad/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Wacht op actie/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /^Kritiek/i })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Zoek casussen, regio's, aanbieders…")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
     expect(screen.getByText("Casus triage")).toBeInTheDocument();
     expect(container.querySelectorAll("[data-care-work-row-cta]").length).toBeGreaterThan(0);
 
@@ -147,17 +144,17 @@ describe("WorkloadPage", () => {
     expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
   });
 
-  it("shows primary tabs and keeps advanced filters collapsed by default", () => {
+  it("keeps advanced filters collapsed by default and exposes werkvoorraad controls in filters", () => {
     mockData([
       makeCase({ id: "C-201", title: "Casus filter test", status: "provider_beoordeling", wachttijd: 5 }),
     ]);
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    expect(screen.getByRole("tab", { name: /Alle casussen/i })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Mijn werkvoorraad/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
     expect(screen.queryByText("Verantwoordelijke")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
+    expect(screen.getByLabelText("Werkvoorraad-weergave")).toBeInTheDocument();
     expect(screen.getByText("Verantwoordelijke")).toBeInTheDocument();
   });
 
@@ -173,7 +170,7 @@ describe("WorkloadPage", () => {
     expect(onCaseClick).toHaveBeenCalledWith("C-301");
   });
 
-  it("filters list when waiting tab is selected", () => {
+  it("filters list when waiting werkvoorraad-view is selected", () => {
     mockData([
       makeCase({ id: "C-401", title: "Lang wachtend", status: "provider_beoordeling", wachttijd: 5 }),
       makeCase({ id: "C-402", title: "Geblokkeerde intake", status: "intake", urgencyValidated: false, urgencyDocumentPresent: false }),
@@ -182,7 +179,8 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /Wacht op actie/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
+    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
 
     expect(screen.getByText("Lang wachtend")).toBeInTheDocument();
     expect(screen.getByText("Geblokkeerde intake")).toBeInTheDocument();
@@ -196,7 +194,8 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("tab", { name: /Wacht op actie/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
+    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
 
     expect(screen.getByText(/\d+ casussen ·/)).toBeInTheDocument();
   });
@@ -209,7 +208,8 @@ describe("WorkloadPage", () => {
     ]);
 
     render(<WorkloadPage onCaseClick={onCaseClick} role="gemeente" onNavigateToWorkflow={onNavigateToWorkflow} />);
-    fireEvent.click(screen.getByRole("tab", { name: /Wacht op actie/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
+    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
     fireEvent.click(screen.getByRole("button", { name: "Bekijk status" }));
 
     expect(onNavigateToWorkflow).toHaveBeenCalledWith("beoordelingen");
@@ -257,13 +257,13 @@ describe("WorkloadPage", () => {
     expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
   });
 
-  it("omits worklist tab shortcut when there are no dossiers but keeps Nieuwe casus when allowed", () => {
+  it("omits worklist tab shortcut when there are no dossiers but keeps regiecasus CTA when allowed", () => {
     mockData([]);
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
     expect(screen.queryByRole("button", { name: "Bekijk mijn werkvoorraad" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Bekijk kritieke casussen" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start regiecasus" })).toBeInTheDocument();
   });
 
   it("shows debug block only when running in dev mode", async () => {
@@ -274,8 +274,8 @@ describe("WorkloadPage", () => {
     const user = userEvent.setup();
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    await user.click(screen.getByRole("button", { name: /Weergave/i }));
-    await user.click(await screen.findByRole("menuitem", { name: /Kaarten/i }));
+    await user.click(screen.getByRole("button", { name: /^Filters$/i }));
+    fireEvent.change(screen.getByLabelText("Lay-out"), { target: { value: "cards" } });
 
     if (import.meta.env.DEV) {
       expect(screen.getByLabelText("Open debug classificatie")).toBeInTheDocument();

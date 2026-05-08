@@ -29,7 +29,6 @@ import { DocumentenPage } from "../care/DocumentenPage";
 import { AudittrailPage } from "../care/AudittrailPage";
 import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
-import { ProfielPage } from "../care/ProfielPage";
 import { CareAppFrame } from "../care/CareAppFrame";
 import { tokens } from "../../design/tokens";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
@@ -97,7 +96,6 @@ type Page =
   | "rapportages"
   | "documenten"
   | "audittrail"
-  | "profiel"
   | "instellingen"
   | "intake"
   | "mijn-casussen"
@@ -118,7 +116,6 @@ const PAGE_TO_HREF: Record<Page, string> = {
   rapportages: "/rapportages",
   documenten: "/documenten",
   audittrail: "/audittrail",
-  profiel: "/profiel",
   instellingen: "/instellingen",
   intake: "/intake",
   "mijn-casussen": "/mijn-casussen",
@@ -140,7 +137,6 @@ const GEMEENTE_PAGES: readonly Page[] = [
   "rapportages",
   "documenten",
   "audittrail",
-  "profiel",
   "instellingen",
 ];
 
@@ -162,7 +158,6 @@ const ADMIN_PAGES: readonly Page[] = [
   "nieuwe-casus",
   "rapportages",
   "documenten",
-  "profiel",
   "instellingen",
 ];
 
@@ -216,9 +211,6 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
   if (path.startsWith("/care/signalen")) {
     return { page: "signalen", caseId: null };
   }
-  if (path.startsWith("/care/profiel")) {
-    return { page: "profiel", caseId: null };
-  }
   if (path.startsWith("/settings")) {
     return { page: "instellingen", caseId: null };
   }
@@ -239,7 +231,6 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
     "/rapportages": "rapportages",
     "/documenten": "documenten",
     "/audittrail": "audittrail",
-    "/profiel": "profiel",
     "/instellingen": "instellingen",
     "/intake": "intake",
     "/mijn-casussen": "mijn-casussen",
@@ -519,7 +510,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           userName={me?.fullName ?? "Jane Doe"}
           userRole="Regisseur"
           onProfileClick={() => {
-            goToPage("profiel");
+            goToPage("instellingen");
           }}
           onSettingsClick={() => {
             goToPage("instellingen");
@@ -546,12 +537,6 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 caseId={selectedCase}
                 role={currentContext.type}
                 onBack={handleCloseCaseDetail}
-              />
-            ) : currentPage === "profiel" ? (
-              <ProfielPage
-                onNavigateToSettings={() => {
-                  goToPage("instellingen");
-                }}
               />
             ) : currentContext.type === "gemeente" || currentContext.type === "admin" ? (
               <>

@@ -467,7 +467,7 @@ function computeSignals(casus: Casus): CasusSignal[] {
       id: "sig-dossier-onvolledig",
       type: "matching",
       severity: "warning",
-      title: "Dossier onvolledig",
+      title: "Casus onvolledig",
       description: "Niet alle vereiste documenten zijn aanwezig voor het plaatsingsverzoek.",
       isResolved: false,
     });

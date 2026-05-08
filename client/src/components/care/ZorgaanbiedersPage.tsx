@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Building2, Maximize2 } from "lucide-react";
+import { ArrowRight, Building2, Maximize2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
@@ -10,7 +10,6 @@ import { ProviderNetworkMap } from "./ProviderNetworkMap";
 import {
   CareAttentionBar,
   CareInfoPopover,
-  CareMetaChip,
   CarePageScaffold,
   CareSection,
   CareSectionBody,
@@ -329,102 +328,104 @@ export function ZorgaanbiedersPage({
     >
       <CareSection>
         <CareSectionHeader
-          title="Werklijst"
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
           meta={
-            <CareMetaChip>
-              {visibleCountValue} zichtbaar · {availableCapacityValue} plekken · {waitDaysLabel}
-              {lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
-            </CareMetaChip>
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {visibleCountValue} zichtbaar · {availableCapacityValue} plekken · {waitDaysLabel}
+                {lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoek op naam, specialisatie of regio..."
+                showSecondaryFilters={showFilters}
+                onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
+                secondaryFiltersLabel="Meer filters"
+                secondaryFilters={
+                  <div className="grid grid-cols-1 gap-3 pt-1 md:grid-cols-3">
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Regio</label>
+                      <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                        <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                          <SelectValue placeholder="Alle regio's" />
+                        </SelectTrigger>
+                        <SelectContent className="border-border bg-card text-foreground">
+                          {regionOptions.map((region) => (
+                            <SelectItem
+                              key={region}
+                              className="text-foreground focus:bg-muted focus:text-foreground"
+                              value={region}
+                            >
+                              {region === "all" ? "Alle regio's" : region}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Type zorg</label>
+                      <Select value={selectedType} onValueChange={setSelectedType}>
+                        <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                          <SelectValue placeholder="Alle types" />
+                        </SelectTrigger>
+                        <SelectContent className="border-border bg-card text-foreground">
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle types</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="residentieel">Residentieel</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="ambulant">Ambulant</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="dagbehandeling">Dagbehandeling</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="crisis">Crisis</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Capaciteit</label>
+                      <Select value={selectedCapacity} onValueChange={setSelectedCapacity}>
+                        <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
+                          <SelectValue placeholder="Alle niveaus" />
+                        </SelectTrigger>
+                        <SelectContent className="border-border bg-card text-foreground">
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle niveaus</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="available">Beschikbaar (3+)</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="limited">Beperkt (1-2)</SelectItem>
+                          <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="full">Vol</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                }
+                rightAction={
+                  <>
+                    <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProviderSortOption)}>
+                      <SelectTrigger className={cn("h-10 min-w-[170px]", selectTriggerClass)}>
+                        <SelectValue placeholder="Sorteer op" />
+                      </SelectTrigger>
+                      <SelectContent className="border-border bg-card text-foreground">
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="best-match">Beste match</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="shortest-wait">Kortste wachttijd</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="most-capacity">Meeste capaciteit</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="nearby">Dichtbij</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-10 shrink-0 border-border"
+                      onClick={() => setMapView((current) => (current === "split" ? "full" : "split"))}
+                    >
+                      <Maximize2 size={16} className="mr-2" />
+                      {mapView === "split" ? "Kaart" : "Split view"}
+                    </Button>
+                  </>
+                }
+              />
+            </div>
           }
         />
         <CareSectionBody className="space-y-4">
-          <div data-testid="zorgaanbieders-filter-panel">
-            <CareSearchFiltersBar
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoek op naam, specialisatie of regio..."
-            showSecondaryFilters={showFilters}
-            onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
-            secondaryFiltersLabel="Meer filters"
-            secondaryFilters={
-              <div className="grid grid-cols-1 gap-3 pt-1 md:grid-cols-3">
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Regio</label>
-                  <Select value={selectedRegion} onValueChange={setSelectedRegion}>
-                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
-                      <SelectValue placeholder="Alle regio's" />
-                    </SelectTrigger>
-                    <SelectContent className="border-border bg-card text-foreground">
-                      {regionOptions.map((region) => (
-                        <SelectItem
-                          key={region}
-                          className="text-foreground focus:bg-muted focus:text-foreground"
-                          value={region}
-                        >
-                          {region === "all" ? "Alle regio's" : region}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Type zorg</label>
-                  <Select value={selectedType} onValueChange={setSelectedType}>
-                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
-                      <SelectValue placeholder="Alle types" />
-                    </SelectTrigger>
-                    <SelectContent className="border-border bg-card text-foreground">
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle types</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="residentieel">Residentieel</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="ambulant">Ambulant</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="dagbehandeling">Dagbehandeling</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="crisis">Crisis</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="mb-2 block text-xs font-medium text-muted-foreground">Capaciteit</label>
-                  <Select value={selectedCapacity} onValueChange={setSelectedCapacity}>
-                    <SelectTrigger className={cn("h-10 w-full", selectTriggerClass)}>
-                      <SelectValue placeholder="Alle niveaus" />
-                    </SelectTrigger>
-                    <SelectContent className="border-border bg-card text-foreground">
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle niveaus</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="available">Beschikbaar (3+)</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="limited">Beperkt (1-2)</SelectItem>
-                      <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="full">Vol</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            }
-            rightAction={
-              <>
-                <Select value={sortBy} onValueChange={(value) => setSortBy(value as ProviderSortOption)}>
-                  <SelectTrigger className={cn("h-10 min-w-[170px]", selectTriggerClass)}>
-                    <SelectValue placeholder="Sorteer op" />
-                  </SelectTrigger>
-                  <SelectContent className="border-border bg-card text-foreground">
-                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="best-match">Beste match</SelectItem>
-                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="shortest-wait">Kortste wachttijd</SelectItem>
-                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="most-capacity">Meeste capaciteit</SelectItem>
-                    <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="nearby">Dichtbij</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-10 shrink-0 border-border"
-                  onClick={() => setMapView((current) => (current === "split" ? "full" : "split"))}
-                >
-                  <Maximize2 size={16} className="mr-2" />
-                  {mapView === "split" ? "Kaart" : "Split view"}
-                </Button>
-              </>
-            }
-            />
-          </div>
       {mapView === "full" ? (
         <div className={cn(networkResultsShell, "overflow-hidden")}>
           <div className="border-b border-border/50 bg-muted/40 px-4 py-3">
@@ -543,15 +544,28 @@ export function ZorgaanbiedersPage({
                           </div>
                         </button>
 
-                        <div className="mt-3 flex gap-2 border-t border-border/45 pt-3">
+                        <div className="mt-3 flex flex-wrap gap-2 border-t border-border/45 pt-3">
                           <Button
                             type="button"
                             size="sm"
+                            variant={isSelected ? "outline" : "default"}
                             className="flex-1"
                             onClick={(event) => confirmProviderSelection(provider, event)}
                           >
                             Selecteer
                           </Button>
+                          {isSelected && onNavigateToMatching ? (
+                            <Button
+                              type="button"
+                              size="sm"
+                              className="flex-1 gap-2"
+                              onClick={onNavigateToMatching}
+                              data-testid={`zorgaanbieders-card-naar-matching-${provider.id}`}
+                            >
+                              Naar Matching
+                              <ArrowRight size={14} aria-hidden />
+                            </Button>
+                          ) : null}
                         </div>
 
                         {isSelected && (
@@ -596,8 +610,7 @@ export function ZorgaanbiedersPage({
                             {provider.specialFacilities && <p className="text-xs text-muted-foreground">{provider.specialFacilities}</p>}
 
                             <p className="rounded-xl border border-border/50 bg-muted/35 px-2.5 py-2 text-xs text-muted-foreground">
-                              Kaart en kaartmarker zijn gesynchroniseerd. Bij een geselecteerde aanbieder verschijnt{" "}
-                              <span className="font-medium text-foreground">Naar Matching</span> op de kaart bij de marker.
+                              Klik op <span className="font-medium text-foreground">Naar Matching</span> om de matchingflow voor deze aanbieder te starten. De kaartmarker is gesynchroniseerd met je selectie.
                             </p>
                           </div>
                         )}

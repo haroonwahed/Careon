@@ -47,6 +47,9 @@ export default defineConfig({
   },
   use: {
     baseURL,
+    launchOptions: {
+      args: ["--disable-gpu", "--disable-software-rasterizer"],
+    },
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",

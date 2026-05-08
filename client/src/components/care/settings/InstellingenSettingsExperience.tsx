@@ -1,4 +1,4 @@
-import { useLayoutEffect, type CSSProperties, type ReactNode } from "react";
+import { useLayoutEffect, useState, type CSSProperties, type ReactNode } from "react";
 import {
   Activity,
   ArrowRight,
@@ -26,6 +26,7 @@ import { Switch } from "../../ui/switch";
 import { cn } from "../../ui/utils";
 import { tokens } from "../../../design/tokens";
 import { CareInfoPopover } from "../CareUnifiedPage";
+import { CareSearchFiltersBar, CareSection, CareSectionBody, CareSectionHeader } from "../CareDesignPrimitives";
 import { SETTINGS_NAV_GROUPS, type SettingsSectionId } from "./instellingenNav";
 import { CARE_TERMS } from "../../../lib/terminology";
 
@@ -82,6 +83,26 @@ export function InstellingenSettingsExperience({
   systemStrip,
   activeToggles,
 }: InstellingenSettingsExperienceProps) {
+  const [gebruikersSearchQuery, setGebruikersSearchQuery] = useState("");
+  const [showGebruikersFilters, setShowGebruikersFilters] = useState(false);
+  const [gebruikersRiskFilter, setGebruikersRiskFilter] = useState<"all" | "hoog" | "middel" | "beperkt zicht">("all");
+
+  const gebruikersRolRows = [
+    { role: "Regisseur", scope: "Casussen, matching, plaatsing, signalen", risk: "Hoog" },
+    { role: "Gemeente validator", scope: "Validatie na matching", risk: "Middel" },
+    { role: "Zorgaanbieder", scope: "Alleen toegewezen casussen", risk: "Beperkt zicht" },
+    { role: "Beheerder", scope: "Platform, integraties, audit", risk: "Hoog" },
+  ];
+
+  const filteredGebruikersRolRows = gebruikersRolRows.filter((row) => {
+    if (gebruikersRiskFilter !== "all" && row.risk.toLowerCase() !== gebruikersRiskFilter) {
+      return false;
+    }
+    const query = gebruikersSearchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return `${row.role} ${row.scope} ${row.risk}`.toLowerCase().includes(query);
+  });
+
   useLayoutEffect(() => {
     const id = window.requestAnimationFrame(() => {
       document.getElementById("settings-section-heading")?.focus();
@@ -229,7 +250,7 @@ export function InstellingenSettingsExperience({
               }
             >
               <SettingsCluster title="Regio & jurisdictie">
-                <Field label="Standaard regio" hint="Voor nieuwe dossiers en matching zonder expliciete override.">
+                <Field label="Standaard regio" hint="Voor nieuwe casussen en matching zonder expliciete override.">
                   <select
                     value={defaultRegion}
                     onChange={(e) => onDefaultRegionChange(e.target.value)}
@@ -274,15 +295,59 @@ export function InstellingenSettingsExperience({
             >
               <GovernanceCallout
                 title="Zichtbaarheid voor aanbieders"
-                copy="Provideraccounts hebben geen toegang tot de volledige werkvoorraad. Alleen gekoppelde dossiers na gemeentelijke regie — zo blijft de keten auditbaar."
+                copy="Provideraccounts hebben geen toegang tot de volledige werkvoorraad. Alleen toegekende casussen na gemeentelijke regie — zo blijft de keten auditbaar."
               />
               <SettingsCluster title="Rollenmatrix">
-                <div className="space-y-2">
-                  <RoleRow role="Regisseur" scope="Casussen, matching, plaatsing, signalen" risk="Hoog" />
-                  <RoleRow role="Gemeente validator" scope="Validatie na matching" risk="Middel" />
-                  <RoleRow role="Zorgaanbieder" scope="Alleen toegewezen casussen" risk="Beperkt zicht" />
-                  <RoleRow role="Beheerder" scope="Platform, integraties, audit" risk="Hoog" />
-                </div>
+                <CareSection>
+                  <CareSectionHeader
+                    className="lg:flex-col lg:items-stretch"
+                    title="Werkvoorraad"
+                    meta={(
+                      <div className="w-full min-w-0 space-y-2">
+                        <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                          {filteredGebruikersRolRows.length} rollen zichtbaar
+                        </span>
+                        <CareSearchFiltersBar
+                          className="px-0"
+                          searchValue={gebruikersSearchQuery}
+                          onSearchChange={setGebruikersSearchQuery}
+                          searchPlaceholder="Zoek op rol, scope of risico..."
+                          showSecondaryFilters={showGebruikersFilters}
+                          onToggleSecondaryFilters={() => setShowGebruikersFilters((current) => !current)}
+                          secondaryFiltersLabel="Filters"
+                          secondaryFilters={(
+                            <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
+                              <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                                Risiconiveau
+                                <select
+                                  value={gebruikersRiskFilter}
+                                  onChange={(event) =>
+                                    setGebruikersRiskFilter(event.target.value as "all" | "hoog" | "middel" | "beperkt zicht")}
+                                  className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                                >
+                                  <option value="all">Alle risiconiveaus</option>
+                                  <option value="hoog">Hoog</option>
+                                  <option value="middel">Middel</option>
+                                  <option value="beperkt zicht">Beperkt zicht</option>
+                                </select>
+                              </label>
+                            </div>
+                          )}
+                        />
+                      </div>
+                    )}
+                  />
+                  <CareSectionBody className="space-y-2">
+                    {filteredGebruikersRolRows.map((row) => (
+                      <RoleRow key={`${row.role}-${row.risk}`} role={row.role} scope={row.scope} risk={row.risk} />
+                    ))}
+                    {filteredGebruikersRolRows.length === 0 ? (
+                      <p className="rounded-xl border border-border/35 bg-background/25 px-3 py-3 text-sm text-muted-foreground">
+                        Geen rollen gevonden voor de huidige filters.
+                      </p>
+                    ) : null}
+                  </CareSectionBody>
+                </CareSection>
               </SettingsCluster>
               <SettingsCluster title="Toegang & sessies">
                 <ToggleRow
@@ -557,7 +622,7 @@ export function InstellingenSettingsExperience({
                 />
                 <AuditTimelineItem
                   time="5 mei · 08:22"
-                  title="Export dossier"
+                  title="Export casustraject"
                   detail="Gemeente Utrecht · dubbele autorisatie OK"
                 />
               </div>
@@ -681,14 +746,14 @@ function SettingsSidebar({
 }) {
   return (
     <aside
-      className="shrink-0 lg:w-[var(--settings-sidebar)]"
+      className="shrink-0 lg:sticky lg:top-4 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:w-[var(--settings-sidebar)] lg:overflow-y-auto lg:pr-2"
       style={
         {
           "--settings-sidebar": tokens.settingsWorkspace.sidebarWidth,
         } as CSSProperties
       }
     >
-      <nav aria-label="Instellingen navigatie" className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:gap-6 lg:overflow-visible lg:pb-0 lg:pr-2">
+      <nav aria-label="Instellingen navigatie" className="flex gap-1 overflow-x-auto pb-1 lg:flex-col lg:gap-6 lg:overflow-visible lg:pb-0">
         {SETTINGS_NAV_GROUPS.map((group) => (
           <div key={group.label}>
             <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/80 lg:px-1">
@@ -744,11 +809,21 @@ function SettingsSection({ title, lede, primaryAction, children }: SettingsSecti
           {title}
         </h2>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">{lede}</p>
+        {primaryAction ? (
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary/90">
+                Wijzigbare sectie
+              </p>
+              <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
+                Pas de zichtbare velden hieronder aan en bevestig dit blok wanneer je klaar bent.
+              </p>
+            </div>
+            <div className="shrink-0">{primaryAction}</div>
+          </div>
+        ) : null}
       </div>
       <div className="space-y-6">{children}</div>
-      {primaryAction ? (
-        <footer className="flex flex-wrap items-center gap-3 border-t border-border/30 pt-6">{primaryAction}</footer>
-      ) : null}
     </article>
   );
 }
@@ -757,8 +832,10 @@ function SettingsCluster({ title, hint, children }: { title: string; hint?: stri
   return (
     <section className="rounded-2xl border border-border/35 bg-card/[0.12] p-4 shadow-sm md:p-5">
       <div className="mb-4">
-        <h3 className="text-[13px] font-semibold text-foreground">{title}</h3>
-        {hint ? <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p> : null}
+        <div className="min-w-0">
+          <h3 className="text-[13px] font-semibold text-foreground">{title}</h3>
+          {hint ? <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p> : null}
+        </div>
       </div>
       <div className="space-y-4">{children}</div>
     </section>

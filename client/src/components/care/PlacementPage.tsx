@@ -161,7 +161,7 @@ export function PlacementPage({
       ? [{ severity: "medium" as const, message: "Geen directe startplek - plan intake met korte wachttijd" }]
       : []),
     ...(provider.responseTime > 8 
-      ? [{ severity: "low" as const, message: `Reactietijd ${provider.responseTime}u - bewaak de intakeplanning` }]
+      ? [{ severity: "low" as const, message: `Reactietijd ${provider.responseTime}u - houd regie op de intakeplanning` }]
       : [])
   ];
 
@@ -270,7 +270,7 @@ export function PlacementPage({
               <div className="flex items-start gap-3">
                 <CheckCircle2 size={16} className="text-emerald-300 flex-shrink-0 mt-0.5" />
                 <p className="text-muted-foreground">
-                  <strong className="text-foreground">Dossier</strong> blijft beschikbaar voor intake
+                  <strong className="text-foreground">Casustraject</strong> blijft beschikbaar voor intake
                 </p>
               </div>
               <div className="flex items-start gap-3">

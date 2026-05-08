@@ -416,40 +416,48 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     >
       <CareSection>
         <CareSectionHeader
-          title="Werklijst"
-          description="Tabbladen filteren op ernst (kritiek, waarschuwing, info). Zoekveld doorzoekt titel en toelichting."
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
+          meta={(
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredSignals.length} signalen
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                tabs={
+                  <CareFilterTabGroup aria-label="Ernst signalen">
+                    <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
+                      Alles
+                    </CareFilterTabButton>
+                    <CareFilterTabButton
+                      selected={selectedSeverity === "critical"}
+                      onClick={() => toggleSeverityFilter("critical")}
+                    >
+                      Kritiek ({loading ? "—" : criticalCount})
+                    </CareFilterTabButton>
+                    <CareFilterTabButton
+                      selected={selectedSeverity === "warning"}
+                      onClick={() => toggleSeverityFilter("warning")}
+                    >
+                      Waarschuwing ({loading ? "—" : warningCount})
+                    </CareFilterTabButton>
+                    <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
+                      Info ({loading ? "—" : infoCount})
+                    </CareFilterTabButton>
+                  </CareFilterTabGroup>
+                }
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoek signalen..."
+                showSecondaryFilters={showSecondaryFilters}
+                onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+                secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
+              />
+            </div>
+          )}
         />
         <CareSectionBody className="space-y-3">
-          <CareSearchFiltersBar
-            tabs={
-              <CareFilterTabGroup aria-label="Ernst signalen">
-                <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
-                  Alles
-                </CareFilterTabButton>
-                <CareFilterTabButton
-                  selected={selectedSeverity === "critical"}
-                  onClick={() => toggleSeverityFilter("critical")}
-                >
-                  Kritiek ({loading ? "—" : criticalCount})
-                </CareFilterTabButton>
-                <CareFilterTabButton
-                  selected={selectedSeverity === "warning"}
-                  onClick={() => toggleSeverityFilter("warning")}
-                >
-                  Waarschuwing ({loading ? "—" : warningCount})
-                </CareFilterTabButton>
-                <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
-                  Info ({loading ? "—" : infoCount})
-                </CareFilterTabButton>
-              </CareFilterTabGroup>
-            }
-            searchValue={searchQuery}
-            onSearchChange={setSearchQuery}
-            searchPlaceholder="Zoek signalen..."
-            showSecondaryFilters={showSecondaryFilters}
-            onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-            secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
-          />
           {loading && (
             <LoadingState title="Signalen laden…" copy="Overzicht wordt opgebouwd." />
           )}
@@ -482,7 +490,7 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
               copy="De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging."
               action={(
                 <PrimaryActionButton className="mt-2" onClick={() => onNavigateToWorkflow?.("casussen")}>
-                  Ga naar casussen
+                  Naar casussen
                 </PrimaryActionButton>
               )}
             />

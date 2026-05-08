@@ -1,10 +1,12 @@
 import { fireEvent, render, screen } from "@testing-library/react";
+import * as React from "react";
 import { describe, expect, it } from "vitest";
 import {
   AppShell,
   CareAlertCard,
   CareFlowBoard,
   CareFlowStepCard,
+  CareSearchFiltersBar,
   CasusWorkspaceStatusBadges,
   EmptyState,
   ErrorState,
@@ -57,6 +59,31 @@ describe("CareDesignPrimitives", () => {
   it("PrimaryActionButton renders a single dominant CTA", () => {
     render(<PrimaryActionButton>Volgende stap</PrimaryActionButton>);
     expect(screen.getByRole("button", { name: "Volgende stap" })).toHaveClass("rounded-xl");
+  });
+
+  it("CareSearchFiltersBar exposes expanded state for secondary filters", () => {
+    function Harness() {
+      const [open, setOpen] = React.useState(false);
+      return (
+        <CareSearchFiltersBar
+          searchValue=""
+          onSearchChange={() => undefined}
+          searchPlaceholder="Zoek casussen"
+          showSecondaryFilters={open}
+          onToggleSecondaryFilters={() => setOpen((current) => !current)}
+          secondaryFiltersLabel="Filters"
+          secondaryFilters={<span data-testid="extra-filters">Extra</span>}
+        />
+      );
+    }
+
+    render(<Harness />);
+    const toggle = screen.getByRole("button", { name: "Filters" });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("region", { name: "Filters" })).toBeInTheDocument();
+    expect(screen.getByTestId("extra-filters")).toBeInTheDocument();
   });
 
   it("CasusWorkspaceStatusBadges reflect variant", () => {

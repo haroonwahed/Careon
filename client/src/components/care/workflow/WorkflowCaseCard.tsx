@@ -1,4 +1,3 @@
-import type { KeyboardEvent, MouseEvent } from "react";
 import { AlertTriangle, ArrowRight, Building2, MapPin } from "lucide-react";
 import { Button } from "../../ui/button";
 import type { WorkflowCaseView } from "../../../lib/workflowUi";
@@ -24,62 +23,53 @@ function urgencyBadgeClasses(urgency: WorkflowCaseView["urgency"]) {
 }
 
 export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
-  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      onOpen(item.id);
-    }
-  };
-
-  const handleActionClick = (event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    onOpen(item.id);
-  };
-
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(item.id)}
-      onKeyDown={handleKeyDown}
-      className={`w-full rounded-2xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md cursor-pointer ${
+    <article
+      className={`w-full rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${
         item.isBlocked ? "border-red-500/25 bg-red-500/5" : "border-border bg-card"
       }`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-foreground">{item.id}</p>
-          <p className="mt-1 text-sm text-foreground/85">{item.clientLabel}</p>
+      <button
+        type="button"
+        onClick={() => onOpen(item.id)}
+        className="group w-full rounded-[1.15rem] text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        aria-label={`Open casus ${item.clientLabel}`}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">{item.id}</p>
+            <p className="mt-1 text-sm text-foreground/85">{item.clientLabel}</p>
+          </div>
+          <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${urgencyBadgeClasses(item.urgency)}`}>
+            {item.urgencyLabel}
+          </span>
         </div>
-        <span className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${urgencyBadgeClasses(item.urgency)}`}>
-          {item.urgencyLabel}
-        </span>
-      </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5">
-          <MapPin size={12} />
-          {item.region}
-        </span>
-        <span>{item.clientAge} jaar</span>
-        <span>{item.daysInCurrentPhase} dagen in stap</span>
-      </div>
-
-      <p className="mt-4 text-sm leading-6 text-foreground/85">{getShortReasonLabel(item.summarySnippet, 72)}</p>
-
-      <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-muted/20 p-3 text-xs">
-        <div>
-          <p className="text-muted-foreground">Stap</p>
-          <p className="mt-1 text-sm font-medium text-foreground">{getShortStatusLabel(item.currentPhaseLabel)}</p>
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <MapPin size={12} aria-hidden="true" />
+            {item.region}
+          </span>
+          <span>{item.clientAge} jaar</span>
+          <span>{item.daysInCurrentPhase} dagen in stap</span>
         </div>
-        <div>
-          <p className="text-muted-foreground">Eigenaar</p>
-          <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
-            <Building2 size={12} />
-            {item.responsibleParty}
-          </p>
+
+        <p className="mt-4 text-sm leading-6 text-foreground/85">{getShortReasonLabel(item.summarySnippet, 72)}</p>
+
+        <div className="mt-4 grid grid-cols-2 gap-3 rounded-2xl bg-muted/20 p-3 text-xs">
+          <div>
+            <p className="text-muted-foreground">Stap</p>
+            <p className="mt-1 text-sm font-medium text-foreground">{getShortStatusLabel(item.currentPhaseLabel)}</p>
+          </div>
+          <div>
+            <p className="text-muted-foreground">Eigenaar</p>
+            <p className="mt-1 inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+              <Building2 size={12} aria-hidden="true" />
+              {item.responsibleParty}
+            </p>
+          </div>
         </div>
-      </div>
+      </button>
 
       <details className="mt-4 rounded-2xl border border-border/80 bg-background/60 px-3 py-3 text-xs leading-5 text-muted-foreground">
         <summary className="cursor-pointer list-none font-medium text-foreground">Meer details</summary>
@@ -131,11 +121,11 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
           <p className="text-xs text-muted-foreground">Actie</p>
           <p className="mt-1 text-sm font-medium text-foreground">{item.primaryActionLabel}</p>
         </div>
-          <Button
+        <Button
           size="sm"
           variant={item.primaryActionEnabled ? "default" : "outline"}
           disabled={!item.primaryActionEnabled}
-          onClick={handleActionClick}
+          onClick={() => onOpen(item.id)}
           className="gap-2"
           title={item.primaryActionReason ?? undefined}
         >
@@ -143,6 +133,6 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
           <ArrowRight size={14} />
         </Button>
       </div>
-    </div>
+    </article>
   );
 }

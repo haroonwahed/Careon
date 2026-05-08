@@ -29,10 +29,12 @@ export interface CasusWorkspaceLayoutProps {
   statusHint?: string | null;
   headerActions?: ReactNode;
   updatedAtLabel?: string | null;
+  onRefresh?: () => void | Promise<void>;
+  refreshing?: boolean;
   /** Problem + primary action — must stay visible without hunting (above decision panel). */
   caseHero: ReactNode;
   /** Explain → risk → guidance for this phase (no duplicate primary CTA here). */
-  decisionPanel: ReactNode;
+  decisionPanel?: ReactNode;
   /** Summary, details, evidence, secondary links — use <details> for progressive disclosure. */
   contextStack: ReactNode;
 }
@@ -49,6 +51,8 @@ export function CasusWorkspaceLayout({
   statusHint,
   headerActions,
   updatedAtLabel,
+  onRefresh,
+  refreshing = false,
   caseHero,
   decisionPanel,
   contextStack,
@@ -97,7 +101,22 @@ export function CasusWorkspaceLayout({
           {updatedAtLabel ? (
             <div className="flex shrink-0 items-center gap-2 text-[12px] text-muted-foreground">
               <span>Bijgewerkt: {updatedAtLabel}</span>
-              <RefreshCw size={14} />
+              {onRefresh ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void onRefresh()}
+                  disabled={refreshing}
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  aria-label="Ververs casusgegevens"
+                  title="Ververs casusgegevens"
+                >
+                  <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
+                </Button>
+              ) : (
+                <RefreshCw size={14} />
+              )}
             </div>
           ) : null}
         </div>
@@ -107,9 +126,11 @@ export function CasusWorkspaceLayout({
         {caseHero}
       </section>
 
-      <section data-testid="casus-decision-panel" className="rounded-xl border border-primary/25 bg-primary/5 p-4 md:p-5">
-        {decisionPanel}
-      </section>
+      {decisionPanel ? (
+        <section data-testid="casus-decision-panel" className="rounded-xl border border-border/80 bg-card/60 p-4 md:p-5">
+          {decisionPanel}
+        </section>
+      ) : null}
 
       <div data-testid="casus-context-stack" className="space-y-3">
         <div data-testid="case-context-panel" className="space-y-3">

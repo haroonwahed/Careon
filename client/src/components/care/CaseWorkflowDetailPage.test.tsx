@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { SpaCase } from "../../hooks/useCases";
 import type { DecisionEvaluation } from "../../lib/decisionEvaluation";
@@ -161,8 +161,9 @@ describe("CaseExecutionPage workspace", () => {
     expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
     expect(await screen.findByText("Voortgang")).toBeInTheDocument();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Naar aanbieder/i })).toBeInTheDocument();
-    expect(screen.getByText(/Gemeente · 8 dagen · Zorgaanbieder A/i)).toBeInTheDocument();
+    const heroBand = screen.getByTestId("casus-hero-band");
+    expect(within(heroBand).getByRole("button", { name: /Start matching|Stuur naar aanbieder/i })).toBeInTheDocument();
+    expect(screen.getByText("Benodigd voor volgende fase")).toBeInTheDocument();
     expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(1);
     expect(container.innerHTML).not.toContain("mx-auto max-w-[1440px]");
     expect(container.innerHTML).not.toContain(`#${"111827"}`);
@@ -187,8 +188,9 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     expect(screen.getByText("Voortgang")).toBeInTheDocument();
     expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Vul casus aan om matching te starten")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Vul casus aan/i })).toBeInTheDocument();
+    expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
+    const heroBand = screen.getByTestId("casus-hero-band");
+    expect(within(heroBand).getByRole("button", { name: /Start matching|Controleer casusstatus/i })).toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
 
     expect(screen.queryByText("Casussen")).not.toBeInTheDocument();
@@ -221,7 +223,7 @@ describe("CaseExecutionPage workspace", () => {
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
     expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Vul casus aan om matching te starten")).toBeInTheDocument();
+    expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
   });
 
   it("keeps metadata row visible for decision context cases", async () => {
@@ -248,17 +250,19 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect(await screen.findByText(/Gemeente · 8 dagen · Zorgaanbieder A/i)).toBeInTheDocument();
+    expect(await screen.findByText("Laatste wijziging")).toBeInTheDocument();
+    expect(screen.getByText("Eigenaar")).toBeInTheDocument();
   });
 
   it("keeps primary action wired to existing action executor", async () => {
     setupCase(makeDecisionEvaluation());
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
-    const primaryButtons = await screen.findAllByRole("button", { name: /Stuur naar aanbieder/i });
+    const heroBand = screen.getByTestId("casus-hero-band");
+    const primaryButtons = await within(heroBand).findAllByRole("button", { name: /Start matching|Stuur naar aanbieder/i });
     const clickable = primaryButtons.filter((button) => !button.hasAttribute("disabled"));
     expect(clickable.length).toBeGreaterThan(0);
-    clickable.forEach((button) => fireEvent.click(button));
+    fireEvent.click(clickable[0]);
 
     await waitFor(() => {
       expect(mockExecuteCaseAction).toHaveBeenCalledWith(

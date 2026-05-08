@@ -805,7 +805,7 @@ def matching_candidates_api(request, case_id):
 def intake_form_options_api(request):
     try:
         organization = get_user_organization(request.user)
-        form = CaseIntakeProcessForm()
+        form = CaseIntakeProcessForm(organization=organization)
 
         coordinator_field = form.fields.get('case_coordinator')
         if organization and coordinator_field is not None:
@@ -1788,7 +1788,7 @@ def intake_create_api(request):
     if role_error is not None:
         return role_error
 
-    form = CaseIntakeProcessForm(data=payload)
+    form = CaseIntakeProcessForm(data=payload, organization=organization)
 
     coordinator_field = form.fields['case_coordinator']
     if organization:

@@ -74,7 +74,9 @@ import {
   PrimaryActionButton,
 } from "./CareDesignPrimitives";
 import { tokens } from "../../design/tokens";
+import { RegieRailEdgeTab, RegieRailToggleButton } from "./RegieRailControls";
 import { useCases } from "../../hooks/useCases";
+import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useProviderEvaluations } from "../../hooks/useProviderEvaluations";
 import type {
   EvaluationDecisionPayload,
@@ -395,6 +397,7 @@ function GemeenteView({
   onNavigateToCasussen,
 }: GemeenteViewProps) {
   const [activeTab, setActiveTab] = useState<"overzicht" | "aanbieders" | "berichten" | "bestanden">("overzicht");
+  const { collapsed: railCollapsed, toggle: toggleRail, setCollapsed: setRailCollapsed } = useRailCollapsed();
 
   const reviewCasesAll = useMemo(
     () => cases.filter(c => c.status === "provider_beoordeling" || c.status === "plaatsing"),
@@ -434,7 +437,7 @@ function GemeenteView({
   return (
     <div
       data-testid="aanbieder-beoordeling-gemeente-root"
-      className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-10"
+      className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-8"
     >
       <div className="min-w-0 flex-1">
         <CarePageScaffold
@@ -484,6 +487,13 @@ function GemeenteView({
                   <RefreshCw size={14} aria-hidden />
                   Ververs
                 </Button>
+                {showMainGrid ? (
+                  <RegieRailToggleButton
+                    collapsed={railCollapsed}
+                    onToggle={toggleRail}
+                    testId="aanbieder-beoordeling-rail-toggle"
+                  />
+                ) : null}
               </div>
             </div>
           )}
@@ -714,7 +724,10 @@ function GemeenteView({
       {showMainGrid ? (
         <aside
           data-testid="aanbieder-beoordeling-right-rail"
-          className="w-full shrink-0 space-y-4 xl:w-[300px] xl:pt-1"
+          className={cn(
+            "w-full shrink-0 space-y-4 xl:w-[300px] xl:pt-1",
+            railCollapsed && "xl:hidden",
+          )}
         >
           <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
             <div className="flex items-center gap-2 border-b border-border/50 pb-3">
@@ -808,6 +821,13 @@ function GemeenteView({
             Notitie toevoegen
           </Button>
         </aside>
+      ) : null}
+
+      {showMainGrid && railCollapsed ? (
+        <RegieRailEdgeTab
+          onExpand={() => setRailCollapsed(false)}
+          testId="aanbieder-beoordeling-rail-edge-tab"
+        />
       ) : null}
     </div>
   );
@@ -1056,7 +1076,7 @@ function ProviderReviewCaseCard({
               className="h-9 gap-1 font-normal text-muted-foreground hover:text-foreground"
               onClick={() => onCaseClick(caseItem.id)}
             >
-              Open dossier
+              Open casus
               <ArrowRight size={12} className="shrink-0 opacity-80" />
             </Button>
           </div>
@@ -1317,7 +1337,7 @@ function ProviderView({
                   : `${activeQueue.length} casussen wachten op jouw beoordeling`
                 : "Geen openstaande beoordeling"
             }
-            action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Bekijk mijn casussen</PrimaryActionButton> : undefined}
+            action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Naar casussen</PrimaryActionButton> : undefined}
           />
         }
         metric={

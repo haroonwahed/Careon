@@ -3,13 +3,10 @@ import { Building2, ClipboardList, Clock3, Lock, ShieldAlert } from "lucide-reac
 import { Button } from "../ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { cn } from "../ui/utils";
-import { tokens } from "../../design/tokens";
 import { CareKPICard } from "./CareKPICard";
 import {
   CareAttentionBar,
   CareDominantStatus,
-  CareFilterTabButton,
-  CareFilterTabGroup,
   CareMetaChip,
   CareInfoPopover,
   CareMetricBadge,
@@ -19,6 +16,7 @@ import {
   CareSectionBody,
   CareSectionHeader,
   CareSearchFiltersBar,
+  CareWorkListCard,
   CareWorkRow,
   EmptyState,
   ErrorState,
@@ -166,62 +164,6 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
   const selectTriggerClass =
     "h-10 border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30";
 
-  const brandAccent = tokens.colors.casussenAccent;
-  const surfaceRaised = tokens.colors.casussenSurfaceRaised;
-
-  /** Zelfde ritme als Casussen / Regiekamer werklijst — tabs + zoekbalk in sectie-meta. */
-  const matchingTabRow = (
-    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
-      <CareFilterTabGroup
-        aria-label="Matching-weergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
-        style={{ backgroundColor: surfaceRaised }}
-      >
-        <CareFilterTabButton selected={listTab === "all"} accentSelected={listTab === "all"} accentHex={brandAccent} onClick={() => setListTab("all")}>
-          Alle casussen
-        </CareFilterTabButton>
-        <CareFilterTabButton
-          selected={listTab === "urgent"}
-          accentSelected={listTab === "urgent"}
-          accentHex={brandAccent}
-          onClick={() => setListTab("urgent")}
-        >
-          Urgent ({loading ? "—" : urgentCount})
-        </CareFilterTabButton>
-        <CareFilterTabButton
-          selected={listTab === "blocked"}
-          accentSelected={listTab === "blocked"}
-          accentHex={brandAccent}
-          onClick={() => setListTab("blocked")}
-        >
-          Geblokkeerd ({loading ? "—" : blockedCount})
-        </CareFilterTabButton>
-      </CareFilterTabGroup>
-    </div>
-  );
-
-  const matchingSortRightAction = (
-    <div className="flex items-center gap-2">
-      <span className="hidden text-[13px] text-muted-foreground sm:inline">Sorteren op</span>
-      <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
-        <SelectTrigger className={cn("h-10 min-w-[10.5rem]", selectTriggerClass)}>
-          <SelectValue placeholder="Sorteren" />
-        </SelectTrigger>
-        <SelectContent className="border-border bg-card text-foreground">
-          <SelectItem value="urgency" className="text-foreground focus:bg-muted">
-            Urgentie
-          </SelectItem>
-          <SelectItem value="region" className="text-foreground focus:bg-muted">
-            Regio
-          </SelectItem>
-          <SelectItem value="wait" className="text-foreground focus:bg-muted">
-            Wachttijd in fase
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
   const kpiStrip = (
     <div className="grid gap-3 px-1 sm:grid-cols-2 xl:grid-cols-4">
       <CareKPICard
@@ -287,29 +229,26 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
               ? `${blockedCount} casus${blockedCount === 1 ? "" : "sen"} geblokkeerd — los dit eerst op voordat matching betrouwbaar is.`
               : "Matching is advisering; de gemeente valideert de selectie voordat een aanbieder de casus beoordeelt."
           }
-          action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Bekijk casussen</PrimaryActionButton> : undefined}
         />
       }
       kpiStrip={kpiStrip}
     >
       <CareSection testId="matching-uitvoerlijst" aria-labelledby="matching-werkvoorraad-heading">
         <CareSectionHeader
+          className="lg:flex-col lg:items-stretch"
           title={
-            <span id="matching-werkvoorraad-heading" className="flex flex-wrap items-baseline gap-3">
-              <span>Werkvoorraad</span>
-              <span className="text-base font-medium tabular-nums text-muted-foreground">
-                {loading ? "…" : `${filteredCases.length} casussen`}
-              </span>
-            </span>
+            <span id="matching-werkvoorraad-heading">Werkvoorraad</span>
           }
           meta={
             <div className="w-full min-w-0 space-y-2">
-              {matchingTabRow}
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {loading ? "…" : `${filteredCases.length} casussen`}
+              </span>
               <CareSearchFiltersBar
                 className="px-0"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
-                searchPlaceholder="Zoek casussen, cliënten, aanbieders…"
+                searchPlaceholder="Zoek casussen, regio's, aanbieders…"
                 showSecondaryFilters={showSecondaryFilters}
                 onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                 secondaryFiltersLabel="Filters"
@@ -326,6 +265,34 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                       >
                         Wissen
                       </button>
+                    </div>
+                    <div className="grid items-end gap-2 md:grid-cols-2">
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className="text-[11px] font-medium text-muted-foreground">Weergave</span>
+                        <Select value={listTab} onValueChange={(value) => setListTab(value as ListTab)}>
+                          <SelectTrigger aria-label="Weergave" className={cn("h-10", selectTriggerClass)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-card text-foreground">
+                            <SelectItem value="all">Alle casussen</SelectItem>
+                            <SelectItem value="urgent">Urgent ({loading ? "—" : urgentCount})</SelectItem>
+                            <SelectItem value="blocked">Geblokkeerd ({loading ? "—" : blockedCount})</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className="text-[11px] font-medium text-muted-foreground">Sorteren op</span>
+                        <Select value={sortBy} onValueChange={(value) => setSortBy(value as SortOption)}>
+                          <SelectTrigger aria-label="Sorteren op" className={cn("h-10", selectTriggerClass)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-card text-foreground">
+                            <SelectItem value="urgency">Urgentie</SelectItem>
+                            <SelectItem value="region">Regio</SelectItem>
+                            <SelectItem value="wait">Wachttijd in fase</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie</p>
@@ -379,7 +346,6 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                     </p>
                   </div>
                 }
-                rightAction={matchingSortRightAction}
               />
             </div>
           }
@@ -398,58 +364,73 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                   ? "Zodra samenvatting en voorbereiding klaar zijn, verschijnen casussen hier automatisch."
                   : "Pas tabblad, zoekopdracht of filters aan."
               }
-              action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Terug naar casussen</PrimaryActionButton>}
+              action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Naar casussen</PrimaryActionButton>}
             />
           )}
 
           {!loading && !error && filteredCases.length > 0 && (
-            <CarePrimaryList>
-              {filteredCases.map((item) => (
-                <CareWorkRow
-                  key={item.id}
-                  leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
-                  title={item.clientLabel}
-                  context={`${item.id} · ${item.region} · ${item.title}`}
-                  status={
-                    <CareDominantStatus
-                      className={
-                        item.matchConfidenceScore != null && item.matchConfidenceScore < 40
-                          ? "border-destructive/35 bg-destructive/10 text-destructive"
-                          : item.matchConfidenceScore != null && item.matchConfidenceScore < 65
-                            ? "border-amber-500/35 bg-amber-500/10 text-amber-100"
-                            : undefined
+            <CareWorkListCard
+              header={(
+                <div className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
+                  <span>Fase</span>
+                  <span>Casus</span>
+                  <span>Matchadvies</span>
+                  <span>Wachttijd</span>
+                  <span>Context</span>
+                  <span>Volgende actie</span>
+                </div>
+              )}
+            >
+              <div className="divide-y divide-border/45">
+                <CarePrimaryList>
+                  {filteredCases.map((item) => (
+                    <CareWorkRow
+                      key={item.id}
+                      leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
+                      title={item.clientLabel}
+                      context={`${item.id} · ${item.region} · ${item.title}`}
+                      status={
+                        <CareDominantStatus
+                          className={
+                            item.matchConfidenceScore != null && item.matchConfidenceScore < 40
+                              ? "border-destructive/35 bg-destructive/10 text-destructive"
+                              : item.matchConfidenceScore != null && item.matchConfidenceScore < 65
+                                ? "border-amber-500/35 bg-amber-500/10 text-amber-100"
+                                : undefined
+                          }
+                        >
+                          {item.matchConfidenceLabel ?? item.phaseLabel}
+                        </CareDominantStatus>
                       }
-                    >
-                      {item.matchConfidenceLabel ?? item.phaseLabel}
-                    </CareDominantStatus>
-                  }
-                  time={
-                    <CareMetaChip>
-                      <Clock3 size={12} />
-                      {item.daysInCurrentPhase}d in fase
-                    </CareMetaChip>
-                  }
-                  contextInfo={
-                    <>
-                      <CareMetaChip>{item.recommendedProvidersCount} aanbieders</CareMetaChip>
-                      {item.isBlocked ? (
-                        <CareMetaChip className="border-destructive/30 text-destructive">
-                          Geblokkeerd
+                      time={
+                        <CareMetaChip>
+                          <Clock3 size={12} />
+                          {item.daysInCurrentPhase}d in fase
                         </CareMetaChip>
-                      ) : null}
-                    </>
-                  }
-                  actionLabel={item.primaryActionEnabled ? "Vergelijk aanbieders" : "Controleer matchadvies"}
-                  actionVariant={item.primaryActionEnabled ? "primary" : "ghost"}
-                  onOpen={() => onCaseClick(item.id)}
-                  onAction={(event) => {
-                    event.stopPropagation();
-                    onCaseClick(item.id);
-                  }}
-                  accentTone={item.isBlocked ? "critical" : item.urgency === "critical" ? "warning" : "neutral"}
-                />
-              ))}
-            </CarePrimaryList>
+                      }
+                      contextInfo={
+                        <>
+                          <CareMetaChip>{item.recommendedProvidersCount} aanbieders</CareMetaChip>
+                          {item.isBlocked ? (
+                            <CareMetaChip className="border-destructive/30 text-destructive">
+                              Geblokkeerd
+                            </CareMetaChip>
+                          ) : null}
+                        </>
+                      }
+                      actionLabel={item.primaryActionEnabled ? "Vergelijk aanbieders" : "Controleer matchadvies"}
+                      actionVariant={item.primaryActionEnabled ? "primary" : "ghost"}
+                      onOpen={() => onCaseClick(item.id)}
+                      onAction={(event) => {
+                        event.stopPropagation();
+                        onCaseClick(item.id);
+                      }}
+                      accentTone={item.isBlocked ? "critical" : item.urgency === "critical" ? "warning" : "neutral"}
+                    />
+                  ))}
+                </CarePrimaryList>
+              </div>
+            </CareWorkListCard>
           )}
         </CareSectionBody>
       </CareSection>

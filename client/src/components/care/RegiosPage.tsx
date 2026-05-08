@@ -26,7 +26,6 @@ import { Button } from "../ui/button";
 import {
   CareAttentionBar,
   CareInfoPopover,
-  CareMetaChip,
   CarePageScaffold,
   CareSection,
   CareSectionBody,
@@ -226,8 +225,47 @@ export function RegiosPage({
     >
       <CareSection>
         <CareSectionHeader
-          title="Werklijst"
-          meta={<CareMetaChip>{filteredRegions.length} zichtbaar · {systemState.totalCases} casussen · {systemState.systemUtilization}% bezetting</CareMetaChip>}
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
+          meta={(
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredRegions.length} zichtbaar · {systemState.totalCases} casussen · {systemState.systemUtilization}% bezetting
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoeken op regio..."
+                secondaryFilters={(
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Select value={capacityFilter} onValueChange={setCapacityFilter}>
+                      <SelectTrigger className="h-10 w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30">
+                        <SelectValue placeholder="Alle capaciteit statussen" />
+                      </SelectTrigger>
+                      <SelectContent className="border-border bg-card text-foreground">
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle capaciteit statussen</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="stabiel">Stabiel</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="druk">Druk</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="tekort">Tekort</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="kritiek">Kritiek</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={sortBy} onValueChange={(v: string) => setSortBy(v as "cases" | "capacity" | "waittime")}>
+                      <SelectTrigger className="h-10 w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30">
+                        <SelectValue placeholder="Sorteer op casussen" />
+                      </SelectTrigger>
+                      <SelectContent className="border-border bg-card text-foreground">
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="cases">Sorteer op casussen</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="capacity">Sorteer op bezetting</SelectItem>
+                        <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="waittime">Sorteer op wachttijd</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              />
+            </div>
+          )}
         />
         <CareSectionBody className="space-y-4">
       <div className={`${regionOverviewShell} p-4`}>
@@ -263,39 +301,6 @@ export function RegiosPage({
             ))}
           </div>
         )}
-      </div>
-
-      <div className="space-y-3">
-        <CareSearchFiltersBar
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoeken op regio..."
-        />
-        <div className="flex flex-col gap-3 px-1 sm:flex-row sm:flex-wrap sm:items-center">
-          <Select value={capacityFilter} onValueChange={setCapacityFilter}>
-            <SelectTrigger className="w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-56">
-              <SelectValue placeholder="Alle capaciteit statussen" />
-            </SelectTrigger>
-            <SelectContent className="border-border bg-card text-foreground">
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="all">Alle capaciteit statussen</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="stabiel">Stabiel</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="druk">Druk</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="tekort">Tekort</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="kritiek">Kritiek</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={(v: string) => setSortBy(v as "cases" | "capacity" | "waittime")}>
-            <SelectTrigger className="w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30 sm:w-52">
-              <SelectValue placeholder="Sorteer op casussen" />
-            </SelectTrigger>
-            <SelectContent className="border-border bg-card text-foreground">
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="cases">Sorteer op casussen</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="capacity">Sorteer op bezetting</SelectItem>
-              <SelectItem className="text-foreground focus:bg-muted focus:text-foreground" value="waittime">Sorteer op wachttijd</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
       </div>
 
       <div className={`${regionOverviewShell} p-4`}>

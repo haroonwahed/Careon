@@ -13,7 +13,7 @@ export const NBA_IMPERATIVE_LABELS: Record<string, string> = {
   REMATCH_CASE: "Her-match casus",
   CONFIRM_PLACEMENT: "Bevestig plaatsing",
   START_INTAKE: "Start intake",
-  MONITOR_CASE: "Bewaak casus",
+  MONITOR_CASE: "Houd regie op casus",
   ARCHIVE_CASE: "Archiveer casus",
   PROVIDER_ACCEPT: "Verwerk acceptatie",
   PROVIDER_REJECT: "Verwerk afwijzing",

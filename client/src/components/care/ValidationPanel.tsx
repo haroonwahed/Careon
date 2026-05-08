@@ -50,9 +50,9 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
     <div className="space-y-3">
       {/* Header */}
       <div>
-        <h3 className="text-sm font-semibold text-foreground mb-1">
+        <h2 className="text-sm font-semibold text-foreground mb-1">
           Validatie & Suggesties
-        </h3>
+        </h2>
         <p className="text-xs text-muted-foreground">
           Controleer de samenvatting voordat je doorgaat
         </p>
@@ -62,7 +62,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
       {validations.length === 0 && (
         <CarePanel className="p-4 border border-emerald-500/40 bg-emerald-500/15">
           <div className="flex items-start gap-3">
-            <CheckCircle2 size={20} className="text-emerald-300 flex-shrink-0 mt-0.5" />
+            <CheckCircle2 size={20} className="text-emerald-300 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <p className="text-sm font-medium text-emerald-300">
                 Samenvatting compleet
@@ -93,8 +93,8 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
                 key={idx}
                 className={`p-3 rounded-lg border ${config.alertClass}`}
               >
-                <div className="flex items-start gap-2">
-                  <Icon size={16} className={`${config.text} flex-shrink-0 mt-0.5`} />
+              <div className="flex items-start gap-2">
+                  <Icon size={16} className={`${config.text} flex-shrink-0 mt-0.5`} aria-hidden="true" />
                   <p className={`text-xs leading-relaxed ${config.text}`}>
                     {validation.message}
                   </p>
@@ -118,13 +118,14 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
               className="p-3 rounded-lg border border-primary/40 bg-primary/15"
             >
               <div className="flex items-start gap-2">
-                <Lightbulb size={16} className="text-primary flex-shrink-0 mt-0.5" />
+                <Lightbulb size={16} className="text-primary flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div className="flex-1">
                   <p className="text-xs text-primary leading-relaxed">
                     {suggestion.text}
                   </p>
                   {suggestion.action && (
                     <button
+                      type="button"
                       onClick={suggestion.action}
                       className="text-xs text-primary underline mt-2 hover:text-primary-hover"
                     >

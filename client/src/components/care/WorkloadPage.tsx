@@ -11,24 +11,13 @@ import {
   FileText,
   FolderOpen,
   Home,
-  LayoutGrid,
-  SlidersHorizontal,
-  SquarePen,
   UserCheck,
   Users,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
-import {
   CareAttentionBar,
   CareDominantStatus,
-  CareFilterTabButton,
-  CareFilterTabGroup,
   CareFlowBoard,
   CareFlowStepCard,
   CareMetaChip,
@@ -48,9 +37,13 @@ import {
   normalizeBoardColumnToPhaseId,
 } from "./CareDesignPrimitives";
 import { cn } from "../ui/utils";
+import { RegieNotesPanel } from "./RegieNotesPanel";
+import { RegieRailEdgeTab, RegieRailToggleButton } from "./RegieRailControls";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { consumeCasussenPreferredFocus } from "../../lib/casussenNavigation";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
   buildWorkflowCases,
@@ -277,54 +270,54 @@ function CasussenWerkvoorraadRow({
     <div
       data-care-work-row
       className={cn(
-        "group grid cursor-pointer gap-y-3 gap-x-4 px-4 py-3.5 transition-colors md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:items-center md:px-5",
+        "group grid gap-y-3 gap-x-4 px-4 py-3.5 transition-colors md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:items-center md:px-5",
         "hover:bg-background/35",
       )}
-      role="button"
-      tabIndex={0}
-      onClick={onOpenCase}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpenCase();
-        }
-      }}
-      aria-label={`Open casus ${item.clientLabel}`}
     >
-      <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
-        <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", urgencyChipShellClass(item.urgency))}>
-          {item.urgencyLabel}
-        </CareMetaChip>
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.clientLabel}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
-          <span className="font-mono text-[11px] text-muted-foreground/80">{item.id}</span>
+      <button
+        type="button"
+        onClick={onOpenCase}
+        aria-label={`Open casus ${item.clientLabel}`}
+        className={cn(
+          "grid min-w-0 gap-y-3 gap-x-4 text-left outline-none transition-colors md:col-span-5 md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px] md:gap-x-5 md:items-center",
+          "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        )}
+      >
+        <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
+          <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", urgencyChipShellClass(item.urgency))}>
+            {item.urgencyLabel}
+          </CareMetaChip>
         </div>
-      </div>
 
-      <div className="min-w-0 space-y-1.5">
-        <CareMetaChip
-          className={cn(
-            "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
-            casussenBlokkadeChipClass(item),
-          )}
-        >
-          <span className="line-clamp-2">{blokkadeLine}</span>
-        </CareMetaChip>
-      </div>
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.clientLabel}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
+            <span className="font-mono text-[11px] text-muted-foreground/80">{item.id}</span>
+          </div>
+        </div>
 
-      <div className="min-w-0">
-        <p className="text-[14px] font-medium leading-tight text-foreground/95">{decision.responsibleParty}</p>
-      </div>
+        <div className="min-w-0 space-y-1.5">
+          <CareMetaChip
+            className={cn(
+              "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
+              casussenBlokkadeChipClass(item),
+            )}
+          >
+            <span className="line-clamp-2">{blokkadeLine}</span>
+          </CareMetaChip>
+        </div>
 
-      <div className="md:justify-self-start">
-        <CareMetaChip className="h-8">
-          <Clock3 size={12} />
-          {item.lastUpdatedLabel}
-        </CareMetaChip>
-      </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-medium leading-tight text-foreground/95">{decision.responsibleParty}</p>
+        </div>
+
+        <div className="md:justify-self-start">
+          <CareMetaChip className="h-8">
+            <Clock3 size={12} />
+            {item.lastUpdatedLabel}
+          </CareMetaChip>
+        </div>
+      </button>
 
       <div className="min-w-0 md:justify-self-start">
         <Button
@@ -333,10 +326,7 @@ function CasussenWerkvoorraadRow({
           type="button"
           data-care-work-row-cta={actionVariant}
           className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
-          onClick={(event) => {
-            event.stopPropagation();
-            onWorkflowAction();
-          }}
+          onClick={onWorkflowAction}
         >
           <span className="whitespace-nowrap text-center">{actionLabel}</span>
         </Button>
@@ -359,7 +349,17 @@ export function WorkloadPage({
   const [selectedOwner, setSelectedOwner] = useState<"all" | "Gemeente" | "Zorgaanbieder" | "Systeem">("all");
   /** Default “Alle casussen”: volledige werklijst; gebruikers kunnen naar Mijn werkvoorraad voor focus. */
   const [focusChip, setFocusChip] = useState<FocusChip>("all");
+  /** One-shot focus hand-off from Regiekamer NBA links (e.g. "Bekijk kritieke casussen", "Bekijk gehele stroom"). */
+  useEffect(() => {
+    const preferred = consumeCasussenPreferredFocus();
+    if (preferred === "critical") {
+      setFocusChip("critical");
+    } else if (preferred === "pipeline") {
+      setFocusChip("pipeline");
+    }
+  }, []);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
+  const { collapsed: railCollapsed, toggle: toggleRail, setCollapsed: setRailCollapsed } = useRailCollapsed();
   const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({
     attention: false,
     "waiting-provider": false,
@@ -388,7 +388,7 @@ export function WorkloadPage({
 
   const regions = useMemo(() => ["all", ...Array.from(new Set(decisionItems.map(({ item }) => item.region)))], [decisionItems]);
 
-  const baseFilteredItems = useMemo(() => {
+  const baseFilteredItemsWithoutPhase = useMemo(() => {
     const searchLower = searchQuery.trim().toLowerCase();
 
     return decisionItems
@@ -408,14 +408,6 @@ export function WorkloadPage({
 
         if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) {
           return false;
-        }
-
-        if (selectedPhase !== "all") {
-          const itemDecision = mapApiPhaseToDecisionUiPhase(normalizeBoardColumnToPhaseId(item.boardColumn));
-          const matchesPhase = itemDecision === selectedPhase;
-          if (!matchesPhase) {
-            return false;
-          }
         }
 
         if (selectedOwner !== "all" && decision.responsibleParty !== selectedOwner) {
@@ -439,28 +431,41 @@ export function WorkloadPage({
 
         return left.item.id.localeCompare(right.item.id);
       });
-  }, [decisionItems, searchQuery, selectedRegion, selectedUrgency, selectedPhase, selectedOwner]);
+  }, [decisionItems, searchQuery, selectedRegion, selectedUrgency, selectedOwner]);
+
+  const baseFilteredItems = useMemo(() => {
+    if (selectedPhase === "all") {
+      return baseFilteredItemsWithoutPhase;
+    }
+    return baseFilteredItemsWithoutPhase.filter(({ item }) => {
+      const itemDecision = mapApiPhaseToDecisionUiPhase(normalizeBoardColumnToPhaseId(item.boardColumn));
+      return itemDecision === selectedPhase;
+    });
+  }, [baseFilteredItemsWithoutPhase, selectedPhase]);
 
   const tabCounts = useMemo(() => {
     let myWorklist = 0;
     let pipeline = 0;
     let critical = 0;
-    for (const { item, decision } of baseFilteredItems) {
+    for (const { item, decision } of baseFilteredItemsWithoutPhase) {
       if (decision.requiresCurrentUserAction) myWorklist++;
       const c = classifyCasusWorkboardState(item, decision);
       if (c.section === "attention" || c.section === "waiting-provider") pipeline++;
       if (item.isBlocked || item.missingDataItems.length > 0 || item.urgency === "critical") critical++;
     }
     return {
-      all: baseFilteredItems.length,
+      all: baseFilteredItemsWithoutPhase.length,
       myWorklist,
       pipeline,
       critical,
-      recent: baseFilteredItems.length,
+      recent: baseFilteredItemsWithoutPhase.length,
     };
-  }, [baseFilteredItems]);
+  }, [baseFilteredItemsWithoutPhase]);
 
-  const stripCounts = useMemo(() => countWorkflowStrip(baseFilteredItems.map((r) => r.item)), [baseFilteredItems]);
+  const stripCounts = useMemo(
+    () => countWorkflowStrip(baseFilteredItemsWithoutPhase.map((r) => r.item)),
+    [baseFilteredItemsWithoutPhase],
+  );
 
   const dominantStripKey = useMemo((): StripBucketKey | null => {
     let best: StripBucketKey | null = null;
@@ -659,14 +664,11 @@ export function WorkloadPage({
     };
   }, [workflowCases.length, focusChip, attentionCount]);
 
-  const brandAccent = tokens.colors.casussenAccent;
-  const surfaceRaised = tokens.colors.casussenSurfaceRaised;
-
   const workloadAttentionMessage =
     workflowCases.length === 0
       ? canCreateCase
-        ? "Er zijn nog geen dossiers in beeld; start een nieuwe casus of pas filters aan."
-        : "Er zijn nog geen dossiers in beeld; pas filters aan."
+        ? "Er zijn nog geen lopende casussen; start een regietraject of pas filters aan."
+        : "Er zijn nog geen lopende casussen; pas filters aan."
       : attentionCount > 0
         ? `${attentionCount} casus${attentionCount === 1 ? "" : "sen"} vragen gemeentelijke actie; blokkades en wachttijd bepalen de volgende eigenaar.`
         : "De werkvoorraad is rustig; gebruik filters om de volgende casus en stap te vinden.";
@@ -682,83 +684,19 @@ export function WorkloadPage({
       </PrimaryActionButton>
     ) : null;
 
-  const headerActions = canCreateCase && onCreateCase ? (
-    <div className="flex flex-col items-start gap-1 md:items-end">
+  const headerActions = (
+    <div className="flex flex-col items-start gap-1 md:pt-3 md:items-end">
       <div className="flex flex-wrap items-center justify-end gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          className="h-10 min-h-10 rounded-xl border-border/50 bg-card/40 px-4 text-[13px] font-semibold text-foreground hover:bg-card/60"
-          onClick={onCreateCase}
-        >
-          Nieuwe casus
-        </Button>
-      </div>
-    </div>
-  ) : undefined;
-
-  /** Tabs + weergave — zelfde verticale ritme als Regiekamer (filters via `CareSearchFiltersBar`). */
-  const workloadTabRow = (
-    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
-      <CareFilterTabGroup
-        aria-label="Werkvoorraad-weergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
-        style={{ backgroundColor: surfaceRaised }}
-      >
-        {(
-          [
-            { key: "my-worklist" as const, label: `Mijn werkvoorraad (${tabCounts.myWorklist})` },
-            { key: "all" as const, label: `Alle casussen (${tabCounts.all})` },
-            { key: "pipeline" as const, label: `Wacht op actie (${tabCounts.pipeline})` },
-            { key: "critical" as const, label: `Kritiek (${tabCounts.critical})` },
-            { key: "recent" as const, label: `Recent bijgewerkt (${tabCounts.recent})` },
-          ] as const
-        ).map((tab) => (
-          <CareFilterTabButton
-            key={tab.key}
-            selected={focusChip === tab.key}
-            accentSelected={focusChip === tab.key}
-            accentHex={brandAccent}
-            onClick={() => setFocusChip(tab.key)}
-          >
-            {tab.label}
-          </CareFilterTabButton>
-        ))}
-      </CareFilterTabGroup>
-      <div className="flex shrink-0 flex-wrap items-center gap-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="h-9 rounded-xl border-border/60 bg-card/30 px-3 text-[13px] font-medium text-foreground hover:bg-card/50"
-            >
-              <SlidersHorizontal size={14} className="mr-1.5 opacity-80" aria-hidden />
-              Weergave
-              <ChevronDown size={14} className="ml-1 opacity-70" aria-hidden />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[12rem]">
-            <DropdownMenuItem
-              className="gap-2 text-[13px]"
-              onClick={() => {
-                setListLayout("table");
-              }}
-            >
-              <LayoutGrid size={14} aria-hidden />
-              Tabel (standaard)
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              className="gap-2 text-[13px]"
-              onClick={() => {
-                setListLayout("cards");
-              }}
-            >
-              Kaarten (compact)
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {canCreateCase && onCreateCase ? (
+          <PrimaryActionButton type="button" className="h-10 min-h-10 px-4 text-[13px]" onClick={onCreateCase}>
+          Start regiecasus
+          </PrimaryActionButton>
+        ) : null}
+        <RegieRailToggleButton
+          collapsed={railCollapsed}
+          onToggle={toggleRail}
+          testId="casussen-rail-toggle"
+        />
       </div>
     </div>
   );
@@ -810,7 +748,7 @@ export function WorkloadPage({
                 }}
                 icon={<Icon size={18} className="text-current" aria-hidden />}
                 metric={stripCounts[step.key]}
-                title={step.label}
+                title={step.key === "casus" ? (stripCounts.casus === 1 ? "Casus" : "Casussen") : step.label}
                 subStatusLines={[
                   <span
                     key={`${step.key}-pill`}
@@ -831,7 +769,7 @@ export function WorkloadPage({
   );
 
   return (
-    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-10">
+    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
       <div className="min-w-0 flex-1">
     <CarePageScaffold
       archetype="worklist"
@@ -843,12 +781,12 @@ export function WorkloadPage({
         <div className="space-y-2">
           <p className="font-semibold text-foreground">Hoe deze lijst werkt</p>
           <p>
-            Tabbladen en zoekveld bepalen welke dossiers je ziet. Sidebar Acties (taken) staat los van het tabblad Mijn werkvoorraad op
+            Tabbladen en zoekveld bepalen welke casussen je ziet. Sidebar Acties (taken) staat los van het tabblad Mijn werkvoorraad op
             deze pagina.
           </p>
-          <p>De ketenstrip telt dossiers per stap (na je filters). De werklijst toont de volgende best passende actie per casus.</p>
+          <p>De ketenstrip telt casussen per stap (na je filters). De werklijst toont de volgende best passende actie per casus.</p>
           <p className="text-muted-foreground">
-            Overzicht van je werkvoorraad per dossier — ketenstrip en filters bepalen wat je hier ziet.
+            Overzicht van je werkvoorraad per casus — ketenstrip en filters bepalen wat je hier ziet.
           </p>
         </div>
       }
@@ -881,32 +819,59 @@ export function WorkloadPage({
     >
       <CareSection testId="casussen-uitvoerlijst" aria-labelledby="casussen-werkvoorraad-heading">
         <CareSectionHeader
+          className="lg:flex-col lg:items-stretch"
           title={
-            <span id="casussen-werkvoorraad-heading" className="flex flex-wrap items-baseline gap-3">
-              <span>Werkvoorraad</span>
-              <span className="text-base font-medium tabular-nums text-muted-foreground">{filteredItems.length} casussen</span>
-            </span>
+            <span id="casussen-werkvoorraad-heading">Werkvoorraad</span>
           }
           meta={
             <div className="w-full min-w-0 space-y-2">
-              {workloadTabRow}
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredItems.length} casussen
+              </span>
               <CareSearchFiltersBar
                 className="px-0"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
-                searchPlaceholder="Zoek casussen, cliënten, aanbieders…"
+                searchPlaceholder="Zoek casussen, regio's, aanbieders…"
                 showSecondaryFilters={showSecondaryFilters}
                 onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                 secondaryFiltersLabel="Filters"
                 secondaryFilters={
-                  <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                    <label className="text-xs text-muted-foreground">
+                  <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Werkvoorraad-weergave
+                      <select
+                        aria-label="Werkvoorraad-weergave"
+                        value={focusChip}
+                        onChange={(event) => setFocusChip(event.target.value as FocusChip)}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="my-worklist">Mijn werkvoorraad ({tabCounts.myWorklist})</option>
+                        <option value="all">Alle casussen ({tabCounts.all})</option>
+                        <option value="pipeline">Wacht op actie ({tabCounts.pipeline})</option>
+                        <option value="critical">Kritiek ({tabCounts.critical})</option>
+                        <option value="recent">Recent bijgewerkt ({tabCounts.recent})</option>
+                      </select>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Lay-out
+                      <select
+                        aria-label="Lay-out"
+                        value={listLayout}
+                        onChange={(event) => setListLayout(event.target.value as "table" | "cards")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="table">Tabel (standaard)</option>
+                        <option value="cards">Kaarten (compact)</option>
+                      </select>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Stap
                       <select
                         aria-label="Stap in de keten"
                         value={selectedPhase}
                         onChange={(event) => setSelectedPhase(event.target.value as "all" | DecisionUiPhaseId)}
-                        className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle fases</option>
                         {phaseOptions.map((phase) => (
@@ -916,13 +881,13 @@ export function WorkloadPage({
                         ))}
                       </select>
                     </label>
-                    <label className="text-xs text-muted-foreground">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Urgentie
                       <select
                         aria-label="Urgentie"
                         value={selectedUrgency}
                         onChange={(event) => setSelectedUrgency(event.target.value)}
-                        className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle urgentie</option>
                         <option value="critical">Kritiek</option>
@@ -931,13 +896,13 @@ export function WorkloadPage({
                         <option value="stable">Laag</option>
                       </select>
                     </label>
-                    <label className="text-xs text-muted-foreground">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Regio
                       <select
                         aria-label="Regio"
                         value={selectedRegion}
                         onChange={(event) => setSelectedRegion(event.target.value)}
-                        className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         {regions.map((region) => (
                           <option key={region} value={region}>
@@ -946,13 +911,13 @@ export function WorkloadPage({
                         ))}
                       </select>
                     </label>
-                    <label className="text-xs text-muted-foreground">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Verantwoordelijke
                       <select
                         aria-label="Verantwoordelijke"
                         value={selectedOwner}
                         onChange={(event) => setSelectedOwner(event.target.value as "all" | "Gemeente" | "Zorgaanbieder" | "Systeem")}
-                        className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle verantwoordelijken</option>
                         <option value="Gemeente">Gemeente</option>
@@ -989,7 +954,7 @@ export function WorkloadPage({
           {!loading && !error && workflowCases.length === 0 && (
             <EmptyState
               title="Geen casussen."
-              copy={canCreateCase ? "Er zijn nog geen dossiers. Start een nieuwe casus via de knop rechtsboven." : "Pas filters aan."}
+              copy={canCreateCase ? "Er zijn nog geen casussen. Start een regietraject via de knop rechtsboven." : "Pas filters aan."}
             />
           )}
 
@@ -1221,29 +1186,38 @@ export function WorkloadPage({
     </CarePageScaffold>
       </div>
 
-      <aside
-        data-testid="casussen-right-rail"
-        className="hidden w-[300px] shrink-0 space-y-4 pt-1 xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
-        style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
-      >
-        <CasussenInsightsPanels
-          gemeenteDisplayName={gemeenteDisplayName}
-          filteredTotal={filteredItems.length}
-          attentionCount={attentionCount}
-          criticalCount={tabCounts.critical}
-          avgDaysInPhase={avgDaysInPhase}
-          riskSignalCount={riskSignalCount}
-          stripCounts={stripCounts}
-          onCriticalClick={() => setFocusChip("critical")}
-          onStripBucketClick={(key) => {
-            const step = STRIP_DEF.find((row) => row.key === key);
-            if (step) {
-              setSelectedPhase(step.filterPhase);
-              setFocusChip("all");
-            }
-          }}
+      {!railCollapsed && (
+        <aside
+          data-testid="casussen-right-rail"
+          className="hidden w-[300px] shrink-0 space-y-4 pt-1 xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
+          style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
+        >
+          <CasussenInsightsPanels
+            gemeenteDisplayName={gemeenteDisplayName}
+            filteredTotal={filteredItems.length}
+            attentionCount={attentionCount}
+            criticalCount={tabCounts.critical}
+            avgDaysInPhase={avgDaysInPhase}
+            riskSignalCount={riskSignalCount}
+            stripCounts={stripCounts}
+            onCriticalClick={() => setFocusChip("critical")}
+            onStripBucketClick={(key) => {
+              const step = STRIP_DEF.find((row) => row.key === key);
+              if (step) {
+                setSelectedPhase(step.filterPhase);
+                setFocusChip("all");
+              }
+            }}
+          />
+        </aside>
+      )}
+
+      {railCollapsed && (
+        <RegieRailEdgeTab
+          onExpand={() => setRailCollapsed(false)}
+          testId="casussen-rail-edge-tab"
         />
-      </aside>
+      )}
     </div>
   );
 }
@@ -1350,16 +1324,7 @@ function CasussenInsightsPanels({
         </ul>
       </section>
 
-      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Regie-notitie</p>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Leg een regieafspraak of aandachtspunt vast voor je team.
-        </p>
-        <Button variant="outline" className="mt-4 w-full gap-2 rounded-xl border-primary/40 text-primary" type="button">
-          <SquarePen size={16} aria-hidden />
-          Nieuwe notitie
-        </Button>
-      </section>
+      <RegieNotesPanel testId="casussen-notes-panel" />
     </>
   );
 }

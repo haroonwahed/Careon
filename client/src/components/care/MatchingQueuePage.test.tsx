@@ -114,7 +114,7 @@ describe("MatchingQueuePage", () => {
 
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Naar casussen" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Zoek casussen, cliënten, aanbieders/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Zoek casussen, regio's, aanbieders/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vergelijk aanbieders" })).toBeInTheDocument();
   });
 

@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 from .models import (
     CareCase, PlacementRequest, CareTask, CareSignal,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
@@ -488,7 +489,11 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'description': 'Aanvullende opmerkingen',
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, organization=None, **kwargs):
+        # `organization` scopes Regio/Voorkeursregio querysets to the requesting tenant
+        # (with NULL-org rows kept as a shared/system fallback). Passed by API views
+        # that have request context; safe default of None preserves legacy behaviour.
+        self._organization = organization
         super().__init__(*args, **kwargs)
 
         main_name = 'Woonvoorziening'
@@ -534,13 +539,34 @@ class CaseIntakeProcessForm(forms.ModelForm):
             name__in=subcategory_names,
         ).order_by('order', 'name')
 
-        selected_region_type = self.data.get('preferred_region_type') or self.initial.get('preferred_region_type')
-        if not selected_region_type:
-            self.initial['preferred_region_type'] = 'GEMEENTELIJK'
-        self.fields['preferred_region'].queryset = RegionalConfiguration.objects.filter(
-            status=RegionalConfiguration.Status.ACTIVE
-        ).order_by('region_type', 'region_name')
-        self.fields['regio'].queryset = self.fields['preferred_region'].queryset
+        # Resolve the region type the user is currently working with. Defaults to
+        # GEMEENTELIJK so the dropdown opens with municipality-level rows on first load.
+        selected_region_type = (
+            self.data.get('preferred_region_type')
+            or self.initial.get('preferred_region_type')
+            or 'GEMEENTELIJK'
+        )
+        if not self.initial.get('preferred_region_type'):
+            self.initial['preferred_region_type'] = selected_region_type
+
+        # Build the Regio queryset narrowed by:
+        #   (A) the selected region_type — eliminates same-name duplicates that only
+        #       differ by type (e.g. "Utrecht (gemeentelijk)" vs "Utrecht (regionaal)").
+        #   (B) the requesting tenant — eliminates cross-organization leakage when
+        #       multiple tenants seed their own copy of the same region. NULL-org rows
+        #       are retained as a shared/system fallback.
+        region_qs = RegionalConfiguration.objects.filter(
+            status=RegionalConfiguration.Status.ACTIVE,
+            region_type=selected_region_type,
+        )
+        if self._organization is not None:
+            region_qs = region_qs.filter(
+                Q(organization=self._organization) | Q(organization__isnull=True)
+            )
+        region_qs = region_qs.order_by('region_name')
+
+        self.fields['preferred_region'].queryset = region_qs
+        self.fields['regio'].queryset = region_qs
         self.fields['gemeente'].queryset = MunicipalityConfiguration.objects.filter(
             status=MunicipalityConfiguration.Status.ACTIVE
         ).order_by('municipality_name')

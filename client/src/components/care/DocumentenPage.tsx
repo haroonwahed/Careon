@@ -29,7 +29,6 @@ import { Button } from "../ui/button";
 import {
   CareAttentionBar,
   CareInfoPopover,
-  CareMetaChip,
   CarePageScaffold,
   CareSection,
   CareSectionBody,
@@ -38,7 +37,6 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  PrimaryActionButton,
 } from "./CareDesignPrimitives";
 import { useDocuments } from "../../hooks/useDocuments";
 import { tokens } from "../../design/tokens";
@@ -191,7 +189,7 @@ export function DocumentenPage() {
         <span className="inline-flex flex-wrap items-center gap-2">
           Documenten
           <CareInfoPopover ariaLabel="Uitleg documenten" testId="documenten-page-info">
-            <p className="text-muted-foreground">Zoek en beheer dossierdocumenten en koppelingen naar casussen.</p>
+            <p className="text-muted-foreground">Zoek en beheer documenten gekoppeld aan casussen.</p>
           </CareInfoPopover>
         </span>
       }
@@ -207,9 +205,9 @@ export function DocumentenPage() {
                 : `${activeCount} actieve documenten — controle nodig`
           }
           action={
-            <PrimaryActionButton onClick={() => setShowFilters((current) => !current)}>
-              Upload
-            </PrimaryActionButton>
+            <Button variant="outline" onClick={() => setShowFilters((current) => !current)}>
+              {showFilters ? "Verberg filters" : "Toon filters"}
+            </Button>
           }
         />
       }
@@ -222,67 +220,73 @@ export function DocumentenPage() {
       )}
       <CareSection>
         <CareSectionHeader
-          title="Werklijst"
-          meta={<CareMetaChip>{filteredDocuments.length} resultaten · {activeCount} actief · {linkedCount} gekoppeld · {recentCount} recent</CareMetaChip>}
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
+          meta={(
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredDocuments.length} resultaten · {activeCount} actief · {linkedCount} gekoppeld · {recentCount} recent
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoeken op document, casus ID of gebruiker..."
+                showSecondaryFilters={showFilters}
+                onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
+                secondaryFiltersLabel="Filters"
+                secondaryFilters={
+                  <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Type</label>
+                      <select
+                        value={typeFilter}
+                        onChange={(e) => setTypeFilter(e.target.value as DocumentType | "all")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alle types</option>
+                        <option value="intake">Intake</option>
+                        <option value="contract">Contract</option>
+                        <option value="rapport">Rapport</option>
+                        <option value="beoordeling">Aanbieder beoordeling</option>
+                        <option value="overig">Overig</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Gekoppeld aan</label>
+                      <select
+                        value={linkedToFilter}
+                        onChange={(e) => setLinkedToFilter(e.target.value as LinkedEntity | "all")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alles</option>
+                        <option value="casus">Casus</option>
+                        <option value="aanbieder">Aanbieder</option>
+                        <option value="gemeente">Gemeente</option>
+                        <option value="geen">Niet gekoppeld</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-xs font-medium text-muted-foreground">Status</label>
+                      <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as DocumentStatus | "all")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alle statussen</option>
+                        <option value="actief">Actief</option>
+                        <option value="gearchiveerd">Gearchiveerd</option>
+                      </select>
+                    </div>
+                  </div>
+                }
+              />
+            </div>
+          )}
         />
         <CareSectionBody className="space-y-4">
-        <CareSearchFiltersBar
-          className="px-0"
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoeken op document, casus ID of gebruiker..."
-          showSecondaryFilters={showFilters}
-          onToggleSecondaryFilters={() => setShowFilters((current) => !current)}
-          secondaryFiltersLabel="Filters"
-          secondaryFilters={
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Type</label>
-                <select
-                  value={typeFilter}
-                  onChange={(e) => setTypeFilter(e.target.value as DocumentType | "all")}
-                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                >
-                  <option value="all">Alle types</option>
-                  <option value="intake">Intake</option>
-                  <option value="contract">Contract</option>
-                  <option value="rapport">Rapport</option>
-                  <option value="beoordeling">Aanbieder beoordeling</option>
-                  <option value="overig">Overig</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Gekoppeld aan</label>
-                <select
-                  value={linkedToFilter}
-                  onChange={(e) => setLinkedToFilter(e.target.value as LinkedEntity | "all")}
-                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                >
-                  <option value="all">Alles</option>
-                  <option value="casus">Casus</option>
-                  <option value="aanbieder">Aanbieder</option>
-                  <option value="gemeente">Gemeente</option>
-                  <option value="geen">Niet gekoppeld</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">Status</label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value as DocumentStatus | "all")}
-                  className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                >
-                  <option value="all">Alle statussen</option>
-                  <option value="actief">Actief</option>
-                  <option value="gearchiveerd">Gearchiveerd</option>
-                </select>
-              </div>
-            </div>
-          }
-        />
-
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <div className={selectedDocument ? "xl:col-span-2" : "xl:col-span-3"}>
           <div className="panel-surface overflow-hidden">

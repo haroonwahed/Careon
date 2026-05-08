@@ -114,9 +114,12 @@ export function ProviderIntakeDashboard() {
 
   // Filter cases
   const filteredCases = allCases.filter(c => {
-    const matchesSearch = searchQuery === "" || 
-      c.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.id.toLowerCase().includes(searchQuery.toLowerCase());
+    // Provider-side search is intentionally limited to operational identifiers
+    // (casus-ID + regio) to reinforce need-to-know access. Names are never used
+    // as a search axis on the provider surface.
+    const matchesSearch = searchQuery === "" ||
+      c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.region.toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = statusFilter === "all" || c.status === statusFilter;
     const matchesUrgency = urgencyFilter === "all" || c.urgency === urgencyFilter;
@@ -159,10 +162,10 @@ export function ProviderIntakeDashboard() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-foreground mb-2">
-          Intake
+          Toegekende casussen
         </h1>
         <p className="text-muted-foreground">
-          Nieuwe en lopende casussen
+          Casussen waarvoor jouw organisatie regie heeft gekregen — toegang ontstaat na gemeentelijke validatie en blijft beperkt tot wat nodig is.
         </p>
       </div>
 
@@ -180,7 +183,7 @@ export function ProviderIntakeDashboard() {
             />
             <input
               type="text"
-              placeholder="Zoek op naam of casus-ID..."
+              placeholder="Zoek op casus-ID of regio…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 rounded-lg bg-muted/30 border border-muted-foreground/30 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
@@ -306,12 +309,12 @@ export function ProviderIntakeDashboard() {
                 <Target size={40} className="text-primary" />
               </div>
               <h3 className="text-xl font-bold text-foreground mb-2">
-                Geen casussen gevonden
+                Geen toegekende casussen
               </h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                {searchQuery || activeFiltersCount > 0 
+                {searchQuery || activeFiltersCount > 0
                   ? "Probeer je zoekopdracht of filters aan te passen."
-                  : "Er zijn momenteel geen casussen die aandacht vereisen. Goed bezig! 🎯"
+                  : "Je krijgt hier alleen casussen te zien waarvoor de gemeente jouw organisatie heeft uitgenodigd. Zodra een nieuwe casus wordt toegekend, verschijnt deze automatisch."
                 }
               </p>
               {(searchQuery || activeFiltersCount > 0) && (

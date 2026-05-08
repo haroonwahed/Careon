@@ -78,6 +78,6 @@ describe("ActiesPage", () => {
 
     expect(screen.getByText(/kritieke actie/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toon te laat" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Naar casussen" })).toBeInTheDocument();
   });
 });

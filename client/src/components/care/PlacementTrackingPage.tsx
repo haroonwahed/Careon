@@ -12,7 +12,11 @@ import {
   CareMetaChip,
   CarePageScaffold,
   CarePrimaryList,
+  CareSection,
+  CareSectionBody,
+  CareSectionHeader,
   CareSearchFiltersBar,
+  CareWorkListCard,
   CareWorkRow,
   EmptyState,
   ErrorState,
@@ -108,7 +112,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
           </CareInfoPopover>
         </span>
       }
-      subtitle="Plaatsing volgt pas nadat de aanbieder heeft geaccepteerd; daarna plan je intake en bewaak je doorlooptijd."
+      subtitle="Plaatsing volgt pas nadat de aanbieder heeft geaccepteerd; daarna plan je intake en volg je de doorlooptijd op."
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {onNavigateToMatching ? (
@@ -131,30 +135,14 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
           action={onNavigateToMatching ? <PrimaryActionButton onClick={onNavigateToMatching}>Bekijk matching</PrimaryActionButton> : undefined}
         />
       }
-      filters={
-        <CareSearchFiltersBar
-          tabs={
-            <CareFilterTabGroup aria-label="Plaatsing-status">
-              {(["te-bevestigen", "lopend", "afgerond"] as PlacementTab[]).map((tab) => (
-                <CareFilterTabButton key={tab} selected={activeTab === tab} onClick={() => setActiveTab(tab)}>
-                  {tabLabel[tab]} · {tabCounts[tab]}
-                </CareFilterTabButton>
-              ))}
-            </CareFilterTabGroup>
-          }
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek casus, provider of regio..."
-        />
-      }
     >
       <CareAttentionBar
         visible={ambiguousPlacementCount > 0}
         tone="info"
         message={
           ambiguousPlacementCount === 1
-            ? "1 casus heeft geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open het dossier voor de exacte tussenstap."
-            : `${ambiguousPlacementCount} casussen hebben geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open het dossier voor de exacte tussenstap.`
+            ? "1 casus heeft geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open de casus voor de exacte tussenstap."
+            : `${ambiguousPlacementCount} casussen hebben geen duidelijk placement-signaal (workflow/arrangement/placement-record) — open de casus voor de exacte tussenstap.`
         }
       />
       <CareAttentionBar
@@ -168,53 +156,94 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
         <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
       )}
 
-      {!loading && !error && visibleCases.length === 0 && (
-        <EmptyState
-          title="Geen plaatsingen in dit overzicht"
-          copy={emptyCopy[activeTab]}
-          action={<PrimaryActionButton onClick={() => onNavigateToMatching?.()}>Naar matching</PrimaryActionButton>}
-        />
-      )}
-
-      {!loading && !error && visibleCases.length > 0 && (
-        <CarePrimaryList>
-          {visibleCases.map((item) => {
-            const { actionLabel, actionVariant } = placementTrackingRowAction(item);
-            const ambiguous = placementTrackingSubstepAmbiguous(item);
-            return (
-            <CareWorkRow
-              key={item.id}
-              leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
-              title={formatClientReference(item.id)}
-              context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
-              status={<CareDominantStatus>{placementTrackingRowStatusLabel(item)}</CareDominantStatus>}
-              time={
-                <CareMetaChip>
-                  {item.daysInCurrentPhase}d in fase
-                </CareMetaChip>
-              }
-              contextInfo={
-                <>
-                  <CareMetaChip>Betrokkene: {maskParticipantIdentity(item.clientLabel || item.id)}</CareMetaChip>
-                  <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
-                  {ambiguous ? (
-                    <CareMetaChip title="Geen workflow/arrangement/placement-record in API — controleer in dossier">
-                      Status via dossier
-                    </CareMetaChip>
-                  ) : null}
-                </>
-              }
-              actionLabel={actionLabel}
-              actionVariant={actionVariant}
-              onOpen={() => onCaseClick(item.id)}
-              onAction={(event) => {
-                event.stopPropagation();
-                onCaseClick(item.id);
-              }}
-            />
-            );
-          })}
-        </CarePrimaryList>
+      {!loading && !error && (
+        <CareSection testId="plaatsingen-uitvoerlijst" aria-labelledby="plaatsingen-werkvoorraad-heading">
+          <CareSectionHeader
+            className="lg:flex-col lg:items-stretch"
+            title={<span id="plaatsingen-werkvoorraad-heading">Werkvoorraad</span>}
+            meta={
+              <div className="w-full min-w-0 space-y-2">
+                <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                  {visibleCases.length} plaatsingen
+                </span>
+                <CareSearchFiltersBar
+                  className="px-0"
+                  tabs={
+                    <CareFilterTabGroup aria-label="Plaatsing-status">
+                      {(["te-bevestigen", "lopend", "afgerond"] as PlacementTab[]).map((tab) => (
+                        <CareFilterTabButton key={tab} selected={activeTab === tab} onClick={() => setActiveTab(tab)}>
+                          {tabLabel[tab]} · {tabCounts[tab]}
+                        </CareFilterTabButton>
+                      ))}
+                    </CareFilterTabGroup>
+                  }
+                  searchValue={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Zoek casus, provider of regio..."
+                />
+              </div>
+            }
+          />
+          <CareSectionBody className="space-y-3">
+            {visibleCases.length === 0 ? (
+              <EmptyState
+                title="Geen plaatsingen in dit overzicht"
+                copy={emptyCopy[activeTab]}
+                action={<PrimaryActionButton onClick={() => onNavigateToMatching?.()}>Naar matching</PrimaryActionButton>}
+              />
+            ) : (
+              <CareWorkListCard className="overflow-x-auto"
+                header={(
+                  <div className="hidden min-w-[980px] gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
+                    <span>Fase</span>
+                    <span>Casus</span>
+                    <span>Status</span>
+                    <span>Tijd</span>
+                    <span>Context</span>
+                    <span>Volgende actie</span>
+                  </div>
+                )}
+              >
+                <div className="min-w-[980px] divide-y divide-border/45">
+                  <CarePrimaryList>
+                    {visibleCases.map((item) => {
+                      const { actionLabel, actionVariant } = placementTrackingRowAction(item);
+                      const ambiguous = placementTrackingSubstepAmbiguous(item);
+                      return (
+                        <CareWorkRow
+                          key={item.id}
+                          leading={<FlowPhaseBadge phaseId={normalizeBoardColumnToPhaseId(item.boardColumn)} />}
+                          title={formatClientReference(item.id)}
+                          context={`${item.id} · ${item.recommendedProviderName ?? "Nog niet gekozen"}`}
+                          status={<CareDominantStatus>{placementTrackingRowStatusLabel(item)}</CareDominantStatus>}
+                          time={<CareMetaChip>{item.daysInCurrentPhase}d in fase</CareMetaChip>}
+                          contextInfo={
+                            <>
+                              <CareMetaChip>Betrokkene: {maskParticipantIdentity(item.clientLabel || item.id)}</CareMetaChip>
+                              <CareMetaChip>{item.intakeDateLabel ?? "Intake volgt"}</CareMetaChip>
+                              {ambiguous ? (
+                                <CareMetaChip title="Geen workflow/arrangement/placement-record in API — controleer via casus">
+                                  Status via casus
+                                </CareMetaChip>
+                              ) : null}
+                            </>
+                          }
+                          actionLabel={actionLabel}
+                          actionVariant={actionVariant}
+                          onOpen={() => onCaseClick(item.id)}
+                          onAction={(event) => {
+                            event.stopPropagation();
+                            onCaseClick(item.id);
+                          }}
+                        />
+                      );
+                    })}
+                  </CarePrimaryList>
+                </div>
+              </CareWorkListCard>
+            )}
+          </CareSectionBody>
+        </CareSection>
       )}
 
       <CareContextHint

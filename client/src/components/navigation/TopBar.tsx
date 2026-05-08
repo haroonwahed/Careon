@@ -299,7 +299,7 @@ export function TopBar({
           <Input
             ref={searchInputRef}
             type="search"
-            placeholder="Zoek casussen, cliënten, aanbieders…"
+            placeholder="Zoek casussen, regio's, aanbieders…"
             value={searchQuery}
             onChange={handleSearchChange}
             className="bg-muted/20 pl-10 pr-[4.5rem] border-muted/30 focus:bg-muted/30"

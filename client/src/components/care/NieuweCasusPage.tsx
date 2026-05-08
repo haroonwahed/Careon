@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save } from "lucide-react";
+import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save, ShieldCheck } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
 import { Button } from "../ui/button";
@@ -82,6 +82,13 @@ type VisibilityRole = "gemeente" | "zorgaanbieder" | "regie";
 
 const baseFieldClass = "h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/50";
 const baseTextareaClass = "w-full rounded-2xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:border-primary/50";
+const SOURCE_REGISTRATION_OPTIONS: Option[] = [
+  { value: "gemeente_den_haag", label: "Gemeente Den Haag" },
+  { value: "jeugdplatform", label: "Jeugdplatform" },
+  { value: "veilig_thuis", label: "Veilig Thuis" },
+  { value: "zorgmail_intake", label: "Zorgmail Intake" },
+  { value: "handmatige_regiecasus", label: "Handmatige Regiecasus" },
+];
 
 interface NieuweCasusPageProps {
   onCancel?: () => void;
@@ -102,6 +109,7 @@ function FieldError({ message }: { message?: string | string[] }) {
 
 function SectionHeader({ step, title, copy }: { step: string; title: string; copy?: string }) {
   const [showCopy, setShowCopy] = useState(false);
+  const copyId = `nieuw-casus-${step}-copy`;
 
   return (
     <div className="mb-4 flex items-start gap-3">
@@ -117,6 +125,7 @@ function SectionHeader({ step, title, copy }: { step: string; title: string; cop
               onClick={() => setShowCopy((current) => !current)}
               className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
               aria-expanded={showCopy}
+              aria-controls={copyId}
             >
               <CircleHelp size={12} />
               Info
@@ -124,7 +133,7 @@ function SectionHeader({ step, title, copy }: { step: string; title: string; cop
             </button>
           )}
         </div>
-        {copy && showCopy && <p className="mt-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">{copy}</p>}
+        {copy && showCopy && <p id={copyId} className="mt-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">{copy}</p>}
       </div>
     </div>
   );
@@ -175,6 +184,12 @@ function addDays(date: Date, days: number): Date {
   const copy = new Date(date);
   copy.setDate(copy.getDate() + days);
   return copy;
+}
+
+function buildReference(prefix: "CO" | "TMP", now = new Date()): string {
+  const year = now.getFullYear();
+  const serial = String(now.getTime() % 10000).padStart(4, "0");
+  return `${prefix}-${year}-${serial}`;
 }
 
 function daysBetween(startDate: string, endDate: string): number | null {
@@ -256,12 +271,18 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [stepError, setStepError] = useState<string | null>(null);
   const [searchRadiusKm, setSearchRadiusKm] = useState<10 | 25 | 50>(25);
-  const [clientReference, setClientReference] = useState("");
-  const [participantLabel, setParticipantLabel] = useState("");
-  const [clientLookup, setClientLookup] = useState("");
+  const [sourceRegistration, setSourceRegistration] = useState("");
+  const [sourceReference, setSourceReference] = useState("");
+  const [careonReference] = useState(() => buildReference("CO"));
+  const [tempReference] = useState(() => buildReference("TMP"));
   const [previewPhase, setPreviewPhase] = useState<WorkflowPhase>("casus");
   const [previewRole, setPreviewRole] = useState<VisibilityRole>("gemeente");
   const [revealRequested, setRevealRequested] = useState(false);
+  const [showRevealPreview, setShowRevealPreview] = useState(false);
+  const [showControleDetails, setShowControleDetails] = useState(false);
+  const pageGuidanceId = "nieuw-casus-page-guidance";
+  const revealPreviewId = "nieuw-casus-reveal-preview";
+  const controleDetailsId = "nieuw-casus-controle-details";
 
   const stepMeta: Array<{ id: 1 | 2 | 3; title: string }> = [
     { id: 1, title: "Basis" },
@@ -315,12 +336,6 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         setFormState(withDefaults);
         setOptions(payload.options);
-        const normalizedTitle = (withDefaults.title ?? "").trim();
-        if (/CLI-\d{3,}/i.test(normalizedTitle)) {
-          setClientReference(normalizedTitle.toUpperCase());
-        } else if (normalizedTitle.length > 0) {
-          setParticipantLabel(normalizedTitle);
-        }
       } catch (error) {
         if (!ignore) {
           setLoadError(error instanceof Error ? error.message : "Kon het intakeformulier niet laden.");
@@ -449,6 +464,44 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     });
   };
 
+  const handleRadioKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    choices: Option[],
+    value: string,
+    onSelect: (nextValue: string) => void,
+  ) => {
+    const keys = ["ArrowDown", "ArrowRight", "ArrowUp", "ArrowLeft", "Home", "End"];
+    if (!keys.includes(event.key)) {
+      return;
+    }
+
+    event.preventDefault();
+    const currentIndex = choices.findIndex((choice) => choice.value === value);
+    if (currentIndex < 0 || choices.length === 0) {
+      return;
+    }
+
+    let nextIndex = currentIndex;
+    if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = choices.length - 1;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (currentIndex - 1 + choices.length) % choices.length;
+    } else {
+      nextIndex = (currentIndex + 1) % choices.length;
+    }
+
+    const nextValue = choices[nextIndex]?.value;
+    if (nextValue) {
+      onSelect(nextValue);
+      const container = event.currentTarget.closest('[role="radiogroup"]');
+      const safeValue = nextValue.replace(/"/g, '\\"');
+      const nextButton = container?.querySelector<HTMLButtonElement>(`button[data-radio-value="${safeValue}"]`);
+      nextButton?.focus();
+    }
+  };
+
   const toggleDiagnostiek = (value: string) => {
     setFormState((current) => {
       if (!current) {
@@ -475,16 +528,21 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     setLoadError(null);
 
     try {
-      const referenceToken = clientReference.trim().toUpperCase();
-      const fallbackPseudo = `CLI-${Date.now().toString().slice(-5)}`;
-      const resolvedReference = referenceToken || fallbackPseudo;
-      const submissionTitle = resolvedReference;
+      const isManualRegieCase = sourceRegistration === "handmatige_regiecasus";
+      const resolvedReference = isManualRegieCase ? tempReference : sourceReference.trim();
+      const sourceLabel = SOURCE_REGISTRATION_OPTIONS.find((option) => option.value === sourceRegistration)?.label ?? sourceRegistration;
+      const orchestrationNotice =
+        `Regiecasus: ${careonReference}\n` +
+        `Bronregistratie: ${sourceLabel || "onbekend"}\n` +
+        `Bronreferentie: ${resolvedReference || "onbekend"}\n` +
+        `Privacy: persoonsgegevens blijven in het bronsysteem tot formele koppeling/intake.`;
       const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", {
         ...formState,
-        title: submissionTitle,
+        title: careonReference,
+        assessment_summary: [formState.assessment_summary?.trim(), orchestrationNotice].filter(Boolean).join("\n\n"),
       });
       const createdCaseId = payload.case_id?.trim();
-      setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe casusdossier.`);
+      setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe regietraject.`);
       const target =
         payload.redirect_url ||
         (createdCaseId ? `/care/cases/${createdCaseId}/` : `${SPA_DASHBOARD_URL}?page=casussen`);
@@ -528,8 +586,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (step === 1) {
-      if (!clientReference.trim() || !formState.start_date || !formState.target_completion_date) {
-        setStepError("Vul cliëntreferentie, startdatum en deadline matching in voordat je doorgaat.");
+      const isManualRegieCase = sourceRegistration === "handmatige_regiecasus";
+      if (!sourceRegistration || (!isManualRegieCase && !sourceReference.trim()) || !formState.start_date || !formState.target_completion_date) {
+        setStepError("Kies bronregistratie, bronreferentie (of handmatige regiecasus), startdatum en deadline matching.");
         return false;
       }
     }
@@ -591,8 +650,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   }
 
   const canRevealIdentity = previewPhase === "plaatsing" || previewPhase === "intake";
-  const maskedIdentity = "M•••• A••••";
-  const revealedIdentity = participantLabel.trim() || "Mohammed Ait Tahar";
+  const maskedIdentity = `${careonReference} · afgeschermd`;
+  const revealedIdentity = sourceReference.trim() || tempReference;
+  const isManualRegieCase = sourceRegistration === "handmatige_regiecasus";
   const identityDisplay =
     previewRole === "zorgaanbieder" && !canRevealIdentity
       ? maskedIdentity
@@ -660,6 +720,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               onClick={() => setShowPageGuidance((current) => !current)}
               className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
               aria-expanded={showPageGuidance}
+              aria-controls={pageGuidanceId}
             >
               <CircleHelp size={12} />
               Toelichting
@@ -677,10 +738,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       </div>
 
       {showPageGuidance && (
-        <div className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
-          <p>Vul de kern in. Daarna gaat de casus door naar matching.</p>
-          <p>Velden met * zijn verplicht.</p>
-          <p className="text-foreground">Persoonsgegevens zijn alleen zichtbaar voor geautoriseerde rollen.</p>
+        <div id={pageGuidanceId} className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+          <p>Vul alleen kerngegevens in; details blijven in het bronsysteem.</p>
+          <p className="text-foreground">Velden met * zijn verplicht.</p>
         </div>
       )}
 
@@ -719,6 +779,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 <button
                   key={step.id}
                   type="button"
+                  aria-current={isActive ? "step" : undefined}
+                  aria-label={`Stap ${step.id}: ${step.title}`}
                   onClick={() => {
                     if (isCompleted || isActive) {
                       jumpToStep(step.id);
@@ -733,49 +795,100 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               );
             })}
           </div>
-          <div className="h-2 w-full rounded-full bg-muted/40">
+          <div
+            className="h-2 w-full rounded-full bg-muted/40"
+            role="progressbar"
+            aria-label="Voortgang nieuwe casus"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round((currentStep / 3) * 100)}
+            aria-valuetext={`Stap ${currentStep} van 3`}
+          >
             <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(currentStep / 3) * 100}%` }} />
           </div>
         </div>
 
         {currentStep === 1 && (
           <div className="space-y-3">
-            <SectionHeader step="1" title="Basisinformatie" copy="Leg de kern vast met minimale gegevensverwerking en pseudonieme coördinatie." />
+            {/*
+             * Privacy ribbon — surfaces the minimal-data principle BEFORE the user
+             * encounters any input field. Reinforces that CareOn is a regielaag
+             * (coördinatie + verwijzing) and not a centraal cliëntdossier.
+             */}
+            <div
+              role="note"
+              aria-label="Privacy en gegevensgebruik"
+              className="flex items-start gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-100"
+              data-testid="nieuwe-casus-privacy-ribbon"
+            >
+              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden />
+              <div className="space-y-1">
+                <p className="font-semibold text-emerald-50">CareOn registreert het minimum dat nodig is voor regie</p>
+                <p className="text-emerald-200/90">
+                  We koppelen een bronregistratie en bewaren alleen referentiegegevens, regio en zorgvraag. Persoonsgegevens
+                  blijven bij de bron — CareOn is een coördinatielaag, geen centraal cliëntdossier.
+                </p>
+              </div>
+            </div>
+            <SectionHeader step="1" title="Bronregistratie koppelen" copy="Start een regiecasus gekoppeld aan een bronregistratie zodat de keten hem kan volgen." />
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Cliëntreferentie *</label>
-              <input
-                value={clientReference}
-                onChange={(event) => setClientReference(event.target.value.toUpperCase())}
+              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bronregistratie *</label>
+              <select
+                value={sourceRegistration}
+                onChange={(event) => {
+                  setSourceRegistration(event.target.value);
+                  if (event.target.value === "handmatige_regiecasus") {
+                    setSourceReference("");
+                  }
+                }}
                 className={baseFieldClass}
-                placeholder="CLI-88314"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">Gebruik een opaque ID. Geen volledige naam als primaire identifier.</p>
-              <FieldError message={formErrors.title ?? formErrors.case_id} />
+                aria-label="Bronregistratie *"
+              >
+                <option value="">Selecteer bronregistratie</option>
+                {SOURCE_REGISTRATION_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Betrokkene</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoek bronreferentie {isManualRegieCase ? "" : "*"}</label>
                 <input
-                  value={participantLabel}
-                  onChange={(event) => setParticipantLabel(event.target.value)}
+                  value={sourceReference}
+                  onChange={(event) => setSourceReference(event.target.value)}
                   className={baseFieldClass}
-                  placeholder="M•••• A••••"
+                  placeholder="Bijv. ZS-2026-8821"
+                  disabled={isManualRegieCase}
+                  aria-label={`Zoek bronreferentie ${isManualRegieCase ? "" : "*"}`.trim()}
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Alleen voor gecontroleerde reveal in latere fase.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Alleen minimale referentie voor ketenregie.</p>
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoek cliënt of dossiernummer</label>
+                <label
+                  htmlFor="careon-casusreferentie"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground"
+                >
+                  CareOn casusreferentie
+                </label>
                 <input
-                  value={clientLookup}
-                  onChange={(event) => setClientLookup(event.target.value)}
+                  id="careon-casusreferentie"
+                  value={careonReference}
                   className={baseFieldClass}
-                  placeholder="Zoek op CLI-ID of dossiernummer"
+                  readOnly
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Zoekindex gebruikt alleen referentievelden, geen NAW-gegevens.</p>
+                <p className="mt-1 text-xs text-muted-foreground">Automatisch gegenereerd.</p>
               </div>
             </div>
+            {isManualRegieCase && (
+              <div className="rounded-2xl border border-cyan-500/25 bg-cyan-500/5 px-4 py-3 text-sm text-cyan-100">
+                <p className="font-semibold">Handmatige regiecasus zonder bronkoppeling</p>
+                <p className="mt-1 text-cyan-200/90">
+                  Tijdelijke referentie: <span className="font-semibold">{tempReference}</span>. Geen persoonsgegevens vereist; koppeling kan later.
+                </p>
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <DateField
@@ -808,9 +921,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Privacy by workflow</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Visibility notice</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Persoonsgegevens blijven afgeschermd tot formele koppeling. Backend-autorisatie bepaalt altijd veldzichtbaarheid.
+                Persoonsgegevens blijven in het bronsysteem tot formele koppeling of intake.
               </p>
             </div>
           </div>
@@ -867,9 +980,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                       <button
                         key={option.value}
                         type="button"
+                        data-radio-value={option.value}
                         onClick={() => updateField("complexity", option.value)}
+                        onKeyDown={(event) => handleRadioKeyDown(event, options.complexity, formState.complexity, (nextValue) => updateField("complexity", nextValue))}
                         role="radio"
                         aria-checked={active}
+                        tabIndex={active ? 0 : -1}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
                       >
                         {option.label}
@@ -890,9 +1006,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                       <button
                         key={option.value}
                         type="button"
+                        data-radio-value={option.value}
                         onClick={() => updateField("urgency", option.value)}
+                        onKeyDown={(event) => handleRadioKeyDown(event, options.urgency, formState.urgency, (nextValue) => updateField("urgency", nextValue))}
                         role="radio"
                         aria-checked={active}
+                        tabIndex={active ? 0 : -1}
                         className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
                       >
                         {option.label}
@@ -920,29 +1039,45 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zichtbaarheid per fase</p>
-              <div className="mt-3 overflow-x-auto">
-                <table className="w-full min-w-[720px] border-separate border-spacing-y-2 text-sm">
-                  <thead>
-                    <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
-                      <th className="px-3">Fase</th>
-                      <th className="px-3">Gemeente</th>
-                      <th className="px-3">Zorgaanbieder</th>
-                      <th className="px-3">Regie</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibilityRows.map((row) => (
-                      <tr key={row.phase} className="rounded-xl border border-border/60 bg-muted/20">
-                        <td className="px-3 py-2 font-semibold text-foreground">{row.label}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{row.gemeente}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{row.zorgaanbieder}</td>
-                        <td className="px-3 py-2 text-muted-foreground">{row.regie}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zichtbaarheid per fase</p>
+                <button
+                  type="button"
+                  onClick={() => setShowRevealPreview((current) => !current)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+                  aria-expanded={showRevealPreview}
+                  aria-controls={revealPreviewId}
+                >
+                  {showRevealPreview ? "Verberg details" : "Toon details"}
+                  <ChevronDown size={12} className={showRevealPreview ? "rotate-180 transition-transform" : "transition-transform"} />
+                </button>
               </div>
+              {showRevealPreview ? (
+                <div id={revealPreviewId} className="mt-3 overflow-x-auto">
+                  <table className="w-full min-w-[720px] border-separate border-spacing-y-2 text-sm">
+                    <thead>
+                      <tr className="text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                        <th className="px-3">Fase</th>
+                        <th className="px-3">Gemeente</th>
+                        <th className="px-3">Zorgaanbieder</th>
+                        <th className="px-3">Regie</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {visibilityRows.map((row) => (
+                        <tr key={row.phase} className="rounded-xl border border-border/60 bg-muted/20">
+                          <td className="px-3 py-2 font-semibold text-foreground">{row.label}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{row.gemeente}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{row.zorgaanbieder}</td>
+                          <td className="px-3 py-2 text-muted-foreground">{row.regie}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-muted-foreground">Standaard: alleen pseudonieme gegevens tot plaatsing/intake.</p>
+              )}
             </div>
           </div>
         )}
@@ -1073,20 +1208,38 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
-              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
-              <div className="grid gap-3 text-sm text-foreground md:grid-cols-2">
-                <p><span className="text-muted-foreground">Cliëntreferentie:</span> {clientReference || "-"}</p>
-                <p><span className="text-muted-foreground">Betrokkene:</span> {identityDisplay}</p>
-                <p><span className="text-muted-foreground">Start:</span> {formatDateDisplayValue(formState.start_date)}</p>
-                <p><span className="text-muted-foreground">Deadline:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
-                <p><span className="text-muted-foreground">Hoofd:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Sub:</span> {visibleSubcategories.find((o) => o.value === formState.care_category_sub)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Complex:</span> {options.complexity.find((o) => o.value === formState.complexity)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Urgentie:</span> {options.urgency.find((o) => o.value === formState.urgency)?.label ?? "-"}</p>
-                <p><span className="text-muted-foreground">Regio:</span> {(options.regio.find((o) => o.value === formState.regio)?.label ?? formState.regio) || "-"}</p>
-                <p><span className="text-muted-foreground">Radius:</span> {searchRadiusKm} km</p>
-                <p className="md:col-span-2"><span className="text-muted-foreground">Beperkingen:</span> {formState.diagnostiek.length > 0 ? formState.diagnostiek.map((value) => options.diagnostiek.find((o) => o.value === value)?.label ?? value).join(", ") : "Geen"}</p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
+                <button
+                  type="button"
+                  onClick={() => setShowControleDetails((current) => !current)}
+                  className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+                  aria-expanded={showControleDetails}
+                  aria-controls={controleDetailsId}
+                >
+                  {showControleDetails ? "Minder details" : "Toon details"}
+                  <ChevronDown size={12} className={showControleDetails ? "rotate-180 transition-transform" : "transition-transform"} />
+                </button>
               </div>
+              <div className="mt-3 grid gap-2 text-sm text-foreground md:grid-cols-2">
+                <p><span className="text-muted-foreground">Bronregistratie:</span> {SOURCE_REGISTRATION_OPTIONS.find((o) => o.value === sourceRegistration)?.label ?? "-"}</p>
+                <p><span className="text-muted-foreground">CareOn referentie:</span> {careonReference}</p>
+                <p><span className="text-muted-foreground">Regio:</span> {(options.regio.find((o) => o.value === formState.regio)?.label ?? formState.regio) || "-"}</p>
+                <p><span className="text-muted-foreground">Urgentie:</span> {options.urgency.find((o) => o.value === formState.urgency)?.label ?? "-"}</p>
+              </div>
+              {showControleDetails ? (
+                <div id={controleDetailsId} className="mt-3 grid gap-3 text-sm text-foreground md:grid-cols-2">
+                  <p><span className="text-muted-foreground">Bronreferentie:</span> {isManualRegieCase ? tempReference : (sourceReference || "-")}</p>
+                  <p><span className="text-muted-foreground">Gecontroleerde toegang:</span> {identityDisplay}</p>
+                  <p><span className="text-muted-foreground">Start:</span> {formatDateDisplayValue(formState.start_date)}</p>
+                  <p><span className="text-muted-foreground">Deadline:</span> {formatDateDisplayValue(formState.target_completion_date)}</p>
+                  <p><span className="text-muted-foreground">Hoofd:</span> {options.care_category_main.find((o) => o.value === formState.care_category_main)?.label ?? "-"}</p>
+                  <p><span className="text-muted-foreground">Sub:</span> {visibleSubcategories.find((o) => o.value === formState.care_category_sub)?.label ?? "-"}</p>
+                  <p><span className="text-muted-foreground">Complex:</span> {options.complexity.find((o) => o.value === formState.complexity)?.label ?? "-"}</p>
+                  <p><span className="text-muted-foreground">Radius:</span> {searchRadiusKm} km</p>
+                  <p className="md:col-span-2"><span className="text-muted-foreground">Beperkingen:</span> {formState.diagnostiek.length > 0 ? formState.diagnostiek.map((value) => options.diagnostiek.find((o) => o.value === value)?.label ?? value).join(", ") : "Geen"}</p>
+                </div>
+              ) : null}
             </div>
           </div>
         )}

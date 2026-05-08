@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { NieuweCasusPage } from "./NieuweCasusPage";
@@ -109,35 +109,63 @@ describe("NieuweCasusPage", () => {
 
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Toelichting" }));
-    expect(screen.getByText("Persoonsgegevens zijn alleen zichtbaar voor geautoriseerde rollen.")).toBeInTheDocument();
+    expect(screen.getByText("Vul alleen kerngegevens in; details blijven in het bronsysteem.")).toBeInTheDocument();
+    // Privacy framing was promoted to a dedicated ribbon at the top of step 1
+    // so the user encounters it before any input field.
+    const privacyRibbon = screen.getByTestId("nieuwe-casus-privacy-ribbon");
+    expect(privacyRibbon).toHaveTextContent(/CareOn registreert het minimum dat nodig is voor regie/i);
+    expect(privacyRibbon).toHaveTextContent(/Persoonsgegevens blijven bij de bron/i);
     await user.click(screen.getByRole("button", { name: "Info" }));
     expect(
-      screen.getByText("Leg de kern vast met minimale gegevensverwerking en pseudonieme coördinatie."),
+      screen.getByText("Start een regiecasus gekoppeld aan een bronregistratie zodat de keten hem kan volgen."),
     ).toBeInTheDocument();
   });
 
-  it("requires a client reference before advancing the intake flow", async () => {
+  it("requires a source registration before advancing the intake flow", async () => {
     const user = userEvent.setup();
     render(<NieuweCasusPage />);
 
     const nextButton = await screen.findByRole("button", { name: "Volgende" });
     await user.click(nextButton);
     expect(
-      screen.getByText("Vul cliëntreferentie, startdatum en deadline matching in voordat je doorgaat."),
+      screen.getByText("Kies bronregistratie, bronreferentie (of handmatige regiecasus), startdatum en deadline matching."),
     ).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText("CLI-88314"), "CLI-12345");
+    await user.selectOptions(screen.getByLabelText("Bronregistratie *"), "jeugdplatform");
+    await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
     await user.click(screen.getByRole("button", { name: "Volgende" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
   });
 
-  it("posts the opaque client reference on submit", async () => {
+  it("supports keyboard navigation for choice groups and disclosure controls", async () => {
+    const user = userEvent.setup();
+    render(<NieuweCasusPage />);
+
+    expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
+    await user.selectOptions(await screen.findByLabelText("Bronregistratie *"), "jeugdplatform");
+    await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
+    await user.click(screen.getByRole("button", { name: "Volgende" }));
+
+    const complexityGroup = screen.getByRole("radiogroup", { name: "Complexiteit" });
+    const mediumComplexity = within(complexityGroup).getByRole("radio", { name: "Midden" });
+    mediumComplexity.focus();
+    await user.keyboard("{ArrowRight}");
+    expect(within(complexityGroup).getByRole("radio", { name: "Hoog" })).toHaveAttribute("aria-checked", "true");
+
+    const guidanceToggle = screen.getByRole("button", { name: "Toelichting" });
+    expect(guidanceToggle).toHaveAttribute("aria-controls", "nieuw-casus-page-guidance");
+    await user.click(guidanceToggle);
+    expect(screen.getByText("Vul alleen kerngegevens in; details blijven in het bronsysteem.")).toBeVisible();
+  });
+
+  it("posts the generated careon reference on submit", async () => {
     const user = userEvent.setup();
     mockGet.mockResolvedValueOnce(makeReadyIntakeFormPayload());
     render(<NieuweCasusPage />);
 
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
-    await user.type(screen.getByPlaceholderText("CLI-88314"), "CLI-12345");
+    await user.selectOptions(screen.getByLabelText("Bronregistratie *"), "jeugdplatform");
+    await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
     await user.click(await screen.findByRole("button", { name: "Volgende" }));
     await user.click(await screen.findByRole("button", { name: "Volgende" }));
     await user.click(screen.getByRole("button", { name: "Casus aanmaken" }));
@@ -145,7 +173,7 @@ describe("NieuweCasusPage", () => {
     expect(mockPost).toHaveBeenCalledWith(
       "/care/api/cases/intake-create/",
       expect.objectContaining({
-        title: "CLI-12345",
+        title: expect.stringMatching(/^CO-\d{4}-\d{4}$/),
       }),
     );
   });

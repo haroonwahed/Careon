@@ -9,7 +9,6 @@ import {
   SelectValue,
 } from "../ui/select";
 import { cn } from "../ui/utils";
-import { tokens } from "../../design/tokens";
 import { useTasks, type SpaTask } from "../../hooks/useTasks";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import {
@@ -24,8 +23,6 @@ import {
 import {
   CareAttentionBar,
   CareDominantStatus,
-  CareFilterTabButton,
-  CareFilterTabGroup,
   CareMetaChip,
   CareMetricBadge,
   CarePageScaffold,
@@ -34,10 +31,12 @@ import {
   CareSectionBody,
   CareSectionHeader,
   CareSearchFiltersBar,
+  CareWorkListCard,
   CareWorkRow,
   EmptyState,
   ErrorState,
   LoadingState,
+  PrimaryActionButton,
 } from "./CareDesignPrimitives";
 import { CareKPICard } from "./CareKPICard";
 
@@ -299,56 +298,6 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
   const selectTriggerClass =
     "h-10 border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30";
 
-  const brandAccent = tokens.colors.casussenAccent;
-  const surfaceRaised = tokens.colors.casussenSurfaceRaised;
-
-  const actiesTabRow = (
-    <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between lg:gap-3">
-      <CareFilterTabGroup
-        aria-label="Actieweergave"
-        className="min-w-0 flex-1 justify-start overflow-x-auto border-border/60 p-1 pb-1 shadow-sm"
-        style={{ backgroundColor: surfaceRaised }}
-      >
-        <CareFilterTabButton selected={listTab === "mine"} accentSelected={listTab === "mine"} accentHex={brandAccent} onClick={() => setListTab("mine")}>
-          Mijn acties
-        </CareFilterTabButton>
-        <CareFilterTabButton
-          selected={listTab === "waiting"}
-          accentSelected={listTab === "waiting"}
-          accentHex={brandAccent}
-          onClick={() => setListTab("waiting")}
-        >
-          Wacht op mij
-        </CareFilterTabButton>
-        <CareFilterTabButton selected={listTab === "all"} accentSelected={listTab === "all"} accentHex={brandAccent} onClick={() => setListTab("all")}>
-          Alle acties
-        </CareFilterTabButton>
-      </CareFilterTabGroup>
-    </div>
-  );
-
-  const actiesSortRightAction = (
-    <div className="flex items-center gap-2">
-      <span className="hidden text-[13px] text-muted-foreground sm:inline">Sorteren op</span>
-      <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-        <SelectTrigger className={cn("h-10 min-w-[10.5rem]", selectTriggerClass)}>
-          <SelectValue placeholder="Sorteren" />
-        </SelectTrigger>
-        <SelectContent className="border-border bg-card text-foreground">
-          <SelectItem value="urgency" className="text-foreground focus:bg-muted">
-            Urgentie
-          </SelectItem>
-          <SelectItem value="due" className="text-foreground focus:bg-muted">
-            Vervaldatum
-          </SelectItem>
-          <SelectItem value="case" className="text-foreground focus:bg-muted">
-            Casus ID
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
-  );
-
   const kpiStrip = (
     <div className="grid gap-3 px-1 sm:grid-cols-2 xl:grid-cols-4">
       <CareKPICard
@@ -393,9 +342,9 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
       actions={
         <div className="flex flex-wrap items-center gap-2">
           {onNavigateToCasussen ? (
-            <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={onNavigateToCasussen}>
-              Open casussen
-            </Button>
+            <PrimaryActionButton type="button" className="rounded-xl px-4 font-semibold" onClick={onNavigateToCasussen}>
+              Naar casussen
+            </PrimaryActionButton>
           ) : null}
           <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={() => refetch()}>
             Ververs
@@ -421,17 +370,15 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
     >
       <CareSection testId="acties-uitvoerlijst" aria-labelledby="acties-werkvoorraad-heading">
         <CareSectionHeader
+          className="lg:flex-col lg:items-stretch"
           title={
-            <span id="acties-werkvoorraad-heading" className="flex flex-wrap items-baseline gap-3">
-              <span>Werkvoorraad</span>
-              <span className="text-base font-medium tabular-nums text-muted-foreground">
-                {loading ? "…" : `${sortedTasks.length} acties`}
-              </span>
-            </span>
+            <span id="acties-werkvoorraad-heading">Werkvoorraad</span>
           }
           meta={
             <div className="w-full min-w-0 space-y-2">
-              {actiesTabRow}
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {loading ? "…" : `${sortedTasks.length} acties`}
+              </span>
               <CareSearchFiltersBar
                 className="px-0"
                 searchValue={searchQuery}
@@ -453,6 +400,34 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
                       >
                         Wissen
                       </button>
+                    </div>
+                    <div className="grid items-end gap-2 md:grid-cols-2">
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className="text-[11px] font-medium text-muted-foreground">Weergave</span>
+                        <Select value={listTab} onValueChange={(v) => setListTab(v as ListTab)}>
+                          <SelectTrigger aria-label="Weergave" className={cn("h-10", selectTriggerClass)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-card text-foreground">
+                            <SelectItem value="mine">Mijn acties</SelectItem>
+                            <SelectItem value="waiting">Wacht op mij</SelectItem>
+                            <SelectItem value="all">Alle acties</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
+                      <label className="flex min-w-0 flex-col gap-1">
+                        <span className="text-[11px] font-medium text-muted-foreground">Sorteren op</span>
+                        <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+                          <SelectTrigger aria-label="Sorteren op" className={cn("h-10", selectTriggerClass)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="border-border bg-card text-foreground">
+                            <SelectItem value="urgency">Urgentie</SelectItem>
+                            <SelectItem value="due">Vervaldatum</SelectItem>
+                            <SelectItem value="case">Casus ID</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </label>
                     </div>
                     <div className="space-y-2">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie</p>
@@ -501,7 +476,6 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
                     </label>
                   </div>
                 }
-                rightAction={actiesSortRightAction}
               />
             </div>
           }
@@ -518,56 +492,71 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
               />
             )}
             {!loading && !error && sortedTasks.length > 0 && (
-              <CarePrimaryList>
-                {sortedTasks.map((task) => {
-                  const p = normalizeTaskPriority(task.priority);
-                  const ui = PRIORITY_UI[p];
-                  const casRef = formatCasReference(task.linkedCaseId);
-                  return (
-                    <CareWorkRow
-                      key={task.id}
-                      leading={priorityLeading(task)}
-                      title={task.title}
-                      context={
-                        <>
-                          <CareMetaChip>{casRef}</CareMetaChip>
-                          <CareMetaChip>{task.caseTitle?.trim() ? task.caseTitle : "—"}</CareMetaChip>
-                        </>
-                      }
-                      status={
-                        <CareDominantStatus className={ui.chipClass}>{ui.label}</CareDominantStatus>
-                      }
-                      time={
-                        <CareMetaChip>
-                          <Clock size={12} aria-hidden />
-                          {formatDeadlinePresent(task)}
-                        </CareMetaChip>
-                      }
-                      contextInfo={
-                        task.assignedTo ? (
-                          <CareMetaChip title={task.assignedTo}>@ {task.assignedTo}</CareMetaChip>
-                        ) : undefined
-                      }
-                      actionLabel={task.actionStatus === "overdue" ? "Open casus nu" : "Bekijk actie"}
-                      actionVariant={
-                        task.actionStatus === "overdue" || task.actionStatus === "today" ? "primary" : "ghost"
-                      }
-                      onOpen={() => onCaseClick(task.linkedCaseId)}
-                      onAction={(event: MouseEvent<HTMLButtonElement>) => {
-                        event.stopPropagation();
-                        onCaseClick(task.linkedCaseId);
-                      }}
-                      accentTone={
-                        task.actionStatus === "overdue"
-                          ? "critical"
-                          : task.actionStatus === "today"
-                            ? "warning"
-                            : "neutral"
-                      }
-                    />
-                  );
-                })}
-              </CarePrimaryList>
+              <CareWorkListCard
+                header={(
+                  <div className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
+                    <span>Prioriteit</span>
+                    <span>Taak</span>
+                    <span>Casus</span>
+                    <span>Verval</span>
+                    <span>Eigenaar</span>
+                    <span>Volgende actie</span>
+                  </div>
+                )}
+              >
+                <div className="divide-y divide-border/45">
+                  <CarePrimaryList>
+                    {sortedTasks.map((task) => {
+                      const p = normalizeTaskPriority(task.priority);
+                      const ui = PRIORITY_UI[p];
+                      const casRef = formatCasReference(task.linkedCaseId);
+                      return (
+                        <CareWorkRow
+                          key={task.id}
+                          leading={priorityLeading(task)}
+                          title={task.title}
+                          context={
+                            <>
+                              <CareMetaChip>{casRef}</CareMetaChip>
+                              <CareMetaChip>{task.caseTitle?.trim() ? task.caseTitle : "—"}</CareMetaChip>
+                            </>
+                          }
+                          status={
+                            <CareDominantStatus className={ui.chipClass}>{ui.label}</CareDominantStatus>
+                          }
+                          time={
+                            <CareMetaChip>
+                              <Clock size={12} aria-hidden />
+                              {formatDeadlinePresent(task)}
+                            </CareMetaChip>
+                          }
+                          contextInfo={
+                            task.assignedTo ? (
+                              <CareMetaChip title={task.assignedTo}>@ {task.assignedTo}</CareMetaChip>
+                            ) : undefined
+                          }
+                          actionLabel={task.actionStatus === "overdue" ? "Open casus nu" : "Bekijk actie"}
+                          actionVariant={
+                            task.actionStatus === "overdue" || task.actionStatus === "today" ? "primary" : "ghost"
+                          }
+                          onOpen={() => onCaseClick(task.linkedCaseId)}
+                          onAction={(event: MouseEvent<HTMLButtonElement>) => {
+                            event.stopPropagation();
+                            onCaseClick(task.linkedCaseId);
+                          }}
+                          accentTone={
+                            task.actionStatus === "overdue"
+                              ? "critical"
+                              : task.actionStatus === "today"
+                                ? "warning"
+                                : "neutral"
+                          }
+                        />
+                      );
+                    })}
+                  </CarePrimaryList>
+                </div>
+              </CareWorkListCard>
             )}
             {!loading && !error && sortedTasks.length === 0 && (
               <EmptyState
@@ -579,15 +568,14 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
                 }
                 action={
                   onNavigateToCasussen ? (
-                    <Button
+                    <PrimaryActionButton
                       type="button"
-                      variant="outline"
                       className="mt-1 rounded-xl px-4 font-semibold"
                       onClick={onNavigateToCasussen}
                       data-testid="acties-empty-open-casussen"
                     >
                       Open casussen
-                    </Button>
+                    </PrimaryActionButton>
                   ) : undefined
                 }
               />

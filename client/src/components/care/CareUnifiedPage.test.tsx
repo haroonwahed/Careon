@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { CARE_UNIFIED_PAGE_STACK, CareListRow, CarePageTemplate, CareWorkRow } from "./CareUnifiedPage";
 
@@ -58,10 +58,14 @@ describe("CareWorkRow / CareListRow", () => {
         onAction={vi.fn()}
       />,
     );
+    const row = document.querySelector("[data-care-work-row]");
     expect(screen.getByTestId("lead")).toBeInTheDocument();
     expect(screen.getByText("Titel")).toBeInTheDocument();
     expect(screen.getAllByTestId("st")).toHaveLength(2);
     expect(screen.getByText("Actie →").closest("button")).toBeTruthy();
+    expect(row).toBeTruthy();
+    expect(row).not.toHaveAttribute("role");
+    expect(within(row as HTMLElement).getAllByRole("button")).toHaveLength(2);
   });
 
   it("stops propagation on CTA so row handler is not double-fired from button", () => {

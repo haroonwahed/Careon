@@ -29,23 +29,23 @@ const severityGroups: SeverityGroup[] = [
   {
     key: "critical",
     title: "Critisch",
-    rowClass: "border-red-border bg-red-light/52 hover:border-red-base/40",
-    badgeClass: "border-red-border bg-red-light text-red-base",
-    icon: <AlertTriangle size={14} className="text-red-base" />,
+    rowClass: "border-destructive/30 bg-destructive/10 hover:border-destructive/50",
+    badgeClass: "border-destructive/30 bg-destructive/10 text-destructive",
+    icon: <AlertTriangle size={14} className="text-destructive" />,
   },
   {
     key: "warning",
     title: "Actie vereist",
-    rowClass: "border-yellow-border bg-yellow-light/58 hover:border-yellow-base/45",
-    badgeClass: "border-yellow-border bg-yellow-light text-yellow-base",
-    icon: <Clock size={14} className="text-yellow-base" />,
+    rowClass: "border-amber-500/30 bg-amber-500/10 hover:border-amber-400/45",
+    badgeClass: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    icon: <Clock size={14} className="text-amber-200" />,
   },
   {
     key: "stable",
     title: "Stabiel",
-    rowClass: "border-green-border bg-green-light/45 hover:border-green-base/45",
-    badgeClass: "border-green-border bg-green-light text-green-base",
-    icon: <CheckCircle2 size={14} className="text-green-base" />,
+    rowClass: "border-emerald-500/30 bg-emerald-500/10 hover:border-emerald-400/45",
+    badgeClass: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    icon: <CheckCircle2 size={14} className="text-emerald-200" />,
   },
 ];
 
@@ -90,18 +90,11 @@ export function ActionPanel({ items }: ActionPanelProps) {
 
             <div className="space-y-2">
               {groupItems.map((item) => (
-                <div
+                <button
                   key={item.key}
-                  role="button"
-                  tabIndex={0}
+                  type="button"
                   onClick={item.onSelect}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter" || event.key === " ") {
-                      event.preventDefault();
-                      item.onSelect();
-                    }
-                  }}
-                  className={`flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${group.rowClass}`}
+                  className={`flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${group.rowClass}`}
                 >
                   <div className="min-w-0 space-y-1">
                     <p className="text-sm font-semibold text-foreground">{item.title}</p>
@@ -114,19 +107,12 @@ export function ActionPanel({ items }: ActionPanelProps) {
                     <span className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${group.badgeClass}`}>
                       {item.count}
                     </span>
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        item.onSelect();
-                      }}
-                      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors hover:bg-primary hover:text-white"
-                    >
+                    <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-1 text-[11px] font-semibold text-primary transition-colors">
                       {item.ctaLabel}
                       <ArrowRight size={12} />
-                    </button>
+                    </span>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           </div>

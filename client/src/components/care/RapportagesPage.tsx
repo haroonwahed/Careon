@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
-import { ChevronDown, Download, Eye, FileBarChart2, Filter, Search, TrendingUp, CalendarClock, ShieldCheck } from "lucide-react";
+import { Download, Eye, FileBarChart2, TrendingUp, CalendarClock, ShieldCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { toast } from "sonner@2.0.3";
 import { tokens } from "../../design/tokens";
-import { CareAttentionBar, CareInfoPopover, CarePageScaffold } from "./CareDesignPrimitives";
+import { CareAttentionBar, CareInfoPopover, CarePageScaffold, CareSearchFiltersBar, CareSection, CareSectionBody, CareSectionHeader } from "./CareDesignPrimitives";
 
 type ReportCategory = "doorstroom" | "kwaliteit" | "compliance";
 
@@ -205,7 +205,7 @@ export function RapportagesPage() {
         <span className="inline-flex flex-wrap items-center gap-2">
           Rapportages
           <CareInfoPopover ariaLabel="Uitleg rapportages" testId="rapportages-page-info">
-            <p className="text-muted-foreground">Genereer stuurinformatie voor doorstroom, kwaliteit en compliance.</p>
+            <p className="text-muted-foreground">Stuurinformatie voor doorstroom, kwaliteit en compliance — automatisch klaargezet.</p>
           </CareInfoPopover>
         </span>
       }
@@ -257,38 +257,43 @@ export function RapportagesPage() {
           </div>
         </div>
       }
-      filters={
-        <section className="rounded-xl border border-border/70 bg-card/45 p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Zoek rapportage..."
-                className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm text-foreground"
+    >
+      <CareSection>
+        <CareSectionHeader
+          className="lg:flex-col lg:items-stretch"
+          title="Werkvoorraad"
+          meta={(
+            <div className="w-full min-w-0 space-y-2">
+              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                {filteredReports.length} rapportages
+              </span>
+              <CareSearchFiltersBar
+                className="px-0"
+                searchValue={searchQuery}
+                onSearchChange={setSearchQuery}
+                searchPlaceholder="Zoek rapportage..."
+                secondaryFilters={(
+                  <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Categorie
+                      <select
+                        value={selectedCategory}
+                        onChange={(event) => setSelectedCategory(event.target.value as ReportCategory | "all")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alle categorieen</option>
+                        <option value="doorstroom">Doorstroom</option>
+                        <option value="kwaliteit">Kwaliteit</option>
+                        <option value="compliance">Compliance</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
               />
             </div>
-            <div className="flex items-center gap-2">
-              <Filter size={15} className="text-muted-foreground" />
-              <div className="relative">
-                <select
-                  value={selectedCategory}
-                  onChange={(event) => setSelectedCategory(event.target.value as ReportCategory | "all")}
-                  className="h-10 appearance-none rounded-xl border border-border bg-card pl-3 pr-8 text-sm text-foreground"
-                >
-                  <option value="all">Alle categorieën</option>
-                  <option value="doorstroom">Doorstroom</option>
-                  <option value="kwaliteit">Kwaliteit</option>
-                  <option value="compliance">Compliance</option>
-                </select>
-                <ChevronDown size={14} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              </div>
-            </div>
-          </div>
-        </section>
-      }
-    >
+          )}
+        />
+        <CareSectionBody>
       <section className="grid gap-4 xl:grid-cols-3">
         {filteredReports.map((report) => (
           <article key={report.id} className="rounded-xl border border-border/70 bg-card/55 p-4">
@@ -386,6 +391,8 @@ export function RapportagesPage() {
           Geen rapportages gevonden voor de huidige filters.
         </div>
       )}
+        </CareSectionBody>
+      </CareSection>
 
       <section className="rounded-xl border border-border/70 bg-card/55 p-4">
         <div className="mb-3 flex items-center gap-2">

@@ -10,7 +10,6 @@ import {
   Home,
   PanelRight,
   RefreshCw,
-  SquarePen,
   UserCheck,
   Users,
 } from "lucide-react";
@@ -42,6 +41,9 @@ import {
 } from "./CareDesignPrimitives";
 import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { useRailCollapsed } from "../../hooks/useRailCollapsed";
+import { RegieNotesPanel } from "./RegieNotesPanel";
+import { RegieRailEdgeTab, RegieRailToggleButton } from "./RegieRailControls";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import type {
@@ -68,6 +70,7 @@ import {
   emitRegiekamerNbaEvent,
   shouldEmitRegiekamerNbaShown,
 } from "../../lib/regiekamerNbaInstrumentation";
+import { setCasussenPreferredFocus } from "../../lib/casussenNavigation";
 import {
   DECISION_UI_PHASE_IDS,
   DECISION_UI_PHASE_LABELS,
@@ -622,6 +625,7 @@ export function SystemAwarenessPage({
   const [ownershipFilter, setOwnershipFilter] = useState<OwnershipFilter>(initialFromUrl.ownershipFilter);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const [railSheetOpen, setRailSheetOpen] = useState(false);
+  const { collapsed: railCollapsed, toggle: toggleRail, setCollapsed: setRailCollapsed } = useRailCollapsed();
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -974,8 +978,14 @@ export function SystemAwarenessPage({
         reasonCount: regiekamerNba.reasons.length,
       }),
     );
-    runNbaAction(regiekamerNba.primaryAction.actionKey);
-  }, [regiekamerNba, runNbaAction, uiMode]);
+    // Honest navigation: link copy ("Bekijk kritieke casussen" / "Open werkvoorraad")
+    // promises a destination, not an in-page filter. Hand a one-shot focus hint to the
+    // worklist for crisis modes so the destination opens pre-filtered to critical cases.
+    if (uiMode === "crisis") {
+      setCasussenPreferredFocus("critical");
+    }
+    onAppNavigate?.("/casussen");
+  }, [regiekamerNba, onAppNavigate, uiMode]);
 
   useEffect(() => {
     if (!hasActiveData) {
@@ -1015,7 +1025,7 @@ export function SystemAwarenessPage({
   };
 
   return (
-    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-10">
+    <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
       <div className="min-w-0 flex-1">
         <CarePageScaffold
           archetype="decision"
@@ -1042,10 +1052,20 @@ export function SystemAwarenessPage({
                     Wis filters
                   </Button>
                 )}
+                {canCreateCase && onCreateCase && hasActiveData ? (
+                  <PrimaryActionButton onClick={onCreateCase}>
+                    Start regiecasus
+                  </PrimaryActionButton>
+                ) : null}
                 <Button variant="outline" onClick={refetch} className="gap-2">
                   <RefreshCw size={14} />
                   Ververs
                 </Button>
+                <RegieRailToggleButton
+                  collapsed={railCollapsed}
+                  onToggle={toggleRail}
+                  testId="regiekamer-rail-toggle"
+                />
               </div>
               {lastUpdateLabel ? (
                 <p className="text-xs text-muted-foreground">{lastUpdateLabel}</p>
@@ -1138,7 +1158,13 @@ export function SystemAwarenessPage({
                   type="button"
                   variant="ghost"
                   className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary"
-                  onClick={() => onAppNavigate?.("/casussen")}
+                  onClick={() => {
+                    // Distinct from "Bekijk kritieke casussen" (critical-only) and from a
+                    // plain /casussen entry: hand off `pipeline` so the worklist opens on
+                    // casussen die in de stroom zitten (gemeentelijke aandacht of bij aanbieder).
+                    setCasussenPreferredFocus("pipeline");
+                    onAppNavigate?.("/casussen");
+                  }}
                   data-testid="regiekamer-doorstroom-open-werkvoorraad"
                 >
                   Bekijk gehele stroom
@@ -1205,14 +1231,14 @@ export function SystemAwarenessPage({
           title="Geen actieve casussen."
           copy={
             canCreateCase && onCreateCase
-              ? "Open de werkvoorraad voor bestaande dossiers of maak een nieuwe casus aan."
-              : "Open de werkvoorraad voor bestaande dossiers of wacht op nieuwe casussen."
+              ? "Open de werkvoorraad voor lopende casussen of start een nieuw regietraject."
+              : "Open de werkvoorraad voor lopende casussen of wacht op nieuwe casussen."
           }
           action={
             canCreateCase && onCreateCase && onAppNavigate ? (
               <div className="flex flex-wrap items-center gap-2">
                 <PrimaryActionButton type="button" onClick={onCreateCase}>
-                  Nieuwe casus
+                  Start regiecasus
                 </PrimaryActionButton>
                 <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
                   Open casussen
@@ -1220,7 +1246,7 @@ export function SystemAwarenessPage({
               </div>
             ) : canCreateCase && onCreateCase ? (
               <PrimaryActionButton type="button" onClick={onCreateCase}>
-                Nieuwe casus
+                Start regiecasus
               </PrimaryActionButton>
             ) : onAppNavigate ? (
               <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
@@ -1246,59 +1272,58 @@ export function SystemAwarenessPage({
       {!loading && !error && visibleItems.length > 0 && (
         <CareSection testId="regiekamer-uitvoerlijst" aria-labelledby="regiekamer-uitvoerlijst-heading">
           <CareSectionHeader
+            className="lg:flex-col lg:items-stretch"
             title={
-              <span id="regiekamer-uitvoerlijst-heading" className="flex flex-wrap items-baseline gap-3">
-                <span>Werkvoorraad</span>
-                <span className="text-base font-medium tabular-nums text-muted-foreground">
-                  {visibleItems.length} casussen
-                </span>
-              </span>
+              <span id="regiekamer-uitvoerlijst-heading">Werkvoorraad</span>
             }
             meta={
-              <div className="w-full min-w-0">
+              <div className="w-full min-w-0 space-y-2">
+                <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                  {visibleItems.length} casussen
+                </span>
                 <CareSearchFiltersBar
                   className="px-0"
                   searchValue={searchQuery}
                   onSearchChange={setSearchQuery}
-                  searchPlaceholder="Zoek casussen, cliënten, aanbieders…"
+                  searchPlaceholder="Zoek casussen, regio's, aanbieders…"
                   showSecondaryFilters={showSecondaryFilters}
                   onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                   secondaryFiltersLabel="Filters"
                   secondaryFilters={(
-                    <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-                      <label className="text-xs text-muted-foreground">
+                    <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-4">
+                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Prioriteit
                         <select
                           aria-label="Prioriteit"
                           value={priorityFilter}
                           onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
                         </select>
                       </label>
-                      <label className="text-xs text-muted-foreground">
+                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Type
                         <select
                           aria-label="Type"
                           value={issueFilter}
                           onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
-                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(ISSUE_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
                         </select>
                       </label>
-                      <label className="text-xs text-muted-foreground">
+                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Stap
                         <select
                           aria-label="Stap in de keten"
                           value={phaseFilter}
                           onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
-                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           <option value="all">Alles</option>
                           {DECISION_UI_PHASE_IDS.map((id) => (
@@ -1306,13 +1331,13 @@ export function SystemAwarenessPage({
                           ))}
                         </select>
                       </label>
-                      <label className="text-xs text-muted-foreground">
+                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Rol
                         <select
                           aria-label="Rol"
                           value={ownershipFilter}
                           onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
-                          className="mt-1 h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
@@ -1326,9 +1351,9 @@ export function SystemAwarenessPage({
             }
           />
           <CareSectionBody>
-            <CareWorkListCard
+            <CareWorkListCard className="overflow-x-auto"
               header={(
-                <div className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
+                <div className="hidden min-w-[980px] gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
                   <span>Prioriteit</span>
                   <span>Casus</span>
                   <span>Blokkade / aandacht</span>
@@ -1338,7 +1363,7 @@ export function SystemAwarenessPage({
                 </div>
               )}
             >
-              <div className="divide-y divide-border/45">
+              <div className="min-w-[980px] divide-y divide-border/45">
                 {visibleItems.map((item) => (
                   <RegiekamerWorkItemCard
                     key={item.case_id}
@@ -1370,25 +1395,34 @@ export function SystemAwarenessPage({
 
       {!loading && !error && hasActiveData ? (
         <>
-          <aside
-            data-testid="regiekamer-right-rail"
-            className="hidden w-[300px] shrink-0 space-y-4 pt-1 xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
-            style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
-          >
-            <RegiekamerInsightsPanels
-              gemeenteDisplayName={gemeenteDisplayName}
-              activeCasesTotal={activeCasesTotal}
-              avgDoorloopDays={avgDoorloopDays}
-              slaRiskTotal={slaRiskTotal}
-              criticalBlockers={criticalBlockers}
-              phaseBoardColumns={phaseBoardColumns}
-              onCriticalClick={applyCriticalDrillFilter}
-              onPhaseClick={applyPhaseBoardFilter}
-              onNavigateCasussen={() => {
-                onAppNavigate?.("/casussen");
-              }}
+          {!railCollapsed && (
+            <aside
+              data-testid="regiekamer-right-rail"
+              className="hidden w-[300px] shrink-0 space-y-4 pt-1 xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
+              style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
+            >
+              <RegiekamerInsightsPanels
+                gemeenteDisplayName={gemeenteDisplayName}
+                activeCasesTotal={activeCasesTotal}
+                avgDoorloopDays={avgDoorloopDays}
+                slaRiskTotal={slaRiskTotal}
+                criticalBlockers={criticalBlockers}
+                phaseBoardColumns={phaseBoardColumns}
+                onCriticalClick={applyCriticalDrillFilter}
+                onPhaseClick={applyPhaseBoardFilter}
+                onNavigateCasussen={() => {
+                  onAppNavigate?.("/casussen");
+                }}
+              />
+            </aside>
+          )}
+
+          {railCollapsed && (
+            <RegieRailEdgeTab
+              onExpand={() => setRailCollapsed(false)}
+              testId="regiekamer-rail-edge-tab"
             />
-          </aside>
+          )}
 
           <div className="contents xl:hidden">
             <Button
@@ -1566,16 +1600,7 @@ function RegiekamerInsightsPanels({
         </button>
       </section>
 
-      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Regie-notitie</p>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Leg een regieafspraak of aandachtspunt vast voor je team.
-        </p>
-        <Button variant="outline" className="mt-4 w-full gap-2 rounded-xl border-primary/40 text-primary" type="button">
-          <SquarePen size={16} aria-hidden />
-          Nieuwe notitie
-        </Button>
-      </section>
+      <RegieNotesPanel testId="regiekamer-notes-panel" onAfterAction={done} />
     </>
   );
 }
@@ -1599,51 +1624,51 @@ function RegiekamerWorkItemCard({
         "group grid gap-y-3 gap-x-4 px-4 py-3.5 transition-colors md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:items-center md:px-5",
         "hover:bg-background/35",
       )}
-      role="button"
-      tabIndex={0}
-      onClick={() => onCaseClick(String(item.case_id))}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onCaseClick(String(item.case_id));
-        }
-      }}
-      aria-label={`Open casus ${item.title}`}
     >
-      <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
-        <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", priorityBadgeClasses(item.priority_score))}>
-          {priorityLabel(item.priority_score)}
-        </CareMetaChip>
-      </div>
-
-      <div className="min-w-0">
-        <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.title}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
-          <span className="font-mono text-[11px] text-muted-foreground/80">{item.case_reference}</span>
+      <button
+        type="button"
+        onClick={() => onCaseClick(String(item.case_id))}
+        aria-label={`Open casus ${item.title}`}
+        className={cn(
+          "group grid min-w-0 gap-y-3 gap-x-4 text-left outline-none transition-colors md:col-span-5 md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px] md:gap-x-5 md:items-center",
+          "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        )}
+      >
+        <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
+          <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", priorityBadgeClasses(item.priority_score))}>
+            {priorityLabel(item.priority_score)}
+          </CareMetaChip>
         </div>
-      </div>
 
-      <div className="min-w-0 space-y-1.5">
-        <CareMetaChip
-          className={cn(
-            "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
-            severityBadgeClasses(issueTone(item)),
-          )}
-        >
-          <span className="line-clamp-2">{blockerDetail}</span>
-        </CareMetaChip>
-      </div>
+        <div className="min-w-0">
+          <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.title}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
+            <span className="font-mono text-[11px] text-muted-foreground/80">{item.case_reference}</span>
+          </div>
+        </div>
 
-      <div className="min-w-0">
-        <p className="text-[14px] font-medium leading-tight text-foreground/95">{ownerLabel(item)}</p>
-      </div>
+        <div className="min-w-0 space-y-1.5">
+          <CareMetaChip
+            className={cn(
+              "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
+              severityBadgeClasses(issueTone(item)),
+            )}
+          >
+            <span className="line-clamp-2">{blockerDetail}</span>
+          </CareMetaChip>
+        </div>
 
-      <div className="md:justify-self-start">
-        <CareMetaChip className="h-8">
-          <Clock3 size={12} />
-          {formatHours(item.hours_in_current_state)}
-        </CareMetaChip>
-      </div>
+        <div className="min-w-0">
+          <p className="text-[14px] font-medium leading-tight text-foreground/95">{ownerLabel(item)}</p>
+        </div>
+
+        <div className="md:justify-self-start">
+          <CareMetaChip className="h-8">
+            <Clock3 size={12} />
+            {formatHours(item.hours_in_current_state)}
+          </CareMetaChip>
+        </div>
+      </button>
 
       <div className="min-w-0 md:justify-self-start">
         {summaryState && summaryState.actionLabel == null ? (
@@ -1655,10 +1680,7 @@ function RegiekamerWorkItemCard({
             variant="default"
             size="sm"
             className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
-            onClick={(event) => {
-              event.stopPropagation();
-              onCaseClick(String(item.case_id));
-            }}
+            onClick={() => onCaseClick(String(item.case_id))}
           >
             <span className="whitespace-nowrap text-center">{normalizedPrimaryAction}</span>
           </Button>
@@ -1667,10 +1689,7 @@ function RegiekamerWorkItemCard({
             variant="secondary"
             size="sm"
             className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
-            onClick={(event) => {
-              event.stopPropagation();
-              onCaseClick(String(item.case_id));
-            }}
+            onClick={() => onCaseClick(String(item.case_id))}
           >
             Bekijk casus
           </Button>

@@ -57,7 +57,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         <CareSearchFiltersBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek casus, cliënt of regio..."
+          searchPlaceholder="Zoek casus, regio of aanbieder..."
           showSecondaryFilters={showSecondaryFilters}
           onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
           secondaryFilters={
@@ -89,7 +89,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         <EmptyState
           title="Geen open beoordelingen"
           copy="Zodra casussen intake of aanbieder-beoordeling ingaan, verschijnen ze hier."
-          action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Ga naar werkvoorraad</PrimaryActionButton>}
+          action={<PrimaryActionButton onClick={() => onNavigateToCasussen?.()}>Open werkvoorraad</PrimaryActionButton>}
         />
       )}
 

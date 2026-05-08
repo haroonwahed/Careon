@@ -1,4 +1,4 @@
-import type { CSSProperties, ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, Info, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
@@ -394,6 +394,7 @@ export function CareSearchFiltersBar({
   const canToggleMore = Boolean(onToggleSecondaryFilters);
   const expanded = Boolean(showSecondaryFilters && canToggleMore);
   const showToggle = canToggleMore && showSecondaryFiltersToggle;
+  const secondaryFiltersId = useId();
 
   return (
     <section data-testid="care-search-control-stack" className={cn("space-y-2 px-1", className)}>
@@ -401,7 +402,7 @@ export function CareSearchFiltersBar({
 
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
         <div
-          className="flex w-full min-w-0 flex-1 items-center gap-2.5 border border-border/80 bg-background/90 px-3 shadow-sm"
+          className="flex w-full min-w-0 flex-1 items-center gap-2.5 border border-border/80 bg-card px-3 shadow-sm"
           style={{
             minHeight: tokens.searchControl.rowMinHeight,
             borderRadius: tokens.searchControl.radius,
@@ -425,6 +426,8 @@ export function CareSearchFiltersBar({
               type="button"
               data-testid="care-more-filters-toggle"
               onClick={onToggleSecondaryFilters}
+              aria-expanded={expanded}
+              aria-controls={secondaryFiltersId}
               className="inline-flex h-10 items-center gap-1.5 rounded-xl px-1 text-[13px] font-medium text-primary hover:text-primary/90"
             >
               {secondaryFiltersLabel}
@@ -435,7 +438,11 @@ export function CareSearchFiltersBar({
         </div>
       </div>
 
-      {expanded ? <div className="rounded-xl border border-border/50 bg-card/30 px-3 py-2.5">{secondaryFilters}</div> : null}
+      {expanded ? (
+        <div id={secondaryFiltersId} role="region" aria-label={secondaryFiltersLabel} className="rounded-xl border border-border/50 bg-card/30 px-3 py-2.5">
+          {secondaryFilters}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -504,42 +511,43 @@ export function CareWorkRow({
       data-care-work-row
       data-testid={testId}
       data-density="compact"
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
       style={{ minHeight: tokens.density.worklistRowHeight }}
       className={cn(
-        "cursor-pointer rounded-2xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 shadow-sm transition-all hover:border-border/90 hover:bg-card/90 hover:shadow-md",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "rounded-2xl border border-border/70 border-l-2 bg-card/75 px-3 py-2.5 shadow-sm transition-all hover:border-border/90 hover:bg-card/90 hover:shadow-md",
         accentClass,
         className,
       )}
     >
       <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-3">
         {/* max-sm: stack phase chips above title so narrow screens get vertical rhythm; sm+: fixed leading column (tokens.layout.worklistLeadingColumnWidth). */}
-        <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:gap-2.5">
-          {leading ? (
-            <div className="mt-0.5 w-full shrink-0 sm:box-border sm:w-[13rem] sm:min-w-[13rem] sm:max-w-[13rem] [&_svg]:size-4">
-              {leading}
-            </div>
-          ) : null}
-          <div className="min-w-0 flex-1 space-y-1">
-            {/* Below md: title then status on their own lines on xs; inline from sm–md so columns stay predictable. */}
-            <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
-              <p className="min-w-0 truncate text-[14px] font-semibold leading-tight text-foreground">{title}</p>
-              <div className="min-w-0 shrink-0 md:hidden">{status}</div>
-            </div>
-            <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] leading-none text-muted-foreground">
-              {context}
+        <button
+          type="button"
+          onClick={onOpen}
+          className={cn(
+            "group flex min-w-0 flex-1 flex-col gap-2 rounded-[1.125rem] text-left outline-none transition-colors",
+            "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+            "hover:bg-transparent",
+          )}
+          aria-label={`Open casus ${title}`}
+        >
+          <div className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-start sm:gap-2.5">
+            {leading ? (
+              <div className="mt-0.5 w-full shrink-0 sm:box-border sm:w-[13rem] sm:min-w-[13rem] sm:max-w-[13rem] [&_svg]:size-4">
+                {leading}
+              </div>
+            ) : null}
+            <div className="min-w-0 flex-1 space-y-1">
+              {/* Below md: title then status on their own lines on xs; inline from sm–md so columns stay predictable. */}
+              <div className="flex min-w-0 flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-2 sm:gap-y-1">
+                <p className="min-w-0 truncate text-[14px] font-semibold leading-tight text-foreground">{title}</p>
+                <div className="min-w-0 shrink-0 md:hidden">{status}</div>
+              </div>
+              <div className="flex min-w-0 flex-wrap items-center gap-1.5 text-[11px] leading-none text-muted-foreground">
+                {context}
+              </div>
             </div>
           </div>
-        </div>
+        </button>
         <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end sm:gap-2.5">
           <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5 sm:justify-end">
             <div
@@ -564,10 +572,7 @@ export function CareWorkRow({
                 variant={actionVariant === "primary" ? "default" : "ghost"}
                 type="button"
                 data-care-work-row-cta={actionVariant}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onAction(event);
-                }}
+                onClick={onAction}
                 className={cn(
                   actionVariant === "primary"
                     ? "h-9 shrink-0 justify-center rounded-xl px-4 text-[13px] font-semibold shadow-md"

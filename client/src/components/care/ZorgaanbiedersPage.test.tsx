@@ -121,6 +121,13 @@ describe("ZorgaanbiedersPage operatieve aandacht action", () => {
       screen.getByText("Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."),
     ).toBeInTheDocument();
   });
+
+  it("keeps split-view count copy consistent between list and map headers", () => {
+    render(<ZorgaanbiedersPage theme="light" />);
+    expect(screen.getByText("1 zorgaanbieders beschikbaar")).toBeInTheDocument();
+    expect(screen.getByText("Split modus · 1 van 1 aanbieders zichtbaar")).toBeInTheDocument();
+    expect(screen.getByText("Split view toont resultaten links en de kaart rechts.")).toBeInTheDocument();
+  });
 });
 
 describe("ZorgaanbiedersPage accessibility", () => {
