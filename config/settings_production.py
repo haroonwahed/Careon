@@ -33,3 +33,35 @@ SECURE_HSTS_PRELOAD = base._bool_env('SECURE_HSTS_PRELOAD', default=True)
 SECURE_REFERRER_POLICY = os.getenv('SECURE_REFERRER_POLICY', 'same-origin')
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_CROSS_ORIGIN_OPENER_POLICY = os.getenv('SECURE_CROSS_ORIGIN_OPENER_POLICY', 'same-origin')
+
+# ---------------------------------------------------------------------------
+# Error monitoring (Sentry)
+# ---------------------------------------------------------------------------
+# Activates only when SENTRY_DSN is set in env. The DSN itself MUST never be
+# committed; it lives in deploy-time environment variables.
+#
+# Privacy posture (regielaag / AVG):
+#   - send_default_pii=False — Sentry must not auto-attach IPs, usernames, or
+#     request bodies. Personal/casus data must not leave the boundary.
+#   - traces_sample_rate=0 by default — no performance tracing during pilot to
+#     keep volume + cost predictable. Override via SENTRY_TRACES_SAMPLE_RATE.
+#   - profiles_sample_rate=0 — no profiling.
+#
+# Operator-facing follow-ups (deploy-time, not code):
+#   - Set SENTRY_DSN, SENTRY_ENVIRONMENT (e.g. "pilot-2026"), and SENTRY_RELEASE
+#     (the deployed git SHA).
+#   - Configure Sentry alert routing for the pilot gemeente.
+SENTRY_DSN = os.getenv('SENTRY_DSN', '').strip()
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration()],
+        environment=os.getenv('SENTRY_ENVIRONMENT', 'production'),
+        release=os.getenv('SENTRY_RELEASE') or None,
+        send_default_pii=False,
+        traces_sample_rate=float(os.getenv('SENTRY_TRACES_SAMPLE_RATE', '0')),
+        profiles_sample_rate=float(os.getenv('SENTRY_PROFILES_SAMPLE_RATE', '0')),
+    )

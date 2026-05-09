@@ -77,13 +77,22 @@ describe("emitRegiekamerNbaEvent", () => {
 
   afterEach(() => {
     delete (window as unknown as { __REGIEKAMER_NBA_TRACK__?: unknown }).__REGIEKAMER_NBA_TRACK__;
+    delete (window as unknown as { __REGIEKAMER_NBA_CONSENT__?: unknown }).__REGIEKAMER_NBA_CONSENT__;
   });
 
-  it("invokes window.__REGIEKAMER_NBA_TRACK__ with RegiekamerNbaTelemetryEvent when set", () => {
+  it("invokes window.__REGIEKAMER_NBA_TRACK__ with RegiekamerNbaTelemetryEvent when consent is granted and tracker is set", () => {
     const fn = vi.fn();
     (window as unknown as { __REGIEKAMER_NBA_TRACK__: typeof fn }).__REGIEKAMER_NBA_TRACK__ = fn;
+    (window as unknown as { __REGIEKAMER_NBA_CONSENT__: boolean }).__REGIEKAMER_NBA_CONSENT__ = true;
     emitRegiekamerNbaEvent("nba_shown", payload);
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(expectedTelemetry);
+  });
+
+  it("does not invoke the tracker when consent is not granted (default)", () => {
+    const fn = vi.fn();
+    (window as unknown as { __REGIEKAMER_NBA_TRACK__: typeof fn }).__REGIEKAMER_NBA_TRACK__ = fn;
+    emitRegiekamerNbaEvent("nba_shown", payload);
+    expect(fn).not.toHaveBeenCalled();
   });
 });

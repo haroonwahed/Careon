@@ -178,10 +178,27 @@ Roll back when any of the following is observed in production within 24h of cuto
 | Privacy: `case_geo` only on detail | `tests/test_case_api_workflow_state.py::test_case_geo_is_exposed_in_detail_but_not_raw_in_list` | passing |
 | Active-source guardrail | `tests/test_product_architecture_guardrails.py::test_active_user_facing_sources_do_not_expose_ai_anonymization_or_uitstroom` | passing |
 
+### Items already addressed this readiness pass (agent-verified)
+
+- **Production settings deploy-check:** all 5 items (`SECRET_KEY`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE`) are overridden in `config/settings_production.py`. Verified clean via `manage.py check --deploy` against `config.settings_production` (0 issues, 0 silenced).
+- **Sentry SDK skeleton:** wired in `config/settings_production.py` behind `SENTRY_DSN` env var. Defaults: `send_default_pii=False`, `traces_sample_rate=0`, `profiles_sample_rate=0`. Init is a no-op when `SENTRY_DSN` is unset; `check --deploy` is clean both with and without DSN. Dependency: `sentry-sdk[django]==2.59.0` in `requirements/runtime.txt`.
+- **Telemetry consent gate:** `client/src/lib/telemetryAdapter.ts` now requires both `window.__REGIEKAMER_NBA_CONSENT__ === true` AND a wired sink before any event leaves the browser. Default: OFF. Negative test added.
+- **Cross-tenant isolation — Regiekamer overview:** explicit cross-tenant test added (`tests/test_cross_tenant_isolation.py::RegiekamerDecisionOverviewIsolationTest`). All 70 tenancy tests passing.
+- **Browser smoke (login → dashboard → logout):** `client/tests/e2e/pilot-login-logout.spec.ts` covers the minimal returning-user happy path independent of registration and seeded case content.
+- **Operator credibility:** `Notitie toevoegen (binnenkort)` disabled stub removed from `AanbiederBeoordelingPage`. The real notes affordance lives in `RegieNotesPanel`.
+
 ### Items still requiring a human (cannot be agent-verified)
 
-- Two-actor manual smoke (gemeente regisseur + zorgaanbieder beoordelaar) on a fresh staging DB.
-- DPO/AVG sign-off walkthrough.
-- Production `SECRET_KEY`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` review (Django `check --deploy` flags 5 settings; verify they are overridden in your production settings layer, not `settings_rehearsal`).
-- Sentry / error-monitoring DSN wiring + alert routing for the pilot gemeente.
-- Pilot communication plan (escalation contact, hours of cover, expected response SLA).
+These four items must be performed by a human before pilot cutover. They are not skippable and cannot be substituted by automated checks.
+
+| # | Item | Owner | Why it cannot be automated |
+|---|------|-------|----------------------------|
+| H1 | **Two-actor manual smoke** on a fresh staging DB: gemeente regisseur creates a casus, validates matching, hands over to provider; zorgaanbieder beoordelaar accepts → places → starts intake. | QA + product | Validates the canonical flow under real human pacing, including the hand-off moment between actors that an automated single-session test cannot exercise. |
+| H2 | **DPO / AVG sign-off** walkthrough on the pilot route. | DPO | Legal accountability decision, requires reviewing data flows, retention, consent surfaces, and minimization claims against actual screen output. |
+| H3 | **Pilot communication plan**: escalation contact, hours of cover, expected response SLA, rollback decision authority. | Product owner | Operational readiness — who answers the phone at 16:30 on a Friday when something looks wrong. |
+| H4 | **Non-developer pilot walkthrough** on the build that will be deployed. | Pilot operator (gemeente side) | Surfaces ambiguity, hesitation, and trust gaps that internal review systematically misses. |
+
+Additional deploy-time configuration (operator, not developer):
+
+- Set `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, and `SENTRY_RELEASE` in the production environment, and configure alert routing for the pilot gemeente in the Sentry project.
+- Confirm the production secret-management surface (env vars or vault) actually populates `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DEFAULT_FROM_EMAIL`, and `DATABASE_URL`. The settings layer raises `ImproperlyConfigured` on boot if any of these is missing or insecure — that is intentional and must not be worked around.

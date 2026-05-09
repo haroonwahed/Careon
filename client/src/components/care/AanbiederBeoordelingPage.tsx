@@ -803,17 +803,6 @@ function GemeenteView({
               </Button>
             </div>
           </section>
-
-          <Button
-            type="button"
-            variant="outline"
-            disabled
-            aria-disabled="true"
-            className="h-11 w-full gap-2 border-border/70 bg-background/50 text-[13px] font-semibold"
-          >
-            <MessageSquare size={16} aria-hidden />
-            Notitie toevoegen (binnenkort)
-          </Button>
         </aside>
       ) : null}
 

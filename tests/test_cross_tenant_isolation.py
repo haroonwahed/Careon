@@ -876,3 +876,34 @@ class CaseIntakeProcessIsolationTest(CrossTenantFixtureMixin, TestCase):
         self.client.login(username='user_b', password='passB1234!')
         url = reverse('careon:intake_update', kwargs={'pk': self.dd_a.pk})
         self.assertEqual(self.client.get(url).status_code, 302)
+
+
+# ===========================================================================
+# Regiekamer overview endpoint (list-shaped response, must be tenant-scoped)
+# ===========================================================================
+
+@_DJANGO_HTML_WS
+class RegiekamerDecisionOverviewIsolationTest(CrossTenantFixtureMixin, TestCase):
+    """
+    `regiekamer_decision_overview_api` returns a list of operational items
+    across the user's organization. A regression here would not be caught by
+    case-detail 404 tests (this is a list endpoint), so we explicitly verify
+    that:
+      - logged in as user_b, only org_b items are returned
+      - org_a case titles never appear in the response
+    """
+
+    def test_overview_excludes_other_org_items(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:regiekamer_decision_overview_api')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        items = payload.get('items', [])
+        titles = {item.get('title') for item in items}
+        case_ids = {item.get('case_id') for item in items}
+
+        self.assertNotIn('Alpha NDA', titles,
+                         'Regiekamer overview must not leak other-tenant case titles')
+        self.assertNotIn(self.contract_a.pk, case_ids,
+                         'Regiekamer overview must not leak other-tenant case IDs')
