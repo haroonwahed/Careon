@@ -515,7 +515,7 @@ export function InstellingenSettingsExperience({
                 </Field>
                 <ToggleRow
                   label="Export alleen met dubbele autorisatie"
-                  description="Voorkomt onbedoelde gegevensuitstroom."
+                  description="Voorkomt onbedoelde data-export."
                   checked
                   onCheckedChange={() => undefined}
                 />
@@ -581,7 +581,7 @@ export function InstellingenSettingsExperience({
                   lastSync="12 min geleden"
                 />
                 <IntegrationTile name="Zorgmail" detail="Beveiligde berichten" status="warn" lastSync="4 uur geleden" />
-                <IntegrationTile name="Azure OpenAI" detail="Samenvatting (geanonimiseerd)" status="ok" lastSync="Live" />
+                <IntegrationTile name="Azure OpenAI" detail="Samenvatting (pseudoniem)" status="ok" lastSync="Live" />
                 <IntegrationTile name="ECD-koppeling" detail="Pilot" status="off" lastSync="—" />
               </div>
             </SettingsSection>

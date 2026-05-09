@@ -157,14 +157,13 @@ describe("CaseExecutionPage workspace", () => {
     const { container } = render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Terug naar casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Meer acties" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Casusacties" })).toBeInTheDocument();
     expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
-    expect(await screen.findByText("Voortgang")).toBeInTheDocument();
+    expect(await screen.findByText("Operationele keten")).toBeInTheDocument();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
     expect(within(heroBand).getByRole("button", { name: /Start matching|Stuur naar aanbieder/i })).toBeInTheDocument();
-    expect(screen.getByText("Benodigd voor volgende fase")).toBeInTheDocument();
-    expect(screen.getAllByText("Meer acties").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText("Casusacties").length).toBeGreaterThanOrEqual(1);
     expect(container.innerHTML).not.toContain("mx-auto max-w-[1440px]");
     expect(container.innerHTML).not.toContain(`#${"111827"}`);
     expect(container.innerHTML).not.toContain(`#${"080E1A"}`);
@@ -186,7 +185,7 @@ describe("CaseExecutionPage workspace", () => {
 
     expectCasusDetailMode();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
-    expect(screen.getByText("Voortgang")).toBeInTheDocument();
+    expect(screen.getByText("Operationele keten")).toBeInTheDocument();
     expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
     expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
@@ -251,7 +250,7 @@ describe("CaseExecutionPage workspace", () => {
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
     expect(await screen.findByText("Laatste wijziging")).toBeInTheDocument();
-    expect(screen.getByText("Eigenaar")).toBeInTheDocument();
+    expect(screen.getByText("Actiehouder / wacht op")).toBeInTheDocument();
   });
 
   it("keeps primary action wired to existing action executor", async () => {

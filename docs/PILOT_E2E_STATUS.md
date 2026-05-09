@@ -117,3 +117,71 @@ This rehearsal path does **not** relax Regiekamer UI behavior, workflow state tr
 - Verify the **current** Vite bundle URL returns **200** before Playwright (`curl -I` on the hashed asset from `index.html`).
 - Keep **`E2E_BASE_URL`** explicit and aligned with the running server (avoid stale shell exports).
 - Avoid **multiple writers** on **`db_rehearsal.sqlite3`** (no parallel `runserver` instances on the same file).
+
+---
+
+## Rollback plan (pilot)
+
+Roll back when any of the following is observed in production within 24h of cutover:
+
+- A workflow transition completes despite a blocked state (placement before acceptance, intake before placement, provider beoordeling before gemeente validatie). **Severity: P0.**
+- The list endpoint exposes raw `case_geo` (postcode/coordinates). **Severity: P0** (privacy).
+- Authorization regression: a role can act on a case outside its decision-ownership boundary (e.g. gemeente acts as provider, or vice versa). **Severity: P0.**
+- Matching elevates from advisory to assignment (auto-assigning providers, hiding rejection options). **Severity: P0.**
+- Audit trail missing for any state transition. **Severity: P1** (auditability requirement).
+- ≥2 municipality operators report being blocked on a step with no recoverable next-best-action surface. **Severity: P1.**
+
+### Rollback procedure
+
+1. **Confirm scope** — record case IDs, timestamps, and the suspect transition or endpoint. Capture `audit_log` excerpts.
+2. **Freeze new casus intake** at the gemeente surface. Do not freeze in-flight matching/placement/intake (stranding cases is worse than stale UI).
+3. **Identify the offending commit.** The most recent merges to `main` are listed via `git log --oneline -20`. Each readiness commit isolates one concern (privacy fix, terminology, automation semantics).
+4. **Revert path:**
+   - Frontend-only regression: build the previous SPA tag and redeploy the static bundle.
+     ```bash
+     git checkout <prev_tag>
+     (cd client && npm run build)
+     # redeploy theme/static/spa/
+     ```
+   - Backend regression: revert the offending commit on a hotfix branch and redeploy.
+     ```bash
+     git checkout -b hotfix/rollback-<short-id> <prev_tag>
+     # cherry-pick safe commits if needed
+     ```
+   - Schema regression: not expected (no new migrations in the readiness pass — `manage.py migrate --plan` returns empty). If a migration *is* the issue, follow `docs/E2E_RUNBOOK.md` rehearsal steps before applying any down-migration.
+5. **Re-verify the canonical flow** on the rolled-back build:
+   ```bash
+   .venv/bin/pytest --tb=line -q
+   (cd client && npx vitest run --no-cache && npm run check:careon-design && npm run build)
+   ```
+   Expected: 763 backend + 167 frontend tests green; design guardrail PASS; SPA build succeeds.
+6. **Notify the pilot gemeente** with the cause, scope of impact, and the safe set of actions still available.
+7. **Open a post-mortem ticket** with the affected canonical-flow rule (per `AGENTS.md`) and the verification gap that allowed it through.
+
+### What is NOT a rollback trigger
+
+- Cosmetic copy variance, layout density complaints, or single-user confusion (handle via a pilot copy-fix patch).
+- Slowness on heavy worklists (capture metrics; tune; do not roll back).
+- Failing E2E *visual* baseline (capture artefact; reconcile baseline; do not roll back).
+- One operator's "I don't know what to do here" feedback (route to walkthrough refinement, not rollback).
+
+### Pre-cutover sign-off (must all be green)
+
+| Check | Command | Status |
+|-------|---------|--------|
+| Backend unit/integration | `.venv/bin/pytest --tb=line -q` | 763 / 763 passed |
+| Frontend unit/component | `(cd client && npx vitest run --no-cache)` | 167 / 167 passed |
+| Design-token guardrail | `(cd client && npm run check:careon-design)` | PASS |
+| Production SPA build | `(cd client && npm run build)` | PASS |
+| Migrations applied + clean | `.venv/bin/python manage.py migrate --plan` | "No planned migration operations." |
+| Demo surface audit | grep + import-trace of `client/src/components/examples/*` | Only `MultiTenantDemo` is wired; rest tree-shaken |
+| Privacy: `case_geo` only on detail | `tests/test_case_api_workflow_state.py::test_case_geo_is_exposed_in_detail_but_not_raw_in_list` | passing |
+| Active-source guardrail | `tests/test_product_architecture_guardrails.py::test_active_user_facing_sources_do_not_expose_ai_anonymization_or_uitstroom` | passing |
+
+### Items still requiring a human (cannot be agent-verified)
+
+- Two-actor manual smoke (gemeente regisseur + zorgaanbieder beoordelaar) on a fresh staging DB.
+- DPO/AVG sign-off walkthrough.
+- Production `SECRET_KEY`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`, `SESSION_COOKIE_SECURE`, `CSRF_COOKIE_SECURE` review (Django `check --deploy` flags 5 settings; verify they are overridden in your production settings layer, not `settings_rehearsal`).
+- Sentry / error-monitoring DSN wiring + alert routing for the pilot gemeente.
+- Pilot communication plan (escalation contact, hours of cover, expected response SLA).

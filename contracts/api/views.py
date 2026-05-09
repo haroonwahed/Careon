@@ -443,7 +443,11 @@ def contracts_api(request):
         paginator = Paginator(queryset, params.page_size)
         page_obj = paginator.get_page(params.page)
 
-        cases = [_build_case_data(case, include_geo=True) for case in page_obj]
+        # Data-minimization: list endpoint exposes only `has_case_geo: bool`.
+        # Raw `case_geo` payload (postcode/coordinates) is intentionally restricted
+        # to the detail endpoint at line ~486. See test_case_api_workflow_state.py
+        # `test_case_geo_is_exposed_in_detail_but_not_raw_in_list` for the contract.
+        cases = [_build_case_data(case) for case in page_obj]
         return JsonResponse({
             'contracts': cases,
             'total_count': paginator.count,

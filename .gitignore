@@ -45,3 +45,13 @@ theme/static/spa/assets/
 
 # Disposable local UI screenshots (manual visual checks)
 client/*-visual-check.png
+
+# Disposable local debug scripts and screenshots (must never be committed)
+client/.tmp-*
+
+# Local rehearsal database (binary; never commit)
+db_rehearsal.sqlite3
+
+# Playwright run artefacts (videos, traces, screenshots, run state)
+client/test-results/
+client/playwright-report/

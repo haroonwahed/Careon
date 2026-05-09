@@ -676,7 +676,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       label: "Casus",
       gemeente: "CAS-ID, CLI-ID, zorgvraag, urgentie",
       zorgaanbieder: "Niet zichtbaar",
-      regie: "Alleen geanonimiseerde metadata",
+      regie: "Alleen pseudonieme metadata",
     },
     {
       phase: "matching",
