@@ -42,6 +42,7 @@ import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { apiClient } from "../../lib/apiClient";
+import { toCareCaseDetail } from "../../lib/routes";
 import { ProviderNetworkMap } from "./ProviderNetworkMap";
 import { tokens } from "../../design/tokens";
 import { cn } from "../ui/utils";
@@ -395,7 +396,7 @@ export function MatchingPageWithMap({
       if (onNavigateToCase) {
         onNavigateToCase(caseId);
       } else {
-        window.location.assign(`/care/cases/${encodeURIComponent(caseId)}/`);
+        window.location.assign(toCareCaseDetail(caseId));
       }
     } catch (err) {
       let msg = err instanceof Error ? err.message : "Wachtlijstvoorstel mislukt.";
@@ -524,7 +525,7 @@ export function MatchingPageWithMap({
                     onNavigateToCase(caseId);
                     return;
                   }
-                  window.location.assign(`/care/cases/${encodeURIComponent(caseId)}/`);
+                  window.location.assign(toCareCaseDetail(caseId));
                 }}
               >
                 <ArrowLeft size={16} aria-hidden />

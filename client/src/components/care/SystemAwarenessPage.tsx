@@ -79,6 +79,7 @@ import {
   normalizeRegiekamerPhaseQueryParam,
   type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
+import { CARE_PATHS } from "../../lib/routes";
 
 interface SystemAwarenessPageProps {
   onCaseClick: (caseId: string) => void;
@@ -102,7 +103,6 @@ type PhaseFilter =
   | "plaatsing"
   | "intake";
 type OwnershipFilter = "all" | RegiekamerOwnershipRole;
-const REGIEKAMER_PATH = "/regiekamer";
 
 const PRIORITY_PARAM_VALUES = new Set<PriorityFilter>(["all", "critical", "high", "medium"]);
 const ISSUE_PARAM_VALUES = new Set<IssueFilter>(["all", "blockers", "risks", "alerts", "SLA", "rejection", "intake"]);
@@ -128,7 +128,7 @@ function pathWithoutTrailingSlash(path: string): string {
 }
 
 function isRegiekamerPath(pathname: string): boolean {
-  return pathWithoutTrailingSlash(pathname) === REGIEKAMER_PATH;
+  return pathWithoutTrailingSlash(pathname) === CARE_PATHS.REGIEKAMER;
 }
 
 function filtersFromSearchString(search: string): {
@@ -206,7 +206,7 @@ function buildRegiekamerUrl(parts: {
     params.set("ownership", parts.ownershipFilter);
   }
   const qs = params.toString();
-  return qs ? `${REGIEKAMER_PATH}?${qs}` : REGIEKAMER_PATH;
+  return qs ? `${CARE_PATHS.REGIEKAMER}?${qs}` : CARE_PATHS.REGIEKAMER;
 }
 
 function itemMatchesPhaseFilter(itemPhase: string, phaseFilter: PhaseFilter): boolean {

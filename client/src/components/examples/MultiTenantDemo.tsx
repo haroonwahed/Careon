@@ -31,7 +31,12 @@ import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
 import { CareAppFrame } from "../care/CareAppFrame";
 import { tokens } from "../../design/tokens";
-import { SPA_DASHBOARD_URL } from "../../lib/routes";
+import {
+  CARE_PATHS,
+  matchCareCasesNumericDetailPath,
+  SPA_DASHBOARD_URL,
+  toCareCaseDetail,
+} from "../../lib/routes";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
@@ -116,7 +121,7 @@ const PAGE_TO_HREF: Record<Page, string> = {
   rapportages: "/rapportages",
   documenten: "/documenten",
   audittrail: "/audittrail",
-  instellingen: "/instellingen",
+  instellingen: CARE_PATHS.SETTINGS,
   intake: "/intake",
   "mijn-casussen": "/mijn-casussen",
   gebruikers: "/gebruikers",
@@ -180,35 +185,35 @@ function pathWithoutTrailingSlash(path: string): string {
 function getInitialNavigation(pathname: string): { page: Page; caseId: string | null } {
   const path = pathWithoutTrailingSlash(pathname.split("?")[0] ?? pathname);
 
-  const casesSpaMatch = path.match(/^\/care\/cases\/(\d+)$/);
-  if (casesSpaMatch) {
-    return { page: "casussen", caseId: casesSpaMatch[1] };
+  const casesSpaCaseId = matchCareCasesNumericDetailPath(path);
+  if (casesSpaCaseId) {
+    return { page: "casussen", caseId: casesSpaCaseId };
   }
-  if (path.startsWith("/care/casussen/new")) {
+  if (path.startsWith(`${CARE_PATHS.CASUSSEN_BASE}/new`)) {
     return { page: "nieuwe-casus", caseId: null };
   }
-  if (path.startsWith("/care/casussen")) {
+  if (path.startsWith(CARE_PATHS.CASUSSEN_BASE)) {
     return { page: "casussen", caseId: null };
   }
-  if (path.startsWith("/care/beoordelingen")) {
+  if (path.startsWith(CARE_PATHS.BEOORDELINGEN)) {
     return { page: "beoordelingen", caseId: null };
   }
-  if (path.startsWith("/care/matching")) {
+  if (path.startsWith(CARE_PATHS.MATCHING)) {
     return { page: "matching", caseId: null };
   }
-  if (path.startsWith("/care/plaatsingen")) {
+  if (path.startsWith(CARE_PATHS.PLAATSINGEN)) {
     return { page: "plaatsingen", caseId: null };
   }
-  if (path.startsWith("/care/zorgaanbieders")) {
+  if (path.startsWith(CARE_PATHS.ZORGAANBIEDERS)) {
     return { page: "zorgaanbieders", caseId: null };
   }
-  if (path.startsWith("/care/gemeenten")) {
+  if (path.startsWith(CARE_PATHS.GEMEENTEN)) {
     return { page: "gemeenten", caseId: null };
   }
-  if (path.startsWith("/care/regio")) {
+  if (path.startsWith(CARE_PATHS.REGIO)) {
     return { page: "regios", caseId: null };
   }
-  if (path.startsWith("/care/signalen")) {
+  if (path.startsWith(CARE_PATHS.SIGNALEN)) {
     return { page: "signalen", caseId: null };
   }
   if (path.startsWith("/settings")) {
@@ -217,7 +222,7 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
 
   const shellMap: Record<string, Page> = {
     "/dashboard": "regiekamer",
-    "/regiekamer": "regiekamer",
+    [CARE_PATHS.REGIEKAMER]: "regiekamer",
     "/casussen": "casussen",
     "/casussen/nieuw": "nieuwe-casus",
     "/beoordelingen": "beoordelingen",
@@ -231,7 +236,7 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
     "/rapportages": "rapportages",
     "/documenten": "documenten",
     "/audittrail": "audittrail",
-    "/instellingen": "instellingen",
+    [CARE_PATHS.SETTINGS]: "instellingen",
     "/intake": "intake",
     "/mijn-casussen": "mijn-casussen",
     "/gebruikers": "gebruikers",
@@ -247,7 +252,7 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
 
 function pageToHref(page: Page, caseId: string | null): string {
   if (caseId) {
-    return `/care/cases/${caseId}/`;
+    return toCareCaseDetail(caseId);
   }
   return PAGE_TO_HREF[page];
 }
@@ -344,7 +349,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     setSelectedCase(caseId);
     const listPage = normalizePageForRole("casussen", currentContext.type);
     setCurrentPage(listPage);
-    window.history.pushState({}, "", `/care/cases/${caseId}/`);
+    window.history.pushState({}, "", toCareCaseDetail(caseId));
   };
 
   const handleCloseCaseDetail = () => {

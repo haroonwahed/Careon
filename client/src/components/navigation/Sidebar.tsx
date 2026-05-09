@@ -29,7 +29,7 @@ import {
   CheckCircle,
   Shield,
 } from "lucide-react";
-import { SPA_DASHBOARD_URL } from "../../lib/routes";
+import { CARE_PATHS, SPA_DASHBOARD_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 type SurfaceStatus =
@@ -165,7 +165,7 @@ const gemeenteNavigation: NavSection[] = [
         id: "instellingen",
         label: "Instellingen",
         icon: Settings,
-        href: "/instellingen",
+        href: CARE_PATHS.SETTINGS,
         surfaceStatus: "SUPPORTING_INTERNAL",
       },
     ]
@@ -355,7 +355,7 @@ const adminNavigation: NavSection[] = [
         id: "instellingen",
         label: "Instellingen",
         icon: Settings,
-        href: "/instellingen",
+        href: CARE_PATHS.SETTINGS,
         surfaceStatus: "SUPPORTING_INTERNAL",
       }
     ]

@@ -8,6 +8,7 @@ import { HandoverInfoPanel } from "./HandoverInfoPanel";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { apiClient } from "../../lib/apiClient";
+import { toCareCasussenPlacementAction } from "../../lib/routes";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { tokens } from "../../design/tokens";
 import { CareAttentionBar, CareInfoPopover, CarePageScaffold, PrimaryActionButton, LoadingState, ErrorState, EmptyState, CarePanel } from "./CareDesignPrimitives";
@@ -179,7 +180,7 @@ export function PlacementPage({
       formData.append("note", "Plaatsing bevestigd vanuit plaatsingsoverzicht.");
       formData.append("next", window.location.pathname);
 
-      const response = await fetch(`/care/casussen/${caseId}/placement/action/`, {
+      const response = await fetch(toCareCasussenPlacementAction(caseId), {
         method: "POST",
         credentials: "same-origin",
         headers: {

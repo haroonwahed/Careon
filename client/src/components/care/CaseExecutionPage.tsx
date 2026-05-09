@@ -76,6 +76,7 @@ import {
   mapApiPhaseToDecisionUiPhase,
 } from "../../lib/decisionPhaseUi";
 import { CARE_TERMS } from "../../lib/terminology";
+import { toCareCaseEdit } from "../../lib/routes";
 
 interface CaseExecutionPageProps {
   caseId: string;
@@ -1086,11 +1087,11 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
               <DropdownMenuItem onClick={() => setArchiveOpen(true)}>Casus archiveren</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <a href={`/care/casussen/${caseId}/edit/?section=casus`}>Casus bewerken</a>
+                <a href={toCareCaseEdit(caseId, "casus")}>Casus bewerken</a>
               </DropdownMenuItem>
               {missingGeo ? (
                 <DropdownMenuItem asChild>
-                  <a href={`/care/casussen/${caseId}/edit/?section=locatie`}>Locatie aanvullen</a>
+                  <a href={toCareCaseEdit(caseId, "locatie")}>Locatie aanvullen</a>
                 </DropdownMenuItem>
               ) : null}
             </DropdownMenuContent>
@@ -1213,7 +1214,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
                   variant="outline"
                   onClick={() => {
                     setSummaryFlowOpen(false);
-                    window.location.assign(`/care/casussen/${caseId}/edit/?section=casus`);
+                    window.location.assign(toCareCaseEdit(caseId, "casus"));
                   }}
                   disabled={Boolean(pendingAction)}
                 >
