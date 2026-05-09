@@ -1053,9 +1053,11 @@ export function SystemAwarenessPage({
                   </Button>
                 )}
                 {canCreateCase && onCreateCase && hasActiveData ? (
-                  <PrimaryActionButton onClick={onCreateCase}>
+                  // Demoted to outline so the dominantAction below holds the operational focus.
+                  // Empty-state still uses PrimaryActionButton (no competing dominantAction there).
+                  <Button variant="outline" onClick={onCreateCase} className="gap-2">
                     Start regiecasus
-                  </PrimaryActionButton>
+                  </Button>
                 ) : null}
                 <Button variant="outline" onClick={refetch} className="gap-2">
                   <RefreshCw size={14} />

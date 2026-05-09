@@ -443,7 +443,7 @@ def contracts_api(request):
         paginator = Paginator(queryset, params.page_size)
         page_obj = paginator.get_page(params.page)
 
-        cases = [_build_case_data(case) for case in page_obj]
+        cases = [_build_case_data(case, include_geo=True) for case in page_obj]
         return JsonResponse({
             'contracts': cases,
             'total_count': paginator.count,

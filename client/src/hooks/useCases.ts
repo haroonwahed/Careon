@@ -37,6 +37,9 @@ interface ApiCase {
   /** Latest placement request (matches derive_workflow_state signals). */
   placement_request_status?: string | null;
   placement_provider_response_status?: string | null;
+  primary_region_label?: string;
+  secondary_region_labels?: string[];
+  all_region_labels?: string[];
 }
 
 interface ApiListResponse {
@@ -55,6 +58,7 @@ export type UrgencyLevel = 'critical' | 'warning' | 'normal' | 'stable';
 export interface SpaCase {
   id: string;
   title: string;
+  owner: string;
   regio: string;
   zorgtype: string;
   wachttijd: number;
@@ -153,10 +157,15 @@ function mapApiCase(c: ApiCase): SpaCase {
 
   const workflowState = isCanonicalWorkflowState(c.workflow_state) ? c.workflow_state : undefined;
 
+  const geoRegionFallback = c.primary_region_label
+    || c.all_region_labels?.find((label) => Boolean(label && label.trim()))
+    || c.secondary_region_labels?.find((label) => Boolean(label && label.trim()))
+    || '';
   return {
     id: c.id,
     title: c.title,
-    regio: c.service_region || '—',
+    owner: c.owner || 'Gemeente',
+    regio: c.service_region || geoRegionFallback || '—',
     zorgtype: CONTRACT_TYPE_LABELS[c.contract_type] || c.contract_type || 'Zorgafspraak',
     wachttijd,
     status: phase,

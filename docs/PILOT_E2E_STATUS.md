@@ -1,10 +1,35 @@
 # Pilot E2E — verified rehearsal state
 
-**Last verified:** 2026-05-04  
+**Last verified:** 2026-05-09  
 **Role:** Canonical **rehearsal** verification path (not production deploy). Use with `config.settings_rehearsal` and `db_rehearsal.sqlite3`.  
 **Detail / env contract:** [E2E_RUNBOOK.md](E2E_RUNBOOK.md)
 
-**End-user pilot handover:** [PILOT_TEST_SCRIPT.md](PILOT_TEST_SCRIPT.md) · [PILOT_OBSERVER_CHECKLIST.md](PILOT_OBSERVER_CHECKLIST.md) · [PILOT_KNOWN_LIMITATIONS.md](PILOT_KNOWN_LIMITATIONS.md) · [RELEASE_READINESS_SUMMARY.md](RELEASE_READINESS_SUMMARY.md)
+## Pilot Readiness
+
+- Verified baseline: design guardrail PASS, axe smoke PASS, focused care tests PASS, golden-path E2E PASS
+- Latest pass state: no P0/P1 findings, no workflow/API/permission regressions observed
+- Confidence: ready for pilot/demo walkthrough
+
+## Pilot Resources
+
+- [PILOT_WALKTHROUGH_CHECKLIST.md](PILOT_WALKTHROUGH_CHECKLIST.md)
+- [PILOT_WALKTHROUGH_SCRIPT.md](PILOT_WALKTHROUGH_SCRIPT.md)
+- [PILOT_KNOWN_LIMITATIONS.md](PILOT_KNOWN_LIMITATIONS.md)
+- [RELEASE_READINESS_SUMMARY.md](RELEASE_READINESS_SUMMARY.md)
+- [PILOT_TEST_SCRIPT.md](PILOT_TEST_SCRIPT.md)
+- [PILOT_OBSERVER_CHECKLIST.md](PILOT_OBSERVER_CHECKLIST.md)
+
+## Recommended Walkthrough Order
+
+1. Nieuwe casus
+2. Casussen
+3. Regiekamer
+4. Matching
+5. Aanbieder beoordeling
+6. Plaatsingen
+7. Acties
+
+**End-user pilot handover:** [PILOT_WALKTHROUGH_CHECKLIST.md](PILOT_WALKTHROUGH_CHECKLIST.md) · [PILOT_WALKTHROUGH_SCRIPT.md](PILOT_WALKTHROUGH_SCRIPT.md) · [PILOT_KNOWN_LIMITATIONS.md](PILOT_KNOWN_LIMITATIONS.md) · [RELEASE_READINESS_SUMMARY.md](RELEASE_READINESS_SUMMARY.md)
 
 ---
 

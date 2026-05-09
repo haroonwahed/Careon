@@ -46,7 +46,7 @@ export function ProviderIntakeDashboard() {
       urgency: "high",
       status: "nieuw",
       waitingTime: "2 uur",
-      problemSummary: "Complexe gedragsproblematiek met agressie-uitingen. Thuissituatie instabiel. Urgente start vereist binnen 3 werkdagen.",
+      problemSummary: "Zorgvraag vereist beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
       municipality: "Gemeente Amsterdam",
       placedDate: "17 april, 11:30"
     },
@@ -59,7 +59,7 @@ export function ProviderIntakeDashboard() {
       urgency: "medium",
       status: "nieuw",
       waitingTime: "5 uur",
-      problemSummary: "Middelenmisbruik en schoolverzuim. Ouders vragen hulp. Stabiele thuissituatie maar groeiende problemen.",
+      problemSummary: "Aanvullende context beschikbaar na gemeentelijke validatie.",
       municipality: "Gemeente Utrecht",
       placedDate: "17 april, 08:15"
     },
@@ -72,7 +72,7 @@ export function ProviderIntakeDashboard() {
       urgency: "high",
       status: "wacht-op-reactie",
       waitingTime: "1 dag",
-      problemSummary: "Ernstige spanningen in gezinssituatie. Moeder overspannen. Kind vertoont angstig gedrag en concentratieproblemen.",
+      problemSummary: "Zorgvraag vereist beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
       municipality: "Gemeente Amsterdam",
       placedDate: "16 april, 14:20"
     },
@@ -85,7 +85,7 @@ export function ProviderIntakeDashboard() {
       urgency: "low",
       status: "intake-gepland",
       waitingTime: "-",
-      problemSummary: "Lichte ontwikkelingsachterstand. Hulp bij structureren van de dag en sociale vaardigheden.",
+      problemSummary: "Startmoment wordt afgestemd na acceptatie.",
       municipality: "Gemeente Rotterdam",
       placedDate: "15 april, 16:45"
     },
@@ -98,7 +98,7 @@ export function ProviderIntakeDashboard() {
       urgency: "medium",
       status: "geaccepteerd",
       waitingTime: "-",
-      problemSummary: "Faalangst en perfectionisme leiden tot stress. Ondersteuning bij omgaan met prestatiegerichte houding.",
+      problemSummary: "Startmoment wordt afgestemd na acceptatie.",
       municipality: "Gemeente Den Haag",
       placedDate: "15 april, 10:20"
     }

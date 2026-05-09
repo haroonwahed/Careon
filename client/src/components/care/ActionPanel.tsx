@@ -68,7 +68,7 @@ export function ActionPanel({
               className="w-full justify-start"
             >
               <Phone size={16} className="mr-2" />
-              Contact cliënt
+              Contact gezin
             </Button>
           )}
 
@@ -185,7 +185,7 @@ export function ActionPanel({
         <ul className="space-y-2 text-xs text-cyan-200">
           <li className="flex items-start gap-2">
             <span className="text-cyan-200 mt-0.5">•</span>
-            <span>Neem contact op binnen 24 uur na plaatsing</span>
+            <span>Neem zo snel mogelijk contact op na plaatsing</span>
           </li>
           <li className="flex items-start gap-2">
             <span className="text-cyan-200 mt-0.5">•</span>
@@ -193,7 +193,7 @@ export function ActionPanel({
           </li>
           <li className="flex items-start gap-2">
             <span className="text-cyan-200 mt-0.5">•</span>
-            <span>Plan intake binnen 3 werkdagen bij hoge urgentie</span>
+            <span>Stem intakeplanning af op urgentie en capaciteit</span>
           </li>
         </ul>
       </CarePanel>

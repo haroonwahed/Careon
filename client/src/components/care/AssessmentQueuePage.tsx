@@ -97,7 +97,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
         <div className="rounded-2xl border border-border/70 bg-card/75 overflow-hidden">
           <div className="grid grid-cols-[1fr_1.2fr_70px_0.9fr_90px_110px_132px] gap-3 border-b border-border/70 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
             <span>Casus</span>
-            <span>Cliënt</span>
+            <span>Onderwerp</span>
             <span>Leeftijd</span>
             <span>Regio</span>
             <span>Urgentie</span>

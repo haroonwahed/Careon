@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import {
   AlertCircle,
   Building2,
@@ -8,18 +7,12 @@ import {
   ChevronRight,
   ChevronUp,
   Clock3,
-  FileText,
-  FolderOpen,
-  Home,
-  UserCheck,
-  Users,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   CareAttentionBar,
   CareDominantStatus,
   CareFlowBoard,
-  CareFlowStepCard,
   CareMetaChip,
   CarePageScaffold,
   CarePrimaryList,
@@ -161,75 +154,110 @@ function casussenBlokkadeChipClass(item: WorkflowCaseView): string {
   return "border-border bg-muted/30 text-foreground";
 }
 
-type StripBucketKey = "casus" | "matching" | "aanbieder" | "plaatsing" | "intake";
+type StripBucketKey =
+  | "casus"
+  | "matching"
+  | "aanbieder_beoordeling"
+  | "plaatsing"
+  | "intake";
 
 const STRIP_DEF: Array<{
   key: StripBucketKey;
   label: string;
-  sub: string;
+  ownerWaitLabel: string;
   countKeys: WorkflowBoardColumn[];
   filterPhase: DecisionUiPhaseId;
   statusTone: "blocked" | "waiting" | "ready" | "in_progress";
-  statusPillLabel: string;
-  Icon: LucideIcon;
 }> = [
   {
     key: "casus",
     label: "Casus",
-    sub: "Nieuw / intake",
-    countKeys: ["casus", "samenvatting"],
+    ownerWaitLabel: "Wacht op regieactie",
+    countKeys: ["casus"],
     filterPhase: "casus_gestart",
     statusTone: "ready",
-    statusPillLabel: "Open",
-    Icon: FolderOpen,
   },
   {
     key: "matching",
     label: "Matching",
-    sub: "Bezig / validatie",
-    countKeys: ["matching", "gemeente-validatie"],
+    ownerWaitLabel: "Wacht op matchvoorstel",
+    countKeys: ["matching"],
     filterPhase: "klaar_voor_matching",
     statusTone: "in_progress",
-    statusPillLabel: "Lopend",
-    Icon: Users,
   },
   {
-    key: "aanbieder",
-    label: "Aanbieder",
-    sub: "Wacht op reactie",
+    key: "aanbieder_beoordeling",
+    label: "Beoordeling",
+    ownerWaitLabel: "Wacht op aanbiederreactie",
     countKeys: ["aanbieder-beoordeling"],
     filterPhase: "in_beoordeling",
     statusTone: "waiting",
-    statusPillLabel: "Wacht",
-    Icon: UserCheck,
   },
   {
     key: "plaatsing",
     label: "Plaatsing",
-    sub: "In afwachting",
+    ownerWaitLabel: "Wacht op plaatsing",
     countKeys: ["plaatsing"],
     filterPhase: "plaatsing_intake",
     statusTone: "waiting",
-    statusPillLabel: "Wacht",
-    Icon: Home,
   },
   {
     key: "intake",
     label: "Intake",
-    sub: "Gepland",
+    ownerWaitLabel: "Wacht op intake-start",
     countKeys: ["intake"],
     filterPhase: "plaatsing_intake",
     statusTone: "in_progress",
-    statusPillLabel: "Lopend",
-    Icon: FileText,
   },
 ];
+
+function ownerWaitLabelForRole(stepKey: StripBucketKey, role: CaseDecisionRole): string {
+  if (role === "zorgaanbieder") {
+    switch (stepKey) {
+      case "casus":
+        return "Wacht op regie-invoer";
+      case "samenvatting":
+        return "Samenvatting wordt verwerkt";
+      case "matching":
+        return "Wacht op matchvoorstel";
+      case "gemeente_validatie":
+        return "Wacht op gemeentevalidatie";
+      case "aanbieder_beoordeling":
+        return "Wacht op jouw beoordeling";
+      case "plaatsing":
+        return "Wacht op plaatsingsactie";
+      case "intake":
+        return "Wacht op intake-uitvoering";
+      default:
+        return "Wacht op doorstroming";
+    }
+  }
+
+  switch (stepKey) {
+    case "casus":
+      return "Wacht op regieactie";
+    case "samenvatting":
+      return "Samenvatting wordt verwerkt";
+    case "matching":
+      return "Wacht op matchvoorstel";
+    case "gemeente_validatie":
+      return "Wacht op gemeentevalidatie";
+    case "aanbieder_beoordeling":
+      return "Wacht op aanbiederreactie";
+    case "plaatsing":
+      return "Wacht op plaatsing";
+    case "intake":
+      return "Wacht op intake-start";
+    default:
+      return "Wacht op doorstroming";
+  }
+}
 
 function countWorkflowStrip(items: WorkflowCaseView[]): Record<StripBucketKey, number> {
   const acc: Record<StripBucketKey, number> = {
     casus: 0,
     matching: 0,
-    aanbieder: 0,
+    aanbieder_beoordeling: 0,
     plaatsing: 0,
     intake: 0,
   };
@@ -569,6 +597,16 @@ export function WorkloadPage({
     onNavigateToWorkflow?.(nav);
   };
 
+  const focusCriticalCases = () => {
+    // Avoid stale phase scoping so critical focus behaves predictably.
+    setSelectedPhase("all");
+    setFocusChip("critical");
+    const werkvoorraadHeading = document.getElementById("casussen-werkvoorraad-heading");
+    if (werkvoorraadHeading && typeof werkvoorraadHeading.scrollIntoView === "function") {
+      werkvoorraadHeading.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
   const toggleSection = (section: SectionKey) => {
     setCollapsedSections((current) => ({ ...current, [section]: !current[section] }));
   };
@@ -602,7 +640,7 @@ export function WorkloadPage({
   const compactActionLabel = (decision: (typeof classifiedItems)[number]["decision"]): string => {
     const action = decision.nextActionLabel.toLowerCase();
     if (action.includes("urgentie")) return "Vul urgentie aan";
-    if (action.includes("wacht op samenvatting")) return "Bekijk status";
+    if (action.includes("samenvatting wordt verwerkt") || action.includes("wacht op samenvatting")) return "Bekijk status";
     if (action.includes("genereer") || action.includes("samenvatting") || action.includes("casus")) return "Vul casus aan";
     if (action.includes("controleer") && action.includes("match")) return "Start matching";
     if (action.includes("start matching")) return "Start matching";
@@ -652,7 +690,7 @@ export function WorkloadPage({
     if (attentionCount > 0) {
       return {
         label: "Bekijk kritieke casussen",
-        onClick: () => setFocusChip("critical"),
+        onClick: focusCriticalCases,
       };
     }
     if (focusChip === "my-worklist") {
@@ -711,21 +749,21 @@ export function WorkloadPage({
     return dominantStripKey === step.key;
   };
 
-  const ketenStrip = (
-    <CareSection testId="casussen-workflow-strip" aria-label="Aantallen per ketenstap">
+  const doorstroomStrip = (
+    <CareSection testId="casussen-workflow-strip" aria-label="Doorstroom per casusfase">
       <CareSectionHeader
-        title="De ketenstrip"
+        title="Doorstroom"
         description={
           <>
-            <p>Tellingen gelden voor je huidige filters en tabblad.</p>
-            <p>Klik een stap om te filteren op die beslisfase (ketenlabel).</p>
+            <p>Toont waar casussen in de keten staan, op basis van je huidige filters.</p>
+            <p>Klik een fase om de werkvoorraad op die fase te filteren.</p>
           </>
         }
-        descriptionAriaLabel="Uitleg ketenstrip"
-        descriptionTestId="casussen-ketenstrip-uitleg"
+        descriptionAriaLabel="Uitleg doorstroom"
+        descriptionTestId="casussen-doorstroom-uitleg"
         action={
           <Button type="button" variant="ghost" className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary" asChild>
-            <a href="/regiekamer" data-testid="casussen-ketenstrip-naar-regiekamer">
+            <a href="/regiekamer" data-testid="casussen-doorstroom-naar-regiekamer">
               Naar Regiekamer
               <ChevronRight size={14} aria-hidden />
             </a>
@@ -735,32 +773,47 @@ export function WorkloadPage({
       <CareSectionBody className="mt-4 space-y-0">
         <CareFlowBoard testId="casussen-flow-board" variant="pipeline">
           {STRIP_DEF.map((step) => {
-            const Icon = step.Icon;
             const active = stripStepIsActive(step);
+            const count = stripCounts[step.key];
+            // Operational lane: phase-first, count-second. The waiting label IS the
+            // bottleneck signal when count > 0; "Geen instroom" stays as the only
+            // generic status pill (drops the low-value "Doorstroom actief").
+            const roleAwareWait = ownerWaitLabelForRole(step.key, role).toLowerCase();
+            const waitingLabel = count > 0
+              ? `${count} ${roleAwareWait}`
+              : null;
             return (
-              <CareFlowStepCard
+              <button
                 key={step.key}
-                testId={`casussen-phase-column-${step.key}`}
-                active={active}
+                type="button"
+                data-testid={`casussen-phase-column-${step.key}`}
                 onClick={() => {
                   setSelectedPhase(step.filterPhase);
                   setFocusChip("all");
                 }}
-                icon={<Icon size={18} className="text-current" aria-hidden />}
-                metric={stripCounts[step.key]}
-                title={step.key === "casus" ? (stripCounts.casus === 1 ? "Casus" : "Casussen") : step.label}
-                subStatusLines={[
+                className={cn(
+                  "group flex h-full w-full flex-col gap-1.5 rounded-xl border border-border/60 bg-bg-subtle px-3 py-2.5 text-left transition",
+                  "hover:border-primary/35 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+                  active && "border-primary/35 ring-2 ring-primary/30",
+                )}
+              >
+                <div className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="truncate text-[13px] font-medium leading-tight text-foreground">{step.label}</span>
+                  <span className="shrink-0 text-[18px] font-semibold leading-none tabular-nums text-foreground">{count}</span>
+                </div>
+                {waitingLabel ? (
+                  <p className="truncate text-[11px] leading-snug text-muted-foreground">{waitingLabel}</p>
+                ) : (
                   <span
-                    key={`${step.key}-pill`}
                     className={cn(
-                      "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
+                      "inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-semibold",
                       phasePillClasses(step.statusTone),
                     )}
                   >
-                    {step.statusPillLabel}
-                  </span>,
-                ]}
-              />
+                    Geen instroom
+                  </span>
+                )}
+              </button>
             );
           })}
         </CareFlowBoard>
@@ -784,9 +837,9 @@ export function WorkloadPage({
             Tabbladen en zoekveld bepalen welke casussen je ziet. Sidebar Acties (taken) staat los van het tabblad Mijn werkvoorraad op
             deze pagina.
           </p>
-          <p>De ketenstrip telt casussen per stap (na je filters). De werklijst toont de volgende best passende actie per casus.</p>
+          <p>Doorstroom toont casussen per fase (na je filters). De werklijst toont de volgende best passende actie per casus.</p>
           <p className="text-muted-foreground">
-            Overzicht van je werkvoorraad per casus — ketenstrip en filters bepalen wat je hier ziet.
+            Overzicht van je werkvoorraad per casus — doorstroom en filters bepalen wat je hier ziet.
           </p>
         </div>
       }
@@ -813,7 +866,7 @@ export function WorkloadPage({
             message={workloadAttentionMessage}
             action={workloadAttentionAction}
           />
-          {ketenStrip}
+          {doorstroomStrip}
         </div>
       }
     >
@@ -1200,7 +1253,7 @@ export function WorkloadPage({
             avgDaysInPhase={avgDaysInPhase}
             riskSignalCount={riskSignalCount}
             stripCounts={stripCounts}
-            onCriticalClick={() => setFocusChip("critical")}
+            onCriticalClick={focusCriticalCases}
             onStripBucketClick={(key) => {
               const step = STRIP_DEF.find((row) => row.key === key);
               if (step) {
@@ -1301,7 +1354,6 @@ function CasussenInsightsPanels({
             </button>
           </li>
           {STRIP_DEF.map((col) => {
-            const QuickIcon = col.Icon;
             return (
             <li key={col.key}>
               <button
@@ -1311,9 +1363,6 @@ function CasussenInsightsPanels({
                 className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
               >
                 <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                  <span className="shrink-0 opacity-90" aria-hidden>
-                    <QuickIcon size={16} className="text-muted-foreground" />
-                  </span>
                   <span className="truncate">{col.label}</span>
                 </span>
                 <span className="tabular-nums font-semibold text-foreground">{stripCounts[col.key]}</span>

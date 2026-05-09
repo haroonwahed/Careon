@@ -1031,7 +1031,7 @@ export function MatchingPageWithMap({
                 [
                   { Icon: Sparkles, text: "Sterke specialisatie-fit met het zorgprofiel" },
                   { Icon: Clock, text: "Relatief korte inschatting van wachttijd" },
-                  { Icon: MapPin, text: "Dichtbij de woonplaats van de cliënt" },
+                  { Icon: MapPin, text: "Dichtbij de woonplaats van de jeugdige" },
                   { Icon: TrendingUp, text: "Goede eerdere uitkomsten in vergelijkbare trajecten" },
                 ] as const
               ).map((row) => (

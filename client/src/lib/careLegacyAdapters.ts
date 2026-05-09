@@ -47,7 +47,7 @@ export function toLegacyCase(spaCase: SpaCase): Case {
   const status = mapCaseStatus(spaCase.status);
   return {
     id: spaCase.id,
-    clientName: spaCase.title || "Cliënt onbekend",
+    clientName: spaCase.title || "Casus onbekend",
     clientAge: 14,
     region: spaCase.regio || "Onbekend",
     status,

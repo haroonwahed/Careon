@@ -366,24 +366,29 @@ export function CareFlowStepCard({
   onClick?: () => void;
   testId?: string;
 }) {
+  // Compact operational lane: phase-first, count-second, optional bottleneck pill.
+  // Replaces the previous 138px+ KPI-style card (text-[34px] metric, framed icon box)
+  // so the flow strip reads as orchestration, not a dashboard.
   return (
     <button
       type="button"
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "group flex h-full min-h-[138px] w-full flex-col gap-2 rounded-xl border border-border/60 bg-bg-subtle p-4 text-left transition hover:bg-card hover:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        "group flex h-full w-full flex-col gap-1.5 rounded-xl border border-border/60 bg-bg-subtle px-3 py-2.5 text-left transition hover:bg-card hover:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
         active && "ring-2 ring-primary/30",
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[34px] font-light leading-none tracking-[-0.06em] text-foreground">{metric}</p>
-          <p className="mt-1 text-[14px] font-medium leading-snug text-foreground">{title}</p>
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="shrink-0 text-muted-foreground" aria-hidden>
+            {icon}
+          </span>
+          <span className="truncate text-[13px] font-medium leading-tight text-foreground">{title}</span>
         </div>
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60">{icon}</div>
+        <span className="shrink-0 text-[20px] font-semibold leading-none tabular-nums text-foreground">{metric}</span>
       </div>
-      {subStatusLines[0] ? <div className="pt-2">{subStatusLines[0]}</div> : null}
+      {subStatusLines[0] ? <div className="min-w-0">{subStatusLines[0]}</div> : null}
     </button>
   );
 }

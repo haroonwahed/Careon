@@ -46,6 +46,7 @@ import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import { NextBestAction } from "../design/NextBestAction";
 import { ProcessTimeline } from "../design/ProcessTimeline";
 import { useCases } from "../../hooks/useCases";
+import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { tokens } from "../../design/tokens";
 import {
   INFO_REQUEST_TYPE_LABELS,
@@ -149,6 +150,21 @@ function formatUpdatedAtLabel(raw: string | null | undefined): string | null {
   }).format(parsed);
 }
 
+function formatWaitingIndicator(hoursInState: number | null | undefined, stateLabel: string): string | null {
+  if (hoursInState == null || Number.isNaN(hoursInState)) {
+    return null;
+  }
+  if (hoursInState < 48) {
+    const roundedHours = Math.max(1, Math.round(hoursInState));
+    return `${roundedHours} uur zonder voortgang (${stateLabel.toLowerCase()})`;
+  }
+  const days = Math.max(1, Math.round(hoursInState / 24));
+  if (days >= 7) {
+    return `${days} dagen zonder voortgang — doorlooptijd overschreden`;
+  }
+  return `${days} dag${days === 1 ? "" : "en"} zonder voortgang (${stateLabel.toLowerCase()})`;
+}
+
 function operationalRequirementItems(evaluation: DecisionEvaluation | null): string[] {
   if (!evaluation) {
     return ["Controleer casusstatus."];
@@ -191,7 +207,7 @@ function CaseWorkflowTimeline({
   steps: readonly { id: string; label: string; owner: string }[];
   activeIndex: number;
 }) {
-  const waitingActionLabel = "matching starten";
+  const waitingActionLabel = "regieactie";
   const pulseBetweenPercent = (() => {
     if (steps.length < 2) {
       return null;
@@ -213,17 +229,17 @@ function CaseWorkflowTimeline({
       return "Afgerond";
     }
     if (index === activeIndex) {
-      return activeIndex === 0 ? "✓ Casus aangemaakt" : "Actief";
+      return "Actieve fase";
     }
     if (index === activeIndex + 1) {
-      return `Wacht op: ${waitingActionLabel}`;
+      return `Wacht op ${waitingActionLabel}`;
     }
     return "Nog niet gestart";
   };
   return (
     <ProcessTimeline className="rounded-2xl border border-border/70 bg-card/40 px-4 py-3.5 md:px-5 md:py-4">
       <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Voortgang</h2>
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Operationele keten</h2>
       </div>
       <div className="relative">
         <div className="absolute hidden md:block" style={{ top: "16px", left: "12.5%", right: "12.5%" }} aria-hidden>
@@ -231,7 +247,7 @@ function CaseWorkflowTimeline({
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-dotted border-border/80" />
             {pulseBetweenPercent != null ? (
               <span
-                className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary/90 animate-pulse ring-4 ring-primary/20"
+                className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary/80 motion-safe:animate-pulse ring-2 ring-primary/15"
                 style={{ left: `${pulseBetweenPercent}%`, transform: "translate(-50%, -50%)" }}
               />
             ) : null}
@@ -240,9 +256,12 @@ function CaseWorkflowTimeline({
         <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4 md:gap-0">
           {steps.map((step, index) => {
             const isCurrent = index === activeIndex;
+            const isCompleted = index < activeIndex;
             const circleTone = isCurrent
-              ? "border-primary/55 bg-primary text-primary-foreground ring-1 ring-primary/35 shadow-md"
-              : "border-border/70 bg-background/70 text-muted-foreground";
+              ? "border-primary/50 bg-primary/90 text-primary-foreground ring-1 ring-primary/30 shadow-sm"
+              : isCompleted
+                ? "border-border/70 bg-emerald-500/12 text-emerald-200"
+                : "border-border/70 bg-background/70 text-muted-foreground/90";
             return (
               <div key={step.id} className="relative min-w-0 px-0.5 pt-0 md:px-1.5 md:pt-9 md:text-center">
                 <div
@@ -260,13 +279,15 @@ function CaseWorkflowTimeline({
                   </div>
                   <div className="hidden md:block" />
                 </div>
-                <p className={`mx-auto w-fit text-[13px] font-semibold leading-tight ${isCurrent ? "text-foreground" : "text-foreground/90"}`}>{step.label}</p>
+                <p className={`mx-auto w-fit text-[13px] font-semibold leading-tight ${isCurrent ? "text-foreground" : isCompleted ? "text-foreground/85" : "text-foreground/70"}`}>{step.label}</p>
                 <span
                   className={cn(
                     "mt-1 inline-flex h-5 w-fit items-center rounded-sm border px-1.5 text-[10px] font-medium",
                     isCurrent
-                      ? "border-primary/35 bg-primary/20 text-primary-foreground"
-                      : "border-border/70 bg-background/75 text-muted-foreground",
+                      ? "border-primary/35 bg-primary/16 text-primary-foreground"
+                      : isCompleted
+                        ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-200"
+                        : "border-border/70 bg-background/75 text-muted-foreground",
                   )}
                 >
                   {phaseStateLabel(index)}
@@ -471,6 +492,7 @@ function ProviderDecisionDialog({
 
 export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExecutionPageProps) {
   const { cases, loading, error, refetch } = useCases({ q: "" });
+  const { me } = useCurrentUser();
   const spaCase = cases.find((item) => item.id === caseId);
   const [decisionEvaluation, setDecisionEvaluation] = useState<DecisionEvaluation | null>(null);
   const [decisionLoading, setDecisionLoading] = useState(false);
@@ -479,8 +501,8 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const [providerDialog, setProviderDialog] = useState<"reject" | "info" | null>(null);
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [summaryFlowOpen, setSummaryFlowOpen] = useState(false);
-  const [showRequiredDetails, setShowRequiredDetails] = useState(true);
   const [refreshingHeader, setRefreshingHeader] = useState(false);
+  const [statusPanelOpen, setStatusPanelOpen] = useState(false);
 
   const loadDecisionEvaluation = async () => {
     setDecisionLoading(true);
@@ -606,6 +628,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
     resolvedState === "ARCHIVED",
   );
   const stepOwner = DECISION_WORKSPACE_FLOW_STEPS[decisionTimelineIndex]?.owner ?? "Gemeente";
+  const organizationLabel = me?.organization?.name?.trim() ?? "";
+  const organizationMunicipalityLabel = organizationLabel
+    ? (organizationLabel.toLowerCase().startsWith("gemeente ") ? organizationLabel : `Gemeente ${organizationLabel}`)
+    : "Gemeente";
+  const municipalityOwnerLabel = spaCase.regio && spaCase.regio !== "—"
+    ? `Gemeente ${spaCase.regio}`
+    : organizationMunicipalityLabel;
   const dominantBlocker = decisionEvaluation?.blockers?.[0] ?? null;
   const blockerIsMissingSummary = dominantBlocker?.code === "MISSING_SUMMARY";
   const summaryNeedsCaseCompletion = blockerIsMissingSummary || nextBestAction?.action === "GENERATE_SUMMARY";
@@ -741,35 +770,114 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const statusLine = summaryNeedsCaseCompletion
     ? "Matching nog niet gestart."
     : dominantBlocker
-      ? "Casus wacht op vervolgstap."
+      ? "Wacht op regieactie."
       : activeStepLabel.toLowerCase() === "casus gestart"
         ? "Casus aangemaakt en gereed voor matching."
         : `${activeStepLabel} is actief.`;
   const statusDotTone = summaryNeedsCaseCompletion || dominantBlocker
     ? "bg-amber-400"
     : "bg-emerald-400";
+  const currentPhaseLabel = decisionUiPhaseBadgeLabel(mapApiPhaseToDecisionUiPhase(resolvedState));
+  const waitForStateLabel = nextBestAction?.label ?? activeStepLabel;
+  const waitingSignal = formatWaitingIndicator(
+    decisionEvaluation?.decision_context.hours_in_current_state,
+    waitForStateLabel,
+  );
+  const matchingAvailabilityLabel = decisionEvaluation?.decision_context.has_matching_result
+    ? "Matchadvies beschikbaar"
+    : (
+      decisionEvaluation?.decision_context.has_summary
+        ? "Matchvoorstel in voorbereiding"
+        : "Matching nog niet mogelijk: samenvatting ontbreekt"
+    );
+  const providerSelectionLabel = decisionEvaluation?.decision_context.selected_provider_name
+    ? `Geselecteerde aanbieder: ${decisionEvaluation.decision_context.selected_provider_name}`
+    : (
+      decisionEvaluation?.decision_context.has_matching_result
+        ? "Aanbiederkeuze nog nodig"
+        : "Aanbiederkeuze volgt na matching"
+    );
+  const operationalContextSignals = [
+    waitingSignal,
+    matchingAvailabilityLabel,
+    providerSelectionLabel,
+    missingGeo ? "Geen aanbieder binnen regio bevestigd" : "Regiodekking beschikbaar",
+    decisionEvaluation?.decision_context.urgency?.toLowerCase().includes("spoed")
+      ? "Spoedplaatsing vereist"
+      : null,
+    resolvedState === "MATCHING_READY" ? `Wacht op ${CARE_TERMS.workflow.gemeenteValidatie.toLowerCase()}` : null,
+    dominantBlocker ? getShortReasonLabel(dominantBlocker.message, 68) : null,
+  ].filter((item): item is string => Boolean(item)).slice(0, 3);
+  const statusAttentionCount = operationalContextSignals.length;
+  const statusTriggerCopy = statusAttentionCount > 0
+    ? `${statusAttentionCount} open aandachtspunt${statusAttentionCount === 1 ? "" : "en"}`
+    : "Stabiele voortgang";
+  const matchingProposalStatusLabel = !decisionEvaluation?.decision_context.has_matching_result
+    ? "Nog geen passend voorstel"
+    : decisionEvaluation?.confidence_score == null
+      ? "Matchvoorstel beschikbaar"
+      : decisionEvaluation.confidence_score >= 0.75
+        ? "Voorstel is goed onderbouwd"
+        : decisionEvaluation.confidence_score >= 0.45
+          ? "Voorstel vraagt aanvullende controle"
+          : "Voorstel vraagt herbeoordeling";
+  const actionHolderLabel = (() => {
+    if (summaryNeedsCaseCompletion) {
+      return municipalityOwnerLabel;
+    }
+    if (resolvedState === "PROVIDER_REVIEW") {
+      return selectedProviderName || CARE_TERMS.roles.zorgaanbieder;
+    }
+    if (resolvedState === "PLACED" && !decisionEvaluation?.decision_context.intake_started) {
+      return selectedProviderName || "Intakecoordinator";
+    }
+    return stepOwner;
+  })();
+  const waitingOnLabel = (() => {
+    if (summaryNeedsCaseCompletion) {
+      return "Samenvatting wordt verwerkt";
+    }
+    if (resolvedState === "MATCHING_READY" && !selectedProviderId) {
+      return `Wacht op ${CARE_TERMS.workflow.gemeenteValidatie.toLowerCase()}`;
+    }
+    if (resolvedState === "PROVIDER_REVIEW") {
+      return "Wacht op reactie aanbieder";
+    }
+    if (resolvedState === "ACCEPTED" && !decisionEvaluation?.decision_context.placement_confirmed) {
+      return "Wacht op plaatsing";
+    }
+    if (resolvedState === "PLACED" && !decisionEvaluation?.decision_context.intake_started) {
+      return "Wacht op intake-start";
+    }
+    return "Wacht op doorstroming";
+  })();
+  const ctaSupportLine = summaryNeedsCaseCompletion
+    ? "Matching wordt gestart zodra samenvatting compleet is."
+    : nextBestAction?.action === "START_MATCHING"
+      ? (
+        decisionEvaluation?.decision_context.has_summary
+          ? "Matchvoorstel wordt opgebouwd op basis van actuele casuscontext."
+          : "Aanvullende gegevens zijn vereist voordat matching kan starten."
+      )
+      : (
+        dominantBlocker
+          ? getShortReasonLabel(dominantBlocker.message, 100)
+          : "Deze stap ondersteunt veilige doorstroming."
+      );
+  const situationInsight = spaCase.systemInsight
+    ? getShortReasonLabel(spaCase.systemInsight, 90)
+    : "Geen aanvullende situatienotitie beschikbaar.";
+  const careSituationSummaryLines = [
+    `Situatie: ${situationInsight}`,
+    `Zorgvraag: ${spaCase.zorgtype}`,
+    `Regio: ${spaCase.regio}`,
+    `Urgentie: ${spaCase.urgency}`,
+    missingGeo ? "Locatiebasis onvolledig voor volledige matching." : "Locatiebasis beschikbaar voor matching.",
+  ].slice(0, 5);
   const displayNextTransitionLabel = gateItems[0] ?? "Start matching";
   const displayNextStepHeading = displayNextTransitionLabel.toLowerCase().includes("controleer")
     ? "Start matching"
     : displayNextTransitionLabel;
-  const pendingRequiredItems = gateItems.filter((item) => item !== "Controleer status en vervolgactie.");
-  const completedRequiredItems = ["Casus aangemaakt"];
-  const hasRequiredDetails = pendingRequiredItems.length > 0;
-  const pendingIconForItem = (item: string) => {
-    if (/matching/i.test(item)) {
-      return <ArrowRight size={12} />;
-    }
-    if (/aanbieder|beoordeling/i.test(item)) {
-      return <UserRound size={12} />;
-    }
-    if (/intake/i.test(item)) {
-      return <Clock3 size={12} />;
-    }
-    if (/plaatsing/i.test(item)) {
-      return <CheckCircle2 size={12} />;
-    }
-    return <Clock3 size={12} />;
-  };
 
   const flowProgress = (
     <CaseWorkflowTimeline
@@ -783,24 +891,65 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
       <div className="grid gap-2.5 pb-3 md:grid-cols-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</p>
-          <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-foreground">
-            <span className={`size-2 rounded-full ${statusDotTone}`} aria-hidden />
-            {statusLine}
-          </p>
+          <div className="mt-2 border-t border-border/55 pt-2">
+            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className={`size-2 rounded-full ${statusDotTone}`} aria-hidden />
+              {statusLine}
+            </p>
+          </div>
         </div>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Eigenaar</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{stepOwner}</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actiehouder / wacht op</p>
+          <div className="mt-2 border-t border-border/55 pt-2">
+            <p className="text-sm font-semibold text-foreground">{actionHolderLabel}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{waitingOnLabel}</p>
+          </div>
         </div>
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Laatste wijziging</p>
-          <p className="mt-1 flex items-center gap-1.5 text-sm font-semibold text-foreground">
-            <Clock3 size={13} className="text-muted-foreground" />
-            {updatedAtLabel ?? "Onbekend"}
-          </p>
+          <div className="mt-2 border-t border-border/55 pt-2">
+            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+              <Clock3 size={13} className="text-muted-foreground" />
+              {updatedAtLabel ?? "Onbekend"}
+            </p>
+          </div>
         </div>
       </div>
-
+      {operationalContextSignals.length > 0 ? (
+        <div className="pb-3">
+          <div className="rounded-lg border border-border/60 bg-background/30 px-2.5 py-2">
+            <button
+              type="button"
+              onClick={() => setStatusPanelOpen((current) => !current)}
+              aria-expanded={statusPanelOpen}
+              className="flex w-full items-center justify-between gap-2 text-left"
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                Regiestatus
+              </span>
+              <span className="inline-flex items-center gap-1.5 text-[11px] text-foreground/90">
+                {statusTriggerCopy}
+                <ChevronDown
+                  size={12}
+                  className={cn("text-muted-foreground transition-transform", statusPanelOpen ? "rotate-180" : "")}
+                />
+              </span>
+            </button>
+            {statusPanelOpen ? (
+              <div className="mt-2 grid gap-1.5 border-t border-border/55 pt-2 sm:grid-cols-2 lg:grid-cols-3">
+                {operationalContextSignals.map((signal) => (
+                  <p
+                    key={signal}
+                    className="rounded-sm border border-border/50 bg-background/35 px-2 py-1.5 text-[12px] leading-relaxed text-foreground/90"
+                  >
+                    {signal}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
       <NextBestAction className="flex shrink-0 flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-start gap-3">
           <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
@@ -811,7 +960,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
             <p className="mt-1 text-[24px] leading-tight font-semibold text-foreground">
               {summaryNeedsCaseCompletion ? "Start matching" : (displayNextStepHeading || primaryButtonLabel || "Start matching")}
             </p>
-            <p className="mt-1 text-sm text-muted-foreground">Wacht op: matching starten.</p>
+            <p className="mt-1 text-sm text-muted-foreground">{ctaSupportLine}</p>
           </div>
         </div>
         {nextBestAction ? (
@@ -828,71 +977,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
           </Button>
         ) : null}
       </NextBestAction>
-      <div className="mt-3 border-t border-border/60 pt-3">
-        <div className="mb-2.5 flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[13px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Benodigd voor volgende fase</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowRequiredDetails((current) => !current)}
-            disabled={!hasRequiredDetails}
-            aria-expanded={hasRequiredDetails ? showRequiredDetails : undefined}
-            className="inline-flex h-6 items-center gap-1 rounded-md border border-border/50 bg-background/40 px-2 text-[11px] font-semibold text-foreground/90 disabled:opacity-100"
-          >
-            {completedRequiredItems.length} van {completedRequiredItems.length + pendingRequiredItems.length} voltooid
-            {hasRequiredDetails ? (
-              <ChevronDown
-                size={11}
-                className={cn("text-muted-foreground/80 transition-transform", showRequiredDetails ? "rotate-180" : "")}
-              />
-            ) : null}
-          </button>
-        </div>
-        <div className="rounded-lg border border-border/55 bg-background/35 px-3.5 py-2.5">
-          <div className="space-y-2">
-            {completedRequiredItems.map((item) => (
-              <div key={item} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-300">
-                    <CheckCircle2 size={12} />
-                  </span>
-                  <span className="text-sm font-medium text-foreground">{item}</span>
-                </div>
-                <div className="flex items-center gap-2 text-right">
-                  <span className="inline-flex h-5 items-center rounded-sm border border-emerald-500/30 bg-emerald-500/10 px-1.5 text-[10px] font-semibold text-emerald-300">
-                    Voltooid
-                  </span>
-                  <p className="text-xs text-muted-foreground">{updatedAtLabel ?? "—"}</p>
-                </div>
-              </div>
-            ))}
-            {hasRequiredDetails && showRequiredDetails ? (
-              <div className="space-y-1 border-t border-border/50 pt-2">
-                {pendingRequiredItems.map((item) => (
-                  <div key={item} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-500/35 bg-amber-500/12 text-amber-300">
-                        {pendingIconForItem(item)}
-                      </span>
-                      <span className="text-sm text-foreground/90">Wacht op: {item.toLowerCase()}</span>
-                    </div>
-                    <span className="inline-flex h-5 items-center rounded-sm border border-amber-500/35 bg-amber-500/12 px-1.5 text-[10px] font-semibold text-amber-300">
-                      Open
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {hasRequiredDetails && !showRequiredDetails ? (
-              <p className="text-xs text-muted-foreground">Open voor vereiste acties.</p>
-            ) : null}
-            {!hasRequiredDetails ? (
-              <p className="text-xs text-muted-foreground">Geen aanvullende acties vereist.</p>
-            ) : null}
-          </div>
-        </div>
-      </div>
       {(actionButtonDisabled || decisionError) && (
         <p className="text-[12px] text-destructive">
           {decisionError ?? getShortReasonLabel(primaryDisabledReason, 110)}
@@ -903,7 +987,76 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
 
   const decisionPanel = null;
 
-  const contextStack = flowProgress;
+  const contextCards = (
+    <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
+      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zorgsituatie</p>
+        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
+          {careSituationSummaryLines.map((line) => (
+            <div key={line} className="flex items-start gap-2 py-1.5">
+              <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-primary/55" aria-hidden />
+              <p className="leading-relaxed">{line}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matchingstatus</p>
+        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-muted-foreground">Matchadvies</span>
+            <span className={cn(
+              "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium",
+              decisionEvaluation?.decision_context.has_matching_result
+                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                : "border-amber-500/35 bg-amber-500/12 text-amber-200",
+            )}
+            >
+              {decisionEvaluation?.decision_context.has_matching_result ? "Beschikbaar" : "Ontbreekt"}
+            </span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-muted-foreground">Aanbieder</span>
+            <span className="font-medium text-foreground">{selectedProviderName || "Nog niet gekozen"}</span>
+          </div>
+          <div className="flex items-center justify-between py-1.5">
+            <span className="text-muted-foreground">Voorstelstatus</span>
+            <span className="font-medium text-foreground">{matchingProposalStatusLabel}</span>
+          </div>
+          <div className="flex items-start justify-between gap-3 py-1.5">
+            <span className="text-muted-foreground">Wachttijd</span>
+            <span className="text-right font-medium text-foreground">
+              {waitingSignal ?? "Niet beschikbaar"}
+            </span>
+          </div>
+        </div>
+      </section>
+      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Signalen en risico's</p>
+        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
+          {attentionRollup.slice(0, 2).map((row) => (
+            <div key={row.key} className="flex items-center gap-2 py-1.5">
+              <span className="size-1.5 shrink-0 rounded-full bg-amber-300/70" aria-hidden />
+              <p className="leading-relaxed">{row.body}</p>
+            </div>
+          ))}
+          {attentionRollup.length === 0 ? (
+            <div className="flex items-center gap-2 py-1.5">
+              <span className="size-1.5 shrink-0 rounded-full bg-emerald-300/70" aria-hidden />
+              <p className="leading-relaxed">Geen extra signalen.</p>
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </div>
+  );
+
+  const contextStack = (
+    <div className="space-y-2.5">
+      <div>{flowProgress}</div>
+      <div>{contextCards}</div>
+    </div>
+  );
 
   return (
     <>
@@ -925,7 +1078,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
                 className="h-10 gap-2 rounded-full border-border/70 bg-background/70 px-4 text-[13px] font-medium text-foreground hover:bg-muted/40"
               >
                 <MoreVertical size={16} />
-                Meer acties
+                Casusacties
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">

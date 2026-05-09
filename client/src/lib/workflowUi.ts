@@ -10,6 +10,17 @@ import {
 } from "./workflowStateMachine";
 import { getShortReasonLabel } from "./uxCopy";
 
+/**
+ * Detects whether a primary-action label indicates a system-driven samenvatting
+ * processing state. Recognizes both legacy ("Wacht op samenvatting") and current
+ * ("Samenvatting wordt verwerkt") phrasings so callers stay backwards-compatible.
+ */
+function isSummaryProcessingLabel(label: string | null | undefined): boolean {
+  if (!label) return false;
+  const lower = label.toLowerCase();
+  return lower.includes("samenvatting wordt verwerkt") || lower.includes("wacht op samenvatting");
+}
+
 export type WorkflowBoardColumn =
   | "casus"
   | "samenvatting"
@@ -288,7 +299,7 @@ function resolveBoardColumnWithFallback(spaCase: SpaCase, missingDataItems: stri
 
 function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn, summaryAvailable: boolean): string {
   if (column === "samenvatting") {
-    return summaryAvailable ? `${CARE_TERMS.workflow.samenvatting} klaar` : `${CARE_TERMS.workflow.samenvatting} nodig`;
+    return summaryAvailable ? `${CARE_TERMS.workflow.samenvatting} gereed` : `${CARE_TERMS.workflow.samenvatting} wordt verwerkt`;
   }
 
   switch (column) {
@@ -347,8 +358,8 @@ function resolveWhyInThisStep(
         : "Klaar voor samenvatting";
     case "samenvatting":
       return summaryAvailable
-        ? "Samenvatting klaar"
-        : "Wacht op samenvatting";
+        ? "Samenvatting gereed"
+        : "Samenvatting wordt verwerkt";
     case "matching":
       return providerCount > 0
         ? `${providerCount} matchvoorstel${providerCount === 1 ? "" : "len"} klaar voor validatie`
@@ -381,11 +392,11 @@ function resolvePrimaryAction(
       }
       return summaryAvailable
         ? { label: "Start matching", enabled: true, reason: null }
-        : { label: "Wacht op samenvatting", enabled: false, reason: "Samenvatting wordt automatisch verwerkt." };
+        : { label: "Samenvatting wordt verwerkt", enabled: false, reason: null };
     case "samenvatting":
       return summaryAvailable
         ? { label: "Bevestig", enabled: true, reason: null }
-        : { label: "Wacht op samenvatting", enabled: false, reason: "Samenvatting wordt automatisch verwerkt." };
+        : { label: "Samenvatting wordt verwerkt", enabled: false, reason: null };
     case "matching":
       return providerCount > 0
         ? { label: "Controleer matchadvies", enabled: true, reason: null }
@@ -599,7 +610,7 @@ export function buildWorkflowCase(spaCase: SpaCase, providers: SpaProvider[] = [
   const view: WorkflowCaseView = {
     id: spaCase.id,
     title: spaCase.title,
-    clientLabel: spaCase.title || `Cliënt ${spaCase.id.slice(-4)}`,
+    clientLabel: spaCase.title || `Casus ${spaCase.id.slice(-4)}`,
     clientAge: stableAge(spaCase.id),
     careType: spaCase.zorgtype,
     region: spaCase.regio || "Onbekend",
@@ -761,15 +772,15 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
       responsibleParty = "Gemeente";
       nextActionLabel = item.missingDataItems.length > 0
         ? "Vul casus aan"
-        : item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting")
-          ? "Wacht op samenvatting"
+        : isSummaryProcessingLabel(item.primaryActionLabel)
+          ? "Samenvatting wordt verwerkt"
           : "Start matching";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;
     case "samenvatting":
-      responsibleParty = item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting") ? "Systeem" : "Gemeente";
-      nextActionLabel = item.primaryActionLabel.toLowerCase().includes("wacht op samenvatting") ? "Wacht op samenvatting" : "Bevestig";
+      responsibleParty = isSummaryProcessingLabel(item.primaryActionLabel) ? "Systeem" : "Gemeente";
+      nextActionLabel = isSummaryProcessingLabel(item.primaryActionLabel) ? "Samenvatting wordt verwerkt" : "Bevestig";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;

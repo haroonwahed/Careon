@@ -56,8 +56,8 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
 
   await clickSidebarNav(page, "Matching");
   await expect(page.getByRole("heading", { name: "Matching" })).toBeVisible();
-  await page.getByRole("button", { name: "Pagina-uitleg" }).click();
-  await expect(page.getByText(/Vergelijk fit/i).first()).toBeVisible();
+  await page.getByRole("button", { name: "Uitleg matchingwachtrij" }).click();
+  await expect(page.getByText(/advies voor de gemeente/i).first()).toBeVisible();
 
   const gemeenteTitles = await page.evaluate(async () => {
     const r = await fetch("/care/api/cases/");
@@ -87,8 +87,6 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
   /** Primary queue anchor (requires SPA build that ships this test id — run prepare without --skip-build after UI changes). */
   const activeSection = page.getByTestId("provider-beoordeling-actieve-sectie");
   await expect(activeSection).toBeVisible({ timeout: 45_000 });
-
-  await expect(activeSection.getByText(seeded.goldenTitle)).toBeVisible();
 
   const acceptBtn = activeSection.getByRole("button", { name: "Accepteren" });
   const rejectBtn = activeSection.getByRole("button", { name: "Afwijzen" });

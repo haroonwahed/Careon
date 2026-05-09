@@ -153,7 +153,7 @@ export function RapportagesPage() {
 
   const handleDownloadTemplate = (report: ReportTemplate, sourceLabel = "Template") => {
     if (report.status !== "ready") {
-      toast.warning("Deze rapportage wordt nog opgebouwd en is nog niet te downloaden.");
+      toast.warning("Deze rapportage wordt nog klaargezet en is nog niet te downloaden.");
       return;
     }
 
@@ -308,7 +308,7 @@ export function RapportagesPage() {
                     : "border border-amber-500/30 bg-amber-500/10 text-amber-300"
                 }`}
               >
-                {report.status === "ready" ? "Klaar" : "Wordt opgebouwd"}
+                {report.status === "ready" ? "Klaar" : "Wordt klaargezet"}
               </span>
             </div>
 
