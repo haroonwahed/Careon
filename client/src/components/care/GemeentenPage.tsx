@@ -45,6 +45,7 @@ interface GemeentenPageProps {
 export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
 
   const { municipalities, loading, error, refetch } = useMunicipalities({ q: searchQuery });
 
@@ -166,6 +167,27 @@ export function GemeentenPage({ onGemeenteClick }: GemeentenPageProps = {}) {
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchPlaceholder="Zoeken op gemeente of regio..."
+                showSecondaryFilters={showSecondaryFilters}
+                onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+                secondaryFiltersLabel="Filters"
+                secondaryFilters={(
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Status
+                      <select
+                        aria-label="Status"
+                        value={selectedStatus}
+                        onChange={(event) => setSelectedStatus(event.target.value)}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alle</option>
+                        <option value="shortage">Tekort</option>
+                        <option value="urgent">Urgent</option>
+                        <option value="blocked">Geblokkeerd</option>
+                      </select>
+                    </label>
+                  </div>
+                )}
               />
             </div>
           )}

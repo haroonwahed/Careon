@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, Loader2, Save, ShieldCheck } from "lucide-react";
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, ExternalLink, Loader2, Lock, Save, ShieldCheck } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
 import { Button } from "../ui/button";
@@ -89,6 +89,10 @@ const SOURCE_REGISTRATION_OPTIONS: Option[] = [
   { value: "zorgmail_intake", label: "Zorgmail Intake" },
   { value: "handmatige_regiecasus", label: "Handmatige Regiecasus" },
 ];
+const compactLabelClass = "mb-1 block text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
+const compactGroupLabelClass = "mb-2 text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
+const quietToggleClass = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/55 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground";
+const quietBadgeClass = "inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-2.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.12em] text-primary/90";
 
 interface NieuweCasusPageProps {
   onCancel?: () => void;
@@ -112,28 +116,28 @@ function SectionHeader({ step, title, copy }: { step: string; title: string; cop
   const copyId = `nieuw-casus-${step}-copy`;
 
   return (
-    <div className="mb-4 flex items-start gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-sm font-semibold text-primary">
+    <div className="mb-3 flex items-start gap-2.5">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/5 text-[11px] font-semibold text-primary/90">
         {step}
       </div>
       <div>
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+        <div className="flex items-center gap-2.5">
+          <h2 className="text-lg font-semibold text-foreground md:text-xl">{title}</h2>
           {copy && (
             <button
               type="button"
               onClick={() => setShowCopy((current) => !current)}
-              className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+              className={quietToggleClass}
               aria-expanded={showCopy}
               aria-controls={copyId}
             >
               <CircleHelp size={12} />
-              Info
+              Waarom?
               <ChevronDown size={12} className={showCopy ? "rotate-180 transition-transform" : "transition-transform"} />
             </button>
           )}
         </div>
-        {copy && showCopy && <p id={copyId} className="mt-2 rounded-xl border border-border/70 bg-muted/20 px-3 py-2 text-sm text-muted-foreground">{copy}</p>}
+        {copy && showCopy && <p id={copyId} className="mt-2 rounded-xl border border-border/70 bg-muted/15 px-3 py-2 text-sm text-muted-foreground">{copy}</p>}
       </div>
     </div>
   );
@@ -227,7 +231,7 @@ function DateField({ label, value, onChange, error }: DateFieldProps) {
 
   return (
     <div>
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">{label}</label>
+      <label className={compactLabelClass}>{label}</label>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <button
@@ -284,10 +288,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const revealPreviewId = "nieuw-casus-reveal-preview";
   const controleDetailsId = "nieuw-casus-controle-details";
 
-  const stepMeta: Array<{ id: 1 | 2 | 3; title: string }> = [
-    { id: 1, title: "Basis" },
-    { id: 2, title: "Zorgvraag" },
-    { id: 3, title: "Randvoorwaarden" },
+  const stepMeta: Array<{ id: 1 | 2 | 3; title: string; subtitle: string }> = [
+    { id: 1, title: "Basis", subtitle: "Koppel bronregistratie" },
+    { id: 2, title: "Zorgvraag", subtitle: "Vul zorgvraag in" },
+    { id: 3, title: "Randvoorwaarden", subtitle: "Controle en afronding" },
   ];
 
   useEffect(() => {
@@ -705,20 +709,20 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   ];
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-primary">
+    <div className="mx-auto max-w-4xl space-y-4 md:space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <div className={quietBadgeClass}>
             Intake
-            <ChevronRight size={12} />
+            <ChevronRight size={11} className="opacity-80" aria-hidden />
             Nieuwe casus
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold text-foreground">Nieuwe casus</h1>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Nieuwe casus</h1>
             <button
               type="button"
               onClick={() => setShowPageGuidance((current) => !current)}
-              className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+              className={quietToggleClass}
               aria-expanded={showPageGuidance}
               aria-controls={pageGuidanceId}
             >
@@ -729,8 +733,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => onCancel?.()}>
+        <div className="flex shrink-0 items-center gap-2 sm:pt-1">
+          <Button variant="outline" className="h-10 gap-2 rounded-xl px-4 text-[13px] font-semibold" onClick={() => onCancel?.()}>
             <ArrowLeft size={15} />
             Terug
           </Button>
@@ -738,7 +742,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       </div>
 
       {showPageGuidance && (
-        <div id={pageGuidanceId} className="space-y-3 rounded-2xl border border-border/80 bg-muted/20 px-4 py-3 text-sm text-muted-foreground">
+        <div id={pageGuidanceId} className="space-y-2 rounded-xl border border-border/70 bg-muted/10 px-4 py-2.5 text-sm text-muted-foreground">
           <p>Vul alleen kerngegevens in; details blijven in het bronsysteem.</p>
           <p className="text-foreground">Velden met * zijn verplicht.</p>
         </div>
@@ -765,13 +769,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
       )}
 
-      <section className="panel-surface rounded-[28px] border border-border/70 p-4">
+      <section className="panel-surface rounded-[24px] border border-border/70 p-5 shadow-sm md:p-6">
         <div className="mb-4">
-          <div className="mb-2 flex items-center justify-between text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <div className="mb-2.5 flex items-center justify-between text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             <span>Stap {currentStep} van 3</span>
-            <span>{Math.round((currentStep / 3) * 100)}%</span>
+            <span className="tabular-nums text-foreground/90">{Math.round((currentStep / 3) * 100)}%</span>
           </div>
-          <div className="mb-3 grid grid-cols-3 gap-2">
+          <div className="mb-2.5 grid grid-cols-1 gap-2.5 md:grid-cols-3">
             {stepMeta.map((step) => {
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
@@ -787,16 +791,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     }
                   }}
                   disabled={!isCompleted && !isActive}
-                  className={`rounded-xl border px-3 py-2 text-left text-xs font-semibold transition-colors ${isActive ? "border-primary/50 bg-primary/10 text-primary" : isCompleted ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:border-emerald-400/45" : "border-border/60 bg-card/40 text-muted-foreground/70"}`}
+                  className={`min-h-[4rem] rounded-xl border px-3 py-2 text-left transition-colors ${isActive ? "border-primary/30 bg-primary/5 text-primary/90 ring-1 ring-primary/15" : isCompleted ? "border-emerald-500/25 bg-emerald-500/6 text-emerald-300 hover:border-emerald-400/35" : "border-border/60 bg-card/35 text-muted-foreground/70"}`}
                 >
-                  <span className="block">Stap {step.id}</span>
-                  <span className="block text-[11px] font-medium">{step.title}</span>
+                  <span className="mb-1 inline-flex h-6 w-6 items-center justify-center rounded-full border border-current/30 text-[10px] font-semibold">
+                    {step.id}
+                  </span>
+                  <span className="block text-[13px] font-semibold">{step.title}</span>
+                  <span className="block text-[10px] font-medium opacity-85">{step.subtitle}</span>
                 </button>
               );
             })}
           </div>
           <div
-            className="h-2 w-full rounded-full bg-muted/40"
+            className="h-1.5 w-full overflow-hidden rounded-full bg-muted/35"
             role="progressbar"
             aria-label="Voortgang nieuwe casus"
             aria-valuemin={0}
@@ -804,12 +811,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             aria-valuenow={Math.round((currentStep / 3) * 100)}
             aria-valuetext={`Stap ${currentStep} van 3`}
           >
-            <div className="h-2 rounded-full bg-primary transition-all" style={{ width: `${(currentStep / 3) * 100}%` }} />
+            <div className="h-1.5 rounded-full bg-primary transition-all" style={{ width: `${(currentStep / 3) * 100}%` }} />
           </div>
         </div>
 
         {currentStep === 1 && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {/*
              * Privacy ribbon — surfaces the minimal-data principle BEFORE the user
              * encounters any input field. Reinforces that CareOn is a regielaag
@@ -818,43 +825,54 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             <div
               role="note"
               aria-label="Privacy en gegevensgebruik"
-              className="flex items-start gap-3 rounded-2xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-100"
+              className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/45 px-4 py-3 text-sm sm:flex-row sm:items-start sm:justify-between sm:gap-4"
               data-testid="nieuwe-casus-privacy-ribbon"
             >
-              <ShieldCheck size={18} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden />
-              <div className="space-y-1">
-                <p className="font-semibold text-emerald-50">CareOn registreert het minimum dat nodig is voor regie</p>
-                <p className="text-emerald-200/90">
-                  We koppelen een bronregistratie en bewaren alleen referentiegegevens, regio en zorgvraag. Persoonsgegevens
-                  blijven bij de bron — CareOn is een coördinatielaag, geen centraal cliëntdossier.
-                </p>
+              <div className="flex min-w-0 items-start gap-3">
+                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary/80" aria-hidden />
+                <div className="min-w-0 space-y-1">
+                  <p className="font-semibold text-foreground">CareOn registreert alleen het minimum voor regie</p>
+                  <p className="text-muted-foreground">
+                    Bronregistratie, referentie, regio en zorgvraag zijn genoeg; persoonsgegevens blijven bij de bron.
+                  </p>
+                </div>
               </div>
-            </div>
-            <SectionHeader step="1" title="Bronregistratie koppelen" copy="Start een regiecasus gekoppeld aan een bronregistratie zodat de keten hem kan volgen." />
-
-            <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Bronregistratie *</label>
-              <select
-                value={sourceRegistration}
-                onChange={(event) => {
-                  setSourceRegistration(event.target.value);
-                  if (event.target.value === "handmatige_regiecasus") {
-                    setSourceReference("");
-                  }
-                }}
-                className={baseFieldClass}
-                aria-label="Bronregistratie *"
+              <a
+                href="/instellingen?section=documenten-privacy"
+                className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-primary underline-offset-4 hover:text-primary/80 hover:underline sm:self-center"
               >
-                <option value="">Selecteer bronregistratie</option>
-                {SOURCE_REGISTRATION_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
+                Meer over gegevensbeheer
+                <ExternalLink size={14} className="opacity-90" aria-hidden />
+              </a>
             </div>
+
+            <div className="rounded-2xl border border-border/55 bg-card/35 p-5 md:p-6">
+            <SectionHeader step="1" title="Bronregistratie koppelen" copy="Koppel de bronregistratie en minimale referentie voor ketenregie." />
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoek bronreferentie {isManualRegieCase ? "" : "*"}</label>
+                <label className={compactLabelClass}>Bronregistratie *</label>
+                <select
+                  value={sourceRegistration}
+                  onChange={(event) => {
+                    setSourceRegistration(event.target.value);
+                    if (event.target.value === "handmatige_regiecasus") {
+                      setSourceReference("");
+                    }
+                  }}
+                  className={baseFieldClass}
+                  aria-label="Bronregistratie *"
+                >
+                  <option value="">Selecteer bronregistratie</option>
+                  {SOURCE_REGISTRATION_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={compactLabelClass}>
+                  Zoek bronreferentie {isManualRegieCase ? "" : "*"}
+                </label>
                 <input
                   value={sourceReference}
                   onChange={(event) => setSourceReference(event.target.value)}
@@ -864,21 +882,6 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   aria-label={`Zoek bronreferentie ${isManualRegieCase ? "" : "*"}`.trim()}
                 />
                 <p className="mt-1 text-xs text-muted-foreground">Alleen minimale referentie voor ketenregie.</p>
-              </div>
-              <div>
-                <label
-                  htmlFor="careon-casusreferentie"
-                  className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground"
-                >
-                  CareOn casusreferentie
-                </label>
-                <input
-                  id="careon-casusreferentie"
-                  value={careonReference}
-                  className={baseFieldClass}
-                  readOnly
-                />
-                <p className="mt-1 text-xs text-muted-foreground">Automatisch gegenereerd.</p>
               </div>
             </div>
             {isManualRegieCase && (
@@ -891,13 +894,30 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             )}
 
             <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <label
+                  htmlFor="careon-casusreferentie"
+                  className={compactLabelClass}
+                >
+                  CareOn casusreferentie
+                </label>
+                <input
+                  id="careon-casusreferentie"
+                  value={careonReference}
+                  className={baseFieldClass}
+                  readOnly
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Automatisch gegenereerd.</p>
+              </div>
               <DateField
                 label="Startdatum casus *"
                 value={formState.start_date}
                 onChange={(nextValue) => updateField("start_date", nextValue)}
                 error={formErrors.start_date}
               />
+            </div>
 
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <DateField
                   label="Deadline matching *"
@@ -905,26 +925,33 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   onChange={(nextValue) => updateField("target_completion_date", nextValue)}
                   error={formErrors.target_completion_date}
                 />
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-1.5">
                   {[3, 7, 14].map((days) => (
                     <button
                       key={days}
                       type="button"
                       onClick={() => setDeadlinePreset(days as 3 | 7 | 14)}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${deadlineDays === days ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/35 hover:text-foreground"}`}
+                      className={`rounded-full border px-2.5 py-1 text-[11px] font-medium ${deadlineDays === days ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                     >
                       {days} dagen
                     </button>
                   ))}
                 </div>
               </div>
+              <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
+                <div className="flex items-start gap-2.5">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-card/30">
+                    <Lock size={14} className="text-muted-foreground" aria-hidden />
+                  </span>
+                  <div>
+                    <p className="text-[11px] font-medium tracking-[0.08em] text-muted-foreground">Zichtbaarheid</p>
+                    <p className="mt-1.5 text-sm leading-snug text-muted-foreground">
+                      Persoonsgegevens blijven in het bronsysteem tot formele koppeling of intake.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
-
-            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Visibility notice</p>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Persoonsgegevens blijven in het bronsysteem tot formele koppeling of intake.
-              </p>
             </div>
           </div>
         )}
@@ -935,7 +962,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Hoofdcategorie *</label>
+                <label className={compactLabelClass}>Hoofdcategorie *</label>
                 <select
                   value={formState.care_category_main}
                   onChange={(event) => {
@@ -953,7 +980,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Subcategorie</label>
+                <label className={compactLabelClass}>Subcategorie</label>
                 <select
                   value={formState.care_category_sub}
                   onChange={(event) => updateField("care_category_sub", event.target.value)}
@@ -971,7 +998,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Complexiteit *</p>
+                <p className={compactGroupLabelClass}>Complexiteit *</p>
                 <p className="mb-2 text-xs text-muted-foreground">Kies 1 optie</p>
                 <div className="grid gap-2" role="radiogroup" aria-label="Complexiteit">
                   {options.complexity.map((option) => {
@@ -986,7 +1013,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         role="radio"
                         aria-checked={active}
                         tabIndex={active ? 0 : -1}
-                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                       >
                         {option.label}
                       </button>
@@ -997,7 +1024,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
 
               <div>
-                <p className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie *</p>
+                <p className={compactGroupLabelClass}>Urgentie *</p>
                 <p className="mb-2 text-xs text-muted-foreground">Kies 1 optie</p>
                 <div className="grid gap-2" role="radiogroup" aria-label="Urgentie">
                   {options.urgency.map((option) => {
@@ -1012,7 +1039,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         role="radio"
                         aria-checked={active}
                         tabIndex={active ? 0 : -1}
-                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                       >
                         {option.label}
                       </button>
@@ -1024,7 +1051,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Toelichting (optioneel)</label>
+              <label className={compactLabelClass}>Toelichting (optioneel)</label>
               <textarea
                 value={formState.assessment_summary}
                 onChange={(event) => updateField("assessment_summary", event.target.value)}
@@ -1033,18 +1060,18 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               />
             </div>
 
-            <div className="rounded-2xl border border-blue-500/25 bg-blue-500/5 px-4 py-3 text-sm text-blue-100">
-              <p className="font-semibold">Urgentiesuggestie</p>
-              <p className="mt-1 text-blue-200/90">{urgencyHint}</p>
+            <div className="rounded-2xl border border-border/60 bg-muted/10 px-4 py-3 text-sm text-muted-foreground">
+              <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Urgentiesuggestie</p>
+              <p className="mt-1 text-foreground/90">{urgencyHint}</p>
             </div>
 
-            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+            <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zichtbaarheid per fase</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Zichtbaarheid per fase</p>
                 <button
                   type="button"
                   onClick={() => setShowRevealPreview((current) => !current)}
-                  className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+                  className={quietToggleClass}
                   aria-expanded={showRevealPreview}
                   aria-controls={revealPreviewId}
                 >
@@ -1065,7 +1092,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </thead>
                     <tbody>
                       {visibilityRows.map((row) => (
-                        <tr key={row.phase} className="rounded-xl border border-border/60 bg-muted/20">
+                        <tr key={row.phase} className="rounded-xl border border-border/50 bg-card/30">
                           <td className="px-3 py-2 font-semibold text-foreground">{row.label}</td>
                           <td className="px-3 py-2 text-muted-foreground">{row.gemeente}</td>
                           <td className="px-3 py-2 text-muted-foreground">{row.zorgaanbieder}</td>
@@ -1088,7 +1115,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Regio *</label>
+                <label className={compactLabelClass}>Regio *</label>
                 <select
                   value={formState.regio}
                   onChange={(event) => {
@@ -1108,14 +1135,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zoekradius</label>
-                <div className="flex gap-2 pt-1">
+                <label className={compactLabelClass}>Zoekradius</label>
+                <div className="flex gap-1.5 pt-1">
                   {[10, 25, 50].map((radius) => (
                     <button
                       key={radius}
                       type="button"
                       onClick={() => setSearchRadiusKm(radius as 10 | 25 | 50)}
-                      className={`rounded-full border px-3 py-2 text-xs font-semibold ${searchRadiusKm === radius ? "border-primary/45 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/35 hover:text-foreground"}`}
+                      className={`rounded-full border px-2.5 py-1.5 text-[11px] font-medium ${searchRadiusKm === radius ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                     >
                       {radius} km
                     </button>
@@ -1125,7 +1152,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Beperkingen</p>
+              <p className={compactGroupLabelClass}>Beperkingen</p>
               <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                 {options.diagnostiek.map((option) => {
                   const active = formState.diagnostiek.includes(option.value);
@@ -1134,7 +1161,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                       key={option.value}
                       type="button"
                       onClick={() => toggleDiagnostiek(option.value)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/50 bg-primary/10 text-foreground" : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"}`}
+                      className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
                     >
                       {option.label}
                     </button>
@@ -1143,10 +1170,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-muted/15 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matchverwachting</p>
+            <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
+              <p className={compactGroupLabelClass}>Matchverwachting</p>
               <div className="mt-2 flex items-center gap-2">
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${matchingPreview.tone === "good" ? "bg-green-500/15 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/15 text-yellow-300" : "bg-red-500/15 text-red-300"}`}>
+                <span className={`rounded-full px-3 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-green-500/10 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/10 text-yellow-300" : "bg-red-500/10 text-red-300"}`}>
                   {matchingPreview.label}
                 </span>
                 <span className="text-sm text-muted-foreground">{matchingPreview.detail}</span>
@@ -1154,14 +1181,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               <p className="mt-3 text-sm text-muted-foreground">{regionCapacityHint}</p>
             </div>
 
-            <div className="rounded-2xl border border-border/80 bg-card/40 p-4">
+            <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Gecontroleerde identity reveal</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Gecontroleerde identiteitsweergave</p>
                 <div className="flex items-center gap-2">
                   <select
                     value={previewRole}
                     onChange={(event) => setPreviewRole(event.target.value as VisibilityRole)}
-                    className="h-9 rounded-xl border border-border/80 bg-background px-2 text-xs text-foreground"
+                    className="h-9 rounded-xl border border-border/70 bg-background px-2 text-xs text-foreground"
                     aria-label="Preview rol"
                   >
                     <option value="gemeente">Gemeente</option>
@@ -1171,7 +1198,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   <select
                     value={previewPhase}
                     onChange={(event) => setPreviewPhase(event.target.value as WorkflowPhase)}
-                    className="h-9 rounded-xl border border-border/80 bg-background px-2 text-xs text-foreground"
+                    className="h-9 rounded-xl border border-border/70 bg-background px-2 text-xs text-foreground"
                     aria-label="Preview fase"
                   >
                     <option value="casus">Casus</option>
@@ -1182,7 +1209,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   </select>
                 </div>
               </div>
-              <div className="mt-3 rounded-xl border border-border/60 bg-muted/20 px-3 py-2">
+              <div className="mt-3 rounded-xl border border-border/60 bg-card/30 px-3 py-2">
                 <p className="text-xs text-muted-foreground">Zichtbare identiteit</p>
                 <p className="mt-1 text-sm font-semibold text-foreground">{identityDisplay}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
@@ -1207,13 +1234,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border/80 bg-card/50 p-4">
+            <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
               <div className="flex items-center justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
+                <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Controle</p>
                 <button
                   type="button"
                   onClick={() => setShowControleDetails((current) => !current)}
-                  className="inline-flex items-center gap-1 rounded-full border border-border/80 bg-card/70 px-2 py-1 text-[11px] font-medium text-muted-foreground hover:border-primary/35 hover:text-foreground"
+                  className={quietToggleClass}
                   aria-expanded={showControleDetails}
                   aria-controls={controleDetailsId}
                 >
@@ -1254,18 +1281,18 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
       )}
 
-      <div className="panel-surface rounded-[24px] border border-border/70 bg-card/60 p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => onCancel?.()}>
+      <div className="panel-surface rounded-[20px] border border-border/70 bg-card/60 p-4 md:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Button variant="outline" className="h-11 min-h-11 gap-2 rounded-xl px-4 text-[13px] font-semibold" onClick={() => onCancel?.()}>
             <ArrowLeft size={15} />
             Terug
           </Button>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {currentStep > 1 && (
               <Button
                 variant="outline"
-                className="gap-2"
+                className="h-11 min-h-11 gap-2 rounded-xl px-4 text-[13px] font-semibold"
                 onClick={() => {
                   setStepError(null);
                   setCurrentStep((current) => (current - 1) as 1 | 2 | 3);
@@ -1278,7 +1305,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             {currentStep < 3 && (
               <Button
-                className="gap-2"
+                className="h-11 min-h-11 gap-2 rounded-xl px-5 text-[13px] font-semibold shadow-md"
                 onClick={() => {
                   if (!validateStep(currentStep)) {
                     return;
@@ -1293,7 +1320,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
             {currentStep === 3 && (
               <Button
-                className="gap-2"
+                className="h-11 min-h-11 gap-2 rounded-xl px-5 text-[13px] font-semibold shadow-md"
                 onClick={() => {
                   if (!validateStep(3)) {
                     return;

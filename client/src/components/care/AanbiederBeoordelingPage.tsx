@@ -124,6 +124,15 @@ function urgencyLabel(urgency: SpaCase["urgency"]): string {
   }
 }
 
+function urgencyToneTextClass(urgency: SpaCase["urgency"]): string {
+  switch (urgency) {
+    case "critical": return "text-destructive";
+    case "warning":  return "text-amber-300";
+    case "normal":   return "text-blue-300";
+    default:         return "text-muted-foreground";
+  }
+}
+
 function formatClientReference(caseId: string): string {
   const digits = caseId.replace(/\D/g, "");
   if (digits.length >= 3) {
@@ -245,7 +254,6 @@ interface GemeenteViewProps {
 }
 
 /** Canonical monitoring layout — pixel baseline matches design mock (provider rows + sidebar). */
-const DEMO_DISPLAY_CASE_ID = "CAS-2025-00124";
 
 type ProviderInviteRow = {
   id: string;
@@ -413,7 +421,9 @@ function GemeenteView({
   }, [reviewCasesAll, searchQuery]);
 
   const focusCase = reviewCases[0] ?? reviewCasesAll[0];
-  const displayCaseId = focusCase?.id ?? DEMO_DISPLAY_CASE_ID;
+  // `displayCaseId` only resolves inside `showMainGrid` contexts where `focusCase` is guaranteed,
+  // so the empty-string fallback is defensive and never user-visible.
+  const displayCaseId = focusCase?.id ?? "";
   const hasPhaseCases = reviewCasesAll.length > 0;
   const showMainGrid = !loading && !error && reviewCases.length > 0;
 
@@ -459,7 +469,11 @@ function GemeenteView({
           )}
           metric={(
             <div className="flex flex-wrap items-center gap-2">
-              <span className="font-mono text-[13px] text-foreground">{displayCaseId}</span>
+              {focusCase ? (
+                <span className="font-mono text-[13px] text-foreground">{focusCase.id}</span>
+              ) : (
+                <span className="text-[13px] text-muted-foreground">Geen casus geselecteerd</span>
+              )}
               <span
                 className={cn(
                   "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-bold tracking-tight",
@@ -746,33 +760,42 @@ function GemeenteView({
                   <p className="text-[15px] font-semibold text-foreground">
                     {focusCase ? formatClientReference(focusCase.id) : "CLI-ONBEKEND"}
                   </p>
-                  <p className="text-[12px] text-muted-foreground">16 jaar · Amsterdam</p>
-                  <p className="text-[12px]">
-                    Urgentie:{" "}
-                    <span className="font-semibold text-red-400">Hoog</span>
-                  </p>
+                  {focusCase?.regio ? (
+                    <p className="text-[12px] text-muted-foreground">{focusCase.regio}</p>
+                  ) : null}
+                  {focusCase ? (
+                    <p className="text-[12px] text-muted-foreground">
+                      Urgentie:{" "}
+                      <span className={cn("font-semibold", urgencyToneTextClass(focusCase.urgency))}>
+                        {urgencyLabel(focusCase.urgency)}
+                      </span>
+                    </p>
+                  ) : null}
                   <p className="text-[11px] text-muted-foreground">
                     Betrokkene: {maskParticipantIdentity(focusCase?.title?.trim() || "Betrokkene")}
                   </p>
                 </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Hulpvraag</p>
-                <p className="text-[13px] leading-relaxed text-foreground">
-                  {focusCase?.systemInsight?.trim() ||
-                    "Intensieve ambulante hulp, gedragsproblematiek, trauma."}
-                </p>
-              </div>
-              <div className="flex items-start gap-2 text-[13px] text-muted-foreground">
-                <CalendarDays size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
-                <span>
-                  Gewenste start: <span className="font-medium text-foreground">Zo snel mogelijk</span>
-                </span>
-              </div>
+              {focusCase?.systemInsight?.trim() ? (
+                <div className="space-y-1">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Hulpvraag</p>
+                  <p className="text-[13px] leading-relaxed text-foreground">
+                    {focusCase.systemInsight.trim()}
+                  </p>
+                </div>
+              ) : null}
+              {focusCase?.intakeStartDate ? (
+                <div className="flex items-start gap-2 text-[13px] text-muted-foreground">
+                  <CalendarDays size={16} className="mt-0.5 shrink-0 text-primary" aria-hidden />
+                  <span>
+                    Gewenste start: <span className="font-medium text-foreground">{focusCase.intakeStartDate}</span>
+                  </span>
+                </div>
+              ) : null}
               <Button
                 type="button"
-                variant="ghost"
-                className="h-auto w-full justify-between px-0 text-[13px] font-semibold text-primary hover:bg-transparent hover:text-primary"
+                variant="outline"
+                className="h-9 w-full justify-between text-[13px] font-semibold"
                 onClick={() => onCaseClick(focusCase?.id ?? displayCaseId)}
               >
                 Bekijk casusdetails
@@ -781,44 +804,15 @@ function GemeenteView({
             </div>
           </section>
 
-          <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-            <div className="flex items-center gap-2 border-b border-border/50 pb-3">
-              <Clock size={16} className="text-primary" aria-hidden />
-              <h2 className="text-[13px] font-semibold text-foreground">Timeline</h2>
-            </div>
-            <ul className="space-y-4 pt-4">
-              <li className="flex gap-3">
-                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" aria-hidden />
-                <div>
-                  <p className="text-[13px] font-medium text-foreground">Aanbieders uitgenodigd</p>
-                  <p className="text-[12px] text-muted-foreground">12 mei 2025</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-sky-400" aria-hidden />
-                <div>
-                  <p className="text-[13px] font-medium text-foreground">Reactie ontvangen Enver Jeugdhulp</p>
-                  <p className="text-[12px] text-muted-foreground">13 mei 2025</p>
-                </div>
-              </li>
-              <li className="flex gap-3">
-                <span className="mt-1.5 size-2 shrink-0 rounded-full bg-amber-400" aria-hidden />
-                <div>
-                  <p className="text-[13px] font-medium text-foreground">Reactietermijn verloopt</p>
-                  <p className="text-[12px] text-muted-foreground">15 mei 2025</p>
-                </div>
-              </li>
-            </ul>
-          </section>
-
           <Button
             type="button"
             variant="outline"
+            disabled
+            aria-disabled="true"
             className="h-11 w-full gap-2 border-border/70 bg-background/50 text-[13px] font-semibold"
-            onClick={() => toast.message("Notitie", { description: "Notities volgen in een volgende iteratie." })}
           >
             <MessageSquare size={16} aria-hidden />
-            Notitie toevoegen
+            Notitie toevoegen (binnenkort)
           </Button>
         </aside>
       ) : null}

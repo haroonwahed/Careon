@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, AlertTriangle, PartyPopper, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { PlacementValidationChecklist } from "./PlacementValidationChecklist";
@@ -120,7 +120,9 @@ export function PlacementPage({
 
   const providerAccepted = placementDetail?.placement?.providerResponseStatus === "ACCEPTED";
 
-  // Validation items
+  // Validation items — only entries backed by real signals (provider acceptance + provider capacity).
+  // The previously hardcoded "Overdrachtsgegevens compleet" item was removed: it was always
+  // marked complete without any backing data and read as a fake validation during pilots.
   const validationItems = [
     {
       id: "provider-response",
@@ -129,11 +131,6 @@ export function PlacementPage({
       description: providerAccepted
         ? "De aanbieder heeft de casus bevestigd."
         : "Plaatsing kan pas worden bevestigd nadat de aanbieder heeft geaccepteerd."
-    },
-    {
-      id: "data",
-      label: "Overdrachtsgegevens compleet",
-      status: "complete" as const
     },
     {
       id: "capacity",
@@ -203,7 +200,7 @@ export function PlacementPage({
     }
   };
 
-  // Success state
+  // Success state — calm operational acknowledgement (no celebratory chrome).
   if (isConfirmed) {
     return (
       <CarePageScaffold
@@ -220,84 +217,34 @@ export function PlacementPage({
         dominantAction={
           <CareAttentionBar
             tone="info"
-            icon={<PartyPopper size={16} />}
-            message={`Plaatsing van ${formatClientReference(caseData.id)} is bevestigd`}
+            icon={<CheckCircle2 size={16} />}
+            message={`Plaatsing van ${formatClientReference(caseData.id)} is bevestigd. Intake wordt nu gepland.`}
             action={<PrimaryActionButton onClick={onBack}>Terug naar plaatsingen</PrimaryActionButton>}
           />
         }
       >
-          <div className="space-y-3">
-          <CarePanel className="p-4 text-center">
-        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full border-2 border-emerald-500/40 bg-emerald-500/10">
-          <PartyPopper size={48} className="text-emerald-300" />
-        </div>
-
-          <h1 className="text-3xl font-bold text-foreground mb-3">
-            Plaatsing bevestigd
-          </h1>
-          <p className="mx-auto mb-8 text-lg text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
-            De casus van <strong className="text-foreground">{formatClientReference(caseData.id)}</strong> is 
-            door <strong className="text-foreground">{provider.name}</strong> geaccepteerd.
-            De intake kan nu worden ingepland vanuit de plaatsingsstap.
-          </p>
-
-          <div className="mx-auto mb-6 grid grid-cols-3 gap-4" style={{ maxWidth: tokens.layout.contentMeasure }}>
-            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
-              <p className="text-sm text-muted-foreground mb-2">Casus-ID</p>
-              <p className="text-xl font-bold text-foreground">{caseData.id}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
-              <p className="text-sm text-muted-foreground mb-2">Aanbieder</p>
-          <p className="text-lg font-bold text-foreground">{provider.name}</p>
-            </div>
-            <div className="p-4 rounded-xl bg-muted/30 border border-muted-foreground/20">
-              <p className="text-sm text-muted-foreground mb-2">Status</p>
-              <p className="text-lg font-bold text-emerald-300">Plaatsing bevestigd</p>
+        <CarePanel className="p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden />
+            <div className="min-w-0 space-y-1">
+              <h2 className="text-base font-semibold text-foreground">Plaatsing bevestigd</h2>
+              <p className="text-sm text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
+                Casus <span className="font-medium text-foreground">{formatClientReference(caseData.id)}</span> is door
+                {" "}<span className="font-medium text-foreground">{provider.name}</span> geaccepteerd. Intake wordt nu gepland.
+              </p>
+              <dl className="mt-2 grid grid-cols-1 gap-x-6 gap-y-1 text-xs text-muted-foreground sm:grid-cols-2">
+                <div className="flex gap-1.5">
+                  <dt>Casusreferentie:</dt>
+                  <dd className="font-medium text-foreground">{formatClientReference(caseData.id)}</dd>
+                </div>
+                <div className="flex gap-1.5">
+                  <dt>Aanbieder:</dt>
+                  <dd className="font-medium text-foreground">{provider.name}</dd>
+                </div>
+              </dl>
             </div>
           </div>
-
-          <div className="mx-auto mb-6 rounded-xl border border-cyan-500/40 bg-cyan-500/10 p-4" style={{ maxWidth: tokens.layout.contentMeasure }}>
-            <h3 className="text-base font-semibold text-foreground mb-3">
-              Volgende stappen
-            </h3>
-            <div className="space-y-2 text-sm text-left">
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={16} className="text-emerald-300 flex-shrink-0 mt-0.5" />
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Gemeente en aanbieder</strong> werken nu vanuit dezelfde planning
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={16} className="text-emerald-300 flex-shrink-0 mt-0.5" />
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Casustraject</strong> blijft beschikbaar voor intake
-                </p>
-              </div>
-              <div className="flex items-start gap-3">
-                <CheckCircle2 size={16} className="text-emerald-300 flex-shrink-0 mt-0.5" />
-                <p className="text-muted-foreground">
-                  <strong className="text-foreground">Intake</strong> wordt nu gepland
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4 justify-center">
-            <Button
-              onClick={onBack}
-              className="bg-primary hover:bg-primary/90"
-            >
-              Terug naar plaatsingen
-            </Button>
-            <Button
-              onClick={onBack}
-              variant="outline"
-            >
-              Terug naar overzicht
-            </Button>
-          </div>
-          </CarePanel>
-          </div>
+        </CarePanel>
       </CarePageScaffold>
     );
   }
@@ -328,22 +275,6 @@ export function PlacementPage({
           }
         />
       }
-      kpiStrip={
-        <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
-          {[
-            { label: "Akkoord", value: providerAccepted ? "Ja" : "Nee", detail: "Van aanbieder" },
-            { label: "Validaties", value: `${validationItems.filter(item => item.status === "complete").length}/${validationItems.length}`, detail: "Klaar voor bevestiging" },
-            { label: "Risico's", value: riskSignals.length, detail: "Aandachtspunten" },
-            { label: "Status", value: isConfirmed ? "Bevestigd" : "Open", detail: "Plaatsing" },
-          ].map((item) => (
-            <div key={item.label} className="rounded-2xl border border-border/70 bg-card/70 px-4 py-3.5 shadow-sm">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{item.label}</p>
-              <div className="mt-1.5 text-[20px] font-semibold leading-none text-foreground">{item.value}</div>
-              <p className="mt-1.5 text-[13px] leading-snug text-muted-foreground">{item.detail}</p>
-            </div>
-          ))}
-        </div>
-      }
     >
       {/* Back Button */}
       <button
@@ -359,7 +290,7 @@ export function PlacementPage({
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-primary" />
               <span className="text-sm font-semibold text-primary uppercase tracking-wide">
                 {providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op beoordeling door aanbieder"}
               </span>
@@ -372,7 +303,7 @@ export function PlacementPage({
             <p className="text-sm text-muted-foreground mb-4 leading-relaxed break-words">
               {providerAccepted ? (
                 <>
-                  Match geaccepteerd door <strong className="text-foreground">{provider.name}</strong> · Score: <strong className="text-emerald-300">94%</strong>
+                  Match geaccepteerd door <strong className="text-foreground">{provider.name}</strong>
                 </>
               ) : (
                 <>
@@ -395,14 +326,12 @@ export function PlacementPage({
                   {providerAccepted ? "Aanbieder heeft geaccepteerd" : "Wacht op beoordeling door aanbieder"}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-300" />
-                <span className="text-muted-foreground">Capaciteit afgestemd</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 size={16} className="text-emerald-300" />
-                <span className="text-muted-foreground">Klaar voor intake</span>
-              </div>
+              {provider.availableSpots > 0 ? (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-300" />
+                  <span className="text-muted-foreground">Capaciteit beschikbaar</span>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -438,7 +367,7 @@ export function PlacementPage({
               </div>
               
               <div>
-                <p className="text-muted-foreground text-xs mb-1">Cliëntreferentie</p>
+                <p className="text-muted-foreground text-xs mb-1">Casusreferentie</p>
                 <p className="font-medium text-foreground">{formatClientReference(caseData.id)}</p>
               </div>
               
@@ -470,39 +399,14 @@ export function PlacementPage({
                    "Laag"}
                 </span>
               </div>
-
-              <div className="pt-3 border-t border-muted-foreground/20">
-                <p className="text-muted-foreground text-xs mb-2">Belangrijke notities</p>
-                <p className="text-xs text-foreground leading-relaxed">
-                  Complexe gedragsproblematiek. Ervaring met trauma-geïnformeerde zorg vereist.
-                </p>
-              </div>
             </div>
           </CarePanel>
         </div>
 
         {/* CENTER PANEL: Selected Provider + Validation */}
         <div className="col-span-6 space-y-3">
-          {/* Selected Provider Card */}
-          <SelectedProviderCard
-            provider={provider}
-            matchScore={94}
-            reasons={[
-              { text: "Specialisatie match", positive: true },
-              { text: "3 plekken beschikbaar", positive: true },
-              { text: "Reactie binnen 4u", positive: true }
-            ]}
-            tradeOffs={{
-              pros: [
-                "Ervaring met traumazorg",
-                "Multidisciplinair team"
-              ],
-              cons: [
-                "15km reisafstand",
-                "Groepstherapie wachtlijst (2-3w)"
-              ]
-            }}
-          />
+          {/* Selected Provider Card — reasons/tradeOffs only render when bound to real, evidence-backed data */}
+          <SelectedProviderCard provider={provider} />
 
           {/* Validation Checklist */}
           <PlacementValidationChecklist items={validationItems} />
@@ -559,16 +463,12 @@ export function PlacementPage({
             <div className="rounded-lg border border-muted-foreground/20 bg-muted/30 p-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="mb-1 text-muted-foreground">Cliëntreferentie</p>
+                  <p className="mb-1 text-muted-foreground">Casusreferentie</p>
                   <p className="font-semibold text-foreground">{formatClientReference(caseData.id)}</p>
                 </div>
                 <div>
                   <p className="mb-1 text-muted-foreground">Aanbieder</p>
                   <p className="font-semibold text-foreground">{provider.name}</p>
-                </div>
-                <div>
-                  <p className="mb-1 text-muted-foreground">Matchscore</p>
-                  <p className="font-semibold text-emerald-300">94%</p>
                 </div>
                 <div>
                   <p className="mb-1 text-muted-foreground">Urgentie</p>

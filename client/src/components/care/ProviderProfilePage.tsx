@@ -276,7 +276,7 @@ export function ProviderProfilePage({
                   ]}
                   tradeoffs={
                     matchScore < 90 ? [
-                      "Afstand tot cliënt is 15km (boven gemiddelde)",
+                      "Afstand tot jeugdige is 15km (boven gemiddelde)",
                       "Groepstherapie heeft wachtlijst van 2-3 weken"
                     ] : []
                   }

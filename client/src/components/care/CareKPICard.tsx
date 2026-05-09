@@ -53,8 +53,10 @@ export function CareKPICard({
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
-          <div className={`mt-2 text-3xl font-semibold tracking-tight ${style.value}`}>{value}</div>
-          {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+          <div className="mt-2 border-t border-border/45 pt-2">
+            <div className={`text-3xl font-semibold tracking-tight ${style.value}`}>{value}</div>
+            {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
+          </div>
         </div>
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-primary/10 ${style.icon}`}>
           <Icon size={18} />

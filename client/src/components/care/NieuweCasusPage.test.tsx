@@ -113,12 +113,10 @@ describe("NieuweCasusPage", () => {
     // Privacy framing was promoted to a dedicated ribbon at the top of step 1
     // so the user encounters it before any input field.
     const privacyRibbon = screen.getByTestId("nieuwe-casus-privacy-ribbon");
-    expect(privacyRibbon).toHaveTextContent(/CareOn registreert het minimum dat nodig is voor regie/i);
-    expect(privacyRibbon).toHaveTextContent(/Persoonsgegevens blijven bij de bron/i);
-    await user.click(screen.getByRole("button", { name: "Info" }));
-    expect(
-      screen.getByText("Start een regiecasus gekoppeld aan een bronregistratie zodat de keten hem kan volgen."),
-    ).toBeInTheDocument();
+    expect(privacyRibbon).toHaveTextContent(/CareOn registreert alleen het minimum voor regie/i);
+    expect(privacyRibbon).toHaveTextContent(/Bronregistratie, referentie, regio en zorgvraag zijn genoeg/i);
+    await user.click(screen.getByRole("button", { name: "Waarom?" }));
+    expect(screen.getByText("Koppel de bronregistratie en minimale referentie voor ketenregie.")).toBeInTheDocument();
   });
 
   it("requires a source registration before advancing the intake flow", async () => {

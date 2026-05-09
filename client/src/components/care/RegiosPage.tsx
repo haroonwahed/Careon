@@ -62,6 +62,7 @@ export function RegiosPage({
   onNavigateToMatching,
 }: RegiosPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const [capacityFilter, setCapacityFilter] = useState<"all" | "stabiel" | "druk" | "tekort" | "kritiek">("all");
   const [sortBy, setSortBy] = useState<"cases" | "capacity" | "waittime">("cases");
 
@@ -237,6 +238,9 @@ export function RegiosPage({
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
                 searchPlaceholder="Zoeken op regio..."
+                showSecondaryFilters={showSecondaryFilters}
+                onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+                secondaryFiltersLabel="Filters"
                 secondaryFilters={(
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <Select value={capacityFilter} onValueChange={setCapacityFilter}>

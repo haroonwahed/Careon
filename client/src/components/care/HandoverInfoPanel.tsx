@@ -102,7 +102,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
               <span className="text-xs font-bold text-primary">3</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
-              Intake binnen 3 werkdagen gepland
+              Intake wordt gepland
             </p>
           </div>
 
@@ -130,16 +130,16 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
               Aanbieder
             </p>
             <p className="text-xs text-muted-foreground break-words">
-              Dossier + contactgegevens
+              Betrokken partijen ontvangen de beschikbare overdrachtsinformatie
             </p>
           </div>
 
           <div className="p-2.5 rounded-lg bg-muted/20">
             <p className="text-xs font-medium text-foreground mb-1">
-              Cliënt/familie
+              Jeugdige &amp; gezin
             </p>
             <p className="text-xs text-muted-foreground break-words">
-              Bevestiging + contactpersoon
+              Contactgegevens worden gedeeld zodra deze beschikbaar en toegestaan zijn
             </p>
           </div>
         </div>

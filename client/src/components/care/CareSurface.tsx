@@ -209,7 +209,7 @@ export function CareSectionCard({
   return (
     <section className={cn("care-hover-card rounded-xl border border-border/70 bg-card/35 p-4", className)}>
       {(title || subtitle || actions) && (
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div className="mb-4 flex flex-col gap-3 border-b border-border/45 pb-3 lg:flex-row lg:items-start lg:justify-between">
           {(title || subtitle) ? (
             <div className="min-w-0 space-y-1">
               <h2 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-base font-semibold text-foreground">

@@ -24,8 +24,10 @@ interface Provider {
 
 interface SelectedProviderCardProps {
   provider: Provider;
-  matchScore: number;
-  reasons: Array<{ text: string; positive: boolean }>;
+  /** Optional — only render when a real fitScore/matchScore is available. */
+  matchScore?: number | null;
+  /** Optional — only render when real, evidence-backed reasons exist. */
+  reasons?: Array<{ text: string; positive: boolean }>;
   tradeOffs?: {
     pros: string[];
     cons: string[];
@@ -38,6 +40,8 @@ export function SelectedProviderCard({
   reasons,
   tradeOffs
 }: SelectedProviderCardProps) {
+  const hasMatchScore = typeof matchScore === "number" && Number.isFinite(matchScore);
+  const hasReasons = Array.isArray(reasons) && reasons.length > 0;
   const hasCapacity = provider.availableSpots > 0;
   const fastResponse = provider.responseTime <= 6;
 
@@ -45,7 +49,7 @@ export function SelectedProviderCard({
     <CarePanel className="border border-primary/40 bg-primary/10 p-4">
       {/* Selected Badge */}
       <div className="flex items-center gap-2 mb-4">
-        <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
+        <div className="w-3 h-3 rounded-full bg-primary" />
         <span className="text-sm font-semibold text-primary uppercase tracking-wide">
           Geselecteerde aanbieder
         </span>
@@ -60,16 +64,18 @@ export function SelectedProviderCard({
           <p className="text-sm text-muted-foreground">{provider.type}</p>
         </div>
         
-        {/* Match Score Badge */}
-        <div className="text-center">
-          <div className="px-4 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15">
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-bold text-emerald-300">{matchScore}</span>
-              <span className="text-sm text-muted-foreground">%</span>
+        {/* Match Score Badge — only render when a real score exists */}
+        {hasMatchScore ? (
+          <div className="text-center">
+            <div className="px-4 py-2 rounded-xl border border-emerald-500/40 bg-emerald-500/15">
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-bold text-emerald-300">{matchScore}</span>
+                <span className="text-sm text-muted-foreground">%</span>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Matchscore</p>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Matchscore</p>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Key Metrics */}
@@ -130,27 +136,29 @@ export function SelectedProviderCard({
         </div>
       </div>
 
-      {/* Why This Provider */}
-      <div className="mb-5 p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/15">
-        <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-          <TrendingUp size={16} className="text-cyan-300" />
-          Waarom deze aanbieder?
-        </h3>
-        <ul className="space-y-2">
-          {reasons.slice(0, 3).map((reason, idx) => (
-            <li key={idx} className="flex items-start gap-2.5">
-              {reason.positive ? (
-                <CheckCircle2 size={14} className="mt-0.5 text-emerald-300 flex-shrink-0" />
-              ) : (
-                <AlertCircle size={14} className="mt-0.5 text-amber-300 flex-shrink-0" />
-              )}
-              <span className="text-xs text-muted-foreground leading-relaxed break-words">
-                {reason.text}
-              </span>
-            </li>
-          ))}
-        </ul>
-      </div>
+      {/* Why This Provider — only render when evidence-backed reasons exist */}
+      {hasReasons ? (
+        <div className="mb-5 p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/15">
+          <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+            <TrendingUp size={16} className="text-cyan-300" />
+            Waarom deze aanbieder?
+          </h3>
+          <ul className="space-y-2">
+            {reasons!.slice(0, 3).map((reason, idx) => (
+              <li key={idx} className="flex items-start gap-2.5">
+                {reason.positive ? (
+                  <CheckCircle2 size={14} className="mt-0.5 text-emerald-300 flex-shrink-0" />
+                ) : (
+                  <AlertCircle size={14} className="mt-0.5 text-amber-300 flex-shrink-0" />
+                )}
+                <span className="text-xs text-muted-foreground leading-relaxed break-words">
+                  {reason.text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* Trade-offs */}
       {tradeOffs && (

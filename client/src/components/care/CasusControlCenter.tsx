@@ -373,9 +373,9 @@ function ContextPanel({ casus }: { casus: Casus }) {
 
   return (
     <div className="space-y-3">
-      {/* Client */}
+      {/* Jeugdige */}
       <div className="panel-surface p-4">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Cliënt</p>
+        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Jeugdige</p>
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
             <User size={18} className="text-primary" />

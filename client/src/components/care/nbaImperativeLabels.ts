@@ -20,6 +20,22 @@ export const NBA_IMPERATIVE_LABELS: Record<string, string> = {
   PROVIDER_REQUEST_INFO: "Beantwoord infoverzoek",
 };
 
+/**
+ * Defensive rewrites for legacy/unmapped labels that frame system automation as
+ * manual human work. The Regielaag UX principle is that automation must never
+ * appear as a CTA — humans only act when judgment is required. If a label slips
+ * through that talks about "genereren" of summary/report, rewrite it to a
+ * human-imperative ("Vul casus aan") or null it out so the caller falls back to
+ * a status display instead of a manual-looking button.
+ */
+const LEGACY_AUTOMATION_LABEL_REWRITES: Array<[RegExp, string | null]> = [
+  [/genereer\s+samenvatting/i, "Vul casus aan"],
+  [/samenvatting\s+genereren/i, "Vul casus aan"],
+  [/genereer\s+rapportage/i, null],
+  [/rapportage\s+genereren/i, null],
+  [/start\s+ai[-\s]?verwerking/i, null],
+];
+
 export function imperativeLabelForActionCode(
   action: string | null | undefined,
   labelFallback: string | null | undefined,
@@ -29,5 +45,11 @@ export function imperativeLabelForActionCode(
     return NBA_IMPERATIVE_LABELS[code];
   }
   const label = labelFallback?.trim();
-  return label || null;
+  if (!label) return null;
+  for (const [pattern, replacement] of LEGACY_AUTOMATION_LABEL_REWRITES) {
+    if (pattern.test(label)) {
+      return replacement;
+    }
+  }
+  return label;
 }
