@@ -84,7 +84,11 @@ export function RegiosPage({
     window.location.assign("/matching");
   }, [onNavigateToMatching]);
 
-  const openZorgaanbieders = () => {
+  const openZorgaanbieders = (regionId?: string) => {
+    if (regionId) {
+      onViewProviders(regionId);
+      return;
+    }
     if (regions.length > 0) {
       onViewProviders(regions[0].id);
       return;
@@ -149,11 +153,12 @@ export function RegiosPage({
     }
 
     if (systemState.noProviderRegions.length > 0) {
+      const affectedRegionId = systemState.noProviderRegions[0]?.id;
       signals.push({
         id: "no-provider",
         message: `${systemState.noProviderRegions.length} regio${systemState.noProviderRegions.length === 1 ? "" : "'s"} heeft geen passende aanbieder`,
         actionLabel: "Ga naar zorgaanbieders",
-        onAction: openZorgaanbieders,
+        onAction: () => openZorgaanbieders(affectedRegionId),
       });
     }
 

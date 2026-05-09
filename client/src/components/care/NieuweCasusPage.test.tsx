@@ -171,7 +171,7 @@ describe("NieuweCasusPage", () => {
     expect(mockPost).toHaveBeenCalledWith(
       "/care/api/cases/intake-create/",
       expect.objectContaining({
-        title: expect.stringMatching(/^CO-\d{4}-\d{4}$/),
+        title: expect.stringMatching(/^CO-\d{4}-[A-F0-9]{6}$/),
       }),
     );
   });

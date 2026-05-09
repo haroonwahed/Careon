@@ -1,4 +1,5 @@
 import type { DecisionEvaluation, CaseDecisionRole } from "./decisionEvaluation";
+import { toCareCaseEdit, toCareMatching } from "./routes";
 
 export type CaseDecisionActionCode =
   | "COMPLETE_CASE_DATA"
@@ -120,7 +121,7 @@ export async function executeCaseAction(
       return {
         kind: "navigate",
         message: "Casusgegevens worden geopend.",
-        href: `/care/casussen/${caseIdString}/edit/`,
+        href: toCareCaseEdit(caseIdString),
       };
 
     case "GENERATE_SUMMARY":
@@ -138,14 +139,14 @@ export async function executeCaseAction(
       return {
         kind: "navigate",
         message: "Matching gestart.",
-        href: `/care/matching?openCase=${encodeURIComponent(caseIdString)}`,
+        href: toCareMatching(caseIdString),
       };
 
     case "VALIDATE_MATCHING":
       return {
         kind: "navigate",
         message: "Matching wordt geopend.",
-        href: `/care/matching?openCase=${encodeURIComponent(caseIdString)}`,
+        href: toCareMatching(caseIdString),
       };
 
     case "SEND_TO_PROVIDER":

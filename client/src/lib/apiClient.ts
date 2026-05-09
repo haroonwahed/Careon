@@ -8,8 +8,8 @@
 import { LOGIN_URL } from "./routes";
 
 function getCsrfToken(): string {
-  const match = document.cookie.match(/csrftoken=([^;]+)/);
-  return match ? match[1] : '';
+  const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
 }
 
 interface RequestOptions extends RequestInit {

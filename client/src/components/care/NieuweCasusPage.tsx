@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
 import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, CalendarDays, CheckCircle2, ChevronDown, ChevronRight, CircleHelp, ExternalLink, Loader2, Lock, Save, ShieldCheck } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
-import { SPA_DASHBOARD_URL } from "../../lib/routes";
+import { SPA_DASHBOARD_URL, toCareCaseDetail, toCareSettingsSection } from "../../lib/routes";
 import { Button } from "../ui/button";
 import { Calendar } from "../ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -192,8 +192,33 @@ function addDays(date: Date, days: number): Date {
 
 function buildReference(prefix: "CO" | "TMP", now = new Date()): string {
   const year = now.getFullYear();
-  const serial = String(now.getTime() % 10000).padStart(4, "0");
+  const randomChunk = (() => {
+    if (typeof crypto !== "undefined" && typeof crypto.getRandomValues === "function") {
+      const bytes = new Uint8Array(4);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("").slice(0, 6);
+    }
+    return Math.random().toString(16).slice(2, 8).padEnd(6, "0");
+  })().toUpperCase();
+  const serial = randomChunk;
   return `${prefix}-${year}-${serial}`;
+}
+
+function extractValidationErrors(error: unknown): Record<string, string | string[]> | null {
+  if (!(error instanceof Error)) {
+    return null;
+  }
+  const match = error.message.match(/API fout \d+:\s*(.*)$/s);
+  const rawPayload = match ? match[1] : "";
+  if (!rawPayload) {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(rawPayload) as IntakeCreateError;
+    return parsed.errors ?? null;
+  } catch {
+    return null;
+  }
 }
 
 function daysBetween(startDate: string, endDate: string): number | null {
@@ -549,27 +574,18 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       setSuccessMessage(`Casus ${payload.title} is aangemaakt. Je wordt doorgestuurd naar het nieuwe regietraject.`);
       const target =
         payload.redirect_url ||
-        (createdCaseId ? `/care/cases/${createdCaseId}/` : `${SPA_DASHBOARD_URL}?page=casussen`);
+        (createdCaseId ? toCareCaseDetail(createdCaseId) : `${SPA_DASHBOARD_URL}?page=casussen`);
       if (createdCaseId) {
         onCreated?.(createdCaseId);
       }
       window.location.href = target;
     } catch (error) {
-      const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
-      const match = responseText.match(/API fout 400: (.*)$/);
-      if (match) {
-        try {
-          const parsed = JSON.parse(match[1]) as IntakeCreateError;
-          if (parsed.errors) {
-            setFormErrors(parsed.errors);
-          } else {
-            setLoadError("Controleer de invoer en probeer opnieuw.");
-          }
-        } catch {
-          setLoadError("Opslaan is mislukt. Controleer de invoer en probeer opnieuw.");
-        }
+      const validationErrors = extractValidationErrors(error);
+      if (validationErrors) {
+        setFormErrors(validationErrors);
       } else {
-        setLoadError(responseText);
+        const responseText = error instanceof Error ? error.message : "Opslaan is mislukt.";
+        setLoadError(responseText || "Opslaan is mislukt. Controleer de invoer en probeer opnieuw.");
       }
     } finally {
       setSaving(false);
@@ -838,7 +854,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 </div>
               </div>
               <a
-                href="/instellingen?section=documenten-privacy"
+                href={toCareSettingsSection("documenten-privacy")}
                 className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-primary underline-offset-4 hover:text-primary/80 hover:underline sm:self-center"
               >
                 Meer over gegevensbeheer

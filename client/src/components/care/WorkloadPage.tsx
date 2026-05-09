@@ -37,6 +37,7 @@ import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { consumeCasussenPreferredFocus } from "../../lib/casussenNavigation";
+import { CARE_PATHS } from "../../lib/routes";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
   buildWorkflowCases,
@@ -84,6 +85,7 @@ interface WorkloadPageProps {
 
 type FocusChip = "my-worklist" | "all" | "pipeline" | "critical" | "recent";
 type SectionKey = CasusWorkboardSection;
+type FlowColumnFilter = "all" | "plaatsing" | "intake";
 
 /** Compacte statusregel voor de paginabadge (contrast met vage “vragen actie”-formuleringen elders). */
 function casussenWerkvoorraadMetric(filteredCount: number, attentionCount: number): string {
@@ -216,12 +218,8 @@ function ownerWaitLabelForRole(stepKey: StripBucketKey, role: CaseDecisionRole):
     switch (stepKey) {
       case "casus":
         return "Wacht op regie-invoer";
-      case "samenvatting":
-        return "Samenvatting wordt verwerkt";
       case "matching":
         return "Wacht op matchvoorstel";
-      case "gemeente_validatie":
-        return "Wacht op gemeentevalidatie";
       case "aanbieder_beoordeling":
         return "Wacht op jouw beoordeling";
       case "plaatsing":
@@ -236,12 +234,8 @@ function ownerWaitLabelForRole(stepKey: StripBucketKey, role: CaseDecisionRole):
   switch (stepKey) {
     case "casus":
       return "Wacht op regieactie";
-    case "samenvatting":
-      return "Samenvatting wordt verwerkt";
     case "matching":
       return "Wacht op matchvoorstel";
-    case "gemeente_validatie":
-      return "Wacht op gemeentevalidatie";
     case "aanbieder_beoordeling":
       return "Wacht op aanbiederreactie";
     case "plaatsing":
@@ -374,6 +368,7 @@ export function WorkloadPage({
   const [selectedRegion, setSelectedRegion] = useState("all");
   const [selectedUrgency, setSelectedUrgency] = useState("all");
   const [selectedPhase, setSelectedPhase] = useState<"all" | DecisionUiPhaseId>("all");
+  const [selectedFlowColumn, setSelectedFlowColumn] = useState<FlowColumnFilter>("all");
   const [selectedOwner, setSelectedOwner] = useState<"all" | "Gemeente" | "Zorgaanbieder" | "Systeem">("all");
   /** Default “Alle casussen”: volledige werklijst; gebruikers kunnen naar Mijn werkvoorraad voor focus. */
   const [focusChip, setFocusChip] = useState<FocusChip>("all");
@@ -434,7 +429,8 @@ export function WorkloadPage({
           return false;
         }
 
-        if (selectedUrgency !== "all" && item.urgency !== selectedUrgency) {
+        const normalizedUrgency = selectedUrgency === "stable" ? "normal" : selectedUrgency;
+        if (normalizedUrgency !== "all" && item.urgency !== normalizedUrgency) {
           return false;
         }
 
@@ -463,13 +459,20 @@ export function WorkloadPage({
 
   const baseFilteredItems = useMemo(() => {
     if (selectedPhase === "all") {
-      return baseFilteredItemsWithoutPhase;
+      if (selectedFlowColumn === "all") {
+        return baseFilteredItemsWithoutPhase;
+      }
+      return baseFilteredItemsWithoutPhase.filter(({ item }) => item.boardColumn === selectedFlowColumn);
     }
-    return baseFilteredItemsWithoutPhase.filter(({ item }) => {
+    const phaseFiltered = baseFilteredItemsWithoutPhase.filter(({ item }) => {
       const itemDecision = mapApiPhaseToDecisionUiPhase(normalizeBoardColumnToPhaseId(item.boardColumn));
       return itemDecision === selectedPhase;
     });
-  }, [baseFilteredItemsWithoutPhase, selectedPhase]);
+    if (selectedFlowColumn === "all") {
+      return phaseFiltered;
+    }
+    return phaseFiltered.filter(({ item }) => item.boardColumn === selectedFlowColumn);
+  }, [baseFilteredItemsWithoutPhase, selectedPhase, selectedFlowColumn]);
 
   const tabCounts = useMemo(() => {
     let myWorklist = 0;
@@ -587,7 +590,7 @@ export function WorkloadPage({
 
   useEffect(() => {
     setPage(1);
-  }, [searchQuery, focusChip, selectedRegion, selectedUrgency, selectedPhase, selectedOwner]);
+  }, [searchQuery, focusChip, selectedRegion, selectedUrgency, selectedPhase, selectedFlowColumn, selectedOwner]);
 
   useEffect(() => {
     if (page !== safePage) setPage(safePage);
@@ -741,6 +744,9 @@ export function WorkloadPage({
 
   const stripStepIsActive = (step: (typeof STRIP_DEF)[number]) => {
     if (selectedPhase !== "all") {
+      if (selectedFlowColumn !== "all") {
+        return (step.key === "plaatsing" || step.key === "intake") && step.key === selectedFlowColumn;
+      }
       if (step.key === "matching") {
         return selectedPhase === "klaar_voor_matching";
       }
@@ -763,7 +769,7 @@ export function WorkloadPage({
         descriptionTestId="casussen-doorstroom-uitleg"
         action={
           <Button type="button" variant="ghost" className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary" asChild>
-            <a href="/regiekamer" data-testid="casussen-doorstroom-naar-regiekamer">
+            <a href={CARE_PATHS.REGIEKAMER} data-testid="casussen-doorstroom-naar-regiekamer">
               Naar Regiekamer
               <ChevronRight size={14} aria-hidden />
             </a>
@@ -789,6 +795,7 @@ export function WorkloadPage({
                 data-testid={`casussen-phase-column-${step.key}`}
                 onClick={() => {
                   setSelectedPhase(step.filterPhase);
+                  setSelectedFlowColumn(step.key === "plaatsing" || step.key === "intake" ? step.key : "all");
                   setFocusChip("all");
                 }}
                 className={cn(
@@ -923,7 +930,10 @@ export function WorkloadPage({
                       <select
                         aria-label="Stap in de keten"
                         value={selectedPhase}
-                        onChange={(event) => setSelectedPhase(event.target.value as "all" | DecisionUiPhaseId)}
+                        onChange={(event) => {
+                          setSelectedPhase(event.target.value as "all" | DecisionUiPhaseId);
+                          setSelectedFlowColumn("all");
+                        }}
                         className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle fases</option>
@@ -945,8 +955,7 @@ export function WorkloadPage({
                         <option value="all">Alle urgentie</option>
                         <option value="critical">Kritiek</option>
                         <option value="warning">Hoog</option>
-                        <option value="normal">Normaal</option>
-                        <option value="stable">Laag</option>
+                        <option value="normal">Normaal / laag</option>
                       </select>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
@@ -1258,6 +1267,7 @@ export function WorkloadPage({
               const step = STRIP_DEF.find((row) => row.key === key);
               if (step) {
                 setSelectedPhase(step.filterPhase);
+                setSelectedFlowColumn(step.key === "plaatsing" || step.key === "intake" ? step.key : "all");
                 setFocusChip("all");
               }
             }}
@@ -1326,7 +1336,7 @@ function CasussenInsightsPanels({
               </div>
             </dl>
             <a
-              href="/regiekamer"
+              href={CARE_PATHS.REGIEKAMER}
               className="inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline"
               data-testid="casussen-rail-naar-regiekamer"
             >
