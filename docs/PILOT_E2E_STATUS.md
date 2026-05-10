@@ -171,7 +171,7 @@ Roll back when any of the following is observed in production within 24h of cuto
 
 | Check | Command | Status |
 |-------|---------|--------|
-| Backend unit/integration | `.venv/bin/pytest --tb=line -q` | 764 / 764 passed |
+| Backend unit/integration | `.venv/bin/pytest --tb=line -q` | 810 / 810 passed |
 | Frontend unit/component | `(cd client && npx vitest run --no-cache)` | 168 / 168 passed |
 | Design-token guardrail | `(cd client && npm run check:careon-design)` | PASS |
 | Production SPA build | `(cd client && npm run build)` | PASS |
@@ -188,7 +188,8 @@ Roll back when any of the following is observed in production within 24h of cuto
 - **Cross-tenant isolation — Regiekamer overview:** explicit cross-tenant test added (`tests/test_cross_tenant_isolation.py::RegiekamerDecisionOverviewIsolationTest`). All 70 tenancy tests passing.
 - **Browser smoke (login → dashboard → logout):** `client/tests/e2e/pilot-login-logout.spec.ts` covers the minimal returning-user happy path independent of registration and seeded case content.
 - **Operator credibility:** `Notitie toevoegen (binnenkort)` disabled stub removed from `AanbiederBeoordelingPage`. The real notes affordance lives in `RegieNotesPanel`.
-- **Provider-shell regression caught (rehearsal pass):** Provider sessions seeded inside the shared `gemeente-demo` org slug were rendering the gemeente shell on login (regression introduced by the active-organization sync, commit `da8dddb`). Fixed by tightening the slug-fallback in `MultiTenantDemo.tsx::demoContextId` to only pin a context when its type matches the session role. Golden-path E2E now passes end-to-end (gemeente → matching → provider scope → accept → plaatsing → intake).
+- **Provider-shell regression confirmed fixed in `5372d5b`:** Provider sessions seeded inside the shared `gemeente-demo` org slug were rendering the gemeente shell on login (regression introduced by `da8dddb`'s active-organization sync). The fix in `MultiTenantDemo.tsx::demoContextId` (slug-type guard) had landed in `5372d5b`; the rehearsal pass independently caught the regression and verified the fix end-to-end via golden-path E2E (`pytest --tb=line` + `npx playwright test zorg-os-golden-path.spec.ts pilot-login-logout.spec.ts` both PASS).
+- **Middleware test mock alignment (rehearsal pass):** `tests/test_organization_middleware.py::test_membership_lookup_failure_does_not_break_request` was failing because the auto-provisioning fallback `ensure_user_organization` (added in `da8dddb`) called `get_full_name` on a `SimpleNamespace` mock that didn't expose it. Fixed by patching `ensure_user_organization` in the fallback path so the test still verifies its original contract — DatabaseError must not crash the middleware. No production code changed.
 
 ### Items still requiring a human (cannot be agent-verified)
 

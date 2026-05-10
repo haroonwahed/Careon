@@ -17,7 +17,11 @@ class OrganizationMiddlewareTests(TestCase):
 
         middleware = OrganizationMiddleware(lambda req: SimpleNamespace(status_code=200))
 
-        with patch('contracts.middleware.OrganizationMembership.objects.filter', side_effect=DatabaseError):
+        # Both DB-touching paths must surface DatabaseError so the middleware's
+        # fallback (request.organization = None) is the verified terminal state.
+        # `ensure_user_organization` was added to the fallback path in da8dddb.
+        with patch('contracts.middleware.OrganizationMembership.objects.filter', side_effect=DatabaseError), \
+             patch('contracts.middleware.ensure_user_organization', side_effect=DatabaseError):
             response = middleware(request)
 
         self.assertEqual(response.status_code, 200)
