@@ -37,6 +37,7 @@ import {
   SPA_DASHBOARD_URL,
   toCareCaseDetail,
 } from "../../lib/routes";
+import { apiClient } from "../../lib/apiClient";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
@@ -52,6 +53,15 @@ interface Context {
   name: string;
   subtitle?: string;
 }
+
+/** Maps UI workspace chips to Django Organization.slug (pilot uses one tenant for all demo chips). */
+const CONTEXT_ORGANIZATION_SLUG: Record<string, string> = {
+  "gemeente-demo": "gemeente-demo",
+  "gemeente-utrecht": "gemeente-demo",
+  "gemeente-amsterdam": "gemeente-demo",
+  "provider-horizon": "gemeente-demo",
+  "admin-system": "gemeente-demo",
+};
 
 const availableContexts: Context[] = [
   {
@@ -263,7 +273,7 @@ interface MultiTenantDemoProps {
 }
 
 export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) {
-  const { me } = useCurrentUser();
+  const { me, refetch: refetchMe } = useCurrentUser();
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
   const [currentPage, setCurrentPage] = useState<Page>(() =>
     normalizePageForRole(
@@ -328,14 +338,22 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
   const handleContextSwitch = (contextId: string) => {
     const newContext = availableContexts.find((c) => c.id === contextId);
-    if (newContext) {
-      setCurrentContext(newContext);
-      setSelectedCase(null);
-      const home: Page = newContext.type === "zorgaanbieder" ? "intake" : "regiekamer";
-      const normalized = normalizePageForRole(home, newContext.type);
-      setCurrentPage(normalized);
-      window.history.pushState({}, "", pageToHref(normalized, null));
+    if (!newContext) {
+      return;
     }
+    const orgSlug = CONTEXT_ORGANIZATION_SLUG[contextId];
+    if (orgSlug) {
+      void apiClient
+        .post<{ ok: boolean }>("/care/api/session/active-organization/", { organization_slug: orgSlug })
+        .then(() => refetchMe())
+        .catch(() => undefined);
+    }
+    setCurrentContext(newContext);
+    setSelectedCase(null);
+    const home: Page = newContext.type === "zorgaanbieder" ? "intake" : "regiekamer";
+    const normalized = normalizePageForRole(home, newContext.type);
+    setCurrentPage(normalized);
+    window.history.pushState({}, "", pageToHref(normalized, null));
   };
 
   const handleNavigate = (itemId: string, _href: string) => {
@@ -398,6 +416,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
    *   so manual TopBar switches are not overwritten on every render.
    */
   const sessionMeKeyRef = useRef<string | null>(null);
+  const sessionOrgSyncedRef = useRef(false);
   const demoContextId = useMemo(() => {
     if (!me) {
       return null;
@@ -470,6 +489,26 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       window.history.replaceState({}, "", pageToHref("regiekamer", null));
     }
   }, [currentContext.id, demoContextId, me]);
+
+  /** Sync Django session `active_organization_id` so APIs see the same tenant as the shell (refresh-safe). */
+  useEffect(() => {
+    if (!me || sessionOrgSyncedRef.current) {
+      return;
+    }
+    const slug = me.organization?.slug;
+    if (!slug) {
+      return;
+    }
+    sessionOrgSyncedRef.current = true;
+    void apiClient
+      .post<{ ok: boolean }>("/care/api/session/active-organization/", { organization_slug: slug })
+      .then(() => {
+        void refetchMe();
+      })
+      .catch(() => {
+        sessionOrgSyncedRef.current = false;
+      });
+  }, [me, refetchMe]);
 
   const handleOpenEntityFromAudit = (entry: any) => {
     if (entry.entityType === "casus" && entry.entityId) {

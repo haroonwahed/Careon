@@ -35,12 +35,15 @@ from contracts.models import (
     Client,
     ProviderProfile,
     MunicipalityConfiguration,
+    Organization,
+    OrganizationMembership,
     RegionalConfiguration,
     CaseIntakeProcess,
     OutcomeReasonCode,
     RegionType,
 )
 from contracts.tenancy import (
+    ensure_user_organization,
     get_scoped_object_or_404,
     get_user_organization,
     scope_queryset_for_organization,
@@ -75,6 +78,20 @@ from contracts.workflow_state_machine import (
 logger = logging.getLogger(__name__)
 
 MIN_SUMMARY_CONTEXT_LEN = 24
+
+
+def _active_organization(request):
+    """Resolve org for API calls; prefers middleware-cached request.organization when set."""
+    user = getattr(request, 'user', None)
+    if not user or not getattr(user, 'is_authenticated', False):
+        return None
+    org = getattr(request, 'organization', None)
+    if org is not None:
+        return org
+    organization = get_user_organization(user)
+    if organization is None:
+        organization = ensure_user_organization(user)
+    return organization
 
 
 def _workflow_summary_complete(*, assessment: CaseAssessment | None, intake: CaseIntakeProcess) -> tuple[bool, str]:
@@ -512,7 +529,7 @@ def case_decision_evaluation_api(request, case_id):
 @login_required
 @require_http_methods(["GET"])
 def regiekamer_decision_overview_api(request):
-    organization = get_user_organization(request.user)
+    organization = _active_organization(request)
     try:
         if organization is None:
             return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
@@ -710,7 +727,7 @@ def _build_match_context_from_intake(intake, organization):
 @require_http_methods(["GET"])
 def current_user_api(request):
     """Session-backed actor for SPA shell (no client-side role switching)."""
-    organization = get_user_organization(request.user)
+    organization = _active_organization(request)
     workflow_role = resolve_actor_role(user=request.user, organization=organization)
     pilot_ui = bool(getattr(settings, 'CAREON_PILOT_UI', False))
     payload = {
@@ -738,9 +755,58 @@ def current_user_api(request):
 
 
 @login_required
+@require_http_methods(["POST"])
+def session_active_organization_api(request):
+    """Persist active tenant for the session (same semantics as HTML switch_organization).
+
+    SPA sends JSON: ``{"organization_slug": "gemeente-demo"}`` or ``{"organization_id": 123}``.
+    Membership is required — no cross-tenant activation without OrganizationMembership.
+    """
+    try:
+        data = json.loads(request.body.decode('utf-8') or '{}')
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return JsonResponse({'ok': False, 'error': 'Ongeldige JSON'}, status=400)
+
+    slug = data.get('organization_slug') or data.get('slug')
+    org_id = data.get('organization_id')
+    organization = None
+    if org_id is not None:
+        try:
+            org_id = int(org_id)
+        except (TypeError, ValueError):
+            return JsonResponse({'ok': False, 'error': 'Ongeldig organization_id'}, status=400)
+        organization = Organization.objects.filter(pk=org_id, is_active=True).first()
+    elif slug:
+        organization = Organization.objects.filter(slug=str(slug).strip(), is_active=True).first()
+
+    if organization is None:
+        return JsonResponse({'ok': False, 'error': 'Organisatie niet gevonden'}, status=404)
+
+    membership = OrganizationMembership.objects.filter(
+        user=request.user,
+        organization=organization,
+        is_active=True,
+        organization__is_active=True,
+    ).first()
+    if membership is None:
+        return JsonResponse({'ok': False, 'error': 'Geen lidmaatschap voor deze organisatie'}, status=400)
+
+    request.session['active_organization_id'] = organization.id
+    request.session.modified = True
+    return JsonResponse({
+        'ok': True,
+        'organization': {
+            'id': organization.pk,
+            'slug': organization.slug,
+            'name': organization.name,
+        },
+    })
+
+
+@login_required
 @require_http_methods(["GET"])
 def matching_candidates_api(request, case_id):
-    organization = get_user_organization(request.user)
+    organization = _active_organization(request)
     if organization is None:
         return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
 
@@ -2445,7 +2511,7 @@ def provider_evaluations_list_api(request):
     Returns an empty list until a dedicated evaluation model is wired; the
     client hook degrades gracefully when this endpoint is absent or empty.
     """
-    organization = get_user_organization(request.user)
+    organization = _active_organization(request)
     if organization is None:
         return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
     return JsonResponse({'evaluations': [], 'total_count': 0})

@@ -9,7 +9,7 @@ from django.utils.cache import patch_cache_control
 from .error_pages import render_safe_error_page
 from .models import AuditLog
 from .models import OrganizationMembership
-from .tenancy import get_user_organization
+from .tenancy import ensure_user_organization, get_user_organization
 
 logger = logging.getLogger(__name__)
 
@@ -94,12 +94,17 @@ class OrganizationMiddleware:
                 if preferred_org_id:
                     user._active_organization_id = preferred_org_id
                 organization = get_user_organization(user)
+                if organization is None:
+                    organization = ensure_user_organization(user)
                 request.organization = organization
                 if organization and request.session.get('active_organization_id') != organization.id:
                     request.session['active_organization_id'] = organization.id
             except DatabaseError:
                 request._had_existing_membership = False
-                request.organization = None
+                try:
+                    request.organization = ensure_user_organization(user)
+                except DatabaseError:
+                    request.organization = None
         else:
             request.organization = None
         return self.get_response(request)
