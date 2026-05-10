@@ -25,7 +25,8 @@ def ensure_user_organization(user: Optional[User]) -> Optional[Organization]:
         if existing:
             return existing.organization
     except DatabaseError:
-        return None
+        # Do not abort provisioning: fall through to auto-create membership/org when possible.
+        pass
 
     org_name = f"{user.get_full_name().strip() or user.username}'s Regie"
     existing_organization = Organization.objects.filter(name=org_name).first()

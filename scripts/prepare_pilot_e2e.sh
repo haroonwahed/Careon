@@ -74,9 +74,10 @@ echo "[prepare_pilot_e2e] Migrating rehearsal database..."
 echo "[prepare_pilot_e2e] Flushing rehearsal database (destructive)..."
 "$PYTHON_BIN" manage.py flush --noinput || die "flush failed"
 
-echo "[prepare_pilot_e2e] Seeding canonical pilot E2E dataset..."
+echo "[prepare_pilot_e2e] Seeding Gemeente Demo pilot ecosystem + E2E accounts..."
 export E2E_DEMO_PASSWORD E2E_SMOKE_PASSWORD
 [[ -n "${E2E_PASSWORD:-}" ]] && export E2E_PASSWORD
+"$PYTHON_BIN" manage.py seed_demo_data --locked-time || die "seed_demo_data failed"
 "$PYTHON_BIN" manage.py seed_pilot_e2e || die "seed_pilot_e2e failed"
 
 echo ""
@@ -87,6 +88,7 @@ echo "  Database:     db_rehearsal.sqlite3 (settings_rehearsal)"
 echo "  E2E_BASE_URL: $E2E_BASE_URL"
 echo ""
 echo "  Demo tier (pilot-demo.spec.ts):"
+echo "    Org slug:  gemeente-demo (same tenant as seed_demo_data; --locked-time clock)"
 echo "    Users:     demo_gemeente, demo_provider_brug, demo_provider_kompas"
 echo "    Password:  $E2E_DEMO_PASSWORD"
 echo ""

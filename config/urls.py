@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import path, include
+from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
 from contracts import views as careon_views
@@ -28,6 +29,13 @@ urlpatterns = [
     path('', careon_views.index, name='index'),
     path('favicon.ico', careon_views.favicon, name='favicon'),
     path('_health/', careon_views.health_check, name='health_check'),
+    path('build-info/', careon_views.build_info, name='build_info'),
+    path('ops/system-state/', careon_views.ops_system_state, name='ops_system_state'),
+    path(
+        'internal/build-info/',
+        RedirectView.as_view(pattern_name='ops_system_state', permanent=False),
+        name='internal_build_info_redirect',
+    ),
     path('dashboard/', careon_views.dashboard, name='dashboard'),
     # Client-side routes (MultiTenantDemo): same SPA shell as dashboard for deep links (e.g. /instellingen?section=…).
     path('instellingen/', careon_views.dashboard, name='spa_instellingen'),

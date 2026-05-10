@@ -4,6 +4,7 @@ import math
 import re
 from typing import Any, Iterable
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils import timezone
 
@@ -23,6 +24,16 @@ from contracts.workflow_state_machine import (
     derive_workflow_state,
     resolve_actor_role,
 )
+
+
+def _safe_related(instance: Any, attr: str) -> Any:
+    """Resolve FK/OneToOne; return None if the related row is missing (broken FK)."""
+    if instance is None:
+        return None
+    try:
+        return getattr(instance, attr)
+    except ObjectDoesNotExist:
+        return None
 
 
 DECISION_ENGINE_THRESHOLDS = {
@@ -447,7 +458,9 @@ def _confidence_to_score(match_result: MatchResultaat | None) -> float | None:
         except (TypeError, ValueError):
             score = None
         else:
-            if 0.0 <= score <= 1.0:
+            if math.isnan(score) or math.isinf(score):
+                score = None
+            elif 0.0 <= score <= 1.0:
                 return round(score, 4)
 
     mapping = {
@@ -463,6 +476,8 @@ def _normalize_unit_score(value: Any) -> float:
     try:
         score = float(value)
     except (TypeError, ValueError):
+        return 0.0
+    if math.isnan(score) or math.isinf(score):
         return 0.0
     if score < 0.0:
         return 0.0
@@ -573,8 +588,8 @@ def _evaluate_distance_coverage(
             "case_geo_available": False,
         }
 
-    provider = getattr(match_result, "zorgaanbieder", None)
-    profiel = getattr(match_result, "zorgprofiel", None)
+    provider = _safe_related(match_result, "zorgaanbieder")
+    profiel = _safe_related(match_result, "zorgprofiel")
     vestiging = getattr(profiel, "aanbieder_vestiging", None) if profiel is not None else None
     provider_lat, provider_lon = _extract_coordinates(vestiging)
 
@@ -1037,7 +1052,7 @@ def _capacity_signals(*, placement: PlacementRequest | None, match_result: Match
     if placement is not None:
         provider = placement.selected_provider or placement.proposed_provider
     elif match_result is not None:
-        provider = getattr(match_result, "zorgaanbieder", None)
+        provider = _safe_related(match_result, "zorgaanbieder")
 
     if provider is not None:
         profile = getattr(provider, "provider_profile", None)
@@ -1858,10 +1873,10 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
             else None
         ),
         "selected_provider_name": (
-            placement.selected_provider.name
-            if placement and placement.selected_provider
-            else match_result.zorgaanbieder.name
-            if match_result and getattr(match_result, "zorgaanbieder", None)
+            _safe_related(placement, "selected_provider").name
+            if placement and _safe_related(placement, "selected_provider")
+            else _safe_related(match_result, "zorgaanbieder").name
+            if match_result and _safe_related(match_result, "zorgaanbieder")
             else None
         ),
     }

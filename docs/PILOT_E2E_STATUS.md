@@ -7,11 +7,13 @@
 ## Pilot Readiness
 
 - Verified baseline: design guardrail PASS, axe smoke PASS, focused care tests PASS, golden-path E2E PASS
+- **Case Timeline v1 boundary:** rehearsal moet `reports/rehearsal_timeline_evidence.json` (of `timeline_boundary_evidence` in `reports/rehearsal_report.json`) produceren; **`manage.py release_evidence_bundle`** moet **GO** geven voordat een pilot als release-klaar wordt geteld — zie [CASE_TIMELINE_V1.md](CASE_TIMELINE_V1.md) en Gate 8 in `scripts/production_readiness_gates.sh`.
 - Latest pass state: no P0/P1 findings, no workflow/API/permission regressions observed
 - Confidence: ready for pilot/demo walkthrough
 
 ## Pilot Resources
 
+- [PILOT_PROOF_PACKAGE.md](PILOT_PROOF_PACKAGE.md) — rehearsal artifacts under `reports/`, GO/NO-GO, troubleshooting (`run_full_pilot_rehearsal.sh`)
 - [PILOT_WALKTHROUGH_CHECKLIST.md](PILOT_WALKTHROUGH_CHECKLIST.md)
 - [PILOT_WALKTHROUGH_SCRIPT.md](PILOT_WALKTHROUGH_SCRIPT.md)
 - [PILOT_KNOWN_LIMITATIONS.md](PILOT_KNOWN_LIMITATIONS.md)
@@ -169,8 +171,8 @@ Roll back when any of the following is observed in production within 24h of cuto
 
 | Check | Command | Status |
 |-------|---------|--------|
-| Backend unit/integration | `.venv/bin/pytest --tb=line -q` | 763 / 763 passed |
-| Frontend unit/component | `(cd client && npx vitest run --no-cache)` | 167 / 167 passed |
+| Backend unit/integration | `.venv/bin/pytest --tb=line -q` | 764 / 764 passed |
+| Frontend unit/component | `(cd client && npx vitest run --no-cache)` | 168 / 168 passed |
 | Design-token guardrail | `(cd client && npm run check:careon-design)` | PASS |
 | Production SPA build | `(cd client && npm run build)` | PASS |
 | Migrations applied + clean | `.venv/bin/python manage.py migrate --plan` | "No planned migration operations." |
@@ -186,6 +188,7 @@ Roll back when any of the following is observed in production within 24h of cuto
 - **Cross-tenant isolation — Regiekamer overview:** explicit cross-tenant test added (`tests/test_cross_tenant_isolation.py::RegiekamerDecisionOverviewIsolationTest`). All 70 tenancy tests passing.
 - **Browser smoke (login → dashboard → logout):** `client/tests/e2e/pilot-login-logout.spec.ts` covers the minimal returning-user happy path independent of registration and seeded case content.
 - **Operator credibility:** `Notitie toevoegen (binnenkort)` disabled stub removed from `AanbiederBeoordelingPage`. The real notes affordance lives in `RegieNotesPanel`.
+- **Provider-shell regression caught (rehearsal pass):** Provider sessions seeded inside the shared `gemeente-demo` org slug were rendering the gemeente shell on login (regression introduced by the active-organization sync, commit `da8dddb`). Fixed by tightening the slug-fallback in `MultiTenantDemo.tsx::demoContextId` to only pin a context when its type matches the session role. Golden-path E2E now passes end-to-end (gemeente → matching → provider scope → accept → plaatsing → intake).
 
 ### Items still requiring a human (cannot be agent-verified)
 

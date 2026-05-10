@@ -1357,6 +1357,119 @@ class CaseDecisionLog(models.Model):
         return f'{case_ref} {self.event_type} @{self.timestamp.isoformat()}'
 
 
+class _CaseTimelineEventQuerySet(models.QuerySet):
+    """Operational timeline rows are append-only — bulk updates/deletes are forbidden."""
+
+    _GUARD = (
+        "CaseTimelineEvent is append-only operational history. "
+        "Do not update or delete rows via the ORM in application code."
+    )
+
+    def delete(self):  # type: ignore[override]
+        raise GovernanceLogImmutableError(self._GUARD)
+
+    def update(self, **kwargs):  # type: ignore[override]
+        raise GovernanceLogImmutableError(self._GUARD)
+
+
+class _CaseTimelineEventManager(models.Manager):
+    def get_queryset(self):
+        return _CaseTimelineEventQuerySet(self.model, using=self._db)
+
+
+class CaseTimelineEvent(models.Model):
+    """
+    Append-only operational timeline for a CareCase (not mutable case state).
+
+    Records workflow-relevant milestones for audit/replay orientation.
+    """
+
+    class EventType(models.TextChoices):
+        GEMEENTE_VALIDATION_APPROVED = (
+            'GEMEENTE_VALIDATION_APPROVED',
+            'Gemeente validatie afgerond',
+        )
+        PLACEMENT_REQUEST_CREATED = (
+            'PLACEMENT_REQUEST_CREATED',
+            'Plaatsingsaanvraag vastgelegd',
+        )
+        PROVIDER_REVIEW_OPENED = (
+            'PROVIDER_REVIEW_OPENED',
+            'Aanbiederbeoordeling geopend',
+        )
+        WORKFLOW_BLOCKED = 'WORKFLOW_BLOCKED', 'Workflow geblokkeerd'
+        WORKFLOW_ESCALATED = 'WORKFLOW_ESCALATED', 'Workflow escalatie'
+
+    organization = models.ForeignKey(
+        'Organization',
+        on_delete=models.CASCADE,
+        related_name='case_timeline_events',
+    )
+    care_case = models.ForeignKey(
+        'CareCase',
+        on_delete=models.CASCADE,
+        related_name='timeline_events',
+    )
+    event_type = models.CharField(max_length=80, choices=EventType.choices)
+    occurred_at = models.DateTimeField(db_index=True)
+    actor = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='case_timeline_events',
+    )
+    actor_role = models.CharField(max_length=40, blank=True)
+    source = models.CharField(
+        max_length=120,
+        blank=True,
+        help_text='Origin surface (e.g. matching_action_api).',
+    )
+    request_id = models.CharField(max_length=128, blank=True)
+    release_id = models.CharField(max_length=120, blank=True)
+    build_sha = models.CharField(max_length=64, blank=True)
+    from_phase = models.CharField(max_length=40, blank=True)
+    to_phase = models.CharField(max_length=40, blank=True)
+    reason_code = models.CharField(max_length=80, blank=True)
+    summary = models.TextField(blank=True)
+    decision_log = models.ForeignKey(
+        CaseDecisionLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='timeline_events',
+    )
+    audit_log = models.ForeignKey(
+        AuditLog,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='case_timeline_events',
+    )
+    metadata = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = _CaseTimelineEventManager()
+
+    class Meta:
+        db_table = 'contracts_casetimelineevent'
+        ordering = ['occurred_at', 'id']
+        indexes = [
+            models.Index(fields=['care_case', 'occurred_at']),
+            models.Index(fields=['organization', 'occurred_at']),
+        ]
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            raise GovernanceLogImmutableError(
+                'CaseTimelineEvent rows are immutable — append new rows only.'
+            )
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):  # type: ignore[override]
+        raise GovernanceLogImmutableError(
+            'CaseTimelineEvent rows cannot be deleted via the ORM.'
+        )
 
 
 class CareTaskQuerySet(models.QuerySet):

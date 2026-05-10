@@ -9,6 +9,14 @@ alwaysApply: true
 
 This repository implements **Zorg OS**, a workflow-first Dutch care allocation system.
 
+### Operating phase (temporary): infrastructure maturity
+
+**Feature expansion is frozen.** Do not propose or implement net-new AI features, broad redesigns, analytics modules, or additional product modules unless owners explicitly lift the freeze (see `docs/INFRASTRUCTURE_MATURITY_PHASE.md`).
+
+Ship **stability, observability, deterministic pilot/rehearsal, deploy truth, tests, and workflow integrity** first.
+
+Operational rehearsal artifacts and GO/NO-GO interpretation for **`./scripts/run_full_pilot_rehearsal.sh`** → **`docs/PILOT_PROOF_PACKAGE.md`** (not product marketing; evidence chain for humans/agents).
+
 Zorg OS is a **decision system**, not a dashboard.
 
 The system enforces:

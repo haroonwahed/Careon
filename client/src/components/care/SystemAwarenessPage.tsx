@@ -1217,7 +1217,7 @@ export function SystemAwarenessPage({
       }
     >
       {loading && (
-        <LoadingState title="Regiekamer laden…" copy="Gegevens worden geladen." />
+        <LoadingState title="Regiekamer synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
       )}
 
       {!loading && error && (

@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 
 from django.conf import settings
 from django.db import DatabaseError
@@ -7,6 +8,12 @@ from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 
 from .error_pages import render_safe_error_page
+from .observability import (
+    bind_correlation_from_request,
+    clear_correlation_id,
+    log_api_outcome,
+    record_api_failure,
+)
 from .models import AuditLog
 from .models import OrganizationMembership
 from .tenancy import ensure_user_organization, get_user_organization
@@ -75,6 +82,56 @@ class AuditLogMiddleware:
     def __call__(self, request):
         response = self.get_response(request)
         return response
+
+
+class OperationalObservabilityMiddleware:
+    """Correlation ID (request/response headers + logging context) and /care/api/ outcome logs."""
+
+    API_PREFIX = "/care/api/"
+    RESPONSE_HEADER = "X-Request-ID"
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        cid = bind_correlation_from_request(request)
+        start = time.perf_counter()
+        try:
+            response = self.get_response(request)
+        except Exception:
+            duration_ms = (time.perf_counter() - start) * 1000
+            if request.path.startswith(self.API_PREFIX):
+                record_api_failure(request, status_code=500)
+                log_api_outcome(
+                    path=request.path,
+                    method=request.method,
+                    status_code=500,
+                    duration_ms=duration_ms,
+                    user_label=self._user_label(request),
+                )
+            clear_correlation_id()
+            raise
+        duration_ms = (time.perf_counter() - start) * 1000
+        response[self.RESPONSE_HEADER] = cid
+        if request.path.startswith(self.API_PREFIX):
+            if response.status_code >= 500:
+                record_api_failure(request, status_code=response.status_code)
+            log_api_outcome(
+                path=request.path,
+                method=request.method,
+                status_code=response.status_code,
+                duration_ms=duration_ms,
+                user_label=self._user_label(request),
+            )
+        clear_correlation_id()
+        return response
+
+    @staticmethod
+    def _user_label(request):
+        user = getattr(request, "user", None)
+        if user is None or not getattr(user, "is_authenticated", False):
+            return "anonymous"
+        return getattr(user, "username", "") or str(user.pk)
 
 
 class OrganizationMiddleware:
@@ -232,6 +289,13 @@ def log_action(user, action, model_name, object_id=None, object_repr='', changes
         if ip_address and ',' in ip_address:
             ip_address = ip_address.split(',')[0].strip()
         user_agent = request.META.get('HTTP_USER_AGENT', '')
+        cid = getattr(request, 'correlation_id', None)
+        if cid:
+            rid = {'request_id': str(cid)}
+            if isinstance(changes, dict):
+                changes = {**rid, **changes}
+            elif changes is None:
+                changes = rid
 
     AuditLog.objects.create(
         user=user,

@@ -1,5 +1,11 @@
 # CareOn Decisions
 
+## Infrastructure maturity phase (feature freeze)
+
+- **Active:** Feature expansion is temporarily frozen in favour of reliability, observability, deterministic pilot/rehearsal, and workflow integrity.
+- **Source of truth:** `docs/INFRASTRUCTURE_MATURITY_PHASE.md`
+- **Lift:** Owners amend that doc and add an entry here when the freeze ends.
+
 ## Canonical Documentation
 
 - `README.md` is the single operational overview for setup, running, auth, reminders, and tests.

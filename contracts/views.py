@@ -6,7 +6,7 @@ from django.db.models import Sum, Count, Q, Avg, Min
 from django.db.models.functions import Coalesce
 from django.utils import timezone
 from django.utils.text import slugify
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth import login
@@ -81,7 +81,9 @@ from .governance import (
     detect_and_log_sla_transition,
     log_case_decision_event,
 )
+from .case_timeline import record_gemeente_validation_to_provider_review_boundary
 from .error_pages import render_safe_error_page
+from .build_info import gather_build_info, gather_ops_cockpit
 from .navigation import SPA_DASHBOARD_URL
 # Temporary blocker: active matching flow still depends on legacy_backend module.
 # Keep until a non-legacy matching service is introduced and migrated here.
@@ -1875,6 +1877,40 @@ def health_check(request):
     except DatabaseError:
         return HttpResponse('DATABASE ERROR', status=503, content_type='text/plain')
     return HttpResponse("OK", content_type="text/plain")
+
+
+@login_required
+@require_GET
+def build_info(request):
+    """Deployment truth for operators (commit, env, seed manifest, migrations). Staff-only."""
+    user = request.user
+    if not user.is_active or not user.is_staff:
+        return JsonResponse({'detail': 'Staff account required.'}, status=403)
+    response = JsonResponse(gather_ops_cockpit())
+    patch_cache_control(response, private=True, no_store=True)
+    return response
+
+
+@login_required
+@require_GET
+def ops_system_state(request):
+    """HTML cockpit + optional JSON (?format=json). Staff-only."""
+    user = request.user
+    if not user.is_active or not user.is_staff:
+        return HttpResponseForbidden("Staff account required.")
+
+    payload = gather_ops_cockpit()
+    wants_json = request.GET.get("format") == "json" or (
+        "application/json" in (request.headers.get("Accept") or "").lower()
+        and request.GET.get("format") != "html"
+    )
+    if wants_json:
+        response = JsonResponse(payload)
+        patch_cache_control(response, private=True, no_store=True)
+        return response
+    response = render(request, "ops/system_state.html", {"ops": payload})
+    patch_cache_control(response, private=True, no_store=True)
+    return response
 
 
 def favicon(request):
@@ -5378,6 +5414,14 @@ def case_matching_action(request, pk):
             new_state=WorkflowState.PROVIDER_REVIEW_PENDING,
             action=WorkflowAction.SEND_TO_PROVIDER,
             placement=placement,
+            source='case_matching_action',
+        )
+        record_gemeente_validation_to_provider_review_boundary(
+            intake=intake,
+            placement=placement,
+            request=request,
+            actor_role=actor_role,
+            workflow_state_before_action=previous_state,
             source='case_matching_action',
         )
         messages.success(request, f'Aanbieder {provider.name} gekoppeld aan casus "{intake.title}".')

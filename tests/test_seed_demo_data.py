@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.test import TestCase
@@ -7,12 +9,14 @@ from contracts.models import (
     CaseAssessment,
     CaseIntakeProcess,
     Client,
+    Deadline,
     MatchResultaat,
     Organization,
     OrganizationMembership,
     PlacementRequest,
     UserProfile,
 )
+from contracts.pilot_universe import PILOT_LOCK_ANCHOR
 from contracts.workflow_state_machine import WorkflowAction, WorkflowRole, can_role_execute_action, resolve_actor_role
 
 from contracts.management.commands.seed_demo_data import CASE_TITLES, DEMO_EMAIL, DEMO_ORG_SLUG
@@ -41,8 +45,8 @@ class SeedDemoDataTests(TestCase):
     def test_demo_cases_and_providers_are_seeded(self):
         organization = Organization.objects.get(slug=DEMO_ORG_SLUG)
 
-        self.assertEqual(Client.objects.filter(organization=organization, provider_profile__isnull=False).count(), 4)
-        self.assertEqual(CaseIntakeProcess.objects.filter(organization=organization).count(), 5)
+        self.assertEqual(Client.objects.filter(organization=organization, provider_profile__isnull=False).count(), 3)
+        self.assertEqual(CaseIntakeProcess.objects.filter(organization=organization).count(), 12)
 
         case_map = {case.title: case for case in CaseIntakeProcess.objects.filter(organization=organization)}
         self.assertEqual(case_map[CASE_TITLES[0]].workflow_state, CaseIntakeProcess.WorkflowState.DRAFT_CASE)
@@ -69,9 +73,9 @@ class SeedDemoDataTests(TestCase):
     def test_seeded_match_results_point_to_expected_top_candidates(self):
         organization = Organization.objects.get(slug=DEMO_ORG_SLUG)
         expected_top_candidates = {
-            CASE_TITLES[1]: 'NovaCare Jeugd',
-            CASE_TITLES[2]: 'ThuisKompas Zorg',
-            CASE_TITLES[3]: 'Veerkracht Centrum',
+            CASE_TITLES[1]: 'Kompas Zorg',
+            CASE_TITLES[2]: 'Groei & Co',
+            CASE_TITLES[3]: 'Horizon Jeugdzorg',
         }
 
         for title, expected_provider in expected_top_candidates.items():
@@ -94,3 +98,12 @@ class SeedDemoDataTests(TestCase):
         payload = response.json()
         self.assertGreaterEqual(payload['count'], 1)
         self.assertEqual(payload['matches'][0]['zorgaanbieder_id'], match.zorgaanbieder_id)
+
+    def test_locked_seed_sets_deadline_dates_from_pilot_anchor(self):
+        call_command('seed_demo_data', reset=True, locked_time=True, verbosity=0)
+        organization = Organization.objects.get(slug=DEMO_ORG_SLUG)
+        intake = CaseIntakeProcess.objects.get(organization=organization, title=CASE_TITLES[1])
+        deadline = Deadline.objects.filter(due_diligence_process=intake).first()
+        self.assertIsNotNone(deadline)
+        expected = PILOT_LOCK_ANCHOR.date() + timedelta(days=2)
+        self.assertEqual(deadline.due_date, expected)

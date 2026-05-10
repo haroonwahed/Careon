@@ -17,6 +17,16 @@
 
 ## Wat is geautomatiseerd getest (laatste bekende groene run)
 
+### Pilot GO — Case Timeline v1 boundary (release evidence)
+
+**Pilot kan niet als GO worden gemarkeerd** zolang de keten **gemeente validatie → aanbieder beoordeling** niet door de rehearsal-timeline-check gaat.
+
+Zie **[PILOT_PROOF_PACKAGE.md](PILOT_PROOF_PACKAGE.md)** voor artefacten, interpretatie GO/NO-GO en troubleshooting tijdens infrastructure maturity.
+
+- Verzamel JSON-artefacten onder `reports/` (standalone `rehearsal_timeline_evidence.json` en/of `timeline_boundary_evidence` in `rehearsal_report.json`).
+- Bundel + GO/NO-GO-gate: `python manage.py release_evidence_bundle` (schrijft `reports/release_evidence_bundle.json`; bij NO-GO exit code ≠ 0, tenzij `--report-only`).
+- Productierelease-script **`./scripts/production_readiness_gates.sh`** bevat **Gate 8** hierop; overslaan alleen met `SKIP_TIMELINE_RELEASE_GATE=1` (expliciet — niet voor standaard pilot-sign-off).
+
 ### Unit / component (Vitest — care)
 
 ```bash

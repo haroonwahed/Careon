@@ -433,7 +433,18 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     ) {
       return "gemeente-demo";
     }
-    return me.organization?.slug ?? null;
+    // Org slug fallback: only pin when the slug resolves to a context whose type
+    // matches the session role. Otherwise (e.g. provider Kompas seeded inside the
+    // shared "gemeente-demo" tenant) returning the slug would force a non-gemeente
+    // user into the gemeente shell — golden-path E2E regression after da8dddb.
+    const slug = me.organization?.slug ?? null;
+    if (slug) {
+      const matched = availableContexts.find((context) => context.id === slug);
+      if (matched && matched.type !== me.workflowRole) {
+        return null;
+      }
+    }
+    return slug;
   }, [me]);
 
   useEffect(() => {

@@ -1,11 +1,14 @@
+import json
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from contracts.decision_engine import DECISION_ENGINE_THRESHOLDS, evaluate_case
+from contracts import decision_engine as decision_engine_module
+from contracts.decision_engine import DECISION_ENGINE_THRESHOLDS, build_regiekamer_decision_overview, evaluate_case
 from contracts.models import (
     CareCase,
     CaseAssessment,
@@ -283,6 +286,44 @@ class DecisionEngineTests(TestCase):
 
         self.assertTrue(any(risk["code"] == "LOW_MATCH_CONFIDENCE" for risk in result["risks"]))
         self.assertTrue(any(alert["code"] == "WEAK_MATCH_NEEDS_VERIFICATION" for alert in result["alerts"]))
+
+    def test_regiekamer_overview_serializable_when_match_scores_contain_nan(self):
+        """NaN in match floats must not 500 Regiekamer (JSON + sorted() in explainability).
+
+        SQLite cannot persist NaN in NOT NULL floats; inject NaN on the ORM instance in-memory.
+        """
+        _, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        MatchResultaat.objects.create(
+            casus=case_record,
+            zorgprofiel=self.provider_profile,
+            zorgaanbieder=self.provider,
+            totaalscore=0.5,
+            score_inhoudelijke_fit=0.5,
+            confidence_label=MatchResultaat.ConfidenceLabel.HOOG,
+            ranking=1,
+        )
+
+        real_latest = decision_engine_module._latest_match_result
+
+        def latest_with_nan(cr):
+            mr = real_latest(cr)
+            if mr is not None:
+                mr.score_inhoudelijke_fit = float("nan")
+            return mr
+
+        with patch.object(decision_engine_module, "_latest_match_result", side_effect=latest_with_nan):
+            overview = build_regiekamer_decision_overview(
+                [case_record],
+                actor=self.gemeente_user,
+                organization=self.organization,
+            )
+            json.dumps(overview)
+
+            result = evaluate_case(case_record, actor=self.gemeente_user)
+            json.dumps(result)
 
     def test_matching_explainability_structure_present(self):
         _, case_record, _, _ = self._create_case(

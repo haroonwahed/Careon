@@ -4,6 +4,7 @@ API views for CareOn case workspace functionality.
 """
 import json
 import logging
+import sys
 from datetime import date
 
 from django.conf import settings
@@ -21,12 +22,14 @@ from django.utils import timezone
 from contracts.domain.contracts import CareCaseData, ListParams, ListResult
 from contracts.forms import CaseIntakeProcessForm
 from contracts.middleware import log_action
+from contracts.observability import log_escalation_hint
 from contracts.decision_engine import build_regiekamer_decision_overview, evaluate_case
 from contracts.governance import AuditLoggingError, log_case_decision_event
 from contracts.models import (
     CareCase,
     CaseAssessment,
     CaseDecisionLog,
+    CaseTimelineEvent,
     PlacementRequest,
     CareSignal,
     CareTask,
@@ -63,7 +66,12 @@ from contracts.permissions import (
 from contracts.provider_workspace import build_provider_workspace_summary
 from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
 from contracts.views import _assign_provider_to_intake, _prepare_waitlist_proposal_for_intake
+from contracts.case_timeline import (
+    record_gemeente_validation_to_provider_review_boundary,
+    serialize_timeline_events_for_api,
+)
 from contracts.navigation import SPA_DASHBOARD_URL
+from contracts.operational_failures import build_operational_failure_payload
 from contracts.workflow_state_machine import (
     WorkflowAction,
     WorkflowRole,
@@ -168,9 +176,26 @@ def _draft_validation_placement(*, request, intake, provider, validation_context
     return placement
 
 
-def _internal_server_error(*, context):
-    logger.exception(context)
-    return JsonResponse({'error': 'Er is een onverwachte fout opgetreden. Probeer het opnieuw.'}, status=500)
+def _internal_server_error(request, *, context: str):
+    """Log API failures with traceback (when inside except) and return calm operational JSON (5xx)."""
+    cid = getattr(request, "correlation_id", None)
+    cid_str = str(cid) if cid else None
+    exc_info = sys.exc_info()
+    if exc_info[0] is not None:
+        logger.error(
+            "api_error context=%s correlation_id=%s",
+            context,
+            cid_str or "-",
+            exc_info=exc_info,
+        )
+    else:
+        logger.error(
+            "api_error context=%s correlation_id=%s (no active exception — check call site)",
+            context,
+            cid_str or "-",
+        )
+    body = build_operational_failure_payload(request, context=context)
+    return JsonResponse(body, status=500)
 
 
 _WORKFLOW_STATE_VALUES = {
@@ -474,7 +499,31 @@ def contracts_api(request):
         })
 
     except Exception:
-        return _internal_server_error(context='cases_api_failed')
+        return _internal_server_error(request, context='cases_api_failed')
+
+@login_required
+@require_http_methods(["GET"])
+def case_timeline_api(request, case_id):
+    """Append-only operational timeline for a case (v1: gemeente validatie → aanbieder)."""
+    try:
+        organization = get_user_organization(request.user)
+        case = get_scoped_object_or_404(
+            CareCase.objects.all(),
+            organization,
+            pk=case_id,
+        )
+        ensure_provider_case_visible_or_404(request.user, case)
+        qs = CaseTimelineEvent.objects.filter(
+            organization=organization,
+            care_case=case,
+        ).order_by('occurred_at', 'id')
+        events = serialize_timeline_events_for_api(qs)
+        return JsonResponse({'caseId': str(case.pk), 'events': events})
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+    except Exception:
+        return _internal_server_error(request, context='case_timeline_api_failed')
+
 
 @login_required
 @require_http_methods(["GET"])
@@ -511,7 +560,7 @@ def case_detail_api(request, contract_id=None, case_id=None):
     except Http404:
         return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
     except Exception:
-        return _internal_server_error(context='case_detail_api_failed')
+        return _internal_server_error(request, context='case_detail_api_failed')
 
 
 @login_required
@@ -547,9 +596,18 @@ def regiekamer_decision_overview_api(request):
             actor=request.user,
             organization=organization,
         )
+        totals = payload.get('totals') or {}
+        if int(totals.get('critical_blockers') or 0) > 0:
+            log_escalation_hint(
+                'REGIEKAMER_CRITICAL_BLOCKERS',
+                extra={
+                    'critical_blockers': totals.get('critical_blockers'),
+                    'active_cases': totals.get('active_cases'),
+                },
+            )
         return JsonResponse(payload)
     except Exception:
-        return _internal_server_error(context='regiekamer_decision_overview_api_failed')
+        return _internal_server_error(request, context='regiekamer_decision_overview_api_failed')
 
 @csrf_exempt
 @login_required
@@ -589,7 +647,7 @@ def cases_bulk_update_api(request):
         return JsonResponse({'success': True, 'updated_count': result})
 
     except Exception:
-        return _internal_server_error(context='cases_bulk_update_api_failed')
+        return _internal_server_error(request, context='cases_bulk_update_api_failed')
 
 
 def _serialize_simple_choices(field):
@@ -1351,6 +1409,14 @@ def _matching_action_api_inner(request, case_id):
                 placement=placement,
                 source='matching_action_api_send_to_provider',
             )
+            record_gemeente_validation_to_provider_review_boundary(
+                intake=intake,
+                placement=placement,
+                request=request,
+                actor_role=actor_role,
+                workflow_state_before_action=previous_state,
+                source='matching_action_api_send_to_provider',
+            )
             return JsonResponse({
                 'ok': True,
                 'nextPage': 'casussen',
@@ -1419,6 +1485,14 @@ def _matching_action_api_inner(request, case_id):
                 new_state=new_state,
                 action=WorkflowAction.SEND_TO_PROVIDER,
                 placement=placement,
+                source='matching_action_api',
+            )
+            record_gemeente_validation_to_provider_review_boundary(
+                intake=intake,
+                placement=placement,
+                request=request,
+                actor_role=actor_role,
+                workflow_state_before_action=previous_state,
                 source='matching_action_api',
             )
 
@@ -1983,7 +2057,7 @@ def assessments_api(request):
             })
         return JsonResponse({'assessments': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='assessments_api_failed')
+        return _internal_server_error(request, context='assessments_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2028,7 +2102,7 @@ def placements_api(request):
             })
         return JsonResponse({'placements': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='placements_api_failed')
+        return _internal_server_error(request, context='placements_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2075,7 +2149,7 @@ def signals_api(request):
             })
         return JsonResponse({'signals': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='signals_api_failed')
+        return _internal_server_error(request, context='signals_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2135,7 +2209,7 @@ def tasks_api(request):
             })
         return JsonResponse({'tasks': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='tasks_api_failed')
+        return _internal_server_error(request, context='tasks_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2179,7 +2253,7 @@ def documents_api(request):
         data = [_serialize_document_row(d) for d in page_obj]
         return JsonResponse({'documents': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='documents_api_failed')
+        return _internal_server_error(request, context='documents_api_failed')
 
 
 @login_required
@@ -2255,7 +2329,7 @@ def audit_log_api(request):
             })
         return JsonResponse({'entries': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='audit_log_api_failed')
+        return _internal_server_error(request, context='audit_log_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2319,7 +2393,7 @@ def providers_api(request):
             })
         return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(qs))})
     except Exception:
-        return _internal_server_error(context='providers_api_failed')
+        return _internal_server_error(request, context='providers_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2352,7 +2426,7 @@ def municipalities_api(request):
             })
         return JsonResponse({'municipalities': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='municipalities_api_failed')
+        return _internal_server_error(request, context='municipalities_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2545,7 +2619,7 @@ def regions_api(request):
             })
         return JsonResponse({'regions': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
-        return _internal_server_error(context='regions_api_failed')
+        return _internal_server_error(request, context='regions_api_failed')
 
 
 @login_required
@@ -2646,7 +2720,7 @@ def regions_health_api(request):
             'total_pages': paginator.num_pages,
         })
     except Exception:
-        return _internal_server_error(context='regions_health_api_failed')
+        return _internal_server_error(request, context='regions_health_api_failed')
 
 
 # ---------------------------------------------------------------------------
@@ -2696,4 +2770,4 @@ def dashboard_summary_api(request):
             'riskBreakdown': risk_counts,
         })
     except Exception:
-        return _internal_server_error(context='dashboard_summary_api_failed')
+        return _internal_server_error(request, context='dashboard_summary_api_failed')

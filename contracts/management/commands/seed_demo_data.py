@@ -1,11 +1,22 @@
 from __future__ import annotations
 
+import os
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+
+from contracts.pilot_universe import (
+    PILOT_CASE_TITLES,
+    PILOT_GEMEENTE_EMAIL,
+    PILOT_GEMEENTE_PASSWORD,
+    PILOT_LOCK_ANCHOR,
+    PILOT_ORG_NAME,
+    PILOT_ORG_SLUG,
+    PILOT_PROVIDER_CLIENT_NAMES,
+)
 
 from contracts.models import (
     AanbiederVestiging,
@@ -38,18 +49,13 @@ from contracts.models import (
 
 User = get_user_model()
 
-DEMO_ORG_NAME = 'Gemeente Demo'
-DEMO_ORG_SLUG = 'gemeente-demo'
-DEMO_EMAIL = 'test@gemeente-demo.nl'
-DEMO_PASSWORD = 'DemoTest123!'
+DEMO_ORG_NAME = PILOT_ORG_NAME
+DEMO_ORG_SLUG = PILOT_ORG_SLUG
+DEMO_EMAIL = PILOT_GEMEENTE_EMAIL
+DEMO_PASSWORD = PILOT_GEMEENTE_PASSWORD
 
-CASE_TITLES = [
-    'Demo Casus A',
-    'Demo Casus B',
-    'Demo Casus C',
-    'Demo Casus D',
-    'Demo Casus E',
-]
+# Pilot werkvoorraad: covers canonical workflow phases end-to-end (see tests/test_seed_demo_data.py).
+CASE_TITLES = list(PILOT_CASE_TITLES)
 
 
 class Command(BaseCommand):
@@ -61,9 +67,31 @@ class Command(BaseCommand):
             action='store_true',
             help='Remove existing demo records for the demo organization before seeding.',
         )
+        parser.add_argument(
+            '--locked-time',
+            action='store_true',
+            help=(
+                'Use fixed simulation clock (PILOT_LOCK_ANCHOR in contracts.pilot_universe) '
+                'for all timestamps and calendar dates — deterministic rehearsal / screenshots.'
+            ),
+        )
+
+    def _anchor_dt(self, *, hours: float = 0, minutes: float = 0, days: float = 0):
+        delta = timedelta(days=days, hours=hours, minutes=minutes)
+        if self._clock_locked:
+            return PILOT_LOCK_ANCHOR + delta
+        return timezone.now() + delta
+
+    def _anchor_today(self, *, days_offset: int = 0):
+        base = PILOT_LOCK_ANCHOR.date() if self._clock_locked else date.today()
+        return base + timedelta(days=days_offset)
 
     @transaction.atomic
     def handle(self, *args, **options):
+        self._clock_locked = bool(
+            options.get('locked_time')
+            or str(os.environ.get('PILOT_LOCKED_TIME', '')).lower() in ('1', 'true', 'yes'),
+        )
         organization = self._ensure_organization()
         demo_user = self._ensure_demo_user(organization)
 
@@ -83,8 +111,11 @@ class Command(BaseCommand):
 
         case_specs = self._case_specs(categories=categories, municipality_map=municipality_map, region_map=region_map)
         cases = [self._ensure_case(organization=organization, demo_user=demo_user, spec=spec, providers=providers) for spec in case_specs]
+        self._ensure_provider_staff_users(organization=organization, providers=providers)
 
         self.stdout.write(self.style.SUCCESS('Demo data successfully seeded.'))
+        if self._clock_locked:
+            self.stdout.write(f'- Simulatieklok: vast ({PILOT_LOCK_ANCHOR.isoformat()})')
         self.stdout.write(f'- Organisatie: {organization.slug}')
         self.stdout.write(f'- Demo account: {DEMO_EMAIL}')
         self.stdout.write(f'- Casussen: {len(cases)}')
@@ -132,12 +163,7 @@ class Command(BaseCommand):
 
     def _clear_existing_demo_data(self, *, organization):
         case_titles = list(CASE_TITLES)
-        provider_names = [
-            'Horizon Jeugdzorg',
-            'NovaCare Jeugd',
-            'ThuisKompas Zorg',
-            'Veerkracht Centrum',
-        ]
+        provider_names = list(PILOT_PROVIDER_CLIENT_NAMES)
         zorgaanbieder_names = list(provider_names)
 
         MatchResultaat.objects.filter(casus__organization=organization).delete()
@@ -147,6 +173,9 @@ class Command(BaseCommand):
         Deadline.objects.for_organization(organization).delete()
         CaseIntakeProcess.objects.filter(organization=organization, title__in=case_titles).delete()
         CareCase.objects.filter(organization=organization, title__in=case_titles).delete()
+        # Ephemeral E2E casuistry (e.g. golden-path Playwright) lives outside PILOT_CASE_TITLES — remove so rehearsal_verify stays deterministic.
+        CaseIntakeProcess.objects.filter(organization=organization).exclude(title__in=case_titles).delete()
+        CareCase.objects.filter(organization=organization).exclude(title__in=case_titles).delete()
         ProviderRegioDekking.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names).delete()
         ContractRelatie.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names, organization=organization).delete()
         PrestatieProfiel.objects.filter(zorgprofiel__zorgaanbieder__name__in=zorgaanbieder_names).delete()
@@ -181,9 +210,8 @@ class Command(BaseCommand):
     def _ensure_network(self, *, organization, demo_user, categories):
         municipalities = [
             {'name': 'Utrecht', 'code': 'DEMO-UTR', 'province': 'Utrecht', 'region_code': 'DEMO-UTR-REG', 'region_name': 'Utrecht Regio'},
-            {'name': 'Rotterdam', 'code': 'DEMO-RTM', 'province': 'Zuid-Holland', 'region_code': 'DEMO-RTM-REG', 'region_name': 'Rotterdam Regio'},
-            {'name': 'Den Haag', 'code': 'DEMO-DHG', 'province': 'Zuid-Holland', 'region_code': 'DEMO-DHG-REG', 'region_name': 'Den Haag Regio'},
             {'name': 'Amsterdam', 'code': 'DEMO-AMS', 'province': 'Noord-Holland', 'region_code': 'DEMO-AMS-REG', 'region_name': 'Amsterdam Regio'},
+            {'name': 'Rotterdam', 'code': 'DEMO-RTM', 'province': 'Zuid-Holland', 'region_code': 'DEMO-RTM-REG', 'region_name': 'Rotterdam Regio'},
         ]
 
         municipality_map = {}
@@ -227,6 +255,7 @@ class Command(BaseCommand):
         return municipality_map, region_map
 
     def _provider_specs(self, *, categories, region_map):
+        # Pilot trio: één regio-kern per aanbieder (Utrecht / Rotterdam / Amsterdam).
         return [
             {
                 'name': 'Horizon Jeugdzorg',
@@ -260,7 +289,7 @@ class Command(BaseCommand):
                 'verification': 'Controleer beschikbaarheid en plan vervolgstap naar samenvatting.',
             },
             {
-                'name': 'NovaCare Jeugd',
+                'name': 'Kompas Zorg',
                 'city': 'Rotterdam',
                 'category': categories['Gedrag en gezin'],
                 'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
@@ -291,8 +320,8 @@ class Command(BaseCommand):
                 'verification': 'Leg de match voor aan de gemeente en stuur vervolgens door.',
             },
             {
-                'name': 'ThuisKompas Zorg',
-                'city': 'Den Haag',
+                'name': 'Groei & Co',
+                'city': 'Amsterdam',
                 'category': categories['Autisme en structuur'],
                 'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
                 'zorgvorm_code': 'outpatient',
@@ -315,48 +344,17 @@ class Command(BaseCommand):
                 'urgentie_crisis': False,
                 'capacity_snapshot': {'open_slots': 3, 'waiting_list': 2, 'avg_wait_days': 9, 'reliability': 0.89},
                 'performance': {'matches': 20, 'placements': 18, 'rejections': 2, 'success': 0.88, 'reactie': 12.0, 'dropout': 0.05},
-                'contract_label': 'Den Haag',
+                'contract_label': 'Amsterdam',
                 'score': 88,
                 'summary': 'Passende ondersteuning voor autisme, structuur en thuisbegeleiding.',
                 'trade_offs': ['Regio is passend en capaciteit is beschikbaar.', 'Inhoudelijke fit is sterk.'],
                 'verification': 'Bevestig de gemeentevalidatie en vraag de aanbiederbeoordeling op.',
             },
-            {
-                'name': 'Veerkracht Centrum',
-                'city': 'Amsterdam',
-                'category': categories['Trauma en veiligheid'],
-                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
-                'zorgvorm_code': 'outpatient',
-                'provider_type': Zorgaanbieder.ProviderType.AMBULANT,
-                'target_age_12_18': True,
-                'target_age_4_12': False,
-                'current_capacity': 0,
-                'max_capacity': 4,
-                'waiting_list_length': 8,
-                'average_wait_days': 35,
-                'specialisations': 'trauma, spoed, complexe casuïstiek',
-                'problematiek_types': ['trauma', 'spoedplaatsing', 'complexe thuissituatie'],
-                'intensiteit': 'hoog_intensief',
-                'setting_type': 'open',
-                'complexiteit_enkelvoudig': False,
-                'complexiteit_meervoudig': True,
-                'complexiteit_zwaar': True,
-                'urgentie_middel': False,
-                'urgentie_hoog': True,
-                'urgentie_crisis': False,
-                'capacity_snapshot': {'open_slots': 0, 'waiting_list': 8, 'avg_wait_days': 35, 'reliability': 0.82},
-                'performance': {'matches': 11, 'placements': 8, 'rejections': 3, 'success': 0.79, 'reactie': 18.0, 'dropout': 0.08},
-                'contract_label': 'Amsterdam',
-                'score': 79,
-                'summary': 'Trauma- en spoedexpertise, maar zonder directe ruimte.',
-                'trade_offs': ['Geen directe capaciteit beschikbaar.', 'De inhoudelijke fit is toch bruikbaar voor retry.'],
-                'verification': 'Gebruik deze aanbieder als onderbouwing voor her-matching.',
-            },
         ]
 
     def _ensure_providers(self, *, organization, demo_user, provider_specs, municipality_map, region_map):
         providers = []
-        for spec in provider_specs:
+        for provider_idx, spec in enumerate(provider_specs):
             client, _ = Client.objects.update_or_create(
                 organization=organization,
                 name=spec['name'],
@@ -414,7 +412,7 @@ class Command(BaseCommand):
                     'normalisatie_status': Zorgaanbieder.NormalisatieStatus.NORMALIZED,
                     'review_status': Zorgaanbieder.ReviewStatus.APPROVED,
                     'last_source_system': 'seed_demo_data',
-                    'bron_laatst_gesynchroniseerd_op': timezone.now(),
+                    'bron_laatst_gesynchroniseerd_op': self._anchor_dt(minutes=provider_idx * 5),
                 },
             )
 
@@ -432,7 +430,7 @@ class Command(BaseCommand):
                     'is_active': True,
                     'bron_type': 'seeded',
                     'bron_id': f"demo-vestiging-{spec['name'].lower().replace(' ', '-')}",
-                    'bron_laatst_gesynchroniseerd_op': timezone.now(),
+                    'bron_laatst_gesynchroniseerd_op': self._anchor_dt(minutes=provider_idx * 5 + 1),
                 },
             )
 
@@ -442,7 +440,7 @@ class Command(BaseCommand):
                 zorgvorm=spec['zorgvorm_code'],
                 zorgdomein='jeugd',
                 defaults={
-                    'doelgroep_leeftijd_van': 4 if spec['name'] == 'ThuisKompas Zorg' else 12,
+                    'doelgroep_leeftijd_van': 4 if spec['name'] == 'Groei & Co' else 12,
                     'doelgroep_leeftijd_tot': 18,
                     'problematiek_types': spec['problematiek_types'],
                     'intensiteit': spec['capacity_snapshot']['avg_wait_days'] >= 30 and 'hoog_intensief' or spec['zorgvorm_code'] == 'outpatient' and 'middel' or 'intensief',
@@ -459,9 +457,9 @@ class Command(BaseCommand):
                     'biedt_dagbehandeling': False,
                     'biedt_residentieel': False,
                     'biedt_crisis': False,
-                    'biedt_thuisbegeleiding': spec['name'] == 'ThuisKompas Zorg',
+                    'biedt_thuisbegeleiding': spec['name'] == 'Groei & Co',
                     'leeftijd_0_4': False,
-                    'leeftijd_4_12': spec['name'] == 'ThuisKompas Zorg',
+                    'leeftijd_4_12': spec['name'] == 'Groei & Co',
                     'leeftijd_12_18': True,
                     'leeftijd_18_plus': False,
                     'complexiteit_enkelvoudig': spec['name'] == 'Horizon Jeugdzorg',
@@ -489,7 +487,7 @@ class Command(BaseCommand):
                     'intake_no_show_ratio': 0.03,
                     'plaatsing_voortijdig_beeindigd_ratio': spec['performance']['dropout'],
                     'kwalitatieve_opmerking': spec['summary'],
-                    'laatst_berekend_op': timezone.now(),
+                    'laatst_berekend_op': self._anchor_dt(minutes=provider_idx * 5 + 2),
                 },
             )
 
@@ -508,7 +506,7 @@ class Command(BaseCommand):
                 direct_pleegbaar=spec['current_capacity'] > 0,
                 toelichting_capaciteit='Demo capaciteitssnapshot voor matching.',
                 betrouwbaarheid_score=spec['capacity_snapshot']['reliability'],
-                laatst_bijgewerkt_op=timezone.now(),
+                laatst_bijgewerkt_op=self._anchor_dt(minutes=provider_idx * 5 + 3),
                 laatst_bijgewerkt_door='seed_demo_data',
             )
 
@@ -518,8 +516,8 @@ class Command(BaseCommand):
                 contract_type='DEMO',
                 defaults={
                     'status': ContractRelatie.ContractStatus.ACTIEF,
-                    'start_date': date.today() - timedelta(days=30),
-                    'end_date': date.today() + timedelta(days=365),
+                    'start_date': self._anchor_today(days_offset=-30),
+                    'end_date': self._anchor_today(days_offset=365),
                     'gemeente': spec['city'],
                     'regio': region_map[spec['city']].region_code,
                     'zorgvormen_contract': [spec['care_form']],
@@ -581,14 +579,14 @@ class Command(BaseCommand):
             defaults={
                 'triggered_by': 'manage.py seed_demo_data',
                 'status': ProviderImportBatch.BatchStatus.COMPLETED,
-                'total_records': 4,
-                'processed_records': 4,
-                'created_records': 4,
+                'total_records': 3,
+                'processed_records': 3,
+                'created_records': 3,
                 'updated_records': 0,
                 'skipped_records': 0,
                 'conflicted_records': 0,
                 'quarantined_records': 0,
-                'completed_at': timezone.now(),
+                'completed_at': self._anchor_dt(),
             },
         )
         return batch
@@ -638,7 +636,7 @@ class Command(BaseCommand):
                 'deadline_type': Deadline.TaskType.SELECT_MATCH,
                 'deadline_title': 'Match selecteren',
                 'signal_title': 'Match klaar voor keuze',
-                'match_provider_name': 'NovaCare Jeugd',
+                'match_provider_name': 'Kompas Zorg',
                 'match_score': 91,
                 'match_summary': 'Beste inhoudelijke fit voor gedragsproblemen en gezinsconflict.',
                 'match_trade_offs': ['Capaciteit is beschikbaar.', 'Fit is inhoudelijk sterk.'],
@@ -646,7 +644,7 @@ class Command(BaseCommand):
             },
             {
                 'title': CASE_TITLES[2],
-                'city': 'Den Haag',
+                'city': 'Amsterdam',
                 'category': categories['Autisme en structuur'],
                 'age': 11,
                 'problematiek': ['autisme', 'begeleiding thuis', 'structuurproblemen'],
@@ -667,8 +665,8 @@ class Command(BaseCommand):
                 'signal_title': 'Aanbiederbeoordeling open',
                 'placement_status': PlacementRequest.Status.IN_REVIEW,
                 'provider_response_status': PlacementRequest.ProviderResponseStatus.PENDING,
-                'provider_name': 'ThuisKompas Zorg',
-                'match_provider_name': 'ThuisKompas Zorg',
+                'provider_name': 'Groei & Co',
+                'match_provider_name': 'Groei & Co',
                 'match_score': 88,
                 'match_summary': 'Sterke match voor autisme, thuisbegeleiding en structuur.',
                 'match_trade_offs': ['Capaciteit is direct beschikbaar.', 'Regio sluit goed aan.'],
@@ -676,7 +674,7 @@ class Command(BaseCommand):
             },
             {
                 'title': CASE_TITLES[3],
-                'city': 'Amsterdam',
+                'city': 'Rotterdam',
                 'category': categories['Trauma en veiligheid'],
                 'age': 15,
                 'problematiek': ['trauma', 'spoedplaatsing', 'complexe thuissituatie'],
@@ -698,12 +696,12 @@ class Command(BaseCommand):
                 'placement_status': PlacementRequest.Status.REJECTED,
                 'provider_response_status': PlacementRequest.ProviderResponseStatus.REJECTED,
                 'provider_response_reason_code': OutcomeReasonCode.CAPACITY,
-                'provider_name': 'Veerkracht Centrum',
-                'match_provider_name': 'Veerkracht Centrum',
-                'match_score': 79,
-                'match_summary': 'Trauma- en spoedexpertise, maar zonder directe ruimte.',
-                'match_trade_offs': ['Geen directe capaciteit beschikbaar.', 'Toch bruikbaar voor retry.'],
-                'verification': 'Gebruik de afwijzing als aanleiding voor een nieuwe matchrichting.',
+                'provider_name': 'Horizon Jeugdzorg',
+                'match_provider_name': 'Horizon Jeugdzorg',
+                'match_score': 86,
+                'match_summary': 'Sterke regionale en inhoudelijke fit; afwijzing volgt capaciteit bij deze intake.',
+                'match_trade_offs': ['Ambulant aanbod heeft tijdelijk geen ruimte.', 'Her-match naar ander profiel binnen regio.'],
+                'verification': 'Leg vast waarom capaciteit ontoereikend was en kies een alternatief.',
             },
             {
                 'title': CASE_TITLES[4],
@@ -728,9 +726,214 @@ class Command(BaseCommand):
                 'signal_title': 'Dossier incompleet',
                 'missing_information': 'Schoolrapportage en toestemming ouder/voogd',
             },
+            {
+                'title': CASE_TITLES[5],
+                'city': 'Utrecht',
+                'category': categories['Gezinsbegeleiding'],
+                'age': 10,
+                'problematiek': ['onveilige thuissituatie', 'ouder overbelast'],
+                'urgency': CaseIntakeProcess.Urgency.MEDIUM,
+                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.MATCHING,
+                'workflow_state': CaseIntakeProcess.WorkflowState.GEMEENTE_VALIDATED,
+                'summary': 'Gemeente heeft de match gevalideerd; plaatsingsverzoek kan naar de aanbieder.',
+                'description': 'Validatie is afgerond. De volgende stap is verzenden naar de aanbieder binnen de ketenregels.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.MATCHING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.NO_MATCH,
+                'deadline_type': Deadline.TaskType.SELECT_MATCH,
+                'deadline_title': 'Plaatsingsverzoek versturen',
+                'signal_title': 'Wacht op verzending aanbieder',
+                'match_provider_name': 'Horizon Jeugdzorg',
+                'match_score': 86,
+                'match_summary': 'Gevalideerd voorstel: passend profiel in de regio Utrecht.',
+                'match_trade_offs': ['Capaciteit is beperkt maar acceptabel.', 'Afstemming met gezin is nodig.'],
+                'verification': 'Bevestig verzending zodra het dossier compleet is.',
+            },
+            {
+                'title': CASE_TITLES[6],
+                'city': 'Rotterdam',
+                'category': categories['Gedrag en gezin'],
+                'age': 15,
+                'problematiek': ['gedrag school', 'escalatie thuis'],
+                'urgency': CaseIntakeProcess.Urgency.HIGH,
+                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.DECISION,
+                'workflow_state': CaseIntakeProcess.WorkflowState.PROVIDER_ACCEPTED,
+                'summary': 'Aanbieder heeft capaciteit bevestigd; gemeente bevestigt plaatsing.',
+                'description': 'Reactie is positief; sluit af met plaatsingsbevestiging en intakeplanning.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.PROVIDER_BEOORDELING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.NO_MATCH,
+                'deadline_type': Deadline.TaskType.CONTACT_PROVIDER,
+                'deadline_title': 'Plaatsing bevestigen',
+                'signal_title': 'Bevestiging plaatsing open',
+                'placement_status': PlacementRequest.Status.IN_REVIEW,
+                'provider_response_status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
+                'provider_name': 'Kompas Zorg',
+                'match_provider_name': 'Kompas Zorg',
+                'match_score': 91,
+                'match_summary': 'Inhoudelijke acceptatie door Kompas Zorg; wacht op formele plaatsing.',
+                'match_trade_offs': ['Start kan binnen norm.', 'Coördinatie met school vereist.'],
+                'verification': 'Leg plaatsing vast en plan intake met de aanbieder.',
+            },
+            {
+                'title': CASE_TITLES[7],
+                'city': 'Amsterdam',
+                'category': categories['Autisme en structuur'],
+                'age': 12,
+                'problematiek': ['autisme', 'overprikkeling school'],
+                'urgency': CaseIntakeProcess.Urgency.MEDIUM,
+                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.DECISION,
+                'workflow_state': CaseIntakeProcess.WorkflowState.PLACEMENT_CONFIRMED,
+                'summary': 'Plaatsing bevestigd; intake wordt ingepland met ouder en school.',
+                'description': 'Contractuele plaatsing staat; planning intake volgt via aanbieder.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.PLAATSING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.NO_MATCH,
+                'deadline_type': Deadline.TaskType.CONTACT_PROVIDER,
+                'deadline_title': 'Intake inplannen',
+                'signal_title': 'Intake nog te plannen',
+                'placement_status': PlacementRequest.Status.APPROVED,
+                'provider_response_status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
+                'provider_name': 'Groei & Co',
+                'match_provider_name': 'Groei & Co',
+                'match_score': 88,
+                'match_summary': 'Plaatsing vastgelegd bij Groei & Co.',
+                'match_trade_offs': ['Route bekend binnen Amsterdam.', 'Documentatie intake nog aan te vullen.'],
+                'verification': 'Monitor intake-aanmelding en documenten.',
+            },
+            {
+                'title': CASE_TITLES[8],
+                'city': 'Utrecht',
+                'category': categories['Angst en spanning'],
+                'age': 16,
+                'problematiek': ['angst', 'middelengebruik risico'],
+                'urgency': CaseIntakeProcess.Urgency.HIGH,
+                'complexity': CaseIntakeProcess.Complexity.SEVERE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.COMPLETED,
+                'workflow_state': CaseIntakeProcess.WorkflowState.INTAKE_STARTED,
+                'summary': 'Intake gestart na plaatsing; uitvoering loopt bij Horizon Jeugdzorg.',
+                'description': 'Casus staat in uitvoering; monitor voortgang en naastenzorg.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.ACTIEF,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.NO_MATCH,
+                'deadline_type': Deadline.TaskType.CONTACT_PROVIDER,
+                'deadline_title': 'Voortgang intake',
+                'signal_title': 'Intake loopt',
+                'placement_status': PlacementRequest.Status.APPROVED,
+                'provider_response_status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
+                'provider_name': 'Horizon Jeugdzorg',
+                'match_provider_name': 'Horizon Jeugdzorg',
+                'match_score': 86,
+                'match_summary': 'Continuïteit na plaatsing: intake uitgevoerd.',
+                'match_trade_offs': ['Zorgdruk blijft hoog.', 'Nazorg met school afstemmen.'],
+                'verification': 'Regiereeks blijft signaleren bij uitval of no-show.',
+            },
+            {
+                'title': CASE_TITLES[9],
+                'city': 'Rotterdam',
+                'category': categories['Trauma en veiligheid'],
+                'age': 14,
+                'problematiek': ['crisis thuis', 'directe veiligheid'],
+                'urgency': CaseIntakeProcess.Urgency.CRISIS,
+                'complexity': CaseIntakeProcess.Complexity.SEVERE,
+                'care_form': CaseIntakeProcess.CareForm.CRISIS,
+                'status': CaseIntakeProcess.ProcessStatus.MATCHING,
+                'workflow_state': CaseIntakeProcess.WorkflowState.MATCHING_READY,
+                'summary': 'Crisis urgentie: matching moet vandaag besloten worden.',
+                'description': 'Escalatie naar regie vanwege onveilige situatie en hoge urgentie.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.MATCHING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.WAIT_EXCEEDED,
+                'deadline_type': Deadline.TaskType.SELECT_MATCH,
+                'deadline_title': 'Crisis-match afhandelen',
+                'signal_title': 'Escalatie crisisplaatsing',
+                'match_provider_name': 'Kompas Zorg',
+                'match_score': 91,
+                'match_summary': 'Hoogste prioriteit voor beschikbare crisis-route in regio.',
+                'match_trade_offs': ['Beschikbaarheid kan beperkt zijn.', 'Snelheid gaat vóór optimale fit.'],
+                'verification': 'Regiekamer monitort beslistijd en communicatie met netwerk.',
+            },
+            {
+                'title': CASE_TITLES[10],
+                'city': 'Amsterdam',
+                'category': categories['Schoolverzuim'],
+                'age': 13,
+                'problematiek': ['langdurig schoolverzuim', 'wacht op intake'],
+                'urgency': CaseIntakeProcess.Urgency.HIGH,
+                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.DECISION,
+                'workflow_state': CaseIntakeProcess.WorkflowState.PLACEMENT_CONFIRMED,
+                'summary': 'Plaatsing staat; intake-documentatie ontbreekt nog—doorlooptijd loopt op.',
+                'description': 'Vertraging door ontbrekende onderwijsdocumenten en ouder niet bereikbaar.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.PLAATSING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.INTAKE_INCOMPLETE,
+                'deadline_type': Deadline.TaskType.CONTACT_PROVIDER,
+                'deadline_title': 'Ontbrekende intake-documenten',
+                'signal_title': 'Intake-vertraging',
+                'placement_status': PlacementRequest.Status.APPROVED,
+                'provider_response_status': PlacementRequest.ProviderResponseStatus.ACCEPTED,
+                'provider_name': 'Groei & Co',
+                'match_provider_name': 'Groei & Co',
+                'match_score': 88,
+                'match_summary': 'Match staat vast; uitvoering blokkeert op dossier.',
+                'match_trade_offs': ['Geen inhoudelijke wijziging nodig.', 'Administratieve stap vereist.'],
+                'verification': 'Herinner aanbieder en ouder; vermijd dubbele intake-inschrijving.',
+            },
+            {
+                'title': CASE_TITLES[11],
+                'city': 'Utrecht',
+                'category': categories['Angst en spanning'],
+                'age': 15,
+                'problematiek': ['angst', 'wacht op aanbieder > norm'],
+                'urgency': CaseIntakeProcess.Urgency.HIGH,
+                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+                'status': CaseIntakeProcess.ProcessStatus.DECISION,
+                'workflow_state': CaseIntakeProcess.WorkflowState.PROVIDER_REVIEW_PENDING,
+                'summary': 'Plaatsingsverzoek uitstaande; reactietijd overschrijdt afgesproken termijn.',
+                'description': 'Operationeel signaal: 9 dagen wachten op inhoudelijke reactie aanbieder.',
+                'assessment_status': CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+                'matching_ready': True,
+                'case_phase': CareCase.CasePhase.PROVIDER_BEOORDELING,
+                'case_status': CareCase.Status.ACTIVE,
+                'signal_type': CareSignal.SignalType.WAIT_EXCEEDED,
+                'deadline_type': Deadline.TaskType.CONTACT_PROVIDER,
+                'deadline_title': 'SLA reactie aanbieder',
+                'signal_title': 'Wacht op aanbieder',
+                'placement_status': PlacementRequest.Status.IN_REVIEW,
+                'provider_response_status': PlacementRequest.ProviderResponseStatus.PENDING,
+                'provider_name': 'Horizon Jeugdzorg',
+                'match_provider_name': 'Horizon Jeugdzorg',
+                'match_score': 86,
+                'match_summary': 'Regionale voorkeur; opvolgen reactie binnen SLA.',
+                'match_trade_offs': ['Geen inhoudelijke reden tot delay bekend.', 'Escaleren bij uitblijven reactie.'],
+                'verification': 'Neem contact op met casusregisseur aanbieder voordat je her-matcht.',
+            },
         ]
 
     def _ensure_case(self, *, organization, demo_user, spec, providers):
+        case_index = CASE_TITLES.index(spec['title'])
         municipality = MunicipalityConfiguration.objects.get(
             organization=organization,
             municipality_name=spec['city'],
@@ -746,8 +949,8 @@ class Command(BaseCommand):
             'status': spec['status'],
             'workflow_state': spec['workflow_state'],
             'case_coordinator': demo_user,
-            'start_date': date.today() - timedelta(days=spec['age'] // 2 or 1),
-            'target_completion_date': date.today() + timedelta(days=10),
+            'start_date': self._anchor_today(days_offset=-(spec['age'] // 2 or 1)),
+            'target_completion_date': self._anchor_today(days_offset=10),
             'care_category_main': spec['category'],
             'urgency': spec['urgency'],
             'complexity': spec['complexity'],
@@ -783,7 +986,7 @@ class Command(BaseCommand):
         case_record.service_region = region.region_name
         case_record.risk_level = self._risk_for_urgency(spec['urgency'])
         case_record.start_date = intake.start_date
-        case_record.end_date = date.today() + timedelta(days=90)
+        case_record.end_date = self._anchor_today(days_offset=90)
         case_record.created_by = demo_user
         case_record.save(update_fields=['status', 'case_phase', 'content', 'service_region', 'risk_level', 'start_date', 'end_date', 'created_by', 'updated_at'])
 
@@ -816,7 +1019,7 @@ class Command(BaseCommand):
             title=spec['deadline_title'],
             defaults={
                 'priority': Deadline.Priority.URGENT if spec['urgency'] == CaseIntakeProcess.Urgency.HIGH else Deadline.Priority.HIGH,
-                'due_date': date.today() + timedelta(days=2),
+                'due_date': self._anchor_today(days_offset=2),
                 'description': 'Demo opvolgtaak.',
                 'assigned_to': demo_user,
                 'created_by': demo_user,
@@ -852,9 +1055,9 @@ class Command(BaseCommand):
                     'provider_response_reason_code': spec.get('provider_response_reason_code', OutcomeReasonCode.NONE),
                     'care_form': spec['care_form'],
                     'decision_notes': spec['summary'],
-                    'start_date': date.today() + timedelta(days=7),
+                    'start_date': self._anchor_today(days_offset=7),
                     'duration_weeks': 12,
-                    'provider_response_recorded_at': timezone.now() - timedelta(hours=6),
+                    'provider_response_recorded_at': self._anchor_dt(hours=-6, minutes=-case_index * 4),
                     'provider_response_recorded_by': demo_user,
                 },
             )[0]
@@ -893,6 +1096,49 @@ class Command(BaseCommand):
             )
 
         return intake
+
+    def _ensure_provider_staff_users(self, *, organization, providers):
+        """Create aanbieder-loginaccounts and link Client.responsible_coordinator for ketenzicht."""
+        staff_specs = [
+            ('provider.horizon@gemeente-demo.nl', 'Aanbieder', 'Horizon', 'Horizon Jeugdzorg'),
+            ('provider.kompas@gemeente-demo.nl', 'Aanbieder', 'Kompas', 'Kompas Zorg'),
+            ('provider.groei@gemeente-demo.nl', 'Aanbieder', 'Groei', 'Groei & Co'),
+        ]
+        for username, first_name, last_name, client_name in staff_specs:
+            user, _ = User.objects.update_or_create(
+                username=username,
+                defaults={
+                    'email': username,
+                    'first_name': first_name,
+                    'last_name': last_name,
+                },
+            )
+            user.set_password(DEMO_PASSWORD)
+            user.save(update_fields=['password', 'email', 'first_name', 'last_name'])
+
+            OrganizationMembership.objects.update_or_create(
+                organization=organization,
+                user=user,
+                defaults={
+                    'role': OrganizationMembership.Role.MEMBER,
+                    'is_active': True,
+                },
+            )
+            UserProfile.objects.update_or_create(
+                user=user,
+                defaults={
+                    'role': UserProfile.Role.CLIENT,
+                    'department': client_name,
+                    'is_active': True,
+                },
+            )
+
+            bundle = next((item for item in providers if item['client'].name == client_name), None)
+            if bundle is None:
+                continue
+            client = bundle['client']
+            client.responsible_coordinator = user
+            client.save(update_fields=['responsible_coordinator', 'updated_at'])
 
     def _risk_for_urgency(self, urgency):
         mapping = {

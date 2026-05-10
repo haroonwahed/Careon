@@ -182,6 +182,7 @@ if SSO_ENABLED and not OIDC_PACKAGE_AVAILABLE:
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'contracts.middleware.OperationalObservabilityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -358,14 +359,25 @@ QUIET_TEST_LOGS = os.getenv('DJANGO_TEST_LOG_LEVEL', '').strip().upper()
 if not QUIET_TEST_LOGS and any(arg == 'test' for arg in sys.argv):
     QUIET_TEST_LOGS = 'ERROR'
 
+# Log every successful /care/api/* request at INFO (verbose); default is 4xx/5xx only via middleware.
+CAREON_API_ACCESS_LOG_ALL = _bool_env('CAREON_API_ACCESS_LOG_ALL', default=False)
+
+# Infrastructure maturity feature freeze (see docs/INFRASTRUCTURE_MATURITY_PHASE.md).
+FEATURE_FREEZE_ACTIVE = _bool_env('FEATURE_FREEZE_ACTIVE', default=True)
+
 # Logging — pilot warning events go to logs/pilot.log so scripts/pilot_log_summary.py
 # can parse them. All loggers also emit to the console (default Django behaviour).
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
+    'filters': {
+        'correlation_id': {
+            '()': 'contracts.observability.CorrelationIdFilter',
+        },
+    },
     'formatters': {
         'standard': {
-            'format': '[{asctime}] {levelname} {name} {message}',
+            'format': '[{asctime}] {levelname} {name} corr={correlation_id} {message}',
             'style': '{',
         },
     },
@@ -373,6 +385,7 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'standard',
+            'filters': ['correlation_id'],
         },
         'pilot_file': {
             'class': 'logging.handlers.RotatingFileHandler',
@@ -380,12 +393,23 @@ LOGGING = {
             'maxBytes': 5 * 1024 * 1024,  # 5 MB
             'backupCount': 3,
             'formatter': 'standard',
+            'filters': ['correlation_id'],
         },
     },
     'loggers': {
         'contracts.views': {
             'handlers': ['console', 'pilot_file'],
             'level': 'WARNING',
+            'propagate': False,
+        },
+        'contracts.api.views': {
+            'handlers': ['console', 'pilot_file'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'contracts.observability': {
+            'handlers': ['console', 'pilot_file'],
+            'level': 'INFO',
             'propagate': False,
         },
     },
@@ -400,6 +424,8 @@ if QUIET_TEST_LOGS in {'ERROR', 'CRITICAL'}:
     for logger_name in (
         'django.request',
         'contracts.views',
+        'contracts.api.views',
+        'contracts.observability',
         'contracts.decision_quality',
         'contracts.governance',
         'contracts.provider_pipeline',

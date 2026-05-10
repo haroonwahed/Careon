@@ -3,6 +3,7 @@
 # Usage (repo root):
 #   ./scripts/run_golden_path_e2e.sh
 #   ./scripts/run_golden_path_e2e.sh --skip-build
+#   ./scripts/run_golden_path_e2e.sh --skip-prepare   # skip flush+seed+build (DB already seeded; SPA must exist)
 #   ./scripts/run_golden_path_e2e.sh --start-server   # background runserver if nothing listens on E2E_BASE_URL
 #
 # Requires: .venv Python, Node/npm in client/. See docs/E2E_RUNBOOK.md
@@ -25,12 +26,14 @@ export E2E_DEMO_PASSWORD="${E2E_DEMO_PASSWORD:-pilot_demo_pass_123}"
 export E2E_SMOKE_PASSWORD="${E2E_SMOKE_PASSWORD:-e2e_pass_123}"
 
 START_SERVER=0
+SKIP_PREPARE=0
 PREP_ARGS=()
 for arg in "$@"; do
   case "$arg" in
     --start-server) START_SERVER=1 ;;
     --skip-build) PREP_ARGS+=(--skip-build) ;;
-    *) echo "Unknown option: $arg (use --skip-build, --start-server)" >&2; exit 2 ;;
+    --skip-prepare) SKIP_PREPARE=1 ;;
+    *) echo "Unknown option: $arg (use --skip-build, --skip-prepare, --start-server)" >&2; exit 2 ;;
   esac
 done
 
@@ -39,12 +42,20 @@ die() {
   exit 1
 }
 
-echo "[run_golden_path_e2e] Step 1/4: prepare rehearsal DB, seed, build SPA → theme/static/spa"
-# Bash + `set -u`: "${PREP_ARGS[@]}" is unbound when the array is empty; branch avoids that.
-if [[ ${#PREP_ARGS[@]} -eq 0 ]]; then
-  ./scripts/prepare_pilot_e2e.sh
+SPA_INDEX="$ROOT_DIR/theme/static/spa/index.html"
+if [[ "$SKIP_PREPARE" -eq 1 ]]; then
+  echo "[run_golden_path_e2e] Step 1/4: skipped (--skip-prepare) — using existing DB + SPA shell"
+  if [[ ! -f "$SPA_INDEX" ]]; then
+    die "Missing SPA bundle at $SPA_INDEX. Run ./scripts/prepare_pilot_e2e.sh or npm run build (client/)."
+  fi
 else
-  ./scripts/prepare_pilot_e2e.sh "${PREP_ARGS[@]}"
+  echo "[run_golden_path_e2e] Step 1/4: prepare rehearsal DB, seed, build SPA → theme/static/spa"
+  # Bash + `set -u`: "${PREP_ARGS[@]}" is unbound when the array is empty; branch avoids that.
+  if [[ ${#PREP_ARGS[@]} -eq 0 ]]; then
+    ./scripts/prepare_pilot_e2e.sh
+  else
+    ./scripts/prepare_pilot_e2e.sh "${PREP_ARGS[@]}"
+  fi
 fi
 
 server_listening() {
@@ -85,11 +96,19 @@ else
   fi
 fi
 
-echo "[run_golden_path_e2e] Step 3/4: DB + HTTP preflight (scripts/e2e_rehearsal_preflight.py)"
+echo "[run_golden_path_e2e] Step 3/5: DB + HTTP preflight (scripts/e2e_rehearsal_preflight.py)"
 export E2E_BASE_URL E2E_DEMO_PASSWORD E2E_SMOKE_PASSWORD
 "$PYTHON_BIN" scripts/e2e_rehearsal_preflight.py
 
-echo "[run_golden_path_e2e] Step 4/4: Playwright golden-path spec"
+mkdir -p "$ROOT_DIR/reports"
+TL_JSON="$ROOT_DIR/reports/rehearsal_timeline_evidence.json"
+TL_STEP_LOG="${ROOT_DIR}/reports/rehearsal_timeline_step.log"
+# JSON is written only via --json-out; human-readable summary lines go to log (same pattern as run_full_pilot_rehearsal.sh).
+echo "[run_golden_path_e2e] Step 4/5: Case Timeline v1 boundary evidence — JSON → ${TL_JSON}, summary → ${TL_STEP_LOG}"
+echo "=== $(date -Iseconds) rehearsal_timeline_evidence (golden path) ===" >> "$TL_STEP_LOG"
+"$PYTHON_BIN" manage.py rehearsal_timeline_evidence --json-out "$TL_JSON" >>"$TL_STEP_LOG" 2>&1 || die "rehearsal_timeline_evidence failed"
+
+echo "[run_golden_path_e2e] Step 5/5: Playwright golden-path spec"
 (
   cd "$ROOT_DIR/client"
   export E2E_BASE_URL E2E_DEMO_PASSWORD E2E_SMOKE_PASSWORD
