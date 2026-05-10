@@ -73,7 +73,7 @@ class Phase2PilotStabilizationTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=self.provider_actor, role=UserProfile.Role.CLIENT)
+        UserProfile.objects.update_or_create(user=self.provider_actor, defaults={'role': UserProfile.Role.CLIENT})
 
     def _grant_provider_actor_case_edit(self, intake):
         case = intake.case_record

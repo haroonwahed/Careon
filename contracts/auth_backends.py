@@ -4,6 +4,8 @@ from django.utils.text import slugify
 
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
+from contracts.user_profile_provisioning import ensure_user_profile_exists
+
 
 class CareonOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     """Authenticate users via OIDC and map identities by email."""
@@ -55,6 +57,8 @@ class CareonOIDCAuthenticationBackend(OIDCAuthenticationBackend):
         )
         user.is_active = True
         user.save(update_fields=['is_active'])
+        # Signal also provisions profile; explicit call keeps SSO path obvious in code review.
+        ensure_user_profile_exists(user)
         return user
 
     def update_user(self, user, claims):

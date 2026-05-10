@@ -1819,7 +1819,9 @@ sync_contract_flow_state = sync_case_flow_state
 
 
 def get_or_create_profile(user):
-    profile, created = UserProfile.objects.get_or_create(user=user)
+    from contracts.user_profile_provisioning import ensure_user_profile_exists
+
+    profile, _ = ensure_user_profile_exists(user)
     return profile
 
 

@@ -267,6 +267,24 @@ function pageToHref(page: Page, caseId: string | null): string {
   return PAGE_TO_HREF[page];
 }
 
+function buildProfileInitials(fullName: string, username: string): string {
+  const name = (fullName || "").trim();
+  if (name.length >= 2) {
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length >= 2) {
+      const a = parts[0]?.[0] ?? "";
+      const b = parts[parts.length - 1]?.[0] ?? "";
+      return `${a}${b}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  }
+  const u = (username || "").trim();
+  if (u.length >= 2) {
+    return u.slice(0, 2).toUpperCase();
+  }
+  return u ? u.slice(0, 1).toUpperCase() : "?";
+}
+
 interface MultiTenantDemoProps {
   theme: "light" | "dark";
   onThemeToggle: () => void;
@@ -299,6 +317,24 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       signalen: wf.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 7).length,
     };
   }, [cases, providers, careTasks]);
+
+  const sessionProfile = useMemo(() => {
+    if (!me) {
+      return { displayName: "Gebruiker", roleLabel: "Regisseur", initials: "?" };
+    }
+    const displayName = (me.fullName || "").trim() || me.username;
+    const roleLabel =
+      me.workflowRole === "zorgaanbieder"
+        ? "Zorgaanbieder"
+        : me.workflowRole === "admin"
+          ? "Administrator"
+          : "Regisseur";
+    return {
+      displayName,
+      roleLabel,
+      initials: buildProfileInitials(me.fullName || me.username, me.username),
+    };
+  }, [me]);
 
   /** Alleen gemeente en admin mogen een nieuwe casus starten vanuit shell (niet zorgaanbieder). */
   const workspaceAllowsNewCasus = currentContext.type === "gemeente" || currentContext.type === "admin";
@@ -545,6 +581,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         badgeOverrides={
           currentContext.type === "gemeente" || currentContext.type === "admin" ? queueCounts : undefined
         }
+        profileDisplayName={sessionProfile.displayName}
+        profileSubtitle={currentContext.subtitle || sessionProfile.roleLabel}
+        profileInitials={sessionProfile.initials}
       />
 
       {/* MAIN AREA */}
@@ -562,8 +601,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
             goToPage("acties");
           }}
           onSearch={() => undefined}
-          userName={me?.fullName ?? "Jane Doe"}
-          userRole="Regisseur"
+          userName={sessionProfile.displayName}
+          userRole={currentContext.subtitle || sessionProfile.roleLabel}
           onProfileClick={() => {
             goToPage("instellingen");
           }}

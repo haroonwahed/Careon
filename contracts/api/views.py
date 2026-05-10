@@ -932,7 +932,7 @@ def matching_candidates_api(request, case_id):
 @require_http_methods(["GET"])
 def intake_form_options_api(request):
     try:
-        organization = get_user_organization(request.user)
+        organization = _active_organization(request)
         form = CaseIntakeProcessForm(organization=organization)
 
         coordinator_field = form.fields.get('case_coordinator')

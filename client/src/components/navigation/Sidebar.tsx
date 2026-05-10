@@ -389,9 +389,21 @@ interface SidebarProps {
   activeItemId?: string;
   onNavigate?: (itemId: string, href: string) => void;
   badgeOverrides?: Partial<Record<string, number>>;
+  /** Session user (avoid hardcoded demo labels in footer). */
+  profileDisplayName?: string;
+  profileSubtitle?: string;
+  profileInitials?: string;
 }
 
-export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOverrides = {} }: SidebarProps) {
+export function Sidebar({
+  role,
+  activeItemId = "regiekamer",
+  onNavigate,
+  badgeOverrides = {},
+  profileDisplayName = "Gebruiker",
+  profileSubtitle = "",
+  profileInitials = "?",
+}: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   
   const navigationStructure = getNavigationForRole(role);
@@ -608,17 +620,19 @@ export function Sidebar({ role, activeItemId = "regiekamer", onNavigate, badgeOv
           ${collapsed ? "justify-center" : ""}
         `}>
           <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-primary">JD</span>
+            <span className="text-xs font-bold text-primary">{profileInitials}</span>
           </div>
           
           {!collapsed && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">
-                Jane Doe
+                {profileDisplayName}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
-                Regisseur
-              </p>
+              {profileSubtitle ? (
+                <p className="text-xs text-muted-foreground truncate">
+                  {profileSubtitle}
+                </p>
+              ) : null}
             </div>
           )}
         </div>

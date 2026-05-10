@@ -17,6 +17,13 @@ Fill these in on the Render service for `careon-web`.
 | `CSRF_TRUSTED_ORIGINS` | `https://<your-render-service-hostname>,https://<your-custom-domain-if-any>` | Must include every HTTPS origin that submits forms. |
 | `DEFAULT_FROM_EMAIL` | `noreply@careon.nl` or your real outbound sender | Must not stay at the local default value. |
 
+### Recommended (avoid broken public links / tune throughput)
+
+| Variable | Example | Notes |
+|---|---|---|
+| `SPA_ORIGIN` | `https://careon-web.onrender.com` | No trailing slash. Required so Django landing nav (`SPA_ORIGIN/login/`) does not default to `http://127.0.0.1:3000`. |
+| `GUNICORN_WORKERS` | `2` | Optional override for `gunicorn --workers`. If unset, Render’s `WEB_CONCURRENCY` is used, then `2`. Raise only if the instance has enough RAM. |
+
 ## Fill-In Steps
 
 1. Open the Render dashboard.
@@ -28,7 +35,7 @@ Fill these in on the Render service for `careon-web`.
 7. Set `DEFAULT_FROM_EMAIL` to the production sender address.
 8. Save the changes.
 9. Redeploy the service.
-10. Verify the startup log shows `Starting careon-web revision=...` followed by `DATABASE_URL detected: ...` and no longer shows the guard failure.
+10. Verify the startup log shows `Starting careon-web revision=...`, then `DATABASE_URL validated.` (or the detailed shape if `DATABASE_URL_VERBOSE_LOG` is enabled), then `gunicorn workers=...`, and no guard failure from `render_startup_checks.py`.
 
 ## Validation Commands
 

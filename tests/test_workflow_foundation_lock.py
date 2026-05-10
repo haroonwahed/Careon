@@ -63,9 +63,9 @@ class WorkflowFoundationLockTests(TestCase):
             is_active=True,
         )
 
-        UserProfile.objects.create(user=self.gemeente_user, role=UserProfile.Role.ASSOCIATE)
-        UserProfile.objects.create(user=self.provider_user, role=UserProfile.Role.CLIENT)
-        UserProfile.objects.create(user=self.admin_user, role=UserProfile.Role.ADMIN)
+        UserProfile.objects.update_or_create(user=self.gemeente_user, defaults={'role': UserProfile.Role.ASSOCIATE})
+        UserProfile.objects.update_or_create(user=self.provider_user, defaults={'role': UserProfile.Role.CLIENT})
+        UserProfile.objects.update_or_create(user=self.admin_user, defaults={'role': UserProfile.Role.ADMIN})
 
         self.provider = CareProvider.objects.create(
             organization=self.organization,
@@ -431,7 +431,7 @@ class WorkflowFoundationLockTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=outsider, role=UserProfile.Role.ASSOCIATE)
+        UserProfile.objects.update_or_create(user=outsider, defaults={'role': UserProfile.Role.ASSOCIATE})
         self.client.login(username='foreign_gemeente_wf', password='testpass123')
         response = self.client.post(
             reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
@@ -452,7 +452,7 @@ class WorkflowFoundationLockTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=outsider, role=UserProfile.Role.ASSOCIATE)
+        UserProfile.objects.update_or_create(user=outsider, defaults={'role': UserProfile.Role.ASSOCIATE})
         self.client.login(username='foreign_html_wf', password='testpass123')
         response = self.client.post(
             reverse('careon:case_matching_action', kwargs={'pk': intake.pk}),

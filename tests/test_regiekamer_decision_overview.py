@@ -52,7 +52,7 @@ class RegiekamerDecisionOverviewTests(TestCase):
             is_active=True,
         )
 
-        UserProfile.objects.create(user=self.provider_user, role=UserProfile.Role.CLIENT)
+        UserProfile.objects.update_or_create(user=self.provider_user, defaults={'role': UserProfile.Role.CLIENT})
 
         self.provider_a = CareProvider.objects.create(
             organization=self.organization,

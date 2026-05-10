@@ -50,10 +50,22 @@ def validate_database_url(database_url: str) -> tuple[bool, str]:
     )
 
 
+def _verbose_database_url_log() -> bool:
+    return os.environ.get("DATABASE_URL_VERBOSE_LOG", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
+
+
 def main() -> int:
     ok, message = validate_database_url(os.environ.get("DATABASE_URL", ""))
     stream = sys.stdout if ok else sys.stderr
-    print(message, file=stream)
+    if ok:
+        print(message if _verbose_database_url_log() else "DATABASE_URL validated.", file=stream)
+    else:
+        print(message, file=stream)
     return 0 if ok else 1
 
 

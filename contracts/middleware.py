@@ -197,6 +197,28 @@ class SpaShellMigrationMiddleware:
         '/settings/',
         '/care/',
     )
+    # MultiTenantDemo uses pushState routes without the /care/ prefix; a full page load must
+    # still serve index.html or the user hits 404 / stale Django templates on refresh.
+    SPA_CLIENT_ROUTE_PREFIXES = (
+        '/casussen',
+        '/matching',
+        '/beoordelingen',
+        '/plaatsingen',
+        '/acties',
+        '/zorgaanbieders',
+        '/gemeenten',
+        '/regios',
+        '/signalen',
+        '/rapportages',
+        '/documenten',
+        '/audittrail',
+        '/regiekamer',
+        '/intake',
+        '/mijn-casussen',
+        '/gebruikers',
+        '/dashboard',
+        '/instellingen',
+    )
     # Pilot SPA shells: keep serving the React index even when the path contains /pk/.
     # Tenancy and forbidden access for these routes are enforced by /care/api/... .
     SPA_SHELL_PK_EXCEPTION_PREFIXES = (
@@ -231,7 +253,7 @@ class SpaShellMigrationMiddleware:
         if self._is_excluded(path):
             return False
 
-        if not any(path.startswith(prefix) for prefix in self.SHELL_PREFIXES):
+        if not self._path_matches_shell_prefixes(path):
             return False
 
         # Legacy Django list/detail/edit URLs under /care/ must reach views so queryset
@@ -241,6 +263,11 @@ class SpaShellMigrationMiddleware:
             return False
 
         return True
+
+    def _path_matches_shell_prefixes(self, path: str) -> bool:
+        if any(path.startswith(prefix) for prefix in self.SHELL_PREFIXES):
+            return True
+        return any(path.startswith(prefix) for prefix in self.SPA_CLIENT_ROUTE_PREFIXES)
 
     def _legacy_care_path_should_bypass_spa_shell(self, path: str) -> bool:
         """True when path looks like a numeric PK route outside SPA dossier shells."""

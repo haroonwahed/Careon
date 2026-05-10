@@ -95,7 +95,8 @@ class SeededPilotIntegrityTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=provider, role=UserProfile.Role.CLIENT)
+        provider.profile.role = UserProfile.Role.CLIENT
+        provider.profile.save(update_fields=['role'])
         other = User.objects.create_user(username="wf_iso_other", password="pw-wf-test")
         OrganizationMembership.objects.create(
             organization=org,
@@ -103,7 +104,8 @@ class SeededPilotIntegrityTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=other, role=UserProfile.Role.ASSOCIATE)
+        other.profile.role = UserProfile.Role.ASSOCIATE
+        other.profile.save(update_fields=['role'])
         self.assertFalse(can_access_case_action(provider, case, CaseAction.VIEW))
         self.assertTrue(can_access_case_action(other, case, CaseAction.VIEW))
 
@@ -117,7 +119,7 @@ class SeededPilotIntegrityTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=foreign_owner, role=UserProfile.Role.ASSOCIATE)
+        UserProfile.objects.update_or_create(user=foreign_owner, defaults={'role': UserProfile.Role.ASSOCIATE})
         foreign = CareCase.objects.create(
             organization=org_other,
             title="Foreign case",
@@ -140,7 +142,21 @@ class WorkflowResolveActorTests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=user, role=UserProfile.Role.ASSOCIATE)
+        self.assertEqual(user.profile.role, UserProfile.Role.ASSOCIATE)
+        self.assertEqual(resolve_actor_role(user=user, organization=org), WorkflowRole.GEMEENTE)
+
+    def test_resolve_actor_without_userprofile_does_not_raise(self):
+        """Resolver must not 500 if UserProfile is missing (data repair / legacy DB)."""
+        org = Organization.objects.create(name="WF Org No Profile", slug="wf-org-noprof")
+        user = User.objects.create_user(username="wf_no_profile", password="pw-wf-test")
+        OrganizationMembership.objects.create(
+            organization=org,
+            user=user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.filter(user=user).delete()
+        self.assertFalse(UserProfile.objects.filter(user=user).exists())
         self.assertEqual(resolve_actor_role(user=user, organization=org), WorkflowRole.GEMEENTE)
 
 

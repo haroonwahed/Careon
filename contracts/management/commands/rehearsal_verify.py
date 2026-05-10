@@ -113,7 +113,10 @@ class Command(BaseCommand):
                 ).first()
                 if m is None:
                     raise ValueError(f"No active membership for {username!r}")
-                prof = getattr(user, "profile", None)
+                try:
+                    prof = user.profile
+                except UserProfile.DoesNotExist:
+                    prof = None
                 if prof is None or prof.role != profile_role:
                     raise ValueError(f"UserProfile.role for {username!r} expected {profile_role}, got {getattr(prof, 'role', None)!r}")
 

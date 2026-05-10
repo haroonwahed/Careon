@@ -22,6 +22,15 @@ class SpaShellMigrationMiddlewareTests(TestCase):
         request.user = self.user
         return request
 
+    def test_client_route_prefix_casussen_renders_spa_shell(self):
+        """pushState uses /casussen; full page GET must serve index.html (not 404)."""
+        request = self._build_request('/casussen/')
+        with patch('contracts.middleware._render_spa_shell_response') as shell_mock:
+            shell_mock.return_value = HttpResponse('<div id="root"></div>', content_type='text/html')
+            response = SpaShellMigrationMiddleware(lambda req: HttpResponse('miss'))(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content.decode('utf-8'), '<div id="root"></div>')
+
     def test_shell_render_failure_returns_safe_error_page(self):
         request = self._build_request('/dashboard/')
 
@@ -101,6 +110,7 @@ class SpaShellMigrationIntegrationTests(TestCase):
             reverse('careon:case_create'),
             reverse('careon:matching_dashboard'),
             reverse('careon:case_list'),
+            '/casussen/',
             reverse('careon:global_search') + '?q=test',
             '/care/does-not-exist/',
         ):

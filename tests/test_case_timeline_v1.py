@@ -59,8 +59,8 @@ class CaseTimelineV1Tests(TestCase):
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=self.gemeente_user, role=UserProfile.Role.ASSOCIATE)
-        UserProfile.objects.create(user=self.provider_user, role=UserProfile.Role.CLIENT)
+        UserProfile.objects.update_or_create(user=self.gemeente_user, defaults={'role': UserProfile.Role.ASSOCIATE})
+        UserProfile.objects.update_or_create(user=self.provider_user, defaults={'role': UserProfile.Role.CLIENT})
 
         self.provider = CareProvider.objects.create(
             organization=self.organization,

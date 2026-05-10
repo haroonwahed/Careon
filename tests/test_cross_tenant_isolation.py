@@ -246,7 +246,7 @@ class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCa
             role=OrganizationMembership.Role.MEMBER,
             is_active=True,
         )
-        UserProfile.objects.create(user=self.provider_user, role=UserProfile.Role.CLIENT)
+        UserProfile.objects.update_or_create(user=self.provider_user, defaults={'role': UserProfile.Role.CLIENT})
 
         self.provider_client = Client.objects.create(
             organization=self.org_a,

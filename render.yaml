@@ -18,6 +18,9 @@ services:
       if [ -z "$REVISION" ]; then
         REVISION="unknown"
       fi
+      if [ ${#REVISION} -gt 7 ]; then
+        REVISION="${REVISION:0:7}"
+      fi
       echo "Starting careon-web revision=${REVISION}"
       if [ -z "$DATABASE_URL" ]; then
         echo "ERROR: DATABASE_URL is missing from the Render runtime environment."
@@ -25,8 +28,13 @@ services:
         exit 1
       fi
       python scripts/render_startup_checks.py
-      python manage.py migrate --noinput --settings=config.settings_production &&
-      gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120
+      python manage.py migrate --noinput --settings=config.settings_production || exit 1
+      # GUNICORN_WORKERS (optional) > Render's WEB_CONCURRENCY > default 2. Use GUNICORN_WORKERS to
+      # raise throughput on larger instances; leave unset to follow Render's CPU-based WEB_CONCURRENCY.
+      WORKERS="${GUNICORN_WORKERS:-${WEB_CONCURRENCY:-2}}"
+      echo "gunicorn workers=${WORKERS}"
+      # exec: gunicorn is PID 1 so Render SIGTERM reaches the master process (graceful shutdown).
+      exec gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers "$WORKERS" --timeout 120
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.8
@@ -44,7 +52,13 @@ services:
         sync: false
       - key: CSRF_TRUSTED_ORIGINS
         sync: false
+      # Public site URL for Django templates (nav links). Set to https://<your-service>.onrender.com
+      - key: SPA_ORIGIN
+        sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
       - key: SECURE_SSL_REDIRECT
         value: "true"
+      # Optional. When set, overrides Render WEB_CONCURRENCY for gunicorn --workers (e.g. 2 on free tier).
+      - key: GUNICORN_WORKERS
+        sync: false

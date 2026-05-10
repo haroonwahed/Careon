@@ -119,7 +119,11 @@ def resolve_actor_role(*, user: User, organization=None) -> str:
     if membership and membership.role in {OrganizationMembership.Role.OWNER, OrganizationMembership.Role.ADMIN}:
         return WorkflowRole.ADMIN
 
-    profile_role = getattr(getattr(user, 'profile', None), 'role', None)
+    # Reverse OneToOne: accessing user.profile raises DoesNotExist when no row — getattr does not catch it.
+    try:
+        profile_role = user.profile.role
+    except UserProfile.DoesNotExist:
+        profile_role = None
     if profile_role == UserProfile.Role.CLIENT:
         return WorkflowRole.ZORGAANBIEDER
     if profile_role == UserProfile.Role.ADMIN:
