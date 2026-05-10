@@ -10,32 +10,12 @@ services:
       npm run build --prefix client
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py collectstatic --noinput --settings=config.settings
       DATABASE_URL='sqlite:////tmp/careon-build.sqlite3' python manage.py migrate --noinput --settings=config.settings
-    startCommand: |
-      REVISION="${RENDER_GIT_COMMIT:-${GIT_COMMIT:-}}"
-      if [ -z "$REVISION" ] && command -v git >/dev/null 2>&1; then
-        REVISION="$(git rev-parse --short HEAD 2>/dev/null || true)"
-      fi
-      if [ -z "$REVISION" ]; then
-        REVISION="unknown"
-      fi
-      if [ ${#REVISION} -gt 7 ]; then
-        REVISION="${REVISION:0:7}"
-      fi
-      echo "Starting careon-web revision=${REVISION}"
-      if [ -z "$DATABASE_URL" ]; then
-        echo "ERROR: DATABASE_URL is missing from the Render runtime environment."
-        echo "Set it on the careon-web service, then redeploy."
-        exit 1
-      fi
-      python scripts/render_startup_checks.py
-      python manage.py migrate --noinput --settings=config.settings_production || exit 1
-      # GUNICORN_WORKERS (optional) > Render's WEB_CONCURRENCY > default 2. Use GUNICORN_WORKERS to
-      # raise throughput on larger instances; leave unset to follow Render's CPU-based WEB_CONCURRENCY.
-      WORKERS="${GUNICORN_WORKERS:-${WEB_CONCURRENCY:-2}}"
-      echo "gunicorn workers=${WORKERS}"
-      # exec: gunicorn is PID 1 so Render SIGTERM reaches the master process (graceful shutdown).
-      exec gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers "$WORKERS" --timeout 120
+    # One line so manual Start Command on Render can match: bash scripts/render_start_command.sh
+    startCommand: bash scripts/render_start_command.sh
     envVars:
+      # Unbuffered Python stdout/stderr so migrate/gunicorn lines show in Render logs without delay.
+      - key: PYTHONUNBUFFERED
+        value: "1"
       - key: PYTHON_VERSION
         value: 3.12.8
       - key: NODE_VERSION
