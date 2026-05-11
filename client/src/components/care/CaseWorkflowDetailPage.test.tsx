@@ -18,6 +18,25 @@ vi.mock("../../lib/decisionEvaluation", async () => {
   return {
     ...actual,
     fetchCaseDecisionEvaluation: (...args: unknown[]) => mockFetchCaseDecisionEvaluation(...args),
+    fetchCaseArrangementAlignment: vi.fn().mockResolvedValue({
+      case_id: "C-100",
+      generated_at: "2026-05-11T00:00:00Z",
+      equivalence_hints: [
+        {
+          source_label: "PGB",
+          target_label: "Referentie (test)",
+          equivalence_confidence: 0.5,
+          rationale: "Teststub voor arrangement-advies.",
+          uncertainty: "high",
+        },
+      ],
+      tariff_alignment: {
+        estimated_delta_pct: null,
+        notes: "Teststub.",
+        uncertainty: "high",
+      },
+      requires_human_confirmation: true,
+    }),
   };
 });
 
@@ -197,7 +216,7 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.queryByText("Alerts")).not.toBeInTheDocument();
     expect(screen.queryByText("SLA")).not.toBeInTheDocument();
     expect(screen.queryByText("Afwijzingen")).not.toBeInTheDocument();
-    expect(screen.getByText("Plaatsing & intake")).toBeInTheDocument();
+    expect(screen.getByText("Plaatsing & uitstroom")).toBeInTheDocument();
   });
 
   it("shows dominant blocked state and missing-summary guidance", async () => {

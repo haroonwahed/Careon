@@ -35,12 +35,17 @@ User = get_user_model()
 class WorkflowTransitionLawTests(TestCase):
     def test_forward_edges_from_state_machine_are_allowed(self):
         edges = [
+            (WorkflowState.WIJKTEAM_INTAKE, WorkflowState.ZORGVRAAG_BEOORDELING),
+            (WorkflowState.ZORGVRAAG_BEOORDELING, WorkflowState.DRAFT_CASE),
             (WorkflowState.DRAFT_CASE, WorkflowState.SUMMARY_READY),
             (WorkflowState.SUMMARY_READY, WorkflowState.MATCHING_READY),
             (WorkflowState.MATCHING_READY, WorkflowState.GEMEENTE_VALIDATED),
             (WorkflowState.GEMEENTE_VALIDATED, WorkflowState.PROVIDER_REVIEW_PENDING),
+            (WorkflowState.PROVIDER_REVIEW_PENDING, WorkflowState.BUDGET_REVIEW_PENDING),
             (WorkflowState.PROVIDER_ACCEPTED, WorkflowState.PLACEMENT_CONFIRMED),
+            (WorkflowState.BUDGET_REVIEW_PENDING, WorkflowState.PROVIDER_ACCEPTED),
             (WorkflowState.PLACEMENT_CONFIRMED, WorkflowState.INTAKE_STARTED),
+            (WorkflowState.INTAKE_STARTED, WorkflowState.ACTIVE_PLACEMENT),
         ]
         for current, target in edges:
             with self.subTest(current=current, target=target):

@@ -7,10 +7,10 @@ alwaysApply: true
 
 When a task involves UI, UX, layout, design tokens, visual hierarchy, or component behavior, use this document as a standing reference:
 
-- `/Users/haroonwahed/Downloads/Careon Design Constitution V1.docx`
+- `docs/CareOn_Design_Constitution_v1_3.md` (canonical; v1.3)
 
 Working rule:
 
 1. Align proposed or implemented design decisions with the constitution.
 2. Prefer constitution guidance over ad-hoc styling choices.
-3. If the document is unavailable or unreadable in-session, ask the user for a text/markdown export and continue with best-effort alignment.
+3. If the document is missing from the workspace, restore it from version control and continue; legacy `.docx` references are deprecated.

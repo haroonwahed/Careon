@@ -1,34 +1,35 @@
 # Zorg OS - Foundation Approach
 
-System-First Build Strategy
+System-First Build Strategy (aligned to **Zorg OS v1.3** — see `docs/Zorg_OS_Product_System_Core_v1_3.md`).
 
 ## 1. Core Principle
 
-Zorg OS is workflow-first and case-centric.
+Zorg OS is workflow-first and **throughflow-centric** (aanvraag / orchestration), not a permanent dossier platform.
 
 The platform must guide the right actor to the next correct action and prevent out-of-order progression.
 
 The backend owns workflow truth. UI and API consumers are adapters, not policy owners.
 
-## 2. Core Workflow (Non-Negotiable)
+## 2. Core Workflow (Non-Negotiable — v1.3 product language)
 
-Casus -> Samenvatting -> Matching -> Gemeente Validatie -> Aanbieder Beoordeling -> Plaatsing -> Intake
+Aanmelding → Anonimisatie → Zorgvraag → Matching → Aanbieder reacties → Voorkeursmatch → Gemeentelijke validatie → Plaatsing → **Uitstroom**
 
 Rules:
 
-- Casus is created by gemeente and acts as anchor entity.
-- Samenvatting clarifies context and missing information, but is not a final decision.
-- Matching proposes explainable candidates and does not assign final ownership.
-- Gemeente Validatie confirms or adjusts matching before provider review starts.
-- Aanbieder Beoordeling is the substantive accept or reject decision by zorgaanbieder.
+- The **Aanmelder** initiates the trajectory; technical roles may still map to `gemeente` / `zorgaanbieder` until finer profiles exist.
+- Zorgvraag / summary clarifies context and missing information, but is not a final placement decision.
+- Matching proposes explainable **zorgcapaciteit** candidates and does not auto-assign.
+- **Gemeentelijke validatie** covers financing / arrangement compatibility — not provider accept/reject on behalf of aanbieders.
+- **Aanbieder reacties** are the substantive accept/reject / info decisions by zorgaanbieder.
 - Plaatsing is only valid after provider acceptance.
-- Intake only starts after placement confirmation.
+- Intake only starts after placement confirmation where applicable.
+- **Uitstroom**: after validated placement + financing alignment, the trajectory exits the platform; external systems own continuation.
 
 ## 3. Core Domain Model
 
 Required domain entities:
 
-- Case (CareCase + CaseIntakeProcess as operational anchor)
+- Aanvraag anchor (CareCase + CaseIntakeProcess as operational throughflow record, not a permanent ECD dossier)
 - Case summary and readiness (CaseAssessment)
 - Match output and recommendation evidence
 - Provider evaluation decision
@@ -40,8 +41,8 @@ Design expectations:
 
 - Use explicit workflow states over vague booleans.
 - Keep actor ownership explicit per action.
-- Keep reason codes structured for explainability and governance.
-- Preserve full case traceability from creation to intake.
+- Keep reason codes structured for explainability and audit.
+- Preserve traceability from aanmelding through placement and **uitstroom** handoff.
 
 ## 4. State Machine
 

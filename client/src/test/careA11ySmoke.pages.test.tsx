@@ -173,6 +173,16 @@ function makeOverview(): RegiekamerDecisionOverview {
         responsible_role: "gemeente",
       },
     ],
+    governance_queues: {
+      wijkteam_intakes_needing_assessment: [],
+      zorgvraag_beoordeling_open: [],
+      cases_waiting_gemeente_validation: [],
+      budget_approvals_pending: [],
+      provider_transition_requests_pending: [],
+      evaluations_upcoming: [],
+      evaluations_overdue: [],
+      active_placements_care_intensity_changed: [],
+    },
   };
 }
 
@@ -285,20 +295,20 @@ describe("Care accessibility smoke: core pages", () => {
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
     const { container } = renderWithA11y(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start regiecasus" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanvragen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe aanvraag" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-    await expectNoA11yViolations(container, "Casussen");
+    await expectNoA11yViolations(container, "Aanvragen");
   });
 
   it("Regiekamer / SystemAwarenessPage", async () => {
     mockUseOverview.mockReturnValue({ data: makeOverview(), loading: false, error: null, refetch: vi.fn() });
 
     const { container } = renderWithA11y(<SystemAwarenessPage onCaseClick={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Coördinatie$/i })).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toBeVisible();
     expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
-    await expectNoA11yViolations(container, "Regiekamer");
+    await expectNoA11yViolations(container, "Coördinatie");
   });
 
   it("Matching queue", async () => {
@@ -333,10 +343,10 @@ describe("Care accessibility smoke: core pages", () => {
         onNavigateToCasussen={vi.fn()}
       />,
     );
-    expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reacties" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Terug naar casus" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
-    await expectNoA11yViolations(container, "Aanbieder beoordeling");
+    await expectNoA11yViolations(container, "Reacties");
   });
 
   it("Plaatsingen", async () => {

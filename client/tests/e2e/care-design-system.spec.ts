@@ -386,7 +386,7 @@ test.describe("Regiekamer adaptive modes (SPA)", () => {
     await expect(page.getByRole("heading", { name: /Regiekamer/i, level: 1 })).toBeVisible({ timeout: 45_000 });
     await expect(page.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
     await expect(page.getByTestId("regiekamer-dominant-primary-cta")).toHaveText(
-      /Bekijk matching-urgenties|Open matchingoverzicht|Bekijk matchingcasussen/,
+      /Bekijk matching-urgenties|Open matchingoverzicht|Bekijk matching-aanvragen/,
     );
     await expect(page.getByTestId("regiekamer-insight-why")).toHaveCount(0);
     await expect(page.getByTestId("regiekamer-dominant-action")).toContainText(/matching|casus/i);

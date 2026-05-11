@@ -159,6 +159,16 @@ function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): Regi
         responsible_role: "zorgaanbieder",
       }),
     ],
+    governance_queues: {
+      wijkteam_intakes_needing_assessment: [],
+      zorgvraag_beoordeling_open: [],
+      cases_waiting_gemeente_validation: [],
+      budget_approvals_pending: [],
+      provider_transition_requests_pending: [],
+      evaluations_upcoming: [],
+      evaluations_overdue: [],
+      active_placements_care_intensity_changed: [],
+    },
     ...overrides,
   };
 }
@@ -168,7 +178,7 @@ describe("SystemAwarenessPage", () => {
     vi.clearAllMocks();
   });
 
-  it("loads the overview and renders De regiestroom, right rail, and Werkvoorraad", () => {
+  it("loads the overview and renders Doorstroom, right rail, and Werkvoorraad", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -178,13 +188,13 @@ describe("SystemAwarenessPage", () => {
 
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Coördinatie$/i })).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getByTestId("regiekamer-right-rail")).toBeInTheDocument();
-    expect(screen.getByText("De regiestroom")).toBeInTheDocument();
+    expect(screen.getByText("Doorstroom")).toBeInTheDocument();
     expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(within(screen.getByTestId("regiekamer-uitvoerlijst")).getByText(/\d+\s+casussen/)).toBeInTheDocument();
+    expect(within(screen.getByTestId("regiekamer-uitvoerlijst")).getByText(/\d+\s+aanvragen/)).toBeInTheDocument();
   });
 
   it("enforces regiekamer screen responsibility boundaries", () => {
@@ -210,7 +220,7 @@ describe("SystemAwarenessPage", () => {
     expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
   });
 
-  it("describes Regiekamer as the control tower and keeps the dominant action singular", () => {
+  it("describes coördinatie as an operational workspace and keeps the dominant action singular", () => {
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -221,8 +231,8 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     fireEvent.click(screen.getByTestId("regiekamer-page-info"));
-    expect(screen.getByText(/Regiekamer is een control tower/i)).toBeInTheDocument();
-    expect(screen.getByText(/volgende actie, eigenaar en reden/i)).toBeInTheDocument();
+    expect(screen.getByText(/Operationele coördinatie/i)).toBeInTheDocument();
+    expect(screen.getByText(/wat wacht, wie eigenaar is en wat de volgende actie is/i)).toBeInTheDocument();
     expect(screen.getAllByTestId("regiekamer-dominant-primary-cta")).toHaveLength(1);
     expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
   });
@@ -241,7 +251,7 @@ describe("SystemAwarenessPage", () => {
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Casus A");
     expect(rows[0]).toHaveTextContent("Kritiek");
-    expect(rows[0]).toHaveTextContent("Vul casus aan");
+    expect(rows[0]).toHaveTextContent("Vul aanvraag aan");
   });
 
   it("renders compact card content on each worklist card", () => {
@@ -257,8 +267,8 @@ describe("SystemAwarenessPage", () => {
     const first = screen.getAllByTestId("regiekamer-worklist-item")[0];
     expect(within(first).getByText("Casus A")).toBeInTheDocument();
     expect(first).toHaveTextContent("Gemeente");
-    expect(first).toHaveTextContent("Casusgegevens onvolledig");
-    expect(within(first).getByRole("button", { name: /Vul casus aan/i })).toBeInTheDocument();
+    expect(first).toHaveTextContent("Aanvraag onvolledig");
+    expect(within(first).getByRole("button", { name: /Vul aanvraag aan/i })).toBeInTheDocument();
   });
 
   it("never renders mixed summary CTA labels", () => {
@@ -268,7 +278,7 @@ describe("SystemAwarenessPage", () => {
           makeItem({
             next_best_action: {
               action: "GENERATE_SUMMARY",
-              label: "Casusgegevens onvolledig",
+              label: "Aanvraag onvolledig",
               priority: "high",
               reason: "Samenvatting ontbreekt.",
             },
@@ -329,16 +339,16 @@ describe("SystemAwarenessPage", () => {
             case_reference: "C-303",
             title: "Samenvatting in verwerking",
             next_best_action: {
-              action: "SEND_TO_PROVIDER",
-              label: "Stuur naar aanbieder",
-              priority: "high",
+              action: "GENERATE_SUMMARY",
+              label: "Wacht op verwerking",
+              priority: "medium",
               reason: "Samenvatting wordt verwerkt.",
             },
             top_blocker: {
               code: "MISSING_SUMMARY",
               severity: "high",
               message: "Samenvatting wordt gemaakt.",
-              blocking_actions: ["START_MATCHING"],
+              blocking_actions: ["GENERATE_SUMMARY"],
             },
           }),
         ],
@@ -350,11 +360,11 @@ describe("SystemAwarenessPage", () => {
 
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Stuur naar aanbieder" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vul casus aan" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Samenvatting wordt automatisch verwerkt/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText("Casusgegevens onvolledig").length).toBeGreaterThan(0);
-    expect(screen.getAllByText("Samenvatting wordt automatisch verwerkt").length).toBeGreaterThan(0);
+    expect(screen.getByRole("button", { name: "Vraag reactie aanbieder" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vul aanvraag aan" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Zorgvraag wordt automatisch verwerkt/i })).not.toBeInTheDocument();
+    expect(screen.getAllByText("Aanvraag onvolledig").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Zorgvraag wordt automatisch verwerkt").length).toBeGreaterThan(0);
   });
 
   it("surfaces intake delay as dominant action when it is the top scenario", () => {
@@ -415,7 +425,7 @@ describe("SystemAwarenessPage", () => {
 
     expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
     expect(screen.getByTestId("regiekamer-dominant-action")).toHaveTextContent(/intake-vertraging/i);
-    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Bekijk intakecasussen/i);
+    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Bekijk intake-aanvragen/i);
   });
 
   it("filters the worklist client-side", async () => {
@@ -466,15 +476,15 @@ describe("SystemAwarenessPage", () => {
 
     render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    expect(screen.getByText("Geen actieve casussen.")).toBeInTheDocument();
+    expect(screen.getByText("Geen actieve aanvragen.")).toBeInTheDocument();
     expect(
-      screen.getByText(/Open de werkvoorraad voor lopende casussen/i),
+      screen.getByText(/Open de werkvoorraad voor lopende aanvragen/i),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Open casussen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open aanvragen" }));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
   });
 
-  it("renders Start regiecasus on empty state when canCreateCase", () => {
+  it("renders Nieuwe aanvraag on empty state when canCreateCase", () => {
     const onCreateCase = vi.fn();
     const onAppNavigate = vi.fn();
     mockUseRegiekamerDecisionOverview.mockReturnValue({
@@ -503,12 +513,10 @@ describe("SystemAwarenessPage", () => {
       />,
     );
 
-    // Empty-state copy now reinforces "regietraject" naming; the button label
-    // ("Start regiecasus") still reads as the imperative for casus-creation.
-    expect(screen.getByText(/start een nieuw regietraject/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Start regiecasus" }));
+    expect(screen.getByText(/start een nieuwe doorstroom/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Nieuwe aanvraag" }));
     expect(onCreateCase).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Open casussen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open aanvragen" }));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
   });
 
@@ -569,7 +577,7 @@ describe("SystemAwarenessPage", () => {
     window.sessionStorage.removeItem("careon.casussen.preferredFocus");
   });
 
-  it("uses canonical Aanbieder beoordeling in flow chain and phase filter", async () => {
+  it("uses canonical aanbieder-reacties label in flow chain and phase filter", async () => {
     const user = userEvent.setup();
     mockUseRegiekamerDecisionOverview.mockReturnValue({
       data: makeOverview({
@@ -612,7 +620,7 @@ describe("SystemAwarenessPage", () => {
     expect(screen.getByTestId("regiekamer-phase-column-plaatsing_intake")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-    expect(screen.getByRole("option", { name: "In beoordeling" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Aanbieder reacties" })).toBeInTheDocument();
   });
 
   it("renders crisis dominant NBA with Los blokkades op", () => {
@@ -641,7 +649,7 @@ describe("SystemAwarenessPage", () => {
 
     expect(screen.getByTestId("regiekamer-dominant-action-metric")).toHaveTextContent("1");
     expect(screen.getByTestId("regiekamer-dominant-action-content")).toHaveTextContent(/kritieke blokkades actief/i);
-    expect(screen.getByTestId("regiekamer-dominant-action-content")).toHaveTextContent("1 casus — gemeentelijke actie nodig");
+    expect(screen.getByTestId("regiekamer-dominant-action-content")).toHaveTextContent("1 aanvraag — vervolgactie nodig");
     expect(screen.getByTestId("regiekamer-dominant-action-actions")).toHaveTextContent("Los blokkades op");
   });
 
@@ -658,7 +666,7 @@ describe("SystemAwarenessPage", () => {
     const workSection = screen.getByTestId("regiekamer-uitvoerlijst");
     expect(within(workSection).getByText("Werkvoorraad")).toBeInTheDocument();
     expect(within(workSection).getByTestId("care-search-control-stack")).toBeInTheDocument();
-    expect(within(workSection).getByRole("searchbox", { name: /Zoek casussen, regio's, aanbieders/i })).toBeInTheDocument();
+    expect(within(workSection).getByRole("searchbox", { name: /Zoek aanvragen, regio's, aanbieders/i })).toBeInTheDocument();
     expect(within(workSection).getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
   });
 
@@ -673,9 +681,9 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     const casusCard = screen.getByTestId("regiekamer-phase-column-casus_gestart");
-    expect(within(casusCard).getAllByText("Casus gestart")).toHaveLength(1);
+    expect(within(casusCard).getAllByText("Aanmelding & zorgvraag")).toHaveLength(1);
     expect(within(casusCard).getByText("Geblokkeerd")).toBeInTheDocument();
-    expect(within(casusCard).queryByText("Klaar voor matching")).not.toBeInTheDocument();
+    expect(within(casusCard).queryByText("Matching & validatie")).not.toBeInTheDocument();
   });
 
   it("supplemental NBA link navigates to /casussen with a critical focus hand-off", () => {
@@ -696,7 +704,7 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
     const link = screen.getByTestId("regiekamer-dominant-cases-link");
-    expect(link).toHaveTextContent(/Bekijk kritieke casussen \(1\)/);
+    expect(link).toHaveTextContent(/Bekijk kritieke aanvragen \(1\)/);
 
     fireEvent.click(link);
 
@@ -742,7 +750,7 @@ describe("SystemAwarenessPage", () => {
     render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
 
     const primary = screen.getByTestId("regiekamer-dominant-primary-cta");
-    expect(primary).toHaveTextContent(/Bekijk matchingcasussen/i);
+    expect(primary).toHaveTextContent(/Bekijk matching-aanvragen/i);
     expect(primary.textContent?.toLowerCase() ?? "").not.toMatch(/herstart/);
   });
 

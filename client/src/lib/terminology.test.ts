@@ -4,14 +4,14 @@ import { CARE_TERMS } from "./terminology";
 describe("CARE_TERMS", () => {
   it("exposes the canonical workflow labels", () => {
     expect(CARE_TERMS.workflow).toEqual({
-      casus: "Casus",
-      samenvatting: "Samenvatting",
+      casus: "Aanvraag",
+      samenvatting: "Zorgvraag",
       matching: "Matching",
-      gemeenteValidatie: "Gemeente validatie",
-      aanbiederBeoordeling: "Aanbieder beoordeling",
+      gemeenteValidatie: "Gemeentelijke validatie",
+      aanbiederBeoordeling: "Aanbieder reacties",
       plaatsing: "Plaatsing",
       intake: "Intake",
-      plaatsingEnIntake: "Plaatsing & intake",
+      plaatsingEnIntake: "Plaatsing & uitstroom",
     });
   });
 });

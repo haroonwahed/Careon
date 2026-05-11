@@ -1,0 +1,4511 @@
+{
+  "meta": {
+    "source_xlsx_url": "https://www.istandaarden.nl/binaries/content/assets/istandaarden/ijw/productcodelijst-jw/standaardproductcodelijst-jeugdwet-.xlsx",
+    "source_portal": "https://www.istandaarden.nl/ijw/over-ijw/productcodelijst-jeugdwet",
+    "publisher": "Zorginstituut Nederland (iStandaarden — Jeugdwet / JZ21)",
+    "note": "Machine-leesbare export voor CareOn arrangement hints. Gemeenten mogen afwijkende eigen codes gebruiken; zie iStandaarden-pagina.",
+    "product_rows": 450
+  },
+  "products": [
+    {
+      "productcode": "40A00",
+      "omschrijving": "Persoonlijke verzorging",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A01",
+      "omschrijving": "Persoonlijke verzorging specialistisch: outputgericht",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A02",
+      "omschrijving": "Persoonlijke verzorging regulier: outputgericht",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A03",
+      "omschrijving": "Persoonlijke verzorging specialistisch: inspanningsgericht",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A04",
+      "omschrijving": "Persoonlijke verzorging regulier: inspanningsgericht",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A05",
+      "omschrijving": "Persoonlijke verzorging regulier: outputgericht (licht)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A06",
+      "omschrijving": "Persoonlijke verzorging regulier: outputgericht (middel)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A07",
+      "omschrijving": "Persoonlijke verzorging regulier: outputgericht (zwaar)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A08",
+      "omschrijving": "Persoonlijke verzorging specialistisch: outputgericht (licht)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A09",
+      "omschrijving": "Persoonlijke verzorging specialistisch: outputgericht (middel)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A10",
+      "omschrijving": "Persoonlijke verzorging specialistisch: outputgericht (zwaar)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A11",
+      "omschrijving": "Persoonlijke verzorging regulier: inspanningsgericht (individueel)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A12",
+      "omschrijving": "Persoonlijke verzorging regulier: inspanningsgericht (op afstand)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A13",
+      "omschrijving": "Persoonlijke verzorging specialistisch: inspanningsgericht (individueel)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A14",
+      "omschrijving": "Persoonlijke verzorging specialistisch: inspanningsgericht (op afstand)",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "40A15",
+      "omschrijving": "Persoonlijke verzorging laag tarief: inspanningsgericht",
+      "productcategorie_code": "40",
+      "productcategorie_omschrijving": "Persoonlijke verzorging",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A00",
+      "omschrijving": "Dagbehandeling",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A01",
+      "omschrijving": "Dagbehandeling regulier: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A02",
+      "omschrijving": "Dagbehandeling specialistisch: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A03",
+      "omschrijving": "Dagbehandeling regulier: inspanningsgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A04",
+      "omschrijving": "Dagbehandeling specialistisch: inspanningsgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A05",
+      "omschrijving": "Dagbehandeling regulier: outputgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A06",
+      "omschrijving": "Dagbehandeling regulier: outputgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A07",
+      "omschrijving": "Dagbehandeling regulier: outputgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A08",
+      "omschrijving": "Dagbehandeling specialistisch: outputgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A09",
+      "omschrijving": "Dagbehandeling specialistisch: outputgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A10",
+      "omschrijving": "Dagbehandeling specialistisch: outputgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A11",
+      "omschrijving": "Dagbehandeling regulier: inspanningsgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A12",
+      "omschrijving": "Dagbehandeling regulier: inspanningsgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A13",
+      "omschrijving": "Dagbehandeling regulier: inspanningsgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A14",
+      "omschrijving": "Dagbehandeling specialistisch: inspanningsgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A15",
+      "omschrijving": "Dagbehandeling specialistisch: inspanningsgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A16",
+      "omschrijving": "Dagbehandeling specialistisch: inspanningsgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A17",
+      "omschrijving": "Dagbesteding: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A18",
+      "omschrijving": "Dagbesteding: inspanningsgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A19",
+      "omschrijving": "Dagbesteding: outputgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A20",
+      "omschrijving": "Dagbesteding: outputgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A21",
+      "omschrijving": "Dagbesteding: outputgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A22",
+      "omschrijving": "Dagbesteding: inspanningsgericht (licht)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A23",
+      "omschrijving": "Dagbesteding: inspanningsgericht (middel)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41A24",
+      "omschrijving": "Dagbesteding: inspanningsgericht (zwaar)",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B00",
+      "omschrijving": "Dagbehandeling: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B01",
+      "omschrijving": "Diagnostiek op eigen locatie aanbieder: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B02",
+      "omschrijving": "Diagnostiek op locatie bij andere organisaties: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B03",
+      "omschrijving": "Begeleiden op eigen locatie aanbieder: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B04",
+      "omschrijving": "Begeleiden op locatie bij andere organisatie: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B05",
+      "omschrijving": "Behandelen op eigen locatie aanbieder: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "41B06",
+      "omschrijving": "Behandelen op locatie bij andere organisatie: outputgericht",
+      "productcategorie_code": "41",
+      "productcategorie_omschrijving": "Dagbehandeling",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "03",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: daghulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A00",
+      "omschrijving": "Vervoerdiensten",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A01",
+      "omschrijving": "Vervoer: outputgericht",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A02",
+      "omschrijving": "Vervoer rolstoel: outputgericht",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A03",
+      "omschrijving": "Vervoer: inspanningsgericht",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A04",
+      "omschrijving": "Vervoer rolstoel: inspanningsgericht",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A05",
+      "omschrijving": "Vervoer: outputgericht (licht)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A06",
+      "omschrijving": "Vervoer: outputgericht (middel)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A07",
+      "omschrijving": "Vervoer: outputgericht (zwaar)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A08",
+      "omschrijving": "Vervoer rolstoel: outputgericht (licht)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A09",
+      "omschrijving": "Vervoer rolstoel: outputgericht (middel)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "42A10",
+      "omschrijving": "Vervoer rolstoel: outputgericht (zwaar)",
+      "productcategorie_code": "42",
+      "productcategorie_omschrijving": "Vervoerdiensten",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A00",
+      "omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A01",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A02",
+      "omschrijving": "Deeltijdverblijf: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A03",
+      "omschrijving": "Pleegzorg: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A04",
+      "omschrijving": "Gezinshuis: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A05",
+      "omschrijving": "Logeren: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A06",
+      "omschrijving": "JeugdzorgPlus: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A07",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A08",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A09",
+      "omschrijving": "Pleegzorg: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A10",
+      "omschrijving": "Gezinshuis: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A11",
+      "omschrijving": "Logeren: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A12",
+      "omschrijving": "JeugdzorgPlus: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A13",
+      "omschrijving": "JSLVG: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A14",
+      "omschrijving": "Observatie: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A15",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A16",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A17",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (middelzwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A18",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A19",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (extra zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A20",
+      "omschrijving": "Deeltijdverblijf: outputgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A21",
+      "omschrijving": "Deeltijdverblijf: outputgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A22",
+      "omschrijving": "Deeltijdverblijf: outputgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A23",
+      "omschrijving": "Pleegzorg: outputgericht (deeltijd)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A24",
+      "omschrijving": "Pleegzorg: outputgericht (voltijd)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A25",
+      "omschrijving": "Pleegzorg: outputgericht (vakantie)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A26",
+      "omschrijving": "Pleegzorg specialistisch: outputgericht (deeltijd)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A27",
+      "omschrijving": "Pleegzorg specialistisch: outputgericht (voltijd)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A28",
+      "omschrijving": "Pleegzorg specialistisch: outputgericht (vakantie)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A29",
+      "omschrijving": "Gezinshuis: outputgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A30",
+      "omschrijving": "Gezinshuis: outputgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A31",
+      "omschrijving": "Gezinshuis: outputgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A32",
+      "omschrijving": "Logeren: outputgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A33",
+      "omschrijving": "Logeren: outputgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A34",
+      "omschrijving": "Logeren: outputgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A35",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A36",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A37",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (middelzwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A38",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A39",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (extra zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A40",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A41",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A42",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A43",
+      "omschrijving": "ZZP LVG: inspanningsgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A44",
+      "omschrijving": "ZZP LVG: inspanningsgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A45",
+      "omschrijving": "ZZP LVG: inspanningsgericht (middelzwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A46",
+      "omschrijving": "ZZP LVG: inspanningsgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A47",
+      "omschrijving": "ZZP LVG: inspanningsgericht (extra zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A48",
+      "omschrijving": "Observatie: inspanningsgericht (licht)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A49",
+      "omschrijving": "Observatie: inspanningsgericht (middel)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A50",
+      "omschrijving": "Observatie: inspanningsgericht (zwaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A51",
+      "omschrijving": "Per dag ZZP 3VG incl.BH excl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A52",
+      "omschrijving": "Per dag ZZP 3VG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A53",
+      "omschrijving": "Per dag ZZP 1LVG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A54",
+      "omschrijving": "Per dag ZZP 2LVG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A55",
+      "omschrijving": "Per dag ZZP 3LVG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A56",
+      "omschrijving": "Per dag ZZP 4LVG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A57",
+      "omschrijving": "Per dag ZZP 5LVG incl.BH incl.DB",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A58",
+      "omschrijving": "NHC",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A59",
+      "omschrijving": "NIC",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A60",
+      "omschrijving": "Pleegzorg geestelijk gehandicapten: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A61",
+      "omschrijving": "Pleegzorg lichamelijk gehandicapten: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A62",
+      "omschrijving": "Pleegzorg: inspanningsgericht (weekend)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A63",
+      "omschrijving": "Pleegzorg: inspanningsgericht (jonger dan 12 jaar)",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A64",
+      "omschrijving": "Jeugdzorg plus jonger dan 12 jaar: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A65",
+      "omschrijving": "Afwezigheidsdag: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43A66",
+      "omschrijving": "Logeren specialistisch: inspanningsgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B00",
+      "omschrijving": "Pleegzorg: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B01",
+      "omschrijving": "Gezinsgericht: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B02",
+      "omschrijving": "Gesloten plaatsing: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B03",
+      "omschrijving": "Verblijf anders: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B04",
+      "omschrijving": "Diagnostiek verblijf anders fulltime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B05",
+      "omschrijving": "Diagnostiek verblijf anders hulpverlener parttime aanwezig: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B06",
+      "omschrijving": "Diagnostiek verblijf anders cliënt parttime aanwezig: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B07",
+      "omschrijving": "Diagnostiek verblijf anders driemilieuvoorziening: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B08",
+      "omschrijving": "Behandelen met pleegzorg fulltime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B09",
+      "omschrijving": "Behandelen met pleegzorg parttime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B10",
+      "omschrijving": "Behandelen gezinsgericht fulltime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B11",
+      "omschrijving": "Behandelen gezinsgericht parttime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B12",
+      "omschrijving": "Gesloten plaatsing: hulp bij voorwaardelijke machtiging gesloten jeugdhulp en schorsing: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B13",
+      "omschrijving": "Gesloten plaatsing: 24 uurs hulp onder machtiging gesloten jeugdhulp: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B14",
+      "omschrijving": "Gesloten plaatsing: opname BOPZ: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B15",
+      "omschrijving": "Gesloten plaatsing: traject Jeugdzorgplus: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B16",
+      "omschrijving": "Behandelen verblijf anders fulltime: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B17",
+      "omschrijving": "Behandelen verblijf anders hulpverlener parttime aanwezig: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B18",
+      "omschrijving": "Behandelen verblijf anders cliënt parttime aanwezig: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "43B19",
+      "omschrijving": "Behandelen verblijf anders driemilieuvoorziening: outputgericht",
+      "productcategorie_code": "43",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (incl. beh.)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A00",
+      "omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A01",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A02",
+      "omschrijving": "Deeltijdverblijf: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A03",
+      "omschrijving": "Pleegzorg: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A04",
+      "omschrijving": "Gezinshuis: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A05",
+      "omschrijving": "Logeren: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A06",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A07",
+      "omschrijving": "Pleegzorg: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A08",
+      "omschrijving": "Gezinshuis: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A09",
+      "omschrijving": "Logeren: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A10",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A11",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A12",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (middelzwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A13",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A14",
+      "omschrijving": "Jeugdhulp verblijf: outputgericht (extra zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A15",
+      "omschrijving": "Deeltijdverblijf: outputgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A16",
+      "omschrijving": "Deeltijdverblijf: outputgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A17",
+      "omschrijving": "Deeltijdverblijf: outputgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A18",
+      "omschrijving": "Pleegzorg: outputgericht (deeltijd)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A19",
+      "omschrijving": "Pleegzorg: outputgericht (voltijd)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A20",
+      "omschrijving": "Pleegzorg: outputgericht (vakantie)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A21",
+      "omschrijving": "Gezinshuis: outputgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A22",
+      "omschrijving": "Gezinshuis: outputgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A23",
+      "omschrijving": "Gezinshuis: outputgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A24",
+      "omschrijving": "Logeren: outputgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A25",
+      "omschrijving": "Logeren: outputgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A26",
+      "omschrijving": "Logeren: outputgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A27",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A28",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A29",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (middelzwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A30",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A31",
+      "omschrijving": "Jeugdhulp verblijf: inspanningsgericht (extra zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A32",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (licht)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A33",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (middel)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A34",
+      "omschrijving": "Deeltijdverblijf: inspanningsgericht (zwaar)",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A35",
+      "omschrijving": "Per dag ZZP 1VG excl. DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A36",
+      "omschrijving": "Per dag ZZP 2VG excl. DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A37",
+      "omschrijving": "Per dag ZZP 3VG excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A38",
+      "omschrijving": "Per dag ZZP 1VG incl. DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A39",
+      "omschrijving": "Per dag ZZP 2VG incl. DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A40",
+      "omschrijving": "Per dag ZZP 3VG excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A41",
+      "omschrijving": "Per dag ZZP V&V verblijf niet-geindiceerd",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A42",
+      "omschrijving": "Per dag ZZP GGZ verblijfscomponent",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A43",
+      "omschrijving": "Per dag ZZP VG&LG verblijfscomponent",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A44",
+      "omschrijving": "Per dag ZZP ZG verblijfscomponent",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A45",
+      "omschrijving": "Logeren specialistisch: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A46",
+      "omschrijving": "Afwezigheidsdag: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A47",
+      "omschrijving": "Per dag VPT 1GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A48",
+      "omschrijving": "Per dag VPT 1GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A49",
+      "omschrijving": "Per dag VPT 2GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A50",
+      "omschrijving": "Per dag VPT 2GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A51",
+      "omschrijving": "Per dag VPT 3GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A52",
+      "omschrijving": "Per dag VPT 3GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A53",
+      "omschrijving": "Per dag VPT 4GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A54",
+      "omschrijving": "Per dag VPT 4GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A55",
+      "omschrijving": "Per dag VPT 5GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A56",
+      "omschrijving": "Per dag VPT 5GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A57",
+      "omschrijving": "Per dag VPT 6GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A58",
+      "omschrijving": "Per dag VPT 6GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A59",
+      "omschrijving": "Per dag ZZP 1GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A60",
+      "omschrijving": "Per dag ZZP 1GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A61",
+      "omschrijving": "Per dag ZZP 2GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A62",
+      "omschrijving": "Per dag ZZP 2GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A63",
+      "omschrijving": "Per dag ZZP 3GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A64",
+      "omschrijving": "Per dag ZZP 3GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A65",
+      "omschrijving": "Per dag ZZP 4GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A66",
+      "omschrijving": "Per dag ZZP 4GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A67",
+      "omschrijving": "Per dag ZZP 5GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A68",
+      "omschrijving": "Per dag ZZP 5GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A69",
+      "omschrijving": "Per dag ZZP 6GGZ-C excl.BH excl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44A70",
+      "omschrijving": "Per dag ZZP 6GGZ-C excl.BH incl.DB",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B00",
+      "omschrijving": "Pleegzorg: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B01",
+      "omschrijving": "Gezinsgericht: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B02",
+      "omschrijving": "Begeleiden pleegzorg fulltime: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B03",
+      "omschrijving": "Begeleiden pleegzorg parttime: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B04",
+      "omschrijving": "Begeleiden gezinsgericht fulltime: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B05",
+      "omschrijving": "Begeleiden gezinsgericht parttime: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B06",
+      "omschrijving": "Pleegzorg voltijd inclusief toeslagen: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B07",
+      "omschrijving": "Pleegzorg deeltijd inclusief toeslagen: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B08",
+      "omschrijving": "Buitengewone bijzondere kosten: outputgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B09",
+      "omschrijving": "Pleegzorg voltijd inclusief toeslagen: inspanninsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B10",
+      "omschrijving": "Pleegzorg deeltijd inclusief toeslagen: inspanningsgericht",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B15",
+      "omschrijving": "Zak- en kleedgeld 6-12 jaar: outputgerichte variant",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B16",
+      "omschrijving": "Zak- en kleedgeld 12+ jaar: outputgerichte variant",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B17",
+      "omschrijving": "Zak- en kleedgeld incl. meerkosten: outputgerichte variant",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "44B18",
+      "omschrijving": "Extra kosten kleedgeld",
+      "productcategorie_code": "44",
+      "productcategorie_omschrijving": "Jeugdhulp verblijf (excl. beh)",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "13",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gesloten plaatsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A00",
+      "omschrijving": "Jeugdhulp ambulant",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A01",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A02",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A03",
+      "omschrijving": "Diagnostiek: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A04",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A05",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A06",
+      "omschrijving": "Jeugdhulp ambulant diagnostiek: inspanningsgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A07",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (licht)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A08",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (middel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A09",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (zwaar)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A10",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A11",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A12",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A13",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A14",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (licht)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A15",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (middel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A16",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (zwaar)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A17",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A18",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A19",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A20",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A21",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (licht & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A22",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (middel & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A23",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (zwaar & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A24",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (licht & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A25",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (middel & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A26",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (zwaar & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A27",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (licht & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A28",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (middel & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A29",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (zwaar & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A30",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (licht & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A31",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (middel & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A32",
+      "omschrijving": "Jeugdhulp ambulant regulier: outputgericht (zwaar & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A33",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (licht & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A34",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (middel & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A35",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (zwaar & individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A36",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (licht & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A37",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (middel & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A38",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (zwaar & groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A39",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (licht & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A40",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (middel & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A41",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (zwaar & gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A42",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (licht & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A43",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (middel & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A44",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: outputgericht (zwaar & op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A45",
+      "omschrijving": "Jeugdhulp ambulant diagnostiek: outputgericht (licht)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A46",
+      "omschrijving": "Jeugdhulp ambulant diagnostiek: outputgericht (middel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A47",
+      "omschrijving": "Jeugdhulp ambulant diagnostiek: outputgericht (zwaar)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A48",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht (individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A49",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht (groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A50",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht (op afstand)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A51",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht (gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A52",
+      "omschrijving": "Jeugdhulp ambulant regulier: inspanningsgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A53",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht (individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A54",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht (groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A55",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht (op afstand)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A56",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht (gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A57",
+      "omschrijving": "Jeugdhulp ambulant specialistisch: inspanningsgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A58",
+      "omschrijving": "Per dag Toeslag ZZP MFC",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A59",
+      "omschrijving": "Per dag Toeslag ZZP Observatie",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A60",
+      "omschrijving": "Per dag Toeslag ZZP woonzorg GHZ kind",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A61",
+      "omschrijving": "Per dag Toeslag ZZP woonzorg GHZ jeugd",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A62",
+      "omschrijving": "Per dagdeel Toeslag ZZP dagb.",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A63",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A64",
+      "omschrijving": "Behandeling: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A65",
+      "omschrijving": "Behandeling: inspanningsgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A66",
+      "omschrijving": "Behandeling: outputgericht (licht)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A67",
+      "omschrijving": "Behandeling: outputgericht (middel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A68",
+      "omschrijving": "Behandeling: outputgericht (zwaar)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A69",
+      "omschrijving": "Behandeling: inspanningsgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A70",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht (individueel)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A71",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht (groep)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A72",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht (op afstand)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A73",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht (gezin/systeem)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A74",
+      "omschrijving": "Jeugdhulp ambulant laag tarief: inspanningsgericht (op locatie)",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45A75",
+      "omschrijving": "Jeugdhulp ambulant coördinatie",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B00",
+      "omschrijving": "Ambulante Jeugdhulp: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B01",
+      "omschrijving": "Diagnostiek in jeugd/wijkteam individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B02",
+      "omschrijving": "Diagnostiek in jeugd/wijkteam gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B03",
+      "omschrijving": "Diagnostiek in jeugd/wijkteam groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B04",
+      "omschrijving": "Diagnostiek ambulant op locatie aanbieder individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B05",
+      "omschrijving": "Diagnostiek ambulant op locatie aanbieder gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B06",
+      "omschrijving": "Diagnostiek ambulant op locatie aanbieder groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B07",
+      "omschrijving": "Diagnostiek in netwerk jeugdige individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B08",
+      "omschrijving": "Diagnostiek in netwerk jeugdige gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B09",
+      "omschrijving": "Diagnostiek in netwerk jeugdige groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B10",
+      "omschrijving": "Begeleiden in jeugd/wijkteam individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B11",
+      "omschrijving": "Begeleiden in jeugd/wijkteam gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B12",
+      "omschrijving": "Begeleiden in jeugd/wijkteam groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B13",
+      "omschrijving": "Begeleiden ambulant op locatie aanbieder individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B14",
+      "omschrijving": "Begeleiden ambulant op locatie aanbieder gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B15",
+      "omschrijving": "Begeleiden ambulant op locatie aanbieder groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B16",
+      "omschrijving": "Begeleiden in netwerk jeugdige individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B17",
+      "omschrijving": "Begeleiden in netwerk jeugdige gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B18",
+      "omschrijving": "Begeleiden in netwerk jeugdige groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B19",
+      "omschrijving": "Behandelen in jeugd/wijkteam individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B20",
+      "omschrijving": "Behandelen in jeugd/wijkteam gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B21",
+      "omschrijving": "Behandelen in jeugd/wijkteam groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "01",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: uitgevoerd door wijk- of buurtteam",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B22",
+      "omschrijving": "Behandelen ambulant op locatie aanbieder individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B23",
+      "omschrijving": "Behandelen ambulant op locatie aanbieder gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B24",
+      "omschrijving": "Behandelen ambulant op locatie aanbieder groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B25",
+      "omschrijving": "Behandelen in netwerk jeugdige individu: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B26",
+      "omschrijving": "Behandelen in netwerk jeugdige gezin: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "45B27",
+      "omschrijving": "Behandelen in netwerk jeugdige groep: outputgericht",
+      "productcategorie_code": "45",
+      "productcategorie_omschrijving": "Jeugdhulp ambulant",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "04",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: jeugdhulp in het netwerk van de jeugdige",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A00",
+      "omschrijving": "Jeugdhulp crisis: outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A01",
+      "omschrijving": "Jeugdhulp crisis ambulant: inspanningsgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A02",
+      "omschrijving": "Jeugdhulp crisis Gezinshuis: inspanningsgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A03",
+      "omschrijving": "Jeugdhulp crisis verblijf: inspanningsgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A04",
+      "omschrijving": "Jeugdhulp crisis verblijf (excl. beh.): inspanningsgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46A05",
+      "omschrijving": "Jeugdhulp crisis pleegzorg: inspanningsgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B00",
+      "omschrijving": "Jeugdhulp crisis: outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B01",
+      "omschrijving": "Jeugdhulp crisis ambulant: outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B02",
+      "omschrijving": "Jeugdhulp crisis gezinshuis: outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "12",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: gezinsgericht",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B03",
+      "omschrijving": "Jeugdhulp crisis verblijf (incl. behandeling): outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B04",
+      "omschrijving": "Jeugdhulp crisis verblijf (excl. behandeling): outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "14",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: Verblijf bij een jeugdhulpaanbieder anders dan bovenstaand",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "46B05",
+      "omschrijving": "Jeugdhulp crisis pleegzorg: outputgericht",
+      "productcategorie_code": "46",
+      "productcategorie_omschrijving": "Jeugdhulp crisis",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Met verblijf: pleegzorg",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A00",
+      "omschrijving": "Jeugdreclassering",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A01",
+      "omschrijving": "Jeugdreclassering: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A02",
+      "omschrijving": "Voorbereiding gedragsbeïnvloedende maatregel: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "63",
+      "dimensie_hulpvorm_omschrijving": "Voorbereiding gedragsbeïnvloedende maatregel, voorwaardelijke sepot, schorsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A03",
+      "omschrijving": "Gedragsbeïnvloedende maatregel: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "62",
+      "dimensie_hulpvorm_omschrijving": "Gedragsbeïnvloedende maatregel",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A04",
+      "omschrijving": "ITB-Criem: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "51",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Criem",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A05",
+      "omschrijving": "ITB-Harde kern: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "50",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Harde Kern",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A06",
+      "omschrijving": "Samenloop: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A07",
+      "omschrijving": "STP training- en scholingsprogramma: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "61",
+      "dimensie_hulpvorm_omschrijving": "Scholings- en trainingsprogramma",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A08",
+      "omschrijving": "Jeugdreclassering: outputgericht (licht)",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A09",
+      "omschrijving": "Jeugdreclassering: outputgericht (middel)",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47A10",
+      "omschrijving": "Jeugdreclassering: outputgericht (zwaar)",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B00",
+      "omschrijving": "Toezicht en begeleiding: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B01",
+      "omschrijving": "Voorbereiding gedrag beïnvloedende maatregel: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "63",
+      "dimensie_hulpvorm_omschrijving": "Voorbereiding gedragsbeïnvloedende maatregel, voorwaardelijke sepot, schorsing",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B02",
+      "omschrijving": "Gedrag beïnvloedende maatregel: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "62",
+      "dimensie_hulpvorm_omschrijving": "Gedragsbeïnvloedende maatregel",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B03",
+      "omschrijving": "Individuele trajectbegeleiding CRIEM: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "51",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Criem",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B04",
+      "omschrijving": "Individuele trajectbegeleiding Harde Kern: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "50",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Harde Kern",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B05",
+      "omschrijving": "Samenloop: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B06",
+      "omschrijving": "Scholings- en trainingsprogramma: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "61",
+      "dimensie_hulpvorm_omschrijving": "Scholings- en trainingsprogramma",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "47B10",
+      "omschrijving": "Jeugdreclassering: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B11",
+      "omschrijving": "GBM Advies: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "62",
+      "dimensie_hulpvorm_omschrijving": "Gedragsbeïnvloedende maatregel",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B12",
+      "omschrijving": "GBM Uitvoering: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "62",
+      "dimensie_hulpvorm_omschrijving": "Gedragsbeïnvloedende maatregel",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B13",
+      "omschrijving": "ITB Criem: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "51",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Criem",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B14",
+      "omschrijving": "ITB Harde kern: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "41",
+      "dimensie_hulpvorm_omschrijving": "Toezicht en begeleiding: gedwongen kader",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B15",
+      "omschrijving": "Jeugdreclassering Samenloop: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "50",
+      "dimensie_hulpvorm_omschrijving": "Individuele trajectbegeleiding Harde Kern",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "47B16",
+      "omschrijving": "STP: outputgericht",
+      "productcategorie_code": "47",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "61",
+      "dimensie_hulpvorm_omschrijving": "Scholings- en trainingsprogramma",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "48A00",
+      "omschrijving": "Jeugdbescherming: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A01",
+      "omschrijving": "Ondertoezichtstelling jaar 1: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A02",
+      "omschrijving": "Ondertoezichtstelling jaar 2 en verder: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A03",
+      "omschrijving": "Voogdij: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "21",
+      "dimensie_hulpvorm_omschrijving": "Voogdij",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A04",
+      "omschrijving": "Ondertoezichtstelling jaar 1: inspanningsgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A05",
+      "omschrijving": "Ondertoezichtstelling jaar 2 en verder: inspanningsgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48A06",
+      "omschrijving": "Voogdij: inspanningsgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "21",
+      "dimensie_hulpvorm_omschrijving": "Voogdij",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48B00",
+      "omschrijving": "Ondertoezichtstelling jaar 1: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48B01",
+      "omschrijving": "Ondertoezichtstelling jaar 2 en verder: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48B02",
+      "omschrijving": "Voogdij: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "21",
+      "dimensie_hulpvorm_omschrijving": "Voogdij",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "48B10",
+      "omschrijving": "Ondertoezichtstelling: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "48B11",
+      "omschrijving": "Voogdij: outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "21",
+      "dimensie_hulpvorm_omschrijving": "Voogdij",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "48B12",
+      "omschrijving": "LET JB Ondertoezichtstelling: : outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "48B13",
+      "omschrijving": "LET JB Voogdij: : outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdreclassering",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "21",
+      "dimensie_hulpvorm_omschrijving": "Voogdij",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "48B14",
+      "omschrijving": "Pupilkosten: : outputgericht",
+      "productcategorie_code": "48",
+      "productcategorie_omschrijving": "Jeugdbescherming",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "11",
+      "dimensie_hulpvorm_omschrijving": "Ondertoezichtstelling",
+      "nza_declaratiecode": null
+    },
+    {
+      "productcode": "49A00",
+      "omschrijving": "Activiteiten in het preventief justitieel kader",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A01",
+      "omschrijving": "Activiteiten in het preventief justitieel kader: inspanningsgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Inspanningsgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A02",
+      "omschrijving": "Activiteiten in het preventief justitieel kader: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A03",
+      "omschrijving": "Activiteiten in het preventief justitieel kader: outputgericht(licht)",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A04",
+      "omschrijving": "Activiteiten in het preventief justitieel kader: outputgericht(middel)",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A05",
+      "omschrijving": "Activiteiten in het preventief justitieel kader: outputgericht(zwaar)",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49A06",
+      "omschrijving": "Begeleiding toezicht: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B00",
+      "omschrijving": "Activiteiten in het preventief kader: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B01",
+      "omschrijving": "Advies/consult: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B02",
+      "omschrijving": "Drang/casusregie: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B03",
+      "omschrijving": "Crisisinterventie: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B04",
+      "omschrijving": "Nazorg: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B05",
+      "omschrijving": "Overig: Raadsmelding: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B06",
+      "omschrijving": "Overig: Zorgmelding/SAVE-onderzoek: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "49B07",
+      "omschrijving": "Overig: Begeleiding toeleiding gesloten jeugdzorg: outputgericht",
+      "productcategorie_code": "49",
+      "productcategorie_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "31",
+      "dimensie_hulpvorm_omschrijving": "Activiteiten in het preventief justitieel kader",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A00",
+      "omschrijving": "Maatwerkarrangementen Jeugdwet: outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A01",
+      "omschrijving": "Zelfstandig leven",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A02",
+      "omschrijving": "Maatschappelijke deelname",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A03",
+      "omschrijving": "Zelfstandig leven 1 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A04",
+      "omschrijving": "Zelfstandig leven 1 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A05",
+      "omschrijving": "Zelfstandig leven 1 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A06",
+      "omschrijving": "Zelfstandig leven 1 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A07",
+      "omschrijving": "Zelfstandig leven 1 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A08",
+      "omschrijving": "Maatschappelijke deelname 1 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A09",
+      "omschrijving": "Maatschappelijke deelname 1 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A10",
+      "omschrijving": "Maatschappelijke deelname 1 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A11",
+      "omschrijving": "Maatschappelijke deelname 1 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A12",
+      "omschrijving": "Maatschappelijke deelname 1 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A13",
+      "omschrijving": "Zelfstandig leven 2 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A14",
+      "omschrijving": "Zelfstandig leven 2 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A15",
+      "omschrijving": "Zelfstandig leven 2 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A16",
+      "omschrijving": "Zelfstandig leven 2 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A17",
+      "omschrijving": "Zelfstandig leven 2 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A18",
+      "omschrijving": "Zelfstandig leven 3 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A19",
+      "omschrijving": "Zelfstandig leven 3 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A20",
+      "omschrijving": "Zelfstandig leven 3 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A21",
+      "omschrijving": "Zelfstandig leven 3 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A22",
+      "omschrijving": "Zelfstandig leven 3 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A23",
+      "omschrijving": "Maatschappelijke deelname 2 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A24",
+      "omschrijving": "Maatschappelijke deelname 2 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A25",
+      "omschrijving": "Maatschappelijke deelname 2 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A26",
+      "omschrijving": "Maatschappelijke deelname 2 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A27",
+      "omschrijving": "Maatschappelijke deelname 2 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A28",
+      "omschrijving": "Maatschappelijke deelname 3 (licht): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A29",
+      "omschrijving": "Maatschappelijke deelname 3 (middel): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A30",
+      "omschrijving": "Maatschappelijke deelname 3 (middelzwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A31",
+      "omschrijving": "Maatschappelijke deelname 3 (zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "50A32",
+      "omschrijving": "Maatschappelijke deelname 3 (extra zwaar): outputgericht",
+      "productcategorie_code": "50",
+      "productcategorie_omschrijving": "Maatwerkarrangementen Jeugdwet",
+      "uitvoeringsvariant": "Outputgericht",
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "51A00",
+      "omschrijving": "Kort",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "180001"
+    },
+    {
+      "productcode": "51A01",
+      "omschrijving": "Middel",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "180002"
+    },
+    {
+      "productcode": "51A02",
+      "omschrijving": "Chronisch",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "180004"
+    },
+    {
+      "productcode": "51A03",
+      "omschrijving": "Intensief",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "180003"
+    },
+    {
+      "productcode": "51A04",
+      "omschrijving": "Onvolledig behandeltraject",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "180005"
+    },
+    {
+      "productcode": "51A05",
+      "omschrijving": "Umami",
+      "productcategorie_code": "51",
+      "productcategorie_omschrijving": "Generalistische Basis GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "52A00",
+      "omschrijving": "Specialistische GGZ (opt-out)",
+      "productcategorie_code": "52",
+      "productcategorie_omschrijving": "Specialistische GGZ",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A00",
+      "omschrijving": "Kindergeneeskunde",
+      "productcategorie_code": "-",
+      "productcategorie_omschrijving": "-",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "-",
+      "dimensie_hulpvorm_omschrijving": "-",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A01",
+      "omschrijving": "Behandeling of onderzoek op de polikliniek of dagbehandeling bij gedragsproblemen",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A02",
+      "omschrijving": "Consult op de polikliniek bij gedragsproblemen",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A03",
+      "omschrijving": "Meer dan 6 polikliniekbezoeken of meer dan 1 dagbehandeling bij een psychische of gedragsaandoening",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A04",
+      "omschrijving": "Consult op de polikliniek bij een psychische of gedragsaandoening",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A05",
+      "omschrijving": "Behandeling of onderzoek op de polikliniek of dagbehandeling bij een psychische of gedragsaandoening (incl. activiteiten psychosociaal specifiek)",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    },
+    {
+      "productcode": "53A06",
+      "omschrijving": "Behandeling of onderzoek op de polikliniek of dagbehandeling bij Een psychische of gedragsaandoening (excl. activiteiten psychosociaal specifiek)",
+      "productcategorie_code": "53",
+      "productcategorie_omschrijving": "Kindergeneeskunde",
+      "uitvoeringsvariant": null,
+      "dimensie_hulpvorm_code": "02",
+      "dimensie_hulpvorm_omschrijving": "Zonder verblijf: ambulante jeugdhulp op locatie van de aanbieder",
+      "nza_declaratiecode": "-"
+    }
+  ]
+}

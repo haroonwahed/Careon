@@ -743,3 +743,77 @@ class DecisionEngineTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(CaseDecisionLog.objects.count(), before_count)
         self.assertEqual(response.json()["case_id"], case_record.pk)
+
+    def test_arrangement_alignment_api_is_read_only_advisory(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.arrangement_type_code = "PGB ambulant"
+        intake.save(update_fields=["arrangement_type_code"])
+        self.client.login(username="gemeente", password="testpass123")
+        before = CaseDecisionLog.objects.count()
+        response = self.client.get(
+            reverse("careon:case_arrangement_alignment_api", kwargs={"case_id": case_record.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(CaseDecisionLog.objects.count(), before)
+        payload = response.json()
+        self.assertEqual(payload["case_id"], str(case_record.pk))
+        self.assertTrue(payload.get("requires_human_confirmation"))
+        self.assertTrue(payload.get("staging_deterministic"))
+        self.assertIsInstance(payload.get("equivalence_hints"), list)
+        self.assertGreaterEqual(len(payload["equivalence_hints"]), 1)
+        hint = payload["equivalence_hints"][0]
+        self.assertIn("source_label", hint)
+        self.assertIn("target_label", hint)
+        self.assertIn("equivalence_confidence", hint)
+        self.assertIn("PGB", hint["target_label"])
+
+    def test_arrangement_alignment_prefers_jz21_official_productcode(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.arrangement_type_code = "40A01"
+        intake.save(update_fields=["arrangement_type_code"])
+        self.client.login(username="gemeente", password="testpass123")
+        response = self.client.get(
+            reverse("careon:case_arrangement_alignment_api", kwargs={"case_id": case_record.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        hint = response.json()["equivalence_hints"][0]
+        self.assertIn("JZ21", hint["target_label"])
+        self.assertIn("40A01", hint["target_label"])
+
+    def test_arrangement_alignment_matches_nza_zorgproductcode(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.arrangement_type_code = "020108050"
+        intake.save(update_fields=["arrangement_type_code"])
+        self.client.login(username="gemeente", password="testpass123")
+        response = self.client.get(
+            reverse("careon:case_arrangement_alignment_api", kwargs={"case_id": case_record.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        hint = response.json()["equivalence_hints"][0]
+        self.assertIn("NZa", hint["target_label"])
+        self.assertIn("020108050", hint["target_label"])
+
+    def test_arrangement_alignment_matches_iwlz_zzp(self):
+        intake, case_record, _, _ = self._create_case(
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+        )
+        intake.arrangement_type_code = "750"
+        intake.save(update_fields=["arrangement_type_code"])
+        self.client.login(username="gemeente", password="testpass123")
+        response = self.client.get(
+            reverse("careon:case_arrangement_alignment_api", kwargs={"case_id": case_record.pk}),
+        )
+        self.assertEqual(response.status_code, 200)
+        hint = response.json()["equivalence_hints"][0]
+        self.assertIn("iWlz", hint["target_label"])
+        self.assertIn("COD163", hint["target_label"])

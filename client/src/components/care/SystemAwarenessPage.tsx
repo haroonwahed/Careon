@@ -410,7 +410,7 @@ function summaryWorkflowState(item: RegiekamerDecisionOverviewItem): {
   const processing = /(wordt|wacht op).*(gemaakt|verwerkt)|automatisch|verwerking/.test(summaryText);
   if (processing) {
     return {
-      statusLabel: "Samenvatting wordt automatisch verwerkt",
+      statusLabel: "Zorgvraag wordt automatisch verwerkt",
       actionLabel: null,
       processing: true,
     };
@@ -418,15 +418,15 @@ function summaryWorkflowState(item: RegiekamerDecisionOverviewItem): {
 
   if (actionCode === "VIEW_SUMMARY") {
     return {
-      statusLabel: "Samenvatting gereed",
+      statusLabel: "Zorgvraag vastgelegd",
       actionLabel: null,
       processing: false,
     };
   }
 
   return {
-    statusLabel: "Casusgegevens onvolledig",
-    actionLabel: "Vul casus aan",
+    statusLabel: "Aanvraag onvolledig",
+    actionLabel: "Vul aanvraag aan",
     processing: false,
   };
 }
@@ -450,16 +450,16 @@ function normalizeWorklistActionLabel(item: RegiekamerDecisionOverviewItem, labe
     return summaryState.actionLabel;
   }
   if (actionCode === "START_MATCHING") {
-    return "Start matching";
+    return imperativeLabelForActionCode("START_MATCHING", item.next_best_action?.label) ?? "Zoek zorgcapaciteit";
   }
   if (actionCode === "VALIDATE_MATCHING") {
-    return "Beoordeel matches";
+    return imperativeLabelForActionCode("VALIDATE_MATCHING", item.next_best_action?.label) ?? "Controleer matchvoorstel";
   }
   if (actionCode === "SEND_TO_PROVIDER") {
-    return "Stuur naar aanbieder";
+    return imperativeLabelForActionCode("SEND_TO_PROVIDER", item.next_best_action?.label) ?? "Vraag reactie aanbieder";
   }
   if (actionCode === "WAIT_PROVIDER_RESPONSE" || actionCode === "FOLLOW_UP_PROVIDER") {
-    return "Volg aanbieder op";
+    return imperativeLabelForActionCode(actionCode, item.next_best_action?.label) ?? "Herinner aanbieder";
   }
   if (actionCode === "PROVIDER_REQUEST_INFO") {
     return "Vraag informatie op";
@@ -474,11 +474,11 @@ function normalizeWorklistActionLabel(item: RegiekamerDecisionOverviewItem, labe
     return "Bekijk status";
   }
   if (summaryRelated) {
-    return "Vul casus aan";
+    return "Vul aanvraag aan";
   }
 
   if (lower.includes("samenvatting")) {
-    return "Vul casus aan";
+    return "Vul aanvraag aan";
   }
   if (lower.includes("intake") || lower.includes("matching") || lower.includes("start")) {
     return `Start ${label.replace(/^(start|starten)\s+/i, "").trim()}`.trim();
@@ -501,12 +501,12 @@ function actionableProblemLabel(item: RegiekamerDecisionOverviewItem): string {
   }
   switch (code) {
     case "MISSING_SUMMARY":
-      return "Casusgegevens onvolledig";
+      return "Aanvraag onvolledig";
     case "GEMEENTE_VALIDATION_REQUIRED":
       return "Matching wacht op gemeente";
     case "NO_MATCH_AVAILABLE":
       if (nextAction === "START_MATCHING") {
-        return "Klaar voor matching";
+        return "Matching & validatie";
       }
       return "🟡 Geen aanbieder toegewezen";
     case "PROVIDER_REVIEW_PENDING_SLA":
@@ -566,7 +566,7 @@ function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
   if (item.top_risk?.title) {
     return item.top_risk.title;
   }
-  return "Geen signaal vastgelegd — open de casus.";
+  return "Geen signaal vastgelegd — open de aanvraag.";
 }
 
 function ownerLabel(item: RegiekamerDecisionOverviewItem): string {
@@ -819,6 +819,59 @@ export function SystemAwarenessPage({
   const phaseBoardColumns = useMemo(() => derivePhaseBoard(allOverviewItems, 3), [allOverviewItems]);
   const dominantPhaseColumn = useMemo(() => getDominantPhaseColumn(phaseBoardColumns), [phaseBoardColumns]);
 
+  const governanceQueuesStrip = useMemo(() => {
+    if (loading || error || !hasActiveData || !data?.governance_queues) {
+      return null;
+    }
+    const q = data.governance_queues;
+    const segments: { key: string; label: string; ids: string[] }[] = [
+      { key: "wijkteam", label: "Wijkteam", ids: q.wijkteam_intakes_needing_assessment },
+      { key: "zorgvraag", label: "Zorgvraag", ids: q.zorgvraag_beoordeling_open },
+      { key: "gemeente", label: "Validatie", ids: q.cases_waiting_gemeente_validation },
+      { key: "budget", label: "Budget", ids: q.budget_approvals_pending },
+      { key: "transitie", label: "Transitie", ids: q.provider_transition_requests_pending },
+      { key: "eval_komend", label: "Evaluaties", ids: q.evaluations_upcoming },
+      { key: "eval_te_laat", label: "Evaluaties te laat", ids: q.evaluations_overdue },
+      { key: "intensiteit", label: "Intensiteit", ids: q.active_placements_care_intensity_changed },
+    ];
+    const active = segments.filter((s) => s.ids.length > 0);
+    if (active.length === 0) {
+      return null;
+    }
+    return (
+      <div
+        data-testid="regiekamer-governance-queues"
+        className="flex max-h-16 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2"
+      >
+        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          Levenscyclus
+        </span>
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {active.map((s) => {
+            const first = s.ids[0];
+            return (
+              <button
+                key={s.key}
+                type="button"
+                className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-left text-[12px] font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={!first}
+                onClick={() => {
+                  if (first) {
+                    onCaseClick(String(first));
+                  }
+                }}
+                data-testid={`regiekamer-governance-${s.key}`}
+              >
+                {s.label}{" "}
+                <span className="tabular-nums text-muted-foreground">({s.ids.length})</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }, [loading, error, hasActiveData, data?.governance_queues, onCaseClick]);
+
   const noMatchDrillItems = useMemo(
     () =>
       allOverviewItems.filter(
@@ -1009,12 +1062,12 @@ export function SystemAwarenessPage({
   const dominantMetric = Math.max(criticalBlockers, regiekamerNba.panel.linkCount || criticalBlockers);
   const dominantAlertTitle = uiMode === "crisis" ? "Kritieke blokkades actief" : regiekamerNba.title;
   const gemeenteActieLine =
-    dominantMetric === 1 ? "1 casus — gemeentelijke actie nodig" : `${dominantMetric} casussen — gemeentelijke actie nodig`;
+    dominantMetric === 1 ? "1 aanvraag — vervolgactie nodig" : `${dominantMetric} aanvragen — vervolgactie nodig`;
   const dominantAlertDescription =
     uiMode === "crisis" ? gemeenteActieLine : dominantPanelDescription;
   const dominantPrimaryLabel = regiekamerNba.primaryAction.label;
   const dominantSecondaryLabel = regiekamerNba.secondaryAction?.label;
-  const dominantCasesLinkLabel = uiMode === "crisis" ? "Bekijk kritieke casussen" : "Open werkvoorraad";
+  const dominantCasesLinkLabel = uiMode === "crisis" ? "Bekijk kritieke aanvragen" : "Open aanvragen";
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -1024,6 +1077,8 @@ export function SystemAwarenessPage({
     setOwnershipFilter("all");
   };
 
+  const showRegiekamerPhaseBoard = !loading && !error && hasActiveData && allOverviewItems.length > 0;
+
   return (
     <div className="flex w-full flex-col gap-8 xl:flex-row xl:items-start xl:gap-8">
       <div className="min-w-0 flex-1">
@@ -1032,14 +1087,14 @@ export function SystemAwarenessPage({
           className="pb-8"
           title={
             <span className="inline-flex flex-wrap items-center gap-2">
-              Regiekamer
-              <CareInfoPopover ariaLabel="Uitleg Regiekamer" testId="regiekamer-page-info">
+              Coördinatie
+              <CareInfoPopover ariaLabel="Uitleg coördinatie" testId="regiekamer-page-info">
                 <div className="space-y-2 text-muted-foreground">
                   <p>
-                    De Regiekamer is een control tower: blokkades, eigenaarschap en de eerstvolgende veilige stap
-                    krijgen prioriteit, niet losse statistieken.
+                    Operationele coördinatie: actieve aanvragen, open matching, reacties van aanbieders, wachtende validaties
+                    en de eerstvolgende veilige stap — compact, zonder governance-dashboardruis.
                   </p>
-                  <p>Gebruik dit overzicht om de volgende actie, eigenaar en reden snel te zien.</p>
+                  <p>Gebruik dit overzicht om snel te zien wat wacht, wie eigenaar is en wat de volgende actie is.</p>
                 </div>
               </CareInfoPopover>
             </span>
@@ -1056,7 +1111,7 @@ export function SystemAwarenessPage({
                   // Demoted to outline so the dominantAction below holds the operational focus.
                   // Empty-state still uses PrimaryActionButton (no competing dominantAction there).
                   <Button variant="outline" onClick={onCreateCase} className="gap-2">
-                    Start regiecasus
+                    Nieuwe aanvraag
                   </Button>
                 ) : null}
                 <Button variant="outline" onClick={refetch} className="gap-2">
@@ -1151,78 +1206,83 @@ export function SystemAwarenessPage({
         </div>
       }
       kpiStrip={
-        !loading && !error && hasActiveData && allOverviewItems.length > 0 ? (
-          <CareSection testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
-            <CareSectionHeader
-              title="De regiestroom"
-              action={
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary"
-                  onClick={() => {
-                    // Distinct from "Bekijk kritieke casussen" (critical-only) and from a
-                    // plain /casussen entry: hand off `pipeline` so the worklist opens on
-                    // casussen die in de stroom zitten (gemeentelijke aandacht of bij aanbieder).
-                    setCasussenPreferredFocus("pipeline");
-                    onAppNavigate?.("/casussen");
-                  }}
-                  data-testid="regiekamer-doorstroom-open-werkvoorraad"
-                >
-                  Bekijk gehele stroom
-                  <ChevronRight size={14} aria-hidden />
-                </Button>
-              }
-            />
-            <CareSectionBody>
-              <CareFlowBoard testId="regiekamer-flow-board" variant="pipeline">
-                {phaseBoardColumns.map((col) => {
-                  const isBottleneck =
-                    dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
-                  const Icon = phaseCardIcon(col.phase);
-                  const details = phaseBoardDetails(col.phase);
-                  const status = details[0];
-                  return (
-                    <div key={col.phase} className="relative">
-                      <CareFlowStepCard
-                        testId={`regiekamer-phase-column-${col.phase}`}
-                        onClick={() => applyPhaseBoardFilter(col.phase)}
-                        active={isBottleneck}
-                        icon={<Icon size={18} className="text-current" />}
-                        metric={col.count}
-                        title={col.label}
-                        subStatusLines={
-                          status
-                            ? [
-                              <span
-                                key={`${col.phase}-status`}
-                                className={cn(
-                                  "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
-                                  phasePillClasses(status.tone),
-                                )}
-                              >
-                                {status.label}
-                              </span>,
-                            ]
-                            : []
-                        }
-                      />
-                    </div>
-                  );
-                })}
-              </CareFlowBoard>
-            </CareSectionBody>
-          </CareSection>
+        showRegiekamerPhaseBoard || governanceQueuesStrip ? (
+          <div className="space-y-3">
+            {governanceQueuesStrip}
+            {showRegiekamerPhaseBoard ? (
+              <CareSection testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
+                <CareSectionHeader
+                  title="Doorstroom"
+                  action={
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                      onClick={() => {
+                        // Distinct from "Bekijk kritieke casussen" (critical-only) and from a
+                        // plain /casussen entry: hand off `pipeline` so the worklist opens on
+                        // casussen die in de stroom zitten (gemeentelijke aandacht of bij aanbieder).
+                        setCasussenPreferredFocus("pipeline");
+                        onAppNavigate?.("/casussen");
+                      }}
+                      data-testid="regiekamer-doorstroom-open-werkvoorraad"
+                    >
+                      Bekijk gehele stroom
+                      <ChevronRight size={14} aria-hidden />
+                    </Button>
+                  }
+                />
+                <CareSectionBody>
+                  <CareFlowBoard testId="regiekamer-flow-board" variant="pipeline">
+                    {phaseBoardColumns.map((col) => {
+                      const isBottleneck =
+                        dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
+                      const Icon = phaseCardIcon(col.phase);
+                      const details = phaseBoardDetails(col.phase);
+                      const status = details[0];
+                      return (
+                        <div key={col.phase} className="relative">
+                          <CareFlowStepCard
+                            testId={`regiekamer-phase-column-${col.phase}`}
+                            onClick={() => applyPhaseBoardFilter(col.phase)}
+                            active={isBottleneck}
+                            icon={<Icon size={18} className="text-current" />}
+                            metric={col.count}
+                            title={col.label}
+                            subStatusLines={
+                              status
+                                ? [
+                                  <span
+                                    key={`${col.phase}-status`}
+                                    className={cn(
+                                      "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
+                                      phasePillClasses(status.tone),
+                                    )}
+                                  >
+                                    {status.label}
+                                  </span>,
+                                ]
+                                : []
+                            }
+                          />
+                        </div>
+                      );
+                    })}
+                  </CareFlowBoard>
+                </CareSectionBody>
+              </CareSection>
+            ) : null}
+          </div>
         ) : undefined
       }
     >
       {loading && (
-        <LoadingState title="Regiekamer synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
+        <LoadingState title="Coördinatie synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
       )}
 
       {!loading && error && (
         <ErrorState
-          title="Regiekamer kon niet worden geladen"
+          title="Coördinatie kon niet worden geladen"
           copy={error}
           action={<Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>}
         />
@@ -1230,29 +1290,29 @@ export function SystemAwarenessPage({
 
       {!loading && !error && !hasActiveData && (
         <EmptyState
-          title="Geen actieve casussen."
+          title="Geen actieve aanvragen."
           copy={
             canCreateCase && onCreateCase
-              ? "Open de werkvoorraad voor lopende casussen of start een nieuw regietraject."
-              : "Open de werkvoorraad voor lopende casussen of wacht op nieuwe casussen."
+              ? "Open de werkvoorraad voor lopende aanvragen of start een nieuwe doorstroom."
+              : "Open de werkvoorraad voor lopende aanvragen of wacht op nieuwe aanmeldingen."
           }
           action={
             canCreateCase && onCreateCase && onAppNavigate ? (
               <div className="flex flex-wrap items-center gap-2">
                 <PrimaryActionButton type="button" onClick={onCreateCase}>
-                  Start regiecasus
+                  Nieuwe aanvraag
                 </PrimaryActionButton>
                 <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
-                  Open casussen
+                  Open aanvragen
                 </Button>
               </div>
             ) : canCreateCase && onCreateCase ? (
               <PrimaryActionButton type="button" onClick={onCreateCase}>
-                Start regiecasus
+                Nieuwe aanvraag
               </PrimaryActionButton>
             ) : onAppNavigate ? (
               <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
-                Open casussen
+                Open aanvragen
               </Button>
             ) : undefined
           }
@@ -1265,7 +1325,7 @@ export function SystemAwarenessPage({
         visibleItems.length === 0 &&
         (data?.items?.length ?? 0) > 0 && (
         <EmptyState
-          title="Geen casussen in dit filter."
+          title="Geen aanvragen in dit filter."
           copy="Wis filters of kies een andere stap."
           action={<Button variant="outline" onClick={clearFilters}>Wis filters</Button>}
         />
@@ -1281,13 +1341,13 @@ export function SystemAwarenessPage({
             meta={
               <div className="w-full min-w-0 space-y-2">
                 <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
-                  {visibleItems.length} casussen
+                  {visibleItems.length} aanvragen
                 </span>
                 <CareSearchFiltersBar
                   className="px-0"
                   searchValue={searchQuery}
                   onSearchChange={setSearchQuery}
-                  searchPlaceholder="Zoek casussen, regio's, aanbieders…"
+                  searchPlaceholder="Zoek aanvragen, regio's, aanbieders…"
                   showSecondaryFilters={showSecondaryFilters}
                   onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                   secondaryFiltersLabel="Filters"
@@ -1384,7 +1444,7 @@ export function SystemAwarenessPage({
                   onClick={() => onAppNavigate("/casussen")}
                   data-testid="regiekamer-bekijk-alle-casussen"
                 >
-                  Bekijk alle {visibleItems.length} casussen
+                  Bekijk alle {visibleItems.length} aanvragen
                   <ChevronDown size={16} aria-hidden />
                 </Button>
               </div>
@@ -1520,7 +1580,7 @@ function RegiekamerInsightsPanels({
             <p className="text-sm font-semibold leading-tight text-foreground">{gemeenteDisplayName}</p>
             <dl className="space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Actieve casussen</dt>
+                <dt className="text-muted-foreground">Actieve aanvragen</dt>
                 <dd className="tabular-nums font-semibold text-foreground">{activeCasesTotal}</dd>
               </div>
               <div className="flex justify-between gap-3">
@@ -1564,7 +1624,7 @@ function RegiekamerInsightsPanels({
             >
               <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                 <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
-                Kritieke casussen
+                Kritieke aanvragen
               </span>
               <span className="tabular-nums font-semibold text-foreground">{criticalBlockers}</span>
             </button>
@@ -1630,7 +1690,7 @@ function RegiekamerWorkItemCard({
       <button
         type="button"
         onClick={() => onCaseClick(String(item.case_id))}
-        aria-label={`Open casus ${item.title}`}
+        aria-label={`Open aanvraag ${item.title}`}
         className={cn(
           "group grid min-w-0 gap-y-3 gap-x-4 text-left outline-none transition-colors md:col-span-5 md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px] md:gap-x-5 md:items-center",
           "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -1693,7 +1753,7 @@ function RegiekamerWorkItemCard({
             className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
             onClick={() => onCaseClick(String(item.case_id))}
           >
-            Bekijk casus
+            Bekijk aanvraag
           </Button>
         )}
       </div>

@@ -15,16 +15,44 @@ export function isAuthDocumentPath(pathname: string): boolean {
   return AUTH_DOCUMENT_PATHS.has(p);
 }
 
+/** Django origin for auth HTML when the SPA runs on the local Vite port (see vite.config server.port). */
+function defaultDjangoOriginForLocalVite(): string {
+  if (typeof window === "undefined") {
+    return "http://127.0.0.1:8000";
+  }
+  const { hostname, port } = window.location;
+  const local = hostname === "localhost" || hostname === "127.0.0.1";
+  if (local && (port === "3000" || port === "5173")) {
+    return "http://127.0.0.1:8000";
+  }
+  return import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin;
+}
+
 /** Full URL to Django for the current auth path (login/register/logout), or null if not an auth path. */
 export function getDjangoAuthDocumentRedirectUrl(): string | null {
   if (typeof window === "undefined" || !isAuthDocumentPath(window.location.pathname)) {
     return null;
   }
-  const djangoOrigin =
-    import.meta.env.VITE_DJANGO_DEV_ORIGIN ??
-    (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
-  const normalizedOrigin = String(djangoOrigin).replace(/\/+$/, "");
-  return `${normalizedOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+  const explicit = import.meta.env.VITE_DJANGO_DEV_ORIGIN;
+  const djangoOrigin = explicit
+    ? String(explicit).replace(/\/+$/, "")
+    : defaultDjangoOriginForLocalVite().replace(/\/+$/, "");
+  return `${djangoOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
+/** If the URL is an auth document path, leave the SPA and load Django (handles missed redirects + pushState). */
+export function redirectIfAuthDocumentPath(): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const dest = getDjangoAuthDocumentRedirectUrl();
+  if (!dest) {
+    return;
+  }
+  const here = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (dest !== here) {
+    window.location.replace(dest);
+  }
 }
 
 export const CARE_PATHS = {

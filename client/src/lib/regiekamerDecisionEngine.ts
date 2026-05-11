@@ -317,7 +317,7 @@ export function buildRegiekamerDecisionSummary(
   const priority_cards: RegiekamerPriorityCard[] = [
     {
       key: "casussen_zonder_match",
-      title: "Casussen zonder match",
+      title: "Aanvragen zonder match",
       value: issue_buckets.cases_without_match,
       subtitle: "Vraagt handmatige opvolging",
       severity: issue_buckets.cases_without_match > 0 ? "critical" : "good",
@@ -325,7 +325,7 @@ export function buildRegiekamerDecisionSummary(
     },
     {
       key: "klaar_voor_matching",
-      title: "Klaar voor matching",
+      title: "Matching & validatie",
       value: issue_buckets.klaar_voor_matching,
       subtitle: "Wachten op matching",
       severity: issue_buckets.klaar_voor_matching > 0 ? "info" : "good",

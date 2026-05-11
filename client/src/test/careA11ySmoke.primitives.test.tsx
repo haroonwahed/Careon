@@ -23,7 +23,7 @@ function makeWorkflowItem(overrides: Partial<WorkflowCaseView> = {}): WorkflowCa
     phaseLabel: "Matching",
     boardColumn: "matching",
     boardColumnLabel: "Matching",
-    currentPhaseLabel: "Klaar voor matching",
+    currentPhaseLabel: "Matching & validatie",
     daysInCurrentPhase: 3,
     tags: ["Ambulant"],
     nextBestAction: "matching",

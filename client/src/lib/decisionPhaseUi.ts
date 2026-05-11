@@ -26,17 +26,21 @@ const API_PHASE_TO_DECISION: Record<string, DecisionUiPhaseId> = {
 };
 
 export const DECISION_UI_PHASE_LABELS: Record<DecisionUiPhaseId, string> = {
-  casus_gestart: "Casus gestart",
-  klaar_voor_matching: "Klaar voor matching",
-  in_beoordeling: "In beoordeling",
+  casus_gestart: "Aanmelding & zorgvraag",
+  klaar_voor_matching: "Matching & validatie",
+  in_beoordeling: "Aanbieder reacties",
   plaatsing_intake: CARE_TERMS.workflow.plaatsingEnIntake,
 };
 
 export const DECISION_WORKSPACE_FLOW_STEPS = [
-  { id: "casus_gestart" as const, label: "Casus gestart", owner: CARE_TERMS.roles.gemeente },
-  { id: "klaar_voor_matching" as const, label: "Klaar voor matching", owner: CARE_TERMS.roles.gemeente },
-  { id: "in_beoordeling" as const, label: "In beoordeling", owner: CARE_TERMS.roles.zorgaanbieder },
-  { id: "plaatsing_intake" as const, label: CARE_TERMS.workflow.plaatsingEnIntake, owner: CARE_TERMS.roles.gemeente },
+  { id: "casus_gestart" as const, label: "Aanmelding & zorgvraag", owner: CARE_TERMS.roles.aanmelder },
+  { id: "klaar_voor_matching" as const, label: "Matching & validatie", owner: CARE_TERMS.roles.aanmelder },
+  { id: "in_beoordeling" as const, label: "Aanbieder reacties", owner: CARE_TERMS.roles.zorgaanbieder },
+  {
+    id: "plaatsing_intake" as const,
+    label: CARE_TERMS.workflow.plaatsingEnIntake,
+    owner: `${CARE_TERMS.roles.aanmelder} / ${CARE_TERMS.roles.zorgaanbieder}`,
+  },
 ] as const;
 
 export function normalizeApiPhaseId(phaseId: string): string {
@@ -98,7 +102,7 @@ export function decisionUiPhaseBadgeShellClass(id: DecisionUiPhaseId): string {
 export function canonicalPhaseSubStatusLabel(normalizedApiPhase: string): string | null {
   const key = normalizeApiPhaseId(normalizedApiPhase);
   if (key === "samenvatting") {
-    return `${CARE_TERMS.workflow.samenvatting} gereed`;
+    return `${CARE_TERMS.workflow.samenvatting} vastgelegd`;
   }
   if (key === "gemeente_validatie") {
     return CARE_TERMS.workflow.gemeenteValidatie;
@@ -111,6 +115,8 @@ export function decisionTimelineIndexFromWorkflowState(currentState: string, isA
     return DECISION_UI_PHASE_IDS.length - 1;
   }
   switch (currentState) {
+    case "WIJKTEAM_INTAKE":
+    case "ZORGVRAAG_BEOORDELING":
     case "DRAFT_CASE":
     case "SUMMARY_READY":
       return 0;
@@ -119,10 +125,12 @@ export function decisionTimelineIndexFromWorkflowState(currentState: string, isA
       return 1;
     case "PROVIDER_REVIEW_PENDING":
     case "PROVIDER_ACCEPTED":
+    case "BUDGET_REVIEW_PENDING":
     case "PROVIDER_REJECTED":
       return 2;
     case "PLACEMENT_CONFIRMED":
     case "INTAKE_STARTED":
+    case "ACTIVE_PLACEMENT":
       return 3;
     default:
       return 0;
@@ -132,6 +140,8 @@ export function decisionTimelineIndexFromWorkflowState(currentState: string, isA
 /** Fallback when `decisionEvaluation.phase` is absent — mirrors coarse workflow progression. */
 export function canonicalPhaseFromWorkflowState(currentState: string): string {
   switch (currentState) {
+    case "WIJKTEAM_INTAKE":
+    case "ZORGVRAAG_BEOORDELING":
     case "DRAFT_CASE":
       return "casus";
     case "SUMMARY_READY":
@@ -142,11 +152,13 @@ export function canonicalPhaseFromWorkflowState(currentState: string): string {
       return "gemeente_validatie";
     case "PROVIDER_REVIEW_PENDING":
     case "PROVIDER_ACCEPTED":
+    case "BUDGET_REVIEW_PENDING":
     case "PROVIDER_REJECTED":
       return "aanbieder_beoordeling";
     case "PLACEMENT_CONFIRMED":
       return "plaatsing";
     case "INTAKE_STARTED":
+    case "ACTIVE_PLACEMENT":
       return "intake";
     default:
       return "casus";

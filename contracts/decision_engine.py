@@ -11,10 +11,12 @@ from django.utils import timezone
 from contracts.models import (
     CareCase,
     CaseAssessment,
+    CaseCareEvaluation,
     CaseDecisionLog,
     CaseIntakeProcess,
     MatchResultaat,
     PlacementRequest,
+    ProviderCareTransitionRequest,
     ProviderRegioDekking,
 )
 from contracts.workflow_state_machine import (
@@ -62,28 +64,36 @@ _CONFIDENCE_FACTORS = {
 
 
 _STATE_PHASE_MAP = {
+    WorkflowState.WIJKTEAM_INTAKE: "wijkteam_intake",
+    WorkflowState.ZORGVRAAG_BEOORDELING: "zorgvraag_beoordeling",
     WorkflowState.DRAFT_CASE: "casus",
     WorkflowState.SUMMARY_READY: "samenvatting",
     WorkflowState.MATCHING_READY: "matching",
     WorkflowState.GEMEENTE_VALIDATED: "gemeente_validatie",
     WorkflowState.PROVIDER_REVIEW_PENDING: "aanbieder_beoordeling",
     WorkflowState.PROVIDER_ACCEPTED: "aanbieder_beoordeling",
+    WorkflowState.BUDGET_REVIEW_PENDING: "budgetcontrole",
     WorkflowState.PROVIDER_REJECTED: "aanbieder_beoordeling",
     WorkflowState.PLACEMENT_CONFIRMED: "plaatsing",
     WorkflowState.INTAKE_STARTED: "intake",
+    WorkflowState.ACTIVE_PLACEMENT: "actieve_plaatsing",
     WorkflowState.ARCHIVED: "archived",
 }
 
 _STATE_PRIORITY = {
+    WorkflowState.WIJKTEAM_INTAKE: ("high", "wijkteam intake afronden"),
+    WorkflowState.ZORGVRAAG_BEOORDELING: ("high", "zorgvraag beoordelen"),
     WorkflowState.DRAFT_CASE: ("high", "casusgegevens aanvullen"),
     WorkflowState.SUMMARY_READY: ("high", "samenvatting genereren of controleren"),
     WorkflowState.MATCHING_READY: ("high", "gemeente validatie van matchadvies"),
     WorkflowState.GEMEENTE_VALIDATED: ("high", "stuur gevalideerde matching naar aanbieder"),
     WorkflowState.PROVIDER_REVIEW_PENDING: ("high", "volg aanbieder beoordeling op"),
     WorkflowState.PROVIDER_ACCEPTED: ("high", "bevestig plaatsing"),
+    WorkflowState.BUDGET_REVIEW_PENDING: ("high", "budgetverzoek beoordelen"),
     WorkflowState.PROVIDER_REJECTED: ("high", "hermatch de casus"),
     WorkflowState.PLACEMENT_CONFIRMED: ("medium", "start intake"),
-    WorkflowState.INTAKE_STARTED: ("low", "monitor casus"),
+    WorkflowState.INTAKE_STARTED: ("medium", "zet actieve plaatsing voor monitoring"),
+    WorkflowState.ACTIVE_PLACEMENT: ("low", "monitor evaluaties en doorstroom"),
     WorkflowState.ARCHIVED: ("low", "archief"),
 }
 
@@ -277,6 +287,94 @@ def _build_regiekamer_overview_item(*, case: CareCase, evaluation: dict[str, Any
     return item
 
 
+def _build_governance_v12_queues(*, organization: Any | None) -> dict[str, Any]:
+    """Operationele wachtrijen voor Regiekamer (gemeente levenscyclus-eigenaar)."""
+    if organization is None:
+        return {}
+    today = timezone.now().date()
+    base = CaseIntakeProcess.objects.filter(organization=organization).exclude(
+        status=CaseIntakeProcess.ProcessStatus.ARCHIVED,
+    )
+    wijkteam = list(
+        base.filter(
+            entry_route=CaseIntakeProcess.EntryRoute.WIJKTEAM,
+            workflow_state=WorkflowState.WIJKTEAM_INTAKE,
+        )
+        .exclude(contract_id__isnull=True)
+        .values_list('contract_id', flat=True)[:200]
+    )
+    zorgvraag = list(
+        base.filter(
+            entry_route=CaseIntakeProcess.EntryRoute.WIJKTEAM,
+            workflow_state=WorkflowState.ZORGVRAAG_BEOORDELING,
+        )
+        .exclude(contract_id__isnull=True)
+        .values_list('contract_id', flat=True)[:200]
+    )
+    gemeente_validatie = list(
+        base.filter(workflow_state=WorkflowState.MATCHING_READY)
+        .exclude(contract_id__isnull=True)
+        .values_list('contract_id', flat=True)[:200]
+    )
+    budget_open = list(
+        PlacementRequest.objects.filter(
+            due_diligence_process__organization=organization,
+            budget_review_status=PlacementRequest.BudgetReviewStatus.PENDING,
+        )
+        .exclude(due_diligence_process__contract_id__isnull=True)
+        .values_list('due_diligence_process__contract_id', flat=True)[:200]
+    )
+    transitions_open = list(
+        ProviderCareTransitionRequest.objects.filter(
+            due_diligence_process__organization=organization,
+            status=ProviderCareTransitionRequest.Status.PENDING,
+            financial_validation_status=ProviderCareTransitionRequest.FinancialValidationStatus.PENDING,
+        )
+        .exclude(due_diligence_process__contract_id__isnull=True)
+        .values_list('due_diligence_process__contract_id', flat=True)[:200]
+    )
+    eval_upcoming = list(
+        CaseCareEvaluation.objects.filter(
+            due_diligence_process__organization=organization,
+            status=CaseCareEvaluation.Status.UPCOMING,
+            due_date__gte=today,
+        )
+        .exclude(due_diligence_process__contract_id__isnull=True)
+        .values_list('due_diligence_process__contract_id', flat=True)[:200]
+    )
+    eval_overdue = list(
+        CaseCareEvaluation.objects.filter(
+            due_diligence_process__organization=organization,
+            due_date__lt=today,
+        )
+        .exclude(status=CaseCareEvaluation.Status.COMPLETED)
+        .exclude(due_diligence_process__contract_id__isnull=True)
+        .values_list('due_diligence_process__contract_id', flat=True)[:200]
+    )
+    active_intensity = list(
+        base.filter(
+            workflow_state__in={WorkflowState.ACTIVE_PLACEMENT, WorkflowState.INTAKE_STARTED},
+        )
+        .filter(
+            Q(indications__placement_quality_status=PlacementRequest.PlacementQualityStatus.AT_RISK)
+            | Q(indications__placement_quality_status=PlacementRequest.PlacementQualityStatus.BROKEN_DOWN),
+        )
+        .exclude(contract_id__isnull=True)
+        .distinct()
+        .values_list('contract_id', flat=True)[:200]
+    )
+    return {
+        'wijkteam_intakes_needing_assessment': [str(x) for x in wijkteam],
+        'zorgvraag_beoordeling_open': [str(x) for x in zorgvraag],
+        'cases_waiting_gemeente_validation': [str(x) for x in gemeente_validatie],
+        'budget_approvals_pending': [str(x) for x in budget_open],
+        'provider_transition_requests_pending': [str(x) for x in transitions_open],
+        'evaluations_upcoming': [str(x) for x in eval_upcoming],
+        'evaluations_overdue': [str(x) for x in eval_overdue],
+        'active_placements_care_intensity_changed': [str(x) for x in active_intensity],
+    }
+
+
 def build_regiekamer_decision_overview(
     cases: Iterable[CareCase],
     *,
@@ -330,6 +428,7 @@ def build_regiekamer_decision_overview(
         "generated_at": timezone.now().isoformat(),
         "totals": totals,
         "items": items,
+        "governance_queues": _build_governance_v12_queues(organization=organization),
     }
 
 
@@ -1209,8 +1308,43 @@ def _evaluate_action_policy(
     if action_code == "REMATCH_CASE":
         if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
             return False, "Alleen gemeente of admin kan een casus her-matchen."
-        if current_state != WorkflowState.PROVIDER_REJECTED:
-            return False, "Her-matching is alleen nodig na afwijzing door de aanbieder."
+        if current_state == WorkflowState.PROVIDER_REJECTED:
+            return True, ""
+        if current_state == WorkflowState.MATCHING_READY and placement is not None:
+            if '[BUDGET_REJECT_REMATCH]' in (placement.decision_notes or ''):
+                return True, ""
+        return False, "Her-matching is alleen nodig na afwijzing door de aanbieder of na budgetafwijzing."
+
+    if action_code in {"BUDGET_APPROVE", "BUDGET_REJECT", "BUDGET_REQUEST_INFO", "BUDGET_DEFER"}:
+        if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
+            return False, "Alleen gemeente of admin kan budget besluiten."
+        if current_state != WorkflowState.BUDGET_REVIEW_PENDING:
+            return False, "Budgetbesluit is alleen nodig tijdens budgetcontrole."
+        if placement is None:
+            return False, "Plaatsing ontbreekt."
+        return True, ""
+
+    if action_code == "COMPLETE_WIJKTEAM_INTAKE":
+        if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
+            return False, "Alleen gemeente of admin kan wijkteam-intake afronden."
+        if current_state != WorkflowState.WIJKTEAM_INTAKE:
+            return False, "Deze actie is alleen beschikbaar tijdens wijkteam-intake."
+        return True, ""
+
+    if action_code == "COMPLETE_ZORGVRAAG_ASSESSMENT":
+        if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN}:
+            return False, "Alleen gemeente of admin kan de zorgvraag beoordelen."
+        if current_state != WorkflowState.ZORGVRAAG_BEOORDELING:
+            return False, "Deze actie is alleen beschikbaar tijdens zorgvraagbeoordeling."
+        return True, ""
+
+    if action_code == "ACTIVATE_PLACEMENT_MONITORING":
+        if actor_role not in {WorkflowRole.GEMEENTE, WorkflowRole.ADMIN, WorkflowRole.ZORGAANBIEDER}:
+            return False, "Geen rechten om actieve plaatsing te activeren."
+        if current_state != WorkflowState.INTAKE_STARTED:
+            return False, "Actieve plaatsing volgt op gestarte intake."
+        if placement is None or placement.status != PlacementRequest.Status.APPROVED:
+            return False, "Plaatsing moet bevestigd zijn."
         return True, ""
 
     if action_code == "CONFIRM_PLACEMENT":
@@ -1621,19 +1755,35 @@ def _next_best_action(
         action = "CONFIRM_PLACEMENT"
         priority = "high"
         reason = "Aanbieder heeft geaccepteerd; bevestig de plaatsing."
+    elif current_state == WorkflowState.BUDGET_REVIEW_PENDING:
+        action = "BUDGET_APPROVE"
+        priority = "high"
+        reason = "Budgetverzoek beoordelen — keur financieel goed of wijs af."
+    elif current_state == WorkflowState.WIJKTEAM_INTAKE:
+        action = "COMPLETE_WIJKTEAM_INTAKE"
+        priority = "high"
+        reason = "Wijkteam intake vastleggen en door naar zorgvraagbeoordeling."
+    elif current_state == WorkflowState.ZORGVRAAG_BEOORDELING:
+        action = "COMPLETE_ZORGVRAAG_ASSESSMENT"
+        priority = "high"
+        reason = "Zorgvraag beoordelen en formele casus openen."
     elif current_state == WorkflowState.PLACEMENT_CONFIRMED:
         action = "START_INTAKE"
         priority = "high"
         reason = "Plaatsing is bevestigd; start de intake-overdracht."
     elif current_state == WorkflowState.INTAKE_STARTED:
         if intake_started:
-            action = "MONITOR_CASE"
-            priority = "low"
-            reason = "Intake loopt; monitor de voortgang."
+            action = "ACTIVATE_PLACEMENT_MONITORING"
+            priority = "medium"
+            reason = "Intake gestart; activeer actieve plaatsing voor evaluatie en monitoring."
         else:
             action = "ARCHIVE_CASE"
             priority = "low"
             reason = "Afronden en archiveren is mogelijk zodra de casus compleet is."
+    elif current_state == WorkflowState.ACTIVE_PLACEMENT:
+        action = "MONITOR_CASE"
+        priority = "low"
+        reason = "Actieve plaatsing: plan evaluaties en volg doorstroom."
 
     return {
         "action": action,
@@ -1650,6 +1800,10 @@ def _next_best_action(
             "START_INTAKE": "Start intake",
             "MONITOR_CASE": "Monitor casus",
             "ARCHIVE_CASE": "Archiveer casus",
+            "BUDGET_APPROVE": "Budgetverzoek beoordelen",
+            "COMPLETE_WIJKTEAM_INTAKE": "Wijkteam intake afronden",
+            "COMPLETE_ZORGVRAAG_ASSESSMENT": "Zorgvraag beoordelen",
+            "ACTIVATE_PLACEMENT_MONITORING": "Actieve plaatsing activeren",
         }.get(action, action),
         "priority": {
             "critical": "critical",
@@ -1691,7 +1845,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
                 CareCase.CasePhase.MATCHING: WorkflowState.MATCHING_READY,
                 CareCase.CasePhase.PROVIDER_BEOORDELING: WorkflowState.PROVIDER_REVIEW_PENDING,
                 CareCase.CasePhase.PLAATSING: WorkflowState.PLACEMENT_CONFIRMED,
-                CareCase.CasePhase.ACTIEF: WorkflowState.INTAKE_STARTED,
+                CareCase.CasePhase.ACTIEF: WorkflowState.ACTIVE_PLACEMENT,
                 CareCase.CasePhase.AFGEROND: WorkflowState.INTAKE_STARTED,
             }.get(getattr(case_record, "case_phase", None), WorkflowState.DRAFT_CASE)
         )
@@ -1811,6 +1965,13 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         ("PROVIDER_ACCEPT", "Aanbieder accepteert"),
         ("PROVIDER_REJECT", "Aanbieder wijst af"),
         ("PROVIDER_REQUEST_INFO", "Aanvullende info opvragen"),
+        ("BUDGET_APPROVE", "Keur financieel goed"),
+        ("BUDGET_REJECT", "Wijs financieel af"),
+        ("BUDGET_REQUEST_INFO", "Vraag onderbouwing budget op"),
+        ("BUDGET_DEFER", "Stel budgetbesluit uit"),
+        ("COMPLETE_WIJKTEAM_INTAKE", "Wijkteam intake afronden"),
+        ("COMPLETE_ZORGVRAAG_ASSESSMENT", "Zorgvraag beoordelen"),
+        ("ACTIVATE_PLACEMENT_MONITORING", "Actieve plaatsing activeren"),
     ]
     allowed_actions: list[dict[str, Any]] = []
     blocked_actions: list[dict[str, Any]] = []

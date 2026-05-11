@@ -7,17 +7,17 @@ alwaysApply: true
 
 ## Project Identity
 
-This repository implements **Zorg OS**, a workflow-first Dutch care allocation system.
+This repository implements **Zorg OS / CareOn** — a **neutral orchestration layer for anonymous youth-care matching and throughflow coordination under capacity scarcity**. It is **not** an ECD, municipal ERP, or permanent dossier platform.
 
 ### Operating phase (temporary): infrastructure maturity
 
-**Feature expansion is frozen.** Do not propose or implement net-new AI features, broad redesigns, analytics modules, or additional product modules unless owners explicitly lift the freeze (see `docs/INFRASTRUCTURE_MATURITY_PHASE.md`).
-
 Ship **stability, observability, deterministic pilot/rehearsal, deploy truth, tests, and workflow integrity** first.
+
+**Strategic v1.3 realignment (active):** product philosophy, UX, terminology, and documentation align with `docs/Zorg_OS_Product_System_Core_v1_3.md`. Net-new **autonomous** AI features remain out of scope; **advisory** arrangement alignment is explicitly productized (see `docs/Zorg_OS_Technical_Foundation_v1_3.md` + `client/src/lib/arrangementAlignmentContract.ts`).
 
 Operational rehearsal artifacts and GO/NO-GO interpretation for **`./scripts/run_full_pilot_rehearsal.sh`** → **`docs/PILOT_PROOF_PACKAGE.md`** (not product marketing; evidence chain for humans/agents).
 
-Zorg OS is a **decision system**, not a dashboard.
+Zorg OS is a **decision system** and **coordination workspace**, not a passive analytics dashboard.
 
 The system enforces:
 - correct sequencing of actions
@@ -28,9 +28,13 @@ The system must always guide the correct actor to the **next best action**.
 
 ---
 
-## Canonical Flow (Source of Truth)
+## Canonical Flow (Source of Truth — v1.3 product language)
 
-**Casus → Samenvatting → Matching → Gemeente Validatie → Aanbieder Beoordeling → Plaatsing → Intake**
+**Aanmelding → Anonimisatie → Zorgvraag → Matching → Aanbieder reacties → Voorkeursmatch → Gemeentelijke validatie → Plaatsing → Uitstroom**
+
+**Exit principle:** after successful placement and financing/arrangement validation, the trajectory **exits** the platform; ownership continues in external systems.
+
+**Technical mapping:** persisted `WorkflowState` / API `phase` keys remain the implementation contract until a coordinated major version (see `docs/Zorg_OS_Technical_Foundation_v1_3.md`, `docs/FOUNDATION_LOCK.md`).
 
 This flow governs:
 
@@ -41,7 +45,7 @@ This flow governs:
 - tests
 - documentation
 
-This flow is **non-negotiable**.
+This flow is **non-negotiable** at the product level; implementation identifiers may differ during migration.
 
 ---
 
@@ -57,23 +61,25 @@ The backend is the source of truth.
 
 ## Decision Ownership (CRITICAL)
 
-### Gemeente
-- Creates casus
-- Reviews AI output (summary + matching)
-- Validates or adjusts matching
-- Decides which provider receives the case
+### Aanmelder (primary operational user — product)
+- Initiates anonymous / pseudonymous requests and capacity search
+- Reviews provider responses and progresses placement **within policy**
+- Typical sources: wijkteam, jeugdbescherming, zorgaanbieder, crisisdienst (technical role may still be `gemeente` until actor profiles ship)
+
+### Gemeente (financing & arrangement compatibility)
+- Validates financing and arrangement compatibility
+- Stimulates chain participation
+- **Does not** perform provider accept/reject on behalf of zorgaanbieders
 
 ### Zorgaanbieder
-- Performs beoordeling (accept/reject)
-- Provides structured rejection reasons
-- Executes placement
-- Initiates intake
+- Exposes honourable capacity signals
+- Performs accept/reject / info responses with structured reasons
+- Executes placement steps and intake handoff where applicable
 
-### System (AI)
-- Generates summary
-- Performs matching
+### Platform (AI)
+- Supports anonymization patterns, matching, and **advisory** arrangement alignment
 - Suggests next-best-action
-- NEVER makes final decisions
+- NEVER makes final placement or financial decisions
 
 ---
 
@@ -83,7 +89,7 @@ Never violate:
 
 1. No intake before placement
 2. No placement before provider acceptance
-3. No provider beoordeling before gemeente validatie
+3. No provider reacties before gemeentelijke validatie where the workflow requires that gate
 4. Municipality cannot perform provider-level decisions
 5. Matching is advisory only (never assignment)
 6. Workflow steps may not be skipped or reordered
@@ -92,21 +98,9 @@ Never violate:
 
 ---
 
-## State Machine (STRICT)
+## State Machine (STRICT — technical)
 
-Allowed transitions:
-
-DRAFT → SUMMARY_READY  
-SUMMARY_READY → MATCHING_READY  
-MATCHING_READY → GEMEENTE_VALIDATED  
-GEMEENTE_VALIDATED → PROVIDER_REVIEW  
-PROVIDER_REVIEW → ACCEPTED  
-PROVIDER_REVIEW → REJECTED  
-ACCEPTED → PLACED  
-PLACED → INTAKE  
-INTAKE → DONE  
-
-REJECTED → MATCHING_READY (retry flow)
+Authoritative transitions live in `contracts/workflow_state_machine.py` (e.g. `DRAFT_CASE` → `SUMMARY_READY` → `MATCHING_READY` → `GEMEENTE_VALIDATED` → `PROVIDER_REVIEW_PENDING` → … → `ARCHIVED`).
 
 Rules:
 - No skipping states
@@ -165,26 +159,25 @@ Matching must NOT:
 
 - assign providers automatically
 - hide uncertainty
-- skip municipality validation
+- skip gemeentelijke validatie when the workflow requires that gate
 
 ---
 
-## Gemeente Validatie Rules
+## Gemeentelijke validatie (financiering & arrangement)
 
-This is a mandatory decision gate.
+This is a mandatory **compatibility / financing** gate — not a substitute for provider judgment.
 
 Must allow:
-- approve matching
-- adjust selection
-- request re-matching
+- approve or adjust matching selection from a financing/arrangement perspective
+- request re-matching when compatibility is unclear
 
 Must NOT allow:
-- provider-level acceptance/rejection
-- bypass of provider beoordeling
+- provider-level acceptance/rejection on behalf of zorgaanbieders
+- bypass of aanbieder reacties when the workflow requires them
 
 ---
 
-## Regiekamer Rules
+## Operationele coördinatie (voorheen Regiekamer)
 
 Each signal must show:
 
@@ -200,8 +193,8 @@ System must detect:
 - repeated rejections
 - capacity risks
 
-Regiekamer is:
-→ a control tower, not a dashboard
+Operationele coördinatie is:
+→ a **coordination workspace**, not a surveillance or ERP dashboard
 
 ---
 
@@ -214,7 +207,7 @@ Classify tasks as:
 - Frontend UX
 - Backend Workflow
 - Matching
-- Regiekamer
+- Operationele coördinatie
 - Test/QA
 
 ---
@@ -226,7 +219,7 @@ Infer automatically:
 - UI / layout → Frontend
 - API / models → Backend
 - scoring → Matching
-- alerts → Regiekamer
+- alerts → operationele coördinatie
 - validation → Test/QA
 
 If multi-domain:
@@ -389,16 +382,16 @@ A task is complete only when:
 
 If anything conflicts:
 
-→ Canonical Flow wins
+→ Canonical product flow (v1.3) wins; technical state names follow `docs/FOUNDATION_LOCK.md`
 
 ---
 
 ## UI MODE ENFORCEMENT
 
-- MetricStrip → ONLY Regiekamer
-- Worklist → ONLY Casussen
-- NextBestAction → ONLY Casus Detail
-- ProcessTimeline → ONLY Casus Detail
+- MetricStrip → ONLY operationele coördinatie (route: `/regiekamer`)
+- Worklist → ONLY aanvragen-werkvoorraad (route: `/casussen` e.d.)
+- NextBestAction → ONLY aanvraag detail
+- ProcessTimeline → ONLY aanvraag detail
 
 Never create duplicate components.
 

@@ -148,7 +148,7 @@ export function PlacementTrackingPage({ onCaseClick, onNavigateToMatching }: Pla
       <CareAttentionBar
         visible={intakeStallCount > 0}
         tone="warning"
-        message={`${intakeStallCount} plaatsing${intakeStallCount === 1 ? "" : "en"} staat${intakeStallCount === 1 ? "" : "en"} ≥5 dagen in plaatsing zonder duidelijke intake — plan intake of escaleer via Regiekamer.`}
+        message={`${intakeStallCount} plaatsing${intakeStallCount === 1 ? "" : "en"} staat${intakeStallCount === 1 ? "" : "en"} ≥5 dagen in plaatsing zonder duidelijke intake — plan intake of escaleer via coördinatie.`}
       />
 
       {loading && <LoadingState title="Plaatsingen laden…" copy="De lijst wordt opgebouwd." />}

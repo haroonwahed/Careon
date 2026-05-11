@@ -7,10 +7,13 @@ This is a code bundle for SaaS Careon. The original project is available at [Fig
 
 Before changing workflow, architecture, or domain behavior, start with:
 
-- `docs/ZORG_OS_FOUNDATION_APPROACH.md` (system-first foundation)
+- `docs/Zorg_OS_Product_System_Core_v1_3.md` (product boundaries & v1.3 flow)
+- `docs/Zorg_OS_Technical_Foundation_v1_3.md` (implementation mapping & API discipline)
 - `docs/FOUNDATION_LOCK.md` (enforced workflow lock and guardrails)
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md` (system-first build strategy)
+- `docs/CareOn_Design_Constitution_v1_3.md` (UX / visual law)
 
-These two documents define the canonical flow, actor ownership, and backend source-of-truth rules.
+Evidence for the v1.3 strategic realignment: `docs/ZORG_OS_V1_3_STRATEGIC_REALIGNMENT_EVIDENCE.md`.
 
 ## Running the code
 

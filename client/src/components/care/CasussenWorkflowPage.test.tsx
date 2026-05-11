@@ -94,12 +94,12 @@ describe("WorkloadPage", () => {
 
     const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByText(/2 casussen ·/)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanvragen" })).toBeInTheDocument();
+    expect(screen.getByText(/2 aanvragen ·/)).toBeInTheDocument();
     expect(screen.getByTestId("casussen-workflow-strip")).toBeInTheDocument();
     const columnHeaders = screen.getByTestId("casussen-werkvoorraad-column-headers");
     expect(within(columnHeaders).getByText("Prioriteit")).toBeInTheDocument();
-    expect(within(columnHeaders).getByText("Casus")).toBeInTheDocument();
+    expect(within(columnHeaders).getByText("Aanvraag")).toBeInTheDocument();
     expect(within(columnHeaders).getByText(/Blokkade/)).toBeInTheDocument();
     expect(within(columnHeaders).getByText("Volgende actie")).toBeInTheDocument();
     expect(container.innerHTML).not.toContain(`#${"0F172A"}`);
@@ -114,10 +114,10 @@ describe("WorkloadPage", () => {
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
-    expect(screen.getByText(/vragen gemeentelijke actie/i)).toBeInTheDocument();
-    expect(screen.getByText(/blokkades en wachttijd bepalen de volgende eigenaar/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start regiecasus" })).toBeInTheDocument();
+    expect(screen.getByText(/wachten op vervolgactie in de keten/i)).toBeInTheDocument();
+    expect(screen.getByText(/blokkades en wachttijd bepalen de eigenaar/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk kritieke aanvragen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe aanvraag" })).toBeInTheDocument();
   });
 
   it("enforces casussen screen responsibility boundaries", () => {
@@ -129,8 +129,8 @@ describe("WorkloadPage", () => {
     const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
     expectCasussenMode();
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Zoek casussen, regio's, aanbieders…")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanvragen" })).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Zoek aanvragen, regio's, aanbieders…")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
     expect(screen.getByText("Casus triage")).toBeInTheDocument();
     expect(container.querySelectorAll("[data-care-work-row-cta]").length).toBeGreaterThan(0);
@@ -197,7 +197,7 @@ describe("WorkloadPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
     fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
 
-    expect(screen.getByText(/\d+ casussen ·/)).toBeInTheDocument();
+    expect(screen.getByText(/\d+ aanvragen ·/)).toBeInTheDocument();
   });
 
   it("keeps CTA navigation aligned with classified waiting-provider state", () => {
@@ -227,12 +227,12 @@ describe("WorkloadPage", () => {
     expect(worklist).toBeInTheDocument();
     expect(screen.getByText("test")).toBeInTheDocument();
     expect(within(worklist).getByText(/— Blokkade$/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vul casus aan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vul aanvraag aan" })).toBeInTheDocument();
     expect(within(worklist).getByText(/dag geleden|Vandaag/)).toBeInTheDocument();
     expect(screen.queryByText(/^Blokkade:/)).not.toBeInTheDocument();
   });
 
-  it("after Bekijk geblokkeerde casussen shows context hint and Toon alle casussen (button does not vanish)", () => {
+  it("after Bekijk kritieke aanvragen shows context hint and Toon alle aanvragen (button does not vanish)", () => {
     mockData([
       makeCase({
         id: "C-901",
@@ -244,17 +244,17 @@ describe("WorkloadPage", () => {
     ]);
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Bekijk kritieke casussen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Bekijk kritieke aanvragen" }));
 
     expect(screen.getByTestId("worklist-blocked-filter-hint")).toBeInTheDocument();
     fireEvent.click(screen.getByTestId("worklist-blocked-filter-hint"));
     expect(screen.getByText(/Weergave: kritiek \/ geblokkeerd/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Toon alle casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Toon alle aanvragen" })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Toon alle casussen" }));
+    fireEvent.click(screen.getByRole("button", { name: "Toon alle aanvragen" }));
 
     expect(screen.queryByTestId("worklist-blocked-filter-hint")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk kritieke aanvragen" })).toBeInTheDocument();
   });
 
   it("omits worklist tab shortcut when there are no dossiers but keeps regiecasus CTA when allowed", () => {
@@ -262,8 +262,8 @@ describe("WorkloadPage", () => {
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
     expect(screen.queryByRole("button", { name: "Bekijk mijn werkvoorraad" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Bekijk kritieke casussen" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start regiecasus" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bekijk kritieke aanvragen" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe aanvraag" })).toBeInTheDocument();
   });
 
   it("shows debug block only when running in dev mode", async () => {

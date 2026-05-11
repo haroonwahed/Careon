@@ -28,8 +28,8 @@ describe("CareDesignPrimitives", () => {
   });
 
   it("renders PageHeader (CareUnifiedHeader) with subtitle behind info trigger", () => {
-    render(<PageHeader title="Regiekamer" subtitle="Operatief overzicht" />);
-    expect(screen.getByTestId("care-unified-header")).toHaveTextContent("Regiekamer");
+    render(<PageHeader title="Coördinatie" subtitle="Operatief overzicht" />);
+    expect(screen.getByTestId("care-unified-header")).toHaveTextContent("Coördinatie");
     expect(screen.queryByText("Operatief overzicht")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Pagina-uitleg" }));
     expect(screen.getByText("Operatief overzicht")).toBeInTheDocument();
@@ -37,13 +37,13 @@ describe("CareDesignPrimitives", () => {
 
   it("renders FlowPhaseBadge mapped to decision phases", () => {
     render(<FlowPhaseBadge phaseId="gemeente_validatie" />);
-    expect(screen.getByTitle("Stap in de keten (vier beslissingen)")).toHaveTextContent("Klaar voor matching");
+    expect(screen.getByTitle("Stap in de keten (vier beslissingen)")).toHaveTextContent("Matching & validatie");
   });
 
   it("LoadingState sets busy status", () => {
-    render(<LoadingState title="Casussen laden…" copy="Even geduld." />);
+    render(<LoadingState title="Aanvragen laden…" copy="Even geduld." />);
     expect(screen.getByTestId("care-loading-state")).toHaveAttribute("aria-busy", "true");
-    expect(screen.getByRole("status")).toHaveTextContent("Casussen laden…");
+    expect(screen.getByRole("status")).toHaveTextContent("Aanvragen laden…");
   });
 
   it("ErrorState is an alert", () => {

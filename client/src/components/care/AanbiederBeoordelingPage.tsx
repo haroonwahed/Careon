@@ -301,7 +301,7 @@ const GEMEENTE_INVITED_PROVIDER_ROWS: ProviderInviteRow[] = [
     response: "Interesse. Kan binnen 7 dagen starten",
     fitLabel: "Goede match",
     fitPct: 89,
-    actionLabel: "Bekijk beoordeling",
+    actionLabel: "Bekijk reactie",
     logo: <img src="/partners/logo-enver.png" alt="" className="h-6 w-auto object-contain" />,
   },
   {
@@ -343,7 +343,7 @@ function GemeenteBeoordelingStepper({ embedded = false }: { embedded?: boolean }
   const steps = [
     { id: "casus", label: "Casus", state: "done" as const },
     { id: "matching", label: "Matching", state: "done" as const },
-    { id: "aanbieder", label: "Aanbieder beoordeling", state: "current" as const },
+    { id: "aanbieder", label: "Reacties", state: "current" as const },
     { id: "plaatsing", label: "Plaatsing", state: "locked" as const },
     { id: "intake", label: "Intake", state: "locked" as const },
   ];
@@ -455,14 +455,14 @@ function GemeenteView({
           className="pb-8"
           title={(
             <span className="inline-flex flex-wrap items-center gap-2">
-              Aanbieder beoordeling
-              <CareInfoPopover ariaLabel="Uitleg aanbieder beoordeling" testId="aanbieder-beoordeling-page-info">
+              Reacties
+              <CareInfoPopover ariaLabel="Uitleg reacties" testId="aanbieder-beoordeling-page-info">
                 <div className="space-y-2 text-muted-foreground">
                   <p>
-                    Monitor aanbiederreactie — beslissing ligt bij de aanbieder. Volg uitnodigingen, reacties en
-                    geschiktheid; herinner of schakel bij overschrijding van de reactietermijn.
+                    Volg reacties van zorgaanbieders op deze aanvraag — beslissing ligt bij de aanbieder. Herinner bij
+                    overschrijding van de reactietermijn.
                   </p>
-                  <p>Volg status en reactietermijn per uitgenodigde aanbieder voor deze casus.</p>
+                  <p>Status en termijn per uitgenodigde aanbieder op één plek.</p>
                 </div>
               </CareInfoPopover>
             </span>
@@ -481,7 +481,7 @@ function GemeenteView({
                 )}
                 style={{ maxWidth: tokens.layout.phaseBadgeMaxWidth }}
               >
-                Fase: Aanbieder beoordeling
+                Fase: Reacties aanbieder
               </span>
             </div>
           )}
@@ -550,7 +550,7 @@ function GemeenteView({
           }
           filters={
             shellExtrasReady ? (
-              <CareFilterTabGroup aria-label="Weergave aanbieder beoordeling">
+              <CareFilterTabGroup aria-label="Weergave reacties">
                 {tabs.map((tab) => (
                   <CareFilterTabButton
                     key={tab.id}
@@ -566,7 +566,7 @@ function GemeenteView({
           }
         >
           {loading && (
-            <LoadingState title="Casussen laden…" copy="Even geduld — de casus en aanbieders worden opgehaald." />
+            <LoadingState title="Aanvragen laden…" copy="Even geduld — de aanvraag en aanbieders worden opgehaald." />
           )}
 
           {!loading && error && (
@@ -578,7 +578,7 @@ function GemeenteView({
               <CareAttentionBar
                 tone="info"
                 icon={<Info size={16} aria-hidden />}
-                message="Aanbieder beoordeling verschijnt pas nadat de gemeente matching heeft gevalideerd en de casus heeft verzonden."
+                message="Reacties verschijnen pas na gemeentelijke validatie van het matchvoorstel en verzending naar de aanbieder."
                 action={
                   <div className="flex flex-wrap items-center gap-2">
                     {onNavigateToMatching ? (
@@ -593,15 +593,15 @@ function GemeenteView({
                 }
               />
               <EmptyState
-                title="Geen casussen in deze fase"
-                copy="Er zijn nu nog geen casussen verzonden naar een aanbieder. Valideer eerst de matching of keer terug naar de werkvoorraad."
+                title="Geen aanvragen in deze fase"
+                copy="Er zijn nog geen aanvragen naar een aanbieder verzonden. Valideer eerst het voorstel of keer terug naar de werkvoorraad."
               />
             </div>
           )}
 
           {!loading && !error && reviewCasesAll.length > 0 && reviewCases.length === 0 && searchQuery.trim() !== "" && (
             <EmptyState
-              title="Geen casussen gevonden"
+              title="Geen aanvragen gevonden"
               copy="Geen resultaat voor deze zoekopdracht. Pas de zoekterm aan."
               action={<Button variant="outline" onClick={() => onSearchChange("")}>Wis zoekopdracht</Button>}
             />
@@ -1301,10 +1301,10 @@ function ProviderView({
         className="pb-8"
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
-            Aanbieder beoordeling
-            <CareInfoPopover ariaLabel="Uitleg aanbieder beoordeling" testId="aanbieder-beoordeling-zorg-page-info">
+            Reacties
+            <CareInfoPopover ariaLabel="Uitleg reacties" testId="aanbieder-beoordeling-zorg-page-info">
               <p className="text-muted-foreground">
-                Je beoordeelt een gemeenteverzoek — kies accepteren of afwijzen; meer info blijft mogelijk.
+                Je reageert op een aanmeldersverzoek — kies accepteren of afwijzen; meer info blijft mogelijk.
               </p>
             </CareInfoPopover>
           </span>
@@ -1316,11 +1316,11 @@ function ProviderView({
             message={
               activeQueue.length > 0
                 ? activeQueue.length === 1
-                  ? "1 casus wacht op jouw beoordeling"
-                  : `${activeQueue.length} casussen wachten op jouw beoordeling`
-                : "Geen openstaande beoordeling"
+                  ? "1 aanvraag wacht op jouw reactie"
+                  : `${activeQueue.length} aanvragen wachten op jouw reactie`
+                : "Geen openstaande reacties"
             }
-            action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Naar casussen</PrimaryActionButton> : undefined}
+            action={onNavigateToCasussen ? <PrimaryActionButton onClick={onNavigateToCasussen}>Naar aanvragen</PrimaryActionButton> : undefined}
           />
         }
         metric={
@@ -1366,7 +1366,7 @@ function ProviderView({
         )}
 
         {loading && (
-          <LoadingState title="Casussen laden…" copy="Even geduld — je wachtrij met beoordelingsverzoeken wordt opgehaald." />
+          <LoadingState title="Aanvragen laden…" copy="Even geduld — je wachtrij met reactieverzoeken wordt opgehaald." />
         )}
 
         {!loading && error && (
@@ -1377,14 +1377,14 @@ function ProviderView({
           <EmptyState
             title="Geen openstaande verzoeken"
             copy="Nieuwe casusverzoeken van gemeenten verschijnen hier zodra een casus naar jouw aanbieder is verzonden."
-            action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn casussen</Button> : undefined}
+            action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn aanvragen</Button> : undefined}
           />
         )}
 
         {!loading && !error && pendingCasesAll.length > 0 && pendingCases.length === 0 && searchQuery.trim() !== "" && (
           <EmptyState
-            title="Geen casussen gevonden"
-            copy="Geen openstaande beoordeling past bij je zoekopdracht. Pas de zoekterm aan of wis het veld."
+            title="Geen aanvragen gevonden"
+            copy="Geen openstaande reactie past bij je zoekopdracht. Pas de zoekterm aan of wis het veld."
             action={<Button variant="outline" onClick={() => onSearchChange("")}>Wis zoekopdracht</Button>}
           />
         )}
@@ -1394,7 +1394,7 @@ function ProviderView({
             {activeQueue.length > 0 && (
               <section className="space-y-3" key={focusToken} data-testid="provider-beoordeling-actieve-sectie">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  Actieve beoordeling
+                  Actieve reactie
                 </p>
                 <ProviderReviewCaseCard
                   caseItem={activeQueue[0]}
@@ -1418,15 +1418,15 @@ function ProviderView({
             {activeQueue.length === 0 && doneCases.length > 0 && (
               <EmptyState
                 title="Wachtrij afgerond"
-                copy="Alle openstaande beoordelingen in dit overzicht zijn verwerkt."
-                action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn casussen</Button> : undefined}
+                copy="Alle openstaande reacties in dit overzicht zijn verwerkt."
+                action={onNavigateToCasussen ? <Button variant="outline" onClick={onNavigateToCasussen}>Bekijk mijn aanvragen</Button> : undefined}
               />
             )}
 
             {doneCases.length > 0 && (
               <section className="space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                  Verwerkte casussen (dit overzicht)
+                  Verwerkte aanvragen (dit overzicht)
                 </p>
                 <div className="space-y-3">
                   {doneCases.map(c => (

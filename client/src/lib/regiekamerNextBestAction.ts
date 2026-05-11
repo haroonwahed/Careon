@@ -29,6 +29,36 @@ function r(n: number): number {
   return Math.max(0, Math.round(n));
 }
 
+function nlWachtUpstream(w: number): string {
+  const x = r(w);
+  return x === 1 ? "1 aanvraag wacht upstream" : `${x} aanvragen wachten upstream`;
+}
+
+function nlBlokkeertBijAanbieder(p: number): string {
+  const x = r(p);
+  return x === 1 ? "1 aanvraag blokkeert bij aanbieder" : `${x} aanvragen blokkeren bij aanbieder`;
+}
+
+function nlMetKritiekeBlokkade(b: number): string {
+  const x = r(b);
+  return x === 1 ? "1 aanvraag met kritieke blokkade" : `${x} aanvragen met kritieke blokkade`;
+}
+
+function nlMetIntakeVertraging(d: number): string {
+  const x = r(d);
+  return x === 1 ? "1 aanvraag met intake-vertraging" : `${x} aanvragen met intake-vertraging`;
+}
+
+function nlMetVerhoogdRisico(risks: number): string {
+  const x = r(risks);
+  return x === 1 ? "1 aanvraag met verhoogd risico" : `${x} aanvragen met verhoogd risico`;
+}
+
+function nlMatchingRegieTitel(m: number): string {
+  const x = r(m);
+  return x === 1 ? "Matching vraagt regie (1 aanvraag)" : `Matching vraagt regie (${x} aanvragen)`;
+}
+
 /**
  * Optional drill-down for `reasons[]` (deterministic; populated by caller from overview items).
  */
@@ -81,13 +111,13 @@ function blockerReasons(b: number, explain: RegiekamerNbaExplainInput | undefine
   const p = r(explain?.blockedProviderCases ?? 0);
   const out: string[] = [];
   if (w > 0) {
-    out.push(`${w} casussen wachten upstream`);
+    out.push(nlWachtUpstream(w));
   }
   if (p > 0) {
-    out.push(`${p} casussen blokkeren bij aanbieder`);
+    out.push(nlBlokkeertBijAanbieder(p));
   }
   if (out.length === 0 && b > 0) {
-    out.push(`${b} casussen met kritieke blokkade`);
+    out.push(nlMetKritiekeBlokkade(b));
   }
   return out;
 }
@@ -157,7 +187,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
       title: `${s} SLA-signal(en) vragen directe regie`,
       description: "Reactietijd of capaciteit schuurt tegen de afspraak.",
       reasons: slaReasons(s, ex),
-      primaryAction: { label: "Bekijk kritieke casussen", actionKey: "FOCUS_SLA" },
+      primaryAction: { label: "Bekijk kritieke aanvragen", actionKey: "FOCUS_SLA" },
       secondaryAction: { label: "Open werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {
         tone: "urgent",
@@ -171,11 +201,11 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // 3 — Matching failures / zwak signaal
   if (m > 0) {
     return {
-      title: `Matching vraagt regie (${m} casussen)`,
+      title: nlMatchingRegieTitel(m),
       description:
-        "Zwak signaal of geen passende match. De primaire knop zet filters op matching-urgenties in de Regiekamer; validatie of her-matching doe je per casus, niet via deze knop.",
+        "Zwak signaal of geen passende zorgcapaciteit. De primaire knop zet filters op matching-urgenties; validatie of her-matching doe je per aanvraag, niet via deze knop.",
       reasons: matchingReasons(m, ex),
-      primaryAction: { label: "Bekijk matchingcasussen", actionKey: "FOCUS_MATCHING" },
+      primaryAction: { label: "Bekijk matching-aanvragen", actionKey: "FOCUS_MATCHING" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
         tone: "attention",
@@ -189,10 +219,10 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // 4 — Intake delays
   if (d > 0) {
     return {
-      title: `${d} casussen met intake-vertraging`,
+      title: nlMetIntakeVertraging(d),
       description: "Start van zorg vertraagt na plaatsing.",
       reasons: intakeReasons(d, ex),
-      primaryAction: { label: "Bekijk intakecasussen", actionKey: "FOCUS_INTAKE" },
+      primaryAction: { label: "Bekijk intake-aanvragen", actionKey: "FOCUS_INTAKE" },
       secondaryAction: { label: "Bekijk risico's", actionKey: "FOCUS_RISKS" },
       panel: {
         tone: "attention",
@@ -206,10 +236,10 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // Risico’s (na de vier prioritaire signalen)
   if (risks >= REGIEKAMER_NBA_RISK_THRESHOLD) {
     return {
-      title: `${risks} casussen met verhoogd risico`,
+      title: nlMetVerhoogdRisico(risks),
       description: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
-      reasons: [`${risks} casussen met verhoogd risico`],
-      primaryAction: { label: "Bekijk kritieke casussen", actionKey: "FOCUS_RISKS" },
+      reasons: [nlMetVerhoogdRisico(risks)],
+      primaryAction: { label: "Bekijk kritieke aanvragen", actionKey: "FOCUS_RISKS" },
       secondaryAction: {
         label: "Open SLA-signalen",
         actionKey: "SLA_PROVIDER_REMINDERS",
@@ -226,9 +256,9 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // Volume-kansen
   if (active >= REGIEKAMER_NBA_OPTIMIZATION_MIN_ACTIVE) {
     return {
-      title: "Volume hoog genoeg voor ketenanalyse",
-      description: `${active} actieve casussen — waar kun je tijd of capaciteit winnen?`,
-      reasons: [`${active} actieve casussen in keten`],
+      title: "Hoge doorstroom — scan kansen",
+      description: `${active} actieve aanvragen — waar kun je tijd of capaciteit winnen?`,
+      reasons: [`${active} actieve aanvragen in doorstroom`],
       primaryAction: { label: "Open doorstroomrapport", actionKey: "OPEN_REPORTS" },
       secondaryAction: { label: "Open werkvoorraad", actionKey: "OPEN_WORKQUEUE" },
       panel: {

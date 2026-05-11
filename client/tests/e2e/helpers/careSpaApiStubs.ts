@@ -513,6 +513,32 @@ export async function installCareApiStubs(page: Page, options?: { regiekamerOver
       return;
     }
 
+    const arrangementMatch = pathname.match(/^\/care\/api\/cases\/([^/]+)\/arrangement-alignment\/?$/);
+    if (arrangementMatch) {
+      const cid = arrangementMatch[1] ?? "";
+      await fulfill({
+        case_id: cid,
+        generated_at: "2026-05-11T12:00:00Z",
+        equivalence_hints: [
+          {
+            source_label: "PGB",
+            target_label: "PGB-achtige jeugdondersteuning (referentietabel)",
+            equivalence_confidence: 0.58,
+            rationale: "E2E stub — geen financiële garantie.",
+            uncertainty: "high",
+          },
+        ],
+        tariff_alignment: {
+          estimated_delta_pct: null,
+          notes: "Stub: tariefvergelijking niet geautomatiseerd.",
+          uncertainty: "high",
+        },
+        requires_human_confirmation: true,
+        staging_deterministic: true,
+      });
+      return;
+    }
+
     await route.continue();
   });
 }

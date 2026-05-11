@@ -29,8 +29,8 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_BLOCKERS");
     expect(r.panel.uiMode).toBe("crisis");
     expect(r.impactHint).toMatch(/SLA-signal/);
-    expect(r.reasons).toEqual(["2 casussen met kritieke blokkade"]);
-    expect(formatRegiekamerDominantDescription(r)).toMatch(/• 2 casussen met kritieke blokkade/);
+    expect(r.reasons).toEqual(["2 aanvragen met kritieke blokkade"]);
+    expect(formatRegiekamerDominantDescription(r)).toMatch(/• 2 aanvragen met kritieke blokkade/);
     expect(formatRegiekamerDominantDescription(r)).toMatch(/Daarnaast: 5 SLA-signal/);
   });
 
@@ -85,7 +85,7 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_RISKS");
     expect(r.secondaryAction?.actionKey).toBe("SLA_PROVIDER_REMINDERS");
     expect(r.panel.uiMode).toBe("intervention");
-    expect(r.reasons).toEqual(["1 casussen met verhoogd risico"]);
+    expect(r.reasons).toEqual(["1 aanvraag met verhoogd risico"]);
   });
 
   it("does not surface risks below threshold", () => {
@@ -108,7 +108,7 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(r.primaryAction.actionKey).toBe("OPEN_REPORTS");
     expect(r.panel.uiMode).toBe("optimization");
-    expect(r.reasons).toEqual(["8 actieve casussen in keten"]);
+    expect(r.reasons).toEqual(["8 actieve aanvragen in doorstroom"]);
   });
 
   it("defaults to stable when volume is low and signals are quiet", () => {
@@ -151,8 +151,8 @@ describe("computeRegiekamerNextBestAction", () => {
       },
     });
     expect(r.reasons).toEqual([
-      "2 casussen wachten upstream",
-      "1 casussen blokkeren bij aanbieder",
+      "2 aanvragen wachten upstream",
+      "1 aanvraag blokkeert bij aanbieder",
     ]);
   });
 

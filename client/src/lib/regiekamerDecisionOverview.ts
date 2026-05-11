@@ -52,10 +52,23 @@ export interface RegiekamerDecisionOverviewTotals {
   intake_delays: number;
 }
 
+/** Operationele wachtrijen (gemeente levenscyclus) — backend `governance_queues`. */
+export interface RegiekamerGovernanceQueues {
+  wijkteam_intakes_needing_assessment: string[];
+  zorgvraag_beoordeling_open: string[];
+  cases_waiting_gemeente_validation: string[];
+  budget_approvals_pending: string[];
+  provider_transition_requests_pending: string[];
+  evaluations_upcoming: string[];
+  evaluations_overdue: string[];
+  active_placements_care_intensity_changed: string[];
+}
+
 export interface RegiekamerDecisionOverview {
   generated_at: string;
   totals: RegiekamerDecisionOverviewTotals;
   items: RegiekamerDecisionOverviewItem[];
+  governance_queues?: RegiekamerGovernanceQueues;
 }
 
 export async function fetchRegiekamerDecisionOverview(): Promise<RegiekamerDecisionOverview> {

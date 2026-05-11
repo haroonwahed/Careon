@@ -1021,10 +1021,22 @@ class PlacementRequest(models.Model):
     Status.PENDING = Status.DRAFT
 
     class CareForm(models.TextChoices):
-        OUTPATIENT = 'OUTPATIENT', 'Ambulant'
+        LOW_THRESHOLD_CONSULT = 'LOW_THRESHOLD_CONSULT', 'Laagdrempelig consult'
+        AMBULANT_SUPPORT = 'AMBULANT_SUPPORT', 'Ambulante ondersteuning'
+        OUTPATIENT = 'OUTPATIENT', 'Ambulant (legacy)'
         DAY_TREATMENT = 'DAY_TREATMENT', 'Dagbehandeling'
-        RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
-        CRISIS = 'CRISIS', 'Crisisopvang'
+        VOLUNTARY_OUT_OF_HOME = 'VOLUNTARY_OUT_OF_HOME', 'Vrijwillige uithuisplaatsing'
+        RESIDENTIAL = 'RESIDENTIAL', 'Woon- of zorgvoorziening'
+        CRISIS = 'CRISIS', 'Crisiszorg'
+        CONTINUATION_PATHWAY = 'CONTINUATION_PATHWAY', 'Doorstroomtraject'
+
+    class BudgetReviewStatus(models.TextChoices):
+        NOT_REQUIRED = 'NOT_REQUIRED', 'Geen budgetcontrole vereist'
+        PENDING = 'PENDING', 'Wacht op gemeentelijke financiële validatie'
+        APPROVED = 'APPROVED', 'Doorstroom financieel akkoord'
+        REJECTED = 'REJECTED', 'Wijs financieel af'
+        NEEDS_INFO = 'NEEDS_INFO', 'Vraag onderbouwing op'
+        DEFERRED = 'DEFERRED', 'Besluit uitgesteld'
 
     class ProviderResponseStatus(models.TextChoices):
         PENDING = 'PENDING', 'Nog niet vastgelegd'
@@ -1079,10 +1091,26 @@ class PlacementRequest(models.Model):
         verbose_name='Geselecteerde aanbieder'
     )
     care_form = models.CharField(
-        max_length=20,
+        max_length=32,
         choices=CareForm.choices,
         blank=True,
         verbose_name='Zorgvorm'
+    )
+    budget_review_status = models.CharField(
+        max_length=20,
+        choices=BudgetReviewStatus.choices,
+        default=BudgetReviewStatus.NOT_REQUIRED,
+        verbose_name='Budgetbeoordeling',
+    )
+    budget_review_note = models.TextField(blank=True, verbose_name='Toelichting budgetbesluit')
+    budget_review_decided_at = models.DateTimeField(null=True, blank=True, verbose_name='Budgetbesluit op')
+    budget_review_decided_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='budget_reviews_decided',
+        verbose_name='Budgetbesluit door',
     )
     start_date = models.DateField(null=True, blank=True, verbose_name='Startdatum')
     duration_weeks = models.PositiveIntegerField(null=True, blank=True, verbose_name='Duur (weken, optioneel)')
@@ -1208,6 +1236,11 @@ class PlacementRequest(models.Model):
                 return False, 'Casus moet eerst in matching staan.'
             if self.provider_response_status != self.ProviderResponseStatus.ACCEPTED:
                 return False, 'Plaatsing kan pas worden bevestigd na acceptatie door de aanbieder.'
+            from contracts.care_lifecycle_v12 import placement_budget_blocks_confirmation
+
+            blocked, reason = placement_budget_blocks_confirmation(self)
+            if blocked:
+                return False, reason
             return True, ''
 
         if target_status == self.Status.REJECTED:
@@ -1221,6 +1254,124 @@ class PlacementRequest(models.Model):
             return True, ''
 
         return True, ''
+
+
+class CaseCareEvaluation(models.Model):
+    """Evaluatie in actieve zorg — planning, uitkomst en vervolg (gemeente eigenaar)."""
+
+    class Status(models.TextChoices):
+        UPCOMING = 'UPCOMING', 'Evaluatie gepland'
+        OVERDUE = 'OVERDUE', 'Evaluatie achterstallig'
+        COMPLETED = 'COMPLETED', 'Evaluatie afgerond'
+
+    class Outcome(models.TextChoices):
+        CONTINUE = 'CONTINUE', 'Voortzetten'
+        TAPER = 'TAPER', 'Afbouwen'
+        SCALE_UP = 'SCALE_UP', 'Opschalen'
+        PREPARE_TRANSITION = 'PREPARE_TRANSITION', 'Doorstroom voorbereiden'
+        CLOSE = 'CLOSE', 'Sluiten'
+
+    due_diligence_process = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='care_evaluations',
+        verbose_name='Casus',
+    )
+    due_date = models.DateField(verbose_name='Datum evaluatie')
+    attendees = models.JSONField(default=list, blank=True, verbose_name='Aanwezigen')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.UPCOMING, verbose_name='Status')
+    outcome = models.CharField(max_length=40, choices=Outcome.choices, blank=True, verbose_name='Uitkomst')
+    follow_up_actions = models.TextField(blank=True, verbose_name='Vervolgacties')
+    recorded_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='recorded_care_evaluations',
+        verbose_name='Laatst vastgelegd door',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['due_date', 'id']
+        verbose_name = 'Zorgevaluatie'
+        verbose_name_plural = 'Zorgevaluaties'
+
+    def __str__(self):
+        return f'Evaluatie {self.due_date} ({self.get_status_display()})'
+
+
+class ProviderCareTransitionRequest(models.Model):
+    """Aanbieder vraagt doorstroom/wijziging; gemeente beslist financieel (geen directe budgetmutatie)."""
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'In behandeling'
+        WITHDRAWN = 'WITHDRAWN', 'Ingetrokken'
+        CLOSED = 'CLOSED', 'Afgehandeld'
+
+    class FinancialValidationStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Wacht op financiële validatie'
+        APPROVED = 'APPROVED', 'Doorstroom financieel akkoord'
+        REJECTED = 'REJECTED', 'Wijs financieel af'
+        NEEDS_INFO = 'NEEDS_INFO', 'Vraag onderbouwing op'
+        DEFERRED = 'DEFERRED', 'Besluit uitgesteld'
+
+    due_diligence_process = models.ForeignKey(
+        'CaseIntakeProcess',
+        on_delete=models.CASCADE,
+        related_name='provider_transition_requests',
+        verbose_name='Casus',
+    )
+    placement_request = models.ForeignKey(
+        'PlacementRequest',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='transition_requests',
+        verbose_name='Plaatsing',
+    )
+    proposed_care_form = models.CharField(max_length=32, verbose_name='Voorgestelde zorgvorm')
+    reason = models.TextField(verbose_name='Reden')
+    urgency = models.CharField(max_length=10, default='MEDIUM', verbose_name='Urgentie')
+    estimated_financial_impact = models.TextField(blank=True, verbose_name='Geschatte financiële impact')
+    requested_start_date = models.DateField(null=True, blank=True, verbose_name='Gewenste ingangsdatum')
+    supporting_explanation = models.TextField(blank=True, verbose_name='Onderbouwing')
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, verbose_name='Verzoekstatus')
+    financial_validation_status = models.CharField(
+        max_length=20,
+        choices=FinancialValidationStatus.choices,
+        default=FinancialValidationStatus.PENDING,
+        verbose_name='Financiële validatie',
+    )
+    financial_validation_note = models.TextField(blank=True, verbose_name='Toelichting gemeente')
+    financial_validation_at = models.DateTimeField(null=True, blank=True, verbose_name='Financiële beslissing op')
+    financial_validation_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='validated_transition_requests',
+        verbose_name='Financiële beslissing door',
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='submitted_transition_requests',
+        verbose_name='Ingediend door',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Doorstroomverzoek aanbieder'
+        verbose_name_plural = 'Doorstroomverzoeken aanbieder'
+
+    def __str__(self):
+        return f'Doorstroom #{self.pk} casus {self.due_diligence_process_id}'
 
 
 class GovernanceLogImmutableError(Exception):
@@ -1275,6 +1426,10 @@ class CaseDecisionLog(models.Model):
         CASE_COMMUNICATION = 'CASE_COMMUNICATION', 'Case communication'
         STATE_TRANSITION = 'STATE_TRANSITION', 'Workflow state transition'
         GEMEENTE_VALIDATION = 'GEMEENTE_VALIDATION', 'Gemeente validatie matching'
+        BUDGET_DECISION = 'BUDGET_DECISION', 'Budgetbesluit gemeente'
+        EVALUATION_OUTCOME = 'EVALUATION_OUTCOME', 'Evaluatie-uitkomst'
+        TRANSITION_REQUEST = 'TRANSITION_REQUEST', 'Doorstroomverzoek'
+        FINANCIAL_VALIDATION = 'FINANCIAL_VALIDATION', 'Financiële validatie doorstroom'
 
     # FK to the live case record. SET_NULL so governance evidence is not
     # destroyed if the operational case record is deleted or archived.
@@ -1766,15 +1921,19 @@ class WorkflowStep(models.Model):
 class CaseIntakeProcess(models.Model):
     """Care/intake & matching processes (Intakes & Matching)"""
     class WorkflowState(models.TextChoices):
+        WIJKTEAM_INTAKE = 'WIJKTEAM_INTAKE', 'Wijkteam intake'
+        ZORGVRAAG_BEOORDELING = 'ZORGVRAAG_BEOORDELING', 'Zorgvraag beoordeling'
         DRAFT_CASE = 'DRAFT_CASE', 'Casus aangemaakt'
         SUMMARY_READY = 'SUMMARY_READY', 'Samenvatting gereed'
         MATCHING_READY = 'MATCHING_READY', 'Matching gereed'
         GEMEENTE_VALIDATED = 'GEMEENTE_VALIDATED', 'Gemeente gevalideerd'
         PROVIDER_REVIEW_PENDING = 'PROVIDER_REVIEW_PENDING', 'Aanbiederbeoordeling open'
         PROVIDER_ACCEPTED = 'PROVIDER_ACCEPTED', 'Aanbieder geaccepteerd'
+        BUDGET_REVIEW_PENDING = 'BUDGET_REVIEW_PENDING', 'Budgetcontrole'
         PROVIDER_REJECTED = 'PROVIDER_REJECTED', 'Aanbieder afgewezen'
         PLACEMENT_CONFIRMED = 'PLACEMENT_CONFIRMED', 'Plaatsing bevestigd'
         INTAKE_STARTED = 'INTAKE_STARTED', 'Intake gestart'
+        ACTIVE_PLACEMENT = 'ACTIVE_PLACEMENT', 'Actieve plaatsing'
         ARCHIVED = 'ARCHIVED', 'Gearchiveerd'
 
     class ProcessStatus(models.TextChoices):
@@ -1797,10 +1956,14 @@ class CaseIntakeProcess(models.Model):
         SEVERE = 'SEVERE', 'Zwaar'
 
     class CareForm(models.TextChoices):
-        OUTPATIENT = 'OUTPATIENT', 'Ambulant'
+        LOW_THRESHOLD_CONSULT = 'LOW_THRESHOLD_CONSULT', 'Laagdrempelig consult'
+        AMBULANT_SUPPORT = 'AMBULANT_SUPPORT', 'Ambulante ondersteuning'
+        OUTPATIENT = 'OUTPATIENT', 'Ambulant (legacy)'
         DAY_TREATMENT = 'DAY_TREATMENT', 'Dagbehandeling'
-        RESIDENTIAL = 'RESIDENTIAL', 'Residentieel'
-        CRISIS = 'CRISIS', 'Crisisopvang'
+        VOLUNTARY_OUT_OF_HOME = 'VOLUNTARY_OUT_OF_HOME', 'Vrijwillige uithuisplaatsing'
+        RESIDENTIAL = 'RESIDENTIAL', 'Woon- of zorgvoorziening'
+        CRISIS = 'CRISIS', 'Crisiszorg'
+        CONTINUATION_PATHWAY = 'CONTINUATION_PATHWAY', 'Doorstroomtraject'
 
     class AgeCategory(models.TextChoices):
         EARLY_CHILDHOOD = '0_4', '0–4'
@@ -1827,12 +1990,24 @@ class CaseIntakeProcess(models.Model):
     title = models.CharField(max_length=200, verbose_name='Casusidentificatie', help_text='Bijv. voornaam + initialiteit')
     status = models.CharField(max_length=20, choices=ProcessStatus.choices, default=ProcessStatus.INTAKE, verbose_name='Status')
     workflow_state = models.CharField(
-        max_length=40,
+        max_length=48,
         choices=WorkflowState.choices,
         blank=True,
         default='',
         verbose_name='Workflowstatus',
         help_text='Persistente workflowstate voor canonical flow-validatie.',
+    )
+
+    class EntryRoute(models.TextChoices):
+        STANDARD = 'STANDARD', 'Standaard casus'
+        WIJKTEAM = 'WIJKTEAM', 'Wijkteam intake'
+
+    entry_route = models.CharField(
+        max_length=20,
+        choices=EntryRoute.choices,
+        default=EntryRoute.STANDARD,
+        verbose_name='Instroomroute',
+        help_text='Wijkteam: familie kan worden geregistreerd vóór externe zorg.',
     )
     
     # Case coordination
@@ -1856,7 +2031,7 @@ class CaseIntakeProcess(models.Model):
     # CARE-SPECIFIC: Matching dimensions
     urgency = models.CharField(max_length=10, choices=Urgency.choices, default=Urgency.MEDIUM, verbose_name='Urgentie')
     complexity = models.CharField(max_length=20, choices=Complexity.choices, default=Complexity.SIMPLE, verbose_name='Complexiteit')
-    preferred_care_form = models.CharField(max_length=20, choices=CareForm.choices, default=CareForm.OUTPATIENT, verbose_name='Gewenste zorgvorm')
+    preferred_care_form = models.CharField(max_length=32, choices=CareForm.choices, default=CareForm.OUTPATIENT, verbose_name='Gewenste zorgvorm')
     preferred_region_type = models.CharField(
         max_length=20,
         choices=RegionType.choices,
@@ -1889,7 +2064,7 @@ class CaseIntakeProcess(models.Model):
         help_text='Deterministisch afgeleid uit gemeente; stabiel tenzij gemeente wijzigt.',
     )
     zorgvorm_gewenst = models.CharField(
-        max_length=20,
+        max_length=32,
         choices=CareForm.choices,
         blank=True,
         verbose_name='Zorgvorm gewenst (matching)',

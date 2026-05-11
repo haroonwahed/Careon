@@ -1,44 +1,74 @@
 # FOUNDATION LOCK
 
-Primary reference: see docs/ZORG_OS_FOUNDATION_APPROACH.md for the system-first foundation approach.
+**Primary references (v1.3 — canonical):**
 
-## Canonical Workflow
+- `docs/Zorg_OS_Product_System_Core_v1_3.md` — product boundaries & actors  
+- `docs/Zorg_OS_Technical_Foundation_v1_3.md` — implementation mapping & API discipline  
+- `docs/CareOn_Design_Constitution_v1_3.md` — UX / visual law  
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md` — system-first build strategy (being aligned to v1.3)
 
-Casus -> Samenvatting -> Matching -> Gemeente Validatie -> Aanbieder Beoordeling -> Plaatsing -> Intake
+Legacy technical evidence for extended lifecycle APIs: `docs/ZORG_OS_V1_2_EVIDENCE.md` (historical).
 
-The backend is the source of truth for transitions and actor ownership.
+---
 
-## Canonical States
+## Canonical product flow (v1.3)
 
-- DRAFT_CASE
-- SUMMARY_READY
-- MATCHING_READY
-- GEMEENTE_VALIDATED
-- PROVIDER_REVIEW_PENDING
-- PROVIDER_ACCEPTED
-- PROVIDER_REJECTED
-- PLACEMENT_CONFIRMED
-- INTAKE_STARTED
-- ARCHIVED
+**Aanmelding → Anonimisatie → Zorgvraag → Matching → Aanbieder reacties → Voorkeursmatch → Gemeentelijke validatie → Plaatsing → Uitstroom**
 
-## Actor Ownership
+The platform is **temporary orchestration infrastructure**: after placement + financing/arrangement validation, the trajectory **exits** to external systems of record (**uitstroom**). It is not the permanent home of the dossier.
 
-- gemeente
+The backend remains the **source of truth** for transitions and actor permissions.
+
+---
+
+## Technical implementation mapping
+
+Persisted workflow states and API `phase` keys are **stable implementation identifiers** (see `contracts/workflow_state_machine.py`). UI may use v1.3 product language while API keys stay unchanged until a coordinated major version.
+
+### Canonical States (persisted)
+
+- `DRAFT_CASE`
+- `SUMMARY_READY`
+- `MATCHING_READY`
+- `GEMEENTE_VALIDATED`
+- `PROVIDER_REVIEW_PENDING`
+- `PROVIDER_ACCEPTED`
+- `PROVIDER_REJECTED`
+- `BUDGET_REVIEW_PENDING`
+- `PLACEMENT_CONFIRMED`
+- `INTAKE_STARTED`
+- `ACTIVE_PLACEMENT`
+- `ARCHIVED` — **product:** *uitstroom* / traject afgesloten (geen permanente dossierstatus in dit platform).
+
+### Zorg OS v1.2 extensions (technical)
+
+Additional workflow states: `WIJKTEAM_INTAKE`, `ZORGVRAAG_BEOORDELING`. Wijkteam-instroom: `CaseIntakeProcess.entry_route = WIJKTEAM`. Zorgvormen en budget: `PlacementRequest.budget_review_status`, `contracts/care_lifecycle_v12.py`. Evaluaties en doorstroom: `CaseCareEvaluation`, `ProviderCareTransitionRequest`.
+
+---
+
+## Actor ownership (technical roles)
+
+> Product language centers the **Aanmelder**; technical enforcement still uses `WorkflowRole` until fine-grained actor profiles ship.  
+> **Mapping (aanmelder ↔ rollen):** see `docs/AANMELDER_WORKFLOWROLE_MAPPING.md`.
+
+- **gemeente** (`WorkflowRole.GEMEENTE`)
   - create_case
-  - complete_summary
   - start_matching
   - validate_matching
   - send_to_provider
   - confirm_placement
   - archive_case
   - rematch
-- zorgaanbieder
+  - budget decisions (where applicable)
+- **zorgaanbieder** (`WorkflowRole.ZORGAANBIEDER`)
   - provider_accept
   - provider_reject
   - provider_request_info
   - start_intake
-- admin
+- **admin**
   - all actions
+
+---
 
 ## Enforced Mutation Endpoints
 
@@ -54,6 +84,8 @@ The backend is the source of truth for transitions and actor ownership.
 - `/care/casussen/<id>/placement/action/`
 - `/care/casussen/<id>/archive/`
 
+---
+
 ## Audit Requirements
 
 Every valid transition writes append-only evidence in `CaseDecisionLog` using event type `STATE_TRANSITION` with:
@@ -67,6 +99,14 @@ Every valid transition writes append-only evidence in `CaseDecisionLog` using ev
 - source endpoint
 - optional reason/note
 
+---
+
+## Read-only advisory APIs (no workflow mutation)
+
+- `GET /care/api/cases/<id>/arrangement-alignment/` — arrangement equivalence hints (staging): **JZ21** → **NZa zorgproduct** → **iWlz-codelijsten** → heuristiek (`contracts/arrangement_alignment_catalog.py`); databestanden en bron-URL’s in `docs/ARRANGEMENT_OFFICIAL_SOURCES.md`. Zelfde case **VIEW** als `decision-evaluation`; payload bevat altijd `requires_human_confirmation: true` (contract).
+
+---
+
 ## Hard Guards
 
 - No provider review bypass from matching directly to placement.
@@ -74,13 +114,15 @@ Every valid transition writes append-only evidence in `CaseDecisionLog` using ev
 - No intake start before placement confirmation.
 - No archive before intake started/completed.
 
+---
+
 ## Decision Engine
 
-The backend decision engine is the single source for operational guidance on a casus. It powers regiekamer alerts, page banners, CTA visibility, blocked action reasons, and future matching intelligence.
+The backend decision engine is the single source for operational guidance on an **aanvraag** (case). It powers coordination alerts, page banners, CTA visibility, blocked action reasons, and future matching intelligence.
 
 ### Purpose
 
-- Evaluate the current state of a casus.
+- Evaluate the current state of an aanvraag.
 - Return blockers, risks, alerts, next-best-action guidance, allowed actions, blocked actions, and explanation context.
 - Keep decision authority in the backend so the frontend only renders the result.
 
@@ -133,17 +175,17 @@ The payload is JSON-serializable and includes:
 
 ### Next-Best-Action Priority
 
-1. Resolve critical blockers
-2. Complete missing case data
-3. Generate or check summary
-4. Start matching
-5. Send selected match to provider
-6. Wait or follow up provider review
-7. Handle provider rejection
-8. Confirm placement after acceptance
-9. Start intake after placement
-10. Monitor case
-11. Archive completed case
+1. Resolve critical blockers  
+2. Complete missing aanvraag data  
+3. Generate or check summary / zorgvraag readiness  
+4. Start matching  
+5. Send selected match to provider  
+6. Wait or follow up provider responses  
+7. Handle provider rejection  
+8. Confirm placement after acceptance  
+9. Start intake after placement  
+10. Complete trajectory / uitstroom handoff  
+11. Archive completed aanvraag  
 
 ### API Endpoint
 
@@ -152,12 +194,12 @@ The payload is JSON-serializable and includes:
 
 Both endpoints require authentication, respect case visibility permissions, and are read-only. They do not mutate data or create audit events.
 
-### Regiekamer Lite Overview
+### Coordination overview (Regiekamer API)
 
-`GET /care/api/regiekamer/decision-overview/` powers the live Regiekamer Lite triage surface.
+`GET /care/api/regiekamer/decision-overview/` powers the live **operationele coördinatie** surface.
 
 - It is derived from `evaluate_case()` and reuses the backend decision contract.
-- It returns active casussen only and excludes archived cases.
+- It returns active aanvragen only and excludes archived cases.
 - It exposes totals, priority ordering, top blocker/risk/alert summaries, and next-best-action hints for rendering only.
 - It does not own workflow authority and the frontend must not infer blockers or next actions on its own.
 
@@ -167,9 +209,9 @@ Both endpoints require authentication, respect case visibility permissions, and 
 - The frontend may not reimplement decision authority.
 - The frontend must treat the backend decision engine as the source of truth for blockers, next-best action, and blocked-action reasons.
 
-## Casus Detail Surface
+## Aanvraag detail surface
 
-The active casus detail page is the operational command surface for one casus.
+The active aanvraag detail page is the operational command surface for one throughflow.
 
 It must render backend decision evaluation directly and show:
 
@@ -187,18 +229,25 @@ It must render backend decision evaluation directly and show:
 - The frontend may call mutation endpoints, but it must refetch decision evaluation after every successful action.
 - The frontend may not infer workflow transitions from local status checks on this page.
 
-## Deferred By Design
+---
 
-Some capabilities are intentionally not productized yet. Treat them as explicit non-goals for the current live flow.
+## v1.3 product evolution (anonymization, uitstroom, arrangement intelligence)
 
-### AI-based anonymization
+These capabilities are **named product commitments** in v1.3. Technical delivery is **phased**; do not imply features are fully automated until endpoints + tests exist.
 
-- Do not introduce a dedicated AI anonymization route, action, or UX surface unless there is a concrete product requirement and an approved implementation plan.
-- Deterministic display masking or truncation helpers may exist for safe rendering, but those are not a user-facing anonymization workflow.
-- If AI anonymization is ever added, define the route, permission, audit trail, and test coverage first.
+### Anonimisatie
+
+- Product language treats **anonimisatie** as a first-class stage of the orchestration layer.  
+- Today: deterministic masking / safe display patterns may apply in UI.  
+- Next: dedicated services/routes require explicit permissions, audit events, DPIA alignment, and tests **before** production claims.
 
 ### Uitstroom
 
-- Do not create a separate first-class uitstroom model or surface unless discharge becomes a distinct product requirement.
-- Use the existing placement, intake, completion, and archive states as the current outcome layer.
-- Any future uitstroom product surface must be designed deliberately, not inferred from existing workflow shortcuts.
+- **Uitstroom** is the product term for **trajectory exit** after placement + financing/arrangement validation; externally owned continuation.  
+- Today: expressed via completion + **archive** semantics and UX copy — not a separate persisted `UITSTROOM` state (optional future migration).
+
+### Arrangement intelligence
+
+- **AI-assisted arrangement alignment** suggests semantic equivalence and tariff alignment **with explicit uncertainty**; humans remain accountable.  
+- Contract: `client/src/lib/arrangementAlignmentContract.ts` and `docs/Zorg_OS_Technical_Foundation_v1_3.md`.  
+- Do **not** ship implied guarantees of financial correctness.

@@ -114,6 +114,8 @@ class ReleaseEvidenceBundleTests(TestCase):
                 base_dir=str(tmp),
                 write_json=str(out),
                 report_only=True,
+                stdout=StringIO(),
+                stderr=StringIO(),
             )
             self.assertTrue(out.is_file())
 
@@ -127,7 +129,12 @@ class ReleaseEvidenceBundleTests(TestCase):
                 encoding='utf-8',
             )
             with self.assertRaises(CommandError):
-                call_command('release_evidence_bundle', base_dir=str(tmp))
+                call_command(
+                    'release_evidence_bundle',
+                    base_dir=str(tmp),
+                    stdout=StringIO(),
+                    stderr=StringIO(),
+                )
 
 
 class RehearsalVerifyJsonStdoutTests(TestCase):
@@ -162,7 +169,13 @@ class MergedRehearsalReportBundleTests(TestCase):
                 encoding='utf-8',
             )
             out = tmp / 'reports' / 'bundle_out.json'
-            call_command('release_evidence_bundle', base_dir=str(tmp), write_json=str(out))
+            call_command(
+                'release_evidence_bundle',
+                base_dir=str(tmp),
+                write_json=str(out),
+                stdout=StringIO(),
+                stderr=StringIO(),
+            )
             self.assertTrue(out.is_file())
             payload = json.loads(out.read_text(encoding='utf-8'))
             self.assertTrue(payload['timeline_gate']['go'])

@@ -169,7 +169,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
       <CareKPICard
         title="Totaal in wachtrij"
         value={loading ? "—" : counts.total}
-        subtitle="Klaar voor matching"
+        subtitle="Zoek zorgcapaciteit"
         icon={ClipboardList}
         urgency="normal"
       />

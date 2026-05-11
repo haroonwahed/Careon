@@ -4,6 +4,8 @@
 
 This project is in an **infrastructure maturity** window. The goal is a **stable, observable, auditable** orchestration system—not a wider feature surface.
 
+**v1.3 note:** owners may still ship **strategic realignment** work documented in `docs/ZORG_OS_V1_3_STRATEGIC_REALIGNMENT_EVIDENCE.md` (copy, navigation, terminology, advisory contracts) without lifting the whole freeze. Autonomous new AI modules remain out of scope until explicitly exempted.
+
 Unstable systems fail pilots and erode trust. **Beautiful unstable systems** are the common failure mode; this phase exists to avoid that.
 
 ---
@@ -30,7 +32,7 @@ Unless owners explicitly exempt in writing:
 4. **Security & tenancy** — session/org correctness, permission boundaries, audit trails.
 5. **Minimal fixes** — bugs, copy that blocks operators, accessibility issues tied to real users.
 
-Canonical workflow (`AGENTS.md`) is **unchanged** and remains non-negotiable; this phase tightens **what we add**, not **how decisions flow**.
+Canonical product flow in `AGENTS.md` (v1.3) is **non-negotiable**; this phase tightens **what we add**, not **how decisions flow** (still backend-gated).
 
 ---
 

@@ -209,7 +209,7 @@ function buildSummarySnippet(spaCase: SpaCase, missingDataItems: string[]): stri
     `Urgentie: ${urgencyLabel(spaCase.urgency).toLowerCase()}.`,
     missingDataItems.length > 0
       ? `Nog ${missingDataItems.length} punt${missingDataItems.length === 1 ? "" : "en"} nodig.`
-      : "Klaar voor matching.",
+      : "Zoek passende zorgcapaciteit.",
   ];
 
   return parts.join(" ");
@@ -254,6 +254,8 @@ function buildMatchConfidence(providerCount: number, urgency: SpaCase["urgency"]
 
 function boardColumnFromWorkflowState(workflowState: CanonicalWorkflowState): WorkflowBoardColumn {
   switch (workflowState) {
+    case "WIJKTEAM_INTAKE":
+    case "ZORGVRAAG_BEOORDELING":
     case "DRAFT_CASE":
       return "casus";
     case "SUMMARY_READY":
@@ -265,9 +267,11 @@ function boardColumnFromWorkflowState(workflowState: CanonicalWorkflowState): Wo
     case "PROVIDER_REVIEW_PENDING":
       return "aanbieder-beoordeling";
     case "PROVIDER_ACCEPTED":
+    case "BUDGET_REVIEW_PENDING":
     case "PLACEMENT_CONFIRMED":
       return "plaatsing";
     case "INTAKE_STARTED":
+    case "ACTIVE_PLACEMENT":
     case "ARCHIVED":
       return "intake";
     case "PROVIDER_REJECTED":
@@ -299,7 +303,7 @@ function resolveBoardColumnWithFallback(spaCase: SpaCase, missingDataItems: stri
 
 function resolveCurrentPhaseLabel(spaCase: SpaCase, column: WorkflowBoardColumn, summaryAvailable: boolean): string {
   if (column === "samenvatting") {
-    return summaryAvailable ? `${CARE_TERMS.workflow.samenvatting} gereed` : `${CARE_TERMS.workflow.samenvatting} wordt verwerkt`;
+    return summaryAvailable ? `${CARE_TERMS.workflow.samenvatting} vastgelegd` : `${CARE_TERMS.workflow.samenvatting} wordt verwerkt`;
   }
 
   switch (column) {
@@ -328,7 +332,7 @@ function resolveResponsibility(column: WorkflowBoardColumn): string {
     case "gemeente-validatie":
       return CARE_TERMS.roles.gemeente;
     default:
-      return CARE_TERMS.roles.gemeente;
+      return CARE_TERMS.roles.aanmelder;
   }
 }
 

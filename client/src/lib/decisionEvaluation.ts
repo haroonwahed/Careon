@@ -1,3 +1,4 @@
+import type { ArrangementAlignmentSuggestion } from "./arrangementAlignmentContract";
 import { apiClient } from "./apiClient";
 
 export type DecisionPriority = "low" | "medium" | "high" | "critical";
@@ -103,4 +104,8 @@ export interface DecisionEvaluation {
 
 export async function fetchCaseDecisionEvaluation(caseId: string | number): Promise<DecisionEvaluation> {
   return apiClient.get<DecisionEvaluation>(`/care/api/cases/${caseId}/decision-evaluation/`);
+}
+
+export async function fetchCaseArrangementAlignment(caseId: string | number): Promise<ArrangementAlignmentSuggestion> {
+  return apiClient.get<ArrangementAlignmentSuggestion>(`/care/api/cases/${caseId}/arrangement-alignment/`);
 }

@@ -1,4 +1,6 @@
 import json
+import logging
+from contextlib import contextmanager
 from datetime import date, timedelta
 from unittest.mock import patch
 
@@ -27,6 +29,21 @@ from contracts.models import (
 )
 from contracts.governance import AuditLoggingError
 from contracts.views import sync_case_flow_state
+
+@contextmanager
+def _quiet_logs_for_expected_client_errors():
+    """
+    These tests intentionally trigger 503/500; suppress CI/build log noise during the POST.
+
+    Per-logger setLevel is unreliable under Django's LOGGING (handlers still emit).  logging.disable
+    drops all records at that severity and below for the whole process until NOTSET restores.
+    """
+    logging.disable(logging.ERROR)
+    try:
+        yield
+    finally:
+        logging.disable(logging.NOTSET)
+
 
 MINIMAL_WORKFLOW_SUMMARY = {
     'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
@@ -277,11 +294,12 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         before = CaseIntakeProcess.objects.count()
 
-        response = self.client.post(
-            reverse('careon:intake_create_api'),
-            data=json.dumps(payload),
-            content_type='application/json',
-        )
+        with _quiet_logs_for_expected_client_errors():
+            response = self.client.post(
+                reverse('careon:intake_create_api'),
+                data=json.dumps(payload),
+                content_type='application/json',
+            )
 
         self.assertEqual(response.status_code, 503, response.content.decode())
         body = response.json()
@@ -333,11 +351,12 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
 
         before = CaseIntakeProcess.objects.count()
 
-        response = self.client.post(
-            reverse('careon:intake_create_api'),
-            data=json.dumps(payload),
-            content_type='application/json',
-        )
+        with _quiet_logs_for_expected_client_errors():
+            response = self.client.post(
+                reverse('careon:intake_create_api'),
+                data=json.dumps(payload),
+                content_type='application/json',
+            )
 
         self.assertEqual(response.status_code, 503, response.content.decode())
         body = response.json()
@@ -385,11 +404,12 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'case_coordinator': str(self.user.pk),
         })
 
-        response = self.client.post(
-            reverse('careon:intake_create_api'),
-            data=json.dumps(payload),
-            content_type='application/json',
-        )
+        with _quiet_logs_for_expected_client_errors():
+            response = self.client.post(
+                reverse('careon:intake_create_api'),
+                data=json.dumps(payload),
+                content_type='application/json',
+            )
 
         self.assertEqual(response.status_code, 500)
         body = response.json()

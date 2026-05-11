@@ -1,47 +1,43 @@
 # CareOn Terminology
 
-This document is the product glossary for visible CareOn language.
+This document is the product glossary for visible CareOn language (**v1.3** — see `docs/Zorg_OS_Product_System_Core_v1_3.md`).
 
-## Canonical workflow terms
+## Canonical workflow terms (product)
 
-These terms should be used consistently across the landing page, dashboard pages, and shared workflow helpers:
+Use consistently across SPA, templates, and operator-facing docs:
 
-1. Casus
-2. Samenvatting
-3. Matching
-4. Gemeente validatie
-5. Aanbieder beoordeling
-6. Plaatsing
-7. Intake
+1. **Aanmelding** — start of a throughflow request (anonymous / operational).  
+2. **Anonimisatie** — privacy stage (deterministic today; expanded services only with governance).  
+3. **Zorgvraag** — structured need / summary readiness (replaces loose “casus dossier” wording where possible).  
+4. **Matching** — advisory zorgcapaciteit routing.  
+5. **Aanbieder reacties** — provider responses (accept / reject / info).  
+6. **Voorkeursmatch** — preferred routing / selection step before final gemeente checks where applicable.  
+7. **Gemeentelijke validatie** — financing & arrangement compatibility gate.  
+8. **Plaatsing** — confirmed placement step.  
+9. **Uitstroom** — trajectory exits the platform; external systems of record take over.
 
 ## Canonical role terms
 
-- Gemeente
-- Zorgaanbieder
-- Admin
-- Systeem
+- **Aanmelder** (primary operational protagonist in UX; may map to `WorkflowRole.GEMEENTE` accounts until finer profiles exist)  
+- **Gemeente** (financing / arrangement validation — not provider decision proxy)  
+- **Zorgaanbieder**  
+- **Admin**  
+- **Platform** (orchestration + advisory AI — never final decision owner)
 
 ## Canonical surface names
 
-- Regiekamer
-- Casussen
-- Matching
-- Acties
-- Aanbieder beoordeling
-- Plaatsingen
-- Zorgaanbieders
-- Gemeenten
-- Regio's
-- Documenten
-- Audittrail
-- Instellingen
+- **Coördinatie** (route `/regiekamer`; operational workspace)  
+- **Aanvragen** (worklist; routes under `/casussen` etc.)  
+- **Matching**  
+- **Acties**  
+- **Reacties** (provider-facing queue; path `/beoordelingen`)  
+- **Plaatsingen**  
+- **Zorgaanbieders**  
+- **Gemeenten**  
+- **Regio's**  
+- **Documenten**  
+- **Audittrail**
 
-## Source of truth
+## Implementation note
 
-- Shared labels in code: `client/src/lib/terminology.ts`
-- Terminology guard for legacy words: `scripts/terminology_guard.py`
-
-## Usage rule
-
-- Use these terms verbatim in UI copy and page titles when the same concept appears across multiple pages.
-- Prefer the shared terminology module over duplicated hardcoded strings in workflow helpers.
+API identifiers such as `phase: "gemeente_validatie"` may remain stable while UI shows **gemeentelijke validatie**. Document mapping: `docs/Zorg_OS_Technical_Foundation_v1_3.md`.

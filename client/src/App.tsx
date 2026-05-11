@@ -1,19 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { MultiTenantDemo } from "./components/examples/MultiTenantDemo";
 import { PublicLandingPage } from "./components/public/PublicLandingPage";
-import { getDjangoAuthDocumentRedirectUrl, isAuthDocumentPath, PUBLIC_LANDING_URL } from "./lib/routes";
+import { isAuthDocumentPath, PUBLIC_LANDING_URL, redirectIfAuthDocumentPath } from "./lib/routes";
+
+/** Keep SPA routing in sync with `window.location` when the shell uses `history.pushState` / `replaceState`. */
+function useSyncedPathname(): string {
+  const [pathname, setPathname] = useState(
+    () => (typeof window !== "undefined" ? window.location.pathname : "/"),
+  );
+  useLayoutEffect(() => {
+    const sync = () => setPathname(window.location.pathname);
+    window.addEventListener("popstate", sync);
+    const originalPush = history.pushState.bind(history);
+    const originalReplace = history.replaceState.bind(history);
+    history.pushState = (...args: Parameters<typeof originalPush>) => {
+      originalPush(...args);
+      sync();
+    };
+    history.replaceState = (...args: Parameters<typeof originalReplace>) => {
+      originalReplace(...args);
+      sync();
+    };
+    return () => {
+      window.removeEventListener("popstate", sync);
+      history.pushState = originalPush;
+      history.replaceState = originalReplace;
+    };
+  }, []);
+  return pathname;
+}
 
 /** Leave the Vite SPA and load Django’s HTML for login/register/logout (session + forms). */
 function AuthDocumentRedirect() {
   useEffect(() => {
-    const dest = getDjangoAuthDocumentRedirectUrl();
-    if (!dest) {
-      return;
-    }
-    const here = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
-    if (dest !== here) {
-      window.location.replace(dest);
-    }
+    redirectIfAuthDocumentPath();
   }, []);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-8 text-foreground">
@@ -39,8 +59,9 @@ export default function App() {
     return "light";
   });
   const [isDashboardView] = useState(() => new URLSearchParams(window.location.search).get("view") === "dashboard");
-  const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL);
-  const [isAuthRoute] = useState(() => isAuthDocumentPath(window.location.pathname));
+  const pathname = useSyncedPathname();
+  const isPublicRoute = pathname === PUBLIC_LANDING_URL;
+  const isAuthRoute = isAuthDocumentPath(pathname);
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);

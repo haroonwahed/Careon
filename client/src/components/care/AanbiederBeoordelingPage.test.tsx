@@ -56,7 +56,7 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
 
     render(<AanbiederBeoordelingPage role="gemeente" onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reacties" })).toBeInTheDocument();
     expect(screen.getByTestId("aanbieder-beoordeling-gemeente-root")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Terug naar casus" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Herinner aanbieders" })).toBeInTheDocument();
@@ -85,9 +85,9 @@ describe("AanbiederBeoordelingPage (gemeente)", () => {
       />,
     );
 
-    expect(screen.getByText("Geen casussen in deze fase")).toBeInTheDocument();
+    expect(screen.getByText("Geen aanvragen in deze fase")).toBeInTheDocument();
     expect(
-      screen.getByText(/matching heeft gevalideerd en de casus heeft verzonden/i),
+      screen.getByText(/nog geen aanvragen naar een aanbieder verzonden/i),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Naar matching" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Terug naar werkvoorraad" })).toBeInTheDocument();
@@ -105,9 +105,9 @@ describe("AanbiederBeoordelingPage (zorgaanbieder)", () => {
 
     render(<AanbiederBeoordelingPage role="zorgaanbieder" onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Reacties" })).toBeInTheDocument();
     expect(screen.getByPlaceholderText(/Zoek op casus-ID, regio/i)).toBeInTheDocument();
-    expect(screen.getByText("Actieve beoordeling")).toBeInTheDocument();
+    expect(screen.getByText("Actieve reactie")).toBeInTheDocument();
     expect(screen.getByTestId("provider-review-idle-hint")).toBeInTheDocument();
   });
 });

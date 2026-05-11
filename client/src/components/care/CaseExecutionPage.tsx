@@ -40,6 +40,7 @@ import {
 } from "../ui/alert-dialog";
 import { Textarea } from "../ui/textarea";
 import { cn } from "../ui/utils";
+import { ArrangementAlignmentPanel } from "./ArrangementAlignmentPanel";
 import { CasusWorkspaceLayout } from "./CasusWorkspaceLayout";
 import { CareMetaChip } from "./CareDesignPrimitives";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
@@ -541,7 +542,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   };
 
   const currentState = decisionEvaluation?.current_state ?? "";
-  const isArchived = currentState === "ARCHIVED";
   const nextBestAction = decisionEvaluation?.next_best_action ?? null;
   const selectedProviderName = decisionEvaluation?.decision_context.selected_provider_name ?? null;
   const selectedProviderId = decisionEvaluation?.decision_context.selected_provider_id ?? null;
@@ -661,6 +661,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
       { action: "SEND_TO_PROVIDER", label: "Casus versturen naar aanbieder", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
       { action: "CONFIRM_PLACEMENT", label: "Plaatsing bevestigen", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
       { action: "START_INTAKE", label: "Intake starten", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "BUDGET_APPROVE", label: "Budget akkoord", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "BUDGET_REJECT", label: "Budget afwijzen", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "BUDGET_REQUEST_INFO", label: "Budget: meer info", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "BUDGET_DEFER", label: "Budget uitstellen", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "COMPLETE_WIJKTEAM_INTAKE", label: "Wijkteam intake afronden", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "COMPLETE_ZORGVRAAG_ASSESSMENT", label: "Zorgvraagbeoordeling afronden", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
+      { action: "ACTIVATE_PLACEMENT_MONITORING", label: "Actieve plaatsing activeren", reason: "Nog niet toegestaan vanuit de huidige fase.", allowed: false },
     ];
   const missingGeo = (decisionEvaluation?.coverage_basis ?? "unknown") === "unknown";
   const actionButtonDisabled = decisionLoading
@@ -880,6 +887,9 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
     ? "Start matching"
     : displayNextTransitionLabel;
 
+  const trajectoryExited = resolvedState === "ARCHIVED";
+  const showArrangementAlignment = role === "gemeente" || role === "admin";
+
   const flowProgress = (
     <CaseWorkflowTimeline
       steps={decisionTimelineSteps}
@@ -888,7 +898,20 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   );
 
   const caseHero = (
-    <div className="rounded-2xl bg-card/40 px-5 py-4">
+    <div className="space-y-3">
+      {trajectoryExited ? (
+        <div
+          data-testid="case-uitstroom-banner"
+          role="status"
+          className="rounded-xl border border-emerald-500/30 bg-emerald-500/6 px-4 py-3 text-sm text-foreground"
+        >
+          <p className="font-semibold">Traject afgesloten — uitstroom</p>
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+            Deze aanvraag is gearchiveerd. Verdere financiële en inhoudelijke voortgang gaat verder buiten dit platform.
+          </p>
+        </div>
+      ) : null}
+      <div className="rounded-2xl bg-card/40 px-5 py-4">
       <div className="grid gap-2.5 pb-3 md:grid-cols-3">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</p>
@@ -984,6 +1007,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         </p>
       )}
     </div>
+    </div>
   );
 
   const decisionPanel = null;
@@ -1054,6 +1078,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
 
   const contextStack = (
     <div className="space-y-2.5">
+      {showArrangementAlignment ? <ArrangementAlignmentPanel caseId={caseId} /> : null}
       <div>{flowProgress}</div>
       <div>{contextCards}</div>
     </div>

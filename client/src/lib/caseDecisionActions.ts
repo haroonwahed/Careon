@@ -16,7 +16,14 @@ export type CaseDecisionActionCode =
   | "ARCHIVE_CASE"
   | "PROVIDER_ACCEPT"
   | "PROVIDER_REJECT"
-  | "PROVIDER_REQUEST_INFO";
+  | "PROVIDER_REQUEST_INFO"
+  | "BUDGET_APPROVE"
+  | "BUDGET_REJECT"
+  | "BUDGET_REQUEST_INFO"
+  | "BUDGET_DEFER"
+  | "COMPLETE_WIJKTEAM_INTAKE"
+  | "COMPLETE_ZORGVRAAG_ASSESSMENT"
+  | "ACTIVATE_PLACEMENT_MONITORING";
 
 export type CaseDecisionActionKind = "mutation" | "navigate" | "noop";
 
@@ -189,7 +196,47 @@ export async function executeCaseAction(
 
     case "START_INTAKE":
       await requestJson(`/care/api/cases/${caseIdString}/intake-action/`, {});
-      return { kind: "mutation", message: "Intake gestart." };
+      return { kind: "mutation", message: "Intake gestart; actieve plaatsing geactiveerd." };
+
+    case "BUDGET_APPROVE":
+      await requestJson(`/care/api/cases/${caseIdString}/budget-decision/`, {
+        decision: "APPROVED",
+        note: String(options.payload?.note ?? "").trim(),
+      });
+      return { kind: "mutation", message: "Budget financieel akkoord vastgelegd." };
+
+    case "BUDGET_REJECT":
+      await requestJson(`/care/api/cases/${caseIdString}/budget-decision/`, {
+        decision: "REJECTED",
+        note: String(options.payload?.note ?? "").trim(),
+      });
+      return { kind: "mutation", message: "Budget afgewezen; casus terug naar matching." };
+
+    case "BUDGET_REQUEST_INFO":
+      await requestJson(`/care/api/cases/${caseIdString}/budget-decision/`, {
+        decision: "NEEDS_INFO",
+        note: String(options.payload?.note ?? "").trim(),
+      });
+      return { kind: "mutation", message: "Onderbouwing budget gevraagd." };
+
+    case "BUDGET_DEFER":
+      await requestJson(`/care/api/cases/${caseIdString}/budget-decision/`, {
+        decision: "DEFERRED",
+        note: String(options.payload?.note ?? "").trim(),
+      });
+      return { kind: "mutation", message: "Budgetbesluit uitgesteld." };
+
+    case "COMPLETE_WIJKTEAM_INTAKE":
+      await requestJson(`/care/api/cases/${caseIdString}/early-lifecycle/`, { action: "complete_wijkteam" });
+      return { kind: "mutation", message: "Wijkteam intake afgerond." };
+
+    case "COMPLETE_ZORGVRAAG_ASSESSMENT":
+      await requestJson(`/care/api/cases/${caseIdString}/early-lifecycle/`, { action: "open_casus_from_zorgvraag" });
+      return { kind: "mutation", message: "Casus geopend vanuit zorgvraagbeoordeling." };
+
+    case "ACTIVATE_PLACEMENT_MONITORING":
+      await requestJson(`/care/api/cases/${caseIdString}/activate-monitoring/`, {});
+      return { kind: "mutation", message: "Actieve plaatsing geactiveerd." };
 
     case "MONITOR_CASE":
       return { kind: "noop", message: "Casus ververst." };

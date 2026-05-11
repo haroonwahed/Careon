@@ -1,10 +1,10 @@
 /**
- * Sidebar Navigation - Elite Design with Role-Based Access
- * 
+ * Sidebar Navigation — CareOn v1.3 (aanmelder-first orchestration).
+ *
  * Role-based navigation:
- * 🟣 Gemeente - Full access (primary user)
- * 🔵 Zorgaanbieder - Limited to intake, their cases, documents
- * 🟡 Admin - Full access + user management
+ * 🟣 Aanmelder-keten (often gemeente account) — doorstroom & validatie
+ * 🔵 Zorgaanbieder — reacties, intake, eigen aanvragen
+ * 🟡 Admin — volledige keten + sturing
  */
 
 import { useState } from "react";
@@ -56,23 +56,23 @@ interface NavSection {
   items: NavItem[];
 }
 
-// GEMEENTE - Full access (primary user)
+// Aanmelder-keten (volledige doorstroom)
 const gemeenteNavigation: NavSection[] = [
   {
     id: "regie",
-    label: "REGIE",
+    label: "DOORSTROOM",
     color: "purple",
     items: [
       {
         id: "regiekamer",
-        label: "Regiekamer",
+        label: "Coördinatie",
         icon: LayoutDashboard,
         href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
-        label: "Casussen",
+        label: "Aanvragen",
         icon: FileText,
         href: "/casussen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -88,7 +88,7 @@ const gemeenteNavigation: NavSection[] = [
   },
   {
     id: "flow-status",
-    label: "KETEN",
+    label: "CAPACITEIT",
     color: "amber",
     items: [
       {
@@ -100,7 +100,7 @@ const gemeenteNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Aanbieder beoordeling",
+        label: "Reacties",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -172,7 +172,7 @@ const gemeenteNavigation: NavSection[] = [
   }
 ];
 
-// ZORGAANBIEDER - Limited access (receive work)
+// Zorgaanbieder — lichte reactie- en overdrachtsstromen
 const zorgaanbiederNavigation: NavSection[] = [
   {
     id: "werk",
@@ -188,14 +188,14 @@ const zorgaanbiederNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Aanbieder beoordeling",
+        label: "Reacties",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "mijn-casussen",
-        label: "Mijn casussen",
+        label: "Mijn aanvragen",
         icon: FileText,
         href: "/mijn-casussen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -222,19 +222,19 @@ const zorgaanbiederNavigation: NavSection[] = [
 const adminNavigation: NavSection[] = [
   {
     id: "regie",
-    label: "REGIE",
+    label: "DOORSTROOM",
     color: "purple",
     items: [
       {
         id: "regiekamer",
-        label: "Regiekamer",
+        label: "Coördinatie",
         icon: LayoutDashboard,
         href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
-        label: "Casussen",
+        label: "Aanvragen",
         icon: FileText,
         href: "/casussen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -250,7 +250,7 @@ const adminNavigation: NavSection[] = [
   },
   {
     id: "flow-status",
-    label: "KETEN",
+    label: "CAPACITEIT",
     color: "amber",
     items: [
       {
@@ -262,7 +262,7 @@ const adminNavigation: NavSection[] = [
       },
       {
         id: "beoordelingen",
-        label: "Aanbieder beoordeling",
+        label: "Reacties",
         icon: FileCheck,
         href: "/beoordelingen",
         surfaceStatus: "ACTIVE_PRODUCT",

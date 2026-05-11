@@ -89,10 +89,10 @@ type FlowColumnFilter = "all" | "plaatsing" | "intake";
 
 /** Compacte statusregel voor de paginabadge (contrast met vage “vragen actie”-formuleringen elders). */
 function casussenWerkvoorraadMetric(filteredCount: number, attentionCount: number): string {
-  if (filteredCount === 0) return "Geen casussen in deze weergave";
-  if (attentionCount === 0) return `${filteredCount} casussen · geen open actie voor jou`;
-  if (attentionCount === 1) return `${filteredCount} casussen · 1 wacht op jouw actie`;
-  return `${filteredCount} casussen · ${attentionCount} wachten op jouw actie`;
+  if (filteredCount === 0) return "Geen aanvragen in deze weergave";
+  if (attentionCount === 0) return `${filteredCount} aanvragen · geen open actie voor jou`;
+  if (attentionCount === 1) return `${filteredCount} aanvragen · 1 wacht op jouw actie`;
+  return `${filteredCount} aanvragen · ${attentionCount} wachten op jouw actie`;
 }
 
 function urgencyRank(urgency: WorkflowCaseView["urgency"]): number {
@@ -299,7 +299,7 @@ function CasussenWerkvoorraadRow({
       <button
         type="button"
         onClick={onOpenCase}
-        aria-label={`Open casus ${item.clientLabel}`}
+        aria-label={`Open aanvraag ${item.clientLabel}`}
         className={cn(
           "grid min-w-0 gap-y-3 gap-x-4 text-left outline-none transition-colors md:col-span-5 md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px] md:gap-x-5 md:items-center",
           "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
@@ -616,14 +616,14 @@ export function WorkloadPage({
 
   const sectionHeaders: Record<SectionKey, string> = {
     attention: "⚠ Vraagt actie",
-    "waiting-provider": "⏳ Aanbieder beoordeling",
+    "waiting-provider": "⏳ Reacties aanbieder",
     stable: "✓ Stabiel",
   };
 
   const sectionEmptyLabel: Record<SectionKey, string> = {
-    attention: "Geen casussen in deze categorie",
-    "waiting-provider": "Geen casussen in deze categorie",
-    stable: "Geen casussen in deze categorie",
+    attention: "Geen aanvragen in deze categorie",
+    "waiting-provider": "Geen aanvragen in deze categorie",
+    stable: "Geen aanvragen in deze categorie",
   };
 
   const compactProblemLabel = (
@@ -632,11 +632,11 @@ export function WorkloadPage({
   ): string => {
     const problem = getShortReasonLabel(decision.blockedReason ?? item.missingDataItems[0] ?? decision.whyHere).toLowerCase();
     if (item.isBlocked || item.missingDataItems.length > 0) {
-      return problem.includes("samenvatting") ? "Casusgegevens onvolledig" : "Blokkade";
+      return problem.includes("samenvatting") ? "Aanvraag onvolledig" : "Blokkade";
     }
     if (problem.includes("urgentie")) return "Blokkade";
-    if (problem.includes("samenvatting")) return "Casusgegevens onvolledig";
-    if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Aanbieder beoordeling";
+    if (problem.includes("samenvatting")) return "Aanvraag onvolledig";
+    if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Reacties aanbieder";
     return decision.requiresCurrentUserAction ? "Actie vereist" : "Geen actie nodig";
   };
 
@@ -644,13 +644,13 @@ export function WorkloadPage({
     const action = decision.nextActionLabel.toLowerCase();
     if (action.includes("urgentie")) return "Vul urgentie aan";
     if (action.includes("samenvatting wordt verwerkt") || action.includes("wacht op samenvatting")) return "Bekijk status";
-    if (action.includes("genereer") || action.includes("samenvatting") || action.includes("casus")) return "Vul casus aan";
+    if (action.includes("genereer") || action.includes("samenvatting") || action.includes("casus")) return "Vul aanvraag aan";
     if (action.includes("controleer") && action.includes("match")) return "Start matching";
     if (action.includes("start matching")) return "Start matching";
     if ((action.includes("bekijk") && action.includes("reactie")) || action.includes("aanbiederreactie")) return "Bekijk status";
     if (action.includes("status") && !action.includes("beoordeling uitvoeren")) return "Bekijk status";
     if (action.includes("intake") && action.includes("bekijk")) return "Bekijk intake";
-    if (action.includes("open")) return "Open casus";
+    if (action.includes("open")) return "Open aanvraag";
     return decision.nextActionLabel;
   };
 
@@ -686,13 +686,13 @@ export function WorkloadPage({
     }
     if (focusChip === "critical") {
       return {
-        label: "Toon alle casussen",
+        label: "Toon alle aanvragen",
         onClick: () => setFocusChip("all"),
       };
     }
     if (attentionCount > 0) {
       return {
-        label: "Bekijk kritieke casussen",
+        label: "Bekijk kritieke aanvragen",
         onClick: focusCriticalCases,
       };
     }
@@ -708,11 +708,11 @@ export function WorkloadPage({
   const workloadAttentionMessage =
     workflowCases.length === 0
       ? canCreateCase
-        ? "Er zijn nog geen lopende casussen; start een regietraject of pas filters aan."
-        : "Er zijn nog geen lopende casussen; pas filters aan."
+        ? "Er zijn nog geen lopende aanvragen; start een doorstroom of pas filters aan."
+        : "Er zijn nog geen lopende aanvragen; pas filters aan."
       : attentionCount > 0
-        ? `${attentionCount} casus${attentionCount === 1 ? "" : "sen"} vragen gemeentelijke actie; blokkades en wachttijd bepalen de volgende eigenaar.`
-        : "De werkvoorraad is rustig; gebruik filters om de volgende casus en stap te vinden.";
+        ? `${attentionCount} aanvraag${attentionCount === 1 ? "" : "en"} wachten op vervolgactie in de keten; blokkades en wachttijd bepalen de eigenaar.`
+        : "De werkvoorraad is rustig; gebruik filters om de volgende aanvraag en stap te vinden.";
 
   const workloadAttentionAction =
     primaryShortcut !== null ? (
@@ -730,7 +730,7 @@ export function WorkloadPage({
       <div className="flex flex-wrap items-center justify-end gap-2">
         {canCreateCase && onCreateCase ? (
           <PrimaryActionButton type="button" className="h-10 min-h-10 px-4 text-[13px]" onClick={onCreateCase}>
-          Start regiecasus
+          Nieuwe aanvraag
           </PrimaryActionButton>
         ) : null}
         <RegieRailToggleButton
@@ -756,12 +756,12 @@ export function WorkloadPage({
   };
 
   const doorstroomStrip = (
-    <CareSection testId="casussen-workflow-strip" aria-label="Doorstroom per casusfase">
+    <CareSection testId="casussen-workflow-strip" aria-label="Doorstroom per fase">
       <CareSectionHeader
         title="Doorstroom"
         description={
           <>
-            <p>Toont waar casussen in de keten staan, op basis van je huidige filters.</p>
+            <p>Toont waar aanvragen in de keten staan, op basis van je huidige filters.</p>
             <p>Klik een fase om de werkvoorraad op die fase te filteren.</p>
           </>
         }
@@ -770,7 +770,7 @@ export function WorkloadPage({
         action={
           <Button type="button" variant="ghost" className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary" asChild>
             <a href={CARE_PATHS.REGIEKAMER} data-testid="casussen-doorstroom-naar-regiekamer">
-              Naar Regiekamer
+              Naar coördinatie
               <ChevronRight size={14} aria-hidden />
             </a>
           </Button>
@@ -834,19 +834,19 @@ export function WorkloadPage({
     <CarePageScaffold
       archetype="worklist"
       className="pb-8"
-      title="Casussen"
+      title="Aanvragen"
       subtitleInfoTestId="casussen-page-info"
-      subtitleAriaLabel="Uitleg Casussen"
+      subtitleAriaLabel="Uitleg aanvragen"
       subtitle={
         <div className="space-y-2">
           <p className="font-semibold text-foreground">Hoe deze lijst werkt</p>
           <p>
-            Tabbladen en zoekveld bepalen welke casussen je ziet. Sidebar Acties (taken) staat los van het tabblad Mijn werkvoorraad op
+            Tabbladen en zoekveld bepalen welke aanvragen je ziet. Sidebar Acties (taken) staat los van het tabblad Mijn werkvoorraad op
             deze pagina.
           </p>
-          <p>Doorstroom toont casussen per fase (na je filters). De werklijst toont de volgende best passende actie per casus.</p>
+          <p>Doorstroom toont aanvragen per fase (na je filters). De werklijst toont de eerstvolgende passende actie per aanvraag.</p>
           <p className="text-muted-foreground">
-            Overzicht van je werkvoorraad per casus — doorstroom en filters bepalen wat je hier ziet.
+            Tijdelijke werkvoorraad — na plaatsing en validatie gaat het traject naar externe systemen (uitstroom).
           </p>
         </div>
       }
@@ -886,13 +886,13 @@ export function WorkloadPage({
           meta={
             <div className="w-full min-w-0 space-y-2">
               <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
-                {filteredItems.length} casussen
+                {filteredItems.length} aanvragen
               </span>
               <CareSearchFiltersBar
                 className="px-0"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
-                searchPlaceholder="Zoek casussen, regio's, aanbieders…"
+                searchPlaceholder="Zoek aanvragen, regio's, aanbieders…"
                 showSecondaryFilters={showSecondaryFilters}
                 onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                 secondaryFiltersLabel="Filters"
@@ -907,7 +907,7 @@ export function WorkloadPage({
                         className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="my-worklist">Mijn werkvoorraad ({tabCounts.myWorklist})</option>
-                        <option value="all">Alle casussen ({tabCounts.all})</option>
+                        <option value="all">Alle aanvragen ({tabCounts.all})</option>
                         <option value="pipeline">Wacht op actie ({tabCounts.pipeline})</option>
                         <option value="critical">Kritiek ({tabCounts.critical})</option>
                         <option value="recent">Recent bijgewerkt ({tabCounts.recent})</option>
@@ -982,7 +982,7 @@ export function WorkloadPage({
                         className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle verantwoordelijken</option>
-                        <option value="Gemeente">Gemeente</option>
+                        <option value="Gemeente">Aanmelder / gemeente</option>
                         <option value="Zorgaanbieder">Zorgaanbieder</option>
                         <option value="Systeem">Systeem</option>
                       </select>
@@ -1000,29 +1000,29 @@ export function WorkloadPage({
                 tone="critical"
                 message={
                   <>
-                    Weergave: kritiek / geblokkeerd. Gebruik <span className="font-medium text-foreground">Toon alle casussen</span> rechtsboven om
+                    Weergave: kritiek / geblokkeerd. Gebruik <span className="font-medium text-foreground">Toon alle aanvragen</span> rechtsboven om
                     terug te gaan naar de volledige lijst.
                   </>
                 }
               />
             </div>
           ) : null}
-          {loading && <LoadingState title="Casussen laden…" copy="De werkvoorraad wordt opgebouwd." />}
+          {loading && <LoadingState title="Aanvragen laden…" copy="De werkvoorraad wordt opgebouwd." />}
 
           {!loading && error && (
-            <ErrorState title="Casussen laden mislukt" copy={getShortReasonLabel(error, 100)} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+            <ErrorState title="Aanvragen laden mislukt" copy={getShortReasonLabel(error, 100)} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
           )}
 
           {!loading && !error && workflowCases.length === 0 && (
             <EmptyState
-              title="Geen casussen."
-              copy={canCreateCase ? "Er zijn nog geen casussen. Start een regietraject via de knop rechtsboven." : "Pas filters aan."}
+              title="Geen aanvragen."
+              copy={canCreateCase ? "Er zijn nog geen aanvragen. Start een doorstroom via de knop rechtsboven." : "Pas filters aan."}
             />
           )}
 
           {!loading && !error && workflowCases.length > 0 && filteredItems.length === 0 && (
             <EmptyState
-              title={focusChip === "my-worklist" ? "Geen open acties." : "Geen casussen."}
+              title={focusChip === "my-worklist" ? "Geen open acties." : "Geen aanvragen."}
               copy={focusChip === "my-worklist" ? "Alles ligt bij andere partijen." : "Pas filters aan."}
             />
           )}
@@ -1036,7 +1036,7 @@ export function WorkloadPage({
                     className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5"
                   >
                     <span>Prioriteit</span>
-                    <span>Casus</span>
+                    <span>Aanvraag</span>
                     <span>Blokkade / aandacht</span>
                     <span>Eigenaar</span>
                     <span>Wachttijd</span>
@@ -1064,7 +1064,7 @@ export function WorkloadPage({
               <div className="flex flex-col gap-3 border-t border-border/50 pt-3 text-[13px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p className="tabular-nums">
                   {totalRows === 0 ? "0" : `${(safePage - 1) * pageSize + 1}–${Math.min(safePage * pageSize, totalRows)}`} van {totalRows}{" "}
-                  casussen
+                  aanvragen
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
@@ -1358,7 +1358,7 @@ function CasussenInsightsPanels({
             >
               <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                 <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
-                Kritieke casussen
+                Kritieke aanvragen
               </span>
               <span className="tabular-nums font-semibold text-foreground">{criticalCount}</span>
             </button>

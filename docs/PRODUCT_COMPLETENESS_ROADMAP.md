@@ -212,22 +212,24 @@ Verification:
   - provider profile surfaces now show matching inputs and clear edit actions
   - targeted regression suites passed
 
-### Task 3: Defer AI and uitstroom work
+### Task 3: v1.3 strategic alignment (anonymization, uitstroom, arrangement intelligence)
 
 Owner:
-- Product architecture
+- Product architecture + engineering
 
 Files:
-- `contracts/models.py`
-- `contracts/views.py`
-- `contracts/provider_matching_service.py`
+- `docs/Zorg_OS_Product_System_Core_v1_3.md`
+- `docs/Zorg_OS_Technical_Foundation_v1_3.md`
+- `contracts/models.py` (only when persisting new alignment hints)
+- `contracts/api/views.py` (only when exposing read-only alignment endpoints)
 - `client/src/components/care/*.tsx`
+- `client/src/lib/arrangementAlignmentContract.ts`
 
 Acceptance:
-- AI anonymization remains deferred by design and does not get a dedicated route, action, or UX surface unless the product explicitly requires it.
-- Deterministic masking or truncation helpers may exist, but they are not treated as an AI anonymization workflow.
-- A separate uitstroom model or surface is not created unless discharge becomes a first-class product surface.
-- Any future AI or uitstroom surface must define its route, permission, audit trail, and tests before launch.
+- Product copy and navigation reflect **Aanmelder-first** orchestration and **uitstroom** as trajectory exit (not infinite in-platform lifecycle ownership).
+- Anonimisatie may start as deterministic masking; any **AI** anonymization route ships only with DPIA alignment, permissions, audit, and tests.
+- Arrangement intelligence ships as **advisory** output with uncertainty + human confirmation — never as autonomous financial approval.
+- Any future persisted `UITSTROOM` state (if introduced) must define migration, API version, audit, and tests before launch.
 
 ### 1. Must-have for pilot
 
@@ -296,6 +298,6 @@ If we start implementation from this backlog, do it in this order:
 
 1. Protect the pilot workflow.
 2. Tighten the live filters and provider profile surfaces.
-3. Defer AI anonymization and uitstroom modeling until there is a concrete request for them.
+3. Execute v1.3 alignment work incrementally: copy/UX first, then read-only arrangement hints, then any persisted uitstroom state if still required.
 
 This keeps the product operational rather than turning it into a reporting or experimentation layer.

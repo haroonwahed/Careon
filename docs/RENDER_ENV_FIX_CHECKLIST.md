@@ -6,9 +6,23 @@ Use this when a Render deploy fails because production settings are missing or m
 
 The production startup path requires a real PostgreSQL `DATABASE_URL`. If Render has an empty value or a placeholder value, startup fails before Django can finish booting.
 
+## Start command drift (your logs look “old”)
+
+If deploy logs still show **`Starting careon-web revision=`** and **“Set it on the careon-web service”**, but this repo’s **`render.yaml`** uses **`Starting web revision=`**, different `DATABASE_URL` error text, and **`[render] Running migrate…`**, then Render is **not** running the current `startCommand` from Git — usually because the service has a **manual Start Command** saved in the dashboard (from an older setup) that overrides the blueprint.
+
+**Fix:** Render requires a **non-empty** Start Command. Use a **one-liner** so it never drifts from the repo:
+
+```bash
+bash scripts/render_start_command.sh
+```
+
+Put that in **Dashboard → your web service → Settings → Start Command**, save, redeploy. The real logic lives in **`scripts/render_start_command.sh`** on `main` (same script `render.yaml` uses).
+
+Alternatively, copy-paste the full script from that file if your deploy layout cannot run `bash` from the repo root (unusual on Render).
+
 ## Required Variables
 
-Fill these in on the Render service for `careon-web`.
+Fill these in on **the Python web service that runs your Django start command** (in `render.yaml` the default name is `careon-web`; your dashboard name may differ).
 
 | Variable | Required value | Notes |
 |---|---|---|
@@ -27,7 +41,7 @@ Fill these in on the Render service for `careon-web`.
 ## Fill-In Steps
 
 1. Open the Render dashboard.
-2. Select the `careon-web` service.
+2. Select your **web** service (the one using this repo’s `startCommand` / gunicorn), not a static site or worker.
 3. Open the Environment section.
 4. Set `DATABASE_URL` to the PostgreSQL connection string from Render or your external database.
 5. Set `ALLOWED_HOSTS` to the actual public hostnames.
@@ -35,7 +49,7 @@ Fill these in on the Render service for `careon-web`.
 7. Set `DEFAULT_FROM_EMAIL` to the production sender address.
 8. Save the changes.
 9. Redeploy the service.
-10. Verify the startup log shows `Starting careon-web revision=...`, then `DATABASE_URL validated.` (or the detailed shape if `DATABASE_URL_VERBOSE_LOG` is enabled), then `gunicorn workers=...`, and no guard failure from `render_startup_checks.py`.
+10. Verify the startup log shows `Starting web revision=...`, then `DATABASE_URL validated.` (or the detailed shape if `DATABASE_URL_VERBOSE_LOG` is enabled), then migrate/gunicorn lines, and no guard failure from `render_startup_checks.py`.
 
 ## Validation Commands
 

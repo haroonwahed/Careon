@@ -82,7 +82,7 @@ describe("AssessmentQueuePage", () => {
 
     render(<AssessmentQueuePage />);
 
-    expect(screen.getByRole("heading", { name: /Aanbieder beoordeling/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /Reacties/i })).toBeInTheDocument();
     expect(screen.getByText("C-T1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Openen/i })).toBeInTheDocument();
   });

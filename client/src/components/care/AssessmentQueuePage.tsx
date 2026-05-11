@@ -42,22 +42,22 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
       className="pb-8"
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
-          Aanbieder beoordeling
-          <CareInfoPopover ariaLabel="Uitleg wachtrij aanbieder beoordeling" testId="aanbieder-beoordeling-queue-info">
+          Reacties
+          <CareInfoPopover ariaLabel="Uitleg wachtrij reacties" testId="aanbieder-beoordeling-queue-info">
             <p className="text-muted-foreground">Open voor besluit.</p>
           </CareInfoPopover>
         </span>
       }
       metric={
         <CareMetricBadge>
-          {queueCases.length} {queueCases.length === 1 ? "casus in wachtrij" : "casussen in wachtrij"}
+          {queueCases.length} {queueCases.length === 1 ? "aanvraag in wachtrij" : "aanvragen in wachtrij"}
         </CareMetricBadge>
       }
       filters={
         <CareSearchFiltersBar
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek casus, regio of aanbieder..."
+          searchPlaceholder="Zoek aanvraag, regio of aanbieder..."
           showSecondaryFilters={showSecondaryFilters}
           onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
           secondaryFilters={
