@@ -15,6 +15,18 @@ export function isAuthDocumentPath(pathname: string): boolean {
   return AUTH_DOCUMENT_PATHS.has(p);
 }
 
+/** Full URL to Django for the current auth path (login/register/logout), or null if not an auth path. */
+export function getDjangoAuthDocumentRedirectUrl(): string | null {
+  if (typeof window === "undefined" || !isAuthDocumentPath(window.location.pathname)) {
+    return null;
+  }
+  const djangoOrigin =
+    import.meta.env.VITE_DJANGO_DEV_ORIGIN ??
+    (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
+  const normalizedOrigin = String(djangoOrigin).replace(/\/+$/, "");
+  return `${normalizedOrigin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+}
+
 export const CARE_PATHS = {
   REGIEKAMER: "/regiekamer",
   MATCHING: "/care/matching",

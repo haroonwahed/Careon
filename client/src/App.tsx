@@ -1,16 +1,19 @@
 import { useEffect, useState } from "react";
 import { MultiTenantDemo } from "./components/examples/MultiTenantDemo";
 import { PublicLandingPage } from "./components/public/PublicLandingPage";
-import { isAuthDocumentPath, PUBLIC_LANDING_URL } from "./lib/routes";
+import { getDjangoAuthDocumentRedirectUrl, isAuthDocumentPath, PUBLIC_LANDING_URL } from "./lib/routes";
 
 /** Leave the Vite SPA and load Django’s HTML for login/register/logout (session + forms). */
 function AuthDocumentRedirect() {
   useEffect(() => {
-    const djangoOrigin =
-      import.meta.env.VITE_DJANGO_DEV_ORIGIN ??
-      (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
-    const dest = `${djangoOrigin.replace(/\/+$/, "")}${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.replace(dest);
+    const dest = getDjangoAuthDocumentRedirectUrl();
+    if (!dest) {
+      return;
+    }
+    const here = `${window.location.origin}${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (dest !== here) {
+      window.location.replace(dest);
+    }
   }, []);
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-8 text-foreground">
