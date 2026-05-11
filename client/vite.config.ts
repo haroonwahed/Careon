@@ -39,7 +39,14 @@ function manualVendorChunks(id: string) {
   return undefined;
 }
 
-  export default defineConfig(({ command }) => ({
+  export default defineConfig(({ command }) => {
+    /** Django for Vite proxy (API, OIDC, server-rendered auth pages). Default matches `manage.py runserver 127.0.0.1:8000`. */
+    const djangoDevOrigin = (process.env.CAREON_DJANGO_DEV_ORIGIN || 'http://127.0.0.1:8000').replace(
+      /\/$/,
+      '',
+    );
+
+    return {
     base: command === 'serve' ? '/' : '/static/spa/',
     plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback()],
     resolve: {
@@ -101,59 +108,59 @@ function manualVendorChunks(id: string) {
       open: true,
       proxy: {
         '/care/api/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
         '/static/css/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
         '/static/js/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
         '/static/spa/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
         '/oidc/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
         '/logout/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8010',
-            referer: 'http://127.0.0.1:8010/logout/',
+            origin: djangoDevOrigin,
+            referer: `${djangoDevOrigin}/logout/`,
           },
         },
         '/login/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8010',
-            referer: 'http://127.0.0.1:8010/login/',
+            origin: djangoDevOrigin,
+            referer: `${djangoDevOrigin}/login/`,
           },
         },
         '/register/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
           headers: {
-            origin: 'http://127.0.0.1:8010',
-            referer: 'http://127.0.0.1:8010/register/',
+            origin: djangoDevOrigin,
+            referer: `${djangoDevOrigin}/register/`,
           },
         },
         '/settings/': {
-          target: 'http://127.0.0.1:8010',
+          target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
         },
@@ -166,4 +173,5 @@ function manualVendorChunks(id: string) {
       include: ['src/**/*.test.{ts,tsx}', 'src/**/*.spec.{ts,tsx}'],
       exclude: ['tests/e2e/**', '**/playwright/**', '**/*.e2e.{ts,tsx}', 'node_modules/**', 'dist/**'],
     },
-  }));
+  };
+  });
