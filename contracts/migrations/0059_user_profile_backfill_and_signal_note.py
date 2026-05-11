@@ -8,6 +8,8 @@ def _pg_userprofile_repair_notnull_defaults(cursor):
     repairs = (
         ('session_revocation_counter', 'session_revocation_counter = 0', '0'),
         ('mfa_enabled', 'mfa_enabled = false', 'false'),
+        ("mfa_enrollment_code_hash", "mfa_enrollment_code_hash = ''", "''"),
+        ("mfa_recovery_code_hashes", "mfa_recovery_code_hashes = '[]'::jsonb", "'[]'::jsonb"),
     )
     for column_name, set_clause, default_literal in repairs:
         cursor.execute(

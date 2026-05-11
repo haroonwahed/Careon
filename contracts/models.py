@@ -120,6 +120,19 @@ class UserProfile(models.Model):
         default=False,
         help_text='Whether multi-factor authentication is enabled for this account.',
     )
+    mfa_verified_at = models.DateTimeField(null=True, blank=True)
+    mfa_enrollment_code_expires_at = models.DateTimeField(null=True, blank=True)
+    mfa_enrollment_code_hash = models.CharField(
+        max_length=128,
+        blank=True,
+        default='',
+        help_text='Hash of a pending MFA enrollment code; empty when not enrolling.',
+    )
+    mfa_enrollment_code_sent_at = models.DateTimeField(null=True, blank=True)
+    mfa_recovery_code_hashes = models.JSONField(
+        default=list,
+        help_text='Hashes of issued MFA recovery codes; empty list when none.',
+    )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.ASSOCIATE)
     phone = models.CharField(max_length=20, blank=True)
     bar_number = models.CharField(max_length=50, blank=True)
