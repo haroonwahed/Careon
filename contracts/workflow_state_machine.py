@@ -18,15 +18,19 @@ class WorkflowRole:
 
 
 class WorkflowState:
+    WIJKTEAM_INTAKE = 'WIJKTEAM_INTAKE'
+    ZORGVRAAG_BEOORDELING = 'ZORGVRAAG_BEOORDELING'
     DRAFT_CASE = 'DRAFT_CASE'
     SUMMARY_READY = 'SUMMARY_READY'
     MATCHING_READY = 'MATCHING_READY'
     GEMEENTE_VALIDATED = 'GEMEENTE_VALIDATED'
     PROVIDER_REVIEW_PENDING = 'PROVIDER_REVIEW_PENDING'
     PROVIDER_ACCEPTED = 'PROVIDER_ACCEPTED'
+    BUDGET_REVIEW_PENDING = 'BUDGET_REVIEW_PENDING'
     PROVIDER_REJECTED = 'PROVIDER_REJECTED'
     PLACEMENT_CONFIRMED = 'PLACEMENT_CONFIRMED'
     INTAKE_STARTED = 'INTAKE_STARTED'
+    ACTIVE_PLACEMENT = 'ACTIVE_PLACEMENT'
     ARCHIVED = 'ARCHIVED'
 
 
@@ -36,6 +40,8 @@ WAITLIST_PROPOSAL_NOTES_MARKER = '[WAITLIST_PROPOSAL]'
 
 class WorkflowAction:
     CREATE_CASE = 'create_case'
+    COMPLETE_WIJKTEAM_INTAKE = 'complete_wijkteam_intake'
+    COMPLETE_ZORGVRAAG_ASSESSMENT = 'complete_zorgvraag_assessment'
     COMPLETE_SUMMARY = 'complete_summary'
     START_MATCHING = 'start_matching'
     VALIDATE_MATCHING = 'validate_matching'
@@ -43,54 +49,91 @@ class WorkflowAction:
     PROVIDER_ACCEPT = 'provider_accept'
     PROVIDER_REJECT = 'provider_reject'
     PROVIDER_REQUEST_INFO = 'provider_request_info'
+    BUDGET_APPROVE = 'budget_approve'
+    BUDGET_REJECT = 'budget_reject'
+    BUDGET_REQUEST_INFO = 'budget_request_info'
+    BUDGET_DEFER = 'budget_defer'
     CONFIRM_PLACEMENT = 'confirm_placement'
     START_INTAKE = 'start_intake'
+    ACTIVATE_PLACEMENT_MONITORING = 'activate_placement_monitoring'
     ARCHIVE_CASE = 'archive_case'
     REMATCH = 'rematch'
+    SUBMIT_TRANSITION_REQUEST = 'submit_transition_request'
+    RESOLVE_TRANSITION_FINANCIAL = 'resolve_transition_financial'
 
 
 _ALLOWED_TRANSITIONS: dict[str, set[str]] = {
+    WorkflowState.WIJKTEAM_INTAKE: {WorkflowState.ZORGVRAAG_BEOORDELING},
+    WorkflowState.ZORGVRAAG_BEOORDELING: {WorkflowState.DRAFT_CASE},
     WorkflowState.DRAFT_CASE: {WorkflowState.SUMMARY_READY},
     WorkflowState.SUMMARY_READY: {WorkflowState.MATCHING_READY},
     WorkflowState.MATCHING_READY: {WorkflowState.GEMEENTE_VALIDATED},
     WorkflowState.GEMEENTE_VALIDATED: {WorkflowState.PROVIDER_REVIEW_PENDING},
     WorkflowState.PROVIDER_REVIEW_PENDING: {
         WorkflowState.PROVIDER_ACCEPTED,
+        WorkflowState.BUDGET_REVIEW_PENDING,
         WorkflowState.PROVIDER_REJECTED,
         WorkflowState.MATCHING_READY,
     },
     WorkflowState.PROVIDER_REJECTED: {WorkflowState.MATCHING_READY},
-    WorkflowState.PROVIDER_ACCEPTED: {WorkflowState.PLACEMENT_CONFIRMED},
+    WorkflowState.PROVIDER_ACCEPTED: {
+        WorkflowState.BUDGET_REVIEW_PENDING,
+        WorkflowState.PLACEMENT_CONFIRMED,
+    },
+    WorkflowState.BUDGET_REVIEW_PENDING: {
+        WorkflowState.PROVIDER_ACCEPTED,
+        WorkflowState.MATCHING_READY,
+    },
     WorkflowState.PLACEMENT_CONFIRMED: {WorkflowState.INTAKE_STARTED},
-    WorkflowState.INTAKE_STARTED: {WorkflowState.ARCHIVED},
+    WorkflowState.INTAKE_STARTED: {WorkflowState.ACTIVE_PLACEMENT, WorkflowState.ARCHIVED},
+    WorkflowState.ACTIVE_PLACEMENT: {WorkflowState.ARCHIVED},
+    WorkflowState.ARCHIVED: set(),
 }
 
 _ROLE_ACTIONS: dict[str, set[str]] = {
     WorkflowRole.GEMEENTE: {
         WorkflowAction.CREATE_CASE,
+        WorkflowAction.COMPLETE_WIJKTEAM_INTAKE,
+        WorkflowAction.COMPLETE_ZORGVRAAG_ASSESSMENT,
         WorkflowAction.COMPLETE_SUMMARY,
         WorkflowAction.START_MATCHING,
         WorkflowAction.VALIDATE_MATCHING,
         WorkflowAction.SEND_TO_PROVIDER,
+        WorkflowAction.BUDGET_APPROVE,
+        WorkflowAction.BUDGET_REJECT,
+        WorkflowAction.BUDGET_REQUEST_INFO,
+        WorkflowAction.BUDGET_DEFER,
         WorkflowAction.CONFIRM_PLACEMENT,
+        WorkflowAction.ACTIVATE_PLACEMENT_MONITORING,
         WorkflowAction.ARCHIVE_CASE,
         WorkflowAction.REMATCH,
+        WorkflowAction.RESOLVE_TRANSITION_FINANCIAL,
     },
     WorkflowRole.ZORGAANBIEDER: {
         WorkflowAction.PROVIDER_ACCEPT,
         WorkflowAction.PROVIDER_REJECT,
         WorkflowAction.PROVIDER_REQUEST_INFO,
         WorkflowAction.START_INTAKE,
+        WorkflowAction.ACTIVATE_PLACEMENT_MONITORING,
+        WorkflowAction.SUBMIT_TRANSITION_REQUEST,
     },
     WorkflowRole.ADMIN: {
         WorkflowAction.CREATE_CASE,
+        WorkflowAction.COMPLETE_WIJKTEAM_INTAKE,
+        WorkflowAction.COMPLETE_ZORGVRAAG_ASSESSMENT,
         WorkflowAction.COMPLETE_SUMMARY,
         WorkflowAction.START_MATCHING,
         WorkflowAction.VALIDATE_MATCHING,
         WorkflowAction.SEND_TO_PROVIDER,
+        WorkflowAction.BUDGET_APPROVE,
+        WorkflowAction.BUDGET_REJECT,
+        WorkflowAction.BUDGET_REQUEST_INFO,
+        WorkflowAction.BUDGET_DEFER,
         WorkflowAction.CONFIRM_PLACEMENT,
+        WorkflowAction.ACTIVATE_PLACEMENT_MONITORING,
         WorkflowAction.ARCHIVE_CASE,
         WorkflowAction.REMATCH,
+        WorkflowAction.RESOLVE_TRANSITION_FINANCIAL,
     },
 }
 
@@ -165,22 +208,31 @@ def derive_workflow_state(*, intake: CaseIntakeProcess, assessment: CaseAssessme
         return WorkflowState.ARCHIVED
 
     persisted_state = str(getattr(intake, 'workflow_state', '') or '').strip()
-    if persisted_state in {
+    valid_persisted = {
+        WorkflowState.WIJKTEAM_INTAKE,
+        WorkflowState.ZORGVRAAG_BEOORDELING,
         WorkflowState.DRAFT_CASE,
         WorkflowState.SUMMARY_READY,
         WorkflowState.MATCHING_READY,
         WorkflowState.GEMEENTE_VALIDATED,
         WorkflowState.PROVIDER_REVIEW_PENDING,
         WorkflowState.PROVIDER_ACCEPTED,
+        WorkflowState.BUDGET_REVIEW_PENDING,
         WorkflowState.PROVIDER_REJECTED,
         WorkflowState.PLACEMENT_CONFIRMED,
         WorkflowState.INTAKE_STARTED,
+        WorkflowState.ACTIVE_PLACEMENT,
         WorkflowState.ARCHIVED,
-    } and persisted_state != WorkflowState.DRAFT_CASE:
+    }
+    if persisted_state in valid_persisted and persisted_state != WorkflowState.DRAFT_CASE:
         return persisted_state
 
     if assessment is None:
-        assessment = getattr(intake, 'case_assessment', None)
+        # Reverse OneToOne: getattr(..., default) does not suppress DoesNotExist.
+        try:
+            assessment = intake.case_assessment
+        except CaseAssessment.DoesNotExist:
+            assessment = None
 
     if placement is None:
         placement = (
@@ -191,6 +243,8 @@ def derive_workflow_state(*, intake: CaseIntakeProcess, assessment: CaseAssessme
         )
 
     if intake.status == CaseIntakeProcess.ProcessStatus.COMPLETED and placement and placement.status == PlacementRequest.Status.APPROVED:
+        if persisted_state == WorkflowState.ACTIVE_PLACEMENT:
+            return WorkflowState.ACTIVE_PLACEMENT
         return WorkflowState.INTAKE_STARTED
 
     if placement is not None:
@@ -198,6 +252,9 @@ def derive_workflow_state(*, intake: CaseIntakeProcess, assessment: CaseAssessme
             return WorkflowState.PLACEMENT_CONFIRMED
 
         if placement.provider_response_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+            br = str(getattr(placement, 'budget_review_status', '') or '').strip().upper()
+            if br == PlacementRequest.BudgetReviewStatus.PENDING:
+                return WorkflowState.BUDGET_REVIEW_PENDING
             return WorkflowState.PROVIDER_ACCEPTED
 
         if placement.provider_response_status in {

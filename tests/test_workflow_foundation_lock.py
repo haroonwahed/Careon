@@ -17,7 +17,11 @@ from contracts.models import (
     UserProfile,
 )
 from contracts.decision_engine import evaluate_case
-from contracts.workflow_state_machine import WAITLIST_PROPOSAL_NOTES_MARKER, WorkflowState
+from contracts.workflow_state_machine import (
+    WAITLIST_PROPOSAL_NOTES_MARKER,
+    WorkflowState,
+    derive_workflow_state,
+)
 
 
 User = get_user_model()
@@ -228,6 +232,7 @@ class WorkflowFoundationLockTests(TestCase):
         intake.refresh_from_db()
         self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.COMPLETED)
         self.assertEqual(intake.case_record.case_phase, CareCase.CasePhase.ACTIEF)
+        self.assertEqual(intake.workflow_state, WorkflowState.ACTIVE_PLACEMENT)
 
         transition_events = CaseDecisionLog.objects.filter(
             case_id=intake.pk,
@@ -240,7 +245,8 @@ class WorkflowFoundationLockTests(TestCase):
         self.assertIn('provider_accept', actions)
         self.assertIn('confirm_placement', actions)
         self.assertIn('start_intake', actions)
-        self.assertGreaterEqual(transition_events.count(), 5)
+        self.assertIn('activate_placement_monitoring', actions)
+        self.assertGreaterEqual(transition_events.count(), 6)
         self.assertTrue(all(actor_id is not None for actor_id in transition_events.values_list('actor_id', flat=True)))
 
     def test_matching_action_does_not_auto_finalize_placement_or_intake(self):
@@ -462,3 +468,20 @@ class WorkflowFoundationLockTests(TestCase):
             },
         )
         self.assertEqual(response.status_code, 404)
+
+    def test_derive_workflow_state_without_case_assessment_does_not_crash(self):
+        """Empty persisted workflow_state + no CaseAssessment must not raise (SPA list / Regiekamer)."""
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Intake zonder beoordeling',
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=10),
+            case_coordinator=self.gemeente_user,
+        )
+        intake.ensure_case_record(created_by=self.gemeente_user)
+        self.assertFalse(CaseAssessment.objects.filter(due_diligence_process=intake).exists())
+        state = derive_workflow_state(intake=intake)
+        self.assertEqual(state, WorkflowState.DRAFT_CASE)
