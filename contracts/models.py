@@ -112,6 +112,10 @@ class UserProfile(models.Model):
         CLIENT = 'CLIENT', 'Cliënt'
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    session_revocation_counter = models.PositiveIntegerField(
+        default=0,
+        help_text='Incremented to invalidate prior sessions after security-sensitive changes.',
+    )
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.ASSOCIATE)
     phone = models.CharField(max_length=20, blank=True)
     bar_number = models.CharField(max_length=50, blank=True)
