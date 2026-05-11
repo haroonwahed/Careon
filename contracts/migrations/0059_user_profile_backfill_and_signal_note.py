@@ -3,34 +3,46 @@
 from django.db import migrations
 
 
+def _pg_userprofile_repair_notnull_defaults(cursor):
+    """Columns that may exist on managed Postgres (e.g. Supabase) before Django migration state."""
+    repairs = (
+        ('session_revocation_counter', 'session_revocation_counter = 0', '0'),
+        ('mfa_enabled', 'mfa_enabled = false', 'false'),
+    )
+    for column_name, set_clause, default_literal in repairs:
+        cursor.execute(
+            """
+            SELECT 1 FROM information_schema.columns
+            WHERE table_schema = 'public'
+              AND table_name = 'contracts_userprofile'
+              AND column_name = %s
+            """,
+            [column_name],
+        )
+        if not cursor.fetchone():
+            continue
+        cursor.execute(
+            f"""
+            UPDATE contracts_userprofile
+            SET {set_clause}
+            WHERE {column_name} IS NULL
+            """
+        )
+        cursor.execute(
+            f"""
+            ALTER TABLE contracts_userprofile
+                ALTER COLUMN {column_name} SET DEFAULT {default_literal}
+            """
+        )
+
+
 def forwards(apps, schema_editor):
     connection = schema_editor.connection
     # Some production Postgres DBs gained NOT NULL columns before Django state included them;
     # ORM inserts omit unknown columns and Postgres rejects NULL. (information_schema is PG-only.)
     if connection.vendor == 'postgresql':
         with connection.cursor() as cursor:
-            cursor.execute(
-                """
-                SELECT 1 FROM information_schema.columns
-                WHERE table_schema = 'public'
-                  AND table_name = 'contracts_userprofile'
-                  AND column_name = 'session_revocation_counter'
-                """
-            )
-            if cursor.fetchone():
-                cursor.execute(
-                    """
-                    UPDATE contracts_userprofile
-                    SET session_revocation_counter = 0
-                    WHERE session_revocation_counter IS NULL
-                    """
-                )
-                cursor.execute(
-                    """
-                    ALTER TABLE contracts_userprofile
-                        ALTER COLUMN session_revocation_counter SET DEFAULT 0
-                    """
-                )
+            _pg_userprofile_repair_notnull_defaults(cursor)
 
     User = apps.get_model('auth', 'User')
     UserProfile = apps.get_model('contracts', 'UserProfile')
