@@ -5,6 +5,16 @@ export const LOGIN_URL = "/login/";
 export const REGISTER_URL = "/register/";
 export const LOGOUT_URL = "/logout/";
 
+/** Paths that must be served as Django HTML (auth), not the React demo shell. */
+const AUTH_DOCUMENT_PATHS = new Set(
+  [LOGIN_URL, REGISTER_URL, LOGOUT_URL].map((u) => u.replace(/\/+$/, "") || "/"),
+);
+
+export function isAuthDocumentPath(pathname: string): boolean {
+  const p = pathname.replace(/\/+$/, "") || "/";
+  return AUTH_DOCUMENT_PATHS.has(p);
+}
+
 export const CARE_PATHS = {
   REGIEKAMER: "/regiekamer",
   MATCHING: "/care/matching",

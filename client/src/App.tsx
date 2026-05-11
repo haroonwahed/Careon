@@ -1,7 +1,23 @@
 import { useEffect, useState } from "react";
 import { MultiTenantDemo } from "./components/examples/MultiTenantDemo";
 import { PublicLandingPage } from "./components/public/PublicLandingPage";
-import { PUBLIC_LANDING_URL } from "./lib/routes";
+import { isAuthDocumentPath, PUBLIC_LANDING_URL } from "./lib/routes";
+
+/** Leave the Vite SPA and load Django’s HTML for login/register/logout (session + forms). */
+function AuthDocumentRedirect() {
+  useEffect(() => {
+    const djangoOrigin =
+      import.meta.env.VITE_DJANGO_DEV_ORIGIN ??
+      (import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin);
+    const dest = `${djangoOrigin.replace(/\/+$/, "")}${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.replace(dest);
+  }, []);
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-8 text-foreground">
+      <p className="text-sm text-muted-foreground">Doorverbinden naar aanmelden…</p>
+    </div>
+  );
+}
 
 export default function App() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -21,6 +37,7 @@ export default function App() {
   });
   const [isDashboardView] = useState(() => new URLSearchParams(window.location.search).get("view") === "dashboard");
   const [isPublicRoute] = useState(() => window.location.pathname === PUBLIC_LANDING_URL);
+  const [isAuthRoute] = useState(() => isAuthDocumentPath(window.location.pathname));
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);
@@ -39,6 +56,14 @@ export default function App() {
         <PublicLandingPage
           onThemeToggle={() => setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark")}
         />
+      </div>
+    );
+  }
+
+  if (isAuthRoute) {
+    return (
+      <div className={theme === "dark" ? "dark" : ""}>
+        <AuthDocumentRedirect />
       </div>
     );
   }
