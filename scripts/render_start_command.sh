@@ -31,7 +31,14 @@ fi
 
 python scripts/render_startup_checks.py
 echo "[render] Running migrate (production DB)…"
-python manage.py migrate --noinput --settings=config.settings_production || exit 1
+# Unbuffered + higher verbosity so Render logs show tracebacks (stdout is often not a TTY).
+# If migrate fails only on deploy: Supabase transaction pooler (port 6543) can break DDL;
+# use the direct DB URL (port 5432, host db.<project>.supabase.co) for DATABASE_URL or a
+# dedicated migrate step — see https://supabase.com/docs/guides/database/connecting-to-postgres
+if ! PYTHONUNBUFFERED=1 python manage.py migrate --noinput --verbosity 2 --settings=config.settings_production; then
+  echo "[render] ERROR: migrate failed (exit $?). Scroll up for Django traceback." >&2
+  exit 1
+fi
 echo "[render] Migrate finished; starting gunicorn on port ${PORT:-?}"
 
 WORKERS="${GUNICORN_WORKERS:-${WEB_CONCURRENCY:-2}}"
