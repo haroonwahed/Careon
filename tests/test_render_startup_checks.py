@@ -1,10 +1,9 @@
 from unittest import TestCase
 
-import pytest
-
 from scripts.render_startup_checks import validate_database_url
 
-pytestmark = pytest.mark.no_database
+# Do not import pytest here: Render build runs `manage.py test` with runtime-only
+# deps (no pytest). DB opt-out for pytest is handled in tests/conftest.py by module name.
 
 
 class RenderStartupChecksTests(TestCase):
