@@ -135,6 +135,13 @@ CSRF_TRUSTED_ORIGINS = _csv_env(
         'https://localhost:3000',
         'http://127.0.0.1:3000',
         'https://127.0.0.1:3000',
+        'http://[::1]:3000',
+        'https://[::1]:3000',
+        # Vite proxy may forward with Django as Host; allow same-origin checks when needed.
+        'http://127.0.0.1:8000',
+        'https://127.0.0.1:8000',
+        'http://localhost:8000',
+        'https://localhost:8000',
         'https://*.replit.dev',
         'https://*.repl.co',
         'https://*.riker.replit.dev',

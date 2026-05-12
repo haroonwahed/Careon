@@ -181,6 +181,13 @@ export function TopBar({
 
   const RoleIcon = getRoleIcon(currentContext.type);
 
+  const pilotContextIds = useMemo(
+    () => new Set(availableContexts.map((context) => context.id)),
+    [availableContexts],
+  );
+  /** Session-backed org (e.g. auto-provisioned "test1's Regie") is not a pilot chip — show it explicitly above the switch list. */
+  const showActiveWorkspaceOutsidePilot = !pilotContextIds.has(currentContext.id);
+
   return (
     <header data-testid="care-top-bar" className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
       
@@ -228,6 +235,41 @@ export function TopBar({
               {/* Dropdown */}
               <div className="absolute top-full left-0 mt-2 w-72 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="space-y-1">
+                  {showActiveWorkspaceOutsidePilot ? (
+                    <>
+                      <div className="px-3 pt-1 pb-0.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Actieve organisatie
+                        </p>
+                      </div>
+                      <div
+                        className="flex w-full items-center gap-3 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2.5 text-left"
+                        role="status"
+                        aria-label={`Actieve werkruimte: ${currentContext.name}`}
+                      >
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10">
+                          <RoleIcon size={16} className="text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+                            {getRoleLabel(currentContext.type)}
+                          </p>
+                          <p className="truncate text-sm font-bold text-primary">
+                            {currentContext.name}
+                          </p>
+                          {currentContext.subtitle ? (
+                            <p className="truncate text-xs text-muted-foreground">{currentContext.subtitle}</p>
+                          ) : null}
+                        </div>
+                        <div className="h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden />
+                      </div>
+                      <div className="px-3 pt-2 pb-0.5">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Pilotwerkruimten
+                        </p>
+                      </div>
+                    </>
+                  ) : null}
                   {availableContexts.map((context) => {
                     const Icon = getRoleIcon(context.type);
                     const isActive = context.id === currentContext.id;

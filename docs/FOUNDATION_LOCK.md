@@ -49,7 +49,8 @@ Additional workflow states: `WIJKTEAM_INTAKE`, `ZORGVRAAG_BEOORDELING`. Wijkteam
 ## Actor ownership (technical roles)
 
 > Product language centers the **Aanmelder**; technical enforcement still uses `WorkflowRole` until fine-grained actor profiles ship.  
-> **Mapping (aanmelder ↔ rollen):** see `docs/AANMELDER_WORKFLOWROLE_MAPPING.md`.
+> **Mapping (aanmelder ↔ rollen):** see `docs/AANMELDER_WORKFLOWROLE_MAPPING.md`.  
+> **Productmetadata:** `CaseIntakeProcess.aanmelder_actor_profile` (gezet bij intake-create) is **niet** voor autorisatie en **niet** in SPA case-JSON; alleen persistentie + admin/exports.
 
 - **gemeente** (`WorkflowRole.GEMEENTE`)
   - create_case
@@ -61,6 +62,7 @@ Additional workflow states: `WIJKTEAM_INTAKE`, `ZORGVRAAG_BEOORDELING`. Wijkteam
   - rematch
   - budget decisions (where applicable)
 - **zorgaanbieder** (`WorkflowRole.ZORGAANBIEDER`)
+  - create_case (zelfde intake-create endpoint als gemeente; keten blijft gemeente-validatie vóór toewijzing)
   - provider_accept
   - provider_reject
   - provider_request_info

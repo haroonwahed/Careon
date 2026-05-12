@@ -41,6 +41,7 @@ class SeedDemoDataTests(TestCase):
         self.assertTrue(can_role_execute_action(WorkflowRole.GEMEENTE, WorkflowAction.VALIDATE_MATCHING))
         self.assertFalse(can_role_execute_action(WorkflowRole.GEMEENTE, WorkflowAction.PROVIDER_ACCEPT))
         self.assertFalse(can_role_execute_action(WorkflowRole.GEMEENTE, WorkflowAction.START_INTAKE))
+        self.assertTrue(can_role_execute_action(WorkflowRole.ZORGAANBIEDER, WorkflowAction.CREATE_CASE))
 
     def test_demo_cases_and_providers_are_seeded(self):
         organization = Organization.objects.get(slug=DEMO_ORG_SLUG)

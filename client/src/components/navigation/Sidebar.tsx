@@ -7,7 +7,7 @@
  * 🟡 Admin — volledige keten + sturing
  */
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   LayoutDashboard,
   FileText,
@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ClipboardList,
+  Plus,
   Users,
   FileCheck,
   MapPinned,
@@ -184,6 +185,13 @@ const zorgaanbiederNavigation: NavSection[] = [
         label: "Intake",
         icon: ClipboardList,
         href: "/intake",
+        surfaceStatus: "ACTIVE_PRODUCT",
+      },
+      {
+        id: "nieuwe-casus",
+        label: "Nieuwe aanvraag",
+        icon: Plus,
+        href: "/casussen/nieuw",
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
@@ -405,7 +413,18 @@ export function Sidebar({
   profileInitials = "?",
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
-  
+  const asideRef = useRef<HTMLElement>(null);
+
+  /** Keep the active route visible: nav scroll position persists across page changes, so DOORSTROOM can sit above the fold while the user is on Coördinatie. */
+  useEffect(() => {
+    const root = asideRef.current;
+    if (!root) {
+      return;
+    }
+    const active = root.querySelector<HTMLElement>(`[data-sidebar-item-id="${activeItemId}"]`);
+    active?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [activeItemId]);
+
   const navigationStructure = getNavigationForRole(role);
   const gemeenteBottomSignalItem: NavItem | null = role === "gemeente"
     ? {
@@ -419,6 +438,7 @@ export function Sidebar({
 
   return (
     <aside
+      ref={asideRef}
       data-testid="care-sidebar"
       className={`
         h-screen bg-card border-r border-border
@@ -479,6 +499,8 @@ export function Sidebar({
                 return (
                   <button
                     key={item.id}
+                    type="button"
+                    data-sidebar-item-id={item.id}
                     onClick={() => onNavigate?.(item.id, item.href || "#")}
                     className={`
                       w-full group relative
@@ -572,6 +594,8 @@ export function Sidebar({
             </div>
           )}
           <button
+            type="button"
+            data-sidebar-item-id={gemeenteBottomSignalItem.id}
             onClick={() => onNavigate?.(gemeenteBottomSignalItem.id, gemeenteBottomSignalItem.href || "#")}
             className={`
               w-full group relative

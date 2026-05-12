@@ -121,22 +121,26 @@ test.describe("Care list visual regression (SPA)", () => {
     }
   });
 
-  test("Casussen: werklijst-tabel + compacte rijen", async ({ page }) => {
+  test("Casussen: operatieve werkrij (queue) + optionele dumps", async ({ page }) => {
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
-    await maybeDump(page, "casussen-desktop");
+    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible({ timeout: 30_000 });
+    const worklist = page.getByTestId("worklist");
+    await expect(worklist).toHaveAttribute("data-layout", "queue");
+    await maybeDump(page, "casussen-werkvoorraad-queue-desktop");
 
-    const rows = page.locator('[data-testid="worklist"] [data-care-work-row]');
+    const rows = worklist.locator("[data-care-work-row]");
     await expect(rows.first()).toBeVisible({ timeout: 30_000 });
-    const heights = await rows.evaluateAll((els) => els.slice(0, 10).map((el) => el.getBoundingClientRect().height));
-    expect(maxMinusMin(heights)).toBeLessThan(36);
+    const heights = await rows.evaluateAll((els) => els.slice(0, 6).map((el) => el.getBoundingClientRect().height));
+    expect(maxMinusMin(heights)).toBeLessThan(220);
+
+    await expect(page.getByTestId("worklist-pagination-hint")).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 900 });
-    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible({ timeout: 30_000 });
-    const firstRow = page.locator('[data-testid="worklist"] [data-care-work-row]').first();
+    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible({ timeout: 30_000 });
+    const firstRow = worklist.locator("[data-care-work-row]").first();
     await expect(firstRow).toBeVisible({ timeout: 30_000 });
     await expect(firstRow.locator('[data-component="care-meta-chip"]').first()).toBeVisible();
-    await maybeDump(page, "casussen-mobile");
+    await maybeDump(page, "casussen-werkvoorraad-queue-mobile");
     await page.setViewportSize({ width: 1280, height: 900 });
   });
 
@@ -231,7 +235,7 @@ test.describe("Care list visual regression (SPA)", () => {
     await page.getByRole("button", { name: "Volgende" }).click();
     await expect(page.getByRole("heading", { name: "Randvoorwaarden" })).toBeVisible();
 
-    await page.getByRole("button", { name: "Casus aanmaken" }).click();
+    await page.getByRole("button", { name: "Casus aanmaken" }).nth(0).click();
     await page.waitForURL(/\/care\/cases\/99\/?$/, { timeout: 30_000 });
   });
 
@@ -241,8 +245,8 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(page.getByPlaceholder(/Zoek casus, naam of type/i)).toBeVisible();
 
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /^Casussen$/i })).toBeVisible();
-    await expect(page.getByPlaceholder(/Zoek casussen, cliënten, aanbieders/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible();
+    await expect(page.getByPlaceholder(/Zoek aanvragen, regio's, aanbieders/i)).toBeVisible();
 
     await goSidebar(page, "Matching");
     await expect(page.getByRole("heading", { name: /^Matching$/i })).toBeVisible();

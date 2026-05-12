@@ -1,3 +1,7 @@
+# macOS / editor cruft (never commit)
+.DS_Store
+**/.DS_Store
+
 __pycache__/
 *.py[cod]
 *.so
@@ -51,6 +55,11 @@ client/*-visual-check.png
 
 # Disposable local debug scripts and screenshots (must never be committed)
 client/.tmp-*
+client/tmp_step3_screenshot.mjs
+client/tmp_step3.png
+
+# Local design kit tree (zip is already covered by *.zip; keep folder out of git)
+Blueprint and design/
 
 # Local rehearsal database (binary; never commit)
 db_rehearsal.sqlite3

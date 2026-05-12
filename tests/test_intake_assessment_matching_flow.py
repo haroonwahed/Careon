@@ -244,6 +244,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(body['case_id'], str(intake.contract_id))
         self.assertEqual(body['redirect_url'], f"/care/cases/{intake.contract_id}/")
         self.assertEqual(intake.contract.title, intake.title)
+        self.assertEqual(intake.aanmelder_actor_profile, CaseIntakeProcess.AanmelderActorProfile.ADMIN)
         self.assertEqual(intake.contract.case_phase, CareCase.CasePhase.INTAKE)
         self.assertEqual(intake.contract.status, CareCase.Status.PENDING)
         self.assertEqual(intake.contract.service_region, region.region_name)

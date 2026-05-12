@@ -34,6 +34,7 @@ import { tokens } from "../../design/tokens";
 import {
   CARE_PATHS,
   matchCareCasesNumericDetailPath,
+  redirectIfAuthDocumentPath,
   SPA_DASHBOARD_URL,
   toCareCaseDetail,
 } from "../../lib/routes";
@@ -155,7 +156,7 @@ const GEMEENTE_PAGES: readonly Page[] = [
   "instellingen",
 ];
 
-const ZORGAANBIEDER_PAGES: readonly Page[] = ["intake", "mijn-casussen", "beoordelingen", "documenten"];
+const ZORGAANBIEDER_PAGES: readonly Page[] = ["intake", "mijn-casussen", "nieuwe-casus", "beoordelingen", "documenten"];
 
 const ADMIN_PAGES: readonly Page[] = [
   "regiekamer",
@@ -292,6 +293,10 @@ interface MultiTenantDemoProps {
 
 export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) {
   const { me, refetch: refetchMe } = useCurrentUser();
+  /** If the shell ever mounts on `/login` etc. (missed redirect), leave immediately for Django auth HTML. */
+  useLayoutEffect(() => {
+    redirectIfAuthDocumentPath();
+  }, []);
   const [currentContext, setCurrentContext] = useState<Context>(availableContexts[0]);
   const [currentPage, setCurrentPage] = useState<Page>(() =>
     normalizePageForRole(
@@ -336,8 +341,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     };
   }, [me]);
 
-  /** Alleen gemeente en admin mogen een nieuwe casus starten vanuit shell (niet zorgaanbieder). */
-  const workspaceAllowsNewCasus = currentContext.type === "gemeente" || currentContext.type === "admin";
+  /** Gemeente, zorgaanbieder en admin kunnen een nieuwe casus (aanmelding) starten — zelfde API, andere ketenverwachting. */
+  const workspaceAllowsNewCasus =
+    currentContext.type === "gemeente" || currentContext.type === "admin" || currentContext.type === "zorgaanbieder";
 
   const goToPage = useCallback(
     (page: Page) => {
@@ -576,7 +582,13 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       {/* SIDEBAR */}
       <Sidebar
         role={currentContext.type}
-        activeItemId={currentPage === "nieuwe-casus" ? "casussen" : currentPage}
+        activeItemId={
+          currentPage === "nieuwe-casus"
+            ? currentContext.type === "zorgaanbieder"
+              ? "nieuwe-casus"
+              : "casussen"
+            : currentPage
+        }
         onNavigate={handleNavigate}
         badgeOverrides={
           currentContext.type === "gemeente" || currentContext.type === "admin" ? queueCounts : undefined
@@ -829,8 +841,23 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <WorkloadPage
                     onCaseClick={handleCaseClick}
                     role={currentContext.type}
+                    canCreateCase={workspaceAllowsNewCasus}
+                    onCreateCase={() => {
+                      goToPage("nieuwe-casus");
+                    }}
                     onNavigateToWorkflow={(page) => {
                       goToPage(page as Page);
+                    }}
+                  />
+                )}
+
+                {currentPage === "nieuwe-casus" && (
+                  <NieuweCasusPage
+                    onCancel={() => {
+                      goToPage("mijn-casussen");
+                    }}
+                    onCreated={() => {
+                      goToPage("mijn-casussen");
                     }}
                   />
                 )}

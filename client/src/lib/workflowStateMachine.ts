@@ -76,10 +76,12 @@ const roleActions: Record<CanonicalWorkflowRole, Set<CanonicalWorkflowAction>> =
     "resolve_transition_financial",
   ]),
   zorgaanbieder: new Set([
+    "create_case",
     "provider_accept",
     "provider_reject",
     "provider_request_info",
     "start_intake",
+    "activate_placement_monitoring",
     "submit_transition_request",
   ]),
   admin: new Set([

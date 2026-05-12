@@ -1,4 +1,5 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
@@ -275,13 +276,29 @@ beforeEach(() => {
 
 describe("Care accessibility smoke: core pages", () => {
   it("Nieuwe casus wizard", async () => {
+    const user = userEvent.setup();
     const { container } = renderWithA11y(<NieuweCasusPage />);
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Stap 1: Basis/i })).toHaveAttribute("aria-current", "step");
     expect(screen.getByRole("progressbar", { name: "Voortgang nieuwe casus" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Bronregistratie koppelen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Basis – Koppel bronregistratie" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toelichting" })).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: "Volgende stap" })).toBeInTheDocument();
+    await user.selectOptions(screen.getByLabelText("Bronregistratie *"), "jeugdplatform");
+    await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
+    await user.click(screen.getByRole("button", { name: "Volgende stap" }));
+    expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Terug" }).length).toBeGreaterThan(1);
+    expect(screen.getByRole("button", { name: "Vorige" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Volgende" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Waarom deze vragen?" })).toHaveAttribute("aria-expanded", "false");
+    await user.selectOptions(screen.getByLabelText("Hoofdcategorie *"), "ggz");
+    await user.click(within(screen.getByRole("radiogroup", { name: "Complexiteit" })).getByRole("radio", { name: "Midden" }));
+    await user.click(within(screen.getByRole("radiogroup", { name: "Urgentie" })).getByRole("radio", { name: "Midden" }));
+    await user.click(screen.getByRole("button", { name: "Volgende" }));
+    expect(screen.getByRole("heading", { name: "Regio en zoekgebied" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Samenvatting voor verzending" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Casus aanmaken" }).length).toBeGreaterThan(1);
     await expectNoA11yViolations(container, "Nieuwe casus");
   });
 

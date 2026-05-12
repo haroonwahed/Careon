@@ -39,9 +39,11 @@ Run these checks in the browser or with `curl`.
 
 ### Required URLs
 
+Pilot/staging origin documented for smoke checks: **`https://careon-web.onrender.com`**. For production verification, substitute your production origin (same path checks).
+
 - `/`
-- `/static/spa/?view=dashboard`
 - `/care/`
+- SPA shell: **`/?view=dashboard`** (preferred) or **`/static/spa/index.html`** — note **`/static/spa/?view=dashboard`** can **404** on some production static configurations even when the app is healthy.
 
 ### Expected result
 
@@ -126,6 +128,7 @@ Add the following to the drill log and rollout sheet:
 
 Related docs:
 
+- [`docs/GO_LIVE_ONE_PAGE_RUNBOOK.md`](GO_LIVE_ONE_PAGE_RUNBOOK.md) — short ordered steps + helper scripts
 - [`docs/RELEASE_ROLLOUT_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/RELEASE_ROLLOUT_CHECKLIST.md)
 - [`docs/RELEASE_EXECUTION_SHEET_2026-04-24.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/RELEASE_EXECUTION_SHEET_2026-04-24.md)
 - [`docs/DRILL_LOG.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/DRILL_LOG.md)

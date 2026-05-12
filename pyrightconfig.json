@@ -3,9 +3,7 @@
   "venv": ".venv",
   "pythonVersion": "3.15",
   "exclude": [
-    "archive",
-    "Blueprint and design",
-    "client/src/components/legacy_archive"
+    "Blueprint and design"
   ],
   "typeCheckingMode": "basic",
   "reportMissingModuleSource": "none",

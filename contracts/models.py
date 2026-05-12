@@ -2002,6 +2002,18 @@ class CaseIntakeProcess(models.Model):
         STANDARD = 'STANDARD', 'Standaard casus'
         WIJKTEAM = 'WIJKTEAM', 'Wijkteam intake'
 
+    class AanmelderActorProfile(models.TextChoices):
+        """
+        Product-/kanaalclassificatie voor wie de aanmelding initieerde.
+        Niet gebruikt voor autorisatie — blijft op WorkflowRole (gemeente / zorgaanbieder / admin).
+        """
+
+        ONBEKEND = 'ONBEKEND', 'Onbekend / legacy'
+        WIJKTEAM = 'WIJKTEAM', 'Wijkteam (instroom WIJKTEAM)'
+        GEMEENTE_AMBTELIJK = 'GEMEENTE_AMBTELIJK', 'Gemeente-account (standaardroute)'
+        ZORGAANBIEDER_ORG = 'ZORGAANBIEDER_ORG', 'Zorgaanbieder-organisatie'
+        ADMIN = 'ADMIN', 'Platformbeheer'
+
     entry_route = models.CharField(
         max_length=20,
         choices=EntryRoute.choices,
@@ -2009,7 +2021,18 @@ class CaseIntakeProcess(models.Model):
         verbose_name='Instroomroute',
         help_text='Wijkteam: familie kan worden geregistreerd vóór externe zorg.',
     )
-    
+    aanmelder_actor_profile = models.CharField(
+        max_length=32,
+        choices=AanmelderActorProfile.choices,
+        default=AanmelderActorProfile.ONBEKEND,
+        db_index=True,
+        verbose_name='Aanmelder-profiel (product)',
+        help_text=(
+            'Niet-autoriserende classificatie voor rapportage/audit. '
+            'Rechten en workflow blijven gekoppeld aan WorkflowRole op de gebruiker.'
+        ),
+    )
+
     # Case coordination
     case_coordinator = models.ForeignKey(
         User,

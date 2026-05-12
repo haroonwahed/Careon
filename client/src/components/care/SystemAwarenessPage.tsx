@@ -1413,7 +1413,7 @@ export function SystemAwarenessPage({
             }
           />
           <CareSectionBody>
-            <CareWorkListCard className="overflow-x-auto"
+            <CareWorkListCard
               header={(
                 <div className="hidden min-w-[980px] gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
                   <span>Prioriteit</span>

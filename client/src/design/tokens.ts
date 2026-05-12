@@ -1,6 +1,6 @@
 export const tokens = {
   layout: {
-    pageMaxWidth: "1280px",
+    pageMaxWidth: "1536px",
     contentMeasure: "48rem",
     contentMeasureNarrow: "40rem",
     contentMeasureTight: "20rem",

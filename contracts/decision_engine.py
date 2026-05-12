@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
 import math
 import re
 from typing import Any, Iterable
+
+logger = logging.getLogger(__name__)
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -383,7 +386,11 @@ def build_regiekamer_decision_overview(
     organization: Any | None = None,
 ) -> dict[str, Any]:
     if actor_role is None and actor is not None:
-        actor_role = resolve_actor_role(user=actor, organization=organization)
+        try:
+            actor_role = resolve_actor_role(user=actor, organization=organization)
+        except Exception:
+            logger.exception("regiekamer_resolve_actor_role_failed")
+            actor_role = WorkflowRole.GEMEENTE
     actor_role = actor_role or WorkflowRole.GEMEENTE
 
     totals = {
@@ -397,38 +404,68 @@ def build_regiekamer_decision_overview(
     items: list[dict[str, Any]] = []
 
     for case in cases:
-        evaluation = evaluate_case(case, actor=actor, actor_role=actor_role)
+        try:
+            evaluation = evaluate_case(case, actor=actor, actor_role=actor_role)
 
-        item = _build_regiekamer_overview_item(case=case, evaluation=evaluation)
-        items.append(item)
+            item = _build_regiekamer_overview_item(case=case, evaluation=evaluation)
+            items.append(item)
 
-        totals["active_cases"] += 1
-        totals["critical_blockers"] += int(any(str(blocker.get("severity") or "").lower() == "critical" for blocker in (evaluation.get("blockers") or [])))
-        totals["high_priority_alerts"] += int(_has_any_alert_severity(evaluation.get("alerts") or [], {"high", "critical"}))
-        totals["provider_sla_breaches"] += int(_has_item_code(evaluation.get("alerts") or [], {"PROVIDER_REVIEW_PENDING_SLA"}))
-        totals["repeated_rejections"] += int(
-            _has_item_code(evaluation.get("risks") or [], {"REPEATED_PROVIDER_REJECTIONS"})
-            or _has_item_code(evaluation.get("alerts") or [], _REJECTION_CODES)
+            totals["active_cases"] += 1
+            totals["critical_blockers"] += int(any(str(blocker.get("severity") or "").lower() == "critical" for blocker in (evaluation.get("blockers") or [])))
+            totals["high_priority_alerts"] += int(_has_any_alert_severity(evaluation.get("alerts") or [], {"high", "critical"}))
+            totals["provider_sla_breaches"] += int(_has_item_code(evaluation.get("alerts") or [], {"PROVIDER_REVIEW_PENDING_SLA"}))
+            totals["repeated_rejections"] += int(
+                _has_item_code(evaluation.get("risks") or [], {"REPEATED_PROVIDER_REJECTIONS"})
+                or _has_item_code(evaluation.get("alerts") or [], _REJECTION_CODES)
+            )
+            totals["intake_delays"] += int(
+                _has_item_code(evaluation.get("alerts") or [], _INTAKE_DELAY_CODES)
+                or _has_item_code(evaluation.get("risks") or [], {"INTAKE_DELAYED"})
+            )
+        except Exception:
+            logger.exception(
+                "regiekamer_overview_item_skipped case_id=%s",
+                getattr(case, "pk", "?"),
+            )
+
+    def _regiekamer_item_sort_key(item: dict[str, Any]) -> tuple[int, float, int]:
+        """All tuple elements must be real numbers: None-valued keys break Python 3 sort."""
+        ps = item.get("priority_score")
+        try:
+            ps_i = int(ps) if ps is not None else 0
+        except (TypeError, ValueError):
+            ps_i = 0
+        hrs = item.get("hours_in_current_state")
+        try:
+            hrs_f = float(hrs) if hrs is not None else 0.0
+        except (TypeError, ValueError):
+            hrs_f = 0.0
+        cid = item.get("case_id")
+        try:
+            cid_i = int(cid) if cid is not None else 0
+        except (TypeError, ValueError):
+            cid_i = 0
+        return (ps_i, hrs_f, cid_i)
+
+    try:
+        items.sort(key=_regiekamer_item_sort_key, reverse=True)
+    except Exception:
+        logger.exception("regiekamer_overview_sort_failed")
+
+    try:
+        governance_queues = _build_governance_v12_queues(organization=organization)
+    except Exception:
+        logger.exception(
+            "regiekamer_governance_queues_failed org_id=%s",
+            getattr(organization, "pk", None),
         )
-        totals["intake_delays"] += int(
-            _has_item_code(evaluation.get("alerts") or [], _INTAKE_DELAY_CODES)
-            or _has_item_code(evaluation.get("risks") or [], {"INTAKE_DELAYED"})
-        )
-
-    items.sort(
-        key=lambda item: (
-            item.get("priority_score", 0),
-            item.get("hours_in_current_state") or 0,
-            item.get("case_id") or 0,
-        ),
-        reverse=True,
-    )
+        governance_queues = {}
 
     return {
         "generated_at": timezone.now().isoformat(),
         "totals": totals,
         "items": items,
-        "governance_queues": _build_governance_v12_queues(organization=organization),
+        "governance_queues": governance_queues,
     }
 
 
@@ -1877,7 +1914,10 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         latest_rejection = rejection_qs.first()
         if latest_rejection is not None:
             if latest_rejection.provider_response_reason_code and latest_rejection.provider_response_reason_code != "NONE":
-                latest_rejection_reason = latest_rejection.get_provider_response_reason_code_display()
+                try:
+                    latest_rejection_reason = latest_rejection.get_provider_response_reason_code_display()
+                except Exception:
+                    latest_rejection_reason = _clean(getattr(latest_rejection, "provider_response_reason_code", ""))
             else:
                 latest_rejection_reason = _clean(latest_rejection.provider_response_notes)
 

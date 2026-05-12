@@ -85,7 +85,10 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_RISKS");
     expect(r.secondaryAction?.actionKey).toBe("SLA_PROVIDER_REMINDERS");
     expect(r.panel.uiMode).toBe("intervention");
-    expect(r.reasons).toEqual(["1 aanvraag met verhoogd risico"]);
+    expect(r.title).toBe("Aanvraag met verhoogd risico");
+    expect(r.description).toBe("");
+    expect(r.reasons).toEqual([]);
+    expect(formatRegiekamerDominantDescription(r)).toBe("");
   });
 
   it("does not surface risks below threshold", () => {

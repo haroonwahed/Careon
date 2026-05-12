@@ -108,22 +108,23 @@ describe("NieuweCasusPage", () => {
     render(<NieuweCasusPage />);
 
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Terug naar aanvragen" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Toelichting" }));
     expect(screen.getByText("Vul alleen kerngegevens in; details blijven in het bronsysteem.")).toBeInTheDocument();
-    // Privacy framing was promoted to a dedicated ribbon at the top of step 1
-    // so the user encounters it before any input field.
     const privacyRibbon = screen.getByTestId("nieuwe-casus-privacy-ribbon");
-    expect(privacyRibbon).toHaveTextContent(/CareOn registreert alleen het minimum voor regie/i);
-    expect(privacyRibbon).toHaveTextContent(/Bronregistratie, referentie, regio en zorgvraag zijn genoeg/i);
+    expect(within(privacyRibbon).getByText("We koppelen deze casus aan een bronregistratie en bepalen de basiscontext.")).toBeInTheDocument();
+    expect(within(privacyRibbon).getByText("Vul alleen de minimale gegevens in om te starten. Aanvullende informatie volgt in de volgende stappen.")).toBeInTheDocument();
+    expect(privacyRibbon).toHaveTextContent(/Persoonsgegevens blijven afgeschermd tot formele intake of koppeling/i);
+    expect(privacyRibbon).toHaveTextContent(/Meer over privacy en zichtbaarheid/i);
     await user.click(screen.getByRole("button", { name: "Waarom?" }));
-    expect(screen.getByText("Koppel de bronregistratie en minimale referentie voor ketenregie.")).toBeInTheDocument();
+    expect(screen.getByText("Koppel de juiste bronregistratie en registreer de basiscontext.")).toBeInTheDocument();
   });
 
   it("requires a source registration before advancing the intake flow", async () => {
     const user = userEvent.setup();
     render(<NieuweCasusPage />);
 
-    const nextButton = await screen.findByRole("button", { name: "Volgende" });
+    const nextButton = await screen.findByRole("button", { name: "Volgende stap" });
     await user.click(nextButton);
     expect(
       screen.getByText("Kies bronregistratie, bronreferentie (of handmatige regiecasus), startdatum en deadline matching."),
@@ -131,7 +132,7 @@ describe("NieuweCasusPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Bronregistratie *"), "jeugdplatform");
     await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
-    await user.click(screen.getByRole("button", { name: "Volgende" }));
+    await user.click(screen.getByRole("button", { name: "Volgende stap" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
   });
 
@@ -142,7 +143,7 @@ describe("NieuweCasusPage", () => {
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
     await user.selectOptions(await screen.findByLabelText("Bronregistratie *"), "jeugdplatform");
     await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
-    await user.click(screen.getByRole("button", { name: "Volgende" }));
+    await user.click(screen.getByRole("button", { name: "Volgende stap" }));
 
     const complexityGroup = screen.getByRole("radiogroup", { name: "Complexiteit" });
     const mediumComplexity = within(complexityGroup).getByRole("radio", { name: "Midden" });
@@ -154,6 +155,10 @@ describe("NieuweCasusPage", () => {
     expect(guidanceToggle).toHaveAttribute("aria-controls", "nieuw-casus-page-guidance");
     await user.click(guidanceToggle);
     expect(screen.getByText("Vul alleen kerngegevens in; details blijven in het bronsysteem.")).toBeVisible();
+    expect(screen.getAllByRole("button", { name: "Terug" }).length).toBeGreaterThan(1);
+    expect(screen.getByRole("button", { name: "Vorige" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Volgende" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Waarom deze vragen?" })).toHaveAttribute("aria-expanded", "false");
   });
 
   it("posts the generated careon reference on submit", async () => {
@@ -164,9 +169,10 @@ describe("NieuweCasusPage", () => {
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
     await user.selectOptions(screen.getByLabelText("Bronregistratie *"), "jeugdplatform");
     await user.type(screen.getByPlaceholderText("Bijv. ZS-2026-8821"), "ZS-2026-8821");
+    await user.click(await screen.findByRole("button", { name: "Volgende stap" }));
     await user.click(await screen.findByRole("button", { name: "Volgende" }));
-    await user.click(await screen.findByRole("button", { name: "Volgende" }));
-    await user.click(screen.getByRole("button", { name: "Casus aanmaken" }));
+    const createButtons = screen.getAllByRole("button", { name: "Casus aanmaken" });
+    await user.click(createButtons[createButtons.length - 1]!);
 
     expect(mockPost).toHaveBeenCalledWith(
       "/care/api/cases/intake-create/",

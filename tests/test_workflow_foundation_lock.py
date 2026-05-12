@@ -11,9 +11,11 @@ from contracts.models import (
     CaseDecisionLog,
     CaseIntakeProcess,
     Client as CareProvider,
+    MunicipalityConfiguration,
     Organization,
     OrganizationMembership,
     PlacementRequest,
+    RegionalConfiguration,
     UserProfile,
 )
 from contracts.decision_engine import evaluate_case
@@ -110,16 +112,57 @@ class WorkflowFoundationLockTests(TestCase):
         )
         return intake
 
-    def test_provider_cannot_create_case_via_intake_create_api(self):
+    def test_provider_can_create_case_via_intake_create_api(self):
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Utrecht',
+            municipality_code='UTR',
+            created_by=self.provider_user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Utrecht',
+            region_code='RU',
+            created_by=self.provider_user,
+        )
+        region.served_municipalities.add(municipality)
+
         self.client.login(username='provider_user', password='testpass123')
+        bootstrap_response = self.client.get(reverse('careon:intake_form_options_api'))
+        self.assertEqual(bootstrap_response.status_code, 200)
+        payload = bootstrap_response.json()['initial_values']
+        payload.update({
+            'title': 'Provider-initiated aanmelding',
+            'target_completion_date': str(date.today() + timedelta(days=14)),
+            'assessment_summary': 'Aanmelding door zorgaanbieder-organisatie.',
+            'description': 'Test: gemeente en aanbieder mogen beide casus starten.',
+            'postcode': '3511AB',
+            'latitude': 52.0907,
+            'longitude': 5.1214,
+            'urgency': CaseIntakeProcess.Urgency.MEDIUM,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'preferred_region_type': region.region_type,
+            'preferred_region': str(region.pk),
+            'gemeente': str(municipality.pk),
+            'case_coordinator': str(self.provider_user.pk),
+        })
 
         response = self.client.post(
             reverse('careon:intake_create_api'),
-            data='{}',
+            data=json.dumps(payload),
             content_type='application/json',
         )
 
-        self.assertEqual(response.status_code, 403)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        body = response.json()
+        self.assertTrue(body.get('ok'))
+        intake = CaseIntakeProcess.objects.get(pk=body['id'])
+        self.assertEqual(intake.organization_id, self.organization.pk)
+        self.assertEqual(
+            intake.aanmelder_actor_profile,
+            CaseIntakeProcess.AanmelderActorProfile.ZORGAANBIEDER_ORG,
+        )
 
     def test_provider_decision_requires_provider_role(self):
         intake = self._create_matching_ready_case()

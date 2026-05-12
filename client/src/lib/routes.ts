@@ -15,14 +15,21 @@ export function isAuthDocumentPath(pathname: string): boolean {
   return AUTH_DOCUMENT_PATHS.has(p);
 }
 
-/** Django origin for auth HTML when the SPA runs on the local Vite port (see vite.config server.port). */
+/** Django origin for auth HTML when this SPA bundle is served from a dev/preview port (not Django itself). */
 function defaultDjangoOriginForLocalVite(): string {
   if (typeof window === "undefined") {
     return "http://127.0.0.1:8000";
   }
   const { hostname, port } = window.location;
-  const local = hostname === "localhost" || hostname === "127.0.0.1";
-  if (local && (port === "3000" || port === "5173")) {
+  const h = hostname.toLowerCase();
+  const loopback =
+    h === "localhost" ||
+    h === "127.0.0.1" ||
+    h === "::1" ||
+    h === "[::1]";
+  const effectivePort = port || "";
+  // Local Vite / preview: never use the SPA origin as Django (fixes `::1`, production preview on :3000, etc.).
+  if (loopback && effectivePort !== "8000") {
     return "http://127.0.0.1:8000";
   }
   return import.meta.env.DEV ? "http://127.0.0.1:8000" : window.location.origin;

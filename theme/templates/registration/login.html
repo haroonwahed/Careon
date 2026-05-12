@@ -19,7 +19,7 @@
             </div>
             <div>
                 <h2 class="login-title">Bescherm je zorgregie. Versterk je team.</h2>
-                <p class="login-subtitle">CareOn biedt hetzelfde heldere systeem als de Regiekamer voor veilige toegang, consistente werkflows en direct begrip van wat de volgende stap is.</p>
+                <p class="login-subtitle">CareOn biedt hetzelfde heldere systeem als het nieuwe dashboard voor veilige toegang, consistente werkflows en direct begrip van wat de volgende stap is.</p>
             </div>
             <div class="auth-feature-list">
                 <div class="auth-feature-row">
@@ -28,7 +28,7 @@
                     </div>
                     <div class="auth-feature-copy">
                         <p class="auth-feature-title">Beheer aanbieders, configuraties en casussen</p>
-                        <p class="auth-feature-meta">Start direct in dezelfde operationele structuur als de Regiekamer.</p>
+                        <p class="auth-feature-meta">Start direct in dezelfde operationele structuur als het nieuwe dashboard.</p>
                     </div>
                 </div>
                 <div class="auth-feature-row">
@@ -70,7 +70,7 @@
 
             <div class="auth-panel-eyebrow">Inloggen</div>
             <h1 class="text-2xl font-bold mb-1.5 login-title">Welkom terug</h1>
-            <p class="text-sm mb-8 login-subtitle">Log in om door te gaan naar je Regiekamer en openstaande werkstroom.</p>
+            <p class="text-sm mb-8 login-subtitle">Log in om door te gaan naar je dashboard en openstaande werkstroom.</p>
 
             {% if form.errors %}
             <div class="mb-6 p-4 rounded-xl auth-error-box">
@@ -107,7 +107,8 @@
                 <span class="text-xs font-semibold uppercase tracking-wide auth-divider-label">of</span>
                 <div class="h-px flex-1 auth-divider-line"></div>
             </div>
-            {% with next_url=SPA_ORIGIN|default:'http://127.0.0.1:3000'|add:'/dashboard/' %}
+            {# Same host as the current page (localhost vs 127.0.0.1, Vite proxy vs :8000) — avoids mixed-origin / chrome-error frames. #}
+            {% with next_url=request.scheme|add:"://"|add:request.get_host|add:"/dashboard/" %}
             {% url 'oidc_authentication_init' as oidc_authentication_path %}
             <a href="{{ request.scheme }}://{{ request.get_host }}{{ oidc_authentication_path }}?next={{ next_url|urlencode }}"
                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition-all duration-200 auth-sso-btn"
@@ -125,8 +126,8 @@
 
             <div class="auth-form-meta">
                 <div class="auth-helper-row">
-                    <p class="auth-form-note">Nog geen account? <a href="http://127.0.0.1:3000/register/" class="auth-link-primary">Maak gratis een account</a></p>
-                    <a href="http://127.0.0.1:3000" class="auth-page-link">Terug naar home</a>
+                    <p class="auth-form-note">Nog geen account? <a href="/register/" class="auth-link-primary">Maak gratis een account</a></p>
+                    <a href="/" class="auth-page-link">Terug naar home</a>
                 </div>
             </div>
         </div>

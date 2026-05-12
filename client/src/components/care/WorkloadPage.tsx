@@ -11,20 +11,15 @@ import {
 import { Button } from "../ui/button";
 import {
   CareAttentionBar,
-  CareDominantStatus,
   CareFlowBoard,
   CareMetaChip,
   CarePageScaffold,
-  CarePrimaryList,
   CareSection,
   CareSectionBody,
   CareSectionHeader,
   CareSearchFiltersBar,
-  CareWorkListCard,
-  CareWorkRow,
   EmptyState,
   ErrorState,
-  FlowPhaseBadge,
   LoadingState,
   PrimaryActionButton,
   normalizeBoardColumnToPhaseId,
@@ -47,14 +42,20 @@ import {
   type WorkflowBoardColumn,
   type WorkflowCaseView,
 } from "../../lib/workflowUi";
-import { classifyCasusWorkboardState, type CasusWorkboardSection } from "./casusWorkboardClassification";
+import { classifyCasusWorkboardState, type CasusWorkboardClassification } from "./casusWorkboardClassification";
+import {
+  deriveOperatieveWachtrijGroep,
+  emptyQueueGroupTotals,
+  operatieveGroepSortIndex,
+  OPERATIEVE_WACHTLIJN_LABELS,
+  OPERATIEVE_WACHTLIJN_VOLGORDE,
+  type OperatieveWachtrijGroepKey,
+} from "./casusOperatieveWachtrijGroep";
 import { CareInfoPopover } from "./CareUnifiedPage";
 import { tokens } from "../../design/tokens";
 import {
-  canonicalPhaseSubStatusLabel,
   DECISION_UI_PHASE_IDS,
   DECISION_UI_PHASE_LABELS,
-  decisionUiPhaseBadgeShellClass,
   mapApiPhaseToDecisionUiPhase,
   type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
@@ -84,7 +85,6 @@ interface WorkloadPageProps {
 }
 
 type FocusChip = "my-worklist" | "all" | "pipeline" | "critical" | "recent";
-type SectionKey = CasusWorkboardSection;
 type FlowColumnFilter = "all" | "plaatsing" | "intake";
 
 /** Compacte statusregel voor de paginabadge (contrast met vage “vragen actie”-formuleringen elders). */
@@ -108,27 +108,6 @@ function urgencyRank(urgency: WorkflowCaseView["urgency"]): number {
   }
 }
 
-function clientInitials(clientLabel: string): string {
-  const parts = clientLabel.trim().split(/\s+/).filter(Boolean);
-  if (parts.length >= 2) {
-    return `${parts[0][0] ?? ""}${parts[parts.length - 1]?.[0] ?? ""}`.toUpperCase();
-  }
-  return clientLabel.slice(0, 2).toUpperCase();
-}
-
-function urgencyDotClass(urgency: WorkflowCaseView["urgency"]): string {
-  switch (urgency) {
-    case "critical":
-      return "bg-red-500";
-    case "warning":
-      return "bg-amber-500";
-    case "normal":
-      return "bg-emerald-500";
-    default:
-      return "bg-muted-foreground/60";
-  }
-}
-
 /** Regiekamer-style priority chip tones for urgency column. */
 function urgencyChipShellClass(urgency: WorkflowCaseView["urgency"]): string {
   switch (urgency) {
@@ -141,19 +120,6 @@ function urgencyChipShellClass(urgency: WorkflowCaseView["urgency"]): string {
     default:
       return "border-border bg-muted/30 text-foreground";
   }
-}
-
-function casussenBlokkadeChipClass(item: WorkflowCaseView): string {
-  if (item.isBlocked || item.missingDataItems.length > 0) {
-    return "border-red-500/35 bg-red-500/10 text-red-100";
-  }
-  if (item.urgency === "critical") {
-    return "border-red-500/35 bg-red-500/10 text-red-100";
-  }
-  if (item.urgency === "warning") {
-    return "border-amber-500/35 bg-amber-500/10 text-amber-100";
-  }
-  return "border-border bg-muted/30 text-foreground";
 }
 
 type StripBucketKey =
@@ -265,94 +231,151 @@ function countWorkflowStrip(items: WorkflowCaseView[]): Record<StripBucketKey, n
   return acc;
 }
 
-/** Zelfde grid als `RegiekamerWorkItemCard` (`SystemAwarenessPage`). */
-function CasussenWerkvoorraadRow({
+function buildOperationalHeadline(item: WorkflowCaseView, decision: CaseDecisionState, phaseHumanLabel: string): string {
+  if (item.missingDataItems.length > 0) {
+    return item.missingDataItems.join(" · ");
+  }
+  const blocked = decision.blockedReason?.trim();
+  if (blocked) return blocked;
+  const why = decision.whyHere?.trim();
+  if (why) return why;
+  return phaseHumanLabel;
+}
+
+function buildOperationalSubline(decision: CaseDecisionState, queueGroup: OperatieveWachtrijGroepKey): string {
+  switch (queueGroup) {
+    case "wacht-op-aanbieder":
+      return "Wacht op reactie van de zorgaanbieder.";
+    case "wacht-op-aanmelder":
+      if (decision.responsibleParty === "Systeem") return "Wacht op systeem (bijv. samenvatting).";
+      return "Wacht op actie van aanmelder of regie.";
+    case "financiele-validatie":
+      return "Gemeente moet validatie afronden voordat de keten doorloopt.";
+    case "klaar-voor-matching":
+      return decision.primaryActionEnabled
+        ? "Je kunt matching starten of het matchadvies controleren."
+        : "Er ontbreekt nog een voorwaarde om matching zeker te starten.";
+    case "plaatsing-intake":
+      return "Plaatsing of intake vraagt coördinatie tussen regie en aanbieder.";
+    default:
+      if (decision.requiresCurrentUserAction) return "Jouw beurt voor de volgende stap.";
+      return "Geen urgente regie-actie; volg op de achtergrond.";
+  }
+}
+
+function buildOperationalMetaLine(item: WorkflowCaseView, decision: CaseDecisionState, phaseHumanLabel: string): string {
+  const owner =
+    decision.responsibleParty === "Gemeente" ? "Regie" : decision.responsibleParty === "Zorgaanbieder" ? "Aanbieder" : "Systeem";
+  return `${item.lastUpdatedLabel} · ${owner} · ${phaseHumanLabel}`;
+}
+
+function queueGroupAccentClass(queueGroup: OperatieveWachtrijGroepKey): string {
+  switch (queueGroup) {
+    case "wacht-op-aanmelder":
+    case "financiele-validatie":
+      return "border-l-[3px] border-l-destructive/70";
+    case "klaar-voor-matching":
+      return "border-l-[3px] border-l-sky-500/60";
+    case "wacht-op-aanbieder":
+      return "border-l-[3px] border-l-amber-500/65";
+    case "plaatsing-intake":
+      return "border-l-[3px] border-l-emerald-600/55";
+    default:
+      return "border-l-[3px] border-l-border/70";
+  }
+}
+
+function CasussenOperatieveWachtrijItem({
   item,
   decision,
-  phaseLabel,
-  problemLabel,
-  actionLabel,
+  queueGroup,
+  classification,
+  phaseHumanLabel,
+  headline,
+  subline,
+  metaLine,
   showPrimaryCta,
   onOpenCase,
   onWorkflowAction,
 }: {
   item: WorkflowCaseView;
   decision: CaseDecisionState;
-  phaseLabel: string;
-  problemLabel: string;
-  actionLabel: string;
+  queueGroup: OperatieveWachtrijGroepKey;
+  classification: CasusWorkboardClassification;
+  phaseHumanLabel: string;
+  headline: string;
+  subline: string;
+  metaLine: string;
   showPrimaryCta: boolean;
   onOpenCase: () => void;
   onWorkflowAction: () => void;
 }) {
-  const blokkadeLine = `${phaseLabel} — ${problemLabel}`;
   const actionVariant = showPrimaryCta ? "primary" : "ghost";
 
   return (
     <div
       data-care-work-row
+      data-queue-group={queueGroup}
       className={cn(
-        "group grid gap-y-3 gap-x-4 px-4 py-3.5 transition-colors md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:items-center md:px-5",
-        "hover:bg-background/35",
+        "group relative rounded-xl border border-border/55 bg-card/25 px-4 py-4 shadow-sm transition-colors hover:bg-card/40 sm:px-5",
+        queueGroupAccentClass(queueGroup),
       )}
     >
       <button
         type="button"
         onClick={onOpenCase}
         aria-label={`Open aanvraag ${item.clientLabel}`}
-        className={cn(
-          "grid min-w-0 gap-y-3 gap-x-4 text-left outline-none transition-colors md:col-span-5 md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px] md:gap-x-5 md:items-center",
-          "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-        )}
+        className="w-full min-w-0 space-y-2.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <div className="flex items-center gap-2 md:flex-col md:items-start md:gap-2.5">
-          <CareMetaChip className={cn("h-8 px-3 text-[13px] font-semibold", urgencyChipShellClass(item.urgency))}>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <span className="break-all font-mono text-[13px] font-semibold leading-snug text-foreground">{item.id}</span>
+          <CareMetaChip className={cn("h-7 shrink-0 px-2.5 text-[12px] font-semibold", urgencyChipShellClass(item.urgency))}>
             {item.urgencyLabel}
           </CareMetaChip>
         </div>
-
-        <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.clientLabel}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] text-muted-foreground">
-            <span className="font-mono text-[11px] text-muted-foreground/80">{item.id}</span>
-          </div>
-        </div>
-
-        <div className="min-w-0 space-y-1.5">
-          <CareMetaChip
-            className={cn(
-              "w-fit max-w-full whitespace-normal border text-left text-[12px] font-semibold leading-snug text-foreground",
-              casussenBlokkadeChipClass(item),
-            )}
-          >
-            <span className="line-clamp-2">{blokkadeLine}</span>
-          </CareMetaChip>
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-[14px] font-medium leading-tight text-foreground/95">{decision.responsibleParty}</p>
-        </div>
-
-        <div className="md:justify-self-start">
-          <CareMetaChip className="h-8">
-            <Clock3 size={12} />
-            {item.lastUpdatedLabel}
-          </CareMetaChip>
-        </div>
+        <p className="text-[15px] font-semibold leading-snug text-foreground break-words">{item.clientLabel}</p>
+        <p className="text-[14px] font-medium leading-snug text-foreground break-words">{headline}</p>
+        <p className="text-[13px] leading-relaxed text-muted-foreground break-words">{subline}</p>
+        <p className="flex flex-wrap items-center gap-1.5 text-[12px] leading-snug text-muted-foreground">
+          <Clock3 size={12} className="shrink-0 opacity-70" aria-hidden />
+          <span className="break-words">{metaLine}</span>
+        </p>
       </button>
-
-      <div className="min-w-0 md:justify-self-start">
+      <div className="mt-3 min-w-0">
         <Button
           variant={showPrimaryCta ? "default" : "secondary"}
           size="sm"
           type="button"
           data-care-work-row-cta={actionVariant}
-          className="h-11 min-h-11 w-full justify-center rounded-xl px-3 text-[13px] font-semibold leading-tight"
+          className="h-11 min-h-11 w-full rounded-xl px-3 text-[13px] font-semibold leading-snug"
           onClick={onWorkflowAction}
         >
-          <span className="whitespace-nowrap text-center">{actionLabel}</span>
+          <span className="text-center break-words whitespace-normal">{decision.nextActionLabel} →</span>
         </Button>
       </div>
+      {import.meta.env.DEV && (
+        <details className="absolute right-2 top-2">
+          <summary
+            aria-label="Open debug classificatie"
+            className="inline-block cursor-pointer list-none rounded-full px-1 text-[10px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted/40 group-hover:opacity-100 focus-visible:opacity-100"
+          >
+            i
+          </summary>
+          <div className="mt-1 space-y-1 text-left text-[11px] text-muted-foreground md:absolute md:right-4 md:z-10 md:max-w-[280px] md:rounded-md md:border md:border-border/60 md:bg-background/95 md:p-2">
+            <p>Bucket: {classification.debug.assignedBucket}</p>
+            <p>Regel: {classification.debug.winningRule}</p>
+            <p>isBlocked: {String(classification.debug.signals.isBlocked)}</p>
+            <p>primaryActionEnabled: {String(classification.debug.signals.primaryActionEnabled)}</p>
+            <p>missingDataItems: {classification.debug.signals.missingDataItems.join(", ") || "geen"}</p>
+            <p>requiresCurrentUserAction: {String(classification.debug.signals.requiresCurrentUserAction)}</p>
+            <p>responsibleParty: {classification.debug.signals.responsibleParty}</p>
+            <p>boardColumn: {classification.debug.signals.boardColumn}</p>
+            <p>providerStatusLabel: {classification.debug.signals.providerStatusLabel ?? "geen"}</p>
+            <p>nextActionRoute: {classification.debug.nextActionRoute}</p>
+            <p>Wachtrij (UI): {queueGroup}</p>
+          </div>
+        </details>
+      )}
     </div>
   );
 }
@@ -383,17 +406,7 @@ export function WorkloadPage({
   }, []);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const { collapsed: railCollapsed, toggle: toggleRail, setCollapsed: setRailCollapsed } = useRailCollapsed();
-  const [collapsedSections, setCollapsedSections] = useState<Record<SectionKey, boolean>>({
-    attention: false,
-    "waiting-provider": false,
-    stable: false,
-  });
-  const [visibleBySection, setVisibleBySection] = useState<Record<SectionKey, number>>({
-    attention: 8,
-    "waiting-provider": 8,
-    stable: 8,
-  });
-  const [listLayout, setListLayout] = useState<"table" | "cards">("table");
+  const [collapsedQueueGroups, setCollapsedQueueGroups] = useState<Partial<Record<OperatieveWachtrijGroepKey, boolean>>>({});
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -535,11 +548,15 @@ export function WorkloadPage({
   }, [filteredItems, focusChip]);
 
   const classifiedItems = useMemo(() => {
-    return sortedForFocus.map(({ item, decision }) => ({
-      item,
-      decision,
-      classification: classifyCasusWorkboardState(item, decision),
-    }));
+    return sortedForFocus.map(({ item, decision }) => {
+      const classification = classifyCasusWorkboardState(item, decision);
+      return {
+        item,
+        decision,
+        classification,
+        queueGroup: deriveOperatieveWachtrijGroep(item, decision, classification),
+      };
+    });
   }, [sortedForFocus]);
 
   const attentionCount = classifiedItems.filter(({ classification }) => classification.section === "attention").length;
@@ -555,24 +572,22 @@ export function WorkloadPage({
     [classifiedItems],
   );
 
-  const sectionedItems = useMemo(
-    () => ({
-      attention: classifiedItems.filter(({ classification }) => classification.section === "attention"),
-      "waiting-provider": classifiedItems.filter(({ classification }) => classification.section === "waiting-provider"),
-      stable: classifiedItems.filter(({ classification }) => classification.section === "stable"),
-    }),
-    [classifiedItems],
-  );
+  const queueGroupTotals = useMemo(() => {
+    const acc = emptyQueueGroupTotals();
+    for (const row of classifiedItems) {
+      acc[row.queueGroup] += 1;
+    }
+    return acc;
+  }, [classifiedItems]);
 
   const displayRows = useMemo(() => {
     const rows = [...classifiedItems];
     if (focusChip === "recent") {
       return rows;
     }
-    const sectionOrder: Record<SectionKey, number> = { attention: 0, "waiting-provider": 1, stable: 2 };
     rows.sort((a, b) => {
-      const s = sectionOrder[a.classification.section] - sectionOrder[b.classification.section];
-      if (s !== 0) return s;
+      const g = operatieveGroepSortIndex(a.queueGroup) - operatieveGroepSortIndex(b.queueGroup);
+      if (g !== 0) return g;
       const u = urgencyRank(b.item.urgency) - urgencyRank(a.item.urgency);
       if (u !== 0) return u;
       return a.item.id.localeCompare(b.item.id);
@@ -587,6 +602,19 @@ export function WorkloadPage({
     const start = (safePage - 1) * pageSize;
     return displayRows.slice(start, start + pageSize);
   }, [displayRows, safePage, pageSize]);
+
+  const groupedPageSections = useMemo(() => {
+    const buckets: Partial<Record<OperatieveWachtrijGroepKey, typeof pageRows>> = {};
+    for (const row of pageRows) {
+      const k = row.queueGroup;
+      if (!buckets[k]) buckets[k] = [];
+      buckets[k]!.push(row);
+    }
+    return OPERATIEVE_WACHTLIJN_VOLGORDE.filter((key) => (buckets[key]?.length ?? 0) > 0).map((key) => ({
+      key,
+      items: buckets[key]!,
+    }));
+  }, [pageRows]);
 
   useEffect(() => {
     setPage(1);
@@ -610,66 +638,16 @@ export function WorkloadPage({
     }
   };
 
-  const toggleSection = (section: SectionKey) => {
-    setCollapsedSections((current) => ({ ...current, [section]: !current[section] }));
+  const toggleQueueGroup = (group: OperatieveWachtrijGroepKey) => {
+    setCollapsedQueueGroups((current) => ({ ...current, [group]: !current[group] }));
   };
 
-  const sectionHeaders: Record<SectionKey, string> = {
-    attention: "⚠ Vraagt actie",
-    "waiting-provider": "⏳ Reacties aanbieder",
-    stable: "✓ Stabiel",
-  };
-
-  const sectionEmptyLabel: Record<SectionKey, string> = {
-    attention: "Geen aanvragen in deze categorie",
-    "waiting-provider": "Geen aanvragen in deze categorie",
-    stable: "Geen aanvragen in deze categorie",
-  };
-
-  const compactProblemLabel = (
-    item: (typeof classifiedItems)[number]["item"],
-    decision: (typeof classifiedItems)[number]["decision"],
-  ): string => {
-    const problem = getShortReasonLabel(decision.blockedReason ?? item.missingDataItems[0] ?? decision.whyHere).toLowerCase();
-    if (item.isBlocked || item.missingDataItems.length > 0) {
-      return problem.includes("samenvatting") ? "Aanvraag onvolledig" : "Blokkade";
-    }
-    if (problem.includes("urgentie")) return "Blokkade";
-    if (problem.includes("samenvatting")) return "Aanvraag onvolledig";
-    if (problem.includes("beoordeling") || problem.includes("aanbieder")) return "Reacties aanbieder";
-    return decision.requiresCurrentUserAction ? "Actie vereist" : "Geen actie nodig";
-  };
-
-  const compactActionLabel = (decision: (typeof classifiedItems)[number]["decision"]): string => {
-    const action = decision.nextActionLabel.toLowerCase();
-    if (action.includes("urgentie")) return "Vul urgentie aan";
-    if (action.includes("samenvatting wordt verwerkt") || action.includes("wacht op samenvatting")) return "Bekijk status";
-    if (action.includes("genereer") || action.includes("samenvatting") || action.includes("casus")) return "Vul aanvraag aan";
-    if (action.includes("controleer") && action.includes("match")) return "Start matching";
-    if (action.includes("start matching")) return "Start matching";
-    if ((action.includes("bekijk") && action.includes("reactie")) || action.includes("aanbiederreactie")) return "Bekijk status";
-    if (action.includes("status") && !action.includes("beoordeling uitvoeren")) return "Bekijk status";
-    if (action.includes("intake") && action.includes("bekijk")) return "Bekijk intake";
-    if (action.includes("open")) return "Open aanvraag";
-    return decision.nextActionLabel;
-  };
-
-  const compactDaysLabel = (lastUpdatedLabel: string): string => {
-    const match = lastUpdatedLabel.match(/(\d+)/);
-    if (match) return `${match[1]}d`;
-    if (lastUpdatedLabel.toLowerCase().includes("vandaag")) return "0d";
-    return lastUpdatedLabel;
-  };
+  const isQueueGroupCollapsed = (group: OperatieveWachtrijGroepKey) => collapsedQueueGroups[group] === true;
 
   const phaseOptions: Array<{ value: DecisionUiPhaseId; label: string }> = DECISION_UI_PHASE_IDS.map((id) => ({
     value: id,
     label: DECISION_UI_PHASE_LABELS[id],
   }));
-
-  const phasePillClass = (item: WorkflowCaseView): string => {
-    const id = mapApiPhaseToDecisionUiPhase(normalizeBoardColumnToPhaseId(item.boardColumn));
-    return decisionUiPhaseBadgeShellClass(id);
-  };
 
   const phasePillLabel = (item: WorkflowCaseView): string => {
     const id = mapApiPhaseToDecisionUiPhase(normalizeBoardColumnToPhaseId(item.boardColumn));
@@ -897,7 +875,7 @@ export function WorkloadPage({
                 onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
                 secondaryFiltersLabel="Filters"
                 secondaryFilters={
-                  <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+                  <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Werkvoorraad-weergave
                       <select
@@ -911,18 +889,6 @@ export function WorkloadPage({
                         <option value="pipeline">Wacht op actie ({tabCounts.pipeline})</option>
                         <option value="critical">Kritiek ({tabCounts.critical})</option>
                         <option value="recent">Recent bijgewerkt ({tabCounts.recent})</option>
-                      </select>
-                    </label>
-                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                      Lay-out
-                      <select
-                        aria-label="Lay-out"
-                        value={listLayout}
-                        onChange={(event) => setListLayout(event.target.value as "table" | "cards")}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                      >
-                        <option value="table">Tabel (standaard)</option>
-                        <option value="cards">Kaarten (compact)</option>
                       </select>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
@@ -1027,39 +993,66 @@ export function WorkloadPage({
             />
           )}
 
-          {!loading && !error && filteredItems.length > 0 && listLayout === "table" && (
-            <div data-testid="worklist" data-density="compact" className="space-y-3">
-              <CareWorkListCard
-                header={(
-                  <div
-                    data-testid="casussen-werkvoorraad-column-headers"
-                    className="hidden gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5"
-                  >
-                    <span>Prioriteit</span>
-                    <span>Aanvraag</span>
-                    <span>Blokkade / aandacht</span>
-                    <span>Eigenaar</span>
-                    <span>Wachttijd</span>
-                    <span>Volgende actie</span>
-                  </div>
-                )}
-              >
-                <div className="divide-y divide-border/45">
-                  {pageRows.map(({ item, decision }) => (
-                    <CasussenWerkvoorraadRow
-                      key={item.id}
-                      item={item}
-                      decision={decision}
-                      phaseLabel={phasePillLabel(item)}
-                      problemLabel={compactProblemLabel(item, decision)}
-                      actionLabel={compactActionLabel(decision)}
-                      showPrimaryCta={Boolean(decision.requiresCurrentUserAction && decision.primaryActionEnabled)}
-                      onOpenCase={() => onCaseClick(item.id)}
-                      onWorkflowAction={() => handleNavigate(decision.nextActionRoute)}
-                    />
-                  ))}
-                </div>
-              </CareWorkListCard>
+          {!loading && !error && filteredItems.length > 0 && (
+            <div data-testid="worklist" data-density="compact" data-layout="queue" className="space-y-5">
+              {groupedPageSections.length === 0 ? (
+                <p className="text-[13px] text-muted-foreground">Geen aanvragen op deze pagina.</p>
+              ) : (
+                groupedPageSections.map(({ key: groupKey, items }) => {
+                  const totalInGroup = queueGroupTotals[groupKey];
+                  const isCollapsed = isQueueGroupCollapsed(groupKey);
+                  return (
+                    <section key={groupKey} className="space-y-2.5">
+                      <button
+                        type="button"
+                        onClick={() => toggleQueueGroup(groupKey)}
+                        className="flex w-full items-start justify-between gap-2 rounded-lg px-0.5 py-0.5 text-left"
+                      >
+                        <div className="min-w-0 space-y-0.5">
+                          <h2 className="text-[15px] font-semibold leading-snug text-foreground">
+                            {OPERATIEVE_WACHTLIJN_LABELS[groupKey]}{" "}
+                            <span className="font-semibold tabular-nums text-muted-foreground">({totalInGroup})</span>
+                          </h2>
+                        </div>
+                        {isCollapsed ? <ChevronDown size={16} className="mt-0.5 shrink-0 text-muted-foreground" /> : <ChevronUp size={16} className="mt-0.5 shrink-0 text-muted-foreground" />}
+                      </button>
+
+                      {!isCollapsed && (
+                        <div className="space-y-3">
+                          {items.map(({ item, decision, classification, queueGroup }) => {
+                            const phaseHuman = phasePillLabel(item);
+                            const headline = buildOperationalHeadline(item, decision, phaseHuman);
+                            const subline = buildOperationalSubline(decision, queueGroup);
+                            const metaLine = buildOperationalMetaLine(item, decision, phaseHuman);
+                            const showPrimaryCta = Boolean(decision.requiresCurrentUserAction && decision.primaryActionEnabled);
+                            return (
+                              <CasussenOperatieveWachtrijItem
+                                key={item.id}
+                                item={item}
+                                decision={decision}
+                                queueGroup={queueGroup}
+                                classification={classification}
+                                phaseHumanLabel={phaseHuman}
+                                headline={headline}
+                                subline={subline}
+                                metaLine={metaLine}
+                                showPrimaryCta={showPrimaryCta}
+                                onOpenCase={() => onCaseClick(item.id)}
+                                onWorkflowAction={() => handleNavigate(decision.nextActionRoute)}
+                              />
+                            );
+                          })}
+                        </div>
+                      )}
+                    </section>
+                  );
+                })
+              )}
+
+              <p className="text-[12px] leading-snug text-muted-foreground" data-testid="worklist-pagination-hint">
+                Paginering loopt plat over alle wachtrijen (volgorde: wachtrij → urgentie → aanvraag). Tellingen bij elke kop
+                zijn voor je huidige filters, niet alleen voor deze pagina.
+              </p>
 
               <div className="flex flex-col gap-3 border-t border-border/50 pt-3 text-[13px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
                 <p className="tabular-nums">
@@ -1113,136 +1106,6 @@ export function WorkloadPage({
               </div>
             </div>
           )}
-
-          {!loading && !error && filteredItems.length > 0 && listLayout === "cards" && (
-            <div data-testid="worklist" data-density="compact" data-layout="cards" className="space-y-3.5">
-              {(Object.keys(sectionedItems) as SectionKey[]).map((sectionKey) => {
-                const items = sectionedItems[sectionKey];
-                const isCollapsed = collapsedSections[sectionKey];
-                const visibleItems = items.slice(0, visibleBySection[sectionKey]);
-                return (
-                  <section key={sectionKey} className="space-y-1">
-                    <button
-                      type="button"
-                      onClick={() => toggleSection(sectionKey)}
-                      className="flex w-full items-center justify-between rounded-lg px-1 py-0.5 text-left"
-                    >
-                      <h2 className="text-[15px] font-semibold">
-                        {sectionHeaders[sectionKey]} ({items.length})
-                      </h2>
-                      {isCollapsed ? <ChevronDown size={16} className="text-muted-foreground" /> : <ChevronUp size={16} className="text-muted-foreground" />}
-                    </button>
-
-                    {!isCollapsed && (
-                      <>
-                        {items.length === 0 ? <p className="text-[13px] text-muted-foreground">{sectionEmptyLabel[sectionKey]}</p> : null}
-                        {items.length > 0 ? (
-                          <CarePrimaryList>
-                            {visibleItems.map(({ item, decision }) => {
-                              const classification = classifyCasusWorkboardState(item, decision);
-                              const showPrimaryCta = decision.requiresCurrentUserAction && decision.primaryActionEnabled;
-                              const apiPhase = normalizeBoardColumnToPhaseId(item.boardColumn);
-                              const subPhase = canonicalPhaseSubStatusLabel(apiPhase);
-                              return (
-                                <div key={item.id} className="group relative">
-                                  <CareWorkRow
-                                    leading={(
-                                      <span className="flex max-w-full flex-col items-stretch gap-1">
-                                        <FlowPhaseBadge phaseId={apiPhase} />
-                                        {subPhase ? <CareMetaChip title="Deelstatus (geen aparte ketenfase)">{subPhase}</CareMetaChip> : null}
-                                      </span>
-                                    )}
-                                    title={item.clientLabel}
-                                    context={(
-                                      <>
-                                        <CareMetaChip>{item.clientAge} jaar</CareMetaChip>
-                                        <CareMetaChip>{item.region}</CareMetaChip>
-                                        <CareMetaChip title={item.careType}>
-                                          <span className="truncate" style={{ maxWidth: tokens.layout.chipMeasure }}>
-                                            {item.careType}
-                                          </span>
-                                        </CareMetaChip>
-                                      </>
-                                    )}
-                                    status={(
-                                      <CareDominantStatus
-                                        className={
-                                          item.isBlocked || item.missingDataItems.length > 0
-                                            ? "border-red-500/35 bg-red-500/10 text-red-700 dark:text-red-200"
-                                            : sectionKey === "attention"
-                                              ? "border-destructive/35 bg-destructive/10 text-destructive"
-                                              : sectionKey === "waiting-provider"
-                                                ? "border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200"
-                                                : "border-border/70 bg-muted/20 text-muted-foreground"
-                                        }
-                                      >
-                                        {compactProblemLabel(item, decision)}
-                                      </CareDominantStatus>
-                                    )}
-                                    time={(
-                                      <CareMetaChip>
-                                        <Clock3 size={12} />
-                                        {compactDaysLabel(item.lastUpdatedLabel)}
-                                      </CareMetaChip>
-                                    )}
-                                    contextInfo={
-                                      item.recommendedProviderName ? (
-                                        <CareMetaChip title={item.recommendedProviderName}>
-                                          <Building2 size={12} />
-                                          <span className="truncate" style={{ maxWidth: tokens.layout.chipMeasureWide }}>
-                                            {item.recommendedProviderName}
-                                          </span>
-                                        </CareMetaChip>
-                                      ) : undefined
-                                    }
-                                    actionLabel={compactActionLabel(decision)}
-                                    actionVariant={showPrimaryCta ? "primary" : "ghost"}
-                                    onOpen={() => onCaseClick(item.id)}
-                                    onAction={(event) => {
-                                      event.stopPropagation();
-                                      handleNavigate(decision.nextActionRoute);
-                                    }}
-                                    accentTone={sectionKey === "attention" ? "critical" : sectionKey === "waiting-provider" ? "warning" : "neutral"}
-                                  />
-                                  {import.meta.env.DEV && (
-                                    <details className="absolute right-2 top-1">
-                                      <summary
-                                        aria-label="Open debug classificatie"
-                                        className="inline-block cursor-pointer list-none rounded-full px-1 text-[10px] text-muted-foreground opacity-0 transition-opacity hover:bg-muted/40 group-hover:opacity-100 focus-visible:opacity-100"
-                                      >
-                                        i
-                                      </summary>
-                                      <div className="mt-1 space-y-1 text-left text-[11px] text-muted-foreground md:absolute md:right-6 md:z-10 md:rounded-md md:border md:border-border/60 md:bg-background/95 md:p-2">
-                                        <p>Bucket: {classification.debug.assignedBucket}</p>
-                                        <p>Regel: {classification.debug.winningRule}</p>
-                                        <p>isBlocked: {String(classification.debug.signals.isBlocked)}</p>
-                                        <p>primaryActionEnabled: {String(classification.debug.signals.primaryActionEnabled)}</p>
-                                        <p>missingDataItems: {classification.debug.signals.missingDataItems.join(", ") || "geen"}</p>
-                                        <p>requiresCurrentUserAction: {String(classification.debug.signals.requiresCurrentUserAction)}</p>
-                                        <p>responsibleParty: {classification.debug.signals.responsibleParty}</p>
-                                        <p>boardColumn: {classification.debug.signals.boardColumn}</p>
-                                        <p>providerStatusLabel: {classification.debug.signals.providerStatusLabel ?? "geen"}</p>
-                                        <p>nextActionRoute: {classification.debug.nextActionRoute}</p>
-                                      </div>
-                                    </details>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </CarePrimaryList>
-                        ) : null}
-                        {items.length > visibleItems.length ? (
-                          <Button variant="outline" onClick={() => setVisibleBySection((current) => ({ ...current, [sectionKey]: current[sectionKey] + 8 }))}>
-                            Toon meer
-                          </Button>
-                        ) : null}
-                      </>
-                    )}
-                  </section>
-                );
-              })}
-            </div>
-          )}
         </CareSectionBody>
       </CareSection>
     </CarePageScaffold>
@@ -1261,16 +1124,7 @@ export function WorkloadPage({
             criticalCount={tabCounts.critical}
             avgDaysInPhase={avgDaysInPhase}
             riskSignalCount={riskSignalCount}
-            stripCounts={stripCounts}
             onCriticalClick={focusCriticalCases}
-            onStripBucketClick={(key) => {
-              const step = STRIP_DEF.find((row) => row.key === key);
-              if (step) {
-                setSelectedPhase(step.filterPhase);
-                setSelectedFlowColumn(step.key === "plaatsing" || step.key === "intake" ? step.key : "all");
-                setFocusChip("all");
-              }
-            }}
           />
         </aside>
       )}
@@ -1292,9 +1146,7 @@ function CasussenInsightsPanels({
   criticalCount,
   avgDaysInPhase,
   riskSignalCount,
-  stripCounts,
   onCriticalClick,
-  onStripBucketClick,
 }: {
   gemeenteDisplayName: string;
   filteredTotal: number;
@@ -1302,9 +1154,7 @@ function CasussenInsightsPanels({
   criticalCount: number;
   avgDaysInPhase: number;
   riskSignalCount: number;
-  stripCounts: Record<StripBucketKey, number>;
   onCriticalClick: () => void;
-  onStripBucketClick: (key: StripBucketKey) => void;
 }) {
   return (
     <>
@@ -1347,40 +1197,23 @@ function CasussenInsightsPanels({
       </section>
 
       <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Snel naar</p>
-        <ul className="mt-3 space-y-2">
-          <li>
-            <button
-              type="button"
-              data-testid="casussen-quick-critical"
-              onClick={onCriticalClick}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
-            >
-              <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
-                Kritieke aanvragen
-              </span>
-              <span className="tabular-nums font-semibold text-foreground">{criticalCount}</span>
-            </button>
-          </li>
-          {STRIP_DEF.map((col) => {
-            return (
-            <li key={col.key}>
-              <button
-                type="button"
-                data-testid={`casussen-quick-phase-${col.key}`}
-                onClick={() => onStripBucketClick(col.key)}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
-              >
-                <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                  <span className="truncate">{col.label}</span>
-                </span>
-                <span className="tabular-nums font-semibold text-foreground">{stripCounts[col.key]}</span>
-              </button>
-            </li>
-            );
-          })}
-        </ul>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Snelle focus</p>
+        <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+          Fasefilters en doorlooptellingen staan in <span className="font-medium text-foreground">Doorstroom</span> boven de werklijst — zo blijft deze
+          kolom licht en contextueel.
+        </p>
+        <button
+          type="button"
+          data-testid="casussen-quick-critical"
+          onClick={onCriticalClick}
+          className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+        >
+          <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+            <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
+            Kritieke aanvragen
+          </span>
+          <span className="tabular-nums font-semibold text-foreground">{criticalCount}</span>
+        </button>
       </section>
 
       <RegieNotesPanel testId="casussen-notes-panel" />

@@ -69,8 +69,15 @@ class CaseRiskSignalInline(admin.TabularInline):
 
 @admin.register(CaseIntakeProcess)
 class CaseIntakeProcessAdmin(admin.ModelAdmin):
-    list_display = ('title', 'target_group_label', 'care_type_label', 'status', 'target_completion_date')
-    list_filter = ('urgency', 'status', 'created_at')
+    list_display = (
+        'title',
+        'aanmelder_actor_profile',
+        'target_group_label',
+        'care_type_label',
+        'status',
+        'target_completion_date',
+    )
+    list_filter = ('urgency', 'status', 'aanmelder_actor_profile', 'created_at')
     search_fields = ('title', 'description', 'case_coordinator__first_name', 'case_coordinator__last_name')
     inlines = [IntakeTaskInline, CaseRiskSignalInline]
 

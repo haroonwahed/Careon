@@ -875,6 +875,29 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const situationInsight = spaCase.systemInsight
     ? getShortReasonLabel(spaCase.systemInsight, 90)
     : "Geen aanvullende situatienotitie beschikbaar.";
+  const arrangementCareContext = {
+    zorgvorm: spaCase.zorgtype,
+    regio: spaCase.regio,
+    aanmelder: spaCase.owner,
+    zorgintensiteit:
+      spaCase.urgency === "critical"
+        ? "Spoed / hoog"
+        : spaCase.urgency === "warning"
+          ? "Verhoogd"
+          : spaCase.urgency === "normal"
+            ? "Standaard"
+            : "Laag / stabiel",
+    startperiode: (() => {
+      if (!spaCase.intakeStartDate) {
+        return "—";
+      }
+      const parsed = new Date(spaCase.intakeStartDate);
+      return Number.isNaN(parsed.getTime())
+        ? "—"
+        : parsed.toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" });
+    })(),
+    korteSamenvatting: situationInsight,
+  };
   const careSituationSummaryLines = [
     `Situatie: ${situationInsight}`,
     `Zorgvraag: ${spaCase.zorgtype}`,
@@ -1078,7 +1101,9 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
 
   const contextStack = (
     <div className="space-y-2.5">
-      {showArrangementAlignment ? <ArrangementAlignmentPanel caseId={caseId} /> : null}
+      {showArrangementAlignment ? (
+        <ArrangementAlignmentPanel caseId={caseId} careContext={arrangementCareContext} />
+      ) : null}
       <div>{flowProgress}</div>
       <div>{contextCards}</div>
     </div>

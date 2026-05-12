@@ -176,6 +176,7 @@ class GovernanceV12WijkteamTests(TestCase):
         self.assertIsNotNone(intake)
         self.assertEqual(intake.entry_route, CaseIntakeProcess.EntryRoute.WIJKTEAM)
         self.assertEqual(intake.workflow_state, WorkflowState.WIJKTEAM_INTAKE)
+        self.assertEqual(intake.aanmelder_actor_profile, CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM)
 
 
 class GovernanceV12BudgetRejectRematchTests(TestCase):

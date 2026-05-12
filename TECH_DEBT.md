@@ -18,14 +18,13 @@ Date: 2026-04-25
 - `contracts/provider_matching_service.py` and `contracts/legacy_backend/provider_matching_service.py` both imply matching logic ownership.
 - `contracts/views.py` and `contracts/api/views.py` both contain workflow logic, which is fine, but the split is easy to misread.
 - The active SPA shell and the server-rendered templates overlap on some routes because of the migration middleware.
-- The repo contains many duplicate-looking docs under `client/src/`, `docs/`, and archive folders that describe older UI states.
+- The repo contains many duplicate-looking docs under `client/src/` and `docs/` that describe older UI states; the old `archive/marketplace` React snapshot and the `design-audit/` screenshot bundle were removed from version control.
 
 ## Dead Code Or Probably Dead Surfaces
 
 - `client/src/components/provider/ProviderIntakeDashboard.tsx` is currently unreferenced and explicitly quarantined as demo-only.
 - `client/src/components/care/CasusControlCenter.tsx` appears to be a legacy workflow shell and should remain quarantined until it is either wired or archived.
 - `client/src/components/examples/*` are demo surfaces and should not be treated as active product code.
-- `client/src/components/legacy_archive/*` is historical reference material, not active workflow code.
 - `theme/templates/contracts/reports_dashboard.html` is intentionally labeled internal; keep it internal-only unless a real backend-backed reporting story is ready.
 - `contracts/management/commands/audit_null_organizations.py` describes itself as a compatibility audit placeholder.
 - `contracts/governance.py` and `contracts/operational_decision_contract.py` contain `pass` branches that should be revisited if they are still intended to execute.

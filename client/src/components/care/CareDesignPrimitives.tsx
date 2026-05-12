@@ -334,7 +334,9 @@ export function CareAlertCard({
             </span>
             <span>{title}</span>
           </h2>
-          <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">{description}</p>
+          {description ? (
+            <p className="mt-1 max-w-prose text-sm leading-relaxed text-muted-foreground">{description}</p>
+          ) : null}
         </div>
         <div
           data-testid={testId ? `${testId}-actions` : undefined}
@@ -451,8 +453,15 @@ export function CareWorkListCard({
   testId?: string;
 }) {
   return (
-    <div data-testid={testId} className={cn("overflow-hidden rounded-xl border border-border/45 bg-background/20", className)}>
-      {header ? <div className="border-b border-border/45">{header}</div> : null}
+    <div
+      data-testid={testId}
+      className={cn(
+        // `min-w-0` + horizontal scroll: wide grid rows (e.g. Werkvoorraad min-w-[980px]) stay usable beside rails / narrow main columns.
+        "min-w-0 overflow-x-auto rounded-xl border border-border/45 bg-background/20",
+        className,
+      )}
+    >
+      {header ? <div className="min-w-0 border-b border-border/45">{header}</div> : null}
       {children}
     </div>
   );

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Iterable
 
@@ -9,6 +10,7 @@ from contracts.governance import log_case_decision_event
 from contracts.models import CaseAssessment, CaseDecisionLog, CaseIntakeProcess, OrganizationMembership, PlacementRequest, UserProfile
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class WorkflowRole:
@@ -110,6 +112,7 @@ _ROLE_ACTIONS: dict[str, set[str]] = {
         WorkflowAction.RESOLVE_TRANSITION_FINANCIAL,
     },
     WorkflowRole.ZORGAANBIEDER: {
+        WorkflowAction.CREATE_CASE,
         WorkflowAction.PROVIDER_ACCEPT,
         WorkflowAction.PROVIDER_REJECT,
         WorkflowAction.PROVIDER_REQUEST_INFO,
@@ -146,33 +149,47 @@ class TransitionDecision:
 
 
 def resolve_actor_role(*, user: User, organization=None) -> str:
-    membership = None
-    if organization is not None:
-        membership = (
-            OrganizationMembership.objects
-            .filter(
-                user=user,
-                organization=organization,
-                is_active=True,
-                organization__is_active=True,
-            )
-            .first()
-        )
+    """
+    Resolve workflow actor role for policy checks.
 
-    if membership and membership.role in {OrganizationMembership.Role.OWNER, OrganizationMembership.Role.ADMIN}:
-        return WorkflowRole.ADMIN
-
-    # Reverse OneToOne: accessing user.profile raises DoesNotExist when no row — getattr does not catch it.
+    Must never raise: this is called while building querysets (e.g. cases list / Regiekamer)
+    before iteration; a DB or profile edge case should degrade to gemeente, not HTTP 500.
+    """
     try:
-        profile_role = user.profile.role
-    except UserProfile.DoesNotExist:
-        profile_role = None
-    if profile_role == UserProfile.Role.CLIENT:
-        return WorkflowRole.ZORGAANBIEDER
-    if profile_role == UserProfile.Role.ADMIN:
-        return WorkflowRole.ADMIN
+        membership = None
+        if organization is not None:
+            membership = (
+                OrganizationMembership.objects
+                .filter(
+                    user=user,
+                    organization=organization,
+                    is_active=True,
+                    organization__is_active=True,
+                )
+                .first()
+            )
 
-    return WorkflowRole.GEMEENTE
+        if membership and membership.role in {OrganizationMembership.Role.OWNER, OrganizationMembership.Role.ADMIN}:
+            return WorkflowRole.ADMIN
+
+        # Reverse OneToOne: accessing user.profile raises DoesNotExist when no row — getattr does not catch it.
+        try:
+            profile_role = user.profile.role
+        except UserProfile.DoesNotExist:
+            profile_role = None
+        if profile_role == UserProfile.Role.CLIENT:
+            return WorkflowRole.ZORGAANBIEDER
+        if profile_role == UserProfile.Role.ADMIN:
+            return WorkflowRole.ADMIN
+
+        return WorkflowRole.GEMEENTE
+    except Exception:
+        logger.exception(
+            "resolve_actor_role_failed user_id=%s org_id=%s",
+            getattr(user, "pk", "?"),
+            getattr(organization, "pk", None),
+        )
+        return WorkflowRole.GEMEENTE
 
 
 def can_role_execute_action(role: str, action: str) -> bool:

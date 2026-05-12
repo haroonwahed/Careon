@@ -94,6 +94,21 @@ from contracts.workflow_state_machine import (
 
 logger = logging.getLogger(__name__)
 
+
+def _derive_aanmelder_actor_profile_for_intake(*, actor_role: str, entry_route: str) -> str:
+    """
+    Product-hint (cliëntaanbieder-kanaal) voor audit/rapportage; geen permissies.
+    """
+    if actor_role == WorkflowRole.ZORGAANBIEDER:
+        return CaseIntakeProcess.AanmelderActorProfile.ZORGAANBIEDER_ORG
+    if actor_role == WorkflowRole.ADMIN:
+        return CaseIntakeProcess.AanmelderActorProfile.ADMIN
+    if actor_role == WorkflowRole.GEMEENTE:
+        if entry_route == CaseIntakeProcess.EntryRoute.WIJKTEAM:
+            return CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM
+        return CaseIntakeProcess.AanmelderActorProfile.GEMEENTE_AMBTELIJK
+    return CaseIntakeProcess.AanmelderActorProfile.ONBEKEND
+
 MIN_SUMMARY_CONTEXT_LEN = 24
 
 
@@ -107,7 +122,14 @@ def _active_organization(request):
         return org
     organization = get_user_organization(user)
     if organization is None:
-        organization = ensure_user_organization(user)
+        try:
+            organization = ensure_user_organization(user)
+        except Exception:
+            logger.exception(
+                "active_organization_provision_failed user_id=%s",
+                getattr(user, "pk", "?"),
+            )
+            return None
     return organization
 
 
@@ -375,16 +397,72 @@ def _safe_case_intake(case):
         return None
 
 
+def _coerce_case_value_for_api(case) -> float | None:
+    if not hasattr(case, "value"):
+        return None
+    raw = getattr(case, "value", None)
+    if raw is None or raw == "":
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _case_owner_display(case) -> str:
+    try:
+        creator = getattr(case, "created_by", None)
+        if creator is None:
+            return "System"
+        name = creator.get_full_name()
+        return name.strip() if name else (getattr(creator, "username", None) or "System")
+    except Exception:
+        return "System"
+
+
+def _minimal_case_list_entry(case: CareCase) -> dict:
+    """Safe JSON row when full serialization fails (one bad dossier must not 500 the list)."""
+    return {
+        "id": str(case.pk),
+        "title": (getattr(case, "title", None) or "Casus")[:200],
+        "status": getattr(case, "status", None) or "DRAFT",
+        "preferred_provider": getattr(case, "preferred_provider", "") or "",
+        "value": None,
+        "start_date": None,
+        "end_date": None,
+        "owner": _case_owner_display(case),
+        "updated_at": case.updated_at.isoformat() if getattr(case, "updated_at", None) else None,
+        "created_at": case.created_at.isoformat() if getattr(case, "created_at", None) else None,
+        "content": "",
+        "case_phase": getattr(case, "case_phase", "intake") or "intake",
+        "risk_level": getattr(case, "risk_level", "LOW") or "LOW",
+        "service_region": getattr(case, "service_region", "") or "",
+        "contract_type": getattr(case, "contract_type", "") or "",
+        "lifecycle_stage": getattr(case, "lifecycle_stage", "") or "",
+        "workflow_state": WorkflowState.DRAFT_CASE,
+        "arrangement_type_code": "",
+        "arrangement_provider": "",
+        "arrangement_end_date": None,
+        "intake_start_date": None,
+        "urgency_validated": False,
+        "urgency_document_present": False,
+        "urgency_granted_date": None,
+        "placement_request_status": None,
+        "placement_provider_response_status": None,
+        "has_case_geo": False,
+    }
+
+
 def _build_case_data(case, *, include_geo=False):
     data = CareCaseData(
         id=str(case.id),
         title=case.title,
         status=case.status,
         preferred_provider=getattr(case, 'preferred_provider', ''),
-        value=float(case.value) if hasattr(case, 'value') and case.value else None,
+        value=_coerce_case_value_for_api(case),
         start_date=case.start_date.isoformat() if hasattr(case, 'start_date') and case.start_date else None,
         end_date=case.end_date.isoformat() if hasattr(case, 'end_date') and case.end_date else None,
-        owner=case.created_by.get_full_name() if case.created_by else 'System',
+        owner=_case_owner_display(case),
         updated_at=case.updated_at.isoformat() if hasattr(case, 'updated_at') and case.updated_at else None,
         created_at=case.created_at.isoformat() if case.created_at else None,
         content=case.content or "",
@@ -396,7 +474,11 @@ def _build_case_data(case, *, include_geo=False):
     result['service_region'] = getattr(case, 'service_region', '') or ''
     result['contract_type'] = getattr(case, 'contract_type', '') or ''
     result['lifecycle_stage'] = getattr(case, 'lifecycle_stage', '') or ''
-    result['workflow_state'] = _case_workflow_state(case)
+    try:
+        result['workflow_state'] = _case_workflow_state(case)
+    except Exception:
+        logger.exception("case_workflow_state_failed case_id=%s", getattr(case, "pk", "?"))
+        result['workflow_state'] = WorkflowState.DRAFT_CASE
     intake = _safe_case_intake(case)
     # Intake-backed fields for SPA (placement inference + urgency) when older clients omit workflow_state.
     if intake is not None:
@@ -412,12 +494,17 @@ def _build_case_data(case, *, include_geo=False):
             intake.urgency_granted_date.isoformat() if getattr(intake, 'urgency_granted_date', None) else None
         )
         # Latest placement row (same signals as derive_workflow_state) for SPA when workflow_state is absent/stale.
-        placement_rows = list(intake.indications.all())
-        placement = placement_rows[0] if placement_rows else None
-        result['placement_request_status'] = placement.status if placement is not None else None
-        result['placement_provider_response_status'] = (
-            placement.provider_response_status if placement is not None else None
-        )
+        try:
+            placement_rows = list(intake.indications.all())
+            placement = placement_rows[0] if placement_rows else None
+            result['placement_request_status'] = placement.status if placement is not None else None
+            result['placement_provider_response_status'] = (
+                placement.provider_response_status if placement is not None else None
+            )
+        except Exception:
+            logger.exception("case_placement_snapshot_failed case_id=%s", getattr(case, "pk", "?"))
+            result['placement_request_status'] = None
+            result['placement_provider_response_status'] = None
     else:
         result['arrangement_type_code'] = ''
         result['arrangement_provider'] = ''
@@ -498,7 +585,13 @@ def contracts_api(request):
         # Raw `case_geo` payload (postcode/coordinates) is intentionally restricted
         # to the detail endpoint at line ~486. See test_case_api_workflow_state.py
         # `test_case_geo_is_exposed_in_detail_but_not_raw_in_list` for the contract.
-        cases = [_build_case_data(case) for case in page_obj]
+        cases: list[dict] = []
+        for case in page_obj:
+            try:
+                cases.append(_build_case_data(case))
+            except Exception:
+                logger.exception("contracts_api case_serialize_failed case_id=%s", getattr(case, "pk", "?"))
+                cases.append(_minimal_case_list_entry(case))
         return JsonResponse({
             'contracts': cases,
             'total_count': paginator.count,
@@ -607,18 +700,26 @@ def case_arrangement_alignment_api(request, case_id):
 @login_required
 @require_http_methods(["GET"])
 def regiekamer_decision_overview_api(request):
-    organization = _active_organization(request)
     try:
+        organization = _active_organization(request)
         if organization is None:
             return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
 
-        cases = scope_queryset_for_organization(
-            CareCase.objects.select_related('due_diligence_process'),
-            organization,
-        ).exclude(
-            Q(lifecycle_stage='ARCHIVED') | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
-        )
-        cases = filter_care_cases_for_provider_actor(cases, request.user, organization)
+        try:
+            cases = scope_queryset_for_organization(
+                CareCase.objects.select_related('due_diligence_process'),
+                organization,
+            ).exclude(
+                Q(lifecycle_stage='ARCHIVED') | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)
+            )
+            cases = filter_care_cases_for_provider_actor(cases, request.user, organization)
+        except Exception:
+            logger.exception(
+                "regiekamer_cases_queryset_failed org_id=%s user_id=%s",
+                getattr(organization, "pk", "?"),
+                getattr(request.user, "pk", "?"),
+            )
+            cases = CareCase.objects.none()
 
         payload = build_regiekamer_decision_overview(
             cases,
@@ -626,15 +727,53 @@ def regiekamer_decision_overview_api(request):
             organization=organization,
         )
         totals = payload.get('totals') or {}
-        if int(totals.get('critical_blockers') or 0) > 0:
-            log_escalation_hint(
-                'REGIEKAMER_CRITICAL_BLOCKERS',
-                extra={
-                    'critical_blockers': totals.get('critical_blockers'),
-                    'active_cases': totals.get('active_cases'),
-                },
+        try:
+            critical_blockers = int(totals.get('critical_blockers') or 0)
+        except (TypeError, ValueError):
+            critical_blockers = 0
+        if critical_blockers > 0:
+            try:
+                log_escalation_hint(
+                    'REGIEKAMER_CRITICAL_BLOCKERS',
+                    extra={
+                        'critical_blockers': totals.get('critical_blockers'),
+                        'active_cases': totals.get('active_cases'),
+                    },
+                )
+            except Exception:
+                logger.exception("regiekamer_escalation_hint_failed")
+        try:
+            return JsonResponse(payload)
+        except Exception:
+            logger.exception(
+                "regiekamer_json_encode_failed correlation_id=%s",
+                getattr(request, "correlation_id", None),
             )
-        return JsonResponse(payload)
+
+            def _safe_totals_int(key: str, default: int = 0) -> int:
+                try:
+                    return int((totals or {}).get(key) or default)
+                except (TypeError, ValueError):
+                    return default
+
+            return JsonResponse(
+                {
+                    "generated_at": timezone.now().isoformat(),
+                    "totals": {
+                        "active_cases": _safe_totals_int("active_cases"),
+                        "critical_blockers": critical_blockers,
+                        "high_priority_alerts": _safe_totals_int("high_priority_alerts"),
+                        "provider_sla_breaches": _safe_totals_int("provider_sla_breaches"),
+                        "repeated_rejections": _safe_totals_int("repeated_rejections"),
+                        "intake_delays": _safe_totals_int("intake_delays"),
+                    },
+                    "items": [],
+                    "governance_queues": {},
+                    "degraded": True,
+                    "degraded_reason": "response_serialization_failed",
+                },
+                status=200,
+            )
     except Exception:
         return _internal_server_error(request, context='regiekamer_decision_overview_api_failed')
 
@@ -1988,7 +2127,7 @@ def intake_create_api(request):
     actor_role, role_error = _require_workflow_role(
         user=request.user,
         organization=organization,
-        allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN},
+        allowed_roles={WorkflowRole.GEMEENTE, WorkflowRole.ADMIN, WorkflowRole.ZORGAANBIEDER},
     )
     if role_error is not None:
         return role_error
@@ -2018,6 +2157,10 @@ def intake_create_api(request):
                 form.instance.entry_route = CaseIntakeProcess.EntryRoute.STANDARD
                 form.instance.workflow_state = WorkflowState.DRAFT_CASE
 
+            form.instance.aanmelder_actor_profile = _derive_aanmelder_actor_profile_for_intake(
+                actor_role=actor_role,
+                entry_route=form.instance.entry_route,
+            )
             intake = form.save()
             case_record = intake.ensure_case_record(created_by=request.user)
             try:

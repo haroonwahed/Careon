@@ -109,3 +109,29 @@ Conclusion:
 
 - local release-confidence gate is green
 - remaining go-live work is operational/process validation on staging and production, not code-level release blockers in the checked surfaces
+
+## 2026-05-12: Staging HTTP smoke (Render)
+
+- Environment: **Render staging** — `https://careon-web.onrender.com`
+- Scope: automated `scripts/go_live_http_smoke.sh` after aligning third check to `/?view=dashboard` (Whitenoise returned 404 for `/static/spa/?view=dashboard` while app was healthy)
+- Repo reference at time of check: **`eb115a0`** (local workspace; redeploy may differ)
+
+### Commands
+
+```bash
+BASE_URL=https://careon-web.onrender.com ./scripts/go_live_http_smoke.sh
+```
+
+### Result
+
+- success — `GET /` → 200, `GET /care/` → 200, `GET /?view=dashboard` → 200
+
+### Not done here (requires your secrets / browser / people)
+
+- `go_live_django_preflight.sh` against Render’s **real** `DATABASE_URL` + full prod env (not run from this agent)
+- Manual browser smoke per `docs/POST_DEPLOY_VERIFICATION_CHECKLIST.md` §3–7 (gemeente + aanbieder)
+- Sentry alert routing + on-call roster (operational)
+
+### Conclusion
+
+- staging origin responds on critical HTTP paths; treat browser + DB preflight as the next gate before calling pilot “signed off”

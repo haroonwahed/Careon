@@ -104,6 +104,8 @@ function manualVendorChunks(id: string) {
       },
     },
     server: {
+      // Default Node/Vite can bind IPv6-only (::1); browsers on http://127.0.0.1:3000 then get ERR_CONNECTION_REFUSED.
+      host: true,
       port: 3000,
       open: true,
       proxy: {
@@ -132,32 +134,23 @@ function manualVendorChunks(id: string) {
           changeOrigin: true,
           secure: false,
         },
-        '/logout/': {
+        // Prefix without trailing slash so `/login` and `/login/` both hit Django (otherwise SPA index is served).
+        // Do not override Origin/Referer: Django CSRF expects the browser's real SPA host
+        // (e.g. http://localhost:3000), see CSRF_TRUSTED_ORIGINS in config/settings.py.
+        '/logout': {
           target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
-          headers: {
-            origin: djangoDevOrigin,
-            referer: `${djangoDevOrigin}/logout/`,
-          },
         },
-        '/login/': {
+        '/login': {
           target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
-          headers: {
-            origin: djangoDevOrigin,
-            referer: `${djangoDevOrigin}/login/`,
-          },
         },
-        '/register/': {
+        '/register': {
           target: djangoDevOrigin,
           changeOrigin: true,
           secure: false,
-          headers: {
-            origin: djangoDevOrigin,
-            referer: `${djangoDevOrigin}/register/`,
-          },
         },
         '/settings/': {
           target: djangoDevOrigin,

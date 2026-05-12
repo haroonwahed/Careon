@@ -49,9 +49,10 @@ function nlMetIntakeVertraging(d: number): string {
   return x === 1 ? "1 aanvraag met intake-vertraging" : `${x} aanvragen met intake-vertraging`;
 }
 
-function nlMetVerhoogdRisico(risks: number): string {
+/** Titel zonder getal: het aantal staat in `panel.linkCount` / CareAlertCard-metric. */
+function nlMetVerhoogdRisicoHeading(risks: number): string {
   const x = r(risks);
-  return x === 1 ? "1 aanvraag met verhoogd risico" : `${x} aanvragen met verhoogd risico`;
+  return x === 1 ? "Aanvraag met verhoogd risico" : "Aanvragen met verhoogd risico";
 }
 
 function nlMatchingRegieTitel(m: number): string {
@@ -236,9 +237,9 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // Risico’s (na de vier prioritaire signalen)
   if (risks >= REGIEKAMER_NBA_RISK_THRESHOLD) {
     return {
-      title: nlMetVerhoogdRisico(risks),
-      description: "Signalen kunnen doorstroom of kwaliteit onder druk zetten.",
-      reasons: [nlMetVerhoogdRisico(risks)],
+      title: nlMetVerhoogdRisicoHeading(risks),
+      description: "",
+      reasons: [],
       primaryAction: { label: "Bekijk kritieke aanvragen", actionKey: "FOCUS_RISKS" },
       secondaryAction: {
         label: "Open SLA-signalen",
