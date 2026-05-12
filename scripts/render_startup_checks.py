@@ -7,6 +7,23 @@ import sys
 from urllib.parse import urlparse
 
 
+def _normalize_database_url(database_url: str) -> str:
+    """Strip accidental outer quotes (Render / .env copy-paste)."""
+    url = database_url.strip()
+    for _ in range(2):
+        if len(url) < 2:
+            break
+        q = url[0]
+        if q in '"\'' and url.endswith(q):
+            inner = url[1:-1].strip()
+            low = inner.lower()
+            if low.startswith(("postgres://", "postgresql://")):
+                url = inner
+                continue
+        break
+    return url
+
+
 def database_url_shape(database_url: str) -> str:
     url = database_url.strip()
     if not url:
@@ -21,7 +38,7 @@ def database_url_shape(database_url: str) -> str:
 
 
 def validate_database_url(database_url: str) -> tuple[bool, str]:
-    url = database_url.strip()
+    url = _normalize_database_url(database_url)
     if not url:
         return False, "ERROR: DATABASE_URL is missing from the Render runtime environment."
 
@@ -29,7 +46,26 @@ def validate_database_url(database_url: str) -> tuple[bool, str]:
     shape = database_url_shape(url)
 
     if parsed.scheme not in {"postgres", "postgresql"}:
-        return False, f"ERROR: DATABASE_URL must start with postgresql:// or postgres://. Current shape: {shape}"
+        low = url.lower().strip()
+        embedded_pg = ("postgresql://" in low or "postgres://" in low) and not low.startswith(
+            ("postgres://", "postgresql://")
+        )
+        hint = ""
+        if embedded_pg:
+            hint = (
+                " A full postgres URL appears inside the value but not at the start — "
+                "remove leading junk, duplicate host fragments, or JSON-style quotes in the middle; "
+                "use a single line postgresql://user:password@host:port/dbname ."
+            )
+        elif " " in url.split("@", 1)[0]:
+            hint = (
+                " There is a space before '@' in the userinfo — use a colon between username and password "
+                "(postgresql://username:password@host/...), and URL-encode special characters in the password."
+            )
+        return False, (
+            "ERROR: DATABASE_URL must start with postgresql:// or postgres://."
+            f"{hint} Current shape: {shape}"
+        )
 
     if not parsed.hostname:
         return False, f"ERROR: DATABASE_URL is missing a hostname. Check the part after '@'. Current shape: {shape}"
