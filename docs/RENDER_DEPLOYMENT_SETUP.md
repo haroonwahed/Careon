@@ -39,7 +39,7 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 
 ### Build Phase
 
-1. Install Python and Node.js dependencies.
+1. Install Python and Node.js dependencies. Full Django tests run in GitHub Actions (for example `.github/workflows/platform-guardrails.yml`), not on Render build; `render.yaml` runs `manage.py check` after `pip install` as a fast configuration gate.
 2. Build the frontend.
 3. Collect Django static files.
 4. If `DATABASE_URL` is set, run Django migrations.
