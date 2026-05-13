@@ -1,5 +1,7 @@
 from unittest import TestCase
 
+import os
+
 from scripts.render_startup_checks import validate_database_url
 
 # Do not import pytest here: Render build runs `manage.py test` with runtime-only
@@ -40,3 +42,21 @@ class RenderStartupChecksTests(TestCase):
 
         self.assertFalse(ok)
         self.assertIn("not at the start", message)
+
+    def test_rejects_direct_supabase_host_on_render(self) -> None:
+        old_render = os.environ.get("RENDER")
+        try:
+            os.environ["RENDER"] = "true"
+            ok, message = validate_database_url(
+                "postgresql://postgres:secret@db.hdvdeviuncpcqsgopnae.supabase.co:5432/postgres"
+            )
+        finally:
+            if old_render is None:
+                os.environ.pop("RENDER", None)
+            else:
+                os.environ["RENDER"] = old_render
+
+        self.assertFalse(ok)
+        self.assertIn("Supabase session pooler", message)
+        self.assertIn("IPv6 is not available", message)
+        self.assertIn("older manual Start Command override", message)

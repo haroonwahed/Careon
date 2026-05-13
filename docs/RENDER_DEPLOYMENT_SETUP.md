@@ -47,7 +47,7 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 
 ### Startup Phase
 
-1. If `DATABASE_URL` is set, run Django migrations.
+1. Run production startup checks.
 2. Start Gunicorn server on port `$PORT`.
 
 ## Troubleshooting
@@ -68,7 +68,7 @@ For a field-by-field checklist of the production environment values, see:
 
 ### Migrations Not Running
 
-- If `DATABASE_URL` is empty, migrations are skipped at startup.
+- If `DATABASE_URL` is empty, build-time migrations are skipped.
 - Manually run migrations:
 
 ```bash
@@ -86,11 +86,11 @@ python manage.py migrate --settings=config.settings
 **Current Implementation (Recommended):**
 
 - Build phase tries to run migrations only if DB is available.
-- Startup phase runs migrations before starting the app.
-- This ensures migrations run with the actual production database.
+- Startup phase runs production startup checks before starting the app.
+- This keeps boot fast and avoids blocking on a long or locked migration during Render startup.
 
 **Benefits:**
 
-- Migrations always run against the correct database.
+- Migrations can still run during build when the database is available.
 - Build succeeds even if the database is not ready yet.
-- Multiple replicas can coexist, while only the first startup runs migrations.
+- Multiple replicas can coexist because startup no longer competes over the same migration step.

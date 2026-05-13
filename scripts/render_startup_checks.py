@@ -81,6 +81,24 @@ def validate_database_url(database_url: str) -> tuple[bool, str]:
             "Copy the session pooler connection string from Supabase Connect.",
         )
 
+    if (
+        os.environ.get("RENDER", "").strip().lower() == "true"
+        and parsed.hostname
+        and parsed.hostname.startswith("db.")
+        and parsed.hostname.endswith(".supabase.co")
+    ):
+        return (
+            False,
+            "ERROR: Render deployments should use the Supabase session pooler URL, not the direct "
+            f"database host. Current shape: {shape}. "
+            "Use the connection string that starts with "
+            "'postgres://postgres.<project-ref>:...@aws-0-<region>.pooler.supabase.com:5432/postgres'. "
+            "The direct db.<project-ref>.supabase.co host may fail from Render when IPv6 is not available. "
+            "If Render logs still show a migrate step during startup, the service is probably running an "
+            "older manual Start Command override instead of the repo script; set it to "
+            "'bash scripts/render_start_command.sh' and redeploy.",
+        )
+
     return True, (
         f"DATABASE_URL detected: {shape}"
     )

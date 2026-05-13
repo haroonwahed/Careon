@@ -8,7 +8,7 @@ The production startup path requires a real PostgreSQL `DATABASE_URL`. If Render
 
 ## Start command drift (your logs look “old”)
 
-If deploy logs still show **`Starting careon-web revision=`** and **“Set it on the careon-web service”**, but this repo’s **`render.yaml`** uses **`Starting web revision=`**, different `DATABASE_URL` error text, and **`[render] Running migrate…`**, then Render is **not** running the current `startCommand` from Git — usually because the service has a **manual Start Command** saved in the dashboard (from an older setup) that overrides the blueprint.
+If deploy logs still show **`Starting careon-web revision=`** and **“Set it on the careon-web service”**, but this repo’s **`render.yaml`** uses **`Starting web revision=`**, different `DATABASE_URL` error text, and a direct **gunicorn startup** after `render_startup_checks.py`, then Render is **not** running the current `startCommand` from Git — usually because the service has a **manual Start Command** saved in the dashboard (from an older setup) that overrides the blueprint.
 
 **Fix:** Render requires a **non-empty** Start Command. Use a **one-liner** so it never drifts from the repo:
 
@@ -49,7 +49,7 @@ Fill these in on **the Python web service that runs your Django start command** 
 7. Set `DEFAULT_FROM_EMAIL` to the production sender address.
 8. Save the changes.
 9. Redeploy the service.
-10. Verify the startup log shows `Starting web revision=...`, then `DATABASE_URL validated.` (or the detailed shape if `DATABASE_URL_VERBOSE_LOG` is enabled), then migrate/gunicorn lines, and no guard failure from `render_startup_checks.py`.
+10. Verify the startup log shows `Starting web revision=...`, then `DATABASE_URL validated.` (or the detailed shape if `DATABASE_URL_VERBOSE_LOG` is enabled), then startup-check and gunicorn lines, and no guard failure from `render_startup_checks.py`.
 
 ## Validation Commands
 
@@ -66,9 +66,11 @@ If startup still fails:
 - confirm `DATABASE_URL` starts with `postgresql://` or `postgres://`
 - confirm the password portion is percent-encoded if it contains reserved characters like `,`, `@`, `:` or `*`
 - if you use Supabase's session pooler, confirm the username is `postgres.<project-ref>` rather than plain `postgres`
+- if you use a direct Supabase host (`db.<project-ref>.supabase.co`) on Render, switch to the Supabase session pooler; direct IPv6-only routes can fail from Render
 - confirm the database host is reachable from Render
 - confirm `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` include the actual Render URL
 - confirm `DEFAULT_FROM_EMAIL` is not the local placeholder
+- if the logs still mention a migrate step during startup, override drift is still in effect; reset the service Start Command to `bash scripts/render_start_command.sh`
 
 ## Related Docs
 
