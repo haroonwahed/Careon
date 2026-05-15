@@ -13,6 +13,7 @@ This repository is **CareOn (Zorg OS)**: a **regulated operational coordination 
 | [`AGENTS.md`](../AGENTS.md) | Agent and contributor operating rules (workflow-first, UI modes, risk class) |
 | [`PILOT_PROOF_PACKAGE.md`](./PILOT_PROOF_PACKAGE.md) | Deterministic pilot rehearsal + **release ritual** (GO/NO-GO artifacts) |
 | [`V1_SCOPE.md`](./V1_SCOPE.md) | **v1 wave:** Phase 0 closure + Phase 1 Must baseline + `assessment` contract |
+| [`NORTH_STAR_V1_STATUS.md`](./NORTH_STAR_V1_STATUS.md) | **v1 progress %** vs north star, Phase 0–1, staging gate |
 
 Supporting: [`ZORG_OS_FOUNDATION_APPROACH.md`](./ZORG_OS_FOUNDATION_APPROACH.md), [`TERMINOLOGY.md`](./TERMINOLOGY.md), [`AANMELDER_WORKFLOWROLE_MAPPING.md`](./AANMELDER_WORKFLOWROLE_MAPPING.md).
 
