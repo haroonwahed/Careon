@@ -2,8 +2,8 @@
 
 Release date: **2026-05-15**  
 Timezone: **Europe/Amsterdam**  
-Release SHA: **`5204b85`** (local rehearsal; commit on `main` — push branch with pilot changes before staging deploy)  
-Branch: **`main`** (worktree had uncommitted pilot/E2E changes at rehearsal time)  
+Release SHA: **`88061c88`** (squash merge of PR #1 to `main`)  
+Branch: **`main`**  
 
 ## Pilot rehearsal (pre-staging) — local
 
@@ -18,7 +18,8 @@ Branch: **`main`** (worktree had uncommitted pilot/E2E changes at rehearsal time
 
 | Check | Command | Status | Notes |
 |-------|---------|--------|-------|
-| Pilot rehearsal workflow | Push `.github/workflows/pilot-rehearsal.yml`, then `gh workflow run pilot-rehearsal.yml -f with_playwright=true` | **Pending push** | Workflow file not on remote yet at rehearsal time |
+| PR #1 merge | https://github.com/haroonwahed/Careon/pull/1 | **Merged** (squash) | CI green after CI fixes (Django 5.2.14, deploy SSL, grep, npm audit --omit=dev, clientLabel) |
+| Pilot rehearsal workflow | `gh workflow run pilot-rehearsal.yml -f with_playwright=true` | **GO** (2026-05-15) | https://github.com/haroonwahed/Careon/actions/runs/25911242272 — artifact `pilot-rehearsal-25911242272` |
 
 ## Owner assignments
 
@@ -35,10 +36,10 @@ Use [`RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md) for full st
 
 | Step | Owner | Target | Actual | Evidence |
 |------|-------|--------|--------|----------|
-| Staging preflight | Ops + Release captain | T-90m | | SHA, backup ref, `manage.py check` |
-| Staging deploy | Backend + Ops | T-60m | | migrate, collectstatic, restart |
-| Staging smoke | QA | T-45m | | Below |
-| Staging sign-off | Release captain | T-30m | | Open issues list |
+| Staging preflight | Ops + Release captain | T-90m | **Pending** | Deploy **`88061c88`** to `https://careon-web.onrender.com` (Render auto-deploy if wired) |
+| Staging deploy | Backend + Ops | T-60m | **Pending** | migrate, collectstatic, restart |
+| Staging smoke | QA | T-45m | **Partial** (2026-05-15) | `BASE_URL=https://careon-web.onrender.com ./scripts/go_live_http_smoke.sh` → **OK** (/, `/care/`, dashboard shell). Full rehearsal on host **after deploy**. |
+| Staging sign-off | Release captain | T-30m | **Pending** | After host rehearsal + authenticated routes |
 
 **Staging smoke commands** (on staging host, rehearsal-equivalent DB or pilot seed):
 
