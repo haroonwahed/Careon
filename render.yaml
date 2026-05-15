@@ -42,3 +42,10 @@ services:
       # Optional. When set, overrides Render WEB_CONCURRENCY for gunicorn --workers (e.g. 2 on free tier).
       - key: GUNICORN_WORKERS
         sync: false
+      # Staging pilot: idempotent demo tenant on cold start (see bootstrap_staging_pilot).
+      - key: PILOT_AUTO_BOOTSTRAP
+        value: "1"
+      - key: PILOT_FORCE_RESET
+        value: "1"
+      - key: E2E_DEMO_PASSWORD
+        value: pilot_demo_pass_123

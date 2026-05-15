@@ -1,0 +1,66 @@
+# Staging sign-off: HTTP shell + Playwright against deployed origin.
+# Optional remote seed when repository secret STAGING_DATABASE_URL is set.
+name: Staging pilot sign-off
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed_remote:
+        description: Run migrate + bootstrap against STAGING_DATABASE_URL
+        type: boolean
+        default: false
+
+jobs:
+  signoff:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Python deps
+        run: pip install -r requirements/runtime.txt
+
+      - name: Install client deps
+        run: npm ci --prefix client
+
+      - name: Build SPA (bundle hash reference)
+        run: npm run build --prefix client
+
+      - name: Remote seed (optional)
+        if: inputs.seed_remote && secrets.STAGING_DATABASE_URL != ''
+        env:
+          STAGING_DATABASE_URL: ${{ secrets.STAGING_DATABASE_URL }}
+          DJANGO_SECRET_KEY: ${{ secrets.STAGING_DJANGO_SECRET_KEY }}
+          ALLOWED_HOSTS: ${{ vars.STAGING_ALLOWED_HOSTS }}
+          CSRF_TRUSTED_ORIGINS: ${{ vars.STAGING_CSRF_TRUSTED_ORIGINS }}
+          DEFAULT_FROM_EMAIL: ${{ vars.STAGING_DEFAULT_FROM_EMAIL }}
+        run: |
+          set -euo pipefail
+          export DATABASE_URL="$STAGING_DATABASE_URL"
+          export DJANGO_SETTINGS_MODULE=config.settings_production
+          test -n "${DJANGO_SECRET_KEY:-}"
+          test -n "${ALLOWED_HOSTS:-}"
+          test -n "${CSRF_TRUSTED_ORIGINS:-}"
+          test -n "${DEFAULT_FROM_EMAIL:-}"
+          ./scripts/staging_pilot_signoff.sh --seed
+
+      - name: Staging sign-off (shell + Playwright)
+        env:
+          BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          E2E_BASE_URL: ${{ vars.STAGING_BASE_URL }}
+          E2E_DEMO_PASSWORD: ${{ secrets.STAGING_E2E_DEMO_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export BASE_URL="${BASE_URL:-https://careon-web.onrender.com}"
+          export E2E_BASE_URL="${E2E_BASE_URL:-$BASE_URL}"
+          export E2E_DEMO_PASSWORD="${E2E_DEMO_PASSWORD:-pilot_demo_pass_123}"
+          ./scripts/staging_pilot_signoff.sh

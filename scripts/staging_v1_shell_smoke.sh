@@ -41,4 +41,13 @@ done
 if [[ "$failed" -ne 0 ]]; then
   exit 1
 fi
+if [[ -n "${EXPECTED_SPA_JS:-}" ]]; then
+  live_js="$(curl -sS -L --max-time 60 "${ORIGIN}/dashboard/" | grep -oE 'index-[A-Za-z0-9_-]+\.js' | head -1 || true)"
+  if [[ "$live_js" != "$EXPECTED_SPA_JS" ]]; then
+    echo "FAIL SPA bundle on /dashboard/: expected ${EXPECTED_SPA_JS}, got ${live_js:-<none>}"
+    exit 1
+  fi
+  echo "OK   SPA bundle ${live_js} on /dashboard/"
+fi
+
 echo "== All shell routes returned 2xx/3xx"

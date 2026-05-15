@@ -30,6 +30,13 @@ if [[ -z "${DATABASE_URL:-}" ]]; then
 fi
 
 python scripts/render_startup_checks.py
+
+if [[ "${PILOT_AUTO_BOOTSTRAP:-}" =~ ^(1|true|yes)$ ]]; then
+  echo "[render] PILOT_AUTO_BOOTSTRAP enabled — migrate + bootstrap_staging_pilot"
+  python manage.py migrate --noinput
+  python manage.py bootstrap_staging_pilot
+fi
+
 echo "[render] Startup checks passed; starting gunicorn on port ${PORT:-?}"
 
 WORKERS="${GUNICORN_WORKERS:-${WEB_CONCURRENCY:-2}}"
