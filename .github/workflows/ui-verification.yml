@@ -43,7 +43,7 @@ jobs:
 
       - name: Contract components guard
         run: |
-          rg -n "export function MetricStrip|export function Worklist|export function NextBestAction|export function ProcessTimeline" client/src/components/design
+          grep -En "export function (MetricStrip|Worklist|NextBestAction|ProcessTimeline)" client/src/components/design
 
       - name: Run UI verification suite
         run: ./scripts/verify_ui.sh || echo "UI verification is non-blocking during migration refactor window"
