@@ -73,6 +73,22 @@ class ReleaseEvidenceBundleTests(TestCase):
             self.assertEqual(loaded['case_id'], 1)
             self.assertTrue(flags['rehearsal_timeline_evidence_json'])
 
+    def test_load_from_custom_reports_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            custom = tmp / 'reports' / 'pilot-ci'
+            custom.mkdir(parents=True)
+            ev = _valid_evidence()
+            (custom / 'rehearsal_timeline_evidence.json').write_text(
+                json.dumps(ev),
+                encoding='utf-8',
+            )
+            loaded, flags = load_timeline_evidence_from_reports(tmp, reports_dir=custom)
+            self.assertIsNotNone(loaded)
+            assert loaded is not None
+            self.assertEqual(loaded['case_id'], 1)
+            self.assertTrue(flags['rehearsal_timeline_evidence_json'])
+
     def test_load_nested_from_rehearsal_report(self):
         with tempfile.TemporaryDirectory() as td:
             tmp = Path(td)
@@ -180,3 +196,25 @@ class MergedRehearsalReportBundleTests(TestCase):
             payload = json.loads(out.read_text(encoding='utf-8'))
             self.assertTrue(payload['timeline_gate']['go'])
             self.assertTrue(payload['sources']['rehearsal_report_timeline_boundary_evidence'])
+
+    def test_release_evidence_bundle_command_with_custom_reports_dir(self):
+        with tempfile.TemporaryDirectory() as td:
+            tmp = Path(td)
+            sub = tmp / 'reports' / 'pilot-123'
+            sub.mkdir(parents=True)
+            (sub / 'rehearsal_timeline_evidence.json').write_text(
+                json.dumps(_valid_evidence()),
+                encoding='utf-8',
+            )
+            out = sub / 'release_evidence_bundle.json'
+            call_command(
+                'release_evidence_bundle',
+                base_dir=str(tmp),
+                reports_dir=str(sub),
+                write_json=str(out),
+                stdout=StringIO(),
+                stderr=StringIO(),
+            )
+            self.assertTrue(out.is_file())
+            payload = json.loads(out.read_text(encoding='utf-8'))
+            self.assertTrue(payload['timeline_gate']['go'])

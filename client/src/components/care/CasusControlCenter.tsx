@@ -1,6 +1,9 @@
 /**
  * CasusControlCenter — Phase-Driven Execution Engine
  *
+ * Quarantine: this module is not imported from the live SPA route tree (`FEATURE_INVENTORY.md`).
+ * Keep it out of production navigation unless explicitly wired and signed off.
+ *
  * Single page, single layout, seven phases.
  * ALL rendering is driven by computeCaseState() — the UI never guesses.
  *

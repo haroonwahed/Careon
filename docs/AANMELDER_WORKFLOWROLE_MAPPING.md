@@ -26,5 +26,6 @@
 ## References
 
 - `docs/FOUNDATION_LOCK.md` — actor ownership table  
-- `docs/Zorg_OS_Product_System_Core_v1_3.md` — Aanmelder-first product model  
+- `docs/ACTOR_PROFILES_ROADMAP.md` — phased plan to align product + enforcement  
+- `docs/Careon_Operational_Constitution_v2.md` — Aanmelder-first and role model (section 5)  
 - `contracts/workflow_state_machine.py` — `WorkflowRole` and allowed actions  

@@ -1,6 +1,6 @@
 # Zorg OS v1.2 — implementatie-evidence (kort)
 
-> **Superseded for product canon:** strategy, UX law, and terminology are governed by **v1.3** (`docs/Zorg_OS_Product_System_Core_v1_3.md`, `docs/FOUNDATION_LOCK.md`, `docs/ZORG_OS_V1_3_STRATEGIC_REALIGNMENT_EVIDENCE.md`). Dit document blijft relevant als **technische** evidence voor de v1.2 API- en schema-uitbreidingen totdat die worden vervangen of samengevoegd.
+> **Superseded for product canon:** strategy, UX law, and terminology are governed by **Operational Constitution v2** (`docs/Careon_Operational_Constitution_v2.md`, `docs/FOUNDATION_LOCK.md`, `docs/ZORG_OS_V1_3_STRATEGIC_REALIGNMENT_EVIDENCE.md`). Dit document blijft relevant als **technische** evidence voor de v1.2 API- en schema-uitbreidingen totdat die worden vervangen of samengevoegd.
 
 ## Gewijzigde bestanden (belangrijkste)
 

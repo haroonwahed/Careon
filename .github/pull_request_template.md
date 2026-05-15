@@ -12,6 +12,8 @@
 
 ## Doctrine Compliance (Required For UI Changes)
 
+- [ ] This change follows `docs/Careon_Operational_Constitution_v2.md` (and `docs/Careon_Operational_Constitution_v2.docx` where sign-off matters)
+- [ ] Workflow, permissions, or API changes respect `docs/FOUNDATION_LOCK.md` and `contracts/workflow_state_machine.py`
 - [ ] This change follows `docs/CAREON_VISUAL_DOCTRINE.md`
 - [ ] This change follows `docs/CAREON_DOCTRINE_ENFORCEMENT_PHASE2.md`
 - [ ] No new primitive was introduced without explicit approval
@@ -45,6 +47,8 @@ If unresolved `P0` exists, this PR must not merge.
 
 ## Verification
 
+- [ ] Onboarding path reviewed: `docs/START_HERE.md`
+- [ ] If release-sensitive: pilot rehearsal / evidence expectations in `docs/PILOT_PROOF_PACKAGE.md`
 - [ ] `python manage.py check`
 - [ ] `python manage.py test tests.test_cross_tenant_isolation -v 1`
 - [ ] `python manage.py audit_null_organizations`

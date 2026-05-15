@@ -1,0 +1,86 @@
+# Deterministic pilot rehearsal + release evidence bundle (GO/NO-GO).
+# Runs on a fixed cadence and on version tags so evidence is archived, not tribal memory.
+#
+# Artifacts: merged `rehearsal_report.json`, `rehearsal_timeline_evidence.json`,
+# `release_evidence_bundle.json`, logs (see docs/PILOT_PROOF_PACKAGE.md).
+
+name: Pilot rehearsal (release evidence)
+
+on:
+  workflow_dispatch:
+    inputs:
+      with_playwright:
+        description: Run Playwright golden path (builds SPA; slower). Default rehearsal stays headless/TestClient-only.
+        required: false
+        default: false
+        type: boolean
+  schedule:
+    # Weekly: Monday 05:15 UTC — adjust to match your ship cadence.
+    - cron: '15 5 * * 1'
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: pilot-rehearsal-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  full-rehearsal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      DJANGO_SETTINGS_MODULE: config.settings_rehearsal
+      DJANGO_SECRET_KEY: ci-rehearsal-not-for-production-use-only-abcdefghijklmnopqrstuvwxyz0123456789
+      REPORT_DIR: ${{ github.workspace }}/reports/pilot-${{ github.run_id }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements/dev.txt
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements/dev.txt
+
+      - name: Set up Node (optional Playwright / SPA build)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Run full pilot rehearsal (headless / default)
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.with_playwright == true) }}
+        run: bash scripts/run_full_pilot_rehearsal.sh
+
+      - name: Install Playwright browsers (Chromium)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_playwright == true }}
+        working-directory: client
+        run: npx playwright install --with-deps chromium
+
+      - name: Run full pilot rehearsal (with Playwright)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.with_playwright == true }}
+        run: bash scripts/run_full_pilot_rehearsal.sh --with-playwright --start-server
+
+      - name: Verify release evidence bundle JSON schema
+        if: success()
+        run: python scripts/verify_release_evidence_bundle.py "${{ env.REPORT_DIR }}/release_evidence_bundle.json"
+
+      - name: Upload pilot evidence bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-rehearsal-${{ github.run_id }}
+          path: reports/pilot-${{ github.run_id }}/
+          if-no-files-found: warn
+          retention-days: 180

@@ -9,8 +9,8 @@ Current product completeness baseline: **88-92%**
 - [x] Close route friction on the canonical entry points.
 - [x] Finish the last visible workflow vocabulary gaps in live templates.
 - [x] Mark clearly historical docs and examples so they do not read like current guidance.
-- [ ] Keep browser smoke checks and workflow gating tests green.
-- [ ] Decide whether the stable `assessment` contract stays internal or gets a formal migration.
+- [x] Keep browser smoke checks and workflow gating tests green.
+- [x] Decide whether the stable `assessment` contract stays internal or gets a formal migration. (**Decision:** internal stable for this wave — `docs/V1_SCOPE.md` §3.)
 
 ## Task Checklist
 
@@ -36,8 +36,8 @@ Current product completeness baseline: **88-92%**
 - [ ] Keep the client build green.
 
 ### Sprint E: Contract Decision
-- [ ] Decide whether `assessment` remains an internal stable contract or gets a formal migration.
-- [ ] If migrating, draft the rename plan before touching schema or API routes.
+- [x] Decide whether `assessment` remains an internal stable contract or gets a formal migration. (**Recorded:** `docs/V1_SCOPE.md` §3 — keep internal; migration only with dual-read plan.)
+- [ ] If migrating, draft the rename plan before touching schema or API routes. *(N/A while decision is internal-stable.)*
 
 ## What remains
 
@@ -128,10 +128,12 @@ Current work items:
 - if not, define the migration scope before any code change
 
 Status:
-- not started
-- this is a product/platform decision, not a copy pass
+- **decision recorded** in [`docs/V1_SCOPE.md`](./V1_SCOPE.md) §3 — keep `assessment` / `CaseAssessment` as stable internal contract for this wave; no rename without a dual-read migration plan
+- this remains a product/platform gate if scope changes later
 
 ## Recommended next slice
+
+**Single prioritized queue:** [`PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`](./PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md) (MoSCoW + top 15, **provider-chain-first** default; pilot/rehearsal as alternate lens).
 
 If we keep working immediately, the highest-value next slice is:
 
@@ -218,8 +220,12 @@ Owner:
 - Product architecture + engineering
 
 Files:
-- `docs/Zorg_OS_Product_System_Core_v1_3.md`
-- `docs/Zorg_OS_Technical_Foundation_v1_3.md`
+- `docs/START_HERE.md`
+- `docs/Careon_Operational_Constitution_v2.md`
+- `docs/ACTOR_PROFILES_ROADMAP.md`
+- `docs/FRONTEND_UI_MODE_AUDIT.md`
+- `docs/MATCHING_EXPLAINABILITY.md`
+- `docs/FOUNDATION_LOCK.md`
 - `contracts/models.py` (only when persisting new alignment hints)
 - `contracts/api/views.py` (only when exposing read-only alignment endpoints)
 - `client/src/components/care/*.tsx`

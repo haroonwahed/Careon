@@ -16,6 +16,16 @@ vi.mock("../../hooks/useProviders", () => ({
   useProviders: (...args: unknown[]) => mockUseProviders(...args),
 }));
 
+vi.mock("../../hooks/useMatchingCandidates", () => ({
+  useMatchingCandidates: () => ({
+    matches: [],
+    loading: false,
+    error: null,
+    incompleteCode: null,
+    refetch: vi.fn(),
+  }),
+}));
+
 vi.mock("../../lib/apiClient", () => ({
   apiClient: {
     get: vi.fn(),

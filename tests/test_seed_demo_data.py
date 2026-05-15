@@ -86,6 +86,14 @@ class SeedDemoDataTests(TestCase):
                 self.assertEqual(match.zorgaanbieder.name, expected_provider)
                 self.assertGreaterEqual(match.totaalscore, 79)
 
+    def test_seeded_horizon_sla_case_has_handoff_read_model_on_intake(self):
+        """CASE_TITLES[11]: rehearsal provider (Horizon) + E2E handoff assertions."""
+        organization = Organization.objects.get(slug=DEMO_ORG_SLUG)
+        intake = CaseIntakeProcess.objects.get(organization=organization, title=CASE_TITLES[11])
+        self.assertEqual(intake.entry_route, CaseIntakeProcess.EntryRoute.WIJKTEAM)
+        self.assertEqual(intake.aanmelder_actor_profile, CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM)
+        self.assertIsNotNone(intake.gemeente_id)
+
     def test_matching_candidates_api_is_safe_for_demo_account(self):
         organization = Organization.objects.get(slug=DEMO_ORG_SLUG)
         user = User.objects.get(username=DEMO_EMAIL)
@@ -99,6 +107,8 @@ class SeedDemoDataTests(TestCase):
         payload = response.json()
         self.assertGreaterEqual(payload['count'], 1)
         self.assertEqual(payload['matches'][0]['zorgaanbieder_id'], match.zorgaanbieder_id)
+        self.assertIn('aanbiederName', payload['matches'][0])
+        self.assertTrue(str(payload['matches'][0].get('aanbiederName') or '').strip())
 
     def test_locked_seed_sets_deadline_dates_from_pilot_anchor(self):
         call_command('seed_demo_data', reset=True, locked_time=True, verbosity=0)

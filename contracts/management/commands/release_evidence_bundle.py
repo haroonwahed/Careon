@@ -32,6 +32,15 @@ class Command(BaseCommand):
             help='Write bundle JSON (default: <base-dir>/reports/release_evidence_bundle.json).',
         )
         parser.add_argument(
+            '--reports-dir',
+            dest='reports_dir',
+            default='',
+            help=(
+                'Directory containing rehearsal_report.json / rehearsal_timeline_evidence.json '
+                '(default: <base-dir>/reports). Use with custom REPORT_DIR in CI.'
+            ),
+        )
+        parser.add_argument(
             '--report-only',
             action='store_true',
             help='Write JSON but do not exit non-zero on NO-GO.',
@@ -56,7 +65,15 @@ class Command(BaseCommand):
             os_out = str(raw_out).strip()
             out_path = Path(os_out) if os_out else base / 'reports' / 'release_evidence_bundle.json'
 
-        bundle = build_release_evidence_bundle(base)
+        raw_reports = options.get('reports_dir')
+        reports_path: Path | None = None
+        if raw_reports is not None:
+            rs = str(raw_reports).strip()
+            if rs:
+                rp = Path(rs)
+                reports_path = rp if rp.is_absolute() else (base / rp).resolve()
+
+        bundle = build_release_evidence_bundle(base, reports_dir=reports_path)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(bundle, indent=2, ensure_ascii=False), encoding='utf-8')
 

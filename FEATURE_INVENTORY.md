@@ -13,14 +13,14 @@ Date: 2026-04-25
 | `/rapportages` and the `RapportagesPage` export preview | `SUPPORTING_INTERNAL` / internal-only; keep the label explicit in the UI |
 | `/gebruikers` in the sidebar legacy path | `LEGACY` |
 | `client/src/components/examples/*` | `DEMO_ONLY` |
-| `client/src/components/care/CasusControlCenter.tsx` | `UNKNOWN` until it is wired or explicitly archived |
+| `client/src/components/care/CasusControlCenter.tsx` | `QUARANTINED_LEGACY` — not imported by the SPA; alternate phase-driven shell kept for reference; do not link from production navigation without explicit product sign-off (see `TECH_DEBT.md`) |
 | `client/src/components/provider/ProviderIntakeDashboard.tsx` | `DEMO_ONLY` and intentionally quarantined; not linked from the live route map |
 
 ### v1.3 product evolution (orchestration layer)
 
 - **Anonimisatie** is a named stage in the v1.3 product flow. Deterministic masking may exist today; dedicated AI routes require explicit security review, permissions, audit, and tests before production claims.
 - **Uitstroom** is explicit product language for trajectory exit after placement + gemeentelijke validatie; technically mapped to completion + archive semantics until a dedicated persisted state is introduced.
-- **Arrangement intelligence** is advisory-only (see `client/src/lib/arrangementAlignmentContract.ts` and `docs/Zorg_OS_Technical_Foundation_v1_3.md`); no implied automatic financial correctness.
+- **Arrangement intelligence** is advisory-only (see `client/src/lib/arrangementAlignmentContract.ts` and `docs/Careon_Operational_Constitution_v2.md` section 4 + `docs/FOUNDATION_LOCK.md`); no implied automatic financial correctness.
 - Any new surface for these streams must ship with route, permission, audit trail, and regression tests.
 
 ### Public and platform routes

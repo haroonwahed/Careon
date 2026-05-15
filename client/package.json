@@ -73,8 +73,9 @@
     "build": "vite build",
     "test": "vitest run",
     "check:careon-design": "python3 ../scripts/check_careon_design_tokens.py",
-    "test:e2e": "playwright test tests/e2e/pilot-smoke.spec.ts tests/e2e/instellingen-workspace.spec.ts",
+    "test:e2e": "playwright test tests/e2e/pilot-smoke.spec.ts tests/e2e/instellingen-workspace.spec.ts tests/e2e/provider-review-smoke.spec.ts tests/e2e/staging-shell-smoke.spec.ts",
     "test:pilot-demo": "playwright test tests/e2e/pilot-demo.spec.ts",
-    "test:e2e:golden-path": "playwright test tests/e2e/zorg-os-golden-path.spec.ts"
+    "test:e2e:golden-path": "playwright test tests/e2e/zorg-os-golden-path.spec.ts",
+    "test:e2e:provider-review": "playwright test tests/e2e/provider-review-smoke.spec.ts"
   }
 }

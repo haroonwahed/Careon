@@ -4,6 +4,7 @@ API views for CareOn case workspace functionality.
 """
 import json
 import logging
+import re
 import sys
 from datetime import date
 
@@ -53,6 +54,7 @@ from contracts.models import (
     CaseIntakeProcess,
     OutcomeReasonCode,
     RegionType,
+    MatchResultaat,
 )
 from contracts.tenancy import (
     ensure_user_organization,
@@ -93,6 +95,51 @@ from contracts.workflow_state_machine import (
 )
 
 logger = logging.getLogger(__name__)
+
+# SPA InfoRequestType slugs (client/src/hooks/useProviderEvaluations.ts) — stored in
+# PlacementRequest.provider_response_notes for INFO_REQUESTED via ``[INFO_TYPE:slug]`` prefix.
+_SPA_INFO_REQUEST_TYPES = frozenset({
+    'medische_informatie',
+    'woonsituatie',
+    'financiele_situatie',
+    'gezinssituatie',
+    'diagnostiek',
+    'andere_informatie',
+})
+_INFO_TYPE_NOTES_PREFIX = re.compile(r'^\[INFO_TYPE:([a-z0-9_]+)\]\s*\n?', re.IGNORECASE)
+
+
+def _compose_provider_info_request_notes(*, info_type: str, body: str) -> str:
+    slug = (info_type or '').strip().lower()
+    body = (body or '').strip()
+    if slug in _SPA_INFO_REQUEST_TYPES and body:
+        return f'[INFO_TYPE:{slug}]\n{body}'
+    return body
+
+
+def _parse_provider_info_request_notes(raw: str) -> tuple[str | None, str]:
+    """Split optional ``[INFO_TYPE:slug]`` storage prefix from provider_response_notes."""
+    s = (raw or '').strip()
+    if not s:
+        return None, ''
+    m = _INFO_TYPE_NOTES_PREFIX.match(s)
+    if not m:
+        return None, s
+    slug = m.group(1).lower()
+    rest = s[m.end():].strip()
+    if slug not in _SPA_INFO_REQUEST_TYPES:
+        return None, s
+    return slug, rest
+
+
+def _evaluation_client_label(case: CareCase | None) -> str:
+    """Pseudonymous label aligned with SPA ``formatClientReference`` (casus id, not free-text naam)."""
+    if case is None:
+        return 'Aanvrager'
+    digits = ''.join(c for c in str(case.pk) if c.isdigit())
+    if len(digits) >= 3:
+        return f'CLI-{digits.zfill(5)[-5:]}'
+    return 'Aanvrager'
 
 
 def _derive_aanmelder_actor_profile_for_intake(*, actor_role: str, entry_route: str) -> str:
@@ -669,7 +716,11 @@ def case_detail_api(request, contract_id=None, case_id=None):
 @require_http_methods(["GET"])
 def case_decision_evaluation_api(request, case_id):
     organization = get_user_organization(request.user)
-    case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+    try:
+        case = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+        ensure_provider_case_visible_or_404(request.user, case)
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
 
     if not can_access_case_action(request.user, case, CaseAction.VIEW):
         return JsonResponse({'error': 'Je hebt geen rechten om deze casus te bekijken.'}, status=403)
@@ -682,14 +733,18 @@ def case_decision_evaluation_api(request, case_id):
 def case_arrangement_alignment_api(request, case_id):
     """Read-only advisory hints for arrangement / tariff alignment (v1.3 staging)."""
     organization = get_user_organization(request.user)
-    case = get_scoped_object_or_404(
-        CareCase.objects.select_related('due_diligence_process'),
-        organization,
-        pk=case_id,
-    )
+    try:
+        case = get_scoped_object_or_404(
+            CareCase.objects.select_related('due_diligence_process'),
+            organization,
+            pk=case_id,
+        )
+        ensure_provider_case_visible_or_404(request.user, case)
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
     if not can_access_case_action(request.user, case, CaseAction.VIEW):
         return JsonResponse({'error': 'Je hebt geen rechten om deze casus te bekijken.'}, status=403)
-    ensure_provider_case_visible_or_404(request.user, case)
     intake = getattr(case, 'due_diligence_process', None)
     if intake is None:
         return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
@@ -1073,6 +1128,7 @@ def matching_candidates_api(request, case_id):
             'casus_id': intake.pk,
             'zorgprofiel_id': row.zorgprofiel_id,
             'zorgaanbieder_id': row.zorgaanbieder_id,
+            'aanbiederName': row.zorgaanbieder.name if getattr(row, 'zorgaanbieder', None) else '',
             'totaalscore': float(row.totaalscore or 0.0),
             'score_inhoudelijke_fit': float(row.score_inhoudelijke_fit or 0.0),
             'score_regio_contract_fit': float(row.score_regio_contract_fit or row.score_contract_regio or 0.0),
@@ -1706,6 +1762,7 @@ def case_placement_detail_api(request, case_id):
             'selectedProviderId': str(placement.selected_provider_id) if placement.selected_provider_id else '',
             'careForm': placement.care_form,
             'decisionNotes': placement.decision_notes,
+            'providerResponseNotes': placement.provider_response_notes,
             'budgetReviewStatus': getattr(placement, 'budget_review_status', '') or '',
             'budgetReviewNote': getattr(placement, 'budget_review_note', '') or '',
         },
@@ -1868,8 +1925,10 @@ def _provider_decision_api_inner(request, case_id):
             if not transition.allowed:
                 return JsonResponse({'ok': False, 'error': transition.reason}, status=400)
 
+            info_type_raw = str(payload.get('information_request_type') or '').strip().lower()
+            stored_notes = _compose_provider_info_request_notes(info_type=info_type_raw, body=notes)
             placement.provider_response_status = PlacementRequest.ProviderResponseStatus.NEEDS_INFO
-            placement.provider_response_notes = notes
+            placement.provider_response_notes = stored_notes
             placement.provider_response_recorded_at = now
             placement.provider_response_recorded_by = request.user
             placement.save(update_fields=[
@@ -2787,18 +2846,294 @@ def _build_region_health_payload(region, region_cases, region_provider_profiles)
     return metrics
 
 
+def _outcome_reason_to_spa_rejection_code(code: str) -> str | None:
+    """Map persisted OutcomeReasonCode to SPA RejectionReasonCode (slug)."""
+    if not code or code == OutcomeReasonCode.NONE:
+        return None
+    mapping = {
+        OutcomeReasonCode.CAPACITY: 'geen_capaciteit',
+        OutcomeReasonCode.WAITLIST: 'urgentie_niet_haalbaar',
+        OutcomeReasonCode.CARE_MISMATCH: 'specialisatie_past_niet',
+        OutcomeReasonCode.REGION_MISMATCH: 'regio_niet_passend',
+        OutcomeReasonCode.SAFETY_RISK: 'te_hoge_complexiteit',
+        OutcomeReasonCode.ADMINISTRATIVE_BLOCK: 'onvoldoende_informatie',
+        OutcomeReasonCode.NO_RESPONSE: 'onvoldoende_informatie',
+        OutcomeReasonCode.CLIENT_DECLINED: 'andere_reden',
+        OutcomeReasonCode.PROVIDER_DECLINED: 'andere_reden',
+        OutcomeReasonCode.NO_SHOW: 'andere_reden',
+        OutcomeReasonCode.OTHER: 'andere_reden',
+    }
+    return mapping.get(code, 'andere_reden')
+
+
+def _spa_evaluation_status_from_placement(placement: PlacementRequest) -> str:
+    st = (placement.provider_response_status or '').strip().upper()
+    if st == PlacementRequest.ProviderResponseStatus.PENDING:
+        return 'PENDING'
+    if st == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+        return 'ACCEPTED'
+    if st == PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+        return 'INFO_REQUESTED'
+    if st in {
+        PlacementRequest.ProviderResponseStatus.REJECTED,
+        PlacementRequest.ProviderResponseStatus.NO_CAPACITY,
+        PlacementRequest.ProviderResponseStatus.WAITLIST,
+    }:
+        return 'REJECTED'
+    return 'PENDING'
+
+
+def _intake_region_label(intake: CaseIntakeProcess | None, case: CareCase | None) -> str:
+    if intake is not None:
+        if intake.regio_id and getattr(intake, 'regio', None):
+            return intake.regio.region_name
+        if intake.preferred_region_id and getattr(intake, 'preferred_region', None):
+            return intake.preferred_region.region_name
+        if intake.gemeente_id and getattr(intake, 'gemeente', None):
+            return intake.gemeente.municipality_name
+    if case is not None and case.service_region:
+        return case.service_region
+    return ''
+
+
+def _placement_care_type_label(placement: PlacementRequest, intake: CaseIntakeProcess | None) -> str:
+    if placement.care_form:
+        return placement.get_care_form_display()
+    if intake is None:
+        return ''
+    if intake.zorgvorm_gewenst:
+        return intake.get_zorgvorm_gewenst_display()
+    if intake.preferred_care_form:
+        return intake.get_preferred_care_form_display()
+    return ''
+
+
+def _trade_offs_hint_short(trade_offs, *, max_items: int = 2, max_len: int = 280) -> str:
+    if not trade_offs:
+        return ''
+    parts: list[str] = []
+    for item in list(trade_offs)[:max_items]:
+        if isinstance(item, dict):
+            t = (item.get('toelichting') or item.get('factor') or '').strip()
+            if t:
+                parts.append(t)
+        elif item:
+            parts.append(str(item))
+    return ' · '.join(parts)[:max_len]
+
+
+def _match_hints_for_placement(case: CareCase | None, provider: Client | None) -> tuple[str, str, int | None]:
+    """Read-model hints from persisted MatchResultaat for this case + aanbieder (advisory)."""
+    if case is None or provider is None or not (provider.name or '').strip():
+        return '', '', None
+    name = (provider.name or '').strip()
+    mr = (
+        MatchResultaat.objects.filter(casus=case, uitgesloten=False)
+        .select_related('zorgaanbieder')
+        .filter(zorgaanbieder__name__iexact=name)
+        .order_by('-totaalscore')
+        .first()
+    )
+    if mr is None:
+        return '', '', None
+    raw_score = float(mr.totaalscore or 0.0)
+    if 0 < raw_score <= 1.0:
+        display_score = max(0, min(100, int(round(raw_score * 100))))
+    else:
+        display_score = max(0, min(100, int(round(raw_score))))
+    summary = (mr.fit_samenvatting or '').strip()[:500]
+    hint = _trade_offs_hint_short(mr.trade_offs)
+    return summary, hint, display_score or None
+
+
+def _arrangement_hint_line(intake: CaseIntakeProcess | None) -> str:
+    if intake is None:
+        return ''
+    code = (getattr(intake, 'arrangement_type_code', '') or '').strip()
+    prov = (getattr(intake, 'arrangement_provider', '') or '').strip()
+    if not code and not prov:
+        return ''
+    parts: list[str] = []
+    if code:
+        parts.append(f'Arrangement (indicatief): {code}')
+    if prov:
+        parts.append(f'Bron registratie: {prov}')
+    return ' · '.join(parts)[:400]
+
+
+def _case_coordinator_display(intake: CaseIntakeProcess | None) -> str:
+    if intake is None:
+        return ''
+    u = getattr(intake, 'case_coordinator', None)
+    if u is None:
+        return ''
+    full = (u.get_full_name() or '').strip()
+    return full or (getattr(u, 'username', None) or '').strip()
+
+
+def _serialize_provider_evaluation_row(placement: PlacementRequest) -> dict:
+    intake = placement.due_diligence_process
+    case = intake.contract if intake is not None else None
+    provider = placement.selected_provider or placement.proposed_provider
+    provider_name = provider.name if provider is not None else ''
+    provider_id = str(provider.pk) if provider is not None else ''
+
+    urgency = intake.get_urgency_display() if intake is not None else ''
+    complexity = intake.get_complexity_display() if intake is not None else ''
+    municipality_id = str(intake.gemeente_id) if intake is not None and intake.gemeente_id else ''
+
+    anchor = placement.provider_response_requested_at or placement.created_at
+    if anchor is not None:
+        days_pending = max(0, (timezone.now() - anchor).days)
+    else:
+        days_pending = 0
+
+    case_title = case.title if case is not None else (intake.title if intake is not None else '')
+    case_pk = case.pk if case is not None else None
+
+    rejection = _outcome_reason_to_spa_rejection_code(placement.provider_response_reason_code or '')
+
+    raw_notes = (placement.provider_response_notes or '').strip()
+    info_type_slug, info_comment_body = _parse_provider_info_request_notes(raw_notes)
+    pr_status = (placement.provider_response_status or '').strip().upper()
+
+    if pr_status == PlacementRequest.ProviderResponseStatus.NEEDS_INFO:
+        provider_comment = None
+        information_request_type = info_type_slug
+        information_request_comment = info_comment_body or None
+    else:
+        provider_comment = raw_notes or None
+        information_request_type = None
+        information_request_comment = None
+
+    municipality_name = ''
+    if intake is not None and intake.gemeente_id and getattr(intake, 'gemeente', None):
+        municipality_name = intake.gemeente.municipality_name
+    entry_route_label = intake.get_entry_route_display() if intake is not None else ''
+    actor_profile_label = intake.get_aanmelder_actor_profile_display() if intake is not None else ''
+    entry_route_value = intake.entry_route if intake is not None else ''
+    actor_profile_value = intake.aanmelder_actor_profile if intake is not None else ''
+
+    match_fit_summary, match_trade_offs_hint, match_score_val = _match_hints_for_placement(case, provider)
+    arrangement_hint = _arrangement_hint_line(intake)
+    arrangement_disclaimer = (
+        'Indicatief arrangement — geen budget- of tarieftoezegging; bevestig financiering in eigen proces.'
+        if arrangement_hint
+        else ''
+    )
+    case_coordinator_label = _case_coordinator_display(intake)
+
+    return {
+        'id': str(placement.pk),
+        'caseId': str(case_pk) if case_pk is not None else '',
+        'caseTitle': case_title,
+        'clientLabel': _evaluation_client_label(case),
+        'region': _intake_region_label(intake, case),
+        'urgency': urgency,
+        'complexity': complexity,
+        'careType': _placement_care_type_label(placement, intake),
+        'providerId': provider_id,
+        'providerName': provider_name,
+        'municipalityId': municipality_id,
+        'municipalityName': municipality_name,
+        'entryRoute': entry_route_value,
+        'entryRouteLabel': entry_route_label,
+        'aanmelderActorProfile': actor_profile_value,
+        'aanmelderActorProfileLabel': actor_profile_label,
+        'caseCoordinatorLabel': case_coordinator_label,
+        'matchFitSummary': match_fit_summary,
+        'matchTradeOffsHint': match_trade_offs_hint,
+        'arrangementHintLine': arrangement_hint,
+        'arrangementHintDisclaimer': arrangement_disclaimer,
+        'selectedMatchId': None,
+        'status': _spa_evaluation_status_from_placement(placement),
+        'rejectionReasonCode': rejection,
+        'providerComment': provider_comment,
+        'informationRequestType': information_request_type,
+        'informationRequestComment': information_request_comment,
+        'requestedAt': placement.provider_response_requested_at.isoformat()
+        if placement.provider_response_requested_at
+        else None,
+        'respondedAt': placement.provider_response_recorded_at.isoformat()
+        if placement.provider_response_recorded_at
+        else None,
+        'decidedAt': placement.provider_response_recorded_at.isoformat()
+        if placement.provider_response_recorded_at
+        else None,
+        'createdAt': placement.created_at.isoformat(),
+        'updatedAt': placement.updated_at.isoformat(),
+        'daysPending': days_pending,
+        'slaDeadlineAt': placement.provider_response_deadline_at.isoformat()
+        if placement.provider_response_deadline_at
+        else None,
+        'matchScore': match_score_val,
+    }
+
+
 @login_required
 @require_http_methods(["GET"])
 def provider_evaluations_list_api(request):
     """List provider-side evaluations for the SPA (Aanbieder Beoordeling).
 
-    Returns an empty list until a dedicated evaluation model is wired; the
-    client hook degrades gracefully when this endpoint is absent or empty.
+    Rows are derived from ``PlacementRequest`` + linked ``CaseIntakeProcess`` / ``CareCase``,
+    scoped to the active organization. Zorgaanbieder users only see placements whose case
+    is visible via the same placement-link rules as other case APIs.
+
+    **Inclusion (provider-review window):** at least one of: case phase is
+    ``provider_beoordeling``; ``provider_response_requested_at`` is set; placement
+    ``status`` is ``IN_REVIEW``; or ``provider_response_status`` is not ``PENDING``.
+    Rows must have a proposed or selected provider.
+
+    **Info-request type:** when the provider chose ``INFO_REQUESTED`` with a structured
+    type, the canonical API stores ``[INFO_TYPE:<slug>]`` at the start of
+    ``provider_response_notes`` (see ``_compose_provider_info_request_notes``); legacy
+    rows without that prefix still expose ``informationRequestComment`` from the full
+    notes string when status is ``NEEDS_INFO``.
+
+    **Handoff read-model (optional):** ``municipalityName``, ``entryRoute`` /
+    ``entryRouteLabel``, ``aanmelderActorProfile`` / ``aanmelderActorProfileLabel``
+    from the linked intake for operational context (read-only).
+    **Advisory hints (row 6):** ``matchFitSummary``, ``matchTradeOffsHint``, ``matchScore`` from
+    persisted ``MatchResultaat`` when it matches the placement aanbieder; ``arrangementHintLine`` +
+    ``arrangementHintDisclaimer`` from intake arrangement metadata (not a financing guarantee).
+    **Coordinator (row 9):** ``caseCoordinatorLabel`` — display name of ``CaseIntakeProcess.case_coordinator``.
     """
     organization = _active_organization(request)
     if organization is None:
         return JsonResponse({'error': 'Geen actieve organisatie'}, status=400)
-    return JsonResponse({'evaluations': [], 'total_count': 0})
+
+    in_provider_review_window = (
+        Q(due_diligence_process__contract__case_phase=CareCase.CasePhase.PROVIDER_BEOORDELING)
+        | Q(provider_response_requested_at__isnull=False)
+        | ~Q(provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING)
+        | Q(status=PlacementRequest.Status.IN_REVIEW)
+    )
+
+    qs = (
+        PlacementRequest.objects.for_organization(organization)
+        .filter(
+            due_diligence_process__isnull=False,
+            due_diligence_process__contract__isnull=False,
+        )
+        .filter(in_provider_review_window)
+        .filter(Q(proposed_provider__isnull=False) | Q(selected_provider__isnull=False))
+        .select_related(
+            'due_diligence_process',
+            'due_diligence_process__contract',
+            'due_diligence_process__gemeente',
+            'due_diligence_process__case_coordinator',
+            'due_diligence_process__regio',
+            'due_diligence_process__preferred_region',
+            'proposed_provider',
+            'selected_provider',
+        )
+        .order_by('-updated_at')
+    )
+    qs = filter_placement_requests_for_provider_actor(qs, request.user, organization)
+
+    total = qs.count()
+    rows = [_serialize_provider_evaluation_row(p) for p in qs[:200]]
+    return JsonResponse({'evaluations': rows, 'total_count': total})
 
 
 @login_required

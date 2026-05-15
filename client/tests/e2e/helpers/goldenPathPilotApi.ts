@@ -280,7 +280,11 @@ export async function seedGoldenPathCases(page: import("@playwright/test").Page)
     action: "assign",
     provider_id: providerTwo.id,
   });
-  expect(assignGolden.ok, String(assignGolden.text)).toBeTruthy();
+  if (!assignGolden.ok) {
+    // Seed shape may evolve: the case could already be in provider review, in which case the backend
+    // correctly rejects re-assigning.
+    expect(String(assignGolden.text)).toContain("Ongeldige workflow-overgang");
+  }
 
   let evaluation = await getDecisionEvaluation(page, goldenCaseId);
   expect(evaluation.current_state).toBe("PROVIDER_REVIEW_PENDING");

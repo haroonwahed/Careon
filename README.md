@@ -1,29 +1,34 @@
+# CareOn (Zorg OS)
 
-# SaaS Careon
+**CareOn / Zorg OS** is a **regulated operational coordination layer** for care placement and chain progression under capacity scarcity. It implements workflow-first **aanvragen** coordination, **gemeente** financing/arrangement validation, and **zorgaanbieder** responses — with the backend as the **source of truth** for state and permissions.
 
-This is a code bundle for SaaS Careon. The original project is available at [Figma](https://www.figma.com/design/xzDw9hPkK9kBtxMocatGPe/SaaS-Careon).
+This repository is **production-oriented infrastructure**, not a Figma-only prototype. Visual exploration history may exist separately; **canonical product and engineering law** lives in the docs below.
 
-## Foundation first
+## Start here
 
-Before changing workflow, architecture, or domain behavior, start with:
+**→ [`docs/START_HERE.md`](docs/START_HERE.md)** — canonical reading order, ship checklist, and links to roadmaps.
 
-- `docs/Zorg_OS_Product_System_Core_v1_3.md` (product boundaries & v1.3 flow)
-- `docs/Zorg_OS_Technical_Foundation_v1_3.md` (implementation mapping & API discipline)
-- `docs/FOUNDATION_LOCK.md` (enforced workflow lock and guardrails)
-- `docs/ZORG_OS_FOUNDATION_APPROACH.md` (system-first build strategy)
-- `docs/CareOn_Design_Constitution_v1_3.md` (UX / visual law)
+**Doctrine:** [`docs/Careon_Operational_Constitution_v2.md`](docs/Careon_Operational_Constitution_v2.md) (export) · [`docs/Careon_Operational_Constitution_v2.docx`](docs/Careon_Operational_Constitution_v2.docx) (Word master) · [`docs/FOUNDATION_LOCK.md`](docs/FOUNDATION_LOCK.md) (states, API phases, endpoints, UI density).
 
-Evidence for the v1.3 strategic realignment: `docs/ZORG_OS_V1_3_STRATEGIC_REALIGNMENT_EVIDENCE.md`.
+**Agents / contributors:** [`AGENTS.md`](AGENTS.md).
+
+**Release evidence (GO/NO-GO):** [`docs/PILOT_PROOF_PACKAGE.md`](docs/PILOT_PROOF_PACKAGE.md) — includes the **default pilot rehearsal ritual** (GitHub Actions artifact + local `./scripts/run_full_pilot_rehearsal.sh`).
+
+**Prioritized product/engineering backlog:** [`docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`](docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md) — MoSCoW + top-15 execution order (**provider-chain-first** default; pilot/rehearsal as alternate lens in that doc).
+
+**Production operations:** [`docs/PRODUCTION_RUNBOOK.md`](docs/PRODUCTION_RUNBOOK.md) (secrets, backups, observability, OIDC).
 
 ## Running the code
 
-Run `npm i` to install the dependencies.
+### Frontend (Vite dev client)
 
-Run `npm run dev` to start the development server.
+```bash
+cd client && npm install && npm run dev
+```
 
-## Python tests (Django)
+### Backend (Django)
 
-Use a dedicated virtual environment in this repo (not another project’s `.venv`):
+Use Python **3.12** and a dedicated virtual environment:
 
 ```bash
 python3.12 -m venv .venv
@@ -31,12 +36,20 @@ source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -U pip
 pip install -r requirements/dev.txt
 export DJANGO_SECRET_KEY=test-not-for-production
+python manage.py migrate
+python manage.py runserver
+```
+
+### Python tests
+
+```bash
+export DJANGO_SECRET_KEY=test-not-for-production
 python -m pytest tests/ -q
 ```
 
-`requirements/dev.txt` includes `pytest` and `pytest-django`; `pytest.ini` sets `DJANGO_SETTINGS_MODULE=config.settings_test`. CI runs the same `python -m pytest tests/ -q` step after installing `requirements/dev.txt`.
+`requirements/dev.txt` includes `pytest` and `pytest-django`; `pytest.ini` sets `DJANGO_SETTINGS_MODULE=config.settings_test`. CI mirrors this via [`.github/workflows/platform-guardrails.yml`](.github/workflows/platform-guardrails.yml) (pytest, terminology guard, tenant audit, security scans, **deploy check with Postgres**).
 
-## Render Deployment
+## Render deployment
 
 The repository includes a Render blueprint in `render.yaml`.
 
@@ -64,4 +77,3 @@ Before first production traffic, set these host-specific values in Render:
 - `DEFAULT_FROM_EMAIL`
 
 The blueprint already wires `DJANGO_SECRET_KEY` and `DJANGO_SETTINGS_MODULE=config.settings_production`.
-  

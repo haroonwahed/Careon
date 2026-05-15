@@ -528,3 +528,115 @@ class WorkflowFoundationLockTests(TestCase):
         self.assertFalse(CaseAssessment.objects.filter(due_diligence_process=intake).exists())
         state = derive_workflow_state(intake=intake)
         self.assertEqual(state, WorkflowState.DRAFT_CASE)
+
+    def test_provider_placement_detail_api_returns_404_when_placement_targets_other_provider(self):
+        intake = self._create_matching_ready_case()
+        other_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Other Provider',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.gemeente_user,
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=other_provider,
+            selected_provider=other_provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:case_placement_detail_api', kwargs={'case_id': intake.contract_id}),
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('niet gevonden', (response.json().get('error') or '').lower())
+
+    def test_provider_placement_detail_api_returns_200_when_linked_to_responsible_coordinator_client(self):
+        intake = self._create_matching_ready_case()
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=self.provider,
+            selected_provider=self.provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:case_placement_detail_api', kwargs={'case_id': intake.contract_id}),
+        )
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        body = response.json()
+        self.assertEqual(body.get('caseId'), str(intake.pk))
+        self.assertEqual(body['placement'].get('proposedProviderId'), str(self.provider.pk))
+        self.assertIn('providerResponseNotes', body['placement'])
+
+    def test_provider_decision_evaluation_api_returns_404_without_placement_link(self):
+        intake = self._create_matching_ready_case()
+        other_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Peer Provider',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.gemeente_user,
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=other_provider,
+            selected_provider=other_provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:case_decision_evaluation_api', kwargs={'case_id': intake.contract_id}),
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('niet gevonden', (response.json().get('error') or '').lower())
+
+    def test_provider_arrangement_alignment_api_returns_404_without_placement_link(self):
+        intake = self._create_matching_ready_case()
+        other_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Peer Provider Arrangement',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.gemeente_user,
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=other_provider,
+            selected_provider=other_provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:case_arrangement_alignment_api', kwargs={'case_id': intake.contract_id}),
+        )
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('niet gevonden', (response.json().get('error') or '').lower())
+
+    def test_gemeente_decision_evaluation_api_returns_200_for_same_case(self):
+        intake = self._create_matching_ready_case()
+        other_provider = CareProvider.objects.create(
+            organization=self.organization,
+            name='Peer Provider B',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.gemeente_user,
+        )
+        PlacementRequest.objects.create(
+            due_diligence_process=intake,
+            status=PlacementRequest.Status.IN_REVIEW,
+            proposed_provider=other_provider,
+            selected_provider=other_provider,
+            provider_response_status=PlacementRequest.ProviderResponseStatus.PENDING,
+            care_form=PlacementRequest.CareForm.OUTPATIENT,
+        )
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:case_decision_evaluation_api', kwargs={'case_id': intake.contract_id}),
+        )
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertEqual(response.json().get('case_id'), intake.case_record.pk)

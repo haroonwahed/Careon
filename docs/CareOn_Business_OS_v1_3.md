@@ -47,4 +47,4 @@ CareOn monetizes **time-to-placement** and **coordination reliability** under sc
 
 ## 6. Dependencies on technical core
 
-See `Zorg_OS_Product_System_Core_v1_3.md` and `Zorg_OS_Technical_Foundation_v1_3.md` for enforceable rules that sales/CS must not contradict in materials.
+See `docs/Careon_Operational_Constitution_v2.md` and `docs/FOUNDATION_LOCK.md` for enforceable rules that sales/CS must not contradict in materials.

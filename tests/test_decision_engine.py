@@ -727,6 +727,7 @@ class DecisionEngineTests(TestCase):
 
         self.assertTrue(any(risk["code"] == "REPEATED_PROVIDER_REJECTIONS" for risk in result["risks"]))
         self.assertGreaterEqual(result["decision_context"]["provider_rejection_count"], 2)
+        self.assertEqual(result["decision_context"].get("latest_rejection_reason_code"), "CAPACITY")
 
     def test_decision_api_is_read_only_and_does_not_create_audit_events(self):
         _, case_record, _, _ = self._create_case(

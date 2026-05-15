@@ -929,6 +929,8 @@ class Command(BaseCommand):
                 'match_summary': 'Regionale voorkeur; opvolgen reactie binnen SLA.',
                 'match_trade_offs': ['Geen inhoudelijke reden tot delay bekend.', 'Escaleren bij uitblijven reactie.'],
                 'verification': 'Neem contact op met casusregisseur aanbieder voordat je her-matcht.',
+                'entry_route': CaseIntakeProcess.EntryRoute.WIJKTEAM,
+                'aanmelder_actor_profile': CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM,
             },
         ]
 
@@ -959,6 +961,11 @@ class Command(BaseCommand):
             'preferred_region_type': RegionType.GEMEENTELIJK,
             'preferred_region': region,
             'gemeente': municipality,
+            'entry_route': spec.get('entry_route', CaseIntakeProcess.EntryRoute.STANDARD),
+            'aanmelder_actor_profile': spec.get(
+                'aanmelder_actor_profile',
+                CaseIntakeProcess.AanmelderActorProfile.ONBEKEND,
+            ),
             'leeftijd': spec['age'],
             'client_age_category': CaseIntakeProcess.AgeCategory.ADOLESCENT if spec['age'] >= 12 else CaseIntakeProcess.AgeCategory.CHILDHOOD,
             'family_situation': CaseIntakeProcess.FamilySituation.HOME_DWELLING,

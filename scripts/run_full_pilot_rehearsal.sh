@@ -4,7 +4,7 @@
 #
 # Usage (repo root):
 #   ./scripts/run_full_pilot_rehearsal.sh
-#   ./scripts/run_full_pilot_rehearsal.sh --with-playwright --start-server   # adds golden-path Playwright (SPA built if missing)
+#   ./scripts/run_full_pilot_rehearsal.sh --with-playwright   # Playwright bundle (auto --start-server unless already listening)
 #   ./scripts/run_full_pilot_rehearsal.sh --skip-spa-build                     # fail if theme/static/spa missing when Playwright requested
 #   ./scripts/run_full_pilot_rehearsal.sh --http-preflight                     # curl live stack at E2E_BASE_URL (same DB/settings required)
 #
@@ -55,6 +55,17 @@ if [[ -n "${REHEARSAL_HTTP_PREFLIGHT:-}" ]] && [[ "${REHEARSAL_HTTP_PREFLIGHT}" 
   HTTP_PREFLIGHT=1
 fi
 
+# Playwright needs a live Django origin; default to background runserver when not already up.
+if [[ "$WITH_PLAYWRIGHT" -eq 1 ]] && [[ "$START_SERVER_GOLDEN" -eq 0 ]]; then
+  START_SERVER_GOLDEN=1
+fi
+
+# Playwright needs a live Django origin; default to background runserver unless caller passes --start-server explicitly off-path.
+if [[ "$WITH_PLAYWRIGHT" -eq 1 ]] && [[ "$START_SERVER_GOLDEN" -eq 0 ]]; then
+  START_SERVER_GOLDEN=1
+  echo "[run_full_pilot_rehearsal] Auto-enabling --start-server for Playwright (E2E_BASE_URL=${E2E_BASE_URL})"
+fi
+
 die() {
   echo "[run_full_pilot_rehearsal] ERROR: $*" >&2
   exit 1
@@ -96,7 +107,10 @@ if report.exists() and tl.exists():
 "
 
 echo "[run_full_pilot_rehearsal] Step 5: release_evidence_bundle → ${REPORT_DIR}/release_evidence_bundle.json"
-"$PYTHON_BIN" manage.py release_evidence_bundle || die "release_evidence_bundle NO-GO"
+"$PYTHON_BIN" manage.py release_evidence_bundle \
+  --reports-dir "$REPORT_DIR" \
+  --write-json "${REPORT_DIR}/release_evidence_bundle.json" \
+  || die "release_evidence_bundle NO-GO"
 
 echo "[run_full_pilot_rehearsal] Step 6: e2e_rehearsal_preflight (ORM + Django test client, --no-http)"
 "$PYTHON_BIN" scripts/e2e_rehearsal_preflight.py --no-http || die "preflight ORM failed"
@@ -112,11 +126,11 @@ fi
 
 if [[ "$WITH_PLAYWRIGHT" -eq 1 ]]; then
   SPA_INDEX="$ROOT_DIR/theme/static/spa/index.html"
-  if [[ ! -f "$SPA_INDEX" ]]; then
-    if [[ "$SKIP_SPA_BUILD" -eq 1 ]]; then
-      die "Missing $SPA_INDEX — run npm run build in client/ or omit --skip-spa-build"
-    fi
-    echo "[run_full_pilot_rehearsal] Building SPA (theme/static/spa)…"
+  if [[ "$SKIP_SPA_BUILD" -eq 1 ]] && [[ ! -f "$SPA_INDEX" ]]; then
+    die "Missing $SPA_INDEX — run npm run build in client/ or omit --skip-spa-build"
+  fi
+  if [[ "$SKIP_SPA_BUILD" -eq 0 ]]; then
+    echo "[run_full_pilot_rehearsal] Building SPA (theme/static/spa) for Playwright…"
     (cd "$ROOT_DIR/client" && (npm ci 2>/dev/null || npm install) && npm run build) || die "SPA build failed"
   fi
   GP_ARGS=(--skip-prepare)

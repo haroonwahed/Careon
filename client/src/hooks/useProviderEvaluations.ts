@@ -75,6 +75,22 @@ export interface ProviderEvaluation {
   providerId: string;
   providerName: string;
   municipalityId: string;
+  /** Gemeente label from linked intake (read-model handoff). */
+  municipalityName?: string;
+  /** Intake entry route code + human label (read-model). */
+  entryRoute?: string;
+  entryRouteLabel?: string;
+  /** Aanmelder actor profile code + label (read-model). */
+  aanmelderActorProfile?: string;
+  aanmelderActorProfileLabel?: string;
+  /** Gemeente casusregisseur display (read-model). */
+  caseCoordinatorLabel?: string;
+  /** Persisted match explainability for this aanbieder (advisory). */
+  matchFitSummary?: string;
+  matchTradeOffsHint?: string;
+  /** Intake arrangement metadata line (advisory; not a budget guarantee). */
+  arrangementHintLine?: string;
+  arrangementHintDisclaimer?: string;
   selectedMatchId: string | null;
   status: EvaluationStatus;
   rejectionReasonCode: RejectionReasonCode | null;

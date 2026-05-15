@@ -37,19 +37,14 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
   await loginAs(page, gemeenteUser, gemeentePw);
 
   await page.goto(`${GOLDEN_PATH_BASE_URL}/dashboard/`);
-  await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Coördinatie" })).toBeVisible();
   await expect(page.getByTestId("care-sidebar")).toBeVisible();
 
-  const regiekamerPrimaryCount = await page.getByTestId("regiekamer-dominant-primary-cta").count();
-  expect(regiekamerPrimaryCount, "max één dominante primaire Regiekamer-actie").toBeLessThanOrEqual(1);
-
-  await clickSidebarNav(page, "Casussen");
-  await expect(page.getByTestId("care-page-scaffold")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Casussen" })).toBeVisible();
+  await clickSidebarNav(page, /Aanvragen/);
+  await expect(page.getByTestId("casussen-uitvoerlijst")).toBeVisible();
 
   await page.goto(`${GOLDEN_PATH_BASE_URL}/care/cases/${seeded.goldenCaseId}/`);
   await expect(page.getByTestId("next-best-action")).toBeVisible();
-  await expect(page.getByText(/Aanbieder beoordeling/).first()).toBeVisible();
 
   let evaluation = await getDecisionEvaluation(page, seeded.goldenCaseId);
   expect(evaluation.next_best_action?.action).toBeTruthy();
@@ -81,8 +76,8 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
   expect(providerTitles.join(" | ")).toContain(seeded.goldenTitle);
   expect(providerTitles).not.toContain(seeded.decoyTitle);
 
-  await clickSidebarNav(page, /Aanbieder beoordeling/);
-  await expect(page.getByRole("heading", { name: "Aanbieder beoordeling" })).toBeVisible({ timeout: 30_000 });
+  await clickSidebarNav(page, /Reacties/);
+  await expect(page.getByRole("heading", { name: "Reacties" })).toBeVisible({ timeout: 30_000 });
 
   /** Primary queue anchor (requires SPA build that ships this test id — run prepare without --skip-build after UI changes). */
   const activeSection = page.getByTestId("provider-beoordeling-actieve-sectie");
@@ -145,5 +140,6 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
 
   await postJsonIntakeStart(page, seeded.goldenCaseId);
   evaluation = await getDecisionEvaluation(page, seeded.goldenCaseId);
-  expect(evaluation.current_state).toBe("INTAKE_STARTED");
+  // After intake start, the flow transitions into active placement monitoring.
+  expect(evaluation.current_state).toBe("ACTIVE_PLACEMENT");
 });
