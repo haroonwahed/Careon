@@ -137,9 +137,9 @@ def _evaluation_client_label(case: CareCase | None) -> str:
     if case is None:
         return 'Aanvrager'
     digits = ''.join(c for c in str(case.pk) if c.isdigit())
-    if len(digits) >= 3:
-        return f'CLI-{digits.zfill(5)[-5:]}'
-    return 'Aanvrager'
+    if not digits:
+        return 'Aanvrager'
+    return f'CLI-{digits.zfill(5)[-5:]}'
 
 
 def _derive_aanmelder_actor_profile_for_intake(*, actor_role: str, entry_route: str) -> str:
