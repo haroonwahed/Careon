@@ -2,15 +2,25 @@
 
 Foundation reference:
 
+- `docs/START_HERE.md`
+- `docs/Careon_Operational_Constitution_v2.md` / `docs/Careon_Operational_Constitution_v2.docx`
 - `docs/ZORG_OS_FOUNDATION_APPROACH.md`
 - `docs/FOUNDATION_LOCK.md`
+- `docs/PILOT_PROOF_PACKAGE.md` (rehearsal GO/NO-GO bundle)
+- `docs/PRODUCTION_RUNBOOK.md` (secrets, backups, observability, SSO)
 
 Use these as the source-of-truth contract for canonical workflow order, actor ownership, and backend-enforced gating during rollout validation.
 
 Use this for the staging-to-production handoff on a release that already has a green local validation set.
 
+For a **blank one-pager** to copy per release, see:
+- [`docs/RELEASE_EXECUTION_SHEET_TEMPLATE.md`](./RELEASE_EXECUTION_SHEET_TEMPLATE.md)
+
+For the current pilot-rehearsal execution sheet, see:
+- [`docs/RELEASE_EXECUTION_SHEET_2026-05-15.md`](./RELEASE_EXECUTION_SHEET_2026-05-15.md)
+
 For a concrete, dated example of how to fill this in, see:
-- [`docs/RELEASE_EXECUTION_SHEET_2026-04-24.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/RELEASE_EXECUTION_SHEET_2026-04-24.md)
+- [`docs/RELEASE_EXECUTION_SHEET_2026-04-24.md`](./RELEASE_EXECUTION_SHEET_2026-04-24.md)
 
 For the live post-deploy smoke path, see:
 - [`docs/POST_DEPLOY_VERIFICATION_CHECKLIST.md`](/Users/haroonwahed/Documents/Projects/Careon/docs/POST_DEPLOY_VERIFICATION_CHECKLIST.md)

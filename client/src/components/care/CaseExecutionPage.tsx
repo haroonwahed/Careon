@@ -66,6 +66,7 @@ import {
   type DecisionEvaluation,
   type DecisionPriority,
 } from "../../lib/decisionEvaluation";
+import { ApiRequestError } from "../../lib/apiClient";
 import { getShortActionLabel, getShortReasonLabel } from "../../lib/uxCopy";
 import {
   canonicalPhaseForCaseExecution,
@@ -514,7 +515,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
       setDecisionEvaluation(payload);
       return payload;
     } catch (fetchError) {
-      setDecisionError(fetchError instanceof Error ? fetchError.message : "Beslisinformatie kon niet worden geladen.");
+      if (fetchError instanceof ApiRequestError && fetchError.status === 404) {
+        setDecisionError(
+          "Deze casus bestaat niet of is voor uw account niet zichtbaar (geen gekoppelde plaatsing).",
+        );
+      } else {
+        setDecisionError(fetchError instanceof Error ? fetchError.message : "Beslisinformatie kon niet worden geladen.");
+      }
       return null;
     } finally {
       setDecisionLoading(false);
@@ -680,6 +687,23 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         || (nextBestAction?.action === "SEND_TO_PROVIDER" && !selectedProviderId)
       )
     );
+  const decisionCtx = decisionEvaluation?.decision_context;
+  const providerRejectionSignal =
+    (decisionCtx?.provider_rejection_count ?? 0) > 0
+    || Boolean(decisionCtx?.latest_rejection_reason?.trim())
+    || Boolean(decisionCtx?.latest_rejection_reason_code?.trim());
+  const providerResponseEvidenceParts = [
+    decisionCtx?.latest_rejection_reason_code?.trim(),
+    decisionCtx?.latest_rejection_reason?.trim(),
+  ].filter(Boolean) as string[];
+  const providerResponseEvidenceRow = providerRejectionSignal
+    ? {
+      label: "Laatste aanbiederreactie",
+      value: providerResponseEvidenceParts.length > 0 ? providerResponseEvidenceParts.join(" · ") : "Geregistreerd",
+      impact: `Volledige redencode en notities staan in de casustijdlijn en audittrail (${decisionCtx?.provider_rejection_count ?? 0} signalen).`,
+      tone: "warning" as const,
+    }
+    : null;
   const evidenceRows = [
     {
       label: "Verplichte gegevens",
@@ -719,6 +743,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         : "Afstand kan worden meegewogen in matching.",
       tone: missingGeo ? "warning" : "success",
     },
+    ...(providerResponseEvidenceRow ? [providerResponseEvidenceRow] : []),
     {
       label: "Laatste gebeurtenis",
       value: decisionEvaluation?.timeline_signals.latest_event_type ?? "Niet beschikbaar",
@@ -743,6 +768,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
     row.label === "Samenvatting"
     || row.label === "Matchresultaat"
     || row.label === "Confidence"
+    || row.label === "Laatste aanbiederreactie"
     || row.label === "Laatste gebeurtenis"
   ));
   const matchingAllowed = activeActionLookup.has("START_MATCHING");

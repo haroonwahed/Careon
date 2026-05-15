@@ -7,6 +7,19 @@
 
 import { LOGIN_URL } from "./routes";
 
+/** Thrown for non-OK API responses so callers can branch on HTTP status (e.g. 404 visibility). */
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly bodyText: string;
+
+  constructor(message: string, status: number, bodyText = "") {
+    super(message);
+    this.name = "ApiRequestError";
+    this.status = status;
+    this.bodyText = bodyText;
+  }
+}
+
 function getCsrfToken(): string {
   const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : '';
@@ -47,8 +60,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const responseUrl = new URL(response.url, window.location.origin);
   const redirectedToLogin = response.redirected && responseUrl.pathname === LOGIN_URL;
 
-  if (response.status === 401 || response.status === 403 || redirectedToLogin) {
-    // Session expired — redirect to login
+  // Unauthenticated: redirect to login. Do not treat 403 as "logged out" — JSON APIs use 403 for
+  // in-session permission denials; 404 is used for hidden cases (e.g. provider without placement link).
+  if (response.status === 401 || redirectedToLogin) {
     const nextUrl = `${window.location.pathname}${window.location.search}`;
     window.location.href = `${LOGIN_URL}?next=${encodeURIComponent(nextUrl)}`;
     throw new Error('Niet geautoriseerd');
@@ -56,7 +70,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    throw new Error(`API fout ${response.status}: ${text}`);
+    throw new ApiRequestError(`API fout ${response.status}: ${text}`, response.status, text);
   }
 
   if (response.status === 204) {

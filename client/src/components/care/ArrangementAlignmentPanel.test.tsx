@@ -59,6 +59,9 @@ describe("ArrangementAlignmentPanel", () => {
       expect(screen.getByTestId("arrangement-alignment-panel")).toBeInTheDocument();
     });
 
+    expect(screen.getByTestId("arrangement-alignment-advisory-banner")).toBeInTheDocument();
+    expect(screen.getByTestId("arrangement-alignment-advisory-banner")).toHaveTextContent(/geen budget/i);
+
     expect(mockFetchCaseArrangementAlignment).toHaveBeenCalledWith("C-42");
     expect(screen.getByText(/Arrangement-afstemming \(advies\)/)).toBeInTheDocument();
     expect(screen.getByText("Aangevraagde zorg")).toBeInTheDocument();

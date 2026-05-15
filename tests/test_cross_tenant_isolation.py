@@ -11,6 +11,9 @@ Models now fixed to filter via related-field org lookups (no direct FK):
     - CareTask → filtered via related case/configuration ownership
     - PlacementRequest → filtered via related provider/configuration ownership
 
+Case-ID JSON APIs (``/care/api/cases/<id>/…``) must combine **tenant scope** with
+**provider placement-link** visibility where applicable (see ``ProviderCaseScopedJsonApiVisibilityTest``).
+
 Direct organization FK models covered in this suite:
     - Budget
     - CaseIntakeProcess
@@ -20,6 +23,7 @@ Run:
 """
 
 import datetime
+import json
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
@@ -41,6 +45,7 @@ from contracts.models import (
     PlacementRequest,
     Budget,
     CaseIntakeProcess,
+    MunicipalityConfiguration,
     UserProfile,
 )
 
@@ -228,11 +233,11 @@ class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
 
 
 @_DJANGO_HTML_WS
-class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCase):
+class ProviderSameOrgPlacementVisibilityBase(CrossTenantFixtureMixin, TestCase):
     """
-    When gemeente and zorgaanbieder share an organization, list/detail APIs must not
-    expose all org cases to the provider—only those with a placement row pointing at
-    the provider's staffed Client (responsible_coordinator).
+    Shared fixtures: org A + provider user whose Client is only on the "linked" placement.
+
+    Class name does not start with ``Test`` so pytest does not treat it as a test class.
     """
 
     def setUp(self):
@@ -310,6 +315,15 @@ class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCa
             selected_provider=self.other_provider,
         )
 
+
+@_DJANGO_HTML_WS
+class ProviderSameOrganizationCaseVisibilityTest(ProviderSameOrgPlacementVisibilityBase):
+    """
+    When gemeente and zorgaanbieder share an organization, list/detail APIs must not
+    expose all org cases to the provider—only those with a placement row pointing at
+    the provider's staffed Client (responsible_coordinator).
+    """
+
     def test_provider_cases_api_lists_only_placement_linked_cases(self):
         self.client.login(username='provider_same_org', password='passP1234!')
         response = self.client.get(reverse('careon:cases_api'))
@@ -336,6 +350,83 @@ class ProviderSameOrganizationCaseVisibilityTest(CrossTenantFixtureMixin, TestCa
         self.client.login(username='provider_same_org', password='passP1234!')
         url = reverse('careon:case_detail_api', kwargs={'case_id': self.contract_linked.pk})
         self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_provider_provider_evaluations_api_lists_only_linked_placement(self):
+        """provider_evaluations_list_api uses the same placement visibility as cases_api."""
+        self.contract_linked.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_linked.save(update_fields=['case_phase', 'updated_at'])
+        self.contract_other.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_other.save(update_fields=['case_phase', 'updated_at'])
+        pl_linked = PlacementRequest.objects.get(due_diligence_process=self.intake_linked)
+        pl_other = PlacementRequest.objects.get(due_diligence_process=self.intake_other)
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:provider_evaluations_list_api'))
+        self.assertEqual(r.status_code, 200)
+        ids = {e['id'] for e in r.json().get('evaluations', [])}
+        self.assertIn(str(pl_linked.pk), ids)
+        self.assertNotIn(str(pl_other.pk), ids)
+
+    def test_gemeente_provider_evaluations_api_lists_all_org_placements_in_phase(self):
+        self.contract_linked.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_linked.save(update_fields=['case_phase', 'updated_at'])
+        self.contract_other.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_other.save(update_fields=['case_phase', 'updated_at'])
+        pl_linked = PlacementRequest.objects.get(due_diligence_process=self.intake_linked)
+        pl_other = PlacementRequest.objects.get(due_diligence_process=self.intake_other)
+        self.client.login(username='user_a', password='passA1234!')
+        r = self.client.get(reverse('careon:provider_evaluations_list_api'))
+        self.assertEqual(r.status_code, 200)
+        body = r.json()
+        ids = {e['id'] for e in body.get('evaluations', [])}
+        self.assertIn(str(pl_linked.pk), ids)
+        self.assertIn(str(pl_other.pk), ids)
+        self.assertEqual(body.get('total_count'), len(ids))
+
+    def test_provider_evaluation_api_includes_read_model_handoff_fields(self):
+        """P1 read-model: gemeente + instroom + aanmelder-profiel op provider-evaluatierij (read-only)."""
+        mun = MunicipalityConfiguration.objects.create(
+            organization=self.org_a,
+            municipality_name='Utrecht (test)',
+            status=MunicipalityConfiguration.Status.ACTIVE,
+            created_by=self.user_a,
+        )
+        self.intake_linked.entry_route = CaseIntakeProcess.EntryRoute.WIJKTEAM
+        self.intake_linked.aanmelder_actor_profile = CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM
+        self.intake_linked.gemeente = mun
+        self.intake_linked.save()
+        self.contract_linked.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_linked.save(update_fields=['case_phase', 'updated_at'])
+        pl = PlacementRequest.objects.get(due_diligence_process=self.intake_linked)
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:provider_evaluations_list_api'))
+        self.assertEqual(r.status_code, 200)
+        row = next(x for x in r.json()['evaluations'] if x['id'] == str(pl.pk))
+        self.assertEqual(row.get('municipalityName'), 'Utrecht (test)')
+        self.assertEqual(row.get('entryRoute'), CaseIntakeProcess.EntryRoute.WIJKTEAM)
+        self.assertEqual(row.get('aanmelderActorProfile'), CaseIntakeProcess.AanmelderActorProfile.WIJKTEAM)
+        self.assertTrue(row.get('entryRouteLabel'))
+        self.assertTrue(row.get('aanmelderActorProfileLabel'))
+        self.assertIn('caseCoordinatorLabel', row)
+        self.assertIn('matchFitSummary', row)
+        self.assertIn('arrangementHintLine', row)
+
+    def test_provider_evaluations_parses_information_request_prefix_and_cli_label(self):
+        self.contract_linked.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
+        self.contract_linked.save(update_fields=['case_phase', 'updated_at'])
+        pl = PlacementRequest.objects.get(due_diligence_process=self.intake_linked)
+        pl.provider_response_status = PlacementRequest.ProviderResponseStatus.NEEDS_INFO
+        pl.provider_response_notes = '[INFO_TYPE:diagnostiek]\nGraag laatste onderzoek.'
+        pl.save(update_fields=['provider_response_status', 'provider_response_notes', 'updated_at'])
+        self.client.login(username='user_a', password='passA1234!')
+        r = self.client.get(reverse('careon:provider_evaluations_list_api'))
+        self.assertEqual(r.status_code, 200)
+        row = next(x for x in r.json()['evaluations'] if x['id'] == str(pl.pk))
+        self.assertEqual(row['informationRequestType'], 'diagnostiek')
+        self.assertEqual(row['informationRequestComment'], 'Graag laatste onderzoek.')
+        self.assertIsNone(row['providerComment'])
+        digits = ''.join(c for c in str(self.contract_linked.pk) if c.isdigit())
+        expected_cli = f'CLI-{digits.zfill(5)[-5:]}'
+        self.assertEqual(row['clientLabel'], expected_cli)
 
     def test_cross_tenant_cases_api_unchanged(self):
         """Other-tenant isolation remains strict (existing behaviour)."""
@@ -550,6 +641,301 @@ class ProviderListApisVisibilityTest(ProviderSameOrganizationCaseVisibilityTest)
         self.assertNotIn(str(self.signal_linked.id), {x['id'] for x in s.get('signals', [])})
         t = self.client.get(reverse('careon:tasks_api')).json()
         self.assertNotIn(str(self.task_linked.id), {x['id'] for x in t.get('tasks', [])})
+
+
+@_DJANGO_HTML_WS
+class ProviderCaseScopedJsonApiVisibilityTest(ProviderSameOrgPlacementVisibilityBase):
+    """
+    Regression: case-scoped JSON endpoints must not leak same-org unlinked cases or other tenants.
+
+    Mirrors ``ensure_provider_case_visible_or_404`` / ``_get_intake_for_case_api_id`` rules used by
+    the SPA execution workspace (placement detail, decision evaluation, timeline, matching, etc.).
+    """
+
+    def setUp(self):
+        super().setUp()
+        CaseAssessment.objects.create(
+            due_diligence_process=self.intake_linked,
+            assessment_status=CaseAssessment.AssessmentStatus.APPROVED_FOR_MATCHING,
+            matching_ready=True,
+            assessed_by=self.user_a,
+            workflow_summary={
+                'context': 'Isolation test — minimaal verplicht voor matching en validatie.',
+                'urgency': 'MEDIUM',
+                'risks': ['test_risk'],
+                'missing_information': '',
+                'risks_none_ack': False,
+            },
+        )
+
+    def test_provider_placement_detail_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_placement_detail_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_placement_detail_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_placement_detail_api', kwargs={'case_id': self.contract_linked.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertEqual(
+            response.json().get('placement', {}).get('proposedProviderId'),
+            str(self.provider_client.pk),
+        )
+
+    def test_provider_decision_evaluation_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_decision_evaluation_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_decision_evaluation_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_decision_evaluation_api', kwargs={'case_id': self.contract_linked.pk})
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_provider_arrangement_alignment_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_arrangement_alignment_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_arrangement_alignment_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        self.intake_linked.arrangement_type_code = 'PGB ambulant'
+        self.intake_linked.save(update_fields=['arrangement_type_code'])
+        url = reverse('careon:case_arrangement_alignment_api', kwargs={'case_id': self.contract_linked.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+
+    def test_provider_case_timeline_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_timeline_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_case_timeline_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_timeline_api', kwargs={'case_id': self.contract_linked.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertIn('events', response.json())
+
+    def test_provider_assessment_decision_get_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:assessment_decision_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_assessment_decision_get_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:assessment_decision_api', kwargs={'case_id': self.contract_linked.pk})
+        self.assertEqual(self.client.get(url).status_code, 200)
+
+    def test_provider_matching_candidates_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:matching_candidates_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_scoped_get_apis_404_for_org_b_case(self):
+        """Org A provider must not read org B case ids on any placement-gated case API."""
+        url_names = (
+            'careon:case_placement_detail_api',
+            'careon:case_decision_evaluation_api',
+            'careon:case_arrangement_alignment_api',
+            'careon:case_timeline_api',
+            'careon:matching_candidates_api',
+            'careon:assessment_decision_api',
+            'careon:case_evaluations_api',
+        )
+        self.client.login(username='provider_same_org', password='passP1234!')
+        for url_name in url_names:
+            with self.subTest(url=url_name):
+                url = reverse(url_name, kwargs={'case_id': self.contract_b.pk})
+                self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_decision_post_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:provider_decision_api', kwargs={'case_id': self.contract_other.pk})
+        response = self.client.post(
+            url,
+            data='{"status":"ACCEPTED"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_provider_decision_post_org_b_case_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:provider_decision_api', kwargs={'case_id': self.contract_b.pk})
+        response = self.client.post(
+            url,
+            data='{"status":"ACCEPTED"}',
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_provider_case_evaluations_get_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_evaluations_api', kwargs={'case_id': self.contract_other.pk})
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_provider_case_evaluations_get_linked_200(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:case_evaluations_api', kwargs={'case_id': self.contract_linked.pk})
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertIn('evaluations', response.json())
+
+    def test_provider_intake_action_post_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:intake_action_api', kwargs={'case_id': self.contract_other.pk})
+        response = self.client.post(url, data='{}', content_type='application/json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_provider_intake_action_post_org_b_case_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:intake_action_api', kwargs={'case_id': self.contract_b.pk})
+        response = self.client.post(url, data='{}', content_type='application/json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_provider_transition_request_post_unlinked_same_org_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:provider_transition_request_api', kwargs={'case_id': self.contract_other.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({
+                'proposedCareForm': 'OUTPATIENT',
+                'reason': 'Visibility test — must not resolve intake without placement link.',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_provider_transition_request_post_org_b_case_404(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        url = reverse('careon:provider_transition_request_api', kwargs={'case_id': self.contract_b.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({
+                'proposedCareForm': 'OUTPATIENT',
+                'reason': 'Cross-tenant visibility test.',
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+
+@_DJANGO_HTML_WS
+class CaseScopedMutationApiCrossTenantTest(CrossTenantFixtureMixin, TestCase):
+    """
+    Org B users must not POST/PATCH org A case-scoped JSON APIs (404), mirroring GET coverage.
+
+    These endpoints resolve the CareCase via ``get_scoped_object_or_404`` inside
+    ``_get_intake_for_case_api_id`` or equivalent; regressions would be list-detail
+    inconsistency or mistaken trust in client-side case ids.
+    """
+
+    def test_assessment_decision_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:assessment_decision_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({'decision': 'matching'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_matching_action_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:matching_action_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(url, data='{}', content_type='application/json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_placement_action_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:placement_action_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({'status': 'APPROVED'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_case_early_lifecycle_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:case_early_lifecycle_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({'action': 'complete_wijkteam'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_placement_budget_decision_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:placement_budget_decision_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({'decision': 'APPROVE'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_activate_placement_monitoring_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:activate_placement_monitoring_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(url, data='{}', content_type='application/json')
+        self.assertEqual(response.status_code, 404)
+
+    def test_case_evaluation_detail_patch_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse(
+            'careon:case_evaluation_detail_api',
+            kwargs={'case_id': self.contract_a.pk, 'evaluation_id': 999999},
+        )
+        response = self.client.patch(
+            url,
+            data=json.dumps({'status': 'COMPLETED'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_cases_bulk_update_other_org_ids_are_no_op(self):
+        """Bulk update must not mutate another tenant's cases (scoped queryset → 0 rows)."""
+        self.client.login(username='user_b', password='passB1234!')
+        title_before = self.contract_a.title
+        url = reverse('careon:cases_bulk_update_api')
+        response = self.client.post(
+            url,
+            data=json.dumps({
+                'case_ids': [self.contract_a.pk],
+                'updates': {'content': 'cross-tenant bulk update probe — must not apply'},
+            }),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200, response.content.decode())
+        self.assertEqual(response.json().get('updated_count'), 0)
+        self.contract_a.refresh_from_db()
+        self.assertEqual(self.contract_a.title, title_before)
+
+    def test_case_evaluations_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse('careon:case_evaluations_api', kwargs={'case_id': self.contract_a.pk})
+        response = self.client.post(
+            url,
+            data=json.dumps({'dueDate': '2030-01-15', 'attendees': []}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_transition_request_financial_post_other_org_case_404(self):
+        self.client.login(username='user_b', password='passB1234!')
+        url = reverse(
+            'careon:transition_request_financial_api',
+            kwargs={'case_id': self.contract_a.pk, 'transition_id': 9_999_999},
+        )
+        response = self.client.post(
+            url,
+            data=json.dumps({'decision': 'APPROVED', 'note': 'probe'}),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 404)
 
 
 @_DJANGO_HTML_WS

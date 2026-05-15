@@ -14,7 +14,7 @@
  *   - Bevestigingsdialoog bij afwijzen bij hoge urgentie; meer info via modal.
  */
 
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   Clock,
   FileText,
+  FileQuestion,
   Info,
   Loader2,
   Lock,
@@ -80,10 +81,16 @@ import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useProviderEvaluations } from "../../hooks/useProviderEvaluations";
 import type {
   EvaluationDecisionPayload,
-  RejectionReasonCode,
+  EvaluationStatus,
   InfoRequestType,
+  ProviderEvaluation,
+  RejectionReasonCode,
 } from "../../hooks/useProviderEvaluations";
-import { INFO_REQUEST_TYPE_LABELS } from "../../hooks/useProviderEvaluations";
+import {
+  INFO_REQUEST_TYPE_LABELS,
+  REJECTION_REASON_LABELS,
+} from "../../hooks/useProviderEvaluations";
+import { apiClient } from "../../lib/apiClient";
 import type { SpaCase } from "../../hooks/useCases";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -95,6 +102,118 @@ type DecisionModalState = { type: "info_request"; caseId: string } | null;
 type CapacitySignal = "vol" | "beperkt" | "beschikbaar";
 
 type PanelMode = "idle" | "accept" | "reject";
+
+type PlacementEvidence = {
+  providerResponseStatus: string;
+  providerResponseReasonCode: string;
+  decisionNotes: string;
+  providerResponseNotes: string;
+};
+
+function parseInfoRequestFromProviderNotes(raw: string): { typeSlug: string | null; body: string } {
+  const t = raw.trim();
+  const m = /^\[INFO_TYPE:([^\]]+)]\s*\n?(.*)$/s.exec(t);
+  if (m) {
+    return { typeSlug: m[1].trim().toLowerCase(), body: (m[2] || "").trim() };
+  }
+  return { typeSlug: null, body: t };
+}
+
+function placementEvidenceIsVisible(p: PlacementEvidence | null): boolean {
+  if (!p) return false;
+  const st = (p.providerResponseStatus || "").trim().toUpperCase();
+  if (st === "NEEDS_INFO") return true;
+  if (st && st !== "PENDING") return true;
+  const code = (p.providerResponseReasonCode || "").trim();
+  if (code && code.toUpperCase() !== "NONE") return true;
+  return Boolean((p.decisionNotes || "").trim());
+}
+
+function placementEvidenceTone(p: PlacementEvidence): "warning" | "info" | "critical" {
+  const st = (p.providerResponseStatus || "").trim().toUpperCase();
+  if (st === "REJECTED") return "warning";
+  if (st === "NEEDS_INFO") return "info";
+  if (st === "NO_CAPACITY" || st === "WAITLIST") return "critical";
+  return "info";
+}
+
+function formatPlacementEvidenceLine(p: PlacementEvidence): string {
+  const st = (p.providerResponseStatus || "").trim().toUpperCase();
+  const prNotes = (p.providerResponseNotes || "").trim();
+
+  if (st === "NEEDS_INFO") {
+    const parts: string[] = ["Aanbieder vraagt aanvullende informatie"];
+    if (prNotes) {
+      const { typeSlug, body } = parseInfoRequestFromProviderNotes(prNotes);
+      const typeLab =
+        typeSlug && typeSlug in INFO_REQUEST_TYPE_LABELS
+          ? INFO_REQUEST_TYPE_LABELS[typeSlug as InfoRequestType]
+          : typeSlug;
+      if (typeLab) parts.push(`type: ${typeLab}`);
+      if (body) parts.push(body.length > 120 ? `${body.slice(0, 120)}…` : body);
+    }
+    const core = parts.join(" · ");
+    return core ? `${core} — volledige audit in casusdossier / tijdlijn.` : "Aanvullende informatie gevraagd — zie dossier en tijdlijn voor audit.";
+  }
+
+  const parts: string[] = [];
+  const code = (p.providerResponseReasonCode || "").trim();
+  const stDisp = (p.providerResponseStatus || "").trim();
+  if (code && code.toUpperCase() !== "NONE") {
+    parts.push(`Redencode: ${code}`);
+  } else if (stDisp && stDisp.toUpperCase() !== "PENDING") {
+    parts.push(`Status: ${stDisp}`);
+  }
+  const notes = (p.decisionNotes || "").trim();
+  if (notes) {
+    parts.push(notes.length > 160 ? `${notes.slice(0, 160)}…` : notes);
+  }
+  const core = parts.join(" · ");
+  return core ? `${core} — volledige audit in casusdossier / tijdlijn.` : "Registratie op plaatsing — zie dossier en tijdlijn voor audit.";
+}
+
+function usePlacementEvidenceForCase(caseId: string | undefined): PlacementEvidence | null {
+  const [evidence, setEvidence] = useState<PlacementEvidence | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!caseId) {
+      setEvidence(null);
+      return;
+    }
+    apiClient
+      .get<{
+        placement?: {
+          providerResponseStatus?: string;
+          providerResponseReasonCode?: string;
+          decisionNotes?: string;
+          providerResponseNotes?: string;
+        };
+      }>(`/care/api/cases/${caseId}/placement-detail/`)
+      .then((body) => {
+        if (cancelled) return;
+        const p = body.placement;
+        if (!p || typeof p !== "object" || Object.keys(p).length === 0) {
+          setEvidence(null);
+          return;
+        }
+        setEvidence({
+          providerResponseStatus: String(p.providerResponseStatus ?? ""),
+          providerResponseReasonCode: String(p.providerResponseReasonCode ?? ""),
+          decisionNotes: String(p.decisionNotes ?? ""),
+          providerResponseNotes: String(p.providerResponseNotes ?? ""),
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setEvidence(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [caseId]);
+
+  return placementEvidenceIsVisible(evidence) ? evidence : null;
+}
 
 /** UI labels mapped to canonical API rejection codes (structured feedback for matching). */
 const STRUCTURED_REJECTION_OPTIONS: { code: RejectionReasonCode; label: string }[] = [
@@ -111,6 +230,42 @@ interface AanbiederBeoordelingPageProps {
   onNavigateToMatching?: () => void;
   onNavigateToPlaatsingen?: () => void;
   onNavigateToCasussen?: () => void;
+}
+
+function formatNlDateTime(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("nl-NL", { dateStyle: "medium", timeStyle: "short" }).format(d);
+}
+
+const EVALUATION_STATUS_LABELS: Record<EvaluationStatus, string> = {
+  PENDING: "Wacht op reactie",
+  ACCEPTED: "Geaccepteerd",
+  REJECTED: "Afgewezen",
+  INFO_REQUESTED: "Aanvullende informatie gevraagd",
+  CANCELLED: "Geannuleerd",
+  SUPERSEDED: "Vervangen",
+};
+
+/** True when the zorgaanbieder has submitted a decision recorded on the evaluation row. */
+function providerEvaluationActionComplete(ev: ProviderEvaluation | undefined): boolean {
+  if (!ev) return false;
+  return (
+    ev.status === "ACCEPTED"
+    || ev.status === "REJECTED"
+    || ev.status === "INFO_REQUESTED"
+    || ev.status === "CANCELLED"
+    || ev.status === "SUPERSEDED"
+  );
+}
+
+function buildEvaluationMap(rows: ProviderEvaluation[]): Map<string, ProviderEvaluation> {
+  const m = new Map<string, ProviderEvaluation>();
+  for (const row of rows) {
+    if (row.caseId) m.set(row.caseId, row);
+  }
+  return m;
 }
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -151,6 +306,91 @@ function maskParticipantIdentity(label: string): string {
     .join(" ");
 }
 
+/** Compact read-model line for provider handoff (gemeente + instroom + aanmeldercontext). */
+function formatProviderHandoffLine(ev: ProviderEvaluation | null | undefined): string | null {
+  if (!ev) return null;
+  const parts: string[] = [];
+  if (ev.municipalityName?.trim()) {
+    parts.push(`Gemeente: ${ev.municipalityName.trim()}`);
+  }
+  if (ev.entryRouteLabel?.trim()) {
+    parts.push(`Instroom: ${ev.entryRouteLabel.trim()}`);
+  }
+  const prof = ev.aanmelderActorProfile?.trim();
+  if (prof && prof !== "ONBEKEND" && ev.aanmelderActorProfileLabel?.trim()) {
+    parts.push(`Aanmeldercontext: ${ev.aanmelderActorProfileLabel.trim()}`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+const PROVIDER_WHY_US_INTRO =
+  "Deze aanvraag is na gemeentelijke validatie en matching bij jullie neergelegd — onderstaande context ondersteunt je reactie (geen automatische toewijzing).";
+
+const PROVIDER_MATCH_ADVISORY_FOOTNOTE =
+  "Geen automatische toewijzing; score en fit zijn indicatief.";
+
+/** Context block: keten-handoff + advisory matching/arrangement (row 6 “why us”). */
+function ProviderReviewWhyUsBlock({ evaluation }: { evaluation: ProviderEvaluation | null | undefined }) {
+  const handoffLine = formatProviderHandoffLine(evaluation);
+  const hasMatch = Boolean(evaluation?.matchFitSummary?.trim());
+  const hasArrangement = Boolean(evaluation?.arrangementHintLine?.trim());
+  const hasCoordinator = Boolean(evaluation?.caseCoordinatorLabel?.trim());
+  if (!handoffLine && !hasMatch && !hasArrangement && !hasCoordinator) {
+    return null;
+  }
+
+  return (
+    <div
+      className="mt-2 space-y-1.5 rounded-lg border border-border/50 bg-muted/10 px-3 py-2.5"
+      data-testid="provider-review-why-us-block"
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground/85">
+        Waarom deze aanvraag bij jullie ligt
+      </p>
+      <p className="text-[11px] leading-snug text-muted-foreground">{PROVIDER_WHY_US_INTRO}</p>
+      {handoffLine ? (
+        <p
+          className="text-[11px] text-muted-foreground leading-snug"
+          data-testid="provider-review-handoff-context"
+        >
+          {handoffLine}
+        </p>
+      ) : null}
+      {hasMatch ? (
+        <p
+          className="text-[11px] text-muted-foreground leading-snug"
+          data-testid="provider-review-match-hint"
+        >
+          <span className="font-medium text-foreground/80">Advies match: </span>
+          {evaluation!.matchFitSummary!.trim()}
+          {evaluation?.matchTradeOffsHint?.trim() ? ` · ${evaluation.matchTradeOffsHint.trim()}` : ""}
+          {evaluation?.matchScore != null ? ` · Score-indicator: ${evaluation.matchScore}` : ""}
+          <span className="block mt-0.5 text-[10px] text-muted-foreground/90">{PROVIDER_MATCH_ADVISORY_FOOTNOTE}</span>
+        </p>
+      ) : null}
+      {hasArrangement ? (
+        <div className="space-y-0.5" data-testid="provider-review-arrangement-block">
+          <p className="text-[11px] text-muted-foreground leading-snug" data-testid="provider-review-arrangement-hint">
+            {evaluation!.arrangementHintLine!.trim()}
+          </p>
+          <p
+            className="text-[10px] text-muted-foreground/90 leading-snug"
+            data-testid="provider-review-arrangement-disclaimer"
+          >
+            {evaluation?.arrangementHintDisclaimer?.trim() ||
+              "Indicatief arrangement — geen budget- of tarieftoezegging."}
+          </p>
+        </div>
+      ) : null}
+      {hasCoordinator ? (
+        <p className="text-[11px] text-muted-foreground" data-testid="provider-review-coordinator-hint">
+          Casusregisseur (gemeente): {evaluation!.caseCoordinatorLabel!.trim()}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 // ─── Info request modal ───────────────────────────────────────────────────────
 
 interface InfoRequestModalProps {
@@ -176,14 +416,20 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
   };
 
   return (
-    <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      data-testid="provider-info-request-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="provider-info-request-title"
+    >
       <div className="w-full rounded-2xl border border-border bg-card shadow-xl" style={{ maxWidth: tokens.layout.dialogNarrowMaxWidth }}>
         <div className="flex items-start gap-3 border-b border-border px-6 py-5">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-500/25 bg-blue-500/10">
             <FileQuestion className="text-blue-400" size={20} />
           </div>
           <div>
-            <p className="font-semibold text-foreground">Meer informatie vragen</p>
+            <p id="provider-info-request-title" className="font-semibold text-foreground">Meer informatie vragen</p>
             <p className="text-sm text-muted-foreground mt-0.5">Casus <span className="font-medium text-foreground">{caseId}</span></p>
           </div>
         </div>
@@ -194,6 +440,8 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
               Type informatie <span className="text-primary">*</span>
             </label>
             <select
+              data-testid="provider-info-request-type"
+              aria-label="Type informatie"
               value={infoType}
               onChange={(e) => setInfoType(e.target.value as InfoRequestType)}
               className="w-full rounded-xl border border-border bg-card px-3 py-2.5 text-sm text-foreground outline-none focus:border-primary/50"
@@ -210,6 +458,8 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
               Vraag / toelichting <span className="text-primary">*</span>
             </label>
             <textarea
+              data-testid="provider-info-request-comment"
+              aria-label="Vraag of toelichting"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Omschrijf welke informatie je nodig hebt om de casus te beoordelen..."
@@ -223,9 +473,12 @@ function InfoRequestModal({ caseId, onClose, onConfirm, submitting }: InfoReques
         </div>
 
         <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
-          <Button variant="outline" onClick={onClose} disabled={submitting}>Annuleren</Button>
+          <Button variant="outline" data-testid="provider-info-request-cancel" onClick={onClose} disabled={submitting}>
+            Annuleren
+          </Button>
           <Button
             className="gap-2"
+            data-testid="provider-info-request-submit"
             onClick={handleSubmit}
             disabled={!isValid || submitting}
           >
@@ -245,6 +498,8 @@ interface GemeenteViewProps {
   loading: boolean;
   error: string | null;
   refetch: () => void;
+  refetchEvaluations: () => void;
+  evaluationByCaseId: Map<string, ProviderEvaluation>;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onCaseClick: (caseId: string) => void;
@@ -326,6 +581,74 @@ const GEMEENTE_INVITED_PROVIDER_ROWS: ProviderInviteRow[] = [
   },
 ];
 
+function evaluationToGemeenteRows(ev: ProviderEvaluation): ProviderInviteRow[] {
+  const statusKind: ProviderInviteRow["statusKind"] =
+    ev.status === "REJECTED"
+      ? "rejected"
+      : ev.status === "ACCEPTED" || ev.status === "INFO_REQUESTED"
+        ? "received"
+        : "waiting";
+
+  const statusLabel = EVALUATION_STATUS_LABELS[ev.status] ?? ev.status;
+  const parts: string[] = [];
+  if (ev.rejectionReasonCode) {
+    const lab = REJECTION_REASON_LABELS[ev.rejectionReasonCode];
+    if (lab) {
+      parts.push(`${lab} (redencode: ${ev.rejectionReasonCode})`);
+    } else {
+      parts.push(`Redencode: ${ev.rejectionReasonCode}`);
+    }
+  }
+  if (ev.informationRequestType) {
+    const t = INFO_REQUEST_TYPE_LABELS[ev.informationRequestType];
+    if (t) {
+      parts.push(`${t} (type-code: ${ev.informationRequestType})`);
+    } else {
+      parts.push(`type-code: ${ev.informationRequestType}`);
+    }
+  }
+  let responseText: string;
+  if (ev.status === "INFO_REQUESTED" && (parts.length > 0 || Boolean(ev.informationRequestComment?.trim()))) {
+    const core = parts.length > 0 ? parts.join(" · ") : "Aanvullende informatie gevraagd";
+    const tail = (ev.informationRequestComment && ev.informationRequestComment.trim()) || "";
+    responseText = tail ? `${core} — ${tail}` : core;
+  } else {
+    responseText =
+      (ev.providerComment && ev.providerComment.trim())
+      || (ev.informationRequestComment && ev.informationRequestComment.trim())
+      || (parts.length ? parts.join(" · ") : "— Nog geen reactie");
+  }
+
+  const responded = formatNlDateTime(ev.respondedAt);
+  const requested = formatNlDateTime(ev.requestedAt);
+  const statusMeta = responded
+    ? `Ontvangen ${responded}`
+    : requested
+      ? `Uitgenodigd ${requested}`
+      : `${ev.daysPending} dagen sinds verzoek`;
+
+  return [
+    {
+      id: `eval-${ev.id}`,
+      name: (ev.providerName || "").trim() || "Aanbieder",
+      distanceKm: "—",
+      city: ev.region || "—",
+      tags:
+        [ev.careType, ev.clientLabel, ev.municipalityName?.trim()]
+          .filter(Boolean)
+          .join(" · ") || "—",
+      statusKind,
+      statusLabel,
+      statusMeta,
+      response: responseText,
+      fitLabel: ev.matchScore != null ? "Matchscore" : "—",
+      fitPct: ev.matchScore,
+      actionLabel: "Open casus",
+      logo: <User size={20} className="text-muted-foreground" aria-hidden />,
+    },
+  ];
+}
+
 function statusPillClass(kind: ProviderInviteRow["statusKind"]): string {
   switch (kind) {
     case "waiting":
@@ -397,6 +720,8 @@ function GemeenteView({
   loading,
   error,
   refetch,
+  refetchEvaluations,
+  evaluationByCaseId,
   searchQuery,
   onSearchChange,
   onCaseClick,
@@ -416,16 +741,36 @@ function GemeenteView({
     const query = searchQuery.toLowerCase();
     return reviewCasesAll.filter(c => {
       if (!query) return true;
-      return [c.id, c.title, c.regio].join(" ").toLowerCase().includes(query);
+      const ev = evaluationByCaseId.get(c.id);
+      const hay = [c.id, c.title, c.regio, ev?.clientLabel, ev?.providerName, ev?.caseTitle]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(query);
     });
-  }, [reviewCasesAll, searchQuery]);
+  }, [reviewCasesAll, searchQuery, evaluationByCaseId]);
 
   const focusCase = reviewCases[0] ?? reviewCasesAll[0];
+  const focusEvaluation = focusCase ? evaluationByCaseId.get(focusCase.id) : undefined;
+
+  const gemeenteProviderTableRows = useMemo(() => {
+    if (focusEvaluation) return evaluationToGemeenteRows(focusEvaluation);
+    return GEMEENTE_INVITED_PROVIDER_ROWS;
+  }, [focusEvaluation]);
+
+  const dominantActionDeadlineText = useMemo(() => {
+    const d = formatNlDateTime(focusEvaluation?.slaDeadlineAt);
+    if (d) {
+      return `Wacht op reactie van aanbieders. Reactietermijn (registratie): ${d}. Herinner bij overschrijding.`;
+    }
+    return "Wacht op reactie van aanbieders. Zij beoordelen of de casus past bij capaciteit en inhoud. Herinner bij overschrijding van de reactietermijn.";
+  }, [focusEvaluation?.slaDeadlineAt]);
   // `displayCaseId` only resolves inside `showMainGrid` contexts where `focusCase` is guaranteed,
   // so the empty-string fallback is defensive and never user-visible.
   const displayCaseId = focusCase?.id ?? "";
   const hasPhaseCases = reviewCasesAll.length > 0;
   const showMainGrid = !loading && !error && reviewCases.length > 0;
+  const placementEvidence = usePlacementEvidenceForCase(focusCase?.id);
 
   const handleBack = () => {
     if (focusCase) {
@@ -497,7 +842,7 @@ function GemeenteView({
                   <ArrowLeft size={16} aria-hidden />
                   Terug naar casus
                 </Button>
-                <Button type="button" variant="outline" onClick={() => void refetch()} className="gap-2">
+                <Button type="button" variant="outline" onClick={() => { void refetch(); void refetchEvaluations(); }} className="gap-2">
                   <RefreshCw size={14} aria-hidden />
                   Ververs
                 </Button>
@@ -520,7 +865,7 @@ function GemeenteView({
                 icon={<Clock size={24} aria-hidden />}
                 metric={3}
                 title="aanbieders uitgenodigd"
-                description="Wacht op reactie van aanbieders. Zij beoordelen of de casus past bij capaciteit en inhoud. Reactietermijn verloopt op 15 mei 2025 om 14:00."
+                description={dominantActionDeadlineText}
                 primaryAction={(
                   <Button
                     type="button"
@@ -570,7 +915,11 @@ function GemeenteView({
           )}
 
           {!loading && error && (
-            <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+            <ErrorState
+              title="Laden mislukt"
+              copy={error}
+              action={<Button variant="outline" onClick={() => { void refetch(); void refetchEvaluations(); }}>Opnieuw</Button>}
+            />
           )}
 
           {!loading && !error && reviewCasesAll.length === 0 && (
@@ -613,6 +962,15 @@ function GemeenteView({
                 title={<span id="aanbieder-uitnodigingen-heading">Uitgenodigde aanbieders</span>}
               />
               <CareSectionBody>
+                {placementEvidence && (
+                  <div className="mb-4" data-testid="aanbieder-gemeente-placement-evidence">
+                    <CareAttentionBar
+                      tone={placementEvidenceTone(placementEvidence)}
+                      icon={<FileText size={16} aria-hidden />}
+                      message={formatPlacementEvidenceLine(placementEvidence)}
+                    />
+                  </div>
+                )}
                 {activeTab === "overzicht" && (
                   <div className="overflow-x-auto rounded-xl border border-border/60 bg-card/35">
                     <table className="w-full min-w-[720px] border-collapse text-left text-[13px]">
@@ -626,7 +984,7 @@ function GemeenteView({
                         </tr>
                       </thead>
                       <tbody>
-                        {GEMEENTE_INVITED_PROVIDER_ROWS.map((row) => (
+                        {gemeenteProviderTableRows.map((row) => (
                           <tr key={row.id} className="border-b border-border/50 last:border-b-0">
                             <td className="px-4 py-4 align-top">
                               <div className="flex gap-3">
@@ -833,17 +1191,19 @@ function capacityLabel(signal: CapacitySignal): string {
 
 interface ProviderReviewCaseCardProps {
   caseItem: SpaCase;
+  evaluation?: ProviderEvaluation | null;
   submitting: boolean;
   submitDecision: (caseId: string, payload: EvaluationDecisionPayload) => Promise<void>;
   onCaseClick: (caseId: string) => void;
   onRequestInfo: () => void;
-  outcome: "accepted" | "rejected" | null;
-  onOutcome: (type: "accepted" | "rejected", caseId: string) => void;
+  outcome: "accepted" | "rejected" | "info_requested" | "inactive" | null;
+  onOutcome: (type: "accepted" | "rejected" | "info_requested", caseId: string) => void;
   onNextCase: () => void;
 }
 
 function ProviderReviewCaseCard({
   caseItem,
+  evaluation,
   submitting,
   submitDecision,
   onCaseClick,
@@ -915,6 +1275,60 @@ function ProviderReviewCaseCard({
     }
   };
 
+  if (outcome === "inactive") {
+    return (
+      <div className="rounded-xl border border-border/70 bg-card/50 p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <Info className="text-muted-foreground shrink-0 mt-0.5" size={20} />
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">Niet meer actief</p>
+            <p className="text-sm text-muted-foreground">Deze aanvraag staat niet meer open voor jouw reactie in dit overzicht.</p>
+          </div>
+        </div>
+        <Button className="h-10 w-auto justify-start gap-2" variant="outline" onClick={onNextCase}>
+          Volgende casus
+          <ArrowRight size={16} />
+        </Button>
+      </div>
+    );
+  }
+
+  if (outcome === "info_requested") {
+    const slug = evaluation?.informationRequestType;
+    const typeLab = slug ? INFO_REQUEST_TYPE_LABELS[slug] : undefined;
+    const detail = (evaluation?.informationRequestComment || "").trim();
+    const auditLine =
+      typeLab && slug ? `${typeLab} (type-code: ${slug})` : slug ? `type-code: ${slug}` : null;
+    return (
+      <div
+        className="rounded-xl border border-border/70 bg-card/50 p-4 space-y-3"
+        data-testid="provider-info-requested-summary"
+      >
+        <div className="flex items-start gap-3">
+          <MessageSquare className="text-primary shrink-0 mt-0.5" size={20} />
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">Aanvullende informatie gevraagd</p>
+            <p className="text-sm text-muted-foreground">De gemeente verwerkt dit verzoek; jij hoeft hier niets meer te doen tot er een update is.</p>
+            {auditLine ? (
+              <p className="text-[12px] text-muted-foreground" data-testid="provider-info-requested-audit-line">
+                {auditLine}
+              </p>
+            ) : null}
+            {detail ? (
+              <p className="text-[11px] leading-snug text-muted-foreground/90">
+                {detail.length > 220 ? `${detail.slice(0, 220)}…` : detail}
+              </p>
+            ) : null}
+          </div>
+        </div>
+        <Button className="h-10 w-auto justify-start gap-2" variant="outline" onClick={onNextCase}>
+          Volgende casus
+          <ArrowRight size={16} />
+        </Button>
+      </div>
+    );
+  }
+
   if (outcome === "accepted") {
     return (
       <div className="rounded-xl border border-border/70 bg-card/50 p-4 space-y-3">
@@ -934,13 +1348,35 @@ function ProviderReviewCaseCard({
   }
 
   if (outcome === "rejected") {
+    const rejCode = evaluation?.rejectionReasonCode;
+    const rejLabel = rejCode ? REJECTION_REASON_LABELS[rejCode] : undefined;
+    const rejNote = (evaluation?.providerComment || "").trim();
+    const auditLine =
+      rejLabel && rejCode
+        ? `${rejLabel} (redencode: ${rejCode})`
+        : rejCode
+          ? `Redencode: ${rejCode}`
+          : null;
     return (
-      <div className="rounded-xl border border-border/70 bg-card/50 p-4 space-y-3">
+      <div
+        className="rounded-xl border border-border/70 bg-card/50 p-4 space-y-3"
+        data-testid="provider-rejected-summary"
+      >
         <div className="flex items-start gap-3">
           <XCircle className="text-destructive shrink-0 mt-0.5" size={20} />
           <div className="space-y-1">
             <p className="text-base font-semibold text-foreground">Afgewezen</p>
             <p className="text-sm text-muted-foreground">Casus gaat terug naar matching.</p>
+            {auditLine ? (
+              <p className="text-[12px] text-muted-foreground" data-testid="provider-rejected-audit-line">
+                {auditLine}
+              </p>
+            ) : null}
+            {rejNote ? (
+              <p className="text-[11px] leading-snug text-muted-foreground/90">
+                {rejNote.length > 220 ? `${rejNote.slice(0, 220)}…` : rejNote}
+              </p>
+            ) : null}
           </div>
         </div>
         <Button variant="outline" className="h-10 w-auto justify-start gap-2" onClick={onNextCase}>
@@ -990,6 +1426,16 @@ function ProviderReviewCaseCard({
           <p className="mt-1 text-[13px] text-muted-foreground">
             {maskParticipantIdentity(caseItem.title?.trim() || caseItem.id)} · {caseItem.regio} · {urgencyLabel(caseItem.urgency)} · {caseItem.wachttijd}d · {caseItem.zorgtype}
           </p>
+          {evaluation && !outcome ? (
+            <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+              <span className="font-medium text-foreground/90">{EVALUATION_STATUS_LABELS[evaluation.status]}</span>
+              {formatNlDateTime(evaluation.slaDeadlineAt) ? (
+                <> · Deadline {formatNlDateTime(evaluation.slaDeadlineAt)}</>
+              ) : null}
+              {evaluation.daysPending > 0 ? <> · {evaluation.daysPending}d sinds uitnodiging</> : null}
+            </p>
+          ) : null}
+          <ProviderReviewWhyUsBlock evaluation={evaluation} />
           <p className="mt-2 text-[12px] text-muted-foreground">
             Jouw besluit: acceptatie {"->"} gemeenteplaatsing; afwijzing {"->"} hermatching.
           </p>
@@ -1072,7 +1518,7 @@ function ProviderReviewCaseCard({
             </p>
           )}
           {panelMode === "accept" && (
-            <div className="space-y-4">
+            <div className="space-y-4" data-testid="provider-review-accept-panel">
               <div className="rounded-lg border border-border/60 bg-muted/5 px-3 py-3">
                 <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground mb-2">
                   Capaciteit (indicatie)
@@ -1223,11 +1669,27 @@ function ProviderReviewCaseCard({
 
 // ─── Zorgaanbieder view (decision) ────────────────────────────────────────────
 
+function deriveProviderCardOutcome(
+  caseId: string,
+  evaluationByCaseId: Map<string, ProviderEvaluation>,
+  acceptedCaseIds: Set<string>,
+  rejectedCaseIds: Set<string>,
+): "accepted" | "rejected" | "info_requested" | null {
+  const ev = evaluationByCaseId.get(caseId);
+  if (acceptedCaseIds.has(caseId) || ev?.status === "ACCEPTED") return "accepted";
+  if (rejectedCaseIds.has(caseId) || ev?.status === "REJECTED") return "rejected";
+  if (ev?.status === "INFO_REQUESTED") return "info_requested";
+  if (ev?.status === "CANCELLED" || ev?.status === "SUPERSEDED") return "inactive";
+  return null;
+}
+
 interface ProviderViewProps {
   cases: SpaCase[];
   loading: boolean;
   error: string | null;
   refetch: () => void;
+  refetchEvaluations: () => void;
+  evaluationByCaseId: Map<string, ProviderEvaluation>;
   searchQuery: string;
   onSearchChange: (value: string) => void;
   onCaseClick: (caseId: string) => void;
@@ -1243,6 +1705,8 @@ function ProviderView({
   loading,
   error,
   refetch,
+  refetchEvaluations,
+  evaluationByCaseId,
   searchQuery,
   onSearchChange,
   onCaseClick,
@@ -1266,20 +1730,41 @@ function ProviderView({
     const query = searchQuery.toLowerCase();
     return pendingCasesAll.filter(c => {
       if (!query) return true;
-      return [c.id, c.title, c.regio].join(" ").toLowerCase().includes(query);
+      const ev = evaluationByCaseId.get(c.id);
+      const hay = [c.id, c.title, c.regio, ev?.clientLabel, ev?.providerName, ev?.caseTitle]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(query);
     });
-  }, [pendingCasesAll, searchQuery]);
+  }, [pendingCasesAll, searchQuery, evaluationByCaseId]);
 
   const activeQueue = useMemo(
-    () => pendingCases.filter(c => !acceptedCaseIds.has(c.id) && !rejectedCaseIds.has(c.id)),
-    [pendingCases, acceptedCaseIds, rejectedCaseIds],
+    () =>
+      pendingCases.filter(c => {
+        if (acceptedCaseIds.has(c.id) || rejectedCaseIds.has(c.id)) return false;
+        const ev = evaluationByCaseId.get(c.id);
+        return !providerEvaluationActionComplete(ev);
+      }),
+    [pendingCases, acceptedCaseIds, rejectedCaseIds, evaluationByCaseId],
   );
+  const activePlacementEvidence = usePlacementEvidenceForCase(activeQueue[0]?.id);
   const doneCases = useMemo(() => {
     const ids = [...acceptedCaseIds, ...rejectedCaseIds].filter(id =>
       pendingCases.some(c => c.id === id),
     );
-    return pendingCases.filter(c => ids.includes(c.id));
-  }, [pendingCases, acceptedCaseIds, rejectedCaseIds]);
+    const localDone = pendingCases.filter(c => ids.includes(c.id));
+    const apiDone = pendingCases.filter(c => providerEvaluationActionComplete(evaluationByCaseId.get(c.id)));
+    const seen = new Set<string>();
+    const merged: SpaCase[] = [];
+    for (const c of [...apiDone, ...localDone]) {
+      if (!seen.has(c.id)) {
+        seen.add(c.id);
+        merged.push(c);
+      }
+    }
+    return merged;
+  }, [pendingCases, acceptedCaseIds, rejectedCaseIds, evaluationByCaseId]);
 
   const handleNextCase = () => {
     setFocusToken(t => t + 1);
@@ -1298,6 +1783,7 @@ function ProviderView({
 
       <CarePageScaffold
         archetype="worklist"
+        testId="aanbieder-beoordeling-zorgaanbieder-root"
         className="pb-8"
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
@@ -1370,7 +1856,11 @@ function ProviderView({
         )}
 
         {!loading && error && (
-          <ErrorState title="Laden mislukt" copy={error} action={<Button variant="outline" onClick={refetch}>Opnieuw</Button>} />
+          <ErrorState
+            title="Laden mislukt"
+            copy={error}
+            action={<Button variant="outline" onClick={() => { void refetch(); void refetchEvaluations(); }}>Opnieuw</Button>}
+          />
         )}
 
         {!loading && !error && pendingCasesAll.length === 0 && (
@@ -1396,8 +1886,18 @@ function ProviderView({
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                   Actieve reactie
                 </p>
+                {activePlacementEvidence && (
+                  <div data-testid="aanbieder-provider-placement-evidence">
+                    <CareAttentionBar
+                      tone={placementEvidenceTone(activePlacementEvidence)}
+                      icon={<FileText size={16} aria-hidden />}
+                      message={formatPlacementEvidenceLine(activePlacementEvidence)}
+                    />
+                  </div>
+                )}
                 <ProviderReviewCaseCard
                   caseItem={activeQueue[0]}
+                  evaluation={evaluationByCaseId.get(activeQueue[0].id)}
                   submitting={submitting}
                   submitDecision={submitDecision}
                   onCaseClick={onCaseClick}
@@ -1406,7 +1906,7 @@ function ProviderView({
                   onOutcome={(type, caseId) => {
                     if (type === "accepted") {
                       setAcceptedCaseIds(prev => new Set([...prev, caseId]));
-                    } else {
+                    } else if (type === "rejected") {
                       setRejectedCaseIds(prev => new Set([...prev, caseId]));
                     }
                   }}
@@ -1433,11 +1933,12 @@ function ProviderView({
                     <ProviderReviewCaseCard
                       key={c.id}
                       caseItem={c}
+                      evaluation={evaluationByCaseId.get(c.id)}
                       submitting={false}
                       submitDecision={submitDecision}
                       onCaseClick={onCaseClick}
                       onRequestInfo={() => setDecisionModal({ type: "info_request", caseId: c.id })}
-                      outcome={acceptedCaseIds.has(c.id) ? "accepted" : "rejected"}
+                      outcome={deriveProviderCardOutcome(c.id, evaluationByCaseId, acceptedCaseIds, rejectedCaseIds)}
                       onOutcome={() => { /* read-only success state */ }}
                       onNextCase={handleNextCase}
                     />
@@ -1465,18 +1966,23 @@ export function AanbiederBeoordelingPage({
 
   const { cases, loading, error, refetch } = useCases({ q: "" });
   const {
+    evaluations,
     submitDecision: postEvaluationDecision,
     submitting,
     submitError,
     clearSubmitError,
+    refetch: refetchEvaluations,
   } = useProviderEvaluations();
+
+  const evaluationByCaseId = useMemo(() => buildEvaluationMap(evaluations), [evaluations]);
 
   const submitDecisionWithCasesRefresh = useCallback(
     async (caseId: string, payload: EvaluationDecisionPayload) => {
       await postEvaluationDecision(caseId, payload);
       refetch();
+      refetchEvaluations();
     },
-    [postEvaluationDecision, refetch],
+    [postEvaluationDecision, refetch, refetchEvaluations],
   );
 
   // Gemeente: monitoring view — no decision authority
@@ -1487,6 +1993,8 @@ export function AanbiederBeoordelingPage({
         loading={loading}
         error={error}
         refetch={refetch}
+        refetchEvaluations={refetchEvaluations}
+        evaluationByCaseId={evaluationByCaseId}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         onCaseClick={onCaseClick}
@@ -1504,6 +2012,8 @@ export function AanbiederBeoordelingPage({
       loading={loading}
       error={error}
       refetch={refetch}
+      refetchEvaluations={refetchEvaluations}
+      evaluationByCaseId={evaluationByCaseId}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       onCaseClick={onCaseClick}

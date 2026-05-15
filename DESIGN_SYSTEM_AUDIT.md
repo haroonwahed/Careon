@@ -2,11 +2,11 @@
 
 Het canonieke ontwerp‑ en UX‑spoor voor Zorg OS / CareOn staat in:
 
-- **[`docs/CareOn_Design_Constitution_v1_3.md`](./docs/CareOn_Design_Constitution_v1_3.md)** — visuele hiërarchie, dichtheid, tokens en componentdiscipline.
+- **[`docs/Careon_Operational_Constitution_v2.md`](./docs/Careon_Operational_Constitution_v2.md)** — UX, visual language, operational philosophy (export of Word master).
+- **[`docs/FOUNDATION_LOCK.md`](./docs/FOUNDATION_LOCK.md)** — UI density, tokens, worklist/timeline/NBA guardrails, API phase mapping.
 
-Aanvullende product‑ en technische kaders:
+Aanvullende master (opmaak):
 
-- [`docs/Zorg_OS_Product_System_Core_v1_3.md`](./docs/Zorg_OS_Product_System_Core_v1_3.md)
-- [`docs/Zorg_OS_Technical_Foundation_v1_3.md`](./docs/Zorg_OS_Technical_Foundation_v1_3.md)
+- [`docs/Careon_Operational_Constitution_v2.docx`](./docs/Careon_Operational_Constitution_v2.docx)
 
 > **Opmerking:** De eerdere `design-audit/` map (screenshots, demo‑evidence, losse audit‑markdown) is uit de repository gehaald om ruis en duplicatie te verminderen. Nieuwe visuele of UX‑bewijslast hoort bij voorkeur in `docs/` of in geautomatiseerde tests / release‑artefacten buiten git.

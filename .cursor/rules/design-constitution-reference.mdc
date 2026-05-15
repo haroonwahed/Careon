@@ -1,16 +1,18 @@
 ---
-description: Always reference Careon Design Constitution V1 for UX/design decisions
+description: Reference CareOn Operational Constitution v2 for UX/design decisions
 alwaysApply: true
 ---
 
 # Careon Design Constitution Reference
 
-When a task involves UI, UX, layout, design tokens, visual hierarchy, or component behavior, use this document as a standing reference:
+When a task involves UI, UX, layout, design tokens, visual hierarchy, or component behavior, use these documents as standing references:
 
-- `docs/CareOn_Design_Constitution_v1_3.md` (canonical; v1.3)
+- `docs/Careon_Operational_Constitution_v2.md` — operational UX + visual language (plain-text export)
+- `docs/Careon_Operational_Constitution_v2.docx` — authoritative formatted master
+- `docs/FOUNDATION_LOCK.md` — UI density, token discipline, and worklist/timeline/NBA guardrails retained from the superseded v1.3 design doc
 
 Working rule:
 
-1. Align proposed or implemented design decisions with the constitution.
+1. Align proposed or implemented design decisions with the constitution and `FOUNDATION_LOCK.md` UI guardrails.
 2. Prefer constitution guidance over ad-hoc styling choices.
-3. If the document is missing from the workspace, restore it from version control and continue; legacy `.docx` references are deprecated.
+3. If the Markdown export is missing but the `.docx` is present, re-export with macOS `textutil -convert txt` from the Word file into `docs/Careon_Operational_Constitution_v2.md`.

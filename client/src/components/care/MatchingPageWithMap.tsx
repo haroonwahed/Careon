@@ -40,6 +40,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
+import { useMatchingCandidates, type MatchingCandidateRow } from "../../hooks/useMatchingCandidates";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { apiClient } from "../../lib/apiClient";
 import { toCareCaseDetail } from "../../lib/routes";
@@ -66,6 +67,15 @@ function formatClientReference(caseId: string): string {
     return `CLI-${digits.padStart(5, "0").slice(-5)}`;
   }
   return "CLI-ONBEKEND";
+}
+
+function confidenceLabelNl(label: string): string {
+  const l = (label || "").toLowerCase();
+  if (l === "hoog") return "Hoog vertrouwen";
+  if (l === "middel") return "Gemiddeld vertrouwen";
+  if (l === "laag") return "Voorzichtig vertrouwen";
+  if (l === "onzeker") return "Onzeker vertrouwen";
+  return "Vertrouwen op basis van beschikbare gegevens";
 }
 
 function maskParticipantIdentity(name: string): string {
@@ -136,6 +146,22 @@ export function MatchingPageWithMap({
   const legacyCases = cases.map(toLegacyCase);
   const legacyProviders = providers.map(toLegacyProvider);
 
+  const { matches: apiMatches, loading: matchCandidatesLoading, incompleteCode } = useMatchingCandidates(caseId);
+
+  const liveApiRanked = useMemo(() => {
+    if (!apiMatches.length) return null;
+    const rows: { legacy: ReturnType<typeof toLegacyProvider>; api: MatchingCandidateRow }[] = [];
+    for (const m of apiMatches) {
+      const nm = (m.aanbiederName || "").trim();
+      if (!nm) continue;
+      const spa = providers.find(p => p.name.trim().toLowerCase() === nm.toLowerCase());
+      if (!spa) continue;
+      rows.push({ legacy: toLegacyProvider(spa), api: m });
+      if (rows.length >= 3) break;
+    }
+    return rows.length ? rows : null;
+  }, [apiMatches, providers]);
+
   const caseData = legacyCases.find((item) => item.id === caseId);
   const [selectedProviderId, setSelectedProviderId] = useState<string | null>(null);
   const [hoveredProviderId, setHoveredProviderId] = useState<string | null>(null);
@@ -199,6 +225,52 @@ export function MatchingPageWithMap({
   };
 
   const rankedMatches = useMemo(() => {
+    if (liveApiRanked && liveApiRanked.length > 0) {
+      return liveApiRanked.map(({ legacy: provider, api }, index) => {
+        const raw = Number(api.totaalscore) || 0;
+        const score = raw > 0 && raw <= 1 ? Math.round(raw * 100) : Math.max(0, Math.min(100, Math.round(raw)));
+        const distance = getDistance(index);
+        const breakdown = scoreBreakdownParts(score);
+        const tradeFromApi = (api.trade_offs ?? []).map(t => String(t)).filter(Boolean);
+        const strongParts = [api.fit_samenvatting, api.verificatie_advies].map(s => (s || "").trim()).filter(Boolean);
+        const strongPoints =
+          strongParts.length > 0 ? strongParts : ["Matchadvies uit de keten-engine (advies)."];
+        const tradeOffs =
+          tradeFromApi.length > 0
+            ? tradeFromApi.slice(0, 3)
+            : index === 0
+              ? ["Capaciteit en wachttijd kunnen verschuiven — verifieer vóór doorleiding."]
+              : ["Zie verificatie-advies voor afronding."];
+        const capacityUpdateLabel = caseData?.lastActivity?.trim() || "recent onbekend";
+        const regionWarn = (api.region_pressure_signal || "").trim();
+        const warnings = regionWarn
+          ? [regionWarn]
+          : index === 0
+            ? [`Capaciteit onzeker (laatste activiteit casus: ${capacityUpdateLabel})`]
+            : [];
+        const whyMatch = api.fit_samenvatting || "Geselecteerd op basis van actuele matching.";
+        const tier = index === 0 ? "best" : index === 1 ? "balanced" : "risk";
+        return {
+          provider,
+          index,
+          score,
+          distance,
+          strongPoints,
+          tradeOffs,
+          alternativeReasons: [] as string[],
+          confidenceLabel: confidenceLabelNl(api.confidence_label),
+          breakdown,
+          focusChecks: [
+            { label: "Regio", value: provider.region },
+            { label: "Score", value: `${score}%` },
+          ],
+          warnings,
+          whyMatch,
+          tier,
+          whyShownThird: index === 2 ? api.fit_samenvatting || null : null,
+        };
+      });
+    }
     return topMatches.map((provider, index) => {
       const score = getMatchScore(index);
       const distance = getDistance(index);
@@ -280,7 +352,7 @@ export function MatchingPageWithMap({
         whyShownThird: index === 2 ? "Geen betere alternatieven beschikbaar" : null,
       };
     });
-  }, [topMatches, caseData?.lastActivity]);
+  }, [liveApiRanked, topMatches, caseData?.lastActivity]);
 
   const overflowList = useMemo(
     () =>
@@ -318,7 +390,7 @@ export function MatchingPageWithMap({
     return showOnlyAvailablePins ? rankedMatches.filter((item) => item.provider.availableSpots > 0) : rankedMatches;
   }, [rankedMatches, showOnlyAvailablePins]);
 
-  if (casesLoading || providersLoading) {
+  if (casesLoading || providersLoading || matchCandidatesLoading) {
     return <LoadingState title="Matching laden…" copy="Aanbieders en casusinformatie worden opgehaald." />;
   }
 
@@ -549,6 +621,22 @@ export function MatchingPageWithMap({
               <p className="text-[12px] text-muted-foreground">
                 Identiteit blijft gemaskeerd in matching. Backend-autorisatie bepaalt zichtbaarheid per fase en rol.
               </p>
+              {incompleteCode === "SUMMARY_INCOMPLETE" ? (
+                <p
+                  className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100"
+                  role="status"
+                >
+                  Samenvatting nog incompleet — live matchscores volgen zodra de samenvatting gereed is. Onderstaande rangorde blijft indicatief.
+                </p>
+              ) : null}
+              {liveApiRanked && liveApiRanked.length > 0 ? (
+                <p
+                  className="rounded-lg border border-border/60 bg-card/30 px-3 py-2 text-[12px] text-muted-foreground"
+                  role="status"
+                >
+                  Scores en toelichting komen uit de matching-engine (advies; geen automatische toewijzing).
+                </p>
+              ) : null}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

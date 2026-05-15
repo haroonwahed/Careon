@@ -108,11 +108,20 @@ echo "[run_golden_path_e2e] Step 4/5: Case Timeline v1 boundary evidence — JSO
 echo "=== $(date -Iseconds) rehearsal_timeline_evidence (golden path) ===" >> "$TL_STEP_LOG"
 "$PYTHON_BIN" manage.py rehearsal_timeline_evidence --json-out "$TL_JSON" >>"$TL_STEP_LOG" 2>&1 || die "rehearsal_timeline_evidence failed"
 
-echo "[run_golden_path_e2e] Step 5/5: Playwright golden-path spec"
+echo "[run_golden_path_e2e] Step 5/5: reset pilot environment (fresh provider queue for browser smoke)"
+"$PYTHON_BIN" manage.py reset_pilot_environment || die "reset_pilot_environment failed"
+
+echo "[run_golden_path_e2e] Step 6/6: Playwright — golden path + staging shell + provider review smoke"
 (
   cd "$ROOT_DIR/client"
   export E2E_BASE_URL E2E_DEMO_PASSWORD E2E_SMOKE_PASSWORD
-  npx playwright test tests/e2e/zorg-os-golden-path.spec.ts
+  # CI and fresh dev machines may not have browsers downloaded yet.
+  npx playwright install chromium
+  # SQLite-backed rehearsal is not concurrency-safe; keep Playwright deterministic.
+  npx playwright test --workers=1 \
+    tests/e2e/zorg-os-golden-path.spec.ts \
+    tests/e2e/staging-shell-smoke.spec.ts \
+    tests/e2e/provider-review-smoke.spec.ts
 )
 
 echo "[run_golden_path_e2e] Done."

@@ -278,6 +278,15 @@ export function ArrangementAlignmentPanel({ caseId, careContext }: Props) {
         </div>
       </header>
 
+      <p
+        className="mb-3 rounded-lg border border-border/50 bg-muted/20 px-3 py-2 text-[11px] leading-snug text-muted-foreground"
+        role="note"
+        data-testid="arrangement-alignment-advisory-banner"
+      >
+        <span className="font-semibold text-foreground/90">Advies — geen budget- of tarief toezegging.</span>{" "}
+        Deze signalen ondersteunen gemeentelijke beoordeling; zorgaanbieders zien arrangement uitsluitend als indicatief.
+      </p>
+
       <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
         {/* LEFT — requested care */}
         <div className="w-full shrink-0 space-y-2 xl:w-[min(100%,260px)]">

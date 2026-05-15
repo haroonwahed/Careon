@@ -1,6 +1,6 @@
 # CareOn Terminology
 
-This document is the product glossary for visible CareOn language (**v1.3** — see `docs/Zorg_OS_Product_System_Core_v1_3.md`).
+This document is the product glossary for visible CareOn language (**aligned to Operational Constitution v2** — see `docs/Careon_Operational_Constitution_v2.md`).
 
 ## Canonical workflow terms (product)
 
@@ -40,4 +40,4 @@ Use consistently across SPA, templates, and operator-facing docs:
 
 ## Implementation note
 
-API identifiers such as `phase: "gemeente_validatie"` may remain stable while UI shows **gemeentelijke validatie**. Document mapping: `docs/Zorg_OS_Technical_Foundation_v1_3.md`.
+API identifiers such as `phase: "gemeente_validatie"` may remain stable while UI shows **gemeentelijke validatie**. Document mapping: `docs/FOUNDATION_LOCK.md`.

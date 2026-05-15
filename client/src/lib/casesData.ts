@@ -360,7 +360,7 @@ export const mockPriorityActions: PriorityAction[] = [
 ];
 
 // ─── Rich Casus objects (phase engine) ───────────────────────────────────────
-// These are the canonical data structures used by CasusControlCenter.
+// Canonical data structures shared by care views; also consumed by the quarantined legacy CasusControlCenter shell.
 // They co-exist with the legacy Case[] above until full migration.
 
 import type { Casus } from "./phaseEngine";

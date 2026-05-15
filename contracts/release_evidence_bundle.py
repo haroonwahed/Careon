@@ -25,18 +25,27 @@ def _read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding='utf-8'))
 
 
-def load_timeline_evidence_from_reports(base_dir: Path) -> tuple[dict[str, Any] | None, dict[str, bool]]:
+def load_timeline_evidence_from_reports(
+    base_dir: Path,
+    *,
+    reports_dir: Path | None = None,
+) -> tuple[dict[str, Any] | None, dict[str, bool]]:
     """
     Prefer standalone reports/rehearsal_timeline_evidence.json;
     fall back to timeline_boundary_evidence inside reports/rehearsal_report.json.
     Returns (canonical_evidence_or_none, flags_which_sources_existed).
+
+    When ``reports_dir`` is set (e.g. CI ``REPORT_DIR``), JSON is read from that directory
+    instead of ``<base_dir>/reports`` — filenames stay ``rehearsal_timeline_evidence.json``
+    and ``rehearsal_report.json``.
     """
     flags = {
         'rehearsal_timeline_evidence_json': False,
         'rehearsal_report_timeline_boundary_evidence': False,
     }
-    standalone = base_dir / 'reports' / 'rehearsal_timeline_evidence.json'
-    merged_report = base_dir / 'reports' / 'rehearsal_report.json'
+    reports_root = reports_dir if reports_dir is not None else base_dir / 'reports'
+    standalone = reports_root / 'rehearsal_timeline_evidence.json'
+    merged_report = reports_root / 'rehearsal_report.json'
 
     ev: dict[str, Any] | None = None
 
@@ -97,9 +106,9 @@ def validate_timeline_release_gate(evidence: dict[str, Any] | None) -> tuple[boo
     return (len(reasons) == 0, reasons)
 
 
-def build_release_evidence_bundle(base_dir: Path) -> dict[str, Any]:
+def build_release_evidence_bundle(base_dir: Path, *, reports_dir: Path | None = None) -> dict[str, Any]:
     """Merge timeline sources + gate result for reports/release_evidence_bundle.json."""
-    evidence, source_flags = load_timeline_evidence_from_reports(base_dir)
+    evidence, source_flags = load_timeline_evidence_from_reports(base_dir, reports_dir=reports_dir)
     go, gate_reasons = validate_timeline_release_gate(evidence)
 
     return {

@@ -1898,6 +1898,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
     provider_review_status = _clean(placement.provider_response_status) if placement else ""
     provider_rejection_count = 0
     latest_rejection_reason = ""
+    latest_rejection_reason_code = ""
     placement_confirmed = bool(placement and placement.status == PlacementRequest.Status.APPROVED)
     intake_started = bool(intake and intake.status == CaseIntakeProcess.ProcessStatus.COMPLETED)
 
@@ -1913,6 +1914,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         provider_rejection_count = rejection_qs.count()
         latest_rejection = rejection_qs.first()
         if latest_rejection is not None:
+            latest_rejection_reason_code = _clean(getattr(latest_rejection, "provider_response_reason_code", "") or "")
             if latest_rejection.provider_response_reason_code and latest_rejection.provider_response_reason_code != "NONE":
                 try:
                     latest_rejection_reason = latest_rejection.get_provider_response_reason_code_display()
@@ -2059,6 +2061,7 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "provider_review_status": provider_review_status,
         "provider_rejection_count": provider_rejection_count,
         "latest_rejection_reason": latest_rejection_reason,
+        "latest_rejection_reason_code": latest_rejection_reason_code,
         "placement_confirmed": placement_confirmed,
         "intake_started": intake_started,
         "case_age_hours": case_age_hours,

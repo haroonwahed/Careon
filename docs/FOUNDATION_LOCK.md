@@ -1,21 +1,24 @@
 # FOUNDATION LOCK
 
-**Primary references (v1.3 — canonical):**
+**Primary references (CareOn Operational Constitution v2 — canonical doctrine):**
 
-- `docs/Zorg_OS_Product_System_Core_v1_3.md` — product boundaries & actors  
-- `docs/Zorg_OS_Technical_Foundation_v1_3.md` — implementation mapping & API discipline  
-- `docs/CareOn_Design_Constitution_v1_3.md` — UX / visual law  
-- `docs/ZORG_OS_FOUNDATION_APPROACH.md` — system-first build strategy (being aligned to v1.3)
+- `docs/Careon_Operational_Constitution_v2.docx` — authoritative formatted master  
+- `docs/Careon_Operational_Constitution_v2.md` — plain-text export (search, diffs, agent tooling)  
+- `docs/ZORG_OS_FOUNDATION_APPROACH.md` — system-first build strategy (aligned to constitution v2)
+
+**Implementation lock (code — not superseded by constitution prose):** from this section’s **Technical implementation mapping** onward, plus `contracts/workflow_state_machine.py`.
 
 Legacy technical evidence for extended lifecycle APIs: `docs/ZORG_OS_V1_2_EVIDENCE.md` (historical).
 
 ---
 
-## Canonical product flow (v1.3)
+## Canonical operational flow (Constitution v2) + technical notes
 
-**Aanmelding → Anonimisatie → Zorgvraag → Matching → Aanbieder reacties → Voorkeursmatch → Gemeentelijke validatie → Plaatsing → Uitstroom**
+Constitution v2 operational chain: **Casus → Samenvatting → Matching → Gemeente Validatie → Aanbieder Beoordeling → Plaatsing → Intake.**
 
-The platform is **temporary orchestration infrastructure**: after placement + financing/arrangement validation, the trajectory **exits** to external systems of record (**uitstroom**). It is not the permanent home of the dossier.
+**Uitstroom / exit:** after placement + financing/arrangement validation, the trajectory **exits** the platform to external systems of record (expressed today via completion + **archive** semantics and UX copy — see persisted states below). The platform is not the permanent dossier home.
+
+Additional **glossary labels** (aanmelding, anonimisatie, uitstroom wording in UI) remain valid where `docs/TERMINOLOGY.md` maps them to stable API `phase` keys.
 
 The backend remains the **source of truth** for transitions and actor permissions.
 
@@ -23,7 +26,30 @@ The backend remains the **source of truth** for transitions and actor permission
 
 ## Technical implementation mapping
 
-Persisted workflow states and API `phase` keys are **stable implementation identifiers** (see `contracts/workflow_state_machine.py`). UI may use v1.3 product language while API keys stay unchanged until a coordinated major version.
+Persisted workflow states and API `phase` keys are **stable implementation identifiers** (see `contracts/workflow_state_machine.py`). UI may use constitution or glossary language while API keys stay unchanged until a coordinated major version.
+
+### Product stage ↔ API `phase` ↔ persisted states (mapping)
+
+| Product stage (constitution / glossary) | Typical API `phase` / notes | Persisted states (examples) |
+|---------------|---------------------------|-----------------------------|
+| Casus / aanmelding | `casus`, early intake routes | `WIJKTEAM_INTAKE`, `DRAFT_CASE`, … |
+| Anonimisatie | (masking / policy; UX + future services) | Deterministic masking today; dedicated services phased |
+| Samenvatting / zorgvraag | `samenvatting` readiness | `SUMMARY_READY`, assessment gates |
+| Matching | `matching` | `MATCHING_READY` |
+| Gemeente validatie | `gemeente_validatie` | `GEMEENTE_VALIDATED`, `BUDGET_REVIEW_PENDING`, … |
+| Aanbieder beoordeling | `aanbieder_beoordeling` | `PROVIDER_REVIEW_PENDING`, … |
+| Plaatsing | `plaatsing` | `PLACEMENT_CONFIRMED`, … |
+| Intake | intake progression | `INTAKE_STARTED`, `ACTIVE_PLACEMENT` |
+| Uitstroom | completion / archive semantics | `ARCHIVED` — trajectory exited platform (product language) |
+
+**Rule:** changing API `phase` enum values requires a **versioned contract** + client migration plan.
+
+### Workflow authority (code)
+
+- `contracts/workflow_state_machine.py` — states, transitions, `evaluate_transition`, `derive_workflow_state`.  
+- `contracts/api/views.py` — mutation endpoints.  
+- `contracts/decision_engine.py` — read models for NBA, blockers, Regiekamer overview.  
+- `client/src/lib/decisionPhaseUi.ts` — **presentation mapping only** (never authority).
 
 ### Canonical States (persisted)
 
@@ -48,7 +74,7 @@ Additional workflow states: `WIJKTEAM_INTAKE`, `ZORGVRAAG_BEOORDELING`. Wijkteam
 
 ## Actor ownership (technical roles)
 
-> Product language centers the **Aanmelder**; technical enforcement still uses `WorkflowRole` until fine-grained actor profiles ship.  
+> Product language centers the **Aanmelder**; technical enforcement still uses `WorkflowRole` until fine-grained actor profiles ship. **Roadmap:** `docs/ACTOR_PROFILES_ROADMAP.md`.  
 > **Mapping (aanmelder ↔ rollen):** see `docs/AANMELDER_WORKFLOWROLE_MAPPING.md`.  
 > **Productmetadata:** `CaseIntakeProcess.aanmelder_actor_profile` (gezet bij intake-create) is **niet** voor autorisatie en **niet** in SPA case-JSON; alleen persistentie + admin/exports.
 
@@ -106,6 +132,20 @@ Every valid transition writes append-only evidence in `CaseDecisionLog` using ev
 ## Read-only advisory APIs (no workflow mutation)
 
 - `GET /care/api/cases/<id>/arrangement-alignment/` — arrangement equivalence hints (staging): **JZ21** → **NZa zorgproduct** → **iWlz-codelijsten** → heuristiek (`contracts/arrangement_alignment_catalog.py`); databestanden en bron-URL’s in `docs/ARRANGEMENT_OFFICIAL_SOURCES.md`. Zelfde case **VIEW** als `decision-evaluation`; payload bevat altijd `requires_human_confirmation: true` (contract).
+
+---
+
+## UI density & token guardrails (retained from superseded Design Constitution v1.3)
+
+Operational surfaces must follow:
+
+- **Metric / signal strips** — compact operational telemetry, not vanity KPIs (see visual density limits in `AGENTS.md`).  
+- **Worklists** — rows, not card stacks; scanability over decoration.  
+- **Process timelines** — compact, legible; no ornamental density.  
+- **Next-best-action** — primary focal band; no competing hero CTAs.  
+- **Design tokens** — no ad-hoc hex; extend theme tokens instead of magic numbers.
+
+UI work must comply with `docs/Careon_Operational_Constitution_v2.md` (UX + visual language) **and** this section.
 
 ---
 
@@ -251,5 +291,12 @@ These capabilities are **named product commitments** in v1.3. Technical delivery
 ### Arrangement intelligence
 
 - **AI-assisted arrangement alignment** suggests semantic equivalence and tariff alignment **with explicit uncertainty**; humans remain accountable.  
-- Contract: `client/src/lib/arrangementAlignmentContract.ts` and `docs/Zorg_OS_Technical_Foundation_v1_3.md`.  
+- Contract: `client/src/lib/arrangementAlignmentContract.ts` and `docs/Careon_Operational_Constitution_v2.md` section 4 (arrangementen) + staging notes in this document.  
 - Do **not** ship implied guarantees of financial correctness.
+
+**Staging (technical, former Technical Foundation v1.3):**
+
+- **Stage 1 (current):** TypeScript contract `client/src/lib/arrangementAlignmentContract.ts` defines suggestion shape: `equivalence_confidence`, `tariff_alignment_estimate`, `uncertainty_notes`, `requires_human_confirmation`.  
+- **Stage 2:** optional read-only API `GET .../arrangement-alignment-hint/` returning the same JSON schema **without** mutating financing records.  
+- **Stage 3:** optional human-confirmed logging to audit trail when a hint influenced a decision.  
+- **Forbidden:** persisting auto-approved tariffs without human action + audit reason.

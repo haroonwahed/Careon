@@ -6,18 +6,28 @@
 
 ---
 
-## 1. Canonical documents added (final)
+## 1. Canonical documents (current)
 
 | Path | Purpose |
+|------|---------|
+| `docs/Careon_Operational_Constitution_v2.docx` | Authoritative operational doctrine (Word master) |
+| `docs/Careon_Operational_Constitution_v2.md` | Plain-text export (search, diffs, agents) |
+| `docs/FOUNDATION_LOCK.md` | Persisted workflow states, API phases, endpoints, decision engine, UI density guardrails |
+| `docs/CareOn_Business_OS_v1_3.md` | Positioning & commercial guardrails |
+
+**Superseded markdown (content removed):** the former v1.3 trio at `docs/Zorg_OS_Product_System_Core_v1_3.md`, `docs/Zorg_OS_Technical_Foundation_v1_3.md`, and `docs/CareOn_Design_Constitution_v1_3.md` — **stub redirect pages** now live at those paths so external links keep working; canonical content is Constitution v2 + `FOUNDATION_LOCK.md`.
+
+**Historical:** the table below recorded the v1.3 documentation pack (2026-05-11). It is retained for traceability only.
+
+| Path (historical) | Purpose |
 |------|---------|
 | `docs/CareOn_Design_Constitution_v1_3.md` | Visual/density/NBA/terminology law |
 | `docs/Zorg_OS_Product_System_Core_v1_3.md` | Product boundaries, actors, flow |
 | `docs/Zorg_OS_Technical_Foundation_v1_3.md` | Backend truth, mapping, arrangement API staging |
-| `docs/CareOn_Business_OS_v1_3.md` | Positioning & commercial guardrails |
 
 **Legacy supersession**
 
-- Product canon: **v1.3 docs** supersede v1.2 narrative in `AGENTS.md` / `FOUNDATION_LOCK.md` / `ZORG_OS_FOUNDATION_APPROACH.md`.  
+- Product canon: **Operational Constitution v2** supersedes the v1.3 markdown trio above.  
 - Implementation log for extended APIs: `docs/ZORG_OS_V1_2_EVIDENCE.md` (historical technical evidence).
 
 ---
@@ -54,14 +64,14 @@
 | Aanbieder beoordeling | **Reacties** |
 | “Casus” in several NBA strings | **Aanvraag** / operational verbs |
 
-**Preserved (API):** `phase` keys such as `gemeente_validatie`, `aanbieder_beoordeling` remain for compatibility (see technical foundation doc).
+**Preserved (API):** `phase` keys such as `gemeente_validatie`, `aanbieder_beoordeling` remain for compatibility (see `docs/FOUNDATION_LOCK.md`).
 
 ---
 
 ## 4. Workflows & state machines
 
 - **No** change to `WorkflowState` enum values in this pass (avoids migration + client breakage).  
-- **Product flow** documented in `FOUNDATION_LOCK.md` + product core doc; implementation mapping table added.  
+- **Product flow** documented in `FOUNDATION_LOCK.md` + `docs/Careon_Operational_Constitution_v2.md`; implementation mapping table added.  
 - **Uitstroom** expressed as product language tied to completion + archive semantics.
 
 ---

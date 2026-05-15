@@ -6,6 +6,21 @@
 
 ---
 
+## 0. Release ritual (default cadence)
+
+Treat the pilot rehearsal as **part of shipping**, not an optional extra:
+
+| When | What |
+|------|------|
+| **Every merge to `main`** | Full Django pytest + guardrails already run in GitHub Actions (`Platform Guardrails`). |
+| **Weekly + on `v*` tags + manual** | Workflow **`Pilot rehearsal (release evidence)`** (`.github/workflows/pilot-rehearsal.yml`) runs `./scripts/run_full_pilot_rehearsal.sh` and **uploads** the `reports/pilot-<run_id>/` bundle as a workflow artifact (retention 180 days). Download the artifact for GO/NO-GO review. |
+| **Manual + Playwright (optional)** | In Actions → **Run workflow**, enable input **`with_playwright`** to append `--with-playwright` (SPA build + browser golden path; slower). Scheduled/tag runs keep the default headless/TestClient path. |
+| **Before pilot / prod promotion** | Run the script locally or via workflow_dispatch; inspect `release_evidence_bundle.json` and merged `rehearsal_report.json` per sections below. |
+
+Local output lives under `reports/` (gitignored). CI artifacts are the **archived** chain of evidence for auditors and release managers.
+
+---
+
 ## 1. Purpose
 
 | Goal | What the package supports |
@@ -29,7 +44,9 @@ From repository root (rehearsal settings and DB are script defaults unless you o
 ./scripts/run_full_pilot_rehearsal.sh
 ```
 
-Optional flags (see script header): `--with-playwright`, `--start-server`, `--skip-spa-build`, `--http-preflight`.
+Optional flags (see script header): `--with-playwright` (auto-starts `runserver` on `E2E_BASE_URL` when omitted), `--start-server`, `--skip-spa-build`, `--http-preflight`.
+
+With Playwright, `run_golden_path_e2e.sh` runs **`zorg-os-golden-path`**, **`staging-shell-smoke`**, and **`provider-review-smoke`** (reject submit last; rehearsal DB only).
 
 **Environment (common):**
 

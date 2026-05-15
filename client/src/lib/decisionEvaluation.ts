@@ -56,6 +56,8 @@ export interface DecisionEvaluationContext {
   provider_review_status: string;
   provider_rejection_count: number;
   latest_rejection_reason: string;
+  /** Raw persisted code (e.g. CAPACITY); complements latest_rejection_reason display label. */
+  latest_rejection_reason_code?: string;
   placement_confirmed: boolean;
   intake_started: boolean;
   case_age_hours: number | null;
