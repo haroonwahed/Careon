@@ -27,6 +27,8 @@ Scope context: **`docs/V1_SCOPE.md`**. Prioritized queue: **`docs/PRODUCT_ENGINE
 
 ## 3. Staging — shell smoke (both technical roles)
 
+**Automated (no auth):** `BASE_URL=https://your-staging-host ./scripts/staging_v1_shell_smoke.sh` — checks `/`, `/care/*` shells, `/dashboard/`, `/login/` (see `docs/NORTH_STAR_V1_STATUS.md`).
+
 After deploy to **staging** (or the agreed rehearsal URL):
 
 | # | Actor | Route / check | OK |

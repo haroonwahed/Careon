@@ -38,7 +38,7 @@ Use [`RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md) for full st
 |------|-------|--------|--------|----------|
 | Staging preflight | Ops + Release captain | T-90m | **Pending** | Deploy **`88061c88`** to `https://careon-web.onrender.com` (Render auto-deploy if wired) |
 | Staging deploy | Backend + Ops | T-60m | **Pending** | migrate, collectstatic, restart |
-| Staging smoke | QA | T-45m | **Partial** (2026-05-15) | `BASE_URL=https://careon-web.onrender.com ./scripts/go_live_http_smoke.sh` → **OK** (/, `/care/`, dashboard shell). Full rehearsal on host **after deploy**. |
+| Staging smoke | QA | T-45m | **Partial** (2026-05-15) | Shell **8/8** `staging_v1_shell_smoke.sh` **OK**; Playwright auth **failed** on Render (pre-deploy SPA + non-rehearsal DB). Host rehearsal **after deploy**. |
 | Staging sign-off | Release captain | T-30m | **Pending** | After host rehearsal + authenticated routes |
 
 **Staging smoke commands** (on staging host, rehearsal-equivalent DB or pilot seed):
