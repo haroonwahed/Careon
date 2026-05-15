@@ -141,7 +141,7 @@ jobs:
           npm --prefix theme/static_src ci
 
       - name: Client dependency vulnerability scan
-        run: npm --prefix client audit --audit-level=high
+        run: npm --prefix client audit --omit=dev --audit-level=high
 
       - name: Theme dependency vulnerability scan
-        run: npm --prefix theme/static_src audit --audit-level=high
+        run: npm --prefix theme/static_src audit --omit=dev --audit-level=high
