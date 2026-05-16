@@ -128,6 +128,16 @@ class Command(BaseCommand):
                 'name': DEMO_ORG_NAME,
                 'is_active': True,
                 'require_mfa': False,
+                'daily_digest': True,
+                'critical_alerts': True,
+                'auto_escalation': True,
+                'default_region': 'Utrecht',
+                'default_timezone': 'Europe/Amsterdam',
+                'default_language': 'nl',
+                'default_theme': 'system',
+                'logo_url': '',
+                'contact_email': '',
+                'notification_email': '',
             },
         )
         return organization

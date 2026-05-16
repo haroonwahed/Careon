@@ -46,6 +46,50 @@ class Organization(models.Model):
         default=False,
         help_text='When enabled, members must complete MFA before access.',
     )
+    daily_digest = models.BooleanField(
+        default=True,
+        help_text='Send operational digest notifications to organization members.',
+    )
+    critical_alerts = models.BooleanField(
+        default=True,
+        help_text='Surface critical chain blockers to authorized members.',
+    )
+    auto_escalation = models.BooleanField(
+        default=True,
+        help_text='Allow automatic escalation when cases stall in the chain.',
+    )
+    default_region = models.CharField(
+        max_length=120,
+        blank=True,
+        default='',
+        help_text='Default region label for intake and matching context.',
+    )
+    default_timezone = models.CharField(
+        max_length=64,
+        blank=True,
+        default='Europe/Amsterdam',
+    )
+    default_language = models.CharField(
+        max_length=16,
+        blank=True,
+        default='nl',
+    )
+    default_theme = models.CharField(
+        max_length=32,
+        blank=True,
+        default='system',
+    )
+    logo_url = models.CharField(
+        max_length=500,
+        blank=True,
+        default='',
+    )
+    contact_email = models.EmailField(blank=True, default='')
+    notification_email = models.EmailField(
+        blank=True,
+        default='',
+        help_text='Optional shared inbox for operational notifications.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
