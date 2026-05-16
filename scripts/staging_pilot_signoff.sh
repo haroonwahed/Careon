@@ -23,11 +23,13 @@ export E2E_BASE_URL="${E2E_BASE_URL:-$BASE_URL}"
 export E2E_DEMO_PASSWORD="${E2E_DEMO_PASSWORD:-pilot_demo_pass_123}"
 
 RUN_SEED=0
+FORCE_RESET=0
 for arg in "$@"; do
   case "$arg" in
     --seed) RUN_SEED=1 ;;
+    --force-reset) FORCE_RESET=1; RUN_SEED=1 ;;
     "") ;;
-    *) echo "Unknown option: $arg (use --seed)" >&2; exit 2 ;;
+    *) echo "Unknown option: $arg (use --seed, --force-reset)" >&2; exit 2 ;;
   esac
 done
 
@@ -65,6 +67,10 @@ if [[ "$RUN_SEED" -eq 1 ]]; then
   "$PYTHON_BIN" manage.py migrate --noinput
   export PILOT_AUTO_BOOTSTRAP=1
   export E2E_DEMO_PASSWORD
+  if [[ "$FORCE_RESET" -eq 1 ]]; then
+    export PILOT_FORCE_RESET=1
+    echo "[staging_pilot_signoff] PILOT_FORCE_RESET=1 (full reset_pilot_environment)"
+  fi
   "$PYTHON_BIN" manage.py bootstrap_staging_pilot
 fi
 

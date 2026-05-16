@@ -5,7 +5,8 @@ Enable on Render (staging web service only):
   PILOT_AUTO_BOOTSTRAP=1
   E2E_DEMO_PASSWORD=pilot_demo_pass_123   # optional; defaults match prepare_pilot_e2e.sh
 
-Does not wipe an existing pilot DB when demo_gemeente already exists.
+When demo_gemeente already exists, runs seed_pilot_e2e only (password sync). Full wipe only when
+the user is missing or PILOT_FORCE_RESET=1.
 """
 
 from __future__ import annotations
@@ -44,8 +45,12 @@ class Command(BaseCommand):
         force = _env_flag("PILOT_FORCE_RESET")
         if User.objects.filter(username=username).exists() and not force:
             self.stdout.write(
+                f"bootstrap_staging_pilot: {username} exists — syncing demo passwords (seed_pilot_e2e) …",
+            )
+            call_command("seed_pilot_e2e", verbosity=1)
+            self.stdout.write(
                 self.style.SUCCESS(
-                    f"bootstrap_staging_pilot: {username} exists — no reset.",
+                    f"bootstrap_staging_pilot: {username} ready (passwords aligned with E2E_DEMO_PASSWORD).",
                 ),
             )
             return

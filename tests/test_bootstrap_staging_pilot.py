@@ -18,7 +18,8 @@ class BootstrapStagingPilotTests(TestCase):
             call_command("bootstrap_staging_pilot", stdout=out)
         self.assertIn("skipped", out.getvalue())
 
-    def test_skips_reset_when_demo_user_exists_without_force(self):
+    @patch("contracts.management.commands.bootstrap_staging_pilot.call_command")
+    def test_syncs_passwords_when_demo_user_exists_without_force(self, mock_call):
         User.objects.create_user(username="demo_gemeente", password="unused")
         out = StringIO()
         with patch.dict(
@@ -28,6 +29,7 @@ class BootstrapStagingPilotTests(TestCase):
         ):
             call_command("bootstrap_staging_pilot", stdout=out)
         self.assertIn("exists", out.getvalue())
+        mock_call.assert_called_once_with("seed_pilot_e2e", verbosity=1)
 
     @patch("contracts.management.commands.bootstrap_staging_pilot.call_command")
     def test_force_reset_when_flag_set(self, mock_call):

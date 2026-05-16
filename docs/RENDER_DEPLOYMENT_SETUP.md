@@ -35,6 +35,19 @@ The following variables must be set in Render's dashboard. They have `sync: fals
 | `CSRF_TRUSTED_ORIGINS` | `https://your-app.render.com` | CSRF validation origins |
 | `DEFAULT_FROM_EMAIL` | `noreply@careon.nl` | Email sender address |
 
+### Staging pilot (demo logins + Playwright)
+
+When the staging DB is empty or missing `demo_gemeente`, set:
+
+| Variable | Example | Purpose |
+| -------- | ------- | ------- |
+| `PILOT_AUTO_BOOTSTRAP` | `1` | On web boot: `migrate` then `bootstrap_staging_pilot` (runs `reset_pilot_environment` only if `demo_gemeente` is absent). |
+| `E2E_DEMO_PASSWORD` | `pilot_demo_pass_123` | Password for `demo_gemeente` and demo provider users (must match Playwright). |
+
+One-time full reseed if an old DB has wrong passwords: add `PILOT_FORCE_RESET=1`, redeploy **once**, then **remove** the variable (otherwise every boot wipes demo data).
+
+Sign-off from CI or laptop: `./scripts/staging_pilot_signoff.sh` (see GitHub workflow **Staging pilot sign-off**).
+
 ## Deployment Flow
 
 ### Build Phase

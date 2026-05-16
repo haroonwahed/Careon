@@ -1,7 +1,7 @@
 # North star v1 — status matrix (percentages)
 
 **As of:** 2026-05-15  
-**Release ref:** `main` @ `1f25131c` (PR #1 merged)  
+**Release ref:** `main` @ `a72b28e5` (staging bootstrap + sign-off automation)  
 **Scoring:** % = evidence-backed completion toward the criterion, not calendar time.  
 **Sources:** North star / Phase 0–1 plan, `docs/V1_SCOPE.md`, `docs/V1_SHIP_CHECKLIST.md`, `docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`.
 
