@@ -54,6 +54,3 @@ services:
       # Cold start: set to 1 once to load full demo werkvoorraad (may fail if DB has legacy NOT NULL columns).
       - key: PILOT_FULL_DEMO_SEED
         value: "1"
-      # One-shot full werkvoorraad (remove after deploy is live).
-      - key: PILOT_FORCE_RESET
-        value: "1"

@@ -1,7 +1,7 @@
 # North star v1 — status matrix (percentages)
 
 **As of:** 2026-05-16  
-**Release ref:** `main` @ `4ac3e7dd` (staging boot + pilot sign-off GO on Render)  
+**Release ref:** `main` @ `581d2298` (staging full demo seed + provider Playwright on Render)  
 **Scoring:** % = evidence-backed completion toward the criterion, not calendar time.  
 **Sources:** North star / Phase 0–1 plan, `docs/V1_SCOPE.md`, `docs/V1_SHIP_CHECKLIST.md`, `docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`.
 
@@ -15,10 +15,10 @@
 | Phase 0 — align & freeze | **95%** |
 | Phase 1 — Must band (rows 1–4) | **94%** |
 | Backlog Should rows 5–12 | **92%** |
-| Staging sign-off (ship gate) | **88%** |
+| Staging sign-off (ship gate) | **95%** |
 | Production | **0%** |
 
-**Remaining for staging 100%:** deep provider-review Playwright (needs `PILOT_FULL_DEMO_SEED=1` or full demo werkvoorraad); optional GitHub secret `RENDER_DEPLOY_HOOK_URL` for push-triggered deploys. **Verified 2026-05-16:** `./scripts/staging_pilot_signoff.sh` GO on `https://careon-web.onrender.com` (deploy `dep-d843sivc9spc73bv0u6g`).
+**Remaining for staging 100%:** optional GitHub secret `RENDER_DEPLOY_HOOK_URL`; 3 provider Playwright tests skipped when no active placement/reject row. **Verified 2026-05-16:** full demo seed on Render; provider Playwright **6/9** on `https://careon-web.onrender.com`.
 
 ---
 
