@@ -3942,11 +3942,17 @@ def case_flow_list_redirect(request, step=None):
 
 @login_required
 def case_flow_create_redirect(request, step=None):
-    """Route legacy create entry points to case creation as single start object."""
-    target = reverse('careon:case_create')
+    """Route legacy create entry points to the canonical SPA intake route."""
+    target = reverse('spa_nieuwe_casus')
     if step:
         target = f'{target}?flow={step}'
     return redirect(target)
+
+
+@login_required
+def redirect_case_intake_create_to_spa(request):
+    """Retire Django intake_form at /care/casussen/new/ — SPA owns nieuwe casus."""
+    return redirect('spa_nieuwe_casus')
 
 
 @login_required
@@ -3962,6 +3968,11 @@ def case_flow_update_redirect(request, pk):
 
 
 def handler403(request, exception=None):  # noqa: ARG001
+    accept = request.META.get('HTTP_ACCEPT', '')
+    if 'text/html' in accept and not request.path.startswith('/care/api/'):
+        from .error_pages import spa_error_redirect
+
+        return spa_error_redirect(request, status_code=403)
     return render_safe_error_page(request, 403, '403.html')
 
 

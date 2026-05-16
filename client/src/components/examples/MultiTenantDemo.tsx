@@ -20,6 +20,7 @@ import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
 import { IntakeListPage } from "../care/IntakeListPage";
 import { WorkloadPage } from "../care/WorkloadPage";
 import { NieuweCasusPage } from "../care/NieuweCasusPage";
+import { AccessDeniedPage } from "../care/AccessDeniedPage";
 import { ZorgaanbiedersPage } from "../care/ZorgaanbiedersPage";
 import { GemeentenPage } from "../care/GemeentenPage";
 import { CaseExecutionPage } from "../care/CaseExecutionPage";
@@ -115,7 +116,8 @@ type Page =
   | "instellingen"
   | "intake"
   | "mijn-casussen"
-  | "gebruikers";
+  | "gebruikers"
+  | "geen-toegang";
 
 const PAGE_TO_HREF: Record<Page, string> = {
   regiekamer: SPA_DASHBOARD_URL,
@@ -136,6 +138,7 @@ const PAGE_TO_HREF: Record<Page, string> = {
   intake: "/intake",
   "mijn-casussen": "/mijn-casussen",
   gebruikers: "/gebruikers",
+  "geen-toegang": "/geen-toegang",
 };
 
 const GEMEENTE_PAGES: readonly Page[] = [
@@ -178,6 +181,9 @@ const ADMIN_PAGES: readonly Page[] = [
 ];
 
 function normalizePageForRole(page: Page, role: RoleType): Page {
+  if (page === "geen-toegang") {
+    return page;
+  }
   const allowed = role === "gemeente" ? GEMEENTE_PAGES : role === "zorgaanbieder" ? ZORGAANBIEDER_PAGES : ADMIN_PAGES;
   if ((allowed as readonly string[]).includes(page)) {
     return page;
@@ -251,6 +257,7 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
     "/intake": "intake",
     "/mijn-casussen": "mijn-casussen",
     "/gebruikers": "gebruikers",
+    "/geen-toegang": "geen-toegang",
   };
 
   const shellPage = shellMap[path];
@@ -638,7 +645,16 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
               className="min-h-full"
               layoutMaxWidth={currentPage === "regiekamer" ? tokens.layout.regiekamerWorkspaceMaxWidth : undefined}
             >
-            {selectedCase ? (
+            {currentPage === "geen-toegang" ? (
+              <AccessDeniedPage
+                onGoDashboard={() => {
+                  goToPage("regiekamer");
+                }}
+                onGoCasussen={() => {
+                  goToPage(currentContext.type === "zorgaanbieder" ? "mijn-casussen" : "casussen");
+                }}
+              />
+            ) : selectedCase ? (
               <CaseExecutionPage
                 caseId={selectedCase}
                 role={currentContext.type}

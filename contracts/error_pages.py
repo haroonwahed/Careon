@@ -1,4 +1,7 @@
-from django.shortcuts import render
+from urllib.parse import urlencode
+
+from django.conf import settings
+from django.shortcuts import redirect, render
 from django.utils.cache import patch_cache_control
 
 
@@ -28,6 +31,33 @@ _SAFE_ERROR_COPY = {
         'secondary_href_name': 'careon:case_list',
     },
 }
+
+
+def _spa_origin_for_request(request) -> str:
+    configured = getattr(settings, 'SPA_ORIGIN', '').strip().rstrip('/')
+    if configured:
+        return configured
+    return request.build_absolute_uri('/').rstrip('/')
+
+
+def spa_error_redirect(request, *, status_code: int = 403):
+    """Send browser HTML errors to the React shell (canonical operational UX)."""
+    query = {'status': str(status_code)}
+    denied_path = request.get_full_path()
+    if denied_path and denied_path not in ('/geen-toegang/', '/geen-toegang'):
+        query['next'] = denied_path
+    destination = f'{_spa_origin_for_request(request)}/geen-toegang/?{urlencode(query)}'
+    response = redirect(destination)
+    response.status_code = 302
+    patch_cache_control(
+        response,
+        no_cache=True,
+        no_store=True,
+        must_revalidate=True,
+        private=True,
+        max_age=0,
+    )
+    return response
 
 
 def render_safe_error_page(request, status_code: int, template_name: str):

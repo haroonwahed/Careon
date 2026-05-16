@@ -107,10 +107,11 @@ class SpaShellMigrationIntegrationTests(TestCase):
         )
 
         for path in (
-            reverse('careon:case_create'),
             reverse('careon:matching_dashboard'),
             reverse('careon:case_list'),
             '/casussen/',
+            '/casussen/nieuw/',
+            '/geen-toegang/',
             reverse('careon:global_search') + '?q=test',
             '/care/does-not-exist/',
         ):
@@ -122,3 +123,32 @@ class SpaShellMigrationIntegrationTests(TestCase):
                 self.assertContains(response, '/static/spa/assets/index-')
                 for legacy_string in legacy_strings:
                     self.assertNotContains(response, legacy_string)
+
+    def test_case_create_redirects_to_spa_nieuwe_casus(self):
+        client = self._login_client()
+        response = client.get(reverse('careon:case_create'), follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/casussen/nieuw/')
+
+        shell_response = client.get('/casussen/nieuw/')
+        self.assertEqual(shell_response.status_code, 200)
+        self.assertEqual(shell_response['X-Careon-Ui-Surface'], 'spa')
+        self.assertContains(shell_response, '<div id="root"></div>', html=True)
+
+    def test_html_403_redirects_to_spa_geen_toegang(self):
+        from contracts.error_pages import spa_error_redirect
+
+        client = self._login_client()
+        request = RequestFactory().get(
+            '/care/casussen/999999/edit/',
+            HTTP_ACCEPT='text/html',
+        )
+        request.user = self.user
+        response = spa_error_redirect(request, status_code=403)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/geen-toegang/?', response['Location'])
+        self.assertIn('status=403', response['Location'])
+
+        shell_response = client.get('/geen-toegang/?status=403&next=%2Fcare%2Fcasussen%2F1%2F')
+        self.assertEqual(shell_response.status_code, 200)
+        self.assertContains(shell_response, 'id="root"', html=False)

@@ -4,6 +4,7 @@ export const SPA_LANDING_URL = "/";
 export const LOGIN_URL = "/login/";
 export const REGISTER_URL = "/register/";
 export const LOGOUT_URL = "/logout/";
+export const ACCESS_DENIED_URL = "/geen-toegang/";
 
 /** Paths that must be served as Django HTML (auth), not the React demo shell. */
 const AUTH_DOCUMENT_PATHS = new Set(

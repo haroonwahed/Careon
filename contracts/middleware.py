@@ -7,7 +7,7 @@ from django.db import DatabaseError
 from django.http import HttpResponse
 from django.utils.cache import patch_cache_control
 
-from .error_pages import render_safe_error_page
+from .error_pages import render_safe_error_page, spa_error_redirect
 from .observability import (
     bind_correlation_from_request,
     clear_correlation_id,
@@ -218,6 +218,7 @@ class SpaShellMigrationMiddleware:
         '/gebruikers',
         '/dashboard',
         '/instellingen',
+        '/geen-toegang',
     )
     # Pilot SPA shells: keep serving the React index even when the path contains /pk/.
     # Tenancy and forbidden access for these routes are enforced by /care/api/... .
@@ -304,6 +305,8 @@ class SpaShellMigrationMiddleware:
             raise
 
         if _should_render_safe_error_page(request, response):
+            if response.status_code == 403:
+                return spa_error_redirect(request, status_code=403)
             return render_safe_error_page(request, response.status_code, f'{response.status_code}.html')
         return response
 

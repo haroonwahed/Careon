@@ -161,7 +161,7 @@ urlpatterns = [
     path('cases/<int:pk>/', views.workflow_case_spa_shell, name='workflow_case_spa'),
 
     path('casussen/', views.CaseIntakeListView.as_view(), name='case_list'),
-    path('casussen/new/', views.CaseIntakeCreateView.as_view(), name='case_create'),
+    path('casussen/new/', views.redirect_case_intake_create_to_spa, name='case_create'),
     path('casussen/<int:pk>/', views.CaseIntakeDetailView.as_view(), name='case_detail'),
     path('casussen/<int:pk>/edit/', views.CaseIntakeUpdateView.as_view(), name='case_update'),
     path('casussen/<int:pk>/archive/', views.case_archive_action, name='case_archive_action'),

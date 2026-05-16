@@ -223,32 +223,18 @@ class UIButtonAndFlowIntegrityTests(TestCase):
                 msg=f'Broken label associations on {page}: {broken_labels}',
             )
 
-    def test_case_create_uses_current_guided_layout_copy(self):
-        response = self.client.get(reverse('careon:case_create'), follow=True)
-        self.assertEqual(response.status_code, 200)
+    def test_case_create_redirects_to_spa_nieuwe_casus(self):
+        response = self.client.get(reverse('careon:case_create'), follow=False)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/casussen/nieuw/')
 
-        # Current approved copy and step treatment for the guided single-page intake.
-        self.assertContains(
-            response,
-            'Registreer de minimale casusgegevens. De samenvatting en matching volgen daarna.',
-        )
-        self.assertContains(response, 'Complexiteit')
-        self.assertContains(response, 'Velden met <strong>*</strong> zijn verplicht.')
-
-        # Legacy version should not reappear.
-        self.assertNotContains(
-            response,
-            '4 stappen naar een complete intake binnen de casusflow en direct inzetbare matching.',
-        )
-        self.assertEqual(response.get('X-Careon-Template-Version'), 'intake_form')
-        self.assertNotContains(response, 'UI versie: intake_form_v3')
-        self.assertNotContains(response, 'Intakeformulier')
-        self.assertNotContains(
-            response,
-            'Vul de vier blokken hieronder in. Velden met <strong>*</strong> zijn verplicht.',
-        )
-        self.assertContains(response, 'Concept bewaren')
-        self.assertContains(response, 'Opslaan en naar samenvatting')
+        shell_response = self.client.get(reverse('careon:case_create'), follow=True)
+        self.assertEqual(shell_response.status_code, 200)
+        html = shell_response.content.decode('utf-8')
+        self.assertIn('id="root"', html)
+        self.assertIn('/static/spa/assets/index-', html)
+        self.assertIsNone(shell_response.get('X-Careon-Template-Version'))
+        self.assertNotIn('Intakeformulier', html)
 
     def test_case_create_entry_links_stay_versioned(self):
         dashboard_response = self.client.get(reverse('dashboard'), follow=True)
