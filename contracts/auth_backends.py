@@ -1,14 +1,58 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.exceptions import SuspiciousOperation
 from django.utils.text import slugify
 
 from mozilla_django_oidc.auth import OIDCAuthenticationBackend
 
+from contracts.oidc_utils import oidc_callback_redirect_uri
 from contracts.user_profile_provisioning import ensure_user_profile_exists
 
 
 class CareonOIDCAuthenticationBackend(OIDCAuthenticationBackend):
     """Authenticate users via OIDC and map identities by email."""
+
+    def authenticate(self, request, **kwargs):
+        """Use canonical redirect_uri for token exchange (must match authorize step)."""
+        self.request = request
+        if not self.request:
+            return None
+
+        state = self.request.GET.get('state')
+        code = self.request.GET.get('code')
+        nonce = kwargs.pop('nonce', None)
+        code_verifier = kwargs.pop('code_verifier', None)
+
+        if not code or not state:
+            return None
+
+        token_payload = {
+            'client_id': self.OIDC_RP_CLIENT_ID,
+            'client_secret': self.OIDC_RP_CLIENT_SECRET,
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': oidc_callback_redirect_uri(),
+        }
+        if code_verifier is not None:
+            token_payload['code_verifier'] = code_verifier
+
+        token_info = self.get_token(token_payload)
+        id_token = token_info.get('id_token')
+        access_token = token_info.get('access_token')
+
+        payload = self.verify_token(id_token, nonce=nonce)
+        if not payload:
+            return None
+
+        self.store_tokens(access_token, id_token)
+        try:
+            return self.get_or_create_user(
+                access_token,
+                id_token,
+                payload,
+            )
+        except SuspiciousOperation:
+            return None
 
     def _email_from_claims(self, claims):
         return (

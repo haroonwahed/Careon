@@ -12,6 +12,7 @@ def feature_flags(request):
         'TEST_MODE': is_test_mode_enabled(),
         'SSO_ENABLED': getattr(settings, 'SSO_ENABLED', False),
         'SPA_ORIGIN': getattr(settings, 'SPA_ORIGIN', 'http://127.0.0.1:3000').rstrip('/'),
+        'OIDC_PUBLIC_BASE_URL': getattr(settings, 'OIDC_PUBLIC_BASE_URL', 'http://127.0.0.1:8000').rstrip('/'),
         'CURRENT_ORGANIZATION': getattr(request, 'organization', None),
         'USER_ORGANIZATION_MEMBERSHIPS': (
             OrganizationMembership.objects.filter(user=request.user, is_active=True).select_related('organization')

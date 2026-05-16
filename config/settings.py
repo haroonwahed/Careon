@@ -195,6 +195,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'contracts.oidc_middleware.OIDCCanonicalPublicUrlMiddleware',
     'contracts.middleware.OrganizationMiddleware',
     'contracts.middleware.SpaShellMigrationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -289,6 +290,24 @@ LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = '/'
 SPA_ORIGIN = os.getenv('SPA_ORIGIN', 'http://127.0.0.1:3000').rstrip('/')
+
+
+def _resolve_oidc_public_base_url() -> str:
+    """Canonical origin for OAuth redirect_uri (must match Google authorized redirect URIs)."""
+    explicit = os.getenv('OIDC_PUBLIC_BASE_URL', '').strip().rstrip('/')
+    if explicit:
+        return explicit
+    for origin in CSRF_TRUSTED_ORIGINS:
+        candidate = (origin or '').strip().rstrip('/')
+        if not candidate.startswith('https://'):
+            continue
+        if 'localhost' in candidate or '127.0.0.1' in candidate:
+            continue
+        return candidate
+    return 'http://127.0.0.1:8000'
+
+
+OIDC_PUBLIC_BASE_URL = _resolve_oidc_public_base_url()
 OIDC_REDIRECT_ALLOWED_HOSTS = [
     host
     for host in _csv_env(

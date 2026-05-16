@@ -107,10 +107,10 @@
                 <span class="text-xs font-semibold uppercase tracking-wide auth-divider-label">of</span>
                 <div class="h-px flex-1 auth-divider-line"></div>
             </div>
-            {# Same host as the current page (localhost vs 127.0.0.1, Vite proxy vs :8000) — avoids mixed-origin / chrome-error frames. #}
-            {% with next_url=request.scheme|add:"://"|add:request.get_host|add:"/dashboard/" %}
+            {# OAuth authorize + callback must use OIDC_PUBLIC_BASE_URL (Google redirect_uri). Post-login lands on SPA. #}
+            {% with next_url=SPA_ORIGIN|add:"/dashboard/" %}
             {% url 'oidc_authentication_init' as oidc_authentication_path %}
-            <a href="{{ request.scheme }}://{{ request.get_host }}{{ oidc_authentication_path }}?next={{ next_url|urlencode }}"
+            <a href="{{ OIDC_PUBLIC_BASE_URL }}{{ oidc_authentication_path }}?next={{ next_url|urlencode }}"
                class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold border transition-all duration-200 auth-sso-btn"
               >
                 <svg class="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
