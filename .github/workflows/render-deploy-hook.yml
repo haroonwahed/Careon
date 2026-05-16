@@ -1,0 +1,31 @@
+# Trigger a Render deploy via deploy hook (set secret RENDER_DEPLOY_HOOK_URL).
+name: Render deploy (staging)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'client/**'
+      - 'contracts/**'
+      - 'theme/**'
+      - 'render.yaml'
+      - 'scripts/render_start_command.sh'
+      - 'requirements/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
+            echo "RENDER_DEPLOY_HOOK_URL not set — skip (configure in GitHub → Settings → Secrets)."
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Deploy hook triggered."

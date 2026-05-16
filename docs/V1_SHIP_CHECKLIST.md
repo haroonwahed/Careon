@@ -29,6 +29,10 @@ Scope context: **`docs/V1_SCOPE.md`**. Prioritized queue: **`docs/PRODUCT_ENGINE
 
 **Automated (no auth):** `BASE_URL=https://your-staging-host ./scripts/staging_v1_shell_smoke.sh` — checks `/`, `/care/*` shells, `/dashboard/`, `/login/` (see `docs/NORTH_STAR_V1_STATUS.md`).
 
+**Full sign-off (auth + SPA hash):** `./scripts/staging_pilot_signoff.sh` after Render serves the current `main` build (`./scripts/wait_staging_spa_deploy.sh` optional).
+
+**Staging Render (2026-05-16):** shell smoke **8/8** on `https://careon-web.onrender.com`; Playwright **pending** until Render deploys `main` and boot syncs demo passwords.
+
 After deploy to **staging** (or the agreed rehearsal URL):
 
 | # | Actor | Route / check | OK |

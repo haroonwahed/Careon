@@ -1,7 +1,7 @@
 # North star v1 — status matrix (percentages)
 
-**As of:** 2026-05-15  
-**Release ref:** `main` @ `a72b28e5` (staging bootstrap + sign-off automation)  
+**As of:** 2026-05-16  
+**Release ref:** `main` @ `49ed09dc` (staging password sync on boot; deploy hook workflow)  
 **Scoring:** % = evidence-backed completion toward the criterion, not calendar time.  
 **Sources:** North star / Phase 0–1 plan, `docs/V1_SCOPE.md`, `docs/V1_SHIP_CHECKLIST.md`, `docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`.
 
@@ -18,7 +18,7 @@
 | Staging sign-off (ship gate) | **58%** |
 | Production | **0%** |
 
-**Blocker for 100% shippable:** deploy merged `main` to staging, run host rehearsal + **authenticated** smoke for **gemeente + zorgaanbieder** (Playwright failed on `careon-web.onrender.com` with rehearsal demo users — likely pre-deploy build and/or non-rehearsal DB).
+**Blocker for 100% shippable:** Render host still serves **old SPA** (`index-CqItJNes.js`; expected `index-BQo3gB9r.js` after `49ed09dc`). Git push to `main` did **not** trigger a Render rebuild in 15m — enable **auto-deploy** or add GitHub secret `RENDER_DEPLOY_HOOK_URL` (workflow `.github/workflows/render-deploy-hook.yml`), then run `./scripts/staging_pilot_signoff.sh`.
 
 ---
 
@@ -98,7 +98,7 @@
 | Environment | Code on target | Rehearsal | Auth smoke (both roles) | Sign-off |
 |-------------|----------------|-----------|-------------------------|----------|
 | Local / CI | **100%** | **100%** | **92%** (12 pass / 1 skip) | Engineering ready |
-| Staging Render | **~40%** (old SPA hash on host) | **0%** | **0%** | **Not ready** |
+| Staging Render | **~40%** (live `index-CqItJNes.js`; `49ed09dc` not deployed) | **0%** | **0%** (login fails; password sync needs new boot code) | **Not ready** |
 | Production | **0%** | **0%** | **0%** | Blocked |
 
 ---
@@ -122,7 +122,8 @@ E2E_BASE_URL=https://careon-web.onrender.com npx playwright test tests/e2e/stagi
 
 ## To reach 100% north star
 
-1. **Deploy `main`** to `https://careon-web.onrender.com` (or agreed staging URL).
-2. On staging host: `./scripts/run_full_pilot_rehearsal.sh` (+ optional `--with-playwright`).
-3. Staging Playwright with **pilot demo users** on that DB (or document production demo accounts).
-4. Fill `docs/V1_SHIP_CHECKLIST.md` §3–4 and staging sign-off on `docs/RELEASE_EXECUTION_SHEET_2026-05-15.md`.
+1. **Render:** Manual **Deploy latest commit** (`49ed09dc`) with **Clear build cache**, or set `RENDER_DEPLOY_HOOK_URL` and re-run **Render deploy (staging)** workflow.
+2. **Env:** `PILOT_AUTO_BOOTSTRAP=1`, `E2E_DEMO_PASSWORD=pilot_demo_pass_123`; remove dashboard `PILOT_FORCE_RESET` if set (repo no longer forces wipe every boot).
+3. **Verify:** `./scripts/wait_staging_spa_deploy.sh` then `./scripts/staging_pilot_signoff.sh`.
+4. Optional host rehearsal: `./scripts/run_full_pilot_rehearsal.sh` (+ `--with-playwright`).
+5. Fill `docs/V1_SHIP_CHECKLIST.md` §3–4 and `docs/RELEASE_EXECUTION_SHEET_2026-05-15.md`.

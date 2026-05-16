@@ -2,7 +2,7 @@
 
 Release date: **2026-05-15**  
 Timezone: **Europe/Amsterdam**  
-Release SHA: **`88061c88`** (squash merge of PR #1 to `main`)  
+Release SHA: **`49ed09dc`** (staging password sync; deploy hook workflow)  
 Branch: **`main`**  
 
 ## Pilot rehearsal (pre-staging) — local
@@ -36,10 +36,10 @@ Use [`RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md) for full st
 
 | Step | Owner | Target | Actual | Evidence |
 |------|-------|--------|--------|----------|
-| Staging preflight | Ops + Release captain | T-90m | **Pending** | Deploy **`88061c88`** to `https://careon-web.onrender.com` (Render auto-deploy if wired) |
-| Staging deploy | Backend + Ops | T-60m | **Pending** | migrate, collectstatic, restart |
-| Staging smoke | QA | T-45m | **Partial** (2026-05-15) | Shell **8/8** `staging_v1_shell_smoke.sh` **OK**; Playwright auth **failed** on Render (pre-deploy SPA + non-rehearsal DB). Host rehearsal **after deploy**. |
-| Staging sign-off | Release captain | T-30m | **Pending** | After host rehearsal + authenticated routes |
+| Staging preflight | Ops + Release captain | T-90m | **Blocked** (2026-05-16) | Live host still on SPA `index-CqItJNes.js`; `main` @ `49ed09dc` not built on Render (no auto-deploy in 15m poll). Use manual deploy or `RENDER_DEPLOY_HOOK_URL`. |
+| Staging deploy | Backend + Ops | T-60m | **Pending** | Render: deploy latest `main`, clear build cache; env `PILOT_AUTO_BOOTSTRAP=1`, `E2E_DEMO_PASSWORD=pilot_demo_pass_123` |
+| Staging smoke | QA | T-45m | **Partial** | Shell **8/8** OK; Playwright **0/3** (stale SPA + login). After deploy: `./scripts/staging_pilot_signoff.sh` |
+| Staging sign-off | Release captain | T-30m | **Pending** | After `./scripts/staging_pilot_signoff.sh` GO |
 
 **Staging smoke commands** (on staging host, rehearsal-equivalent DB or pilot seed):
 

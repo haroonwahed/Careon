@@ -41,12 +41,21 @@ When the staging DB is empty or missing `demo_gemeente`, set:
 
 | Variable | Example | Purpose |
 | -------- | ------- | ------- |
-| `PILOT_AUTO_BOOTSTRAP` | `1` | On web boot: `migrate` then `bootstrap_staging_pilot` (runs `reset_pilot_environment` only if `demo_gemeente` is absent). |
+| `PILOT_AUTO_BOOTSTRAP` | `1` | On web boot: `migrate` then `bootstrap_staging_pilot`. |
 | `E2E_DEMO_PASSWORD` | `pilot_demo_pass_123` | Password for `demo_gemeente` and demo provider users (must match Playwright). |
 
-One-time full reseed if an old DB has wrong passwords: add `PILOT_FORCE_RESET=1`, redeploy **once**, then **remove** the variable (otherwise every boot wipes demo data).
+If `demo_gemeente` already exists, boot runs `seed_pilot_e2e` only (password sync). Full wipe: set `PILOT_FORCE_RESET=1` in the dashboard, redeploy **once**, then remove it.
 
-Sign-off from CI or laptop: `./scripts/staging_pilot_signoff.sh` (see GitHub workflow **Staging pilot sign-off**).
+**Auto-deploy from GitHub:** connect the Render service to this repo, or add a [deploy hook](https://render.com/docs/deploy-hooks) URL as GitHub secret `RENDER_DEPLOY_HOOK_URL` (workflow **Render deploy (staging)**).
+
+Sign-off from CI or laptop:
+
+```bash
+./scripts/wait_staging_spa_deploy.sh   # optional: wait for new SPA hash
+./scripts/staging_pilot_signoff.sh
+```
+
+Remote seed (when `STAGING_DATABASE_URL` is available locally or in CI secrets): `./scripts/staging_pilot_signoff.sh --seed` or `--force-reset`.
 
 ## Deployment Flow
 
