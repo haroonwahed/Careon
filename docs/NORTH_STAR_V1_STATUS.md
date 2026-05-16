@@ -30,7 +30,7 @@
 | F2 | Matching remains advisory | **100%** | No auto-assign; API/UI copy; guardrails |
 | F3 | Provider visibility = linked cases only | **92%** | `tests/test_cross_tenant_isolation.py` (168 tests in Must bundle run) |
 | T1 | Structured provider decisions (codes + notes) | **95%** | API + Reacties UI + E2E reject/info paths |
-| T2 | Audit trail visible where disputes matter | **82%** | Timeline API, audit lines on Reacties; not full export/dispute module |
+| T2 | Audit trail visible where disputes matter | **90%** | Timeline API + org CSV export (`/care/api/audit-log/export/`) + case dispute bundle (`/care/api/cases/<id>/dispute-export/`) |
 | S1 | Platform Guardrails green on `main` | **100%** | PR #1 + post-merge pilot workflow pass |
 | S2 | Pilot rehearsal → reviewed `release_evidence_bundle.json` | **100%** | Local + [CI run 25911242272](https://github.com/haroonwahed/Careon/actions/runs/25911242272) GO |
 | S3 | Staging smoke — **both roles** (demo) | **55%** | Shell HTTP **8/8** (`scripts/staging_v1_shell_smoke.sh`); Playwright **0/3** on live Render without deploy/rehearsal DB |

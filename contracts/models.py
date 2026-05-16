@@ -42,6 +42,10 @@ class Organization(models.Model):
     name = models.CharField(max_length=200, unique=True)
     slug = models.SlugField(max_length=120, unique=True)
     is_active = models.BooleanField(default=True)
+    require_mfa = models.BooleanField(
+        default=False,
+        help_text='When enabled, members must complete MFA before access.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

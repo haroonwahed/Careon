@@ -2601,6 +2601,50 @@ def audit_log_api(request):
         return _internal_server_error(request, context='audit_log_api_failed')
 
 
+@login_required
+@require_http_methods(["GET"])
+def audit_log_export_api(request):
+    """CSV/JSON export of organization audit log (gemeente/admin only)."""
+    from contracts.api.audit_export import build_audit_log_export
+
+    organization = get_user_organization(request.user)
+    try:
+        actor_role = resolve_actor_role(user=request.user, organization=organization)
+        return build_audit_log_export(request=request, organization=organization, actor_role=actor_role)
+    except Exception:
+        return _internal_server_error(request, context='audit_log_export_api_failed')
+
+
+@login_required
+@require_http_methods(["GET"])
+def case_dispute_export_api(request, case_id):
+    """Case-scoped dispute bundle: timeline + decision log + related audit rows."""
+    from contracts.api.audit_export import build_case_dispute_export
+
+    try:
+        organization = get_user_organization(request.user)
+        case = get_scoped_object_or_404(
+            CareCase.objects.all(),
+            organization,
+            pk=case_id,
+        )
+        ensure_provider_case_visible_or_404(request.user, case)
+        try:
+            intake = _get_intake_for_case_api_id(case_id, organization, user=request.user)
+        except Http404:
+            intake = getattr(case, 'due_diligence_process', None)
+        return build_case_dispute_export(
+            request=request,
+            organization=organization,
+            case=case,
+            intake=intake,
+        )
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+    except Exception:
+        return _internal_server_error(request, context='case_dispute_export_api_failed')
+
+
 # ---------------------------------------------------------------------------
 # Providers
 # ---------------------------------------------------------------------------

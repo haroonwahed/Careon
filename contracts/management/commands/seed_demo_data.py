@@ -127,6 +127,7 @@ class Command(BaseCommand):
             defaults={
                 'name': DEMO_ORG_NAME,
                 'is_active': True,
+                'require_mfa': False,
             },
         )
         return organization

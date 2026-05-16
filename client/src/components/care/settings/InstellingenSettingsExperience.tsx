@@ -596,7 +596,9 @@ export function InstellingenSettingsExperience({
                   type="button"
                   variant="outline"
                   className="gap-2 rounded-xl"
-                  onClick={() => toast.info("Exporteren van audit-/compliancerapport volgt wanneer rapportage-API beschikbaar is.")}
+                  onClick={() => {
+                    window.location.href = "/care/api/audit-log/export/?format=csv";
+                  }}
                 >
                   <FileKey2 className="size-4" />
                   Verantwoordingsrapport exporteren

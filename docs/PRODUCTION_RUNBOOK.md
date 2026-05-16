@@ -52,6 +52,16 @@ GitHub Actions job **`deploy-production-check`** (`.github/workflows/platform-gu
 | Intermittent DB connection refused | The workflow waits on `127.0.0.1:5432`; if failures persist, increase the wait loop or Postgres `health-retries`. |
 | `npm audit` / `npm ci` failures | Resolve or bump vulnerable dependencies in `client/` or `theme/static_src/`; audits are intentionally strict (`--audit-level=high`). |
 
-## 7. Incident contacts
+## 7. Local preflight before production promotion
+
+From a release-candidate checkout:
+
+```bash
+./scripts/production_go_live_preflight.sh
+```
+
+Optional Postgres deploy check: set `PREFLIGHT_POSTGRES_URL` plus production env vars (`DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DEFAULT_FROM_EMAIL`). Then complete [`docs/RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md).
+
+## 8. Incident contacts
 
 Define in your org (not in git): primary engineering, gemeente security officer, hosting vendor support IDs.

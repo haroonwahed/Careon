@@ -1282,6 +1282,15 @@ def _evaluate_action_policy(
     latest_match_confidence: float | None,
     provider_response_pending_sla_breached: bool,
 ) -> tuple[bool, str]:
+    from contracts.actor_profile_policy import decision_action_blocked_for_actor_profile
+
+    if intake and decision_action_blocked_for_actor_profile(
+        action_code=action_code,
+        workflow_role=actor_role,
+        actor_profile=getattr(intake, 'aanmelder_actor_profile', None),
+    ):
+        return False, 'Deze actie past niet bij het aanmelder-profiel van de casus.'
+
     is_mutation_blocked = current_state == WorkflowState.ARCHIVED
     if action_code == "MONITOR_CASE":
         return True, ""

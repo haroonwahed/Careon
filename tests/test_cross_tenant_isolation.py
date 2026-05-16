@@ -631,6 +631,17 @@ class ProviderListApisVisibilityTest(ProviderSameOrganizationCaseVisibilityTest)
         self.assertEqual(r.status_code, 200)
         self.assertIn('entries', r.json())
 
+    def test_provider_audit_log_export_forbidden(self):
+        self.client.login(username='provider_same_org', password='passP1234!')
+        r = self.client.get(reverse('careon:audit_log_export_api'))
+        self.assertEqual(r.status_code, 403)
+
+    def test_gemeente_audit_log_export_allowed(self):
+        self.client.login(username='user_a', password='passA1234!')
+        r = self.client.get(reverse('careon:audit_log_export_api'))
+        self.assertEqual(r.status_code, 200)
+        self.assertIn('text/csv', r['Content-Type'])
+
     def test_list_apis_cross_tenant_no_org_a_leak(self):
         self.client.login(username='user_b', password='passB1234!')
         a = self.client.get(reverse('careon:assessments_api')).json()
