@@ -12,7 +12,18 @@ def _pg_default_for_unknown_column(column_name: str, data_type: str, udt_name: s
         return f"{column_name} = '{{}}'::jsonb", "'{}'::jsonb"
     if udt_name.startswith('_'):
         return f"{column_name} = '{{}}'", "'{}'"
-    return f"{column_name} = ''", "''"
+    if udt_name in {'timestamptz', 'timestamp'} or 'timestamp' in data_type:
+        return f'{column_name} = NOW()', 'NOW()'
+    if udt_name == 'date' or data_type == 'date':
+        return f'{column_name} = CURRENT_DATE', 'CURRENT_DATE'
+    if udt_name == 'uuid':
+        return f'{column_name} = gen_random_uuid()', 'gen_random_uuid()'
+    if data_type in {'character varying', 'text'} or udt_name == 'varchar':
+        return f"{column_name} = ''", "''"
+    # Skip exotic types — leave NULL repair to manual ops rather than invalid literals.
+    raise ValueError(
+        f'Cannot infer Postgres default for {column_name!r} ({data_type}/{udt_name})'
+    )
 
 
 def _pg_repair_organization_notnull_defaults(cursor, table: str) -> None:
@@ -30,7 +41,12 @@ def _pg_repair_organization_notnull_defaults(cursor, table: str) -> None:
     )
     qtable = f'"{table}"'
     for column_name, data_type, udt_name in cursor.fetchall():
-        set_clause, default_literal = _pg_default_for_unknown_column(column_name, data_type, udt_name)
+        try:
+            set_clause, default_literal = _pg_default_for_unknown_column(
+                column_name, data_type, udt_name
+            )
+        except ValueError:
+            continue
         qcol = f'"{column_name}"'
         cursor.execute(
             f"""
