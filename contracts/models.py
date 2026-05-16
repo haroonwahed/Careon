@@ -556,6 +556,12 @@ class CareCase(models.Model):
         default=0,
         help_text='Optional legacy upstream system key (production Postgres drift).',
     )
+    source_system_url = models.CharField(
+        max_length=500,
+        blank=True,
+        default='',
+        help_text='Optional legacy upstream URL (production Postgres drift).',
+    )
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
     content = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
@@ -2435,6 +2441,7 @@ class CaseIntakeProcess(models.Model):
             title=self.title,
             source_system='zorg_os',
             source_system_id=0,
+            source_system_url='',
             contract_type=contract_type_map.get(self.zorgvorm_gewenst or self.preferred_care_form, CareCase.ContractType.OTHER),
             content=(self.assessment_summary or self.description or '').strip(),
             status=CareCase.Status.PENDING,
