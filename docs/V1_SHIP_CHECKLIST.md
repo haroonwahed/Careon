@@ -31,7 +31,7 @@ Scope context: **`docs/V1_SCOPE.md`**. Prioritized queue: **`docs/PRODUCT_ENGINE
 
 **Full sign-off (auth + SPA hash):** `./scripts/staging_pilot_signoff.sh` after Render serves the current `main` build (`./scripts/wait_staging_spa_deploy.sh` optional).
 
-**Staging Render (2026-05-16):** shell smoke **8/8** on `https://careon-web.onrender.com`; live SPA still **`index-CqItJNes.js`** (repo build **`index-BQo3gB9r.js`**) — redeploy required; Playwright **pending** after deploy + `PILOT_AUTO_BOOTSTRAP` / `E2E_DEMO_PASSWORD` on host.
+**Staging Render (2026-05-16):** deploy **`dep-d843sivc9spc73bv0u6g`** live on `https://careon-web.onrender.com` (`4ac3e7dd`); shell smoke **8/8**; live SPA **`index-CbfEh6WY.js`** (asset **200**); Playwright shell smokes **4 passed** / 8 skipped (no full demo werkvoorraad). Run `./scripts/staging_pilot_signoff.sh` for full gate.
 
 After deploy to **staging** (or the agreed rehearsal URL):
 
@@ -41,8 +41,8 @@ After deploy to **staging** (or the agreed rehearsal URL):
 | 2 | Gemeente or admin | `/care/matching/` — surface loads | [x] shell |
 | 3 | Gemeente or admin | `/care/beoordelingen/` — Reacties monitoring loads | [x] shell |
 | 4 | Gemeente or admin | Dashboard / werkruimte entry — **200**, no shell **500** | [x] shell |
-| 5 | Zorgaanbieder (linked) | `/care/beoordelingen/` — queue + decision UI loads | [ ] auth |
-| 6 | Zorgaanbieder | Linked casus detail / execution — **404** only for **unlinked** cases (no leakage) | [ ] auth |
+| 5 | Zorgaanbieder (linked) | `/care/beoordelingen/` — queue + decision UI loads | [x] Playwright shell |
+| 6 | Zorgaanbieder | Linked casus detail / execution — **404** only for **unlinked** cases (no leakage) | [ ] needs `PILOT_FULL_DEMO_SEED` |
 
 **Tester:** _______________ **Date / build:** _______________
 

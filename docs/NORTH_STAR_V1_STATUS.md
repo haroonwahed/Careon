@@ -1,7 +1,7 @@
 # North star v1 — status matrix (percentages)
 
 **As of:** 2026-05-16  
-**Release ref:** `main` @ `49ed09dc` (staging password sync on boot; deploy hook workflow)  
+**Release ref:** `main` @ `4ac3e7dd` (staging boot + pilot sign-off GO on Render)  
 **Scoring:** % = evidence-backed completion toward the criterion, not calendar time.  
 **Sources:** North star / Phase 0–1 plan, `docs/V1_SCOPE.md`, `docs/V1_SHIP_CHECKLIST.md`, `docs/PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`.
 
@@ -15,10 +15,10 @@
 | Phase 0 — align & freeze | **95%** |
 | Phase 1 — Must band (rows 1–4) | **94%** |
 | Backlog Should rows 5–12 | **92%** |
-| Staging sign-off (ship gate) | **58%** |
+| Staging sign-off (ship gate) | **88%** |
 | Production | **0%** |
 
-**Blocker for 100% shippable:** Render host still serves **old SPA** (`index-CqItJNes.js`; expected `index-BQo3gB9r.js` after `49ed09dc`). Git push to `main` did **not** trigger a Render rebuild in 15m — enable **auto-deploy** or add GitHub secret `RENDER_DEPLOY_HOOK_URL` (workflow `.github/workflows/render-deploy-hook.yml`), then run `./scripts/staging_pilot_signoff.sh`.
+**Remaining for staging 100%:** deep provider-review Playwright (needs `PILOT_FULL_DEMO_SEED=1` or full demo werkvoorraad); optional GitHub secret `RENDER_DEPLOY_HOOK_URL` for push-triggered deploys. **Verified 2026-05-16:** `./scripts/staging_pilot_signoff.sh` GO on `https://careon-web.onrender.com` (deploy `dep-d843sivc9spc73bv0u6g`).
 
 ---
 

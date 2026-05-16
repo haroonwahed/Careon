@@ -28,6 +28,16 @@ def _gemeente_username() -> str:
     return os.environ.get("E2E_GEMEENTE_USERNAME", "demo_gemeente")
 
 
+def _demo_werkvoorraad_empty() -> bool:
+    from contracts.models import CareCase, Organization
+
+    try:
+        org = Organization.objects.get(slug="gemeente-demo")
+    except Organization.DoesNotExist:
+        return True
+    return not CareCase.objects.filter(organization=org).exists()
+
+
 class Command(BaseCommand):
     help = (
         "When PILOT_AUTO_BOOTSTRAP=1, run reset_pilot_environment only if demo_gemeente "
@@ -48,6 +58,23 @@ class Command(BaseCommand):
                 f"bootstrap_staging_pilot: {username} exists — syncing demo passwords (seed_pilot_e2e) …",
             )
             call_command("seed_pilot_e2e", verbosity=1)
+            if _env_flag("PILOT_FULL_DEMO_SEED") and _demo_werkvoorraad_empty():
+                self.stdout.write(
+                    self.style.WARNING(
+                        "bootstrap_staging_pilot: PILOT_FULL_DEMO_SEED — "
+                        "gemeente-demo has no cases; reset_pilot_environment …",
+                    ),
+                )
+                try:
+                    call_command("reset_pilot_environment", verbosity=1)
+                except Exception as exc:
+                    self.stderr.write(
+                        self.style.ERROR(
+                            f"bootstrap_staging_pilot: full demo seed failed ({exc!s}); "
+                            "E2E users remain available via seed_pilot_e2e.",
+                        ),
+                    )
+                    return
             self.stdout.write(
                 self.style.SUCCESS(
                     f"bootstrap_staging_pilot: {username} ready (passwords aligned with E2E_DEMO_PASSWORD).",

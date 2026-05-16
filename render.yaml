@@ -50,4 +50,4 @@ services:
         value: pilot_demo_pass_123
       # Cold start: set to 1 once to load full demo werkvoorraad (may fail if DB has legacy NOT NULL columns).
       - key: PILOT_FULL_DEMO_SEED
-        value: "0"
+        value: "1"
