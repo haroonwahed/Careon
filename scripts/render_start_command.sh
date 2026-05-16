@@ -34,7 +34,10 @@ python scripts/render_startup_checks.py
 if [[ "${PILOT_AUTO_BOOTSTRAP:-}" =~ ^(1|true|yes)$ ]]; then
   echo "[render] PILOT_AUTO_BOOTSTRAP enabled — migrate + bootstrap_staging_pilot"
   python manage.py migrate --noinput
-  python manage.py bootstrap_staging_pilot
+  if ! python manage.py bootstrap_staging_pilot; then
+    echo "[render] WARN: bootstrap_staging_pilot failed — running seed_pilot_e2e fallback"
+    python manage.py seed_pilot_e2e || true
+  fi
 fi
 
 echo "[render] Startup checks passed; starting gunicorn on port ${PORT:-?}"

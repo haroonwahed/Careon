@@ -55,17 +55,32 @@ class Command(BaseCommand):
             )
             return
 
-        if force:
+        # Always ensure E2E users exist (passwords + memberships).
+        call_command("seed_pilot_e2e", verbosity=1)
+
+        if force or _env_flag("PILOT_FULL_DEMO_SEED"):
+            label = "PILOT_FORCE_RESET" if force else "PILOT_FULL_DEMO_SEED"
             self.stdout.write(
                 self.style.WARNING(
-                    f"bootstrap_staging_pilot: PILOT_FORCE_RESET — reset_pilot_environment …",
+                    f"bootstrap_staging_pilot: {label} — reset_pilot_environment (full demo) …",
                 ),
             )
+            try:
+                call_command("reset_pilot_environment", verbosity=1)
+            except Exception as exc:
+                self.stderr.write(
+                    self.style.ERROR(
+                        f"bootstrap_staging_pilot: full demo seed failed ({exc!s}); "
+                        "E2E users remain available via seed_pilot_e2e.",
+                    ),
+                )
+                return
         else:
             self.stdout.write(
-                f"bootstrap_staging_pilot: {username} missing — running reset_pilot_environment …",
+                "bootstrap_staging_pilot: demo users seeded; "
+                "set PILOT_FULL_DEMO_SEED=1 for full werkvoorraad on cold start.",
             )
-        call_command("reset_pilot_environment", verbosity=1)
+
         self.stdout.write(
-            self.style.SUCCESS("bootstrap_staging_pilot: pilot tenant ready."),
+            self.style.SUCCESS("bootstrap_staging_pilot: pilot users ready."),
         )

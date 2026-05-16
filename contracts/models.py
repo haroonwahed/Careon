@@ -550,6 +550,12 @@ class CareCase(models.Model):
         default='',
         help_text='Optional upstream system identifier for imported cases (empty for native casussen).',
     )
+    source_system_id = models.IntegerField(
+        null=True,
+        blank=True,
+        default=None,
+        help_text='Optional legacy upstream system key (production Postgres drift).',
+    )
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
     content = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
