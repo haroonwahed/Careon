@@ -46,10 +46,10 @@ Reference release SHA:
 
 | Step | Owner | Target timestamp | Actual timestamp | Evidence to capture |
 |---|---|---|---|---|
-| Staging preflight | Release captain + Ops owner | `T-90m` |  | Clean working tree, current backup, target SHA visible, `manage.py check` available |
-| Staging deploy | Backend owner + Ops owner | `T-60m` |  | Checkout SHA, install dependencies, migrate, collectstatic, restart app |
-| Staging verification | QA owner | `T-45m` |  | `check`, terminology guard, targeted tests, HTTP 200s on key routes |
-| Staging sign-off | Release captain | `T-30m` |  | Staging URL smoke result, canonical flow confirmation, open issues list |
+| Staging preflight | Release captain + Ops owner | `T-90m` | 2026-05-16 | `ca146bdc`; Render env pilot bootstrap + demo seed |
+| Staging deploy | Backend owner + Ops owner | `T-60m` | 2026-05-16 | Live on https://careon-web.onrender.com |
+| Staging verification | QA owner | `T-45m` | 2026-05-16 | `staging_pilot_signoff.sh` GO (9 Playwright / 3 skipped) |
+| Staging sign-off | Release captain | `T-30m` | 2026-05-16 | See `docs/RELEASE_EXECUTION_SHEET_2026-05-15.md` |
 | Production preflight | Release captain + Ops owner | `T-15m` |  | Backup confirmation, change window confirmation, rollback owner confirmation |
 | Production deploy | Ops owner + Backend owner | `T0` |  | Checkout SHA, migrate, collectstatic, restart app |
 | Production verification | QA owner + Release captain | `T+15m` |  | `check --deploy`, terminology guard, smoke checks, monitoring watch start |

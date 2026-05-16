@@ -1,8 +1,8 @@
 # CareOn release execution sheet — pilot rehearsal gate
 
-Release date: **2026-05-15**  
+Release date: **2026-05-16** (updated)  
 Timezone: **Europe/Amsterdam**  
-Release SHA: **`49ed09dc`** (staging password sync; deploy hook workflow)  
+Release SHA: **`ca146bdc`** (staging sign-off GO; full demo seed on Render)  
 Branch: **`main`**  
 
 ## Pilot rehearsal (pre-staging) — local
@@ -36,10 +36,10 @@ Use [`RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md) for full st
 
 | Step | Owner | Target | Actual | Evidence |
 |------|-------|--------|--------|----------|
-| Staging preflight | Ops + Release captain | T-90m | **Blocked** (2026-05-16) | Live host still on SPA `index-CqItJNes.js`; `main` @ `49ed09dc` not built on Render (no auto-deploy in 15m poll). Use manual deploy or `RENDER_DEPLOY_HOOK_URL`. |
-| Staging deploy | Backend + Ops | T-60m | **Pending** | Render: deploy latest `main`, clear build cache; env `PILOT_AUTO_BOOTSTRAP=1`, `E2E_DEMO_PASSWORD=pilot_demo_pass_123` |
-| Staging smoke | QA | T-45m | **Partial** | Shell **8/8** OK; Playwright **0/3** (stale SPA + login). After deploy: `./scripts/staging_pilot_signoff.sh` |
-| Staging sign-off | Release captain | T-30m | **Pending** | After `./scripts/staging_pilot_signoff.sh` GO |
+| Staging preflight | Ops + Release captain | T-90m | **Done** (2026-05-16) | `main` on Render; `PILOT_AUTO_BOOTSTRAP=1`, `PILOT_FULL_DEMO_SEED=1`, `E2E_DEMO_PASSWORD=pilot_demo_pass_123` |
+| Staging deploy | Backend + Ops | T-60m | **Done** | Deploy `ca146bdc` live; migrations `0071`–`0076` for Postgres drift |
+| Staging smoke | QA | T-45m | **Done** | Shell **8/8**; `./scripts/staging_pilot_signoff.sh` **GO** (9 Playwright passed, 3 skipped) |
+| Staging sign-off | Release captain | T-30m | **Done** | `https://careon-web.onrender.com`; provider deep smoke **6–9/9** |
 
 **Staging smoke commands** (on staging host, rehearsal-equivalent DB or pilot seed):
 
@@ -53,9 +53,15 @@ export DJANGO_SETTINGS_MODULE=config.settings_rehearsal  # or staging settings
 
 **Post-deploy UI** (live URL): gemeente `/care/casussen`, `/regiekamer`; provider `/care/beoordelingen` — see [`POST_DEPLOY_VERIFICATION_CHECKLIST.md`](./POST_DEPLOY_VERIFICATION_CHECKLIST.md).
 
-## Production
+## Production preflight (local, not promoted)
 
-Copy production rows from [`RELEASE_EXECUTION_SHEET_TEMPLATE.md`](./RELEASE_EXECUTION_SHEET_TEMPLATE.md) when the staging sign-off is complete.
+| Check | Command | Status | Notes |
+|-------|---------|--------|-------|
+| Go-live preflight | `./scripts/production_go_live_preflight.sh` | **GO** (2026-05-16) | 176 Must-band tests OK; client build OK; `check --deploy` skipped (set `PREFLIGHT_POSTGRES_URL` for Postgres parity) |
+
+## Production deploy
+
+Copy production rows from [`RELEASE_EXECUTION_SHEET_TEMPLATE.md`](./RELEASE_EXECUTION_SHEET_TEMPLATE.md) when production promotion is scheduled.
 
 ## Evidence paths
 

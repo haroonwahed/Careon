@@ -46,7 +46,10 @@ When the staging DB is empty or missing `demo_gemeente`, set:
 
 If `demo_gemeente` already exists, boot runs `seed_pilot_e2e` only (password sync). Full wipe: set `PILOT_FORCE_RESET=1` in the dashboard, redeploy **once**, then remove it.
 
-**Auto-deploy from GitHub:** connect the Render service to this repo, or add a [deploy hook](https://render.com/docs/deploy-hooks) URL as GitHub secret `RENDER_DEPLOY_HOOK_URL` (workflow **Render deploy (staging)**).
+**Auto-deploy from GitHub:** the service has `autoDeploy: yes` on `main`. CI can also trigger deploys via workflow **Render deploy (staging)** using either:
+
+- GitHub secret `RENDER_DEPLOY_HOOK_URL` (dashboard deploy hook), or
+- GitHub secret `RENDER_API_KEY` + repository variable `RENDER_SERVICE_ID` (`srv-d7h4h5jbc2fs738ol9a0`) — POST to Render API `/v1/services/{id}/deploys`.
 
 Sign-off from CI or laptop:
 

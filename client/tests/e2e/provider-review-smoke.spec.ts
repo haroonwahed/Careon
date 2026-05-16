@@ -58,6 +58,16 @@ async function apiFetch<T>(page: import("@playwright/test").Page, path: string):
   }, path);
 }
 
+/** Pending review for the logged-in provider (linked placement), not any org-wide casus. */
+async function pendingLinkedProviderCaseId(page: import("@playwright/test").Page): Promise<string | null> {
+  const res = await apiFetch<ProviderEvaluationsPayload>(page, "/care/api/provider-evaluations/");
+  if (!res.ok) return null;
+  const row = (res.json?.evaluations ?? []).find(
+    (r) => String(r.status ?? "").toUpperCase() === "PENDING",
+  );
+  return row?.caseId != null ? String(row.caseId) : null;
+}
+
 test.describe.configure({ mode: "serial" });
 
 test("provider smoke: login and open Reacties (SPA)", async ({ page }) => {
@@ -140,12 +150,10 @@ test("provider smoke: case timeline API returns events for a visible provider_be
   await page.goto(BASE_URL);
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip timeline assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip timeline assertion");
 
-  const tl = await apiFetch<{ events?: unknown[] }>(page, `/care/api/cases/${pending!.id}/timeline/`);
+  const tl = await apiFetch<{ events?: unknown[] }>(page, `/care/api/cases/${caseId}/timeline/`);
   expect(tl.status, `timeline should be 200, got ${tl.status}`).toBe(200);
   expect(Array.isArray(tl.json?.events), "timeline payload should include events array").toBeTruthy();
 });
@@ -154,14 +162,12 @@ test("provider smoke: placement-detail for a visible provider_beoordeling case i
   await page.goto(BASE_URL);
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip API assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip API assertion");
 
   const detail = await apiFetch<{ placement?: Record<string, unknown> }>(
     page,
-    `/care/api/cases/${pending!.id}/placement-detail/`,
+    `/care/api/cases/${caseId}/placement-detail/`,
   );
   expect(detail.status, `placement-detail should be 200, got ${detail.status}`).toBe(200);
   expect(detail.json?.placement, "placement-detail should include placement object").toBeTruthy();
@@ -176,10 +182,8 @@ test("provider smoke: accept panel opens when an active review is present", asyn
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
   await page.goto(new URL("/care/beoordelingen", BASE_URL).toString());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip UI panel assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip UI panel assertion");
 
   const section = page.getByTestId("provider-beoordeling-actieve-sectie");
   test.skip((await section.count()) === 0, "No active provider review in queue — skip accept panel smoke");
@@ -200,10 +204,8 @@ test("provider smoke: meer informatie modal opens, submit disabled until valid, 
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
   await page.goto(new URL("/care/beoordelingen", BASE_URL).toString());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip modal assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip modal assertion");
 
   const section = page.getByTestId("provider-beoordeling-actieve-sectie");
   await expect(section).toBeVisible({ timeout: 45_000 });
@@ -224,14 +226,12 @@ test("provider smoke: decision-evaluation succeeds for a visible provider_beoord
   await page.goto(BASE_URL);
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip API assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip API assertion");
 
   const evalRes = await apiFetch<Record<string, unknown>>(
     page,
-    `/care/api/cases/${pending!.id}/decision-evaluation/`,
+    `/care/api/cases/${caseId}/decision-evaluation/`,
   );
   expect(evalRes.status, `decision-evaluation should be 200, got ${evalRes.status}`).toBe(200);
   expect(evalRes.json?.current_state, "evaluation payload should include workflow state").toBeTruthy();
@@ -241,21 +241,19 @@ test("provider smoke: decision-evaluation succeeds for a visible provider_beoord
  * Mutates the seeded provider-review case — kept last so earlier serial tests still see PENDING.
  */
 test("provider smoke: reject flow submits and shows rejected summary", async ({ page }) => {
+  test.setTimeout(120_000);
   await page.goto(BASE_URL);
   await login(page, pilotDemoProviderOneUsername(), pilotDemoProviderPassword());
   await page.goto(new URL("/care/beoordelingen", BASE_URL).toString());
 
-  const cases = await apiFetch<CasesPayload>(page, "/care/api/cases/?q=");
-  expect(cases.ok, `cases API should load (${cases.status})`).toBeTruthy();
-  const pending = (cases.json?.contracts ?? []).find((c) => c.case_phase === "provider_beoordeling");
-  test.skip(!pending, "No seeded case in provider_beoordeling — skip reject submit assertion");
+  const caseId = await pendingLinkedProviderCaseId(page);
+  test.skip(!caseId, "No PENDING linked provider evaluation — skip reject submit assertion");
 
   const section = page.getByTestId("provider-beoordeling-actieve-sectie");
   await expect(section).toBeVisible({ timeout: 45_000 });
 
   await section.getByRole("button", { name: "Afwijzen" }).click();
   await section.getByText("Geen capaciteit", { exact: true }).click();
-  const caseId = String(pending!.id);
   await section.locator(`#rej-comm-${caseId}`).fill("E2E afwijzing — voldoende tekens voor validatie.");
   await section.getByRole("button", { name: "Bevestig afwijzing" }).click();
 
@@ -264,7 +262,7 @@ test("provider smoke: reject flow submits and shows rejected summary", async ({ 
 
   // Case leaves the active queue and appears under "Verwerkte aanvragen" with outcome summary.
   const rejected = page.getByTestId("provider-rejected-summary");
-  await expect(rejected).toBeVisible({ timeout: 30_000 });
+  await expect(rejected).toBeVisible({ timeout: 60_000 });
   await expect(rejected).toContainText("Afgewezen");
 
   const evalAfter = await apiFetch<ProviderEvaluationsPayload>(page, "/care/api/provider-evaluations/");

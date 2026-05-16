@@ -1,4 +1,4 @@
-# Trigger a Render deploy via deploy hook (set secret RENDER_DEPLOY_HOOK_URL).
+# Trigger a Render deploy on push to main (deploy hook URL or Render API key).
 name: Render deploy (staging)
 
 on:
@@ -11,14 +11,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Trigger Render deploy hook
+      - name: Trigger Render deploy
         env:
           RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
           set -euo pipefail
-          if [[ -z "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
-            echo "RENDER_DEPLOY_HOOK_URL not set — skip (configure in GitHub → Settings → Secrets)."
+          if [[ -n "${RENDER_DEPLOY_HOOK_URL:-}" ]]; then
+            curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+            echo "Deploy hook triggered."
             exit 0
           fi
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
-          echo "Deploy hook triggered."
+          if [[ -n "${RENDER_API_KEY:-}" && -n "${RENDER_SERVICE_ID:-}" ]]; then
+            curl -fsS -X POST \
+              -H "Authorization: Bearer ${RENDER_API_KEY}" \
+              -H "Content-Type: application/json" \
+              "https://api.render.com/v1/services/${RENDER_SERVICE_ID}/deploys" \
+              -d '{}'
+            echo "Render API deploy triggered for ${RENDER_SERVICE_ID}."
+            exit 0
+          fi
+          echo "No RENDER_DEPLOY_HOOK_URL or RENDER_API_KEY+RENDER_SERVICE_ID — skip."
