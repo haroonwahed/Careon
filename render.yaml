@@ -35,6 +35,9 @@ services:
       # Public site URL for Django templates (nav links). Set to https://<your-service>.onrender.com
       - key: SPA_ORIGIN
         sync: false
+      # Must match Google OAuth authorized redirect URI origin (https://<host>, not :3000).
+      - key: OIDC_PUBLIC_BASE_URL
+        sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
       - key: SECURE_SSL_REDIRECT
@@ -50,4 +53,7 @@ services:
         value: pilot_demo_pass_123
       # Cold start: set to 1 once to load full demo werkvoorraad (may fail if DB has legacy NOT NULL columns).
       - key: PILOT_FULL_DEMO_SEED
+        value: "1"
+      # One-shot full werkvoorraad (remove after deploy is live).
+      - key: PILOT_FORCE_RESET
         value: "1"
