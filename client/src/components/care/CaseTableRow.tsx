@@ -51,7 +51,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
     <CarePanel
       className="
         cursor-pointer p-4
-        transition-all hover:border-primary/40
+        transition-all hover:border-border/80
         group
       "
       onClick={onClick}
@@ -59,7 +59,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
       <div className="grid grid-cols-12 gap-4 items-center">
         {/* Case ID & Client */}
         <div className="col-span-2">
-          <div className="font-medium text-foreground group-hover:text-primary transition-colors">
+          <div className="font-medium text-foreground group-hover:text-foreground transition-colors">
             {caseData.id}
           </div>
           <div className="text-sm text-muted-foreground mt-0.5">
@@ -119,7 +119,7 @@ export function CaseTableRow({ case: caseData, onClick }: CaseTableRowProps) {
           <Button 
             size="sm" 
             variant="ghost"
-            className="group-hover:bg-primary/20 group-hover:text-foreground transition-all"
+            className="group-hover:bg-muted/35 group-hover:text-foreground transition-all"
           >
             <ArrowRight size={16} />
           </Button>

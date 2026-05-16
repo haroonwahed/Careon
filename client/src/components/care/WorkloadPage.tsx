@@ -7,17 +7,23 @@ import {
   ChevronRight,
   ChevronUp,
   Clock3,
+  ClipboardList,
+  GitBranch,
+  MapPin,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import {
   CareAttentionBar,
   CareFlowBoard,
+  CareFlowStepCard,
   CareMetaChip,
   CarePageScaffold,
   CareSection,
   CareSectionBody,
   CareSectionHeader,
+  CareOperationalSelect,
   CareSearchFiltersBar,
+  CareWorkspaceSection,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -720,6 +726,23 @@ export function WorkloadPage({
     </div>
   );
 
+  const stripStepIcon = (key: StripBucketKey) => {
+    switch (key) {
+      case "casus":
+        return ClipboardList;
+      case "matching":
+        return GitBranch;
+      case "aanbieder_beoordeling":
+        return Building2;
+      case "plaatsing":
+        return MapPin;
+      case "intake":
+        return Clock3;
+      default:
+        return ClipboardList;
+    }
+  };
+
   const stripStepIsActive = (step: (typeof STRIP_DEF)[number]) => {
     if (selectedPhase !== "all") {
       if (selectedFlowColumn !== "all") {
@@ -733,8 +756,18 @@ export function WorkloadPage({
     return dominantStripKey === step.key;
   };
 
+  const activeStripIndex = (() => {
+    const fromFilter = STRIP_DEF.findIndex((step) => stripStepIsActive(step));
+    if (fromFilter >= 0) return fromFilter;
+    if (dominantStripKey) {
+      const dominantIndex = STRIP_DEF.findIndex((step) => step.key === dominantStripKey);
+      if (dominantIndex >= 0) return dominantIndex;
+    }
+    return 0;
+  })();
+
   const doorstroomStrip = (
-    <CareSection testId="casussen-workflow-strip" aria-label="Doorstroom per fase">
+    <CareSection tone="context" testId="casussen-workflow-strip" aria-label="Doorstroom per fase">
       <CareSectionHeader
         title="Doorstroom"
         description={
@@ -746,7 +779,7 @@ export function WorkloadPage({
         descriptionAriaLabel="Uitleg doorstroom"
         descriptionTestId="casussen-doorstroom-uitleg"
         action={
-          <Button type="button" variant="ghost" className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary" asChild>
+          <Button type="button" variant="ghost" className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-muted/35 hover:text-primary" asChild>
             <a href={CARE_PATHS.REGIEKAMER} data-testid="casussen-doorstroom-naar-regiekamer">
               Naar coördinatie
               <ChevronRight size={14} aria-hidden />
@@ -755,10 +788,17 @@ export function WorkloadPage({
         }
       />
       <CareSectionBody className="mt-4 space-y-0">
-        <CareFlowBoard testId="casussen-flow-board" variant="pipeline">
-          {STRIP_DEF.map((step) => {
+        <CareFlowBoard
+          testId="casussen-flow-board"
+          variant="pipeline"
+          activeStepIndex={activeStripIndex}
+          stepCount={STRIP_DEF.length}
+        >
+          {STRIP_DEF.map((step, stepIndex) => {
             const active = stripStepIsActive(step);
+            const completed = !active && stepIndex < activeStripIndex;
             const count = stripCounts[step.key];
+            const StepIcon = stripStepIcon(step.key);
             // Operational lane: phase-first, count-second. The waiting label IS the
             // bottleneck signal when count > 0; "Geen instroom" stays as the only
             // generic status pill (drops the low-value "Doorstroom actief").
@@ -767,38 +807,35 @@ export function WorkloadPage({
               ? `${count} ${roleAwareWait}`
               : null;
             return (
-              <button
+              <CareFlowStepCard
                 key={step.key}
-                type="button"
-                data-testid={`casussen-phase-column-${step.key}`}
+                testId={`casussen-phase-column-${step.key}`}
                 onClick={() => {
                   setSelectedPhase(step.filterPhase);
                   setSelectedFlowColumn(step.key === "plaatsing" || step.key === "intake" ? step.key : "all");
                   setFocusChip("all");
                 }}
-                className={cn(
-                  "group flex h-full w-full flex-col gap-1.5 rounded-xl border border-border/60 bg-bg-subtle px-3 py-2.5 text-left transition",
-                  "hover:border-primary/35 hover:bg-card focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
-                  active && "border-primary/35 ring-2 ring-primary/30",
-                )}
-              >
-                <div className="flex min-w-0 items-center justify-between gap-2">
-                  <span className="truncate text-[13px] font-medium leading-tight text-foreground">{step.label}</span>
-                  <span className="shrink-0 text-[18px] font-semibold leading-none tabular-nums text-foreground">{count}</span>
-                </div>
-                {waitingLabel ? (
-                  <p className="truncate text-[11px] leading-snug text-muted-foreground">{waitingLabel}</p>
-                ) : (
-                  <span
-                    className={cn(
-                      "inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-semibold",
-                      phasePillClasses(step.statusTone),
-                    )}
-                  >
-                    Geen instroom
-                  </span>
-                )}
-              </button>
+                active={active}
+                completed={completed}
+                icon={<StepIcon size={16} className="text-current" />}
+                metric={count}
+                title={step.label}
+                subStatusLines={
+                  waitingLabel
+                    ? [<p key={`${step.key}-wait`} className="truncate text-[11px] leading-snug text-muted-foreground">{waitingLabel}</p>]
+                    : [
+                      <span
+                        key={`${step.key}-empty`}
+                        className={cn(
+                          "inline-flex w-fit rounded-full border px-2 py-0.5 text-[10px] font-semibold",
+                          phasePillClasses(step.statusTone),
+                        )}
+                      >
+                        Geen instroom
+                      </span>,
+                    ]
+                }
+              />
             );
           })}
         </CareFlowBoard>
@@ -855,7 +892,11 @@ export function WorkloadPage({
         </div>
       }
     >
-      <CareSection testId="casussen-uitvoerlijst" aria-labelledby="casussen-werkvoorraad-heading">
+      <CareWorkspaceSection
+        testId="casussen-uitvoerlijst"
+        aria-labelledby="casussen-werkvoorraad-heading"
+        bodyClassName="space-y-3"
+        header={(
         <CareSectionHeader
           className="lg:flex-col lg:items-stretch"
           title={
@@ -863,10 +904,11 @@ export function WorkloadPage({
           }
           meta={
             <div className="w-full min-w-0 space-y-2">
-              <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+              <span className="inline-flex w-fit items-center rounded-full bg-muted/35 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
                 {filteredItems.length} aanvragen
               </span>
               <CareSearchFiltersBar
+                variant="workspace"
                 className="px-0"
                 searchValue={searchQuery}
                 onSearchChange={setSearchQuery}
@@ -878,29 +920,28 @@ export function WorkloadPage({
                   <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Werkvoorraad-weergave
-                      <select
+                      <CareOperationalSelect
                         aria-label="Werkvoorraad-weergave"
                         value={focusChip}
                         onChange={(event) => setFocusChip(event.target.value as FocusChip)}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="my-worklist">Mijn werkvoorraad ({tabCounts.myWorklist})</option>
                         <option value="all">Alle aanvragen ({tabCounts.all})</option>
                         <option value="pipeline">Wacht op actie ({tabCounts.pipeline})</option>
                         <option value="critical">Kritiek ({tabCounts.critical})</option>
                         <option value="recent">Recent bijgewerkt ({tabCounts.recent})</option>
-                      </select>
+                      </CareOperationalSelect>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Stap
-                      <select
+                      <CareOperationalSelect
                         aria-label="Stap in de keten"
                         value={selectedPhase}
                         onChange={(event) => {
                           setSelectedPhase(event.target.value as "all" | DecisionUiPhaseId);
                           setSelectedFlowColumn("all");
                         }}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                        
                       >
                         <option value="all">Alle fases</option>
                         {phaseOptions.map((phase) => (
@@ -908,50 +949,47 @@ export function WorkloadPage({
                             {phase.label}
                           </option>
                         ))}
-                      </select>
+                      </CareOperationalSelect>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Urgentie
-                      <select
+                      <CareOperationalSelect
                         aria-label="Urgentie"
                         value={selectedUrgency}
                         onChange={(event) => setSelectedUrgency(event.target.value)}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle urgentie</option>
                         <option value="critical">Kritiek</option>
                         <option value="warning">Hoog</option>
                         <option value="normal">Normaal / laag</option>
-                      </select>
+                      </CareOperationalSelect>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Regio
-                      <select
+                      <CareOperationalSelect
                         aria-label="Regio"
                         value={selectedRegion}
                         onChange={(event) => setSelectedRegion(event.target.value)}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         {regions.map((region) => (
                           <option key={region} value={region}>
                             {region === "all" ? "Alle regio's" : region}
                           </option>
                         ))}
-                      </select>
+                      </CareOperationalSelect>
                     </label>
                     <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                       Verantwoordelijke
-                      <select
+                      <CareOperationalSelect
                         aria-label="Verantwoordelijke"
                         value={selectedOwner}
                         onChange={(event) => setSelectedOwner(event.target.value as "all" | "Gemeente" | "Zorgaanbieder" | "Systeem")}
-                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                       >
                         <option value="all">Alle verantwoordelijken</option>
                         <option value="Gemeente">Aanmelder / gemeente</option>
                         <option value="Zorgaanbieder">Zorgaanbieder</option>
                         <option value="Systeem">Systeem</option>
-                      </select>
+                      </CareOperationalSelect>
                     </label>
                   </div>
                 }
@@ -959,7 +997,8 @@ export function WorkloadPage({
             </div>
           }
         />
-        <CareSectionBody className="space-y-3">
+        )}
+      >
           {focusChip === "critical" && workflowCases.length > 0 ? (
             <div data-testid="worklist-blocked-filter-hint">
               <CareAttentionBar
@@ -1088,26 +1127,25 @@ export function WorkloadPage({
                 </div>
                 <label className="flex items-center gap-2">
                   <span className="text-[12px]">Rijen per pagina</span>
-                  <select
+                  <CareOperationalSelect
                     value={pageSize}
                     onChange={(event) => {
                       setPageSize(Number(event.target.value));
                       setPage(1);
                     }}
-                    className="h-9 rounded-lg border border-border bg-background px-2 text-[13px] text-foreground"
+                    className="care-op-select h-9 w-auto rounded-lg px-2 text-[13px]"
                   >
                     {[5, 10, 20, 50].map((n) => (
                       <option key={n} value={n}>
                         {n}
                       </option>
                     ))}
-                  </select>
+                  </CareOperationalSelect>
                 </label>
               </div>
             </div>
           )}
-        </CareSectionBody>
-      </CareSection>
+      </CareWorkspaceSection>
     </CarePageScaffold>
       </div>
 
@@ -1206,7 +1244,7 @@ function CasussenInsightsPanels({
           type="button"
           data-testid="casussen-quick-critical"
           onClick={onCriticalClick}
-          className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+          className="mt-3 flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-border/80 hover:bg-muted/25"
         >
           <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
             <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />

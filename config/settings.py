@@ -128,26 +128,29 @@ ENABLE_DJANGO_BROWSER_RELOAD = _bool_env('ENABLE_DJANGO_BROWSER_RELOAD', default
 
 ALLOWED_HOSTS = _csv_env('ALLOWED_HOSTS', default=['*'])
 
-CSRF_TRUSTED_ORIGINS = _csv_env(
-    'CSRF_TRUSTED_ORIGINS',
-    default=[
-        'http://localhost:3000',
-        'https://localhost:3000',
-        'http://127.0.0.1:3000',
-        'https://127.0.0.1:3000',
-        'http://[::1]:3000',
-        'https://[::1]:3000',
-        # Vite proxy may forward with Django as Host; allow same-origin checks when needed.
-        'http://127.0.0.1:8000',
-        'https://127.0.0.1:8000',
-        'http://localhost:8000',
-        'https://localhost:8000',
-        'https://*.replit.dev',
-        'https://*.repl.co',
-        'https://*.riker.replit.dev',
-        'https://*.riker.replit.dev:8000',
-    ],
-)
+_LOCAL_CSRF_ORIGINS = [
+    'http://localhost:3000',
+    'https://localhost:3000',
+    'http://127.0.0.1:3000',
+    'https://127.0.0.1:3000',
+    'http://[::1]:3000',
+    'https://[::1]:3000',
+    # Vite proxy may forward with Django as Host; allow same-origin checks when needed.
+    'http://127.0.0.1:8000',
+    'https://127.0.0.1:8000',
+    'http://localhost:8000',
+    'https://localhost:8000',
+    'https://*.replit.dev',
+    'https://*.repl.co',
+    'https://*.riker.replit.dev',
+    'https://*.riker.replit.dev:8000',
+]
+_csrf_from_env = _csv_env('CSRF_TRUSTED_ORIGINS', default=_LOCAL_CSRF_ORIGINS)
+# .env may list production origins only; keep local Vite/Django origins when DEBUG.
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_from_env + _LOCAL_CSRF_ORIGINS))
+else:
+    CSRF_TRUSTED_ORIGINS = _csrf_from_env
 
 
 # Application definition
@@ -387,6 +390,10 @@ if not QUIET_TEST_LOGS and any(arg == 'test' for arg in sys.argv):
 
 # Log every successful /care/api/* request at INFO (verbose); default is 4xx/5xx only via middleware.
 CAREON_API_ACCESS_LOG_ALL = _bool_env('CAREON_API_ACCESS_LOG_ALL', default=False)
+
+# Geocoding / maps (optional — PDOK is default for backend geocoding)
+GOOGLE_GEOCODING_API_KEY = os.getenv('GOOGLE_GEOCODING_API_KEY', '').strip()
+GEOCODING_PREFER_GOOGLE = _bool_env('GEOCODING_PREFER_GOOGLE', default=False)
 
 # Infrastructure maturity feature freeze (see docs/INFRASTRUCTURE_MATURITY_PHASE.md).
 FEATURE_FREEZE_ACTIVE = _bool_env('FEATURE_FREEZE_ACTIVE', default=True)

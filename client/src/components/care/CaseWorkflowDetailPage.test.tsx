@@ -268,8 +268,9 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect(await screen.findByText("Laatste wijziging")).toBeInTheDocument();
-    expect(screen.getByText("Actiehouder / wacht op")).toBeInTheDocument();
+    expect(await screen.findByText("Kerngegevens")).toBeInTheDocument();
+    expect(screen.getByText("Actiehouder")).toBeInTheDocument();
+    expect(screen.getByText("Aandachtspunten")).toBeInTheDocument();
   });
 
   it("keeps primary action wired to existing action executor", async () => {

@@ -72,7 +72,7 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
         "rounded-[24px] border p-4 shadow-sm transition-all duration-200",
         item.isBlocked
           ? "border-red-500/30 bg-gradient-to-br from-red-500/8 via-card/80 to-card"
-          : "border-border bg-card/75 hover:border-primary/30 hover:shadow-md",
+          : "border-border bg-card/75 hover:border-border/70 hover:shadow-md",
       )}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -117,7 +117,7 @@ export function ActionCaseDecisionCard({ item, decision, role, onOpen, onNavigat
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Reden</p>
           <p className="mt-1 text-sm text-foreground/90">{getShortReasonLabel(decision.whyHere, 76)}</p>
         </section>
-        <section className="rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3">
+        <section className="rounded-2xl border border-border/70 bg-muted/25 px-4 py-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actie</p>
           <p className="mt-1 text-sm font-medium text-foreground">{getShortActionLabel(decision.nextActionLabel)}</p>
           {decision.blockedReason && (

@@ -46,7 +46,7 @@ export function SelectedProviderCard({
   const fastResponse = provider.responseTime <= 6;
 
   return (
-    <CarePanel className="border border-primary/40 bg-primary/10 p-4">
+    <CarePanel className="border border-border/70 bg-card/90 p-4 ring-1 ring-primary/20">
       {/* Selected Badge */}
       <div className="flex items-center gap-2 mb-4">
         <div className="w-3 h-3 rounded-full bg-primary" />
@@ -128,7 +128,7 @@ export function SelectedProviderCard({
           {provider.specializations.map((spec, idx) => (
             <span 
               key={idx}
-              className="px-3 py-1.5 bg-primary/10 border border-primary/30 text-primary text-xs rounded-md font-medium"
+              className="px-3 py-1.5 bg-muted/35 border border-border/70 text-foreground text-xs rounded-md font-medium"
             >
               {spec}
             </span>

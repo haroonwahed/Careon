@@ -536,7 +536,7 @@ function AuditDetailPanel({
                 {entry.entityName}
               </p>
             </div>
-            <ExternalLink size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
+            <ExternalLink size={14} className="text-muted-foreground group-hover:text-foreground transition-colors" />
           </div>
         </div>
       </div>

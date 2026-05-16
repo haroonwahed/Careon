@@ -287,7 +287,7 @@ export function PlacementPage({
       </button>
 
       {/* TOP DECISION HEADER */}
-      <CarePanel className="p-4 border-2 border-primary/40">
+      <CarePanel className="p-4 border border-border/70 ring-1 ring-primary/25">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">

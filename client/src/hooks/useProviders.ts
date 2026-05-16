@@ -26,6 +26,8 @@ export interface SpaProvider {
   latitude: number | null;
   longitude: number | null;
   hasCoordinates: boolean;
+  coordinateSource?: 'vestiging' | 'geocode' | 'city_estimate' | 'none';
+  geocodedAt?: string | null;
   locationLabel: string;
   regionLabel: string;
   municipalityLabel: string;
@@ -87,6 +89,8 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
         latitude: number | null;
         longitude: number | null;
         hasCoordinates: boolean;
+        coordinateSource?: 'vestiging' | 'geocode' | 'city_estimate' | 'none';
+        geocodedAt?: string | null;
         locationLabel: string;
         regionLabel: string;
         municipalityLabel: string;
@@ -112,6 +116,8 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
           latitude: p.latitude ?? null,
           longitude: p.longitude ?? null,
           hasCoordinates: Boolean(p.hasCoordinates),
+          coordinateSource: p.coordinateSource ?? 'none',
+          geocodedAt: p.geocodedAt ?? null,
           locationLabel: p.locationLabel ?? p.city ?? '',
           regionLabel: p.regionLabel ?? '',
           municipalityLabel: p.municipalityLabel ?? '',

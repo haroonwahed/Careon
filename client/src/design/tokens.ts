@@ -44,28 +44,31 @@ export const tokens = {
   },
 
   colors: {
-    bg: "#0B0F1A",
-    surface: "#121826",
-    surfaceSubtle: "#0F1523",
-    border: "rgba(255,255,255,0.08)",
+    bg: "#0B1020",
+    surface: "#151B2E",
+    surfaceSubtle: "#111827",
+    surfaceElevated: "#20283D",
+    border: "rgba(255,255,255,0.06)",
 
-    textPrimary: "#E5E7EB",
-    textSecondary: "#9CA3AF",
+    textPrimary: "#E8ECF3",
+    textSecondary: "#94A3B8",
 
-    accentPrimary: "#7C3AED",
-    accentWarning: "#F59E0B",
-    accentDanger: "#EF4444",
-    accentInfo: "#06B6D4",
+    accentPrimary: "#7C5CFF",
+    accentSecondary: "#8B7CFF",
+    accentWarning: "#D9A441",
+    accentDanger: "#C96B6B",
+    accentSuccess: "#3FA37C",
+    accentInfo: "#6B9AD4",
 
-    /** Casussen high-fidelity mock (dark chrome): use via WorkloadPage only — keeps brand purple consistent with designs. */
-    casussenAccent: "#6D5DFC",
-    casussenSurfaceRaised: "#161B22",
-    casussenPageChrome: "#0B0E14",
-    casussenMetricBg: "rgba(22, 27, 34, 0.92)",
-    casussenMetricBorder: "rgba(125, 211, 252, 0.45)",
-    casussenMetricText: "#E0F2FE",
-    casussenMetricDot: "#7DD3FC",
-    casussenUrgencyNormal: "#00C853",
+    /** Casussen list chrome — aligned with operational shell (accent used sparingly). */
+    casussenAccent: "#7C5CFF",
+    casussenSurfaceRaised: "#1B2236",
+    casussenPageChrome: "#0B1020",
+    casussenMetricBg: "rgba(21, 27, 46, 0.92)",
+    casussenMetricBorder: "rgba(255, 255, 255, 0.08)",
+    casussenMetricText: "#E8ECF3",
+    casussenMetricDot: "#6B9AD4",
+    casussenUrgencyNormal: "#3FA37C",
   },
 
   radius: {

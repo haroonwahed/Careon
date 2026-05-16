@@ -27,10 +27,10 @@ export function SignalCard({ signal }: SignalCardProps) {
       icon: "text-amber-300"
     },
     info: {
-      bg: "bg-primary/10",
-      border: "border-primary/30",
-      text: "text-primary",
-      icon: "text-primary"
+      bg: "bg-blue-500/10",
+      border: "border-blue-500/30",
+      text: "text-blue-300",
+      icon: "text-blue-300"
     }
   };
 

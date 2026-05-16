@@ -71,7 +71,7 @@ const documentTypeConfig: Record<DocumentType, { label: string; color: string; i
 };
 
 const linkedEntityConfig: Record<LinkedEntity, { label: string; color: string }> = {
-  casus: { label: "Casus", color: "text-primary" },
+  casus: { label: "Casus", color: "text-blue-300" },
   aanbieder: { label: "Aanbieder", color: "text-blue-500" },
   gemeente: { label: "Gemeente", color: "text-green-500" },
   geen: { label: "Niet gekoppeld", color: "text-muted-foreground" }
@@ -214,7 +214,7 @@ export function DocumentenPage() {
     >
 
       {lastActionMessage && (
-        <div className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">
+        <div className="rounded-xl border border-border/70 bg-muted/30 px-3 py-2 text-sm text-foreground">
           {lastActionMessage}
         </div>
       )}

@@ -126,7 +126,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="gap-2 text-primary hover:bg-primary/10 hover:text-primary"
+                    className="gap-2 text-primary hover:bg-muted/35 hover:text-primary"
                     onClick={() => onCaseClick?.(item.id)}
                   >
                     Openen
@@ -140,7 +140,7 @@ export function AssessmentQueuePage({ onCaseClick, onNavigateToCasussen }: Asses
       )}
 
       <CareContextHint
-        icon={<ClipboardCheck className="text-primary" size={20} />}
+        icon={<ClipboardCheck className="text-muted-foreground" size={20} />}
         title="Zelfde casusflow"
         copy="Beoordeling blijft aan de casus gekoppeld."
       />

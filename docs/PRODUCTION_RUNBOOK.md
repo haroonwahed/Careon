@@ -60,7 +60,7 @@ From a release-candidate checkout:
 ./scripts/production_go_live_preflight.sh
 ```
 
-Optional Postgres deploy check: set `PREFLIGHT_POSTGRES_URL` plus production env vars (`DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DEFAULT_FROM_EMAIL`). Then complete [`docs/RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md).
+Optional Postgres deploy check: set `PREFLIGHT_POSTGRES_URL` (production) or `STAGING_DATABASE_URL` (Render **Internal Database URL** from the staging Postgres dashboard) plus `DJANGO_SECRET_KEY`, `ALLOWED_HOSTS`, `CSRF_TRUSTED_ORIGINS`, `DEFAULT_FROM_EMAIL`. Then complete [`docs/RELEASE_ROLLOUT_CHECKLIST.md`](./RELEASE_ROLLOUT_CHECKLIST.md).
 
 ## 8. Incident contacts
 

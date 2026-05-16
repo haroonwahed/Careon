@@ -70,7 +70,7 @@ export function CasusWorkspaceStatusBadges({
         <Badge className="border-emerald-500/30 bg-emerald-500/10 text-[12px] font-semibold text-emerald-300">Actief</Badge>
       )}
       {variant === "progress" && (
-        <Badge className="border-primary/30 bg-primary/10 text-[12px] font-semibold text-primary">In behandeling</Badge>
+        <Badge className="border-blue-500/30 bg-blue-500/10 text-[12px] font-semibold text-blue-300">In behandeling</Badge>
       )}
       {hint && variant === "blocked" ? (
         <Badge
@@ -148,12 +148,14 @@ export function PrimaryActionButton({ className, children, ...props }: Component
   );
 }
 
-type CareSectionTone = "default" | "muted";
+type CareSectionTone = "default" | "muted" | "context" | "workspace";
 type CareAlertTone = "critical" | "warning" | "info" | "success";
 
 const CARE_SECTION_TONE_CLASSES: Record<CareSectionTone, string> = {
-  default: "bg-card border border-border/60 shadow-sm",
-  muted: "bg-muted/20",
+  default: "surface-section",
+  muted: "rounded-xl bg-muted/15 p-4 md:p-5",
+  context: "surface-context",
+  workspace: "surface-workspace overflow-hidden",
 };
 
 const CARE_ALERT_TONE_CLASSES: Record<
@@ -165,23 +167,23 @@ const CARE_ALERT_TONE_CLASSES: Record<
   }
 > = {
   critical: {
-    shell: "border-destructive/30 bg-destructive/10 shadow-sm",
-    icon: "border-destructive/30 bg-destructive/10 text-destructive",
+    shell: "care-dominant-focus border-0 bg-destructive/8 ring-1 ring-destructive/20",
+    icon: "border-destructive/25 bg-destructive/10 text-destructive",
     metric: "text-destructive",
   },
   warning: {
-    shell: "border-amber-500/30 bg-amber-500/10",
-    icon: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    shell: "care-dominant-focus border-0 bg-amber-500/8 ring-1 ring-amber-500/20",
+    icon: "border-amber-500/25 bg-amber-500/10 text-amber-200",
     metric: "text-amber-200",
   },
   info: {
-    shell: "border-sky-500/30 bg-sky-500/10",
-    icon: "border-sky-500/30 bg-sky-500/10 text-sky-200",
+    shell: "care-dominant-focus border-0 bg-sky-500/8 ring-1 ring-sky-500/18",
+    icon: "border-sky-500/25 bg-sky-500/10 text-sky-200",
     metric: "text-sky-200",
   },
   success: {
-    shell: "border-emerald-500/30 bg-emerald-500/10",
-    icon: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    shell: "care-dominant-focus border-0 bg-emerald-500/8 ring-1 ring-emerald-500/18",
+    icon: "border-emerald-500/25 bg-emerald-500/10 text-emerald-200",
     metric: "text-emerald-200",
   },
 };
@@ -284,6 +286,54 @@ export function CareSectionBody({
   return <div className={cn("mt-4", className)}>{children}</div>;
 }
 
+
+/** Tonal select for operational filter bars (werklijst headers). */
+export const CARE_OPERATIONAL_SELECT_CLASS =
+  "care-op-select h-10 w-full rounded-xl px-3 text-sm text-foreground";
+
+export function CareOperationalSelect({ className, ...props }: ComponentProps<"select">) {
+  return <select className={cn(CARE_OPERATIONAL_SELECT_CLASS, className)} {...props} />;
+}
+
+/**
+ * Primary work surface — header / body / footer padding without manual `p-0` splits.
+ * Use `bodyBleedX` when the list card should span edge-to-edge (e.g. Regiekamer grid).
+ */
+export function CareWorkspaceSection({
+  header,
+  children,
+  footer,
+  bodyBleedX = false,
+  bodyClassName,
+  className,
+  testId,
+  ...props
+}: {
+  header: ReactNode;
+  children: ReactNode;
+  footer?: ReactNode;
+  bodyBleedX?: boolean;
+  bodyClassName?: string;
+  testId?: string;
+  className?: string;
+} & Omit<ComponentProps<"section">, "children">) {
+  return (
+    <CareSection tone="workspace" className={cn("mt-1 p-0 md:p-0", className)} testId={testId} {...props}>
+      <div className="care-workspace-section__header">{header}</div>
+      <CareSectionBody
+        className={cn(
+          "care-workspace-section__body mt-0",
+          bodyBleedX && "care-workspace-section__body--bleed-x",
+          bodyClassName,
+        )}
+      >
+        {children}
+      </CareSectionBody>
+      {footer ? <div className="care-workspace-section__footer">{footer}</div> : null}
+    </CareSection>
+  );
+}
+
 export function CareAlertCard({
   tone,
   icon,
@@ -313,7 +363,7 @@ export function CareAlertCard({
     <section
       data-component="care-dominant-action-panel"
       data-testid={testId}
-      className={cn("rounded-xl border px-4 py-4 md:px-5", toneClasses.shell, className)}
+      className={cn("rounded-xl px-4 py-4 md:px-5", toneClasses.shell, className)}
       aria-live="polite"
       {...props}
     >
@@ -357,6 +407,7 @@ export function CareFlowStepCard({
   title,
   subStatusLines,
   active = false,
+  completed = false,
   onClick,
   testId,
 }: {
@@ -365,20 +416,19 @@ export function CareFlowStepCard({
   title: ReactNode;
   subStatusLines: ReactNode[];
   active?: boolean;
+  completed?: boolean;
   onClick?: () => void;
   testId?: string;
 }) {
-  // Compact operational lane: phase-first, count-second, optional bottleneck pill.
-  // Replaces the previous 138px+ KPI-style card (text-[34px] metric, framed icon box)
-  // so the flow strip reads as orchestration, not a dashboard.
   return (
     <button
       type="button"
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "group flex h-full w-full flex-col gap-1.5 rounded-xl border border-border/60 bg-bg-subtle px-3 py-2.5 text-left transition hover:bg-card hover:border-primary/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
-        active && "ring-2 ring-primary/30",
+        "care-flow-step__card group flex h-full w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        active && "care-flow-step__card--active",
+        completed && !active && "care-flow-step__card--completed",
       )}
     >
       <div className="flex min-w-0 items-center justify-between gap-2">
@@ -388,7 +438,7 @@ export function CareFlowStepCard({
           </span>
           <span className="truncate text-[13px] font-medium leading-tight text-foreground">{title}</span>
         </div>
-        <span className="shrink-0 text-[20px] font-semibold leading-none tabular-nums text-foreground">{metric}</span>
+        <span className={cn("shrink-0 text-[20px] font-semibold leading-none tabular-nums", active ? "text-foreground" : "text-muted-foreground")}>{metric}</span>
       </div>
       {subStatusLines[0] ? <div className="min-w-0">{subStatusLines[0]}</div> : null}
     </button>
@@ -400,33 +450,52 @@ export function CareFlowBoard({
   className,
   testId,
   variant = "grid",
+  activeStepIndex = 0,
+  stepCount,
 }: {
   children: ReactNode;
   className?: string;
   testId?: string;
-  /** `pipeline`: horizontal strip with chevrons (Regiekamer doorstroom). */
+  /** `pipeline`: horizontal orchestration lane (Regiekamer / Casussen doorstroom). */
   variant?: "grid" | "pipeline";
+  /** Highlights left-to-right progression on the connective track (0-based). */
+  activeStepIndex?: number;
+  stepCount?: number;
 }) {
   if (variant === "pipeline") {
     const items = Children.toArray(children).filter(Boolean);
+    const total = stepCount ?? items.length;
+    const progressPct =
+      total <= 1 ? 0 : Math.min(100, Math.max(8, (activeStepIndex / (total - 1)) * 100));
     return (
       <div
         data-testid={testId}
-        className={cn(
-          "flex flex-col gap-3 md:flex-row md:flex-wrap md:items-stretch lg:flex-nowrap lg:gap-0",
-          className,
-        )}
+        className={cn("care-flow-pipeline", className)}
+        role="list"
+        aria-label="Doorstroom per fase"
       >
-        {items.map((child, i) => (
-          <Fragment key={i}>
-            {i > 0 ? (
-              <div className="hidden shrink-0 items-center justify-center self-center px-0.5 md:flex" aria-hidden>
-                <ChevronRight className="size-5 text-muted-foreground/55" strokeWidth={2} />
+        <div className="care-flow-pipeline__track hidden md:block" aria-hidden />
+        <div
+          className="care-flow-pipeline__progress hidden md:block"
+          style={{ width: `${progressPct}%` }}
+          aria-hidden
+        />
+        <div className="relative z-[1] flex flex-col gap-3 md:flex-row md:flex-wrap md:items-stretch lg:flex-nowrap lg:gap-0">
+          {items.map((child, i) => (
+            <Fragment key={i}>
+              {i > 0 ? (
+                <div className="care-flow-connector" aria-hidden>
+                  <span className="care-flow-connector__dot" />
+                  <span className="care-flow-connector__stem" />
+                  <span className="care-flow-connector__dot" />
+                </div>
+              ) : null}
+              <div className="care-flow-step min-w-0 flex-1 basis-[calc(50%-0.25rem)] lg:basis-0" role="listitem">
+                {child}
               </div>
-            ) : null}
-            <div className="min-w-0 flex-1 basis-[calc(50%-0.25rem)] lg:basis-0">{child}</div>
-          </Fragment>
-        ))}
+            </Fragment>
+          ))}
+        </div>
       </div>
     );
   }
@@ -457,11 +526,11 @@ export function CareWorkListCard({
       data-testid={testId}
       className={cn(
         // `min-w-0` + horizontal scroll: wide grid rows (e.g. Werkvoorraad min-w-[980px]) stay usable beside rails / narrow main columns.
-        "min-w-0 overflow-x-auto rounded-xl border border-border/45 bg-background/20",
+        "min-w-0 overflow-x-auto rounded-xl surface-workspace",
         className,
       )}
     >
-      {header ? <div className="min-w-0 border-b border-border/45">{header}</div> : null}
+      {header ? <div className="min-w-0 surface-workspace-header px-4 py-3 md:px-5">{header}</div> : null}
       {children}
     </div>
   );

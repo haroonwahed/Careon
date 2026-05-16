@@ -43,7 +43,7 @@ export function SimpleCasusCard({
     <div 
       className={`
         panel-surface p-4 cursor-pointer
-        hover:border-primary/40 transition-all
+        hover:border-border/80 transition-all
         group
         ${isSelected ? "ring-2 ring-primary" : ""}
       `}
@@ -119,7 +119,7 @@ function CasusCardContent({
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className="font-semibold text-foreground group-hover:text-primary transition-colors">
+            <span className="font-semibold text-foreground group-hover:text-foreground transition-colors">
               {id}
             </span>
             <div className="flex items-center gap-1.5">

@@ -62,9 +62,9 @@ export function CarePageScaffold({
 }: CarePageScaffoldProps) {
   const attention =
     dominantAction || kpiStrip ? (
-      <div className={cn(dominantAction && kpiStrip && "space-y-4")}>
+      <div className={cn("space-y-4", dominantAction && kpiStrip && "pb-0.5")}>
         {dominantAction}
-        {kpiStrip}
+        {kpiStrip ? <div className="opacity-95">{kpiStrip}</div> : null}
       </div>
     ) : undefined;
 

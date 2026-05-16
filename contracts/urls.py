@@ -56,6 +56,7 @@ urlpatterns = [
     path('api/audit-log/export/', api_views.audit_log_export_api, name='audit_log_export_api'),
     path('api/cases/<int:case_id>/dispute-export/', api_views.case_dispute_export_api, name='case_dispute_export_api'),
     path('api/providers/', api_views.providers_api, name='providers_api'),
+    path('api/providers/geocode-vestigingen/', api_views.geocode_vestigingen_api, name='geocode_vestigingen_api'),
     path('api/municipalities/', api_views.municipalities_api, name='municipalities_api'),
     path('api/regions/', api_views.regions_api, name='regions_api'),
     path('api/regions/health/', api_views.regions_health_api, name='regions_health_api'),

@@ -35,7 +35,7 @@ export function CareKPICard({
       border: "border-amber-500/35",
     },
     normal: {
-      icon: "text-primary",
+      icon: "text-muted-foreground",
       value: "text-foreground",
       border: "border-border",
     },
@@ -58,7 +58,7 @@ export function CareKPICard({
             {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
-        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-primary/10 ${style.icon}`}>
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/35 ${style.icon}`}>
           <Icon size={18} />
         </div>
       </div>

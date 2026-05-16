@@ -11,8 +11,8 @@ vi.mock("../../hooks/useProviders", () => ({
   useProviders: (...args: unknown[]) => mockUseProviders(...args),
 }));
 
-vi.mock("./ProviderNetworkMap", () => ({
-  ProviderNetworkMap: ({
+vi.mock("./ProviderMapSurface", () => ({
+  ProviderMapSurface: ({
     selectedProviderId,
     onNavigateToMatching,
   }: {

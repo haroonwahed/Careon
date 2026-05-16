@@ -92,7 +92,7 @@ const SOURCE_REGISTRATION_OPTIONS: Option[] = [
 ];
 const compactLabelClass = "mb-1 block text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
 const compactGroupLabelClass = "mb-2 text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
-const quietToggleClass = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/55 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground";
+const quietToggleClass = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/55 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground";
 
 interface NieuweCasusPageProps {
   onCancel?: () => void;
@@ -133,7 +133,7 @@ function SectionHeader({
     <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-primary/25 bg-primary/5 text-[11px] font-semibold text-primary/90">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/25 text-[11px] font-semibold text-foreground">
             {step}
           </div>
           <h2 className="min-w-0 text-[22px] font-semibold leading-tight tracking-tight text-foreground md:text-[24px]">
@@ -309,6 +309,57 @@ function DateField({ label, value, onChange, error }: DateFieldProps) {
         </PopoverContent>
       </Popover>
       <FieldError message={error} />
+    </div>
+  );
+}
+
+const NIEUWE_CASUS_PRIVACY_GUIDANCE = [
+  "We koppelen deze casus aan een bronregistratie en bepalen de basiscontext.",
+  "Vul alleen de minimale gegevens in om te starten. Aanvullende informatie volgt in de volgende stappen.",
+  "Persoonsgegevens blijven afgeschermd tot formele intake of koppeling.",
+] as const;
+
+function NieuweCasusPrivacyGuidance({
+  id,
+  className,
+  showRequiredFieldsNote = false,
+}: {
+  id?: string;
+  className?: string;
+  showRequiredFieldsNote?: boolean;
+}) {
+  const rootClass = [
+    "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div id={id} role="note" aria-label="Privacy en gegevensgebruik" className={rootClass}>
+      <div className="flex min-w-0 items-start gap-3">
+        <Lock size={16} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
+        <div className="min-w-0 space-y-1">
+          {NIEUWE_CASUS_PRIVACY_GUIDANCE.map((paragraph, index) => (
+            <p
+              key={paragraph}
+              className={index === 0 ? "text-foreground" : "mt-1 text-muted-foreground"}
+            >
+              {paragraph}
+            </p>
+          ))}
+          {showRequiredFieldsNote ? (
+            <p className="text-foreground">Velden met * zijn verplicht.</p>
+          ) : null}
+        </div>
+      </div>
+      <a
+        href={toCareSettingsSection("documenten-privacy")}
+        className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-primary underline-offset-4 hover:text-muted-foreground hover:underline sm:self-center"
+      >
+        Meer over privacy en zichtbaarheid
+        <ExternalLink size={14} className="opacity-90" aria-hidden />
+      </a>
     </div>
   );
 }
@@ -793,7 +844,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         <button
           type="button"
           onClick={() => onCancel?.()}
-          className="inline-flex items-center gap-1.5 text-[15px] font-medium text-primary transition-colors hover:text-primary/80"
+          className="inline-flex items-center gap-1.5 text-[15px] font-medium text-primary transition-colors hover:text-muted-foreground"
         >
           <ArrowLeft size={15} />
           Terug naar aanvragen
@@ -855,10 +906,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       </div>
 
       {showPageGuidance && (
-        <div id={pageGuidanceId} className="space-y-2 rounded-xl border border-border/70 bg-muted/10 px-4 py-2.5 text-sm text-muted-foreground">
-          <p>Vul alleen kerngegevens in; details blijven in het bronsysteem.</p>
-          <p className="text-foreground">Velden met * zijn verplicht.</p>
-        </div>
+        <NieuweCasusPrivacyGuidance id={pageGuidanceId} showRequiredFieldsNote />
       )}
 
       {formErrors.__all__ && (
@@ -902,7 +950,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     }
                   }}
                   disabled={!isCompleted && !isActive}
-                  className={`flex min-h-[80px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${isActive ? "border-primary/35 bg-primary/10 text-primary/90 ring-1 ring-primary/15" : "border-cyan-500/20 bg-cyan-500/5 text-cyan-300 hover:border-cyan-400/30"}`}
+                  className={`flex min-h-[80px] items-center justify-between gap-3 rounded-2xl border px-4 py-3 text-left transition-colors ${isActive ? "border-primary/35 bg-primary/10 text-foreground ring-1 ring-primary/15" : "border-cyan-500/20 bg-cyan-500/5 text-cyan-300 hover:border-cyan-400/30"}`}
                 >
                   <span className="flex min-w-0 items-center gap-3">
                     <span className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border text-sm font-semibold leading-none ${isActive ? "border-primary/20 bg-primary text-primary-foreground" : "border-cyan-500/25 bg-cyan-500/12 text-cyan-200"}`}>
@@ -910,10 +958,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </span>
                     <span className="min-w-0">
                       <span className={`block text-[13px] font-semibold leading-tight ${isActive ? "text-foreground" : "text-cyan-100"}`}>{step.title}</span>
-                      <span className={`mt-0.5 block text-[12px] font-medium leading-snug ${isActive ? "text-primary/80" : "text-cyan-200/80"}`}>{step.subtitle}</span>
+                      <span className={`mt-0.5 block text-[12px] font-medium leading-snug ${isActive ? "text-muted-foreground" : "text-cyan-200/80"}`}>{step.subtitle}</span>
                     </span>
                   </span>
-                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${isActive ? "border-primary/15 bg-primary/10 text-primary/80" : "border-cyan-500/20 bg-cyan-500/8 text-cyan-200/80"}`}>
+                  <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border ${isActive ? "border-primary/15 bg-primary/10 text-muted-foreground" : "border-cyan-500/20 bg-cyan-500/8 text-cyan-200/80"}`}>
                     {icon}
                   </span>
                 </button>
@@ -1044,35 +1092,6 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               )}
 
             </div>
-
-            <div
-              role="note"
-              aria-label="Privacy en gegevensgebruik"
-              className="flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4"
-              data-testid="nieuwe-casus-privacy-ribbon"
-            >
-              <div className="flex min-w-0 items-start gap-3">
-                <Lock size={16} className="mt-0.5 shrink-0 text-primary/80" aria-hidden />
-                <div className="min-w-0">
-                  <p className="text-foreground">
-                    We koppelen deze casus aan een bronregistratie en bepalen de basiscontext.
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    Vul alleen de minimale gegevens in om te starten. Aanvullende informatie volgt in de volgende stappen.
-                  </p>
-                  <p className="mt-1 text-muted-foreground">
-                    Persoonsgegevens blijven afgeschermd tot formele intake of koppeling.
-                  </p>
-                </div>
-              </div>
-              <a
-                href={toCareSettingsSection("documenten-privacy")}
-                className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-primary underline-offset-4 hover:text-primary/80 hover:underline sm:self-center"
-              >
-                Meer over privacy en zichtbaarheid
-                <ExternalLink size={14} className="opacity-90" aria-hidden />
-              </a>
-            </div>
           </div>
         )}
 
@@ -1135,7 +1154,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         role="radio"
                         aria-checked={active}
                         tabIndex={active ? 0 : -1}
-                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-border/70 hover:text-foreground"}`}
                       >
                         {option.label}
                       </button>
@@ -1161,7 +1180,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         role="radio"
                         aria-checked={active}
                         tabIndex={active ? 0 : -1}
-                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm transition-colors ${active ? "border-primary/30 bg-primary/5 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-border/70 hover:text-foreground"}`}
                       >
                         {option.label}
                       </button>
@@ -1271,7 +1290,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                           key={radius}
                           type="button"
                           onClick={() => setSearchRadiusKm(radius as 10 | 25 | 50)}
-                          className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${searchRadiusKm === radius ? "border-primary/30 bg-primary/10 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-primary/25 hover:text-foreground"}`}
+                          className={`rounded-full border px-3 py-1.5 text-[11px] font-medium ${searchRadiusKm === radius ? "border-primary/30 bg-primary/10 text-foreground" : "border-border/70 bg-card/30 text-muted-foreground hover:border-border/70 hover:text-foreground"}`}
                         >
                           {radius} km
                         </button>
@@ -1307,7 +1326,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                           toggleDiagnostiek(option.value);
                         }
                       }}
-                      className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/30 px-3 py-1.5 text-sm text-foreground transition-colors hover:border-primary/25 hover:bg-primary/5"
+                      className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-card/30 px-3 py-1.5 text-sm text-foreground transition-colors hover:border-border/70 hover:bg-muted/30"
                     >
                       <span>{label}</span>
                       <X size={14} className="text-muted-foreground" aria-hidden />
@@ -1329,7 +1348,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                           key={option.value}
                           type="button"
                           onClick={() => toggleDiagnostiek(option.value)}
-                          className="rounded-full border border-border/70 bg-card/25 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/25 hover:text-foreground"
+                          className="rounded-full border border-border/70 bg-card/25 px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground"
                         >
                           {option.label}
                         </button>
@@ -1439,7 +1458,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
               <div className="mt-4 rounded-xl border border-border/60 bg-card/30 p-4">
                 <div className="flex items-start gap-3">
-                  <ShieldCheck size={18} className="mt-0.5 shrink-0 text-primary/80" aria-hidden />
+                  <ShieldCheck size={18} className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Controleer bovenstaande gegevens.</p>
                     <p className="mt-1 text-sm text-muted-foreground">Na aanmaken start de workflow automatisch.</p>

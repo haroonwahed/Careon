@@ -93,7 +93,7 @@ const STRIP_COLORS = {
   action: {
     wrap: "bg-gradient-to-r from-primary to-primary/80",
     badge: "bg-primary-foreground/20 text-white",
-    btn: "bg-white text-primary hover:bg-primary/10 font-semibold shadow-md",
+    btn: "bg-white text-primary hover:bg-muted/35 font-semibold shadow-md",
     detail: "text-white/80",
   },
   good: {
@@ -143,7 +143,7 @@ function SectionHeader({
       {icon}
       <span className="font-semibold text-sm">{title}</span>
       {badge !== undefined && (
-        <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">
+        <span className="ml-auto text-xs bg-muted/35 text-foreground px-2 py-0.5 rounded-full border border-border/70 font-medium">
           {badge}
         </span>
       )}
@@ -189,7 +189,7 @@ function CheckItem({
         className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
           checked
             ? "bg-emerald-500 border-emerald-500"
-            : "border-border group-hover:border-primary"
+            : "border-border group-hover:border-border/80"
         }`}
       >
         {checked && <CheckCircle2 size={11} className="text-white" />}
@@ -380,7 +380,7 @@ function ContextPanel({ casus }: { casus: Casus }) {
       <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-4">Jeugdige</p>
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-full bg-muted/40 flex items-center justify-center shrink-0">
             <User size={18} className="text-primary" />
           </div>
           <div>
@@ -733,7 +733,7 @@ function ProviderCard({
 
   const badgeColor =
     result.recommendationType === "perfect" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
-    result.recommendationType === "good"    ? "bg-primary/10 text-primary border-primary/20" :
+    result.recommendationType === "good"    ? "bg-blue-500/10 text-blue-300 border-blue-500/25" :
                                               "bg-muted text-muted-foreground border-border";
 
   const badgeLabel =
@@ -747,12 +747,12 @@ function ProviderCard({
       className={`w-full text-left p-4 rounded-xl border transition-all ${
         isSelected
           ? "border-primary bg-primary/5 ring-1 ring-primary"
-          : "border-border bg-card hover:border-primary/40 hover:bg-muted/20"
+          : "border-border bg-card hover:border-border/80 hover:bg-muted/20"
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
-          <Building2 size={16} className="text-primary" />
+        <div className="w-9 h-9 rounded-lg bg-muted/40 flex items-center justify-center shrink-0 mt-0.5">
+          <Building2 size={16} className="text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
@@ -806,10 +806,10 @@ function PlaatsingPanel({
     <div className="space-y-3">
       {/* Selected provider */}
       <div className="panel-surface p-4">
-        <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Geselecteerde aanbieder" />
+        <SectionHeader icon={<Building2 size={16} className="text-muted-foreground" />} title="Geselecteerde aanbieder" />
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-            <Building2 size={20} className="text-primary" />
+          <div className="w-12 h-12 rounded-xl bg-muted/40 flex items-center justify-center shrink-0">
+            <Building2 size={20} className="text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-semibold">{placement.providerName}</p>
@@ -913,7 +913,7 @@ function IntakeProviderPanel({
     <div className="space-y-3">
       {/* Handover summary */}
       <div className="panel-surface p-4">
-        <SectionHeader icon={<Building2 size={16} className="text-primary" />} title="Overdracht" />
+        <SectionHeader icon={<Building2 size={16} className="text-muted-foreground" />} title="Overdracht" />
         <div className="space-y-3 text-sm mb-4">
           <Row label="Aanbieder" value={placement.providerName ?? "—"} />
           <Row label="Bevestigd op" value={placement.confirmedAt ? new Date(placement.confirmedAt).toLocaleDateString("nl-NL") : "—"} />
@@ -1116,7 +1116,7 @@ function IntelligencePanel({
                     {phase.label}
                   </p>
                   {isCurrent && !isBlocked && (
-                    <p className="text-xs text-primary/60 mt-0.5">Nu</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">Nu</p>
                   )}
                 </div>
               </div>

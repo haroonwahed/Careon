@@ -80,8 +80,8 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
         
         <div className="space-y-2.5">
           <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-primary">1</span>
+            <div className="w-6 h-6 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-bold text-muted-foreground">1</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
               Aanbieder ontvangt bevestiging
@@ -89,8 +89,8 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
           </div>
 
           <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-primary">2</span>
+            <div className="w-6 h-6 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-bold text-muted-foreground">2</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
               Dossier wordt gedeeld voor intake
@@ -98,8 +98,8 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
           </div>
 
           <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-              <span className="text-xs font-bold text-primary">3</span>
+            <div className="w-6 h-6 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-bold text-muted-foreground">3</span>
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
               Intake wordt gepland

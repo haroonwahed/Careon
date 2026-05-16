@@ -140,7 +140,7 @@ export function ActionPanel({
           {/* Case Owner Contact */}
           <div className="p-4 rounded-lg bg-muted/20 border border-muted-foreground/20">
             <div className="flex items-start gap-3 mb-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+              <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0 border border-border/70">
                 <User size={16} className="text-primary" />
               </div>
               <div className="flex-1">

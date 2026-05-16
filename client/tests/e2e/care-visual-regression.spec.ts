@@ -224,9 +224,9 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(page.getByRole("button", { name: "Toelichting" })).toBeVisible();
 
     await page.getByRole("button", { name: "Toelichting" }).click();
-    await expect(page.getByText("Vul alleen kerngegevens in; details blijven in het bronsysteem.")).toBeVisible();
-    await page.getByRole("button", { name: "Info" }).click();
-    await expect(page.getByText("Velden met * zijn verplicht.")).toBeVisible();
+    await expect(page.getByText("We koppelen deze casus aan een bronregistratie en bepalen de basiscontext.")).toBeVisible();
+    await expect(page.getByText("Persoonsgegevens blijven afgeschermd tot formele intake of koppeling.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Meer over privacy en zichtbaarheid" })).toBeVisible();
 
     await page.getByPlaceholder("CLI-88314").fill("CLI-12345");
     await page.getByRole("button", { name: "Volgende" }).click();

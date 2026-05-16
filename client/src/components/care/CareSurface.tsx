@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Layers } from "lucide-react";
 import { cn } from "../ui/utils";
 import { tokens } from "../../design/tokens";
 import { CareInfoPopover } from "./CareUnifiedPage";
@@ -238,18 +239,33 @@ export function CareEmptyState({
   copy,
   action,
   className,
+  icon,
 }: {
   title: ReactNode;
   copy?: ReactNode;
   action?: ReactNode;
   className?: string;
+  icon?: ReactNode;
 }) {
   return (
-    <div className={cn("border border-dashed border-border/70 bg-transparent px-5 py-8 text-left", className)}>
-      <div className="space-y-2">
-        <p className="text-base font-semibold text-foreground">{title}</p>
-        {copy && <p className="text-sm leading-6 text-muted-foreground">{copy}</p>}
-        {action && <div className="pt-1">{action}</div>}
+    <div
+      role="status"
+      className={cn("care-empty-state relative px-6 py-10 text-left md:px-8 md:py-12", className)}
+    >
+      <div className="relative z-[1] flex max-w-prose flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <div className="care-empty-state__icon shrink-0" aria-hidden>
+            {icon ?? <Layers size={20} strokeWidth={1.75} />}
+          </div>
+          <div className="min-w-0 space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+              Werkruimte gereed
+            </p>
+            <p className="text-lg font-semibold tracking-tight text-foreground">{title}</p>
+            {copy ? <p className="text-sm leading-relaxed text-muted-foreground">{copy}</p> : null}
+          </div>
+        </div>
+        {action ? <div className="pl-[3.25rem] pt-1">{action}</div> : null}
       </div>
     </div>
   );

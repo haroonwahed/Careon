@@ -260,7 +260,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                       </p>
                       <button
                         type="button"
-                        className="shrink-0 text-[13px] font-semibold text-primary hover:text-primary/90"
+                        className="shrink-0 text-[13px] font-semibold text-primary hover:text-foreground"
                         onClick={clearSidebarFilters}
                       >
                         Wissen

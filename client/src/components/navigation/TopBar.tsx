@@ -199,8 +199,8 @@ export function TopBar({
             onClick={() => canSwitchRole && setRoleDropdownOpen(!roleDropdownOpen)}
             className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/30 transition-colors group"
           >
-            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
-              <RoleIcon size={16} className="text-primary" />
+            <div className="w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center border border-border/70">
+              <RoleIcon size={16} className="text-foreground" />
             </div>
             
             <div className="text-left">
@@ -243,7 +243,7 @@ export function TopBar({
                         </p>
                       </div>
                       <div
-                        className="flex w-full items-center gap-3 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2.5 text-left"
+                        className="flex w-full items-center gap-3 rounded-lg border border-border/70 bg-muted/25 px-3 py-2.5 text-left"
                         role="status"
                         aria-label={`Actieve werkruimte: ${currentContext.name}`}
                       >
@@ -399,7 +399,7 @@ export function TopBar({
                     <p className="text-sm font-bold text-foreground">Notifications</p>
                     <p className="text-xs text-muted-foreground">Recent activity and operational alerts</p>
                   </div>
-                  <span className="inline-flex min-w-6 h-6 px-2 items-center justify-center rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                  <span className="inline-flex min-w-6 h-6 px-2 items-center justify-center rounded-full bg-muted/35 text-foreground text-xs font-semibold">
                     {notificationCount}
                   </span>
                 </div>
@@ -441,7 +441,7 @@ export function TopBar({
                 <div className="pt-2 mt-2 border-t border-border">
                   <button
                     onClick={() => setNotificationsOpen(false)}
-                    className="w-full px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+                    className="w-full px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-muted/35 transition-colors"
                   >
                     Close notifications
                   </button>
@@ -471,7 +471,7 @@ export function TopBar({
                 className="w-8 h-8 rounded-full"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center">
                 <span className="text-xs font-bold text-primary">
                   {userName.split(" ").map(n => n[0]).join("").toUpperCase()}
                 </span>

@@ -1,15 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
-  ArrowRight,
-  CheckCircle2,
-  ChevronDown,
   ChevronRight,
-  Clock3,
   Loader2,
   MoreVertical,
   RefreshCw,
-  UserRound,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -39,13 +34,19 @@ import {
   AlertDialogTitle,
 } from "../ui/alert-dialog";
 import { Textarea } from "../ui/textarea";
-import { cn } from "../ui/utils";
 import { ArrangementAlignmentPanel } from "./ArrangementAlignmentPanel";
 import { CasusWorkspaceLayout } from "./CasusWorkspaceLayout";
-import { CareMetaChip } from "./CareDesignPrimitives";
+import {
+  CaseAttentionPointsCard,
+  CaseDetailEvidenceList,
+  CaseExecutionDetailTabs,
+  CaseKeyFactsCard,
+  CaseOperationalStepper,
+  CasePrimaryActionPanel,
+  CaseTimelineHistoryList,
+  shortenAttentionLabel,
+} from "./CaseExecutionWorkspaceSections";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
-import { NextBestAction } from "../design/NextBestAction";
-import { ProcessTimeline } from "../design/ProcessTimeline";
 import { useCases } from "../../hooks/useCases";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { tokens } from "../../design/tokens";
@@ -76,6 +77,7 @@ import {
   decisionUiPhaseBadgeShellClass,
   DECISION_WORKSPACE_FLOW_STEPS,
   mapApiPhaseToDecisionUiPhase,
+  type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
 import { CARE_TERMS } from "../../lib/terminology";
 import { toCareCaseEdit } from "../../lib/routes";
@@ -201,138 +203,6 @@ function operationalRequirementItems(evaluation: DecisionEvaluation | null): str
     items.push("Controleer status en vervolgactie.");
   }
   return Array.from(new Set(items)).slice(0, 3);
-}
-
-function CaseWorkflowTimeline({
-  steps,
-  activeIndex,
-}: {
-  steps: readonly { id: string; label: string; owner: string }[];
-  activeIndex: number;
-}) {
-  const waitingActionLabel = "regieactie";
-  const pulseBetweenPercent = (() => {
-    if (steps.length < 2) {
-      return null;
-    }
-    const safeIndex = Math.max(0, Math.min(activeIndex, steps.length - 1));
-    const nextIndex = Math.min(safeIndex + 1, steps.length - 1);
-    if (nextIndex === safeIndex) {
-      return null;
-    }
-    // Step centers are evenly distributed on a 0-100 scale.
-    // Pulse sits exactly between current and next center.
-    const stepSpan = 100 / (steps.length - 1);
-    const currentCenter = safeIndex * stepSpan;
-    const nextCenter = nextIndex * stepSpan;
-    return (currentCenter + nextCenter) / 2;
-  })();
-  const phaseStateLabel = (index: number) => {
-    if (index < activeIndex) {
-      return "Afgerond";
-    }
-    if (index === activeIndex) {
-      return "Actieve fase";
-    }
-    if (index === activeIndex + 1) {
-      return `Wacht op ${waitingActionLabel}`;
-    }
-    return "Nog niet gestart";
-  };
-  return (
-    <ProcessTimeline className="rounded-2xl border border-border/70 bg-card/40 px-4 py-3.5 md:px-5 md:py-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <h2 className="text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Operationele keten</h2>
-      </div>
-      <div className="relative">
-        <div className="absolute hidden md:block" style={{ top: "16px", left: "12.5%", right: "12.5%" }} aria-hidden>
-            <div className="relative h-2">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t border-dotted border-border/80" />
-            {pulseBetweenPercent != null ? (
-              <span
-                className="absolute top-1/2 h-2 w-2 -translate-y-1/2 rounded-full bg-primary/80 motion-safe:animate-pulse ring-2 ring-primary/15"
-                style={{ left: `${pulseBetweenPercent}%`, transform: "translate(-50%, -50%)" }}
-              />
-            ) : null}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 gap-2.5 md:grid-cols-4 md:gap-0">
-          {steps.map((step, index) => {
-            const isCurrent = index === activeIndex;
-            const isCompleted = index < activeIndex;
-            const circleTone = isCurrent
-              ? "border-primary/50 bg-primary/90 text-primary-foreground ring-1 ring-primary/30 shadow-sm"
-              : isCompleted
-                ? "border-border/70 bg-emerald-500/12 text-emerald-200"
-                : "border-border/70 bg-background/70 text-muted-foreground/90";
-            return (
-              <div key={step.id} className="relative min-w-0 px-0.5 pt-0 md:px-1.5 md:pt-9 md:text-center">
-                <div
-                  className="mb-2 flex items-center gap-2 md:absolute md:left-1/2 md:-translate-x-1/2 md:flex-col md:items-center md:gap-0"
-                  style={{ top: tokens.layout.edgeZero }}
-                >
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-[12px] font-semibold",
-                      "motion-safe:transition-[color,background-color,border-color,box-shadow] motion-safe:duration-500 motion-safe:ease-out",
-                      circleTone,
-                    )}
-                  >
-                    {index + 1}
-                  </div>
-                  <div className="hidden md:block" />
-                </div>
-                <p className={`mx-auto w-fit text-[13px] font-semibold leading-tight ${isCurrent ? "text-foreground" : isCompleted ? "text-foreground/85" : "text-foreground/70"}`}>{step.label}</p>
-                <span
-                  className={cn(
-                    "mt-1 inline-flex h-5 w-fit items-center rounded-sm border px-1.5 text-[10px] font-medium",
-                    isCurrent
-                      ? "border-primary/35 bg-primary/16 text-primary-foreground"
-                      : isCompleted
-                        ? "border-emerald-500/30 bg-emerald-500/12 text-emerald-200"
-                        : "border-border/70 bg-background/75 text-muted-foreground",
-                  )}
-                >
-                  {phaseStateLabel(index)}
-                </span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </ProcessTimeline>
-  );
-}
-
-function AttentionRow({
-  icon,
-  headline,
-  body,
-  tone,
-}: {
-  icon: string;
-  headline: string;
-  body: string;
-  tone: "critical" | "warning" | "info";
-}) {
-  const toneClasses: Record<string, string> = {
-    critical: "border-destructive/60 bg-destructive/8",
-    warning: "border-amber-500/50 bg-amber-500/8",
-    info: "border-primary/40 bg-primary/8",
-  };
-
-  return (
-    <div className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${toneClasses[tone]}`}>
-      <span className="shrink-0 text-base" aria-hidden>
-        {icon}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="text-[13px] font-semibold text-foreground">{headline}</p>
-        <p className="mt-1 text-[12px] leading-snug text-muted-foreground">{body}</p>
-      </div>
-      <ChevronRight size={16} className="shrink-0 text-muted-foreground" aria-hidden />
-    </div>
-  );
 }
 
 function buildAttentionRollup(evaluation: DecisionEvaluation | null): Array<{
@@ -505,7 +375,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [summaryFlowOpen, setSummaryFlowOpen] = useState(false);
   const [refreshingHeader, setRefreshingHeader] = useState(false);
-  const [statusPanelOpen, setStatusPanelOpen] = useState(false);
+  const [detailTab, setDetailTab] = useState("overzicht");
 
   const loadDecisionEvaluation = async () => {
     setDecisionLoading(true);
@@ -939,10 +809,54 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
   const trajectoryExited = resolvedState === "ARCHIVED";
   const showArrangementAlignment = role === "gemeente" || role === "admin";
 
+  const attentionItems = attentionRollup.map((row) => {
+    const severity = row.key.startsWith("blocker") ? "critical" : row.key.startsWith("risk") ? "warning" : "info";
+    return {
+      key: row.key,
+      label: shortenAttentionLabel(row.headline, row.body),
+      tone: severity as "critical" | "warning" | "info",
+    };
+  });
+
+  const stepWarningIndexes = dominantBlocker || summaryNeedsCaseCompletion
+    ? [decisionTimelineIndex]
+    : [];
+
+  const caseFacts = [
+    { label: "Zorgvraag", value: spaCase.zorgtype || "—", title: spaCase.zorgtype },
+    { label: "Regio", value: spaCase.regio || "—" },
+    { label: "Zorgintensiteit", value: arrangementCareContext.zorgintensiteit },
+    { label: "Startperiode", value: arrangementCareContext.startperiode },
+    { label: "Aanmelder", value: spaCase.owner || "—" },
+    {
+      label: "Bronregistratie",
+      value: spaCase.arrangementProvider?.trim() || spaCase.arrangementTypeCode?.trim() || "—",
+      title: spaCase.arrangementProvider || spaCase.arrangementTypeCode,
+    },
+  ];
+
+  const primaryCtaLabel = nextBestAction
+    ? (summaryNeedsCaseCompletion
+      ? "Start matching"
+      : (displayNextStepHeading || primaryButtonLabel || getShortActionLabel(nextBestAction.label)))
+    : null;
+
+  const historyEvents = (decisionEvaluation?.timeline_signals.recent_events ?? []).slice(0, 12).map((event) => ({
+    timestamp: formatUpdatedAtLabel(event.timestamp) ?? event.timestamp,
+    label: event.user_action || event.event_type,
+    source: event.action_source,
+  }));
+
+  const overviewEvidence = compactEvidenceRows.map((row) => ({
+    label: row.label,
+    value: row.value,
+  }));
+
   const flowProgress = (
-    <CaseWorkflowTimeline
+    <CaseOperationalStepper
       steps={decisionTimelineSteps}
       activeIndex={decisionTimelineIndex}
+      warningStepIndexes={stepWarningIndexes}
     />
   );
 
@@ -952,186 +866,96 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         <div
           data-testid="case-uitstroom-banner"
           role="status"
-          className="rounded-xl border border-emerald-500/30 bg-emerald-500/6 px-4 py-3 text-sm text-foreground"
+          className="rounded-lg bg-emerald-500/8 px-3 py-2 text-sm text-foreground"
         >
           <p className="font-semibold">Traject afgesloten — uitstroom</p>
-          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-            Deze aanvraag is gearchiveerd. Verdere financiële en inhoudelijke voortgang gaat verder buiten dit platform.
-          </p>
         </div>
       ) : null}
-      <div className="rounded-2xl bg-card/40 px-5 py-4">
-      <div className="grid gap-2.5 pb-3 md:grid-cols-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Status</p>
-          <div className="mt-2 border-t border-border/55 pt-2">
-            <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className={`size-2 rounded-full ${statusDotTone}`} aria-hidden />
-              {statusLine}
-            </p>
-          </div>
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Actiehouder / wacht op</p>
-          <div className="mt-2 border-t border-border/55 pt-2">
-            <p className="text-sm font-semibold text-foreground">{actionHolderLabel}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{waitingOnLabel}</p>
-          </div>
-        </div>
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Laatste wijziging</p>
-          <div className="mt-2 border-t border-border/55 pt-2">
-            <p className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-              <Clock3 size={13} className="text-muted-foreground" />
-              {updatedAtLabel ?? "Onbekend"}
-            </p>
-          </div>
-        </div>
-      </div>
-      {operationalContextSignals.length > 0 ? (
-        <div className="pb-3">
-          <div className="rounded-lg border border-border/60 bg-background/30 px-2.5 py-2">
-            <button
-              type="button"
-              onClick={() => setStatusPanelOpen((current) => !current)}
-              aria-expanded={statusPanelOpen}
-              className="flex w-full items-center justify-between gap-2 text-left"
-            >
-              <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                Regiestatus
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-[11px] text-foreground/90">
-                {statusTriggerCopy}
-                <ChevronDown
-                  size={12}
-                  className={cn("text-muted-foreground transition-transform", statusPanelOpen ? "rotate-180" : "")}
-                />
-              </span>
-            </button>
-            {statusPanelOpen ? (
-              <div className="mt-2 grid gap-1.5 border-t border-border/55 pt-2 sm:grid-cols-2 lg:grid-cols-3">
-                {operationalContextSignals.map((signal) => (
-                  <p
-                    key={signal}
-                    className="rounded-sm border border-border/50 bg-background/35 px-2 py-1.5 text-[12px] leading-relaxed text-foreground/90"
-                  >
-                    {signal}
-                  </p>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-      <NextBestAction className="flex shrink-0 flex-col gap-3 border-t border-border/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex min-w-0 items-start gap-3">
-          <span className="mt-0.5 inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/20 text-primary">
-            <ArrowRight size={16} />
-          </span>
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende stap</p>
-            <p className="mt-1 text-[24px] leading-tight font-semibold text-foreground">
-              {summaryNeedsCaseCompletion ? "Start matching" : (displayNextStepHeading || primaryButtonLabel || "Start matching")}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">{ctaSupportLine}</p>
-          </div>
-        </div>
-        {nextBestAction ? (
-          <Button
-            type="button"
-            onClick={handlePrimaryAction}
-            disabled={actionButtonDisabled}
-            className="h-11 min-h-[44px] w-auto min-w-[220px] justify-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:bg-muted disabled:text-muted-foreground"
-          >
-            {summaryNeedsCaseCompletion
-              ? "Start matching"
-              : (displayNextStepHeading || primaryButtonLabel || getShortActionLabel(nextBestAction.label))}
-            <ArrowRight size={16} />
-          </Button>
-        ) : null}
-      </NextBestAction>
-      {(actionButtonDisabled || decisionError) && (
-        <p className="text-[12px] text-destructive">
-          {decisionError ?? getShortReasonLabel(primaryDisabledReason, 110)}
-        </p>
-      )}
-    </div>
-    </div>
-  );
-
-  const decisionPanel = null;
-
-  const contextCards = (
-    <div className="grid gap-2.5 md:grid-cols-2 xl:grid-cols-3">
-      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Zorgsituatie</p>
-        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
-          {careSituationSummaryLines.map((line) => (
-            <div key={line} className="flex items-start gap-2 py-1.5">
-              <span className="mt-[6px] size-1.5 shrink-0 rounded-full bg-primary/55" aria-hidden />
-              <p className="leading-relaxed">{line}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Matchingstatus</p>
-        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-muted-foreground">Matchadvies</span>
-            <span className={cn(
-              "inline-flex items-center rounded-sm border px-1.5 py-0.5 text-[11px] font-medium",
-              decisionEvaluation?.decision_context.has_matching_result
-                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
-                : "border-amber-500/35 bg-amber-500/12 text-amber-200",
-            )}
-            >
-              {decisionEvaluation?.decision_context.has_matching_result ? "Beschikbaar" : "Ontbreekt"}
-            </span>
-          </div>
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-muted-foreground">Aanbieder</span>
-            <span className="font-medium text-foreground">{selectedProviderName || "Nog niet gekozen"}</span>
-          </div>
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-muted-foreground">Voorstelstatus</span>
-            <span className="font-medium text-foreground">{matchingProposalStatusLabel}</span>
-          </div>
-          <div className="flex items-start justify-between gap-3 py-1.5">
-            <span className="text-muted-foreground">Wachttijd</span>
-            <span className="text-right font-medium text-foreground">
-              {waitingSignal ?? "Niet beschikbaar"}
-            </span>
-          </div>
-        </div>
-      </section>
-      <section className="rounded-xl border border-border/70 bg-card/35 px-3.5 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Signalen en risico's</p>
-        <div className="mt-2 border-t border-border/55 pt-2.5 text-[13px] text-foreground/90">
-          {attentionRollup.slice(0, 2).map((row) => (
-            <div key={row.key} className="flex items-center gap-2 py-1.5">
-              <span className="size-1.5 shrink-0 rounded-full bg-amber-300/70" aria-hidden />
-              <p className="leading-relaxed">{row.body}</p>
-            </div>
-          ))}
-          {attentionRollup.length === 0 ? (
-            <div className="flex items-center gap-2 py-1.5">
-              <span className="size-1.5 shrink-0 rounded-full bg-emerald-300/70" aria-hidden />
-              <p className="leading-relaxed">Geen extra signalen.</p>
-            </div>
-          ) : null}
-        </div>
-      </section>
+      <CasePrimaryActionPanel
+        statusLabel={statusLine}
+        actionHolderLabel={actionHolderLabel}
+        waitingOnLabel={waitingOnLabel}
+        nextStepLabel={summaryNeedsCaseCompletion ? "Start matching" : (displayNextStepHeading || "Volgende actie")}
+        primaryCtaLabel={primaryCtaLabel}
+        onPrimaryAction={() => void handlePrimaryAction()}
+        primaryDisabled={actionButtonDisabled}
+        disabledReason={primaryDisabledReason}
+        errorMessage={decisionError}
+      />
     </div>
   );
 
   const contextStack = (
-    <div className="space-y-2.5">
+    <div className="space-y-4">
+      {flowProgress}
+      <CaseKeyFactsCard facts={caseFacts} />
       {showArrangementAlignment ? (
-        <ArrangementAlignmentPanel caseId={caseId} careContext={arrangementCareContext} />
+        <ArrangementAlignmentPanel caseId={caseId} careContext={arrangementCareContext} variant="compact" />
       ) : null}
-      <div>{flowProgress}</div>
-      <div>{contextCards}</div>
+      <CaseAttentionPointsCard
+        items={attentionItems}
+        onShowAll={attentionItems.length > 3 ? () => setDetailTab("overzicht") : undefined}
+      />
+      <CaseExecutionDetailTabs
+        activeTab={detailTab}
+        onTabChange={setDetailTab}
+        overzicht={(
+          <div className="space-y-3">
+            <CaseDetailEvidenceList rows={overviewEvidence} />
+            {verificationSteps.length > 0 ? (
+              <ul className="surface-section rounded-xl px-4 py-3 text-[13px] text-muted-foreground md:px-5">
+                {verificationSteps.map((step) => (
+                  <li key={step} className="py-1">{step}</li>
+                ))}
+              </ul>
+            ) : null}
+            {attentionRollup.length > 3 ? (
+              <ul className="surface-section rounded-xl px-4 py-3 md:px-5">
+                {attentionRollup.map((row) => (
+                  <li key={row.key} className="border-b border-border/30 py-2 text-[13px] last:border-0">
+                    <span className="font-medium text-foreground">{row.headline}: </span>
+                    <span className="text-muted-foreground">{row.body}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        )}
+        arrangement={showArrangementAlignment ? (
+          <ArrangementAlignmentPanel caseId={caseId} careContext={arrangementCareContext} variant="full" />
+        ) : (
+          <p className="text-sm text-muted-foreground">Geen arrangement-advies voor uw rol.</p>
+        )}
+        matching={(
+          <CaseDetailEvidenceList
+            rows={[
+              { label: "Matchadvies", value: decisionEvaluation?.decision_context.has_matching_result ? "Beschikbaar" : "Ontbreekt" },
+              { label: "Aanbieder", value: selectedProviderName || "Nog niet gekozen" },
+              { label: "Voorstelstatus", value: matchingProposalStatusLabel },
+              { label: "Confidence", value: decisionEvaluation?.confidence_score != null ? `${Math.round(decisionEvaluation.confidence_score * 100)}%` : "—" },
+              { label: "Wachttijd", value: waitingSignal ?? "—" },
+            ]}
+          />
+        )}
+        validatie={(
+          <CaseDetailEvidenceList
+            rows={[
+              { label: "Gemeentelijke validatie", value: resolvedState === "MATCHING_READY" ? "Vereist" : "Niet actief" },
+              { label: "Verplichte gegevens", value: decisionEvaluation?.decision_context.required_data_complete ? "Compleet" : "Onvolledig" },
+              { label: "Samenvatting", value: decisionEvaluation?.decision_context.has_summary ? "Beschikbaar" : "Ontbreekt" },
+            ]}
+          />
+        )}
+        historie={<CaseTimelineHistoryList events={historyEvents} />}
+        documenten={(
+          <div className="surface-section rounded-xl px-4 py-3.5 text-[13px] md:px-5">
+            <p className="text-muted-foreground">Documenten en bijlagen beheer je in de casusbewerking.</p>
+            <Button type="button" variant="outline" size="sm" className="mt-3 rounded-full" asChild>
+              <a href={toCareCaseEdit(caseId, "casus")}>Open casus bewerken</a>
+            </Button>
+          </div>
+        )}
+      />
     </div>
   );
 
@@ -1141,9 +965,9 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         onBack={onBack}
         flowProgress={null}
         title={`CASUS #${spaCase.id.replace(/\D/g, "") || spaCase.id} — ${spaCase.title}`}
-        metaLine=""
-        phaseLabel=""
-        phaseId={undefined}
+        metaLine={null}
+        phaseLabel={currentPhaseLabel}
+        phaseId={mapApiPhaseToDecisionUiPhase(resolvedState) as DecisionUiPhaseId}
         statusVariant={workspaceStatusVariant}
         statusHint={workspaceStatusHint}
         headerActions={(
@@ -1177,7 +1001,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack }: CaseExe
         onRefresh={handleHeaderRefresh}
         refreshing={refreshingHeader}
         caseHero={caseHero}
-        decisionPanel={decisionPanel}
         contextStack={contextStack}
       />
 

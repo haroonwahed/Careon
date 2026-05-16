@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { cn } from "../ui/utils";
 import { useProviders, type SpaProvider } from "../../hooks/useProviders";
 import { tokens } from "../../design/tokens";
-import { ProviderNetworkMap } from "./ProviderNetworkMap";
+import { ProviderMapSurface } from "./ProviderMapSurface";
 import {
   CareAttentionBar,
   CareInfoPopover,
@@ -435,7 +435,7 @@ export function ZorgaanbiedersPage({
             </p>
           </div>
           <div className="h-[calc(100vh-12rem)] min-h-[32rem]">
-            <ProviderNetworkMap
+            <ProviderMapSurface
               providers={sortedProviders}
               selectedProviderId={selectedProvider}
               hoveredProviderId={hoveredProvider}
@@ -485,7 +485,7 @@ export function ZorgaanbiedersPage({
                         onMouseEnter={() => setHoveredProvider(provider.id)}
                         onMouseLeave={() => setHoveredProvider(null)}
                         className={cn(
-                          "rounded-xl border bg-card/35 p-4 text-left transition-colors hover:border-primary/35",
+                          "rounded-xl border bg-card/35 p-4 text-left transition-colors hover:border-border/80",
                           isSelected ? "border-primary/50 bg-primary/5 ring-2 ring-primary/20" : "border-border/60",
                         )}
                       >
@@ -501,7 +501,7 @@ export function ZorgaanbiedersPage({
                               <div className="flex items-center gap-2">
                                 <h3 className="text-[15px] font-semibold text-foreground">{provider.name}</h3>
                                 {recommendation && (
-                                  <span className="rounded-full border border-primary/35 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary">
+                                  <span className="rounded-full border border-border/70 bg-muted/35 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-foreground">
                                     {recommendation}
                                   </span>
                                 )}
@@ -591,7 +591,7 @@ export function ZorgaanbiedersPage({
                                     <span className="rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground">Ambulant</span>
                                   )}
                                   {provider.offersDayTreatment && (
-                                    <span className="rounded-full border border-primary/25 bg-primary/10 px-2 py-0.5 text-xs text-primary">Dagbehandeling</span>
+                                    <span className="rounded-full border border-border/70 bg-muted/35 px-2 py-0.5 text-xs text-muted-foreground">Dagbehandeling</span>
                                   )}
                                   {provider.offersResidential && (
                                     <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs text-amber-800 dark:text-amber-200">
@@ -629,7 +629,7 @@ export function ZorgaanbiedersPage({
                       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kaartweergave</p>
                       <p className="mt-1 text-sm font-medium text-foreground">Aanbieders op de kaart</p>
                     </div>
-                    <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">Live sync</span>
+                    <span className="rounded-full border border-border/70 bg-muted/35 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Live sync</span>
                   </div>
                   <p className="mt-1 text-sm text-muted-foreground">
                     Split modus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
@@ -647,7 +647,7 @@ export function ZorgaanbiedersPage({
                   </div>
                 </div>
                 <div className="h-[18rem] sm:h-[22rem] 2xl:h-[calc(100vh-11rem)] 2xl:min-h-[33rem]">
-                  <ProviderNetworkMap
+                  <ProviderMapSurface
                     providers={sortedProviders}
                     selectedProviderId={selectedProvider}
                     hoveredProviderId={hoveredProvider}

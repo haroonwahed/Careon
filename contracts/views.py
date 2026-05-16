@@ -63,6 +63,7 @@ from .provider_metrics import (
     label_behavior_signals,
 )
 from .provider_workspace import build_provider_workspace_rows, build_provider_workspace_summary
+from .provider_location import provider_location_payload as _provider_location_payload
 from .oversight_workspace import (
     build_municipality_list_summary,
     build_municipality_detail_summary,
@@ -455,32 +456,6 @@ def _build_case_location(intake):
     if municipality is not None:
         sources.append(municipality)
 
-    latitude = None
-    longitude = None
-    for source in sources:
-        latitude, longitude = _extract_coordinates(source)
-        if latitude is not None and longitude is not None:
-            break
-
-    return {
-        'label': location_label,
-        'latitude': latitude,
-        'longitude': longitude,
-        'region_label': region_label,
-        'municipality_label': municipality_label,
-        'has_coordinates': latitude is not None and longitude is not None,
-    }
-
-
-def _provider_location_payload(profile):
-    primary_region = _first_related(profile.served_regions)
-    municipality = _first_related(primary_region.served_municipalities) if primary_region else None
-    region_label = primary_region.region_name if primary_region else ''
-    municipality_label = municipality.municipality_name if municipality else ''
-    location_label = profile.client.city or municipality_label or region_label or profile.service_area or 'Locatie ontbreekt'
-
-    # TODO: wire explicit provider/case geo fields into this source list when the schema is extended.
-    sources = [profile, profile.client, primary_region, municipality]
     latitude = None
     longitude = None
     for source in sources:

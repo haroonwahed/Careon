@@ -114,7 +114,7 @@ export function ProviderProfilePage({
               )}
             </div>
           )}
-          <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
+          <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted/35 hover:text-primary">
             <ArrowLeft size={16} />
             {context === "matching" ? "Terug naar matching" : "Terug naar overzicht"}
           </Button>
@@ -200,7 +200,7 @@ export function ProviderProfilePage({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-primary/10 text-primary rounded-full text-xs font-semibold">
+                    <span className="px-3 py-1 bg-muted/35 text-foreground rounded-full border border-border/70 text-xs font-semibold">
                       Jeugdzorg
                     </span>
                     <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-semibold">
@@ -261,7 +261,7 @@ export function ProviderProfilePage({
             {context === "matching" && matchScore && (
               <div className="panel-surface p-4">
                 <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Target size={20} className="text-primary" />
+                  <Target size={20} className="text-muted-foreground" />
                   Waarom deze aanbieder?
                 </h2>
                 
@@ -623,7 +623,7 @@ export function ProviderProfilePage({
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
-                  <FileText size={14} className="text-primary" />
+                  <FileText size={14} className="text-muted-foreground" />
                   <span className="text-sm text-foreground">Zorgaanbod brochure</span>
                 </a>
                 
@@ -631,7 +631,7 @@ export function ProviderProfilePage({
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
-                  <FileText size={14} className="text-primary" />
+                  <FileText size={14} className="text-muted-foreground" />
                   <span className="text-sm text-foreground">Intake procedure</span>
                 </a>
 
@@ -639,7 +639,7 @@ export function ProviderProfilePage({
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
-                  <FileText size={14} className="text-primary" />
+                  <FileText size={14} className="text-muted-foreground" />
                   <span className="text-sm text-foreground">Privacy statement</span>
                 </a>
               </div>

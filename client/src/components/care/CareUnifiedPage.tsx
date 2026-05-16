@@ -13,7 +13,7 @@ import {
 } from "../../lib/decisionPhaseUi";
 
 /** Vertical rhythm for unified care list pages (header → optional attention → filters → list). */
-export const CARE_UNIFIED_PAGE_STACK = "space-y-4";
+export const CARE_UNIFIED_PAGE_STACK = "space-y-5";
 
 /**
  * Shared list-page shell: header, optional attention strip, optional filters, then main content
@@ -266,7 +266,7 @@ export function CareAttentionBar({
     <div
       data-component="care-attention-bar"
       className={cn(
-        "care-hover-card flex min-h-[52px] items-center justify-between gap-3 rounded-xl border border-border/70 border-l-2 bg-card/70 px-3 py-2.5",
+        "flex min-h-[52px] items-center justify-between gap-3 rounded-xl border-l-2 bg-muted/20 px-3 py-2.5 shadow-sm",
         accent,
       )}
     >
@@ -374,6 +374,8 @@ export function CareSearchFiltersBar({
   secondaryFilters,
   rightAction,
   showSecondaryFiltersToggle = true,
+  /** `workspace`: tonal controls for primary werklijst surfaces (less border reliance). */
+  variant = "default",
   className,
 }: {
   /** Optional segmented control row above the search field (e.g. Casussen triage tabs). */
@@ -389,6 +391,7 @@ export function CareSearchFiltersBar({
   rightAction?: ReactNode;
   /** When false, hide the search-row toggle (e.g. Casussen moves “Filters” next to tabs). */
   showSecondaryFiltersToggle?: boolean;
+  variant?: "default" | "workspace";
   className?: string;
 }) {
   const canToggleMore = Boolean(onToggleSecondaryFilters);
@@ -402,7 +405,12 @@ export function CareSearchFiltersBar({
 
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
         <div
-          className="flex w-full min-w-0 flex-1 items-center gap-2.5 border border-border/80 bg-card px-3 shadow-sm"
+          className={cn(
+            "flex w-full min-w-0 flex-1 items-center gap-2.5 px-3 shadow-sm",
+            variant === "workspace"
+              ? "care-op-search-field"
+              : "border border-border/80 bg-card",
+          )}
           style={{
             minHeight: tokens.searchControl.rowMinHeight,
             borderRadius: tokens.searchControl.radius,
@@ -428,7 +436,7 @@ export function CareSearchFiltersBar({
               onClick={onToggleSecondaryFilters}
               aria-expanded={expanded}
               aria-controls={secondaryFiltersId}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl px-1 text-[13px] font-medium text-primary hover:text-primary/90"
+              className="inline-flex h-10 items-center gap-1.5 rounded-xl px-1 text-[13px] font-medium text-primary hover:text-foreground"
             >
               {secondaryFiltersLabel}
               {showSecondaryFilters ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
@@ -439,7 +447,15 @@ export function CareSearchFiltersBar({
       </div>
 
       {expanded ? (
-        <div id={secondaryFiltersId} role="region" aria-label={secondaryFiltersLabel} className="rounded-xl border border-border/50 bg-card/30 px-3 py-2.5">
+        <div
+          id={secondaryFiltersId}
+          role="region"
+          aria-label={secondaryFiltersLabel}
+          className={cn(
+            "rounded-xl px-3 py-2.5",
+            variant === "workspace" ? "care-op-filter-panel" : "border border-border/50 bg-card/30",
+          )}
+        >
           {secondaryFilters}
         </div>
       ) : null}
@@ -576,7 +592,7 @@ export function CareWorkRow({
                 className={cn(
                   actionVariant === "primary"
                     ? "h-9 shrink-0 justify-center rounded-xl px-4 text-[13px] font-semibold shadow-md"
-                    : "h-8 shrink-0 justify-center rounded-full px-3 text-[13px] font-medium text-primary hover:bg-primary/10 hover:text-primary",
+                    : "h-8 shrink-0 justify-center rounded-full px-3 text-[13px] font-medium text-primary hover:bg-muted/35 hover:text-primary",
                 )}
               >
                 <span className="truncate">{actionLabel}</span>

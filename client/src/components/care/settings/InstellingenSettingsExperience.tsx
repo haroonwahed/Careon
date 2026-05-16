@@ -172,7 +172,7 @@ export function InstellingenSettingsExperience({
                 </Button>
               }
             >
-              <p className="mb-5 border-l-2 border-primary/35 pl-3 text-[13px] leading-relaxed text-muted-foreground">
+              <p className="mb-5 border-l-2 border-border/80 pl-3 text-[13px] leading-relaxed text-muted-foreground">
                 <span className="font-medium text-foreground">Wat is hier actief:</span> alleen <strong className="font-medium text-foreground">organisatienaam</strong> kun je in dit blok aanpassen; kies <strong className="font-medium text-foreground">Basis voorkeuren vastleggen</strong> om te bevestigen (nu lokaal in deze browser; serveropslag volgt).{" "}
                 <strong className="font-medium text-foreground">Thema</strong> wissel je met het zonnetje in de kopbalk.{" "}
                 <strong className="font-medium text-foreground">Taal</strong> en <strong className="font-medium text-foreground">tijdzone</strong> staan in deze release vast.{" "}
@@ -812,9 +812,9 @@ function SettingsSection({ title, lede, primaryAction, children }: SettingsSecti
         </h2>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">{lede}</p>
         {primaryAction ? (
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
+          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border/70 bg-muted/25 px-4 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary/90">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground">
                 Wijzigbare sectie
               </p>
               <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
@@ -868,9 +868,9 @@ function ReadOnlyTile({ icon, label, value }: { icon: ReactNode; label: string; 
 
 function GovernanceCallout({ title, copy }: { title: string; copy: string }) {
   return (
-    <div className="rounded-2xl border border-primary/20 bg-primary/[0.05] px-4 py-4 shadow-md">
+    <div className="rounded-2xl border border-border/70 bg-muted/25 px-4 py-4 shadow-md">
       <div className="flex gap-3">
-        <Shield className="mt-0.5 size-4 shrink-0 text-primary/90" aria-hidden />
+        <Shield className="mt-0.5 size-4 shrink-0 text-foreground" aria-hidden />
         <div>
           <p className="text-[13px] font-semibold text-foreground">{title}</p>
           <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{copy}</p>
@@ -1000,7 +1000,7 @@ function IntegrationTile({
 function AuditTimelineItem({ time, title, detail }: { time: string; title: string; detail: string }) {
   return (
     <div className="relative pb-8 last:pb-0">
-      <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full border-2 border-primary/40 bg-background ring-2 ring-primary/20" />
+      <span className="absolute -left-[21px] top-1.5 size-2.5 rounded-full border border-border/70 ring-2 ring-primary/25 bg-background" />
       <time className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{time}</time>
       <p className="mt-1 text-sm font-medium text-foreground">{title}</p>
       <p className="mt-0.5 text-[13px] text-muted-foreground">{detail}</p>

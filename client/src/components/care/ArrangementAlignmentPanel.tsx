@@ -22,6 +22,8 @@ type Props = {
   caseId: string;
   /** When omitted, the left column shows placeholders until backend adds structured context. */
   careContext?: ArrangementAlignmentCareContext | null;
+  /** `compact`: summary card on casus detail; `full`: expanded comparison workspace (tabs). */
+  variant?: "compact" | "full";
 };
 
 function pctFromConfidence(equivalenceConfidence: number): number {
@@ -181,7 +183,116 @@ function ArrangementSuggestionCard({
  * Read-only arrangement alignment (v1.3). GET advisory payload — no financial automation.
  * Operational comparison surface: requested care, top suggestions, decision context.
  */
-export function ArrangementAlignmentPanel({ caseId, careContext }: Props) {
+function ArrangementAlignmentCompact({
+  caseId,
+  data,
+  topHint,
+  pct,
+  band,
+  primaryHref,
+  financialValidationRequired,
+  maxArrangementUncertainty,
+}: {
+  caseId: string;
+  data: ArrangementAlignmentSuggestion;
+  topHint: ArrangementAlignmentSuggestion["equivalence_hints"][number];
+  pct: number;
+  band: ReturnType<typeof operationalMatchBandLabel>;
+  primaryHref: string;
+  financialValidationRequired: boolean;
+  maxArrangementUncertainty: "low" | "medium" | "high";
+}) {
+  const [whyOpen, setWhyOpen] = useState(false);
+  const [financialOpen, setFinancialOpen] = useState(false);
+  const [technicalOpen, setTechnicalOpen] = useState(false);
+  const whyId = useId();
+  const financialId = useId();
+  const technicalId = useId();
+
+  return (
+    <section
+      data-testid="arrangement-alignment-panel"
+      data-variant="compact"
+      aria-label="Arrangement-advies"
+      className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            Arrangement-advies
+          </p>
+          <p className="text-[12px] text-muted-foreground">Advies, geen automatische toewijzing.</p>
+        </div>
+        <Badge variant={band.badgeVariant} className="text-[10px]">
+          {band.label}
+        </Badge>
+      </div>
+
+      <article className="mt-3 rounded-lg bg-muted/20 px-3 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Beste match</p>
+        <h3 className="mt-1 text-[15px] font-semibold leading-snug text-foreground line-clamp-2">{topHint.target_label}</h3>
+        <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <span>Matchkwaliteit</span>
+          <span className="font-semibold text-foreground">{pct}%</span>
+        </div>
+        <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted/80">
+          <div className={cn("h-full rounded-full", matchQualityBarClass(pct))} style={{ width: `${pct}%` }} />
+        </div>
+        <p className="mt-2 text-[12px] text-muted-foreground">{shortMatchReason(topHint.rationale, 80)}</p>
+      </article>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button type="button" variant="outline" size="sm" className="rounded-full text-[12px]" onClick={() => setWhyOpen((v) => !v)}>
+          Bekijk details
+        </Button>
+        <Button asChild size="sm" className="rounded-full text-[12px] font-semibold">
+          <a href={primaryHref}>Vraag gemeentelijke validatie aan</a>
+        </Button>
+      </div>
+
+      <Collapsible open={whyOpen} onOpenChange={setWhyOpen} className="mt-3 border-t border-border/40 pt-2">
+        <CollapsibleTrigger className="flex w-full items-center justify-between py-1.5 text-left text-[13px] font-medium text-foreground">
+          Waarom deze match?
+          <ChevronDown size={14} className={cn("transition-transform", whyOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent id={whyId} className="text-[12px] leading-relaxed text-muted-foreground">
+          <p className="pt-1">{topHint.rationale}</p>
+          <p className="pt-2">{uncertaintyOperationalLine(topHint.uncertainty)}</p>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible open={financialOpen} onOpenChange={setFinancialOpen} className="border-t border-border/40 pt-1">
+        <CollapsibleTrigger className="flex w-full items-center justify-between py-1.5 text-left text-[13px] font-medium text-foreground">
+          Financiële context
+          <ChevronDown size={14} className={cn("transition-transform", financialOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent id={financialId} className="space-y-1 pb-2 text-[12px] text-muted-foreground">
+          <p>
+            {financialValidationRequired
+              ? "Tarief/bekostiging niet automatisch gevalideerd."
+              : "Controleer tarieven inhoudelijk in het contract."}
+          </p>
+          {data.tariff_alignment?.notes ? <p>{data.tariff_alignment.notes}</p> : null}
+        </CollapsibleContent>
+      </Collapsible>
+
+      <Collapsible open={technicalOpen} onOpenChange={setTechnicalOpen} className="border-t border-border/40 pt-1">
+        <CollapsibleTrigger className="flex w-full items-center justify-between py-1.5 text-left text-[13px] font-medium text-foreground">
+          Technische context
+          <ChevronDown size={14} className={cn("transition-transform", technicalOpen && "rotate-180")} />
+        </CollapsibleTrigger>
+        <CollapsibleContent id={technicalId} className="pb-2 text-[12px] text-muted-foreground">
+          <p>Arrangement: {uncertaintyOperationalLine(maxArrangementUncertainty)}</p>
+          {data.staging_deterministic ? (
+            <p className="pt-1">Vergelijking via vaste regels en referentietabellen.</p>
+          ) : null}
+        </CollapsibleContent>
+      </Collapsible>
+    </section>
+  );
+}
+
+export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full" }: Props) {
   const [data, setData] = useState<ArrangementAlignmentSuggestion | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -252,6 +363,25 @@ export function ArrangementAlignmentPanel({ caseId, careContext }: Props) {
     }
     return null;
   })();
+
+  const topHint = topHints[0]!;
+  const topPct = pctFromConfidence(topHint.equivalence_confidence);
+  const topBand = operationalMatchBandLabel(topPct);
+
+  if (variant === "compact") {
+    return (
+      <ArrangementAlignmentCompact
+        caseId={caseId}
+        data={data}
+        topHint={topHint}
+        pct={topPct}
+        band={topBand}
+        primaryHref={primaryHref}
+        financialValidationRequired={financialValidationRequired}
+        maxArrangementUncertainty={maxArrangementUncertainty}
+      />
+    );
+  }
 
   const dash = "—";
 

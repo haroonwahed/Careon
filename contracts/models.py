@@ -3160,6 +3160,16 @@ class AanbiederVestiging(models.Model):
                                    help_text='Jeugdzorg regio-indeling')
     latitude = models.FloatField(null=True, blank=True)
     longitude = models.FloatField(null=True, blank=True)
+    coordinate_source = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text='Herkomst van latitude/longitude (vestiging, geocode_pdok, geocode_google)',
+    )
+    geocoded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text='Tijdstip van laatste geocodering',
+    )
     telefoon_vestiging = models.CharField(max_length=30, blank=True)
     email_vestiging = models.EmailField(blank=True)
     is_primary = models.BooleanField(default=False)

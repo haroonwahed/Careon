@@ -451,7 +451,7 @@ export function Sidebar({
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-primary/25 bg-primary/10 text-primary shadow-[0_0_0_1px_rgba(124,92,255,0.05)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/80 bg-muted/30 text-foreground">
               <Shield size={20} />
             </div>
             <div>
@@ -509,8 +509,8 @@ export function Sidebar({
                       transition-all duration-200
                       ${collapsed ? "justify-center" : ""}
                       ${isActive
-                        ? "bg-primary-light text-primary shadow-sm border border-transparent"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                        ? "bg-primary/10 text-primary border border-primary/20 shadow-none"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground border border-transparent"
                       }
                     `}
                     title={collapsed ? item.label : undefined}
@@ -643,8 +643,8 @@ export function Sidebar({
           hover:bg-muted/30 transition-colors cursor-pointer
           ${collapsed ? "justify-center" : ""}
         `}>
-          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-primary">{profileInitials}</span>
+          <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-foreground">{profileInitials}</span>
           </div>
           
           {!collapsed && (

@@ -32,8 +32,10 @@ import {
   CareSection,
   CareSectionBody,
   CareSectionHeader,
+  CareOperationalSelect,
   CareSearchFiltersBar,
   CareWorkListCard,
+  CareWorkspaceSection,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -818,6 +820,11 @@ export function SystemAwarenessPage({
   );
   const phaseBoardColumns = useMemo(() => derivePhaseBoard(allOverviewItems, 3), [allOverviewItems]);
   const dominantPhaseColumn = useMemo(() => getDominantPhaseColumn(phaseBoardColumns), [phaseBoardColumns]);
+  const activeFlowIndex = useMemo(() => {
+    if (!dominantPhaseColumn) return 0;
+    const idx = phaseBoardColumns.findIndex((col) => col.phase === dominantPhaseColumn.phase);
+    return idx >= 0 ? idx : 0;
+  }, [dominantPhaseColumn, phaseBoardColumns]);
 
   const governanceQueuesStrip = useMemo(() => {
     if (loading || error || !hasActiveData || !data?.governance_queues) {
@@ -841,7 +848,7 @@ export function SystemAwarenessPage({
     return (
       <div
         data-testid="regiekamer-governance-queues"
-        className="flex max-h-16 flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2"
+        className="flex max-h-16 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted/20 px-3 py-2 shadow-sm"
       >
         <span className="shrink-0 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           Levenscyclus
@@ -853,7 +860,7 @@ export function SystemAwarenessPage({
               <button
                 key={s.key}
                 type="button"
-                className="rounded-full border border-border/70 bg-background px-2.5 py-1 text-left text-[12px] font-medium text-foreground hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-full bg-muted/35 px-2.5 py-1 text-left text-[12px] font-medium text-foreground hover:bg-muted/55 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={!first}
                 onClick={() => {
                   if (first) {
@@ -1135,7 +1142,6 @@ export function SystemAwarenessPage({
             <CareAlertCard
               testId="regiekamer-dominant-action"
               data-regiekamer-mode={uiMode}
-              className="ring-1 ring-border/20"
               tone={
                 regiekamerNba.panel.tone === "urgent"
                   ? "critical"
@@ -1197,7 +1203,7 @@ export function SystemAwarenessPage({
             highPriorityAlerts === 0 && (
               <div
                 data-testid="regiekamer-calm-state"
-                className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-foreground"
+                className="rounded-lg bg-muted/25 px-3 py-2 text-sm text-foreground"
               >
                 <p className="font-medium">Geen operationele blokkades</p>
                 <p className="mt-1 text-xs text-muted-foreground">Geen spoedsignalen in dit overzicht.</p>
@@ -1210,14 +1216,14 @@ export function SystemAwarenessPage({
           <div className="space-y-3">
             {governanceQueuesStrip}
             {showRegiekamerPhaseBoard ? (
-              <CareSection testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
+              <CareSection tone="context" testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
                 <CareSectionHeader
                   title="Doorstroom"
                   action={
                     <Button
                       type="button"
                       variant="ghost"
-                      className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-primary/10 hover:text-primary"
+                      className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-muted/35 hover:text-primary"
                       onClick={() => {
                         // Distinct from "Bekijk kritieke casussen" (critical-only) and from a
                         // plain /casussen entry: hand off `pipeline` so the worklist opens on
@@ -1233,10 +1239,16 @@ export function SystemAwarenessPage({
                   }
                 />
                 <CareSectionBody>
-                  <CareFlowBoard testId="regiekamer-flow-board" variant="pipeline">
-                    {phaseBoardColumns.map((col) => {
+                  <CareFlowBoard
+                    testId="regiekamer-flow-board"
+                    variant="pipeline"
+                    activeStepIndex={activeFlowIndex}
+                    stepCount={phaseBoardColumns.length}
+                  >
+                    {phaseBoardColumns.map((col, phaseIndex) => {
                       const isBottleneck =
                         dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
+                      const completed = phaseIndex < activeFlowIndex && !isBottleneck;
                       const Icon = phaseCardIcon(col.phase);
                       const details = phaseBoardDetails(col.phase);
                       const status = details[0];
@@ -1246,6 +1258,7 @@ export function SystemAwarenessPage({
                             testId={`regiekamer-phase-column-${col.phase}`}
                             onClick={() => applyPhaseBoardFilter(col.phase)}
                             active={isBottleneck}
+                            completed={completed}
                             icon={<Icon size={18} className="text-current" />}
                             metric={col.count}
                             title={col.label}
@@ -1332,7 +1345,11 @@ export function SystemAwarenessPage({
       )}
 
       {!loading && !error && visibleItems.length > 0 && (
-        <CareSection testId="regiekamer-uitvoerlijst" aria-labelledby="regiekamer-uitvoerlijst-heading">
+        <CareWorkspaceSection
+          testId="regiekamer-uitvoerlijst"
+          aria-labelledby="regiekamer-uitvoerlijst-heading"
+          bodyBleedX
+          header={(
           <CareSectionHeader
             className="lg:flex-col lg:items-stretch"
             title={
@@ -1340,10 +1357,11 @@ export function SystemAwarenessPage({
             }
             meta={
               <div className="w-full min-w-0 space-y-2">
-                <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                <span className="inline-flex w-fit items-center rounded-full bg-muted/35 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
                   {visibleItems.length} aanvragen
                 </span>
                 <CareSearchFiltersBar
+                  variant="workspace"
                   className="px-0"
                   searchValue={searchQuery}
                   onSearchChange={setSearchQuery}
@@ -1355,56 +1373,52 @@ export function SystemAwarenessPage({
                     <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-4">
                       <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Prioriteit
-                        <select
+                        <CareOperationalSelect
                           aria-label="Prioriteit"
                           value={priorityFilter}
                           onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
-                        </select>
+                        </CareOperationalSelect>
                       </label>
                       <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Type
-                        <select
+                        <CareOperationalSelect
                           aria-label="Type"
                           value={issueFilter}
                           onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
-                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(ISSUE_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
-                        </select>
+                        </CareOperationalSelect>
                       </label>
                       <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Stap
-                        <select
+                        <CareOperationalSelect
                           aria-label="Stap in de keten"
                           value={phaseFilter}
                           onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
-                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           <option value="all">Alles</option>
                           {DECISION_UI_PHASE_IDS.map((id) => (
                             <option key={id} value={id}>{DECISION_UI_PHASE_LABELS[id]}</option>
                           ))}
-                        </select>
+                        </CareOperationalSelect>
                       </label>
                       <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
                         Rol
-                        <select
+                        <CareOperationalSelect
                           aria-label="Rol"
                           value={ownershipFilter}
                           onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
-                          className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
                         >
                           {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
                             <option key={key} value={key}>{label}</option>
                           ))}
-                        </select>
+                        </CareOperationalSelect>
                       </label>
                     </div>
                   )}
@@ -1412,31 +1426,10 @@ export function SystemAwarenessPage({
               </div>
             }
           />
-          <CareSectionBody>
-            <CareWorkListCard
-              header={(
-                <div className="hidden min-w-[980px] gap-y-3 gap-x-4 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5 md:px-5">
-                  <span>Prioriteit</span>
-                  <span>Casus</span>
-                  <span>Blokkade / aandacht</span>
-                  <span>Eigenaar</span>
-                  <span>Wachttijd</span>
-                  <span>Volgende actie</span>
-                </div>
-              )}
-            >
-              <div className="min-w-[980px] divide-y divide-border/45">
-                {visibleItems.map((item) => (
-                  <RegiekamerWorkItemCard
-                    key={item.case_id}
-                    item={item}
-                    onCaseClick={onCaseClick}
-                  />
-                ))}
-              </div>
-            </CareWorkListCard>
-            {onAppNavigate ? (
-              <div className="flex justify-center pt-5">
+          )}
+          footer={
+            onAppNavigate ? (
+              <div className="flex justify-center pt-3">
                 <Button
                   type="button"
                   variant="ghost"
@@ -1448,9 +1441,32 @@ export function SystemAwarenessPage({
                   <ChevronDown size={16} aria-hidden />
                 </Button>
               </div>
-            ) : null}
-          </CareSectionBody>
-        </CareSection>
+            ) : undefined
+          }
+        >
+          <CareWorkListCard
+            header={(
+              <div className="hidden min-w-[980px] gap-y-3 gap-x-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:grid md:grid-cols-[88px_128px_minmax(220px,260px)_104px_112px_minmax(220px,1fr)] md:gap-x-5">
+                <span>Prioriteit</span>
+                <span>Casus</span>
+                <span>Blokkade / aandacht</span>
+                <span>Eigenaar</span>
+                <span>Wachttijd</span>
+                <span>Volgende actie</span>
+              </div>
+            )}
+          >
+            <div className="min-w-[980px] divide-y divide-border/30">
+              {visibleItems.map((item) => (
+                <RegiekamerWorkItemCard
+                  key={item.case_id}
+                  item={item}
+                  onCaseClick={onCaseClick}
+                />
+              ))}
+            </div>
+          </CareWorkListCard>
+        </CareWorkspaceSection>
       )}
         </CarePageScaffold>
       </div>
@@ -1620,7 +1636,7 @@ function RegiekamerInsightsPanels({
                 onCriticalClick();
                 done?.();
               }}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-border/80 hover:bg-muted/25"
             >
               <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                 <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
@@ -1638,7 +1654,7 @@ function RegiekamerInsightsPanels({
                   onPhaseClick(col.phase);
                   done?.();
                 }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-primary/35 hover:bg-muted/25"
+                className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-border/80 hover:bg-muted/25"
               >
                 <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
                   <span className="shrink-0 opacity-90">{renderQuickPhaseIcon(col.phase)}</span>

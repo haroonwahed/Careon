@@ -52,7 +52,7 @@ export function caseStatusToneClass(status: CareCaseStatusTone): string {
     case "intake":
       return "text-blue-300";
     case "beoordeling":
-      return "text-primary";
+      return "text-blue-300";
     case "matching":
       return "text-amber-300";
     case "plaatsing":
@@ -65,7 +65,7 @@ export function caseStatusToneClass(status: CareCaseStatusTone): string {
 export function workflowStatusChipClasses(status: CareWorkflowStatusTone): string {
   switch (status) {
     case "intake":
-      return "text-primary bg-primary/10 border-primary/30";
+      return "text-blue-300 bg-blue-500/10 border-blue-500/30";
     case "assessment":
       return "text-blue-300 bg-blue-500/10 border-blue-500/30";
     case "matching":

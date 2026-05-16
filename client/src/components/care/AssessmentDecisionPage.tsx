@@ -53,7 +53,7 @@ function signalClasses(severity: 'critical' | 'warning' | 'info') {
 function timelineToneClasses(tone: 'neutral' | 'info' | 'warning') {
   switch (tone) {
     case 'info':
-      return 'bg-primary/15 text-primary';
+      return 'bg-blue-500/12 text-blue-300';
     case 'warning':
       return 'bg-amber-500/15 text-amber-200';
     default:
@@ -142,7 +142,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
         </span>
       }
       actions={
-        <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-primary/10 hover:text-primary">
+        <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-muted/35 hover:text-primary">
           <ArrowLeft size={16} />
           Terug naar casussen
         </Button>
@@ -204,7 +204,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                     key={option.value}
                     type="button"
                     onClick={() => updateField('decision', option.value)}
-                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${active ? 'border-primary/45 bg-primary/10 shadow-sm' : 'border-border bg-card hover:border-primary/35 hover:bg-muted/20'}`}
+                    className={`w-full rounded-2xl border px-4 py-3 text-left transition-all ${active ? 'border-primary/45 bg-primary/10 shadow-sm' : 'border-border bg-card hover:border-border/80 hover:bg-muted/20'}`}
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div>
@@ -219,7 +219,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
             </div>
 
             {consequence && (
-              <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/6 px-4 py-2.5">
+              <div className="mt-3 rounded-2xl border border-border/70 bg-muted/25 px-4 py-2.5">
                 <p className="text-xs font-semibold uppercase tracking-[0.08em] text-foreground">Gevolg van deze keuze</p>
                 <p className="mt-1 text-xs leading-5 text-muted-foreground">{consequence.description}</p>
               </div>
@@ -252,7 +252,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                         key={option.value}
                         type="button"
                         onClick={() => updateField('urgency', option.value)}
-                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/35'}`}
+                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
                       >
                         {option.label}
                       </button>
@@ -271,7 +271,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                         key={option.value}
                         type="button"
                         onClick={() => updateField('complexity', option.value)}
-                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/35'}`}
+                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
                       >
                         {option.label}
                       </button>
@@ -286,7 +286,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                   {data.options.constraints.map((option) => {
                     const active = formState.constraints.includes(option.value);
                     return (
-                      <label key={option.value} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-primary/35'}`}>
+                      <label key={option.value} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
                         <input
                           type="checkbox"
                           checked={active}

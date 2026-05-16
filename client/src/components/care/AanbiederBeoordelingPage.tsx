@@ -837,7 +837,7 @@ function GemeenteView({
                   type="button"
                   variant="ghost"
                   onClick={handleBack}
-                  className="gap-2 text-primary hover:bg-primary/10 hover:text-primary"
+                  className="gap-2 text-primary hover:bg-muted/35 hover:text-primary"
                 >
                   <ArrowLeft size={16} aria-hidden />
                   Terug naar casus
@@ -1844,7 +1844,7 @@ function ProviderView({
           <div
             role="status"
             aria-live="polite"
-            className="flex items-center gap-3 rounded-xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm text-foreground"
+            className="flex items-center gap-3 rounded-xl border border-border/70 bg-muted/25 px-4 py-3 text-sm text-foreground"
           >
             <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
             <span>Beoordeling wordt verzonden…</span>

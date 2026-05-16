@@ -144,7 +144,7 @@ export function CaseTriageCard({
                 {statusStyle.label}
               </span>
             </div>
-            <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+            <h3 className="text-base font-semibold text-foreground group-hover:text-foreground transition-colors">
               {title}
             </h3>
           </div>
@@ -211,7 +211,7 @@ export function CaseTriageCard({
           <Button
             onClick={onViewDetails}
             variant="outline"
-            className="border-muted-foreground/30 hover:border-primary/50 hover:text-primary"
+            className="border-muted-foreground/30 hover:border-border/80 hover:text-foreground"
           >
             Bekijk casus
           </Button>

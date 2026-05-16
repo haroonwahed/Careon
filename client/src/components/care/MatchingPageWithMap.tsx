@@ -44,7 +44,7 @@ import { useMatchingCandidates, type MatchingCandidateRow } from "../../hooks/us
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { apiClient } from "../../lib/apiClient";
 import { toCareCaseDetail } from "../../lib/routes";
-import { ProviderNetworkMap } from "./ProviderNetworkMap";
+import { ProviderMapSurface } from "./ProviderMapSurface";
 import { tokens } from "../../design/tokens";
 import { cn } from "../ui/utils";
 import { CarePanel, EmptyState, ErrorState, LoadingState } from "./CareDesignPrimitives";
@@ -758,7 +758,7 @@ export function MatchingPageWithMap({
               </div>
 
               <div
-                className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-primary/25 px-4 py-3 text-[13px] leading-snug text-muted-foreground"
+                className="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-border/70 bg-muted/25 px-4 py-3 text-[13px] leading-snug text-muted-foreground"
                 style={{ backgroundColor: `${MATCH_BRAND}18` }}
               >
                 <div className="flex min-w-0 gap-2">
@@ -803,7 +803,7 @@ export function MatchingPageWithMap({
                           onMouseLeave={() => setHoveredProviderId(null)}
                           className={cn(
                             "cursor-pointer rounded-xl border border-border/60 p-4 transition-all",
-                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
+                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-border/80",
                           )}
                           style={{ backgroundColor: MATCH_SURFACE }}
                         >
@@ -938,7 +938,7 @@ export function MatchingPageWithMap({
                           onMouseLeave={() => setHoveredProviderId(null)}
                           className={cn(
                             "cursor-pointer rounded-xl border border-border/60 p-4 transition-all",
-                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-primary/35",
+                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-border/80",
                           )}
                           style={{ backgroundColor: MATCH_SURFACE }}
                         >
@@ -1099,7 +1099,7 @@ export function MatchingPageWithMap({
                     ))}
                   </div>
                   <div className="relative h-[min(52vh,520px)] overflow-hidden rounded-xl border border-white/10 bg-background/80">
-                    <ProviderNetworkMap
+                    <ProviderMapSurface
                       providers={providers}
                       selectedProviderId={selectedProviderId ?? bestMatch?.provider.id ?? null}
                       hoveredProviderId={hoveredProviderId}
