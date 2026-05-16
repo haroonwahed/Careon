@@ -553,7 +553,7 @@ class CareCase(models.Model):
     source_system_id = models.IntegerField(
         null=True,
         blank=True,
-        default=None,
+        default=0,
         help_text='Optional legacy upstream system key (production Postgres drift).',
     )
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
@@ -2433,6 +2433,8 @@ class CaseIntakeProcess(models.Model):
         case_record = CareCase.objects.create(
             organization=self.organization,
             title=self.title,
+            source_system='zorg_os',
+            source_system_id=0,
             contract_type=contract_type_map.get(self.zorgvorm_gewenst or self.preferred_care_form, CareCase.ContractType.OTHER),
             content=(self.assessment_summary or self.description or '').strip(),
             status=CareCase.Status.PENDING,
