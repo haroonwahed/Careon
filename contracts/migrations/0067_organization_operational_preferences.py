@@ -2,6 +2,29 @@
 
 from django.db import migrations, models
 
+# Django-managed Organization columns — never alter defaults via drift repair.
+_ORGANIZATION_SKIP_REPAIR = frozenset(
+    {
+        'id',
+        'name',
+        'slug',
+        'is_active',
+        'created_at',
+        'updated_at',
+        'require_mfa',
+        'daily_digest',
+        'critical_alerts',
+        'auto_escalation',
+        'default_region',
+        'default_timezone',
+        'default_language',
+        'default_theme',
+        'logo_url',
+        'contact_email',
+        'notification_email',
+    }
+)
+
 
 def _pg_default_for_unknown_column(column_name: str, data_type: str, udt_name: str) -> tuple[str, str]:
     if udt_name == 'bool' or data_type == 'boolean':
@@ -41,6 +64,8 @@ def _pg_repair_organization_notnull_defaults(cursor, table: str) -> None:
     )
     qtable = f'"{table}"'
     for column_name, data_type, udt_name in cursor.fetchall():
+        if column_name in _ORGANIZATION_SKIP_REPAIR:
+            continue
         try:
             set_clause, default_literal = _pg_default_for_unknown_column(
                 column_name, data_type, udt_name
