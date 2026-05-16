@@ -160,6 +160,7 @@ class Command(BaseCommand):
             defaults={
                 'role': OrganizationMembership.Role.MEMBER,
                 'is_active': True,
+                'scim_external_id': '',
             },
         )
         UserProfile.objects.update_or_create(

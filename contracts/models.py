@@ -110,6 +110,12 @@ class OrganizationMembership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organization_memberships')
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.MEMBER)
     is_active = models.BooleanField(default=True)
+    scim_external_id = models.CharField(
+        max_length=255,
+        blank=True,
+        default='',
+        help_text='Optional SCIM provisioner identifier (empty when not SSO-provisioned).',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
