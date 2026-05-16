@@ -14,6 +14,7 @@ from contracts.models import (
     MunicipalityConfiguration,
     Organization,
     OrganizationMembership,
+    OutcomeReasonCode,
     PlacementRequest,
     RegionalConfiguration,
     UserProfile,
@@ -291,6 +292,32 @@ class WorkflowFoundationLockTests(TestCase):
         self.assertIn('activate_placement_monitoring', actions)
         self.assertGreaterEqual(transition_events.count(), 6)
         self.assertTrue(all(actor_id is not None for actor_id in transition_events.values_list('actor_id', flat=True)))
+
+    def test_provider_reject_accepts_spa_rejection_slug(self):
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        assign_response = self.client.post(
+            reverse('careon:matching_action_api', kwargs={'case_id': intake.contract_id}),
+            data=f'{{"action":"assign","provider_id":{self.provider.pk}}}',
+            content_type='application/json',
+        )
+        self.assertEqual(assign_response.status_code, 200)
+
+        self.client.logout()
+        self.client.login(username='provider_user', password='testpass123')
+        response = self.client.post(
+            reverse('careon:provider_decision_api', kwargs={'case_id': intake.contract_id}),
+            data=(
+                '{"status":"REJECTED","rejection_reason_code":"geen_capaciteit",'
+                '"provider_comment":"Afwijzing test met voldoende tekens."}'
+            ),
+            content_type='application/json',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+
+        placement = PlacementRequest.objects.get(due_diligence_process=intake)
+        self.assertEqual(placement.provider_response_reason_code, OutcomeReasonCode.CAPACITY)
+        self.assertEqual(placement.provider_response_status, PlacementRequest.ProviderResponseStatus.REJECTED)
 
     def test_matching_action_does_not_auto_finalize_placement_or_intake(self):
         intake = self._create_matching_ready_case()

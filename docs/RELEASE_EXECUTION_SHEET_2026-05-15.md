@@ -57,7 +57,8 @@ export DJANGO_SETTINGS_MODULE=config.settings_rehearsal  # or staging settings
 
 | Check | Command | Status | Notes |
 |-------|---------|--------|-------|
-| Go-live preflight | `./scripts/production_go_live_preflight.sh` | **GO** (2026-05-16) | 176 Must-band tests OK; client build OK; `check --deploy` skipped (set `PREFLIGHT_POSTGRES_URL` for Postgres parity) |
+| Go-live preflight | `./scripts/production_go_live_preflight.sh` | **GO** (2026-05-16) | 176 Must-band tests OK; client build OK; `check --deploy` needs `PREFLIGHT_POSTGRES_URL` or `STAGING_DATABASE_URL` (Render internal URL from dashboard) |
+| Provider reject E2E | `provider-review-smoke` reject test | **Fix** (`eff34bd2`+) | Map SPA slug `geen_capaciteit` → `CAPACITY`; remove misleading placement-action fallback for providers |
 
 ## Production deploy
 

@@ -207,29 +207,14 @@ export function useProviderEvaluations(): UseProviderEvaluationsResult {
         );
         toast.success(decisionSuccessToastMessage(payload));
         refetch();
-      } catch {
-        // Fallback: keep placement endpoint compatibility during rollout.
-        try {
-          if (payload.status === 'INFO_REQUESTED') {
-            throw new Error('Aanvullende informatie aanvragen vereist de provider decision API.');
-          }
-          await apiClient.post(`/care/api/cases/${caseId}/placement-action/`, {
-            status: payload.status === 'ACCEPTED' ? 'APPROVED' : 'REJECTED',
-            reason_code: payload.rejection_reason_code,
-            comment: payload.provider_comment ?? payload.information_request_comment,
-            info_type: payload.information_request_type,
-          });
-          toast.success(decisionSuccessToastMessage(payload));
-          refetch();
-        } catch (fallbackErr) {
-          const msg =
-            fallbackErr instanceof Error
-              ? fallbackErr.message
-              : 'De beslissing kon niet worden verwerkt. Probeer het opnieuw.';
-          setSubmitError(msg);
-          toast.error(msg);
-          throw fallbackErr;
-        }
+      } catch (primaryErr) {
+        const msg =
+          primaryErr instanceof Error
+            ? primaryErr.message
+            : 'De beslissing kon niet worden verwerkt. Probeer het opnieuw.';
+        setSubmitError(msg);
+        toast.error(msg);
+        throw primaryErr;
       } finally {
         setSubmitting(false);
       }

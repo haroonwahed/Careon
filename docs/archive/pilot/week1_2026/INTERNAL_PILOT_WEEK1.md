@@ -1,5 +1,7 @@
 # Internal Pilot Week 1
 
+> **Historical / non-guidance.** Week-1 pilot operations archive. Use `docs/V1_SHIP_CHECKLIST.md` and `docs/PILOT_PROOF_PACKAGE.md` for current release gates.
+
 ## Goal
 
 Validate trust in the core flow, not just technical correctness:

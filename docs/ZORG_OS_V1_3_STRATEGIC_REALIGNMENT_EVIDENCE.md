@@ -1,5 +1,7 @@
 # Zorg OS v1.3 — strategic realignment evidence
 
+> **Historical / non-guidance.** Evidence snapshot for the v1.3 realignment wave. Current doctrine: `docs/Careon_Operational_Constitution_v2.md` and `docs/FOUNDATION_LOCK.md`.
+
 **Date:** 2026-05-11  
 **Scope:** product philosophy, UX/navigation/copy, canonical documentation, guardrail tests.  
 **Note:** Source files from `~/Downloads/CareOn_ZorgOS_v1_3_Updated_Documentation/` were **not present** on the build machine; canonical markdown was authored **into the repo** at the paths below.

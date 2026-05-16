@@ -11,7 +11,7 @@ from datetime import date
 from django.conf import settings
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
@@ -27,6 +27,7 @@ from contracts.observability import log_escalation_hint
 from contracts.arrangement_alignment import build_arrangement_alignment_payload
 from contracts.decision_engine import build_regiekamer_decision_overview, evaluate_case
 from contracts.governance import AuditLoggingError, log_case_decision_event
+from contracts.provider_location import provider_location_payload as _provider_location_payload
 from contracts.care_lifecycle_v12 import (
     sync_placement_budget_review_flags,
     care_form_requires_budget_review,
@@ -346,64 +347,6 @@ def _coerce_coordinate(value, *, minimum, maximum):
     if numeric_value < minimum or numeric_value > maximum:
         return None
     return round(numeric_value, 6)
-
-
-def _extract_coordinates(source):
-    if source is None:
-        return None, None
-
-    candidate_pairs = (
-        ('latitude', 'longitude'),
-        ('lat', 'lng'),
-        ('lat', 'lon'),
-    )
-
-    for latitude_attr, longitude_attr in candidate_pairs:
-        if not hasattr(source, latitude_attr) or not hasattr(source, longitude_attr):
-            continue
-
-        latitude = _coerce_coordinate(getattr(source, latitude_attr, None), minimum=-90, maximum=90)
-        longitude = _coerce_coordinate(getattr(source, longitude_attr, None), minimum=-180, maximum=180)
-        if latitude is not None and longitude is not None:
-            return latitude, longitude
-
-    return None, None
-
-
-def _first_related(queryset_or_manager):
-    if queryset_or_manager is None:
-        return None
-
-    try:
-        return queryset_or_manager.all().first()
-    except AttributeError:
-        return None
-
-
-def _provider_location_payload(profile):
-    primary_region = _first_related(profile.served_regions)
-    municipality = _first_related(primary_region.served_municipalities) if primary_region else None
-    region_label = primary_region.region_name if primary_region else ''
-    municipality_label = municipality.municipality_name if municipality else ''
-    location_label = profile.client.city or municipality_label or region_label or profile.service_area or 'Locatie ontbreekt'
-
-    # Derive coordinates from available linked sources until explicit provider geo fields exist.
-    sources = [profile, profile.client, primary_region, municipality]
-    latitude = None
-    longitude = None
-    for source in sources:
-        latitude, longitude = _extract_coordinates(source)
-        if latitude is not None and longitude is not None:
-            break
-
-    return {
-        'label': location_label,
-        'latitude': latitude,
-        'longitude': longitude,
-        'region_label': region_label,
-        'municipality_label': municipality_label,
-        'has_coordinates': latitude is not None and longitude is not None,
-    }
 
 
 def _provider_regions_payload(profile):
@@ -1005,6 +948,7 @@ def _build_match_context_from_intake(intake, organization):
 
 
 @login_required
+@ensure_csrf_cookie
 @require_http_methods(["GET"])
 def current_user_api(request):
     """Session-backed actor for SPA shell (no client-side role switching)."""
@@ -1797,7 +1741,9 @@ def _provider_decision_api_inner(request, case_id):
 
     decision = str(payload.get('status') or '').strip().upper()
     notes = (payload.get('provider_comment') or payload.get('information_request_comment') or '').strip()
-    reason_code = str(payload.get('rejection_reason_code') or payload.get('reason_code') or '').strip().upper()
+    reason_code = _normalize_provider_rejection_reason_code(
+        str(payload.get('rejection_reason_code') or payload.get('reason_code') or ''),
+    )
 
     with transaction.atomic():
         intake = _get_intake_for_case_api_id(case_id, organization, lock=True, user=request.user)
@@ -2671,14 +2617,12 @@ def providers_api(request):
         data = []
         for client in page_obj:
             pp = getattr(client, 'provider_profile', None)
-            location = _provider_location_payload(pp) if pp else {
-                'label': client.city or 'Locatie ontbreekt',
-                'latitude': None,
-                'longitude': None,
-                'region_label': '',
-                'municipality_label': '',
-                'has_coordinates': False,
-            }
+            location = _provider_location_payload(pp) if pp else _provider_location_payload(None)
+            if not pp:
+                location = {
+                    **location,
+                    'label': client.city or location['label'],
+                }
             regions_payload = _provider_regions_payload(pp)
             data.append({
                 'id': str(client.id),
@@ -2698,6 +2642,8 @@ def providers_api(request):
                 'latitude': location['latitude'],
                 'longitude': location['longitude'],
                 'hasCoordinates': location['has_coordinates'],
+                'coordinateSource': location['coordinate_source'],
+                'geocodedAt': location['geocoded_at'],
                 'locationLabel': location['label'],
                 'regionLabel': location['region_label'] or regions_payload['primary_region_label'],
                 'municipalityLabel': location['municipality_label'],
@@ -2707,6 +2653,43 @@ def providers_api(request):
         return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(qs))})
     except Exception:
         return _internal_server_error(request, context='providers_api_failed')
+
+
+@login_required
+@require_http_methods(['POST'])
+def geocode_vestigingen_api(request):
+    if not request.user.is_staff:
+        return JsonResponse({'error': 'Geen toegang'}, status=403)
+
+    from contracts.geocoding import apply_geocode_result, geocode_vestiging
+    from contracts.models import AanbiederVestiging
+
+    try:
+        body = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        body = {}
+
+    limit = int(body.get('limit') or 25)
+    force = bool(body.get('force'))
+    prefer_google = bool(body.get('prefer_google'))
+
+    qs = AanbiederVestiging.objects.filter(is_active=True).order_by('id')
+    if not force:
+        qs = qs.filter(Q(latitude__isnull=True) | Q(longitude__isnull=True))
+    if limit > 0:
+        qs = qs[:limit]
+
+    updated = []
+    skipped = []
+    for vestiging in qs:
+        result = geocode_vestiging(vestiging, prefer_google=prefer_google)
+        if result is None:
+            skipped.append(vestiging.id)
+            continue
+        apply_geocode_result(vestiging, result)
+        updated.append({'id': vestiging.id, 'label': result.label, 'provider': result.provider})
+
+    return JsonResponse({'updated': updated, 'skipped_ids': skipped, 'processed': len(updated) + len(skipped)})
 
 
 # ---------------------------------------------------------------------------
@@ -2888,6 +2871,27 @@ def _build_region_health_payload(region, region_cases, region_provider_profiles)
         'providerCountComputed': len(region_provider_profiles),
     })
     return metrics
+
+
+def _normalize_provider_rejection_reason_code(raw: str) -> str:
+    """Map SPA rejection slugs (and legacy codes) to ``OutcomeReasonCode`` values."""
+    slug = str(raw or '').strip().lower()
+    slug_map = {
+        'geen_capaciteit': OutcomeReasonCode.CAPACITY,
+        'urgentie_niet_haalbaar': OutcomeReasonCode.WAITLIST,
+        'specialisatie_past_niet': OutcomeReasonCode.CARE_MISMATCH,
+        'regio_niet_passend': OutcomeReasonCode.REGION_MISMATCH,
+        'te_hoge_complexiteit': OutcomeReasonCode.SAFETY_RISK,
+        'onvoldoende_informatie': OutcomeReasonCode.ADMINISTRATIVE_BLOCK,
+        'andere_reden': OutcomeReasonCode.OTHER,
+    }
+    if slug in slug_map:
+        return slug_map[slug]
+    upper = str(raw or '').strip().upper()
+    valid = {choice.value for choice in OutcomeReasonCode}
+    if upper in valid:
+        return upper
+    return OutcomeReasonCode.OTHER
 
 
 def _outcome_reason_to_spa_rejection_code(code: str) -> str | None:
