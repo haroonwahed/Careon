@@ -87,7 +87,11 @@ class Command(BaseCommand):
             OrganizationMembership.objects.update_or_create(
                 organization=org,
                 user=user,
-                defaults={"role": membership_role, "is_active": True},
+                defaults={
+                    "role": membership_role,
+                    "is_active": True,
+                    "scim_external_id": "",
+                },
             )
             profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"role": profile_role})
             profile.role = profile_role

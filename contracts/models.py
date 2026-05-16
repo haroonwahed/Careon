@@ -544,6 +544,12 @@ class CareCase(models.Model):
 
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE, null=True, blank=True, related_name='contracts')
     title = models.CharField(max_length=200)
+    source_system = models.CharField(
+        max_length=100,
+        blank=True,
+        default='',
+        help_text='Optional upstream system identifier for imported cases (empty for native casussen).',
+    )
     contract_type = models.CharField(max_length=20, choices=ContractType.choices, default=ContractType.OTHER)
     content = models.TextField(blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
