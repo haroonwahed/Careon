@@ -26,12 +26,12 @@ export type DominantActionPanelProps = {
     testId?: string;
   };
   /**
-   * Stable `data-testid` on the root `<section>` (route-specific, e.g. `regiekamer-dominant-action`).
+   * Stable `data-testid` on the root `<section>` (route-specific, e.g. `coordination-dominant-action`).
    * Defaults to `dominant-action-panel`.
    */
   panelTestId?: string;
   /**
-   * Extra `data-*` attributes on the root section. Use DOM keys, e.g. `{ "data-regiekamer-mode": "crisis" }`.
+   * Extra `data-*` attributes on the root section. Use DOM keys, e.g. `{ "data-coordination-mode": "crisis" }`.
    */
   rootDataset?: Record<string, string | undefined>;
   className?: string;

@@ -35,7 +35,7 @@ function writeValue(next: boolean): void {
 }
 
 /**
- * Shared collapse state for the right-side regie rail across pages.
+ * Shared collapse state for the right-side coördinatie rail across pages.
  * Persisted in localStorage so the preference survives reloads and
  * stays consistent between Coordination, Casussen, and Aanbieder beoordeling.
  */

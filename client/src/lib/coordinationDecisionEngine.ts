@@ -415,7 +415,7 @@ export function buildCoordinationDecisionSummary(
     {
       key: "risk",
       tone: issue_buckets.high_risk_cases > 0 ? "critical" : "info",
-      text: `${pluralize(issue_buckets.high_risk_cases, "hoog-risico casus vraagt", "hoog-risico casussen vragen")} directe regie`,
+      text: `${pluralize(issue_buckets.high_risk_cases, "hoog-risico casus vraagt", "hoog-risico casussen vragen")} directe coördinatie`,
       action: { target_view: "signalen", target_filter: "highRisk" },
     },
   ];

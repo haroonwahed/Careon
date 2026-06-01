@@ -260,7 +260,7 @@ export function computeCoordinationNextBestAction(input: CoordinationNbaInput): 
   if (active >= REGIEKAMER_NBA_COORDINATION_MIN_ACTIVE) {
     return {
       title: "Hoge doorstroom — coördineer knelpunten",
-      description: `${active} actieve aanvragen — richt regie op wachtposities en doorstroom.`,
+      description: `${active} actieve aanvragen — richt coördinatie op wachtposities en doorstroom.`,
       reasons: [`${active} actieve aanvragen in doorstroom`],
       primaryAction: { label: "Bekijk knelpunt in stroom", actionKey: "FOCUS_PIPELINE" },
       secondaryAction: { label: "Open aanvragen", actionKey: "OPEN_WORKQUEUE" },

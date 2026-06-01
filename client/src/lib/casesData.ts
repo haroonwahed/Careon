@@ -1,4 +1,4 @@
-// CareOn - Zorgregie Platform
+// CareOn - Zorgcoördinatie Platform
 // Mock data for healthcare cases
 
 export type CaseStatus = 
