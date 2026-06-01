@@ -1,14 +1,14 @@
 /**
- * RegiekamerDemo - Control Center Demonstration
- * 
- * Shows the redesigned Regiekamer as an operational control tower
+ * CoordinationDemo - Control Center Demonstration
+ *
+ * Shows the redesigned coördinatie shell as an operational control tower
  */
 
 import { useState } from "react";
 import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
 import { CareAppFrame } from "../care/CareAppFrame";
 
-export function RegiekamerDemo() {
+export function CoordinationDemo() {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
 
   const handleCaseClick = (caseId: string) => {

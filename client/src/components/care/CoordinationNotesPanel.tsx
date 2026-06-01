@@ -1,12 +1,12 @@
 import { MessageSquareText } from "lucide-react";
 import { Button } from "../ui/button";
 
-interface RegieNotesPanelProps {
+interface CoordinationNotesPanelProps {
   testId?: string;
   onAfterAction?: () => void;
 }
 
-export function RegieNotesPanel({ testId, onAfterAction }: RegieNotesPanelProps) {
+export function CoordinationNotesPanel({ testId, onAfterAction }: CoordinationNotesPanelProps) {
   return (
     <section data-testid={testId} className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
       <div className="flex items-start gap-3">

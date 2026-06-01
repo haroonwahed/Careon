@@ -1,49 +1,49 @@
-import type { RegiekamerNbaActionKey, RegiekamerNbaUiMode } from "./regiekamerNextBestAction";
+import type { CoordinationNbaActionKey, CoordinationNbaUiMode } from "./coordinationNextBestAction";
 import { trackNbaEvent } from "./telemetryAdapter";
-import type { RegiekamerNbaTelemetryEvent } from "./telemetrySchema";
+import type { CoordinationNbaTelemetryEvent } from "./telemetrySchema";
 
-export const REGIEKAMER_NBA_ROUTE = "/regiekamer" as const;
+export const COORDINATION_NBA_ROUTE = "/regiekamer" as const;
 
-export type RegiekamerNbaInstrumentationEventName =
+export type CoordinationNbaInstrumentationEventName =
   | "nba_shown"
   | "nba_primary_clicked"
   | "nba_secondary_clicked"
   | "nba_cases_link_clicked"
   | "nba_insight_opened";
 
-/** Which Regiekamer insight `<details>` opened (`nba_insight_opened` only) — UI only; not sent in telemetry v1. */
-export type RegiekamerNbaInsightSource = "why" | "flow";
+/** Which Coordination insight `<details>` opened (`nba_insight_opened` only) — UI only; not sent in telemetry v1. */
+export type CoordinationNbaInsightSource = "why" | "flow";
 
 /** Internal context for building telemetry (no title — privacy). */
-export type RegiekamerNbaInstrumentationPayload = {
-  actionKey: RegiekamerNbaActionKey;
-  uiMode: RegiekamerNbaUiMode;
+export type CoordinationNbaInstrumentationPayload = {
+  actionKey: CoordinationNbaActionKey;
+  uiMode: CoordinationNbaUiMode;
   reasonCount: number;
-  route: typeof REGIEKAMER_NBA_ROUTE;
+  route: typeof COORDINATION_NBA_ROUTE;
   /** For deterministic unit tests */
   now?: Date;
 };
 
-export function buildRegiekamerNbaInstrumentationPayload(args: {
-  actionKey: RegiekamerNbaActionKey;
-  uiMode: RegiekamerNbaUiMode;
+export function buildCoordinationNbaInstrumentationPayload(args: {
+  actionKey: CoordinationNbaActionKey;
+  uiMode: CoordinationNbaUiMode;
   reasonCount: number;
   /** For deterministic unit tests */
   now?: Date;
-}): RegiekamerNbaInstrumentationPayload {
+}): CoordinationNbaInstrumentationPayload {
   return {
     actionKey: args.actionKey,
     uiMode: args.uiMode,
     reasonCount: args.reasonCount,
-    route: REGIEKAMER_NBA_ROUTE,
+    route: COORDINATION_NBA_ROUTE,
     ...(args.now !== undefined ? { now: args.now } : {}),
   };
 }
 
 function toTelemetryEvent(
-  event: RegiekamerNbaInstrumentationEventName,
-  payload: RegiekamerNbaInstrumentationPayload,
-): RegiekamerNbaTelemetryEvent {
+  event: CoordinationNbaInstrumentationEventName,
+  payload: CoordinationNbaInstrumentationPayload,
+): CoordinationNbaTelemetryEvent {
   const ts = (payload.now ?? new Date()).getTime();
   return {
     event,
@@ -59,10 +59,10 @@ function toTelemetryEvent(
 let lastShownDedupe: { fingerprint: string; at: number } | null = null;
 
 /**
- * Deduplicates `nba_shown` for the same Regiekamer NBA snapshot (e.g. React StrictMode
+ * Deduplicates `nba_shown` for the same Coordination NBA snapshot (e.g. React StrictMode
  * double effect) without suppressing a real re-show after data refresh.
  */
-export function shouldEmitRegiekamerNbaShown(fingerprint: string, windowMs = 150): boolean {
+export function shouldEmitCoordinationNbaShown(fingerprint: string, windowMs = 150): boolean {
   const now = Date.now();
   if (
     lastShownDedupe &&
@@ -76,16 +76,16 @@ export function shouldEmitRegiekamerNbaShown(fingerprint: string, windowMs = 150
 }
 
 /** @internal */
-export function resetRegiekamerNbaShownDedupeForTests(): void {
+export function resetCoordinationNbaShownDedupeForTests(): void {
   lastShownDedupe = null;
 }
 
 /**
  * Frontend-only: delegates to `trackNbaEvent` (see `telemetryAdapter.ts`).
  */
-export function emitRegiekamerNbaEvent(
-  event: RegiekamerNbaInstrumentationEventName,
-  payload: RegiekamerNbaInstrumentationPayload,
+export function emitCoordinationNbaEvent(
+  event: CoordinationNbaInstrumentationEventName,
+  payload: CoordinationNbaInstrumentationPayload,
 ): void {
   trackNbaEvent(toTelemetryEvent(event, payload));
 }

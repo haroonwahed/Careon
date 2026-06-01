@@ -1,5 +1,5 @@
 /**
- * UI-only decision phases (max 4 on Regiekamer doorstroom). Maps from backend/API `phase` strings — no API changes.
+ * UI-only decision phases (max 4 on Coordination doorstroom). Maps from backend/API `phase` strings — no API changes.
  */
 
 import { CARE_TERMS } from "./terminology";
@@ -52,10 +52,10 @@ export function normalizeApiPhaseId(phaseId: string): string {
 }
 
 /**
- * Normalizes `phase` URL query values (Regiekamer filters, bookmarks).
+ * Normalizes `phase` URL query values (Coordination filters, bookmarks).
  * Remaps legacy `wacht_op_validatie` to `klaar_voor_matching`. Returns `""` when absent.
  */
-export function normalizeRegiekamerPhaseQueryParam(raw: string | null | undefined): string {
+export function normalizeCoordinationPhaseQueryParam(raw: string | null | undefined): string {
   const trimmed = (raw ?? "").trim();
   if (!trimmed) {
     return "";

@@ -136,7 +136,7 @@ export function CaseDetailWithAI({
         className="gap-2 hover:bg-primary/10 hover:text-primary"
       >
         <ArrowLeft size={16} />
-        Terug naar Regiekamer
+        Terug naar coördinatie
       </Button>
 
       {/* Header */}

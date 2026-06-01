@@ -37,16 +37,16 @@ export function ProviderIntakeDashboard() {
 
   // Mock data
   const allCases: ProviderCase[] = [
-    {
-      id: "C-001",
-      clientName: "Emma de Jong",
-      clientAge: 14,
+      {
+        id: "C-001",
+        clientName: "Emma de Jong",
+        clientAge: 14,
       region: "Amsterdam",
       caseType: "Intensieve begeleiding",
       urgency: "high",
       status: "nieuw",
       waitingTime: "2 uur",
-      problemSummary: "Zorgvraag vereist beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
+      problemSummary: "Zorgvraag vraagt beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
       municipality: "Gemeente Amsterdam",
       placedDate: "17 april, 11:30"
     },
@@ -72,7 +72,7 @@ export function ProviderIntakeDashboard() {
       urgency: "high",
       status: "wacht-op-reactie",
       waitingTime: "1 dag",
-      problemSummary: "Zorgvraag vereist beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
+      problemSummary: "Zorgvraag vraagt beoordeling door aanbieder. Aanvullende context beschikbaar na gemeentelijke validatie.",
       municipality: "Gemeente Amsterdam",
       placedDate: "16 april, 14:20"
     },
@@ -165,7 +165,7 @@ export function ProviderIntakeDashboard() {
           Toegekende casussen
         </h1>
         <p className="text-muted-foreground">
-          Casussen waarvoor jouw organisatie regie heeft gekregen — toegang ontstaat na gemeentelijke validatie en blijft beperkt tot wat nodig is.
+          Casussen waarvoor jouw organisatie coördinatie heeft gekregen — toegang ontstaat na gemeentelijke validatie en blijft beperkt tot wat nodig is.
         </p>
       </div>
 

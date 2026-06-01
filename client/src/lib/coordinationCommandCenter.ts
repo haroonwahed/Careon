@@ -1,7 +1,7 @@
 import type {
-  RegiekamerDecisionOverviewItem,
-  RegiekamerDecisionOverviewTotals,
-} from "./regiekamerDecisionOverview";
+  CoordinationDecisionOverviewItem,
+  CoordinationDecisionOverviewTotals,
+} from "./coordinationDecisionOverview";
 import {
   DECISION_UI_PHASE_LABELS,
   DECISION_UI_PHASE_IDS,
@@ -9,19 +9,19 @@ import {
   type DecisionUiPhaseId,
 } from "./decisionPhaseUi";
 
-/** Regiekamer phase board columns — UI decision phases (doorstroom strip). */
+/** Coordination phase board columns — UI decision phases (doorstroom strip). */
 export const REGIEKAMER_FLOW_PHASES = DECISION_UI_PHASE_IDS;
 
-export type RegiekamerFlowPhase = DecisionUiPhaseId;
+export type CoordinationFlowPhase = DecisionUiPhaseId;
 
-/** Regiekamer-only labels for horizontal doorstroom (may differ from compact workload chips). */
-export const REGIEKAMER_PHASE_BOARD_LABELS: Record<RegiekamerFlowPhase, string> = {
+/** Coordination-only labels for horizontal doorstroom (may differ from compact workload chips). */
+export const REGIEKAMER_PHASE_BOARD_LABELS: Record<CoordinationFlowPhase, string> = {
   ...DECISION_UI_PHASE_LABELS,
   in_beoordeling: "Wacht op aanbieder",
 };
 
 /** Filter snapshot applied when user clicks an attention chip (matches SystemAwarenessPage state). */
-export type RegiekamerListFilter = {
+export type CoordinationListFilter = {
   issue: string;
   phase: string;
   priority: string;
@@ -37,7 +37,7 @@ export type AttentionSignal = {
   id: AttentionSignalId;
   label: string;
   count: number;
-  filter: RegiekamerListFilter;
+  filter: CoordinationListFilter;
 };
 
 /**
@@ -45,8 +45,8 @@ export type AttentionSignal = {
  * Order: matching urgent → afwijzingen → intake → zwakke match/capaciteit.
  */
 export function deriveAttentionSignals(
-  items: RegiekamerDecisionOverviewItem[],
-  totals: RegiekamerDecisionOverviewTotals,
+  items: CoordinationDecisionOverviewItem[],
+  totals: CoordinationDecisionOverviewTotals,
   noMatchUrgentCount: number,
 ): AttentionSignal[] {
   const weakMatchingCount = items.filter(
@@ -96,14 +96,14 @@ function r(n: number | undefined | null): number {
 }
 
 export type PhaseBoardColumn = {
-  phase: RegiekamerFlowPhase;
+  phase: CoordinationFlowPhase;
   label: string;
   count: number;
-  sample: RegiekamerDecisionOverviewItem[];
+  sample: CoordinationDecisionOverviewItem[];
 };
 
 export function derivePhaseBoard(
-  items: RegiekamerDecisionOverviewItem[],
+  items: CoordinationDecisionOverviewItem[],
   maxSample = 3,
 ): PhaseBoardColumn[] {
   return REGIEKAMER_FLOW_PHASES.map((phase) => ({

@@ -33,7 +33,7 @@ export const SETTINGS_NAV_GROUPS: readonly SettingsNavGroup[] = [
     label: "Mensen & keten",
     items: [
       { id: "gebruikers-rollen", label: "Gebruikers & rollen" },
-      { id: "workflow-regie", label: "Workflow & regie" },
+      { id: "workflow-regie", label: "Workflow & coördinatie" },
       { id: "matching-engine", label: "Matching engine" },
     ],
   },

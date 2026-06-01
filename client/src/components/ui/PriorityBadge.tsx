@@ -11,7 +11,7 @@
  * Rule: Component has NO business logic for ranking (data from backend)
  * Rule: Maps ONLY to priority_rank field
  * 
- * Used on: Casussen, Regiekamer (max 1 badge per item)
+ * Used on: Casussen, Coordination (max 1 badge per item)
  */
 
 interface PriorityBadgeProps {

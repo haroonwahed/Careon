@@ -127,7 +127,7 @@ export function RegiosPage({
     };
   }, [regions]);
 
-  const regieSignals = useMemo(() => {
+  const coordinationSignals = useMemo(() => {
     const signals: Array<{
       id: string;
       message: string;
@@ -297,11 +297,11 @@ export function RegiosPage({
                 </Button>
               </div>
 
-              {regieSignals.length === 0 ? (
+              {coordinationSignals.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Geen signalen in dit overzicht.</p>
               ) : (
                 <div className="space-y-2">
-                  {regieSignals.map((signal) => (
+                  {coordinationSignals.map((signal) => (
                     <div
                       key={signal.id}
                       className="flex flex-col gap-2 rounded-lg border border-border/55 bg-muted/15 px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"

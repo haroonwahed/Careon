@@ -37,8 +37,8 @@ import {
   normalizeBoardColumnToPhaseId,
 } from "./CareDesignPrimitives";
 import { cn } from "../ui/utils";
-import { RegieNotesPanel } from "./RegieNotesPanel";
-import { RegieRailEdgeTab, RegieRailToggleButton } from "./RegieRailControls";
+import { CoordinationNotesPanel } from "./CoordinationNotesPanel";
+import { CoordinationRailEdgeTab, CoordinationRailToggleButton } from "./CoordinationRailControls";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useCases } from "../../hooks/useCases";
@@ -76,7 +76,7 @@ import {
   type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
 
-/** Aligns with Regiekamer phase-board pill tones (`SystemAwarenessPage`). */
+/** Aligns with Coordination phase-board pill tones (`SystemAwarenessPage`). */
 function phasePillClasses(tone: "blocked" | "waiting" | "ready" | "in_progress"): string {
   switch (tone) {
     case "blocked":
@@ -125,7 +125,7 @@ function urgencyRank(urgency: WorkflowCaseView["urgency"]): number {
   }
 }
 
-/** Regiekamer-style priority chip tones for urgency column. */
+/** Coordination-style priority chip tones for urgency column. */
 function urgencyChipShellClass(urgency: WorkflowCaseView["urgency"]): string {
   switch (urgency) {
     case "critical":
@@ -460,7 +460,7 @@ export function WorkloadPage({
   const [selectedTaxonomySubcategory, setSelectedTaxonomySubcategory] = useState<TaxonomyFilter>("all");
   /** Default “Alle casussen”: volledige werklijst; gebruikers kunnen naar Mijn werkvoorraad voor focus. */
   const [focusChip, setFocusChip] = useState<FocusChip>("all");
-  /** One-shot focus hand-off from Regiekamer NBA links (e.g. "Bekijk kritieke casussen", "Bekijk gehele stroom"). */
+  /** One-shot focus hand-off from Coordination NBA links (e.g. "Bekijk kritieke casussen", "Bekijk gehele stroom"). */
   useEffect(() => {
     const preferred = consumeCasussenPreferredFocus();
     if (preferred === "critical") {
@@ -810,7 +810,7 @@ export function WorkloadPage({
             Nieuwe casus
           </Button>
         ) : null}
-        <RegieRailToggleButton
+        <CoordinationRailToggleButton
           collapsed={railCollapsed}
           onToggle={toggleRail}
           testId="casussen-rail-toggle"
@@ -1236,7 +1236,7 @@ export function WorkloadPage({
         <aside
           data-testid="casussen-right-rail"
           className="care-layout-with-rail__rail hidden space-y-4 pt-1 xl:sticky xl:top-4 xl:z-10 xl:block xl:overflow-y-auto xl:self-start"
-          style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
+          style={{ maxHeight: tokens.layout.coordinationRailMaxHeight }}
         >
           <CasussenInsightsPanels
             gemeenteDisplayName={gemeenteDisplayName}
@@ -1251,7 +1251,7 @@ export function WorkloadPage({
       )}
 
       {railCollapsed && (
-        <RegieRailEdgeTab
+        <CoordinationRailEdgeTab
           onExpand={() => setRailCollapsed(false)}
           testId="casussen-rail-edge-tab"
         />
@@ -1309,7 +1309,7 @@ function CasussenInsightsPanels({
             <a
               href={CARE_PATHS.REGIEKAMER}
               className="inline-block text-sm font-semibold text-primary underline-offset-4 hover:underline"
-              data-testid="casussen-rail-naar-regiekamer"
+              data-testid="casussen-rail-naar-coordination"
             >
               Bekijk coördinatie-overzicht
             </a>
@@ -1337,7 +1337,7 @@ function CasussenInsightsPanels({
         </button>
       </section>
 
-      <RegieNotesPanel testId="casussen-notes-panel" />
+      <CoordinationNotesPanel testId="casussen-notes-panel" />
     </>
   );
 }

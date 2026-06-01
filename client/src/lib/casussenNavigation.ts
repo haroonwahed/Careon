@@ -1,7 +1,7 @@
 /**
- * One-shot focus handoff between Regiekamer NBA links and the Casussen worklist.
+ * One-shot focus handoff between Coordination NBA links and the Casussen worklist.
  *
- * Regiekamer can hint a preferred initial focus when navigating the user to
+ * Coordination can hint a preferred initial focus when navigating the user to
  * /casussen (e.g. landing pre-filtered to "critical" cases). The receiver
  * (WorkloadPage) consumes the hint exactly once on mount and clears it.
  *

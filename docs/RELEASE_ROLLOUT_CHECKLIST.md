@@ -13,6 +13,29 @@ Use these as the source-of-truth contract for canonical workflow order, actor ow
 
 Use this for the staging-to-production handoff on a release that already has a green local validation set.
 
+## GO / NO-GO at a glance
+
+**GO only when**
+- production window is confirmed
+- all four owners are assigned
+- rollback path is known
+- backup is recent and referenced
+- secrets/env are ready
+- `OIDC_RP_CLIENT_SECRET` status is clear
+- local release-confidence checks are green
+
+**NO-GO when**
+- any production input is still pending
+  - reason: you do not yet have a complete go/no-go decision set.
+- backup or secrets are unconfirmed
+  - reason: restore and deploy safety cannot be verified.
+- the rollout window is not scheduled
+  - reason: there is no approved maintenance window to execute in.
+- deploy verification cannot be run
+  - reason: you cannot validate the release after changes are applied.
+- monitoring access is unavailable
+  - reason: you cannot safely observe or abort the live rollout.
+
 ## Required production inputs
 
 Fill these before the production window starts:
@@ -31,6 +54,23 @@ Fill these before the production window starts:
 - Secrets/env readiness:
 - Monitoring access:
 - `OIDC_RP_CLIENT_SECRET` rotation status:
+
+## Go / No-Go checklist
+
+Use this as the final preflight gate before the production window starts.
+
+- [ ] Production window is confirmed and calendar-blocked.
+- [ ] Release captain, backend owner, ops owner, and QA owner are assigned.
+- [ ] Rollback owner and rollback path are confirmed.
+- [ ] Backup reference and timestamp are recorded for the target environment.
+- [ ] Secrets/env readiness is confirmed for production.
+- [ ] Monitoring access is confirmed.
+- [ ] `OIDC_RP_CLIENT_SECRET` rotation is complete or explicitly not needed.
+- [ ] Local release-confidence checks are green.
+- [ ] Production preflight is green on the intended release SHA.
+- [ ] Deploy, migrate, collectstatic, and restart plan are ready.
+- [ ] Smoke checks and monitoring watch window are scheduled.
+- [ ] Sign-off owner understands the abort triggers and rollback decision point.
 
 ### Copy block
 

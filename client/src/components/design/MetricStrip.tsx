@@ -8,14 +8,14 @@ import { tokens } from "../../design/tokens";
  * Density contract:
  * - Must remain compact (around 48-56px visual height)
  * - Must not become KPI card-grid tiles
- * - Regiekamer only
+ * - Coordination only
  */
 interface MetricStripProps {
   children: ReactNode;
   className?: string;
 }
 
-/** Contract: ONLY allowed in Regiekamer (system awareness). */
+/** Contract: ONLY allowed in Coordination (system awareness). */
 export function MetricStrip({ children, className }: MetricStripProps) {
   return (
     <div

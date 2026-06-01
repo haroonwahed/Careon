@@ -1,6 +1,6 @@
 /**
  * Imperative next-best-action copy (decision system).
- * Used by Regiekamer and casus execution; must stay aligned with API action codes.
+ * Used by Coordination and casus execution; must stay aligned with API action codes.
  */
 export const NBA_IMPERATIVE_LABELS: Record<string, string> = {
   COMPLETE_CASE_DATA: "Vul casus aan",

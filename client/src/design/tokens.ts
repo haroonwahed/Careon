@@ -23,13 +23,13 @@ export const tokens = {
     matchingGridRightMinWidth: "680px",
     matchingWorkspaceMinHeight: "620px",
     matchingWorkspaceDesktopHeight: "calc(100vh - 170px)",
-    /** Regiekamer: main + right rail without crunching the doorstroom strip. */
-    regiekamerWorkspaceMaxWidth: "96rem",
+    /** Coordination: main + right rail without crunching the doorstroom strip. */
+    coordinationWorkspaceMaxWidth: "96rem",
     /**
-     * Regiekamer right rail (`aside`): max height inside the main scroll region.
+     * Coordination right rail (`aside`): max height inside the main scroll region.
      * Shell scrollport sits below `TopBar` (`h-16` = 4rem); rail uses `sticky` + `top-4` (1rem).
      */
-    regiekamerRailMaxHeight: "calc(100dvh - 5rem)",
+    coordinationRailMaxHeight: "calc(100dvh - 5rem)",
     timelineConnectorTop: "2.5rem",
     edgeZero: "0px",
     sectionSpacing: "24px",

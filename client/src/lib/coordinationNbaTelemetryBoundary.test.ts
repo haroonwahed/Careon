@@ -1,5 +1,5 @@
 /**
- * Static guard: Regiekamer NBA telemetry must not live in the same module as
+ * Static guard: Coordination NBA telemetry must not live in the same module as
  * audit/governance hooks (see docs/REGIEKAMER_NBA_TELEMETRY.md).
  *
  * Scope: all `.ts` / `.tsx` files under `client/src/` — architecture docs may mention both concepts.
@@ -33,12 +33,12 @@ function auditGovernanceSignals(source: string): string[] {
   return found;
 }
 
-describe("Regiekamer NBA ↔ audit/governance coupling", () => {
+describe("Coordination NBA ↔ audit/governance coupling", () => {
   it("no client/src file that references nba_ also references audit log infrastructure", () => {
     const violations: string[] = [];
     for (const abs of walkTsFiles(CLIENT_SRC)) {
       /** This file defines matchers containing audit symbols — skip self to avoid a tautological failure. */
-      if (basename(abs) === "regiekamerNbaTelemetryBoundary.test.ts") continue;
+      if (basename(abs) === "coordinationNbaTelemetryBoundary.test.ts") continue;
       const source = readFileSync(abs, "utf8");
       if (!source.includes("nba_")) continue;
       const signals = auditGovernanceSignals(source);

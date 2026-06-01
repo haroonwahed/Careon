@@ -4,7 +4,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
 import type { SpaTask } from "../hooks/useTasks";
-import type { RegiekamerDecisionOverview } from "../lib/regiekamerDecisionOverview";
+import type { CoordinationDecisionOverview } from "../lib/coordinationDecisionOverview";
 import { expectNoA11yViolations, renderWithA11y } from "./utils/a11y";
 import { NieuweCasusPage } from "../components/care/NieuweCasusPage";
 import { WorkloadPage } from "../components/care/WorkloadPage";
@@ -36,8 +36,8 @@ vi.mock("../hooks/useTasks", () => ({
 vi.mock("../hooks/useCurrentUser", () => ({
   useCurrentUser: (...args: unknown[]) => mockUseCurrentUser(...args),
 }));
-vi.mock("../hooks/useRegiekamerDecisionOverview", () => ({
-  useRegiekamerDecisionOverview: (...args: unknown[]) => mockUseOverview(...args),
+vi.mock("../hooks/useCoordinationDecisionOverview", () => ({
+  useCoordinationDecisionOverview: (...args: unknown[]) => mockUseOverview(...args),
 }));
 vi.mock("../hooks/useRailCollapsed", () => ({
   useRailCollapsed: (...args: unknown[]) => mockUseRailCollapsed(...args),
@@ -129,7 +129,7 @@ function makeTask(overrides: Partial<SpaTask> = {}): SpaTask {
   };
 }
 
-function makeOverview(): RegiekamerDecisionOverview {
+function makeOverview(): CoordinationDecisionOverview {
   return {
     generated_at: "2026-04-25T10:00:00Z",
     totals: {
@@ -310,7 +310,11 @@ describe("Care accessibility smoke: core pages", () => {
     expect(screen.getAllByRole("button", { name: "Terug" }).length).toBe(1);
     expect(screen.getByRole("button", { name: "Vorige" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Volgende" })).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText("Urgentie *"), "MEDIUM");
+    await user.click(screen.getByLabelText("Client heeft al een urgentieverklaring"));
+    await user.upload(
+      screen.getByLabelText("Urgentieverklaring *"),
+      new File(["urgentieverklaring"], "urgentieverklaring.pdf", { type: "application/pdf" }),
+    );
     await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie *"), "WONEN_VERBLIJF");
     await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "WONEN_VERBLIJF_WOONVOORZIENING");
     expect(await screen.findByLabelText("Specifieke zorgbehoefte")).toHaveValue("WONEN_VERBLIJF_WOONVOORZIENING");
@@ -342,12 +346,12 @@ describe("Care accessibility smoke: core pages", () => {
     await expectNoA11yViolations(container, "Casussen");
   });
 
-  it("Regiekamer / SystemAwarenessPage", async () => {
+  it("Coordination / SystemAwarenessPage", async () => {
     mockUseOverview.mockReturnValue({ data: makeOverview(), loading: false, error: null, refetch: vi.fn() });
 
     const { container } = renderWithA11y(<SystemAwarenessPage onCaseClick={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: /^Coördinatie$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toBeVisible();
+    expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toBeVisible();
     expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
     await expectNoA11yViolations(container, "Coördinatie");
   });

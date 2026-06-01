@@ -37,7 +37,7 @@ function writeValue(next: boolean): void {
 /**
  * Shared collapse state for the right-side regie rail across pages.
  * Persisted in localStorage so the preference survives reloads and
- * stays consistent between Regiekamer, Casussen, and Aanbieder beoordeling.
+ * stays consistent between Coordination, Casussen, and Aanbieder beoordeling.
  */
 export function useRailCollapsed(): {
   collapsed: boolean;

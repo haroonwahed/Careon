@@ -1,5 +1,5 @@
 /**
- * Regiekamer NBA telemetry sink (frontend-only).
+ * Coordination NBA telemetry sink (frontend-only).
  *
  * Must not import or call AuditLog, CaseDecisionLog, or `/care/api/audit-log/` —
  * see docs/REGIEKAMER_NBA_TELEMETRY.md (R1–R5).
@@ -18,25 +18,25 @@
  *   - Implement POST /care/api/instrumentation/events/ with rate-limit + retention
  *   - Surface a UI affordance for consent capture
  */
-import type { RegiekamerNbaTelemetryEvent } from "./telemetrySchema";
+import type { CoordinationNbaTelemetryEvent } from "./telemetrySchema";
 
-type RegiekamerNbaTrackFn = (event: RegiekamerNbaTelemetryEvent) => void;
+type CoordinationNbaTrackFn = (event: CoordinationNbaTelemetryEvent) => void;
 
-interface RegiekamerNbaWindow {
+interface CoordinationNbaWindow {
   __REGIEKAMER_NBA_CONSENT__?: boolean;
-  __REGIEKAMER_NBA_TRACK__?: RegiekamerNbaTrackFn;
+  __REGIEKAMER_NBA_TRACK__?: CoordinationNbaTrackFn;
 }
 
-function hasConsent(w: RegiekamerNbaWindow): boolean {
+function hasConsent(w: CoordinationNbaWindow): boolean {
   return w.__REGIEKAMER_NBA_CONSENT__ === true;
 }
 
-export function trackNbaEvent(event: RegiekamerNbaTelemetryEvent): void {
+export function trackNbaEvent(event: CoordinationNbaTelemetryEvent): void {
   if (typeof window === "undefined") {
     return;
   }
 
-  const w = window as Window & RegiekamerNbaWindow;
+  const w = window as Window & CoordinationNbaWindow;
 
   if (!hasConsent(w)) {
     if (import.meta.env.DEV) {

@@ -185,7 +185,7 @@ export function TopBar({
     () => new Set(availableContexts.map((context) => context.id)),
     [availableContexts],
   );
-  /** Session-backed org (e.g. auto-provisioned "test1's Regie") is not a pilot chip — show it explicitly above the switch list. */
+  /** Session-backed org (e.g. auto-provisioned "test1's Coördinatie") is not a pilot chip — show it explicitly above the switch list. */
   const showActiveWorkspaceOutsidePilot = !pilotContextIds.has(currentContext.id);
 
   return (

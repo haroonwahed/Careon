@@ -6,6 +6,26 @@ Working draft for the next rollout. Fill this during the actual staging-to-produ
 
 ---
 
+## GO / NO-GO at a glance
+
+**GO only when**
+- production window is confirmed
+- all four owners are assigned
+- rollback path is known
+- backup is recent and referenced
+- secrets/env are ready
+- `OIDC_RP_CLIENT_SECRET` status is clear
+- local release-confidence checks are green
+
+**NO-GO when**
+- any production input is still pending
+- backup or secrets are unconfirmed
+- the rollout window is not scheduled
+- deploy verification cannot be run
+- monitoring access is unavailable
+
+---
+
 ## Release metadata
 
 | Field | Value |
@@ -99,6 +119,23 @@ If a field is not known yet, leave it blank and mark it `pending` in the rollout
 - [ ] Monitoring access is confirmed.
 - [ ] Rollback owner is confirmed.
 - [ ] Local release-confidence checks are green.
+
+### Go / No-Go checklist
+
+| Item | Status |
+|------|--------|
+| Production window is confirmed and calendar-blocked | pending |
+| Release captain, backend owner, ops owner, and QA owner are assigned | pending |
+| Rollback owner and rollback path are confirmed | pending |
+| Backup reference and timestamp are recorded | pending |
+| Secrets/env readiness is confirmed | pending |
+| Monitoring access is confirmed | pending |
+| `OIDC_RP_CLIENT_SECRET` rotation is complete or explicitly not needed | pending |
+| Local release-confidence checks are green | pending |
+| Production preflight is green on the intended release SHA | pending |
+| Deploy, migrate, collectstatic, and restart plan are ready | pending |
+| Smoke checks and monitoring watch window are scheduled | pending |
+| Sign-off owner understands abort triggers and rollback decision point | pending |
 
 ### Start / Stop
 

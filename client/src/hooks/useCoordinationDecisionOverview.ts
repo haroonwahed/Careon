@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import {
-  fetchRegiekamerDecisionOverview,
-  type RegiekamerDecisionOverview,
-} from "../lib/regiekamerDecisionOverview";
+  fetchCoordinationDecisionOverview,
+  type CoordinationDecisionOverview,
+} from "../lib/coordinationDecisionOverview";
 
-export interface UseRegiekamerDecisionOverviewResult {
-  data: RegiekamerDecisionOverview | null;
+export interface UseCoordinationDecisionOverviewResult {
+  data: CoordinationDecisionOverview | null;
   loading: boolean;
   error: string | null;
   refetch: () => void;
 }
 
-export function useRegiekamerDecisionOverview(): UseRegiekamerDecisionOverviewResult {
-  const [data, setData] = useState<RegiekamerDecisionOverview | null>(null);
+export function useCoordinationDecisionOverview(): UseCoordinationDecisionOverviewResult {
+  const [data, setData] = useState<CoordinationDecisionOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
@@ -26,7 +26,7 @@ export function useRegiekamerDecisionOverview(): UseRegiekamerDecisionOverviewRe
     setLoading(true);
     setError(null);
 
-    fetchRegiekamerDecisionOverview()
+    fetchCoordinationDecisionOverview()
       .then((payload) => {
         if (!cancelled) {
           setData(payload);
@@ -34,7 +34,7 @@ export function useRegiekamerDecisionOverview(): UseRegiekamerDecisionOverviewRe
       })
       .catch((fetchError) => {
         if (!cancelled) {
-          setError(fetchError instanceof Error ? fetchError.message : "Regiekamer-overzicht kon niet worden geladen.");
+          setError(fetchError instanceof Error ? fetchError.message : "Coördinatie-overzicht kon niet worden geladen.");
         }
       })
       .finally(() => {

@@ -32,7 +32,7 @@ export const CARE_RHYTHM = {
   metaStack: "care-meta-stack",
   /** CareSearchFiltersBar root. */
   searchStack: "care-search-control-stack",
-  /** Main + right rail page layout (Casussen, Regiekamer). */
+  /** Main + right rail page layout (Casussen, Coordination). */
   layoutWithRail: "care-layout-with-rail",
   /** Empty / loading / error in main column. */
   emptyZone: "care-empty-zone",

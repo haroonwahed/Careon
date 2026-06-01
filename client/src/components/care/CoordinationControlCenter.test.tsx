@@ -1,14 +1,14 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
-import type { RegiekamerDecisionOverview } from "../../lib/regiekamerDecisionOverview";
-import { expectRegiekamerMode } from "../../test/utils/modeGuards";
-import { SystemAwarenessPage } from "./SystemAwarenessPage";
+import type { CoordinationDecisionOverview } from "../../lib/coordinationDecisionOverview";
+import { expectCoordinationMode } from "../../test/utils/modeGuards";
+import { CoordinationControlCenter } from "./CoordinationControlCenter";
 
-const mockUseRegiekamerDecisionOverview = vi.fn();
+const mockUseCoordinationDecisionOverview = vi.fn();
 
-vi.mock("../../hooks/useRegiekamerDecisionOverview", () => ({
-  useRegiekamerDecisionOverview: () => mockUseRegiekamerDecisionOverview(),
+vi.mock("../../hooks/useCoordinationDecisionOverview", () => ({
+  useCoordinationDecisionOverview: () => mockUseCoordinationDecisionOverview(),
 }));
 
 vi.mock("../../hooks/useCurrentUser", () => ({
@@ -29,7 +29,7 @@ vi.mock("../../hooks/useCurrentUser", () => ({
   }),
 }));
 
-function makeItem(overrides: Partial<RegiekamerDecisionOverview["items"][number]> = {}) {
+function makeItem(overrides: Partial<CoordinationDecisionOverview["items"][number]> = {}) {
   return {
     case_id: 101,
     case_reference: "C-101",
@@ -77,7 +77,7 @@ function makeItem(overrides: Partial<RegiekamerDecisionOverview["items"][number]
   };
 }
 
-function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): RegiekamerDecisionOverview {
+function makeOverview(overrides: Partial<CoordinationDecisionOverview> = {}): CoordinationDecisionOverview {
   return {
     generated_at: "2026-04-25T10:00:00Z",
     totals: {
@@ -180,47 +180,47 @@ function makeOverview(overrides: Partial<RegiekamerDecisionOverview> = {}): Regi
   };
 }
 
-describe("SystemAwarenessPage", () => {
+describe("CoordinationControlCenter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("loads the overview and renders Doorstroom, right rail, and Werkvoorraad", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+  mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-uitvoerlijst")).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-right-rail")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-right-rail")).toBeInTheDocument();
     expect(screen.getByText("Doorstroom")).toBeInTheDocument();
     expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(within(screen.getByTestId("regiekamer-uitvoerlijst")).getByText(/\d+\s+in coördinatie-aandacht/)).toBeInTheDocument();
+    expect(within(screen.getByTestId("coordination-uitvoerlijst")).getByText(/\d+\s+in coördinatie-aandacht/)).toBeInTheDocument();
   });
 
-  it("enforces regiekamer screen responsibility boundaries", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+  it("enforces coordination screen responsibility boundaries", () => {
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expectRegiekamerMode();
-    expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-uitvoerlijst")).toBeInTheDocument();
+    expectCoordinationMode();
+    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "crisis");
-    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
 
     expect(screen.queryByText(/Casusdetail|Case detail/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Genereer samenvatting" })).not.toBeInTheDocument();
@@ -228,24 +228,24 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("describes operationele coördinatie as an operational workspace and keeps the dominant action singular", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    fireEvent.click(screen.getByTestId("regiekamer-page-info"));
+    fireEvent.click(screen.getByTestId("coordination-page-info"));
     expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
     expect(screen.getByText(/wat wacht, wie eigenaar is en wat de volgende actie is/i)).toBeInTheDocument();
-    expect(screen.getAllByTestId("regiekamer-dominant-primary-cta")).toHaveLength(1);
-    expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
+    expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
+    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
   });
 
   it("renders governance queues as Wachtrijen with explicit gemeentelijke validatie copy", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         governance_queues: {
           wijkteam_intakes_needing_assessment: [],
@@ -263,31 +263,31 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("regiekamer-governance-queues")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-governance-queues")).toBeInTheDocument();
     expect(screen.getByText("Wachtrijen")).toBeInTheDocument();
     expect(screen.queryByText("Levenscyclus")).not.toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Open eerste casus in wachtrij Gemeentelijke validatie \(2\)/i }),
     ).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-governance-gemeente")).toHaveAttribute(
+    expect(screen.getByTestId("coordination-governance-gemeente")).toHaveAttribute(
       "title",
       expect.stringMatching(/matching gereed is en de gemeente het arrangement/i),
     );
   });
 
   it("renders the priority worklist in score order", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const rows = screen.getAllByTestId("regiekamer-worklist-item");
+    const rows = screen.getAllByTestId("coordination-worklist-item");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Casus A");
     expect(rows[0]).toHaveTextContent("Kritiek");
@@ -295,16 +295,16 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("renders compact card content on each worklist card", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const first = screen.getAllByTestId("regiekamer-worklist-item")[0];
+    const first = screen.getAllByTestId("coordination-worklist-item")[0];
     expect(within(first).getByText("Casus A")).toBeInTheDocument();
     expect(first).toHaveTextContent("Gemeente");
     expect(first).toHaveTextContent("Samenvatting is compleet");
@@ -314,7 +314,7 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("never renders mixed summary CTA labels", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         items: [
           makeItem({
@@ -338,13 +338,13 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.queryByRole("button", { name: /Genereer samenvatting/i })).not.toBeInTheDocument();
   });
 
   it("uses summary CTA variants for existing, missing, and pending summary states", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         items: [
           makeItem({
@@ -400,7 +400,7 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.getByRole("button", { name: "Vraag reactie aanbieder" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Vul casus aan" })).toBeInTheDocument();
@@ -410,7 +410,7 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("surfaces intake delay as dominant action when it is the top scenario", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 2,
@@ -463,43 +463,43 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "intervention");
-    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveTextContent(/intake-vertraging/i);
-    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Bekijk intake-aanvragen/i);
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "intervention");
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveTextContent(/intake-vertraging/i);
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Bekijk intake-aanvragen/i);
   });
 
   it("filters the worklist client-side", async () => {
     const user = userEvent.setup();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
     await user.selectOptions(screen.getByRole("combobox", { name: "Prioriteit" }), "critical");
-    expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
+    expect(await screen.findAllByTestId("coordination-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus A")).toBeInTheDocument();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Prioriteit" }), "all");
     await user.selectOptions(screen.getByRole("combobox", { name: "Type" }), "intake");
-    expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
+    expect(await screen.findAllByTestId("coordination-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus C")).toBeInTheDocument();
 
     await user.selectOptions(screen.getByRole("combobox", { name: "Type" }), "all");
     await user.selectOptions(screen.getByRole("combobox", { name: "Rol" }), "regie");
-    expect(await screen.findAllByTestId("regiekamer-worklist-item")).toHaveLength(1);
+    expect(await screen.findAllByTestId("coordination-worklist-item")).toHaveLength(1);
     expect(screen.getByText("Casus B")).toBeInTheDocument();
   });
 
   it("renders the no-data empty state with werkvoorraad CTA when navigation is available", () => {
     const onAppNavigate = vi.fn();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 0,
@@ -516,7 +516,7 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
     expect(screen.getByText("Geen actieve aanvragen.")).toBeInTheDocument();
     expect(
@@ -529,7 +529,7 @@ describe("SystemAwarenessPage", () => {
   it("renders Nieuwe casus on empty state when canCreateCase", () => {
     const onCreateCase = vi.fn();
     const onAppNavigate = vi.fn();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 0,
@@ -547,7 +547,7 @@ describe("SystemAwarenessPage", () => {
     });
 
     render(
-      <SystemAwarenessPage
+      <CoordinationControlCenter
         onCaseClick={vi.fn()}
         onAppNavigate={onAppNavigate}
         canCreateCase
@@ -564,7 +564,7 @@ describe("SystemAwarenessPage", () => {
 
   it("shows calm success when there are no operational blockers while still listing cases", () => {
     const onAppNavigate = vi.fn();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 2,
@@ -603,13 +603,13 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    expect(screen.getByTestId("regiekamer-calm-state")).toHaveTextContent("Geen operationele blokkades");
-    expect(screen.getByTestId("regiekamer-uitvoerlijst")).toBeInTheDocument();
-    expect(screen.getAllByTestId("regiekamer-worklist-item")).toHaveLength(2);
+    expect(screen.getByTestId("coordination-calm-state")).toHaveTextContent("Geen operationele blokkades");
+    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
+    expect(screen.getAllByTestId("coordination-worklist-item")).toHaveLength(2);
     fireEvent.click(
-      within(screen.getByTestId("regiekamer-phase-board")).getByRole("button", { name: /Bekijk gehele stroom/i }),
+      within(screen.getByTestId("coordination-phase-board")).getByRole("button", { name: /Bekijk gehele stroom/i }),
     );
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
     // The button should hand off a "pipeline" focus hint so the worklist opens
@@ -621,7 +621,7 @@ describe("SystemAwarenessPage", () => {
 
   it("uses canonical aanbieder-reacties label in flow chain and phase filter", async () => {
     const user = userEvent.setup();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 5,
@@ -655,57 +655,57 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "stable");
-    expect(screen.getByTestId("regiekamer-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("regiekamer-phase-column-plaatsing_intake")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "stable");
+    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-phase-column-plaatsing_intake")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
     expect(screen.getByRole("option", { name: "Aanbieder reacties" })).toBeInTheDocument();
   });
 
   it("renders crisis dominant NBA with Los blokkades op", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("regiekamer-dominant-action")).toHaveAttribute("data-regiekamer-mode", "crisis");
-    expect(screen.getByTestId("regiekamer-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los blokkades op/i);
   });
 
   it("renders critical alert regions with metric, text block, and actions", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("regiekamer-dominant-action-metric")).toHaveTextContent("1");
-    expect(screen.getByTestId("regiekamer-dominant-action-content")).toHaveTextContent(/verhoogde coördinatie-aandacht/i);
-    expect(screen.getByTestId("regiekamer-dominant-action-content")).toHaveTextContent("1 casus vraagt directe afstemming");
-    expect(screen.getByTestId("regiekamer-dominant-action-actions")).toHaveTextContent("Los blokkades op");
+    expect(screen.getByTestId("coordination-dominant-action-metric")).toHaveTextContent("1");
+    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent(/verhoogde coördinatie-aandacht/i);
+    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent("1 casus vraagt directe afstemming");
+    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("Los blokkades op");
   });
 
   it("places search and filters inside the Werkvoorraad section header", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const workSection = screen.getByTestId("regiekamer-uitvoerlijst");
+    const workSection = screen.getByTestId("coordination-uitvoerlijst");
     expect(within(workSection).getByText("Werkvoorraad")).toBeInTheDocument();
     expect(within(workSection).getByTestId("care-search-control-stack")).toBeInTheDocument();
     expect(within(workSection).getByRole("searchbox", { name: /Zoek aanvragen, regio's, aanbieders/i })).toBeInTheDocument();
@@ -713,23 +713,23 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("does not duplicate flow titles inside flow card body", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const casusCard = screen.getByTestId("regiekamer-phase-column-casus_gestart");
+    const casusCard = screen.getByTestId("coordination-phase-column-casus_gestart");
     expect(within(casusCard).getAllByText("Aanmelding & zorgvraag")).toHaveLength(1);
     expect(within(casusCard).getByText("Geblokkeerd")).toBeInTheDocument();
     expect(within(casusCard).queryByText("Matching & validatie")).not.toBeInTheDocument();
   });
 
   it("supplemental NBA link navigates to /casussen with a critical focus hand-off", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
@@ -743,9 +743,9 @@ describe("SystemAwarenessPage", () => {
       // sessionStorage may be unavailable in some environments; ignore.
     }
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    const link = screen.getByTestId("regiekamer-dominant-cases-link");
+    const link = screen.getByTestId("coordination-dominant-cases-link");
     expect(link).toHaveTextContent(/Bekijk kritieke aanvragen \(1\)/);
 
     fireEvent.click(link);
@@ -758,7 +758,7 @@ describe("SystemAwarenessPage", () => {
   });
 
   it("matching-urgenties tier uses filter-aligned primary label (no execution verbs)", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 1,
@@ -789,45 +789,45 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const primary = screen.getByTestId("regiekamer-dominant-primary-cta");
+    const primary = screen.getByTestId("coordination-dominant-primary-cta");
     expect(primary).toHaveTextContent(/Bekijk matching-aanvragen/i);
     expect(primary.textContent?.toLowerCase() ?? "").not.toMatch(/herstart/);
   });
 
   it("opens the existing case detail overlay by notifying the parent", () => {
     const onCaseClick = vi.fn();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={onCaseClick} />);
+    render(<CoordinationControlCenter onCaseClick={onCaseClick} />);
 
-    const firstWorklistRow = screen.getAllByTestId("regiekamer-worklist-item")[0];
+    const firstWorklistRow = screen.getAllByTestId("coordination-worklist-item")[0];
     fireEvent.click(within(firstWorklistRow).getAllByRole("button")[0]);
 
     expect(onCaseClick).toHaveBeenCalledWith("101");
   });
 
   it("renders exactly one dominant primary CTA", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getAllByTestId("regiekamer-dominant-primary-cta")).toHaveLength(1);
+    expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
   });
 
-  it("surfaces urgency applications in the regiekamer header summary", () => {
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+  it("surfaces urgency applications in the coordination header summary", () => {
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
           active_cases: 1,
@@ -844,23 +844,23 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.getByText(/Urgentie aangevraagd: 3/i)).toBeInTheDocument();
   });
 
   it("clicking a quick-link phase row applies the keten filter", async () => {
     const user = userEvent.setup();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByTestId("regiekamer-quick-phase-klaar_voor_matching"));
+    await user.click(screen.getByTestId("coordination-quick-phase-klaar_voor_matching"));
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
 
     expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("klaar_voor_matching");
@@ -868,16 +868,16 @@ describe("SystemAwarenessPage", () => {
 
   it("clicking a phase board column applies the phase filter", async () => {
     const user = userEvent.setup();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByTestId("regiekamer-phase-column-in_beoordeling"));
+    await user.click(screen.getByTestId("coordination-phase-column-in_beoordeling"));
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
 
     expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("in_beoordeling");
@@ -885,7 +885,7 @@ describe("SystemAwarenessPage", () => {
 
   it("filters coordination rows by zorgbehoefte categorie and subcategorie", async () => {
     const user = userEvent.setup();
-    mockUseRegiekamerDecisionOverview.mockReturnValue({
+    mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         items: [
           makeItem(),
@@ -907,7 +907,7 @@ describe("SystemAwarenessPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<SystemAwarenessPage onCaseClick={vi.fn()} />);
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
     expect(screen.getByLabelText("Zorgbehoefte categorie")).toBeInTheDocument();

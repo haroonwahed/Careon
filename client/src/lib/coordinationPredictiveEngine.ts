@@ -1,9 +1,9 @@
 import type { Casus } from "./phaseEngine";
-import type { RegiekamerBottleneckStage, RegiekamerDecisionSummary } from "./regiekamerDecisionEngine";
+import type { CoordinationBottleneckStage, CoordinationDecisionSummary } from "./coordinationDecisionEngine";
 
 export type PredictiveRiskBand = "critical" | "high" | "medium" | "low";
 
-export interface RegiekamerForecastSignal {
+export interface CoordinationForecastSignal {
   key:
     | "assessment_delay"
     | "match_failure"
@@ -15,10 +15,10 @@ export interface RegiekamerForecastSignal {
   text: string;
   severity: "critical" | "warning" | "info";
   affected_case_ids: string[];
-  target_stage: Exclude<RegiekamerBottleneckStage, "none">;
+  target_stage: Exclude<CoordinationBottleneckStage, "none">;
 }
 
-export interface RegiekamerCaseForecast {
+export interface CoordinationCaseForecast {
   risk_score: number;
   risk_band: PredictiveRiskBand;
   top_reasons: string[];
@@ -26,11 +26,11 @@ export interface RegiekamerCaseForecast {
   projected_impact: string;
 }
 
-export interface RegiekamerPredictiveSummary {
-  forecast_signals: RegiekamerForecastSignal[];
-  projected_bottleneck_stage: RegiekamerBottleneckStage;
+export interface CoordinationPredictiveSummary {
+  forecast_signals: CoordinationForecastSignal[];
+  projected_bottleneck_stage: CoordinationBottleneckStage;
   action_impact_summary: string;
-  per_case_forecast: Record<string, RegiekamerCaseForecast>;
+  per_case_forecast: Record<string, CoordinationCaseForecast>;
 }
 
 const SLA_DAYS = 7;
@@ -42,7 +42,7 @@ function bandFor(score: number): PredictiveRiskBand {
   return "low";
 }
 
-function scoreCase(caseItem: Casus): RegiekamerCaseForecast {
+function scoreCase(caseItem: Casus): CoordinationCaseForecast {
   let score = 0;
   const reasons: string[] = [];
 
@@ -130,7 +130,7 @@ function scoreCase(caseItem: Casus): RegiekamerCaseForecast {
   };
 }
 
-function findProjectedBottleneck(cases: Casus[], forecast: Record<string, RegiekamerCaseForecast>): RegiekamerBottleneckStage {
+function findProjectedBottleneck(cases: Casus[], forecast: Record<string, CoordinationCaseForecast>): CoordinationBottleneckStage {
   const stageRisk = {
     casussen: 0,
     beoordelingen: 0,
@@ -152,16 +152,16 @@ function findProjectedBottleneck(cases: Casus[], forecast: Record<string, Regiek
 
   const ranked = Object.entries(stageRisk).sort((a, b) => b[1] - a[1]);
   if (!ranked.length || ranked[0][1] === 0) return "none";
-  return ranked[0][0] as RegiekamerBottleneckStage;
+  return ranked[0][0] as CoordinationBottleneckStage;
 }
 
-export function buildRegiekamerPredictiveSummary(
+export function buildCoordinationPredictiveSummary(
   cases: Casus[],
-  decisionSummary?: RegiekamerDecisionSummary
-): RegiekamerPredictiveSummary {
+  decisionSummary?: CoordinationDecisionSummary
+): CoordinationPredictiveSummary {
   const activeCases = cases.filter((c) => c.phase !== "afgerond");
 
-  const perCaseForecast = activeCases.reduce<Record<string, RegiekamerCaseForecast>>((acc, caseItem) => {
+  const perCaseForecast = activeCases.reduce<Record<string, CoordinationCaseForecast>>((acc, caseItem) => {
     acc[caseItem.id] = scoreCase(caseItem);
     return acc;
   }, {});
@@ -192,7 +192,7 @@ export function buildRegiekamerPredictiveSummary(
     })
     .map((c) => c.id);
 
-  const signals: RegiekamerForecastSignal[] = [];
+  const signals: CoordinationForecastSignal[] = [];
 
   if (assessmentDelayIds.length > 0) {
     signals.push({

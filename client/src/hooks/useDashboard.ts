@@ -1,5 +1,5 @@
 /**
- * useDashboard — fetches aggregate KPI summary from the Django API for the Regiekamer.
+ * useDashboard — fetches aggregate KPI summary from the Django API for the Coordination.
  */
 import { useState, useEffect, useCallback } from 'react';
 import { apiClient } from '../lib/apiClient';

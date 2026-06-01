@@ -1,9 +1,9 @@
 import type { Casus } from "./phaseEngine";
 import { CARE_TERMS } from "./terminology";
 
-export type RegiekamerSeverity = "critical" | "warning" | "info" | "good";
-export type RegiekamerViewTarget = "matching" | "casussen" | "plaatsingen" | "signalen";
-export type RegiekamerFilterTarget =
+export type CoordinationSeverity = "critical" | "warning" | "info" | "good";
+export type CoordinationViewTarget = "matching" | "casussen" | "plaatsingen" | "signalen";
+export type CoordinationFilterTarget =
   | "noMatch"
   | "casussen"
   | "placement"
@@ -14,9 +14,9 @@ export type RegiekamerFilterTarget =
   | "aanbieder_wacht"
   | "afgewezen";
 
-export type RegiekamerBottleneckStage = "casussen" | "matching" | "plaatsingen" | "aanbieder_review" | "none";
+export type CoordinationBottleneckStage = "casussen" | "matching" | "plaatsingen" | "aanbieder_review" | "none";
 
-export interface RegiekamerFlowCounts {
+export interface CoordinationFlowCounts {
   casussen: number;
   klaar_voor_matching: number;
   matching: number;
@@ -24,7 +24,7 @@ export interface RegiekamerFlowCounts {
   intake_pending: number;
 }
 
-export interface RegiekamerIssueBuckets {
+export interface CoordinationIssueBuckets {
   klaar_voor_matching: number;
   wacht_op_aanbieder: number;
   afgewezen_door_aanbieder: number;
@@ -36,23 +36,23 @@ export interface RegiekamerIssueBuckets {
   high_risk_cases: number;
 }
 
-export interface RegiekamerActionTarget {
+export interface CoordinationActionTarget {
   label: string;
-  target_view: RegiekamerViewTarget;
-  target_filter: RegiekamerFilterTarget;
+  target_view: CoordinationViewTarget;
+  target_filter: CoordinationFilterTarget;
   reason: string;
   cta_label: string;
   target_region?: string;
 }
 
-export interface RegiekamerCommandBarSummary {
+export interface CoordinationCommandBarSummary {
   primary_message: string;
   why_it_matters: string;
   cta_label: string;
-  tone: RegiekamerSeverity;
+  tone: CoordinationSeverity;
 }
 
-export interface RegiekamerPriorityCard {
+export interface CoordinationPriorityCard {
   key:
     | "casussen_zonder_match"
     | "klaar_voor_matching"
@@ -65,36 +65,36 @@ export interface RegiekamerPriorityCard {
   title: string;
   value: number;
   subtitle: string;
-  severity: RegiekamerSeverity;
+  severity: CoordinationSeverity;
   action: {
-    target_view: RegiekamerViewTarget;
-    target_filter: RegiekamerFilterTarget;
+    target_view: CoordinationViewTarget;
+    target_filter: CoordinationFilterTarget;
     label: string;
     target_region?: string;
   };
   suffix?: string;
 }
 
-export interface RegiekamerSignalStrip {
+export interface CoordinationSignalStrip {
   key: string;
   text: string;
-  tone: RegiekamerSeverity;
+  tone: CoordinationSeverity;
   action: {
-    target_view: RegiekamerViewTarget;
-    target_filter: RegiekamerFilterTarget;
+    target_view: CoordinationViewTarget;
+    target_filter: CoordinationFilterTarget;
     target_region?: string;
   };
 }
 
-export interface RegiekamerDecisionSummary {
-  command_bar_summary: RegiekamerCommandBarSummary;
-  recommended_action: RegiekamerActionTarget;
+export interface CoordinationDecisionSummary {
+  command_bar_summary: CoordinationCommandBarSummary;
+  recommended_action: CoordinationActionTarget;
   recommended_action_reason: string;
-  bottleneck_stage: RegiekamerBottleneckStage;
-  priority_cards: RegiekamerPriorityCard[];
-  signal_strips: RegiekamerSignalStrip[];
-  flow_counts: RegiekamerFlowCounts;
-  issue_buckets: RegiekamerIssueBuckets;
+  bottleneck_stage: CoordinationBottleneckStage;
+  priority_cards: CoordinationPriorityCard[];
+  signal_strips: CoordinationSignalStrip[];
+  flow_counts: CoordinationFlowCounts;
+  issue_buckets: CoordinationIssueBuckets;
   capacity_region: string | null;
 }
 
@@ -114,15 +114,15 @@ function topRegion(cases: Casus[]): string | null {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 }
 
-export function buildRegiekamerDecisionSummary(
+export function buildCoordinationDecisionSummary(
   cases: Casus[],
   options?: { slaDays?: number }
-): RegiekamerDecisionSummary {
+): CoordinationDecisionSummary {
   const slaDays = options?.slaDays ?? DEFAULT_SLA_DAYS;
 
   const casesInScope = cases.filter((caseItem) => caseItem.phase !== "afgerond");
 
-  const flow_counts: RegiekamerFlowCounts = {
+  const flow_counts: CoordinationFlowCounts = {
     casussen: casesInScope.filter((c) => c.phase === "casus").length,
     klaar_voor_matching: casesInScope.filter((c) => c.phase === "casus" || (c.status === "klaar_voor_matching" as string)).length,
     matching: casesInScope.filter((c) => c.phase === "matching" || c.phase === "aanbieder_selectie" || c.phase === "geblokkeerd").length,
@@ -155,7 +155,7 @@ export function buildRegiekamerDecisionSummary(
 
   const capacityRegion = topRegion(capacityShortageCases);
 
-  const issue_buckets: RegiekamerIssueBuckets = {
+  const issue_buckets: CoordinationIssueBuckets = {
     klaar_voor_matching: casesKlaarVoorMatching.length,
     wacht_op_aanbieder: wachtOpAanbieder.length,
     afgewezen_door_aanbieder: afgewezenDoorAanbieder.length,
@@ -167,7 +167,7 @@ export function buildRegiekamerDecisionSummary(
     high_risk_cases: highRisk.length,
   };
 
-  const priorityOrder: Array<keyof RegiekamerIssueBuckets> = [
+  const priorityOrder: Array<keyof CoordinationIssueBuckets> = [
     "afgewezen_door_aanbieder",
     "blocked_cases",
     "cases_without_match",
@@ -179,8 +179,8 @@ export function buildRegiekamerDecisionSummary(
 
   const primaryIssue = priorityOrder.find((issueKey) => issue_buckets[issueKey] > 0) ?? "placements_pending";
 
-  let command_bar_summary: RegiekamerCommandBarSummary;
-  let recommended_action: RegiekamerActionTarget;
+  let command_bar_summary: CoordinationCommandBarSummary;
+  let recommended_action: CoordinationActionTarget;
 
   if (primaryIssue === "afgewezen_door_aanbieder") {
     command_bar_summary = {
@@ -298,7 +298,7 @@ export function buildRegiekamerDecisionSummary(
     };
   }
 
-  let bottleneck_stage: RegiekamerBottleneckStage = "none";
+  let bottleneck_stage: CoordinationBottleneckStage = "none";
   if (issue_buckets.afgewezen_door_aanbieder > 0 || issue_buckets.blocked_cases > 0 || issue_buckets.cases_without_match > 0) {
     bottleneck_stage = "matching";
   } else if (issue_buckets.wacht_op_aanbieder > 0) {
@@ -314,7 +314,7 @@ export function buildRegiekamerDecisionSummary(
       ? 0
       : Math.round(casesInScope.reduce((sum, c) => sum + c.waitingDays, 0) / casesInScope.length);
 
-  const priority_cards: RegiekamerPriorityCard[] = [
+  const priority_cards: CoordinationPriorityCard[] = [
     {
       key: "casussen_zonder_match",
       title: "Aanvragen zonder match",
@@ -387,7 +387,7 @@ export function buildRegiekamerDecisionSummary(
     },
   ];
 
-  const candidateSignals: RegiekamerSignalStrip[] = [
+  const candidateSignals: CoordinationSignalStrip[] = [
     {
       key: "waiting",
       tone: issue_buckets.waiting_time_exceeded > 0 ? "warning" : "info",

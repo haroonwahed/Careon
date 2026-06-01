@@ -1,7 +1,7 @@
 /**
  * useAuditLog — fetches live AuditLog records from the Django API.
  *
- * Potential violation: telemetry must not use audit infrastructure — Regiekamer NBA
+ * Potential violation: telemetry must not use audit infrastructure — Coordination NBA
  * events must not be sent here; see docs/REGIEKAMER_NBA_TELEMETRY.md.
  */
 import { useState, useEffect, useCallback } from 'react';

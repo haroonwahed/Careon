@@ -49,45 +49,45 @@ import {
   ErrorState,
   LoadingState,
 } from "./CareDesignPrimitives";
-import { useRegiekamerDecisionOverview } from "../../hooks/useRegiekamerDecisionOverview";
+import { useCoordinationDecisionOverview } from "../../hooks/useCoordinationDecisionOverview";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { useRailCollapsed } from "../../hooks/useRailCollapsed";
-import { RegieNotesPanel } from "./RegieNotesPanel";
-import { RegieRailEdgeTab, RegieRailToggleButton } from "./RegieRailControls";
+import { CoordinationNotesPanel } from "./CoordinationNotesPanel";
+import { CoordinationRailEdgeTab, CoordinationRailToggleButton } from "./CoordinationRailControls";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import type {
-  RegiekamerDecisionOverviewItem,
-  RegiekamerOwnershipRole,
-  RegiekamerPriorityBand,
-} from "../../lib/regiekamerDecisionOverview";
+  CoordinationDecisionOverviewItem,
+  CoordinationOwnershipRole,
+  CoordinationPriorityBand,
+} from "../../lib/coordinationDecisionOverview";
 import {
-  computeRegiekamerNextBestAction,
-  formatRegiekamerDominantDescription,
-  type RegiekamerNbaActionKey,
-  type RegiekamerNbaUiMode,
-} from "../../lib/regiekamerNextBestAction";
+  computeCoordinationNextBestAction,
+  formatCoordinationDominantDescription,
+  type CoordinationNbaActionKey,
+  type CoordinationNbaUiMode,
+} from "../../lib/coordinationNextBestAction";
 import {
   derivePhaseBoard,
   getDominantPhaseColumn,
   type PhaseBoardColumn,
-  type RegiekamerListFilter,
-  type RegiekamerFlowPhase,
-} from "../../lib/regiekamerCommandCenter";
+  type CoordinationListFilter,
+  type CoordinationFlowPhase,
+} from "../../lib/coordinationCommandCenter";
 import { tokens } from "../../design/tokens";
 import { CARE_RHYTHM } from "../../lib/operationalRhythm";
 import {
-  buildRegiekamerNbaInstrumentationPayload,
-  emitRegiekamerNbaEvent,
-  shouldEmitRegiekamerNbaShown,
-} from "../../lib/regiekamerNbaInstrumentation";
+  buildCoordinationNbaInstrumentationPayload,
+  emitCoordinationNbaEvent,
+  shouldEmitCoordinationNbaShown,
+} from "../../lib/coordinationNbaInstrumentation";
 import { setCasussenPreferredFocus } from "../../lib/casussenNavigation";
 import {
   DECISION_UI_PHASE_IDS,
   DECISION_UI_PHASE_LABELS,
   isDecisionUiPhaseId,
   mapApiPhaseToDecisionUiPhase,
-  normalizeRegiekamerPhaseQueryParam,
+  normalizeCoordinationPhaseQueryParam,
   type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
 import { CARE_PATHS } from "../../lib/routes";
@@ -96,7 +96,7 @@ interface SystemAwarenessPageProps {
   onCaseClick: (caseId: string) => void;
   /** Shell navigation (e.g. metric strip → Casussen). Optional in standalone demos/tests. */
   onAppNavigate?: (path: string) => void;
-  /** Same rules as Casussen werkvoorraad — shows “Nieuwe casus” on empty Regiekamer when true. */
+  /** Same rules as Casussen werkvoorraad — shows “Nieuwe casus” on empty Coordination when true. */
   canCreateCase?: boolean;
   onCreateCase?: () => void;
 }
@@ -114,7 +114,7 @@ type PhaseFilter =
   | "aanbieder_beoordeling"
   | "plaatsing"
   | "intake";
-type OwnershipFilter = "all" | RegiekamerOwnershipRole;
+type OwnershipFilter = "all" | CoordinationOwnershipRole;
 
 const PRIORITY_PARAM_VALUES = new Set<PriorityFilter>(["all", "critical", "high", "medium"]);
 const ISSUE_PARAM_VALUES = new Set<IssueFilter>(["all", "blockers", "risks", "alerts", "SLA", "rejection", "intake"]);
@@ -139,7 +139,7 @@ function pathWithoutTrailingSlash(path: string): string {
   return p || "/";
 }
 
-function isRegiekamerPath(pathname: string): boolean {
+function isCoordinationPath(pathname: string): boolean {
   return pathWithoutTrailingSlash(pathname) === CARE_PATHS.REGIEKAMER;
 }
 
@@ -158,7 +158,7 @@ function filtersFromSearchString(search: string): {
   const priorityFilter = PRIORITY_PARAM_VALUES.has(pr) ? pr : "all";
   const ir = params.get("issue") as IssueFilter;
   const issueFilter = ISSUE_PARAM_VALUES.has(ir) ? ir : "all";
-  const phaseKey = normalizeRegiekamerPhaseQueryParam(params.get("phase"));
+  const phaseKey = normalizeCoordinationPhaseQueryParam(params.get("phase"));
   const phaseFilter: PhaseFilter =
     phaseKey && PHASE_PARAM_VALUES.has(phaseKey as PhaseFilter)
       ? (phaseKey as PhaseFilter)
@@ -190,7 +190,7 @@ function readFiltersFromUrl(): {
       subcategoryFilter: "all",
     };
   }
-  if (!isRegiekamerPath(window.location.pathname)) {
+  if (!isCoordinationPath(window.location.pathname)) {
     return {
       searchQuery: "",
       priorityFilter: "all",
@@ -204,7 +204,7 @@ function readFiltersFromUrl(): {
   return filtersFromSearchString(window.location.search);
 }
 
-function buildRegiekamerUrl(parts: {
+function buildCoordinationUrl(parts: {
   searchQuery: string;
   priorityFilter: PriorityFilter;
   issueFilter: IssueFilter;
@@ -249,7 +249,7 @@ function itemMatchesPhaseFilter(itemPhase: string, phaseFilter: PhaseFilter): bo
   return itemPhase === phaseFilter;
 }
 
-/** NBA action codes from API → korte Nederlandse label voor Regiekamer (alleen weergave). */
+/** NBA action codes from API → korte Nederlandse label voor Coordination (alleen weergave). */
 const NBA_ACTION_CODE_LABELS: Record<string, string> = {
   COMPLETE_CASE_DATA: "Vul casus aan",
   GENERATE_SUMMARY: "Vul casus aan",
@@ -287,7 +287,7 @@ const ISSUE_LABELS: Record<IssueFilter, string> = {
 
 const REGIEKAMER_COORDINATION_LIST_CAP = 12;
 
-function itemNeedsCoordinationAttention(item: RegiekamerDecisionOverviewItem): boolean {
+function itemNeedsCoordinationAttention(item: CoordinationDecisionOverviewItem): boolean {
   if (item.top_blocker || item.top_alert) {
     return true;
   }
@@ -305,7 +305,7 @@ const OWNERSHIP_LABELS: Record<OwnershipFilter, string> = {
   regie: "Coördinatie",
 };
 
-function priorityBand(score: number): RegiekamerPriorityBand {
+function priorityBand(score: number): CoordinationPriorityBand {
   if (score >= 100) {
     return "critical";
   }
@@ -358,7 +358,7 @@ function severityBadgeClasses(severity?: string | null) {
   }
 }
 
-function phaseCardIcon(phase: RegiekamerFlowPhase) {
+function phaseCardIcon(phase: CoordinationFlowPhase) {
   switch (phase) {
     case "casus_gestart":
       return FolderOpen;
@@ -373,7 +373,7 @@ function phaseCardIcon(phase: RegiekamerFlowPhase) {
   }
 }
 
-function renderQuickPhaseIcon(phase: RegiekamerFlowPhase) {
+function renderQuickPhaseIcon(phase: CoordinationFlowPhase) {
   const Icon = phaseCardIcon(phase);
   return <Icon size={16} className="text-muted-foreground" aria-hidden />;
 }
@@ -383,7 +383,7 @@ type PhaseBoardDetail = {
   tone: "blocked" | "waiting" | "ready" | "in_progress";
 };
 
-function phaseBoardDetails(phase: RegiekamerFlowPhase): PhaseBoardDetail[] {
+function phaseBoardDetails(phase: CoordinationFlowPhase): PhaseBoardDetail[] {
   switch (phase) {
     case "casus_gestart":
       return [
@@ -415,7 +415,7 @@ function phasePillClasses(tone: PhaseBoardDetail["tone"]): string {
   }
 }
 
-function imperativeCtaLabel(item: RegiekamerDecisionOverviewItem): string | null {
+function imperativeCtaLabel(item: CoordinationDecisionOverviewItem): string | null {
   const nba = item.next_best_action;
   if (!nba) {
     return null;
@@ -423,7 +423,7 @@ function imperativeCtaLabel(item: RegiekamerDecisionOverviewItem): string | null
   return imperativeLabelForActionCode(nba.action, nba.label);
 }
 
-function summaryWorkflowState(item: RegiekamerDecisionOverviewItem): {
+function summaryWorkflowState(item: CoordinationDecisionOverviewItem): {
   statusLabel: string;
   actionLabel: string | null;
   processing: boolean;
@@ -474,7 +474,7 @@ function summaryWorkflowState(item: RegiekamerDecisionOverviewItem): {
     };
 }
 
-function normalizeWorklistActionLabel(item: RegiekamerDecisionOverviewItem, label: string | null): string | null {
+function normalizeWorklistActionLabel(item: CoordinationDecisionOverviewItem, label: string | null): string | null {
   if (!label) {
     return null;
   }
@@ -535,7 +535,7 @@ function normalizeWorklistActionLabel(item: RegiekamerDecisionOverviewItem, labe
   return `Bekijk ${label.replace(/^bekijk\s+/i, "").trim()}`.trim();
 }
 
-function actionableProblemLabel(item: RegiekamerDecisionOverviewItem): string {
+function actionableProblemLabel(item: CoordinationDecisionOverviewItem): string {
   const nbaReason = item.next_best_action?.reason?.trim();
   if (nbaReason) {
     return getShortReasonLabel(nbaReason, 72);
@@ -578,7 +578,7 @@ function formatHours(hours: number | null) {
   return `${Math.round(hours / 24)} dagen`;
 }
 
-function issueTone(item: RegiekamerDecisionOverviewItem) {
+function issueTone(item: CoordinationDecisionOverviewItem) {
   if (item.top_blocker) {
     return item.top_blocker.severity;
   }
@@ -591,7 +591,7 @@ function issueTone(item: RegiekamerDecisionOverviewItem) {
   return "low";
 }
 
-function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
+function primaryProblemText(item: CoordinationDecisionOverviewItem): string {
   if (item.top_blocker?.message) {
     return item.top_blocker.message;
   }
@@ -616,29 +616,29 @@ function primaryProblemText(item: RegiekamerDecisionOverviewItem): string {
   return "Geen signaal vastgelegd — open de casus.";
 }
 
-function ownerLabel(item: RegiekamerDecisionOverviewItem): string {
+function ownerLabel(item: CoordinationDecisionOverviewItem): string {
   const role = (item.responsible_role ?? "regie") as OwnershipFilter;
   return OWNERSHIP_LABELS[role] ?? "Coördinatie";
 }
 
-function matchesIssueFilter(item: RegiekamerDecisionOverviewItem, filter: IssueFilter) {
+function matchesIssueFilter(item: CoordinationDecisionOverviewItem, filter: IssueFilter) {
   if (filter === "all") {
     return true;
   }
   return (item.issue_tags ?? []).includes(filter);
 }
 
-function matchesOwnershipFilter(item: RegiekamerDecisionOverviewItem, filter: OwnershipFilter) {
+function matchesOwnershipFilter(item: CoordinationDecisionOverviewItem, filter: OwnershipFilter) {
   if (filter === "all") {
     return true;
   }
   return (item.responsible_role ?? "regie") === filter;
 }
 
-/** UI-only Regiekamer modes — computed via `computeRegiekamerNextBestAction` (deterministic). */
-export type RegiekamerUiMode = RegiekamerNbaUiMode;
+/** UI-only Coordination modes — computed via `computeCoordinationNextBestAction` (deterministic). */
+export type CoordinationUiMode = CoordinationNbaUiMode;
 
-function searchText(item: RegiekamerDecisionOverviewItem) {
+function searchText(item: CoordinationDecisionOverviewItem) {
   return [
     item.case_reference,
     item.title,
@@ -662,7 +662,7 @@ function searchText(item: RegiekamerDecisionOverviewItem) {
     .toLowerCase();
 }
 
-function collectTaxonomyCategoryOptions(items: RegiekamerDecisionOverviewItem[]) {
+function collectTaxonomyCategoryOptions(items: CoordinationDecisionOverviewItem[]) {
   const map = new Map<string, string>();
   for (const item of items) {
     const code = (item.zorgbehoefte_categorie_code ?? "").trim();
@@ -679,7 +679,7 @@ function collectTaxonomyCategoryOptions(items: RegiekamerDecisionOverviewItem[])
     .sort((left, right) => left.label.localeCompare(right.label, "nl"));
 }
 
-function collectTaxonomySubcategoryOptions(items: RegiekamerDecisionOverviewItem[], categoryFilter: TaxonomyFilter) {
+function collectTaxonomySubcategoryOptions(items: CoordinationDecisionOverviewItem[], categoryFilter: TaxonomyFilter) {
   const map = new Map<string, string>();
   for (const item of items) {
     const categoryCode = (item.zorgbehoefte_categorie_code ?? "").trim();
@@ -700,7 +700,7 @@ function collectTaxonomySubcategoryOptions(items: RegiekamerDecisionOverviewItem
     .sort((left, right) => left.label.localeCompare(right.label, "nl"));
 }
 
-function buildTaxonomySummaryLabel(item: RegiekamerDecisionOverviewItem): string {
+function buildTaxonomySummaryLabel(item: CoordinationDecisionOverviewItem): string {
   const category = (item.zorgbehoefte_categorie ?? "").trim();
   const specific = (item.zorgbehoefte_specifiek ?? "").trim();
   if (category && specific) {
@@ -715,7 +715,7 @@ export function SystemAwarenessPage({
   canCreateCase = false,
   onCreateCase,
 }: SystemAwarenessPageProps) {
-  const { data, loading, error, refetch } = useRegiekamerDecisionOverview();
+  const { data, loading, error, refetch } = useCoordinationDecisionOverview();
   const { me } = useCurrentUser();
   const initialFromUrl = readFiltersFromUrl();
   const [searchQuery, setSearchQuery] = useState(initialFromUrl.searchQuery);
@@ -733,10 +733,10 @@ export function SystemAwarenessPage({
     if (typeof window === "undefined") {
       return;
     }
-    if (!isRegiekamerPath(window.location.pathname)) {
+    if (!isCoordinationPath(window.location.pathname)) {
       return;
     }
-    const next = buildRegiekamerUrl({
+    const next = buildCoordinationUrl({
       searchQuery,
       priorityFilter,
       issueFilter,
@@ -754,7 +754,7 @@ export function SystemAwarenessPage({
 
   useEffect(() => {
     const onPop = () => {
-      if (!isRegiekamerPath(window.location.pathname)) {
+      if (!isCoordinationPath(window.location.pathname)) {
         return;
       }
       const parsed = filtersFromSearchString(window.location.search);
@@ -771,7 +771,7 @@ export function SystemAwarenessPage({
   }, []);
 
   const applyListFilterSnapshot = useCallback(
-    (snapshot: RegiekamerListFilter) => {
+    (snapshot: CoordinationListFilter) => {
       setSearchQuery("");
       setPriorityFilter((snapshot.priority === "all" ? "all" : snapshot.priority) as PriorityFilter);
       setIssueFilter(snapshot.issue as IssueFilter);
@@ -784,10 +784,10 @@ export function SystemAwarenessPage({
   );
 
   const applyPhaseBoardFilter = useCallback(
-    (phase: RegiekamerFlowPhase) => {
+    (phase: CoordinationFlowPhase) => {
       applyListFilterSnapshot({ issue: "all", phase, priority: "all" });
-      if (typeof window !== "undefined" && isRegiekamerPath(window.location.pathname)) {
-        const next = buildRegiekamerUrl({
+      if (typeof window !== "undefined" && isCoordinationPath(window.location.pathname)) {
+        const next = buildCoordinationUrl({
           searchQuery: "",
           priorityFilter: "all",
           issueFilter: "all",
@@ -900,8 +900,8 @@ export function SystemAwarenessPage({
     setCategoryFilter("all");
     setSubcategoryFilter("all");
     setSearchQuery("");
-    if (typeof window !== "undefined" && isRegiekamerPath(window.location.pathname)) {
-      const next = buildRegiekamerUrl({
+    if (typeof window !== "undefined" && isCoordinationPath(window.location.pathname)) {
+      const next = buildCoordinationUrl({
         searchQuery: "",
         priorityFilter: "critical",
         issueFilter: "blockers",
@@ -1034,14 +1034,14 @@ export function SystemAwarenessPage({
     }
     return (
       <div
-        data-testid="regiekamer-governance-queues"
+        data-testid="coordination-governance-queues"
         className="flex max-h-16 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted/20 px-3 py-2 shadow-sm"
       >
         <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           Wachtrijen
           <CareInfoPopover
             ariaLabel="Uitleg wachtrijen"
-            testId="regiekamer-governance-queues-info"
+            testId="coordination-governance-queues-info"
             triggerClassName="h-5 w-5"
           >
             <p className="text-muted-foreground">
@@ -1067,7 +1067,7 @@ export function SystemAwarenessPage({
                     onCaseClick(String(first));
                   }
                 }}
-                data-testid={`regiekamer-governance-${s.key}`}
+                data-testid={`coordination-governance-${s.key}`}
               >
                 <span className="truncate">{s.label}</span>{" "}
                 <span className="shrink-0 tabular-nums text-muted-foreground">({count})</span>
@@ -1092,7 +1092,7 @@ export function SystemAwarenessPage({
 
   const activeCasesTotal = data?.totals.active_cases ?? 0;
 
-  const regiekamerNbaExplain = useMemo(() => {
+  const coordinationNbaExplain = useMemo(() => {
     const criticalTop = allOverviewItems.filter(
       (i) => String(i.top_blocker?.severity ?? "").toLowerCase() === "critical",
     );
@@ -1108,9 +1108,9 @@ export function SystemAwarenessPage({
     };
   }, [allOverviewItems, noMatchDrillItems, providerSlaBreaches, intakeDelaysTotal]);
 
-  const regiekamerNba = useMemo(
+  const coordinationNba = useMemo(
     () =>
-      computeRegiekamerNextBestAction({
+      computeCoordinationNextBestAction({
         totals: {
           critical_blockers: criticalBlockers,
           provider_sla_breaches: providerSlaBreaches,
@@ -1119,7 +1119,7 @@ export function SystemAwarenessPage({
         },
         activeCases: activeCasesTotal,
         noMatchUrgentCount,
-        explain: regiekamerNbaExplain,
+        explain: coordinationNbaExplain,
       }),
     [
       activeCasesTotal,
@@ -1128,11 +1128,11 @@ export function SystemAwarenessPage({
       intakeDelaysTotal,
       noMatchUrgentCount,
       providerSlaBreaches,
-      regiekamerNbaExplain,
+      coordinationNbaExplain,
     ],
   );
 
-  const uiMode = regiekamerNba.panel.uiMode;
+  const uiMode = coordinationNba.panel.uiMode;
 
   const actionReminders = useCallback(() => {
     setSearchQuery("");
@@ -1159,7 +1159,7 @@ export function SystemAwarenessPage({
   }, []);
 
   const runNbaAction = useCallback(
-    (key: RegiekamerNbaActionKey) => {
+    (key: CoordinationNbaActionKey) => {
       switch (key) {
         case "FOCUS_BLOCKERS":
           applyFiltersAll();
@@ -1208,39 +1208,39 @@ export function SystemAwarenessPage({
   );
 
   const runModePrimary = useCallback(() => {
-    emitRegiekamerNbaEvent(
+    emitCoordinationNbaEvent(
       "nba_primary_clicked",
-      buildRegiekamerNbaInstrumentationPayload({
-        actionKey: regiekamerNba.primaryAction.actionKey,
+      buildCoordinationNbaInstrumentationPayload({
+        actionKey: coordinationNba.primaryAction.actionKey,
         uiMode,
-        reasonCount: regiekamerNba.reasons.length,
+        reasonCount: coordinationNba.reasons.length,
       }),
     );
-    runNbaAction(regiekamerNba.primaryAction.actionKey);
-  }, [regiekamerNba, runNbaAction, uiMode]);
+    runNbaAction(coordinationNba.primaryAction.actionKey);
+  }, [coordinationNba, runNbaAction, uiMode]);
 
   const runModeSecondary = useCallback(() => {
-    const secondary = regiekamerNba.secondaryAction;
+    const secondary = coordinationNba.secondaryAction;
     if (secondary) {
-      emitRegiekamerNbaEvent(
+      emitCoordinationNbaEvent(
         "nba_secondary_clicked",
-        buildRegiekamerNbaInstrumentationPayload({
+        buildCoordinationNbaInstrumentationPayload({
           actionKey: secondary.actionKey,
           uiMode,
-          reasonCount: regiekamerNba.reasons.length,
+          reasonCount: coordinationNba.reasons.length,
         }),
       );
       runNbaAction(secondary.actionKey);
     }
-  }, [regiekamerNba, runNbaAction, uiMode]);
+  }, [coordinationNba, runNbaAction, uiMode]);
 
   const applyModeCasesLink = useCallback(() => {
-    emitRegiekamerNbaEvent(
+    emitCoordinationNbaEvent(
       "nba_cases_link_clicked",
-      buildRegiekamerNbaInstrumentationPayload({
-        actionKey: regiekamerNba.primaryAction.actionKey,
+      buildCoordinationNbaInstrumentationPayload({
+        actionKey: coordinationNba.primaryAction.actionKey,
         uiMode,
-        reasonCount: regiekamerNba.reasons.length,
+        reasonCount: coordinationNba.reasons.length,
       }),
     );
     // Honest navigation: link copy ("Bekijk kritieke casussen" / "Open werkvoorraad")
@@ -1250,31 +1250,31 @@ export function SystemAwarenessPage({
       setCasussenPreferredFocus("critical");
     }
     onAppNavigate?.("/casussen");
-  }, [regiekamerNba, onAppNavigate, uiMode]);
+  }, [coordinationNba, onAppNavigate, uiMode]);
 
   useEffect(() => {
     if (!hasActiveData) {
       return;
     }
-    const fp = `${uiMode}|${regiekamerNba.primaryAction.actionKey}|${regiekamerNba.title}|${regiekamerNba.reasons.length}`;
-    if (!shouldEmitRegiekamerNbaShown(fp)) {
+    const fp = `${uiMode}|${coordinationNba.primaryAction.actionKey}|${coordinationNba.title}|${coordinationNba.reasons.length}`;
+    if (!shouldEmitCoordinationNbaShown(fp)) {
       return;
     }
-    emitRegiekamerNbaEvent(
+    emitCoordinationNbaEvent(
       "nba_shown",
-      buildRegiekamerNbaInstrumentationPayload({
-        actionKey: regiekamerNba.primaryAction.actionKey,
+      buildCoordinationNbaInstrumentationPayload({
+        actionKey: coordinationNba.primaryAction.actionKey,
         uiMode,
-        reasonCount: regiekamerNba.reasons.length,
+        reasonCount: coordinationNba.reasons.length,
       }),
     );
-  }, [hasActiveData, regiekamerNba, uiMode]);
+  }, [hasActiveData, coordinationNba, uiMode]);
 
-  const dominantPanelDescription = formatRegiekamerDominantDescription(regiekamerNba);
+  const dominantPanelDescription = formatCoordinationDominantDescription(coordinationNba);
   const showDominantHeroMetric =
-    uiMode === "crisis" && (regiekamerNba.panel.linkCount > 0 || criticalBlockers > 0);
+    uiMode === "crisis" && (coordinationNba.panel.linkCount > 0 || criticalBlockers > 0);
   const dominantMetric = showDominantHeroMetric
-    ? Math.max(criticalBlockers, regiekamerNba.panel.linkCount || criticalBlockers)
+    ? Math.max(criticalBlockers, coordinationNba.panel.linkCount || criticalBlockers)
     : 0;
   const gemeenteActieLine =
     dominantMetric === 1
@@ -1282,8 +1282,8 @@ export function SystemAwarenessPage({
       : `${dominantMetric} aanvragen vragen directe afstemming`;
   const dominantAlertDescription =
     uiMode === "crisis" ? gemeenteActieLine : dominantPanelDescription;
-  const dominantPrimaryLabel = regiekamerNba.primaryAction.label;
-  const dominantSecondaryLabel = regiekamerNba.secondaryAction?.label;
+  const dominantPrimaryLabel = coordinationNba.primaryAction.label;
+  const dominantSecondaryLabel = coordinationNba.secondaryAction?.label;
   const dominantCasesLinkLabel = uiMode === "crisis" ? "Bekijk kritieke aanvragen" : "Open aanvragen";
 
   const clearFilters = () => {
@@ -1296,7 +1296,7 @@ export function SystemAwarenessPage({
     setSubcategoryFilter("all");
   };
 
-  const showRegiekamerPhaseBoard = !loading && !error && hasActiveData && allOverviewItems.length > 0;
+  const showCoordinationPhaseBoard = !loading && !error && hasActiveData && allOverviewItems.length > 0;
 
   return (
     <div className="flex w-full flex-col gap-6 xl:flex-row xl:items-start xl:gap-6">
@@ -1307,7 +1307,7 @@ export function SystemAwarenessPage({
           title={
             <span className="inline-flex flex-wrap items-center gap-2">
               Operationele coördinatie
-              <CareInfoPopover ariaLabel="Uitleg coördinatie" testId="regiekamer-page-info">
+              <CareInfoPopover ariaLabel="Uitleg coördinatie" testId="coordination-page-info">
                 <div className="space-y-2 text-muted-foreground">
                   <p>
                     Operationele coördinatie: actieve aanvragen, open matching, reacties van aanbieders, wachtende validaties
@@ -1342,15 +1342,15 @@ export function SystemAwarenessPage({
                   variant="ghost"
                   className="gap-2 xl:hidden"
                   onClick={() => setRailSheetOpen(true)}
-                  data-testid="regiekamer-mobile-regie-panel"
+                  data-testid="coordination-mobile-regie-panel"
                 >
                   <PanelRight size={14} aria-hidden />
                   Coördinatiepaneel
                 </Button>
-                <RegieRailToggleButton
+                <CoordinationRailToggleButton
                   collapsed={railCollapsed}
                   onToggle={toggleRail}
-                  testId="regiekamer-rail-toggle"
+                  testId="coordination-rail-toggle"
                 />
               </div>
               {lastUpdateLabel ? (
@@ -1370,29 +1370,29 @@ export function SystemAwarenessPage({
           {hasActiveData && (
             <CareAlertCard
               density="compact"
-              testId="regiekamer-dominant-action"
-              data-regiekamer-mode={uiMode}
+              testId="coordination-dominant-action"
+              data-coordination-mode={uiMode}
               tone={
-                regiekamerNba.panel.tone === "urgent"
+                coordinationNba.panel.tone === "urgent"
                   ? "critical"
-                  : regiekamerNba.panel.tone === "attention"
+                  : coordinationNba.panel.tone === "attention"
                     ? "warning"
                     : "info"
               }
               icon={<AlertCircle size={showDominantHeroMetric ? 22 : 18} />}
               metric={dominantMetric}
               showMetric={showDominantHeroMetric}
-              title={regiekamerNba.title}
+              title={coordinationNba.title}
               description={dominantAlertDescription}
               supportingLink={
-                regiekamerNba.panel.showCasesLink && regiekamerNba.panel.linkCount > 0 ? (
+                coordinationNba.panel.showCasesLink && coordinationNba.panel.linkCount > 0 ? (
                   <button
                     type="button"
                     className="text-left text-sm font-medium text-primary underline-offset-4 hover:underline"
                     onClick={applyModeCasesLink}
-                    data-testid="regiekamer-dominant-cases-link"
+                    data-testid="coordination-dominant-cases-link"
                     >
-                    {dominantCasesLinkLabel} ({regiekamerNba.panel.linkCount})
+                    {dominantCasesLinkLabel} ({coordinationNba.panel.linkCount})
                   </button>
                 ) : undefined
               }
@@ -1400,17 +1400,17 @@ export function SystemAwarenessPage({
                 <CareQueueInlineAction
                   type="button"
                   onClick={runModePrimary}
-                  data-testid="regiekamer-dominant-primary-cta"
+                  data-testid="coordination-dominant-primary-cta"
                 >
                   {dominantPrimaryLabel}
                 </CareQueueInlineAction>
               }
               secondaryAction={
-                regiekamerNba.secondaryAction ? (
+                coordinationNba.secondaryAction ? (
                   <CareQueueInlineAction
                     type="button"
                     onClick={runModeSecondary}
-                    data-testid="regiekamer-dominant-secondary-cta"
+                    data-testid="coordination-dominant-secondary-cta"
                   >
                     {dominantSecondaryLabel}
                   </CareQueueInlineAction>
@@ -1420,7 +1420,7 @@ export function SystemAwarenessPage({
           )}
 
           {hasActiveData && criticalBlockers > 0 ? (
-            <GuidanceContextBanner testId="regiekamer-blokkades-banner">
+            <GuidanceContextBanner testId="coordination-blokkades-banner">
               Los blokkades eerst op om doorstroom te behouden.
             </GuidanceContextBanner>
           ) : null}
@@ -1433,7 +1433,7 @@ export function SystemAwarenessPage({
             noMatchUrgentCount === 0 &&
             highPriorityAlerts === 0 && (
               <div
-                data-testid="regiekamer-calm-state"
+                data-testid="coordination-calm-state"
                 className="rounded-lg bg-muted/25 px-3 py-2 text-sm text-foreground"
               >
                 <p className="font-medium">Geen operationele blokkades</p>
@@ -1443,11 +1443,11 @@ export function SystemAwarenessPage({
         </div>
       }
       kpiStrip={
-        showRegiekamerPhaseBoard || governanceQueuesStrip ? (
+        showCoordinationPhaseBoard || governanceQueuesStrip ? (
           <div className={CARE_RHYTHM.zoneStack}>
             {governanceQueuesStrip}
-            {showRegiekamerPhaseBoard ? (
-              <CareSection tone="context" testId="regiekamer-phase-board" aria-label="Aantallen per beslisstap">
+            {showCoordinationPhaseBoard ? (
+              <CareSection tone="context" testId="coordination-phase-board" aria-label="Aantallen per beslisstap">
                 <CareSectionHeader
                   title="Doorstroom"
                   action={
@@ -1462,7 +1462,7 @@ export function SystemAwarenessPage({
                         setCasussenPreferredFocus("pipeline");
                         onAppNavigate?.("/casussen");
                       }}
-                      data-testid="regiekamer-doorstroom-open-werkvoorraad"
+                      data-testid="coordination-doorstroom-open-werkvoorraad"
                     >
                       Bekijk gehele stroom
                       <ChevronRight size={14} aria-hidden />
@@ -1471,7 +1471,7 @@ export function SystemAwarenessPage({
                 />
                 <CareSectionBody>
                   <CareFlowBoard
-                    testId="regiekamer-flow-board"
+                    testId="coordination-flow-board"
                     variant="pipeline"
                     activeStepIndex={activeFlowIndex}
                     stepCount={phaseBoardColumns.length}
@@ -1486,7 +1486,7 @@ export function SystemAwarenessPage({
                       return (
                         <div key={col.phase} className="relative">
                           <CareFlowStepCard
-                            testId={`regiekamer-phase-column-${col.phase}`}
+                            testId={`coordination-phase-column-${col.phase}`}
                             onClick={() => applyPhaseBoardFilter(col.phase)}
                             active={isBottleneck}
                             completed={completed}
@@ -1587,14 +1587,14 @@ export function SystemAwarenessPage({
 
       {!loading && !error && coordinationListItems.length > 0 && (
         <CareWorkspaceSection
-          testId="regiekamer-uitvoerlijst"
-          aria-labelledby="regiekamer-uitvoerlijst-heading"
+          testId="coordination-uitvoerlijst"
+          aria-labelledby="coordination-uitvoerlijst-heading"
           bodyBleedX
           header={(
           <CareSectionHeader
             className="lg:flex-col lg:items-stretch"
             title={
-              <span id="regiekamer-uitvoerlijst-heading">Werkvoorraad</span>
+              <span id="coordination-uitvoerlijst-heading">Werkvoorraad</span>
             }
             meta={
               <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
@@ -1602,7 +1602,7 @@ export function SystemAwarenessPage({
                   {coordinationListItems.length} in coördinatie-aandacht
                 </span>
                 {coordinationListCapped ? (
-                  <FieldHelperBox className="mt-0" data-testid="regiekamer-coordination-hint">
+                  <FieldHelperBox className="mt-0" data-testid="coordination-coordination-hint">
                     <p>Eerste coördinatie-aandacht — volledige werkvoorraad staat onder Aanvragen.</p>
                   </FieldHelperBox>
                 ) : null}
@@ -1624,7 +1624,7 @@ export function SystemAwarenessPage({
                           <InlineHelpChip
                             title="Waarom staat dit bovenaan?"
                             triggerLabel="Uitleg"
-                            testId="regiekamer-prioriteit-help"
+                            testId="coordination-prioriteit-help"
                           >
                             <p>Items worden geprioriteerd op urgentie, blokkades en benodigde actie.</p>
                           </InlineHelpChip>
@@ -1724,7 +1724,7 @@ export function SystemAwarenessPage({
                   variant="ghost"
                   className="gap-2 text-muted-foreground hover:text-foreground"
                   onClick={() => onAppNavigate("/casussen")}
-                  data-testid="regiekamer-bekijk-alle-casussen"
+                  data-testid="coordination-bekijk-alle-casussen"
                 >
                   Volledige werkvoorraad in Aanvragen
                   <ChevronDown size={16} aria-hidden />
@@ -1737,7 +1737,7 @@ export function SystemAwarenessPage({
             <InlineHelpChip
               title="Waarom wachten?"
               triggerLabel="Waarom wachten?"
-              testId="regiekamer-wachten-help"
+              testId="coordination-wachten-help"
             >
               <p>Er is nu geen actie nodig totdat externe opvolging of reactie binnenkomt.</p>
             </InlineHelpChip>
@@ -1751,7 +1751,7 @@ export function SystemAwarenessPage({
           >
             <div className="divide-y divide-border/40">
               {coordinationListItems.map((item) => (
-                <RegiekamerWorkItemCard
+                <CoordinationWorkItemCard
                   key={item.case_id}
                   item={item}
                   onCaseClick={onCaseClick}
@@ -1768,12 +1768,12 @@ export function SystemAwarenessPage({
         <>
           {!railCollapsed && (
             <aside
-              data-testid="regiekamer-right-rail"
+              data-testid="coordination-right-rail"
               className="hidden w-[300px] shrink-0 rounded-[28px] border border-border/60 bg-card/35 p-3 shadow-sm backdrop-blur xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
-              style={{ maxHeight: tokens.layout.regiekamerRailMaxHeight }}
+              style={{ maxHeight: tokens.layout.coordinationRailMaxHeight }}
             >
               <div className="space-y-4">
-                <RegiekamerInsightsPanels
+                <CoordinationInsightsPanels
                   gemeenteDisplayName={gemeenteDisplayName}
                   activeCasesTotal={activeCasesTotal}
                   avgDoorloopDays={avgDoorloopDays}
@@ -1791,18 +1791,18 @@ export function SystemAwarenessPage({
           )}
 
           {railCollapsed && (
-            <RegieRailEdgeTab
+            <CoordinationRailEdgeTab
               onExpand={() => setRailCollapsed(false)}
-              testId="regiekamer-rail-edge-tab"
+              testId="coordination-rail-edge-tab"
             />
           )}
 
           <div className="contents xl:hidden">
             <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
               <SheetContent
-                id="regiekamer-rail-sheet"
+                id="coordination-rail-sheet"
                 side="right"
-                data-testid="regiekamer-rail-sheet"
+                data-testid="coordination-rail-sheet"
                 className="flex w-full max-w-md flex-col gap-0 border-border/60 p-0 sm:max-w-md"
               >
                 <SheetHeader className="shrink-0 space-y-1 border-b border-border/50 px-4 py-4">
@@ -1813,7 +1813,7 @@ export function SystemAwarenessPage({
                 </SheetHeader>
                 <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
                   <div className="space-y-4 rounded-[24px] border border-border/60 bg-card/30 p-3 shadow-sm">
-                    <RegiekamerInsightsPanels
+                    <CoordinationInsightsPanels
                       gemeenteDisplayName={gemeenteDisplayName}
                       activeCasesTotal={activeCasesTotal}
                       avgDoorloopDays={avgDoorloopDays}
@@ -1838,7 +1838,7 @@ export function SystemAwarenessPage({
   );
 }
 
-function RegiekamerInsightsPanels({
+function CoordinationInsightsPanels({
   gemeenteDisplayName,
   activeCasesTotal,
   avgDoorloopDays,
@@ -1857,7 +1857,7 @@ function RegiekamerInsightsPanels({
   criticalBlockers: number;
   phaseBoardColumns: PhaseBoardColumn[];
   onCriticalClick: () => void;
-  onPhaseClick: (phase: RegiekamerFlowPhase) => void;
+  onPhaseClick: (phase: CoordinationFlowPhase) => void;
   onNavigateCasussen: () => void;
   onAfterAction?: () => void;
 }) {
@@ -1895,7 +1895,7 @@ function RegiekamerInsightsPanels({
                 onNavigateCasussen();
                 done?.();
               }}
-              data-testid="regiekamer-bekijk-aanvragen-rail"
+              data-testid="coordination-bekijk-aanvragen-rail"
             >
               Naar aanvragen
             </button>
@@ -1909,7 +1909,7 @@ function RegiekamerInsightsPanels({
           <li>
             <button
               type="button"
-              data-testid="regiekamer-quick-critical"
+              data-testid="coordination-quick-critical"
               onClick={() => {
                 onCriticalClick();
                 done?.();
@@ -1927,7 +1927,7 @@ function RegiekamerInsightsPanels({
             <li key={col.phase}>
               <button
                 type="button"
-                data-testid={`regiekamer-quick-phase-${col.phase}`}
+                data-testid={`coordination-quick-phase-${col.phase}`}
                 onClick={() => {
                   onPhaseClick(col.phase);
                   done?.();
@@ -1950,22 +1950,22 @@ function RegiekamerInsightsPanels({
             onNavigateCasussen();
             done?.();
           }}
-          data-testid="regiekamer-quick-werkvoorraad-link"
+          data-testid="coordination-quick-werkvoorraad-link"
         >
           Bekijk werkvoorraad
         </button>
       </section>
 
-      <RegieNotesPanel testId="regiekamer-notes-panel" onAfterAction={done} />
+      <CoordinationNotesPanel testId="coordination-notes-panel" onAfterAction={done} />
     </>
   );
 }
 
-function RegiekamerWorkItemCard({
+function CoordinationWorkItemCard({
   item,
   onCaseClick,
 }: {
-  item: RegiekamerDecisionOverviewItem;
+  item: CoordinationDecisionOverviewItem;
   onCaseClick: (caseId: string) => void;
 }) {
   const primaryAction = imperativeCtaLabel(item);
@@ -1983,7 +1983,7 @@ function RegiekamerWorkItemCard({
 
   return (
     <CareWorkRow
-      testId="regiekamer-worklist-item"
+      testId="coordination-worklist-item"
       density="operational"
       queueVariant="command"
       leading={

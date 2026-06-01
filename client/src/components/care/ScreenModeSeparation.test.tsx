@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const mockUseCases = vi.fn();
 const mockUseProviders = vi.fn();
-const mockUseRegiekamerDecisionOverview = vi.fn();
+const mockUseCoordinationDecisionOverview = vi.fn();
 const mockFetchCaseDecisionEvaluation = vi.fn();
 const mockExecuteCaseAction = vi.fn();
 
@@ -15,8 +15,8 @@ vi.mock("../../hooks/useProviders", () => ({
   useProviders: (...args: unknown[]) => mockUseProviders(...args),
 }));
 
-vi.mock("../../hooks/useRegiekamerDecisionOverview", () => ({
-  useRegiekamerDecisionOverview: () => mockUseRegiekamerDecisionOverview(),
+vi.mock("../../hooks/useCoordinationDecisionOverview", () => ({
+  useCoordinationDecisionOverview: () => mockUseCoordinationDecisionOverview(),
 }));
 
 vi.mock("../../lib/decisionEvaluation", async () => {
@@ -38,7 +38,7 @@ vi.mock("sonner", () => ({
   },
 }));
 
-import { SystemAwarenessPage as RegiekamerControlCenter } from "./RegiekamerControlCenter";
+import { CoordinationControlCenter } from "./CoordinationControlCenter";
 import { WorkloadPage as CasussenWorkflowPage } from "./CasussenWorkflowPage";
 import { CaseExecutionPage as CaseWorkflowDetailPage } from "./CaseExecutionPage";
 
@@ -104,7 +104,7 @@ function setupSharedMocks() {
     ],
   });
 
-  mockUseRegiekamerDecisionOverview.mockReturnValue({
+  mockUseCoordinationDecisionOverview.mockReturnValue({
     data: {
       generated_at: "2026-04-25T10:00:00Z",
       totals: {
@@ -217,10 +217,10 @@ describe("Screen mode separation", () => {
   });
 
   it("enforces screen mode separation across core pages", async () => {
-    render(<RegiekamerControlCenter onCaseClick={vi.fn()} />);
-    const regiekamerDominant = screen.getByTestId("regiekamer-dominant-action");
-    expect(regiekamerDominant).toBeInTheDocument();
-    expect(regiekamerDominant).toHaveAttribute("data-regiekamer-mode", "crisis");
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
+    const coordinationDominant = screen.getByTestId("coordination-dominant-action");
+    expect(coordinationDominant).toBeInTheDocument();
+    expect(coordinationDominant).toHaveAttribute("data-coordination-mode", "crisis");
     expect(screen.queryByTestId("next-best-action")).not.toBeInTheDocument();
     cleanup();
 
@@ -228,7 +228,7 @@ describe("Screen mode separation", () => {
     const worklist = screen.getByTestId("worklist");
     expect(worklist).toBeInTheDocument();
     expect(worklist).toHaveAttribute("data-density", "compact");
-    expect(screen.queryByTestId("regiekamer-dominant-action")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("coordination-dominant-action")).not.toBeInTheDocument();
     cleanup();
 
     render(<CaseWorkflowDetailPage caseId="C-100" onBack={vi.fn()} />);
@@ -237,7 +237,7 @@ describe("Screen mode separation", () => {
     expect(nextBestAction).toHaveAttribute("data-priority", "primary");
     const processTimeline = screen.getByTestId("case-process-timeline");
     expect(processTimeline).toHaveAttribute("data-density", "compact");
-    expect(screen.queryByTestId("regiekamer-dominant-action")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("coordination-dominant-action")).not.toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
   });
 });

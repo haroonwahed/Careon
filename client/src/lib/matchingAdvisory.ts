@@ -26,7 +26,7 @@ export const MATCHING_ADVISORY_HINTS: Record<MatchingAdvisoryTier, string> = {
   strong_fit: "Arrangement sluit grotendeels aan — bevestig in casus.",
   review_needed: "Aanvullende beoordeling nodig vóór doorstroom.",
   capacity_uncertain: "Capaciteit nog niet bevestigd.",
-  manual_coordination: "Afstemming tussen regie en aanbieder vereist.",
+  manual_coordination: "Afstemming tussen coördinatie en aanbieder vereist.",
   preliminary: "Matchadvies nog in opbouw of onvolledig.",
 };
 
@@ -87,9 +87,9 @@ export function deriveListMatchingAdvisory(args: {
   }
 
   if (providerCount === 1) {
-    return urgency === "critical"
-      ? pack("manual_coordination", "Eén optie — spoed vraagt handmatige afstemming.")
-      : pack("capacity_uncertain", "Eén optie — capaciteit bevestigen.");
+      return urgency === "critical"
+      ? pack("manual_coordination", "Eén optie — spoed vraagt handmatige coördinatie.")
+        : pack("capacity_uncertain", "Eén optie — capaciteit bevestigen.");
   }
 
   if (providerCount === 2) {

@@ -41,7 +41,7 @@ const QUEUE_LIST_GUARD_FILES = [
 ];
 
 describe("operationalDesignLawsGuard", () => {
-  it("LAW 02 — CareKPICard only on command (Regiekamer) page", () => {
+  it("LAW 02 — CareKPICard only on command (Coordination) page", () => {
     const violations: string[] = [];
     for (const file of careTsxFiles()) {
       if (file === "CareKPICard.tsx") continue;
@@ -54,7 +54,7 @@ describe("operationalDesignLawsGuard", () => {
     expect(violations, `CareKPICard is command-only. Violations: ${violations.join(", ")}`).toEqual([]);
   });
 
-  it("LAW 01/02 — no KPI stat grids in kpiStrip outside Regiekamer", () => {
+  it("LAW 01/02 — no KPI stat grids in kpiStrip outside Coordination", () => {
     const violations: string[] = [];
     for (const file of careTsxFiles()) {
       if (file === "SystemAwarenessPage.tsx" || file === "CarePageScaffold.tsx") continue;
@@ -77,8 +77,8 @@ describe("operationalDesignLawsGuard", () => {
     expect(source).not.toMatch(/Math\.max\(52,\s*66/);
   });
 
-  it("LAW 06 — Regiekamer NBA must not route to rapportages optimization", () => {
-    const nba = readFileSync(join(ROOT, "lib/regiekamerNextBestAction.ts"), "utf8");
+  it("LAW 06 — Coordination NBA must not route to rapportages optimization", () => {
+    const nba = readFileSync(join(ROOT, "lib/coordinationNextBestAction.ts"), "utf8");
     const page = readCareFile("SystemAwarenessPage.tsx");
     expect(nba).not.toMatch(/OPEN_REPORTS/);
     expect(nba).not.toMatch(/uiMode:\s*"optimization"/);

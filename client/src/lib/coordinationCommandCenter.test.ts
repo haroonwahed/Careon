@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type {
-  RegiekamerDecisionOverviewItem,
-  RegiekamerDecisionOverviewTotals,
-} from "./regiekamerDecisionOverview";
+  CoordinationDecisionOverviewItem,
+  CoordinationDecisionOverviewTotals,
+} from "./coordinationDecisionOverview";
 import {
   deriveAttentionSignals,
   derivePhaseBoard,
   getDominantPhaseColumn,
   REGIEKAMER_FLOW_PHASES,
-} from "./regiekamerCommandCenter";
+} from "./coordinationCommandCenter";
 
-function item(partial: Partial<RegiekamerDecisionOverviewItem>): RegiekamerDecisionOverviewItem {
+function item(partial: Partial<CoordinationDecisionOverviewItem>): CoordinationDecisionOverviewItem {
   return {
     case_id: 1,
     case_reference: "#1",
@@ -35,7 +35,7 @@ function item(partial: Partial<RegiekamerDecisionOverviewItem>): RegiekamerDecis
   };
 }
 
-function totals(partial: Partial<RegiekamerDecisionOverviewTotals>): RegiekamerDecisionOverviewTotals {
+function totals(partial: Partial<CoordinationDecisionOverviewTotals>): CoordinationDecisionOverviewTotals {
   return {
     active_cases: 1,
     critical_blockers: 0,

@@ -1,10 +1,10 @@
-import type { RegiekamerDecisionOverviewTotals } from "./regiekamerDecisionOverview";
+import type { CoordinationDecisionOverviewTotals } from "./coordinationDecisionOverview";
 
 /**
- * Deterministic Regiekamer Next Best Action (no AI).
+ * Deterministic Coordination Next Best Action (no AI).
  * Priority: 1 blokkades → 2 SLA → 3 matching → 4 intake → risico’s → doorstroom-coördinatie → stabiel.
  */
-export type RegiekamerNbaActionKey =
+export type CoordinationNbaActionKey =
   | "FOCUS_BLOCKERS"
   | "FOCUS_SLA"
   | "FOCUS_MATCHING"
@@ -16,7 +16,7 @@ export type RegiekamerNbaActionKey =
   /** SLA + aanbieder-fase — zelfde gedrag als bestaande “reminders” flow. */
   | "SLA_PROVIDER_REMINDERS";
 
-export type RegiekamerNbaUiMode = "crisis" | "intervention" | "stable" | "coordination";
+export type CoordinationNbaUiMode = "crisis" | "intervention" | "stable" | "coordination";
 
 export type DominantNbaTone = "calm" | "attention" | "urgent";
 
@@ -57,13 +57,13 @@ function nlMetVerhoogdRisicoHeading(risks: number): string {
 
 function nlMatchingRegieTitel(m: number): string {
   const x = r(m);
-  return x === 1 ? "Matching vraagt regie (1 casus)" : `Matching vraagt regie (${x} casussen)`;
+  return x === 1 ? "Matching vraagt coördinatie (1 casus)" : `Matching vraagt coördinatie (${x} casussen)`;
 }
 
 /**
  * Optional drill-down for `reasons[]` (deterministic; populated by caller from overview items).
  */
-export type RegiekamerNbaExplainInput = {
+export type CoordinationNbaExplainInput = {
   /** Casussen met kritieke blokkade die upstream wachten (niet primair bij aanbieder-beoordeling). */
   blockerWaitingCases?: number;
   /** Casussen met kritieke blokkade in aanbieder-beoordeling. */
@@ -76,38 +76,38 @@ export type RegiekamerNbaExplainInput = {
   intakeDelayedStart?: number;
 };
 
-export type RegiekamerNbaInput = {
+export type CoordinationNbaInput = {
   totals: Pick<
-    RegiekamerDecisionOverviewTotals,
+    CoordinationDecisionOverviewTotals,
     "critical_blockers" | "provider_sla_breaches" | "high_priority_alerts" | "intake_delays"
   >;
   activeCases: number;
-  /** Matching-urgent count: matching phase + hoog/kritiek urgent (same as Regiekamer UI). */
+  /** Matching-urgent count: matching phase + hoog/kritiek urgent (same as Coordination UI). */
   noMatchUrgentCount: number;
-  explain?: RegiekamerNbaExplainInput;
+  explain?: CoordinationNbaExplainInput;
 };
 
 /**
  * Public contract: single dominant action + copy.
  * `panel` holds presentation wiring for DominantActionPanel without changing layout.
  */
-export type RegiekamerNbaDecision = {
+export type CoordinationNbaDecision = {
   title: string;
   description: string;
   /** Korte deterministische “waarom”-regels voor transparantie (UI plakt ze achter `description`). */
   reasons: string[];
-  primaryAction: { label: string; actionKey: RegiekamerNbaActionKey };
-  secondaryAction?: { label: string; actionKey: RegiekamerNbaActionKey };
+  primaryAction: { label: string; actionKey: CoordinationNbaActionKey };
+  secondaryAction?: { label: string; actionKey: CoordinationNbaActionKey };
   impactHint?: string;
   panel: {
     tone: DominantNbaTone;
     linkCount: number;
     showCasesLink: boolean;
-    uiMode: RegiekamerNbaUiMode;
+    uiMode: CoordinationNbaUiMode;
   };
 };
 
-function blockerReasons(b: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+function blockerReasons(b: number, explain: CoordinationNbaExplainInput | undefined): string[] {
   const w = r(explain?.blockerWaitingCases ?? 0);
   const p = r(explain?.blockedProviderCases ?? 0);
   const out: string[] = [];
@@ -123,7 +123,7 @@ function blockerReasons(b: number, explain: RegiekamerNbaExplainInput | undefine
   return out;
 }
 
-function slaReasons(s: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+function slaReasons(s: number, explain: CoordinationNbaExplainInput | undefined): string[] {
   const n = r(explain?.slaOverdueCount ?? s);
   if (n <= 0) {
     return [];
@@ -131,7 +131,7 @@ function slaReasons(s: number, explain: RegiekamerNbaExplainInput | undefined): 
   return [`${n} SLA-signal(en) te laat bij aanbieder`];
 }
 
-function matchingReasons(m: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+function matchingReasons(m: number, explain: CoordinationNbaExplainInput | undefined): string[] {
   const mcRaw = explain?.matchingMissingCandidates;
   const mc = mcRaw != null ? r(mcRaw) : null;
   if (mc != null && mc > 0) {
@@ -140,7 +140,7 @@ function matchingReasons(m: number, explain: RegiekamerNbaExplainInput | undefin
   return [`${m} urgent in matching (hoog/kritiek)`];
 }
 
-function intakeReasons(d: number, explain: RegiekamerNbaExplainInput | undefined): string[] {
+function intakeReasons(d: number, explain: CoordinationNbaExplainInput | undefined): string[] {
   const n = r(explain?.intakeDelayedStart ?? d);
   return [`${n} met vertraagde intake-start`];
 }
@@ -148,7 +148,7 @@ function intakeReasons(d: number, explain: RegiekamerNbaExplainInput | undefined
 /**
  * Rule-ordered decision. When both blokkades and SLA exist, blokkades win; SLA is surfaced in `impactHint`.
  */
-export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): RegiekamerNbaDecision {
+export function computeCoordinationNextBestAction(input: CoordinationNbaInput): CoordinationNbaDecision {
   const ex = input.explain;
   const b = r(input.totals.critical_blockers);
   const s = r(input.totals.provider_sla_breaches);
@@ -159,14 +159,14 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
 
   // 1 — Blokkades
   if (b > 0) {
-    const title = "Verhoogde regie-aandacht";
+    const title = "Verhoogde coördinatie-aandacht";
     const description =
       b === 1
         ? "1 casus vraagt directe afstemming."
         : `${b} aanvragen vragen directe afstemming.`;
     const impactHint =
       s > 0
-        ? `Daarnaast: ${s} SLA-signal(en) — plan regie zodra de blokkade is opgelost.`
+        ? `Daarnaast: ${s} SLA-signal(en) — plan coördinatie zodra de blokkade is opgelost.`
         : undefined;
     return {
       title,
@@ -187,7 +187,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // 2 — SLA breaches
   if (s > 0) {
     return {
-      title: "Verhoogde regie-aandacht",
+      title: "Verhoogde coördinatie-aandacht",
       description: `${s} SLA-signal(en) vragen directe afstemming.`,
       reasons: slaReasons(s, ex),
       primaryAction: { label: "Bekijk kritieke aanvragen", actionKey: "FOCUS_SLA" },
@@ -239,7 +239,7 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
   // Risico’s (na de vier prioritaire signalen)
   if (risks >= REGIEKAMER_NBA_RISK_THRESHOLD) {
     return {
-      title: "Verhoogde regie-aandacht",
+      title: "Verhoogde coördinatie-aandacht",
       description: "",
       reasons: [],
       primaryAction: { label: "Bekijk kritieke aanvragen", actionKey: "FOCUS_RISKS" },
@@ -290,8 +290,8 @@ export function computeRegiekamerNextBestAction(input: RegiekamerNbaInput): Regi
 /**
  * Plakt deterministische redenen aan de beschrijving (inline bullets; werkt in één `<p>` zonder extra CSS).
  */
-export function formatRegiekamerDominantDescription(
-  decision: Pick<RegiekamerNbaDecision, "description" | "reasons" | "impactHint">,
+export function formatCoordinationDominantDescription(
+  decision: Pick<CoordinationNbaDecision, "description" | "reasons" | "impactHint">,
 ): string {
   const reasonPart =
     decision.reasons.length > 0 ? ` ${decision.reasons.map((x) => `• ${x}`).join(" ")}` : "";

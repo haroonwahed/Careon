@@ -1,8 +1,8 @@
 /**
- * Minimal Regiekamer NBA telemetry envelope (v1).
+ * Minimal Coordination NBA telemetry envelope (v1).
  * No case identifiers; no raw title strings (privacy).
  */
-export type RegiekamerNbaTelemetryEvent = {
+export type CoordinationNbaTelemetryEvent = {
   event: string;
   route: string;
   uiMode: string;

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   REGIEKAMER_NBA_COORDINATION_MIN_ACTIVE,
   REGIEKAMER_NBA_RISK_THRESHOLD,
-  computeRegiekamerNextBestAction,
-  formatRegiekamerDominantDescription,
-} from "./regiekamerNextBestAction";
+  computeCoordinationNextBestAction,
+  formatCoordinationDominantDescription,
+} from "./coordinationNextBestAction";
 
 function baseTotals() {
   return {
@@ -15,9 +15,9 @@ function baseTotals() {
   };
 }
 
-describe("computeRegiekamerNextBestAction", () => {
+describe("computeCoordinationNextBestAction", () => {
   it("prioritizes blokkades over SLA, matching, intake and risks", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         critical_blockers: 2,
@@ -29,13 +29,13 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_BLOCKERS");
     expect(r.panel.uiMode).toBe("crisis");
     expect(r.impactHint).toMatch(/SLA-signal/);
-    expect(r.reasons).toEqual(["2 aanvragen met kritieke blokkade"]);
-    expect(formatRegiekamerDominantDescription(r)).toMatch(/• 2 aanvragen met kritieke blokkade/);
-    expect(formatRegiekamerDominantDescription(r)).toMatch(/Daarnaast: 5 SLA-signal/);
+    expect(r.reasons).toEqual(["2 casussen met kritieke blokkade"]);
+    expect(formatCoordinationDominantDescription(r)).toMatch(/• 2 casussen met kritieke blokkade/);
+    expect(formatCoordinationDominantDescription(r)).toMatch(/Daarnaast: 5 SLA-signal/);
   });
 
   it("uses SLA tier when no blockers", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         provider_sla_breaches: 2,
@@ -44,13 +44,13 @@ describe("computeRegiekamerNextBestAction", () => {
       noMatchUrgentCount: 1,
     });
     expect(r.primaryAction.actionKey).toBe("FOCUS_SLA");
-    expect(r.title).toMatch(/SLA-signal/);
+    expect(r.title).toBe("Verhoogde coördinatie-aandacht");
     expect(r.panel.linkCount).toBe(2);
     expect(r.reasons).toEqual(["2 SLA-signal(en) te laat bij aanbieder"]);
   });
 
   it("prioritizes matching failures before intake delays", () => {
-    const intakeFirst = computeRegiekamerNextBestAction({
+    const intakeFirst = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         intake_delays: 5,
@@ -60,7 +60,7 @@ describe("computeRegiekamerNextBestAction", () => {
     });
     expect(intakeFirst.primaryAction.actionKey).toBe("FOCUS_MATCHING");
 
-    const intakeOnly = computeRegiekamerNextBestAction({
+    const intakeOnly = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         intake_delays: 4,
@@ -74,7 +74,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("surfaces risks after the four priority tiers", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         high_priority_alerts: REGIEKAMER_NBA_RISK_THRESHOLD,
@@ -85,14 +85,14 @@ describe("computeRegiekamerNextBestAction", () => {
     expect(r.primaryAction.actionKey).toBe("FOCUS_RISKS");
     expect(r.secondaryAction?.actionKey).toBe("SLA_PROVIDER_REMINDERS");
     expect(r.panel.uiMode).toBe("intervention");
-    expect(r.title).toBe("Casus met verhoogd risico");
+    expect(r.title).toBe("Verhoogde coördinatie-aandacht");
     expect(r.description).toBe("");
     expect(r.reasons).toEqual([]);
-    expect(formatRegiekamerDominantDescription(r)).toBe("");
+    expect(formatCoordinationDominantDescription(r)).toBe("");
   });
 
   it("does not surface risks below threshold", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         high_priority_alerts: REGIEKAMER_NBA_RISK_THRESHOLD - 1,
@@ -104,7 +104,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("chooses coordination when volume is high and signals are quiet (no rapportages)", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: baseTotals(),
       activeCases: REGIEKAMER_NBA_COORDINATION_MIN_ACTIVE,
       noMatchUrgentCount: 0,
@@ -116,7 +116,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("defaults to stable when volume is low and signals are quiet", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: baseTotals(),
       activeCases: REGIEKAMER_NBA_COORDINATION_MIN_ACTIVE - 1,
       noMatchUrgentCount: 0,
@@ -127,7 +127,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("rounds fractional totals defensively", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         critical_blockers: 0.6,
         provider_sla_breaches: 0,
@@ -138,11 +138,11 @@ describe("computeRegiekamerNextBestAction", () => {
       noMatchUrgentCount: 0,
     });
     expect(r.primaryAction.actionKey).toBe("FOCUS_BLOCKERS");
-    expect(r.title).toMatch(/1 kritieke blokkade/);
+    expect(r.title).toBe("Verhoogde coördinatie-aandacht");
   });
 
   it("splits blocker reasons into upstream vs aanbieder when explain slices are provided", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         critical_blockers: 3,
@@ -155,13 +155,13 @@ describe("computeRegiekamerNextBestAction", () => {
       },
     });
     expect(r.reasons).toEqual([
-      "2 aanvragen wachten upstream",
+      "2 casussen wachten upstream",
       "1 casus blokkeert bij aanbieder",
     ]);
   });
 
   it("uses matchingMissingCandidates in matching tier when provided", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: baseTotals(),
       activeCases: 3,
       noMatchUrgentCount: 4,
@@ -172,7 +172,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("FOCUS_MATCHING label describes triage (filter/focus), not workflow execution", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: baseTotals(),
       activeCases: 3,
       noMatchUrgentCount: 2,
@@ -185,7 +185,7 @@ describe("computeRegiekamerNextBestAction", () => {
   });
 
   it("allows SLA overdue count override via explain", () => {
-    const r = computeRegiekamerNextBestAction({
+    const r = computeCoordinationNextBestAction({
       totals: {
         ...baseTotals(),
         provider_sla_breaches: 2,

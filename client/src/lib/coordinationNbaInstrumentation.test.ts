@@ -1,16 +1,16 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
-  REGIEKAMER_NBA_ROUTE,
-  buildRegiekamerNbaInstrumentationPayload,
-  emitRegiekamerNbaEvent,
-  resetRegiekamerNbaShownDedupeForTests,
-  shouldEmitRegiekamerNbaShown,
-} from "./regiekamerNbaInstrumentation";
+  COORDINATION_NBA_ROUTE,
+  buildCoordinationNbaInstrumentationPayload,
+  emitCoordinationNbaEvent,
+  resetCoordinationNbaShownDedupeForTests,
+  shouldEmitCoordinationNbaShown,
+} from "./coordinationNbaInstrumentation";
 
-describe("buildRegiekamerNbaInstrumentationPayload", () => {
+describe("buildCoordinationNbaInstrumentationPayload", () => {
   it("builds the canonical payload shape (no title — telemetry privacy)", () => {
     const fixed = new Date("2026-05-01T12:00:00.000Z");
-    const p = buildRegiekamerNbaInstrumentationPayload({
+    const p = buildCoordinationNbaInstrumentationPayload({
       actionKey: "FOCUS_SLA",
       uiMode: "crisis",
       reasonCount: 1,
@@ -20,45 +20,45 @@ describe("buildRegiekamerNbaInstrumentationPayload", () => {
       actionKey: "FOCUS_SLA",
       uiMode: "crisis",
       reasonCount: 1,
-      route: REGIEKAMER_NBA_ROUTE,
+      route: COORDINATION_NBA_ROUTE,
       now: fixed,
     });
   });
 });
 
-describe("shouldEmitRegiekamerNbaShown", () => {
+describe("shouldEmitCoordinationNbaShown", () => {
   beforeEach(() => {
-    resetRegiekamerNbaShownDedupeForTests();
+    resetCoordinationNbaShownDedupeForTests();
   });
 
   it("allows first emission and suppresses duplicate fingerprint within the window", () => {
-    expect(shouldEmitRegiekamerNbaShown("a|b", 200)).toBe(true);
-    expect(shouldEmitRegiekamerNbaShown("a|b", 200)).toBe(false);
+    expect(shouldEmitCoordinationNbaShown("a|b", 200)).toBe(true);
+    expect(shouldEmitCoordinationNbaShown("a|b", 200)).toBe(false);
   });
 
   it("allows a different fingerprint immediately", () => {
-    expect(shouldEmitRegiekamerNbaShown("a", 200)).toBe(true);
-    expect(shouldEmitRegiekamerNbaShown("b", 200)).toBe(true);
+    expect(shouldEmitCoordinationNbaShown("a", 200)).toBe(true);
+    expect(shouldEmitCoordinationNbaShown("b", 200)).toBe(true);
   });
 
   it("allows same fingerprint after window elapsed", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(0));
     try {
-      resetRegiekamerNbaShownDedupeForTests();
-      expect(shouldEmitRegiekamerNbaShown("x", 100)).toBe(true);
-      expect(shouldEmitRegiekamerNbaShown("x", 100)).toBe(false);
+      resetCoordinationNbaShownDedupeForTests();
+      expect(shouldEmitCoordinationNbaShown("x", 100)).toBe(true);
+      expect(shouldEmitCoordinationNbaShown("x", 100)).toBe(false);
       vi.setSystemTime(new Date(200));
-      expect(shouldEmitRegiekamerNbaShown("x", 100)).toBe(true);
+      expect(shouldEmitCoordinationNbaShown("x", 100)).toBe(true);
     } finally {
       vi.useRealTimers();
     }
   });
 });
 
-describe("emitRegiekamerNbaEvent", () => {
+describe("emitCoordinationNbaEvent", () => {
   const fixed = new Date("2026-05-01T12:00:00.000Z");
-  const payload = buildRegiekamerNbaInstrumentationPayload({
+  const payload = buildCoordinationNbaInstrumentationPayload({
     actionKey: "REVIEW_STABLE",
     uiMode: "stable",
     reasonCount: 0,
@@ -67,7 +67,7 @@ describe("emitRegiekamerNbaEvent", () => {
 
   const expectedTelemetry = {
     event: "nba_shown" as const,
-    route: REGIEKAMER_NBA_ROUTE,
+    route: COORDINATION_NBA_ROUTE,
     uiMode: "stable",
     actionKey: "REVIEW_STABLE",
     reasonCount: 0,
@@ -80,11 +80,11 @@ describe("emitRegiekamerNbaEvent", () => {
     delete (window as unknown as { __REGIEKAMER_NBA_CONSENT__?: unknown }).__REGIEKAMER_NBA_CONSENT__;
   });
 
-  it("invokes window.__REGIEKAMER_NBA_TRACK__ with RegiekamerNbaTelemetryEvent when consent is granted and tracker is set", () => {
+  it("invokes window.__REGIEKAMER_NBA_TRACK__ with CoordinationNbaTelemetryEvent when consent is granted and tracker is set", () => {
     const fn = vi.fn();
     (window as unknown as { __REGIEKAMER_NBA_TRACK__: typeof fn }).__REGIEKAMER_NBA_TRACK__ = fn;
     (window as unknown as { __REGIEKAMER_NBA_CONSENT__: boolean }).__REGIEKAMER_NBA_CONSENT__ = true;
-    emitRegiekamerNbaEvent("nba_shown", payload);
+    emitCoordinationNbaEvent("nba_shown", payload);
     expect(fn).toHaveBeenCalledTimes(1);
     expect(fn).toHaveBeenCalledWith(expectedTelemetry);
   });
@@ -92,7 +92,7 @@ describe("emitRegiekamerNbaEvent", () => {
   it("does not invoke the tracker when consent is not granted (default)", () => {
     const fn = vi.fn();
     (window as unknown as { __REGIEKAMER_NBA_TRACK__: typeof fn }).__REGIEKAMER_NBA_TRACK__ = fn;
-    emitRegiekamerNbaEvent("nba_shown", payload);
+    emitCoordinationNbaEvent("nba_shown", payload);
     expect(fn).not.toHaveBeenCalled();
   });
 });

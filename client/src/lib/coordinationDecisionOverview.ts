@@ -1,19 +1,19 @@
 import { apiClient } from "./apiClient";
 
-export type RegiekamerPriorityBand = "critical" | "high" | "medium" | "low";
-export type RegiekamerOwnershipRole = "gemeente" | "zorgaanbieder" | "regie";
-export type RegiekamerIssueType = "blockers" | "risks" | "alerts" | "SLA" | "rejection" | "intake";
+export type CoordinationPriorityBand = "critical" | "high" | "medium" | "low";
+export type CoordinationOwnershipRole = "gemeente" | "zorgaanbieder" | "regie";
+export type CoordinationIssueType = "blockers" | "risks" | "alerts" | "SLA" | "rejection" | "intake";
 
-export interface RegiekamerOverviewAction {
+export interface CoordinationOverviewAction {
   action: string;
   label: string;
-  priority: RegiekamerPriorityBand;
+  priority: CoordinationPriorityBand;
   reason: string;
 }
 
-export interface RegiekamerOverviewIssue {
+export interface CoordinationOverviewIssue {
   code: string;
-  severity: RegiekamerPriorityBand | "warning" | "info";
+  severity: CoordinationPriorityBand | "warning" | "info";
   message?: string;
   title?: string;
   recommended_action?: string;
@@ -21,7 +21,7 @@ export interface RegiekamerOverviewIssue {
   evidence?: Record<string, unknown>;
 }
 
-export interface RegiekamerDecisionOverviewItem {
+export interface CoordinationDecisionOverviewItem {
   case_id: number | string;
   case_reference: string;
   title: string;
@@ -35,18 +35,18 @@ export interface RegiekamerDecisionOverviewItem {
   placement_pressure_reason?: string | null;
   placement_pressure_implication?: string | null;
   assigned_provider: string;
-  next_best_action: RegiekamerOverviewAction | null;
-  top_blocker: RegiekamerOverviewIssue | null;
-  top_risk: RegiekamerOverviewIssue | null;
-  top_alert: RegiekamerOverviewIssue | null;
+  next_best_action: CoordinationOverviewAction | null;
+  top_blocker: CoordinationOverviewIssue | null;
+  top_risk: CoordinationOverviewIssue | null;
+  top_alert: CoordinationOverviewIssue | null;
   blocker_count: number;
   risk_count: number;
   alert_count: number;
   priority_score: number;
   age_hours: number | null;
   hours_in_current_state: number | null;
-  issue_tags?: RegiekamerIssueType[];
-  responsible_role?: RegiekamerOwnershipRole;
+  issue_tags?: CoordinationIssueType[];
+  responsible_role?: CoordinationOwnershipRole;
   zorgbehoefte_categorie?: string;
   zorgbehoefte_categorie_code?: string;
   zorgbehoefte_specifiek?: string;
@@ -55,7 +55,7 @@ export interface RegiekamerDecisionOverviewItem {
   taxonomie_code_lijn?: string;
 }
 
-export interface RegiekamerDecisionOverviewTotals {
+export interface CoordinationDecisionOverviewTotals {
   active_cases: number;
   critical_blockers: number;
   high_priority_alerts: number;
@@ -66,7 +66,7 @@ export interface RegiekamerDecisionOverviewTotals {
 }
 
 /** Operationele wachtrijen op Coördinatie — backend `governance_queues`. */
-export interface RegiekamerGovernanceQueues {
+export interface CoordinationGovernanceQueues {
   wijkteam_intakes_needing_assessment: string[];
   zorgvraag_beoordeling_open: string[];
   cases_waiting_gemeente_validation: string[];
@@ -77,13 +77,13 @@ export interface RegiekamerGovernanceQueues {
   active_placements_care_intensity_changed: string[];
 }
 
-export interface RegiekamerDecisionOverview {
+export interface CoordinationDecisionOverview {
   generated_at: string;
-  totals: RegiekamerDecisionOverviewTotals;
-  items: RegiekamerDecisionOverviewItem[];
-  governance_queues?: RegiekamerGovernanceQueues;
+  totals: CoordinationDecisionOverviewTotals;
+  items: CoordinationDecisionOverviewItem[];
+  governance_queues?: CoordinationGovernanceQueues;
 }
 
-export async function fetchRegiekamerDecisionOverview(): Promise<RegiekamerDecisionOverview> {
-  return apiClient.get<RegiekamerDecisionOverview>("/care/api/regiekamer/decision-overview/");
+export async function fetchCoordinationDecisionOverview(): Promise<CoordinationDecisionOverview> {
+  return apiClient.get<CoordinationDecisionOverview>("/care/api/regiekamer/decision-overview/");
 }

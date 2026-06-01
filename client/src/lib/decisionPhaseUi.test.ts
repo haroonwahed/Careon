@@ -1,25 +1,25 @@
 import { describe, expect, it } from "vitest";
 import {
   mapApiPhaseToDecisionUiPhase,
-  normalizeRegiekamerPhaseQueryParam,
+  normalizeCoordinationPhaseQueryParam,
   resolveCaseExecutionPhasePresentation,
 } from "./decisionPhaseUi";
 
-describe("normalizeRegiekamerPhaseQueryParam", () => {
+describe("normalizeCoordinationPhaseQueryParam", () => {
   it("returns empty for absent or blank input", () => {
-    expect(normalizeRegiekamerPhaseQueryParam(null)).toBe("");
-    expect(normalizeRegiekamerPhaseQueryParam(undefined)).toBe("");
-    expect(normalizeRegiekamerPhaseQueryParam("   ")).toBe("");
+    expect(normalizeCoordinationPhaseQueryParam(null)).toBe("");
+    expect(normalizeCoordinationPhaseQueryParam(undefined)).toBe("");
+    expect(normalizeCoordinationPhaseQueryParam("   ")).toBe("");
   });
 
   it("maps legacy wacht_op_validatie bookmarks to klaar_voor_matching", () => {
-    expect(normalizeRegiekamerPhaseQueryParam("wacht_op_validatie")).toBe("klaar_voor_matching");
-    expect(normalizeRegiekamerPhaseQueryParam("wacht-op-validatie")).toBe("klaar_voor_matching");
+    expect(normalizeCoordinationPhaseQueryParam("wacht_op_validatie")).toBe("klaar_voor_matching");
+    expect(normalizeCoordinationPhaseQueryParam("wacht-op-validatie")).toBe("klaar_voor_matching");
   });
 
   it("passes through other phase keys unchanged", () => {
-    expect(normalizeRegiekamerPhaseQueryParam("matching")).toBe("matching");
-    expect(normalizeRegiekamerPhaseQueryParam("gemeente_validatie")).toBe("gemeente_validatie");
+    expect(normalizeCoordinationPhaseQueryParam("matching")).toBe("matching");
+    expect(normalizeCoordinationPhaseQueryParam("gemeente_validatie")).toBe("gemeente_validatie");
   });
 });
 

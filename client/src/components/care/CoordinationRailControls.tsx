@@ -2,13 +2,13 @@ import { ChevronLeft, PanelRightOpen } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 
-interface RegieRailToggleButtonProps {
+interface CoordinationRailToggleButtonProps {
   collapsed: boolean;
   onToggle: () => void;
   testId?: string;
 }
 
-export function RegieRailToggleButton({ collapsed, onToggle, testId }: RegieRailToggleButtonProps) {
+export function CoordinationRailToggleButton({ collapsed, onToggle, testId }: CoordinationRailToggleButtonProps) {
   return (
     <Button
       type="button"
@@ -26,12 +26,12 @@ export function RegieRailToggleButton({ collapsed, onToggle, testId }: RegieRail
   );
 }
 
-interface RegieRailEdgeTabProps {
+interface CoordinationRailEdgeTabProps {
   onExpand: () => void;
   testId?: string;
 }
 
-export function RegieRailEdgeTab({ onExpand, testId }: RegieRailEdgeTabProps) {
+export function CoordinationRailEdgeTab({ onExpand, testId }: CoordinationRailEdgeTabProps) {
   return (
     <button
       type="button"
