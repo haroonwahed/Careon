@@ -19,11 +19,11 @@ interface CareKPICardProps {
   urgency?: "critical" | "warning" | "normal" | "positive";
 }
 
-export function CareKPICard({ 
-  title, 
-  value, 
-  subtitle, 
-  icon: Icon, 
+export function CareKPICard({
+  title,
+  value,
+  subtitle: _subtitle,
+  icon: Icon,
   trend,
   urgency = "normal"
 }: CareKPICardProps) {
@@ -59,7 +59,6 @@ export function CareKPICard({
           <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">{title}</p>
           <div className="mt-2 border-t border-border/45 pt-2">
             <div className={`text-3xl font-semibold tracking-tight ${style.value}`}>{value}</div>
-            {subtitle && <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>}
           </div>
         </div>
         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/35 ${style.icon}`}>

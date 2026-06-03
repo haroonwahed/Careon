@@ -47,12 +47,8 @@ export function CarePageScaffold({
   testId = "care-page-scaffold",
   className,
   title,
-  subtitle,
   eyebrow,
   titleClassName,
-  subtitleClassName,
-  subtitleInfoTestId,
-  subtitleAriaLabel,
   actions,
   metric,
   dominantAction,
@@ -76,13 +72,9 @@ export function CarePageScaffold({
       ) : null}
       <CareUnifiedHeader
         title={title}
-        subtitle={subtitle}
         metric={metric}
         actions={actions}
         titleClassName={titleClassName}
-        subtitleClassName={subtitleClassName}
-        subtitleInfoTestId={subtitleInfoTestId}
-        subtitleAriaLabel={subtitleAriaLabel}
       />
     </div>
   );

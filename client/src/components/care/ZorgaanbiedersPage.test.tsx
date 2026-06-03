@@ -111,15 +111,13 @@ describe("ZorgaanbiedersPage operatieve aandacht action", () => {
     expect(screen.getByRole("button", { name: "Selecteer beste match" })).toBeInTheDocument();
   });
 
-  it("shows the network-overview subtitle instead of workflow language", async () => {
-    const user = userEvent.setup();
+  it("hides the former network-overview subtitle chrome", () => {
     render(<ZorgaanbiedersPage theme="light" />);
 
-    expect(screen.getByRole("button", { name: "Pagina-uitleg" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Pagina-uitleg" }));
+    expect(screen.queryByRole("button", { name: "Pagina-uitleg" })).not.toBeInTheDocument();
     expect(
-      screen.getByText("Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."),
-    ).toBeInTheDocument();
+      screen.queryByText("Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps split-view count copy consistent between list and map headers", () => {

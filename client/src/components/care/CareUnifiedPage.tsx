@@ -200,13 +200,9 @@ export function CareContextHint({
 
 export function CareUnifiedHeader({
   title,
-  subtitle,
   metric,
   actions,
   titleClassName,
-  subtitleClassName,
-  subtitleInfoTestId,
-  subtitleAriaLabel,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -214,9 +210,7 @@ export function CareUnifiedHeader({
   actions?: ReactNode;
   titleClassName?: string;
   subtitleClassName?: string;
-  /** Defaults to `care-page-subtitle-info`. */
   subtitleInfoTestId?: string;
-  /** `aria-label` on the info trigger when `subtitle` is set. */
   subtitleAriaLabel?: string;
 }) {
   return (
@@ -239,14 +233,6 @@ export function CareUnifiedHeader({
             >
               <span className="min-w-0">{title}</span>
             </h1>
-            {subtitle ? (
-              <CareInfoPopover
-                ariaLabel={subtitleAriaLabel ?? "Pagina-uitleg"}
-                testId={subtitleInfoTestId ?? "care-page-subtitle-info"}
-              >
-                <div className={cn("leading-snug text-muted-foreground", subtitleClassName ?? "text-[13px]")}>{subtitle}</div>
-              </CareInfoPopover>
-            ) : null}
           </div>
           {actions ? (
             <div className="flex flex-col items-start gap-1 md:shrink-0 md:items-end">{actions}</div>

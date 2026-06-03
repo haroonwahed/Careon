@@ -15,6 +15,8 @@ describe("CarePageScaffold", () => {
     expect(screen.getByTestId("care-unified-header")).toBeInTheDocument();
     expect(screen.getByTestId("care-page-content")).toBeInTheDocument();
     expect(screen.getByText("Inhoud")).toBeInTheDocument();
+    expect(screen.queryByText("Ondertitel")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pagina-uitleg" })).not.toBeInTheDocument();
     expect(screen.queryByTestId("care-page-insights")).not.toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
   });

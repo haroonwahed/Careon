@@ -269,9 +269,6 @@ export function CarePanel({
 export function CareSectionHeader({
   eyebrow,
   title,
-  description,
-  descriptionAriaLabel = "Sectie-uitleg",
-  descriptionTestId,
   action,
   meta,
   className,
@@ -291,14 +288,7 @@ export function CareSectionHeader({
         {eyebrow ? (
           <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">{eyebrow}</p>
         ) : null}
-        <h2 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-[22px] font-semibold tracking-tight text-foreground">
-          <span className="min-w-0">{title}</span>
-          {description ? (
-            <CareInfoPopover ariaLabel={descriptionAriaLabel} testId={descriptionTestId}>
-              <div className="text-muted-foreground">{description}</div>
-            </CareInfoPopover>
-          ) : null}
-        </h2>
+        <h2 className="text-[22px] font-semibold tracking-tight text-foreground">{title}</h2>
       </div>
       {(meta || action) ? (
         <div className="flex w-full min-w-0 flex-col items-stretch gap-2 lg:w-auto lg:max-w-none lg:flex-1 lg:items-end">
@@ -492,7 +482,7 @@ export function CareFlowStepCard({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "care-flow-step__card group flex h-full w-full flex-col gap-1.5 rounded-xl px-3 py-2.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        "care-flow-step__card group flex h-full w-full flex-col gap-0.5 rounded-xl px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
         active && "care-flow-step__card--active",
         completed && !active && "care-flow-step__card--completed",
       )}
@@ -504,7 +494,11 @@ export function CareFlowStepCard({
           </span>
           <span className="truncate text-[13px] font-medium leading-tight text-foreground">{title}</span>
         </div>
-        <span className={cn("shrink-0 text-[20px] font-semibold leading-none tabular-nums", active ? "text-foreground" : "text-muted-foreground")}>{metric}</span>
+        {metric != null ? (
+          <span className={cn("shrink-0 text-[16px] font-semibold leading-none tabular-nums", active ? "text-foreground" : "text-muted-foreground")}>
+            {metric}
+          </span>
+        ) : null}
       </div>
       {subStatusLines[0] ? <div className="min-w-0">{subStatusLines[0]}</div> : null}
     </button>

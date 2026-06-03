@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { Layers } from "lucide-react";
 import { cn } from "../ui/utils";
-import { tokens } from "../../design/tokens";
-import { CareInfoPopover } from "./CareUnifiedPage";
 
 type CareTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 
@@ -42,9 +40,6 @@ const TONE_STYLES: Record<CareTone, { shell: string; icon: string; note: string 
 export function CarePageHeader({
   eyebrow,
   title,
-  subtitle,
-  subtitleAriaLabel,
-  subtitleInfoTestId,
   actions,
   meta,
   className,
@@ -70,16 +65,6 @@ export function CarePageHeader({
           <div className="space-y-2">
             <h1 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-3xl font-semibold tracking-tight text-foreground">
               <span className="min-w-0">{title}</span>
-              {subtitle ? (
-                <CareInfoPopover
-                  ariaLabel={subtitleAriaLabel ?? "Pagina-uitleg"}
-                  testId={subtitleInfoTestId ?? "care-hero-header-subtitle-info"}
-                >
-                  <div className="leading-6 text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
-                    {subtitle}
-                  </div>
-                </CareInfoPopover>
-              ) : null}
             </h1>
           </div>
           {meta && <div>{meta}</div>}
@@ -192,9 +177,6 @@ export function CareMetricCard({
 
 export function CareSectionCard({
   title,
-  subtitle,
-  subtitleAriaLabel,
-  subtitleInfoTestId,
   actions,
   children,
   className,
@@ -209,21 +191,11 @@ export function CareSectionCard({
 }) {
   return (
     <section className={cn("care-hover-card rounded-xl border border-border/70 bg-card/35 p-4", className)}>
-      {(title || subtitle || actions) && (
+      {(title || actions) && (
         <div className="mb-4 flex flex-col gap-3 border-b border-border/45 pb-3 lg:flex-row lg:items-start lg:justify-between">
-          {(title || subtitle) ? (
+          {title ? (
             <div className="min-w-0 space-y-1">
-              <h2 className="inline-flex min-w-0 flex-wrap items-center gap-1.5 text-base font-semibold text-foreground">
-                {title ? <span className="min-w-0">{title}</span> : null}
-                {subtitle ? (
-                  <CareInfoPopover
-                    ariaLabel={subtitleAriaLabel ?? "Sectie-uitleg"}
-                    testId={subtitleInfoTestId ?? "care-section-card-subtitle-info"}
-                  >
-                    <div className="text-sm text-muted-foreground">{subtitle}</div>
-                  </CareInfoPopover>
-                ) : null}
-              </h2>
+              <h2 className="text-base font-semibold text-foreground">{title}</h2>
             </div>
           ) : null}
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

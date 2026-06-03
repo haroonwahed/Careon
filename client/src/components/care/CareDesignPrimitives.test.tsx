@@ -1,4 +1,5 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import * as React from "react";
 import { describe, expect, it } from "vitest";
 import {
@@ -28,12 +29,11 @@ describe("CareDesignPrimitives", () => {
     expect(screen.getByTestId("inner")).toBeInTheDocument();
   });
 
-  it("renders PageHeader (CareUnifiedHeader) with subtitle behind info trigger", () => {
+  it("renders PageHeader (CareUnifiedHeader) without subtitle chrome", () => {
     render(<PageHeader title="Coördinatie" subtitle="Operatief overzicht" />);
     expect(screen.getByTestId("care-unified-header")).toHaveTextContent("Coördinatie");
     expect(screen.queryByText("Operatief overzicht")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Pagina-uitleg" }));
-    expect(screen.getByText("Operatief overzicht")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Pagina-uitleg" })).not.toBeInTheDocument();
   });
 
   it("renders FlowPhaseBadge mapped to decision phases", () => {
@@ -68,7 +68,9 @@ describe("CareDesignPrimitives", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Vul het persoonsbeeld in om door te gaan.");
   });
 
-  it("CareSearchFiltersBar exposes expanded state for secondary filters", () => {
+  it("CareSearchFiltersBar exposes expanded state for secondary filters", async () => {
+    const user = userEvent.setup();
+
     function Harness() {
       const [open, setOpen] = React.useState(false);
       return (
@@ -87,7 +89,7 @@ describe("CareDesignPrimitives", () => {
     render(<Harness />);
     const toggle = screen.getByRole("button", { name: "Filters" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    fireEvent.click(toggle);
+    await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("region", { name: "Filters" })).toBeInTheDocument();
     expect(screen.getByTestId("extra-filters")).toBeInTheDocument();
