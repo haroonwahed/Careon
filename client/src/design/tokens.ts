@@ -30,7 +30,7 @@ export const tokens = {
      * Shell scrollport sits below `TopBar` (`h-16` = 4rem); rail uses `sticky` + `top-4` (1rem).
      */
     coordinationRailMaxHeight: "calc(100dvh - 5rem)",
-    timelineConnectorTop: "2.5rem",
+    timelineConnectorTop: "2.25rem",
     edgeZero: "0px",
     sectionSpacing: "24px",
     blockSpacing: "16px",
@@ -126,7 +126,7 @@ export const tokens = {
     compactWorklistRowHeight: "56px",
     nextBestActionMinHeight: "112px",
     nextBestActionMaxHeight: "156px",
-    processTimelineHeight: "64px",
+    processTimelineHeight: "56px",
     contextPanelSectionSpacing: "16px",
     rowHeight: "56px",
     compactRowHeight: "44px",
