@@ -379,43 +379,6 @@ function renderQuickPhaseIcon(phase: CoordinationFlowPhase) {
   return <Icon size={16} className="text-muted-foreground" aria-hidden />;
 }
 
-type PhaseBoardDetail = {
-  label: string;
-  tone: "blocked" | "waiting" | "ready" | "in_progress";
-};
-
-function phaseBoardDetails(phase: CoordinationFlowPhase): PhaseBoardDetail[] {
-  switch (phase) {
-    case "casus_gestart":
-      return [
-        { label: "Geblokkeerd", tone: "blocked" },
-      ];
-    case "klaar_voor_matching":
-      return [{ label: "Klaar", tone: "ready" }];
-    case "in_beoordeling":
-      return [{ label: "Wacht", tone: "waiting" }];
-    case "plaatsing_intake":
-      return [{ label: "Lopend", tone: "in_progress" }];
-    default:
-      return [];
-  }
-}
-
-function phasePillClasses(tone: PhaseBoardDetail["tone"]): string {
-  switch (tone) {
-    case "blocked":
-      return "border-red-500/35 bg-red-500/10 text-red-100";
-    case "waiting":
-      return "border-amber-500/35 bg-amber-500/10 text-amber-100";
-    case "ready":
-      return "border-sky-500/35 bg-sky-500/10 text-sky-100";
-    case "in_progress":
-      return "border-emerald-500/35 bg-emerald-500/10 text-emerald-100";
-    default:
-      return "border-border bg-muted/30 text-foreground";
-  }
-}
-
 function imperativeCtaLabel(item: CoordinationDecisionOverviewItem): string | null {
   const nba = item.next_best_action;
   if (!nba) {
@@ -1483,8 +1446,6 @@ export function SystemAwarenessPage({
                         dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
                       const completed = phaseIndex < activeFlowIndex && !isBottleneck;
                       const Icon = phaseCardIcon(col.phase);
-                      const details = phaseBoardDetails(col.phase);
-                      const status = details[0];
                       return (
                         <div key={col.phase} className="relative">
                           <CareFlowStepCard
@@ -1495,21 +1456,6 @@ export function SystemAwarenessPage({
                             icon={<Icon size={18} className="text-current" />}
                             metric={col.count}
                             title={col.label}
-                            subStatusLines={
-                              status
-                                ? [
-                                  <span
-                                    key={`${col.phase}-status`}
-                                    className={cn(
-                                      "inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold",
-                                      phasePillClasses(status.tone),
-                                    )}
-                                  >
-                                    {status.label}
-                                  </span>,
-                                ]
-                                : []
-                            }
                           />
                         </div>
                       );

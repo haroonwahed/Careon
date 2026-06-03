@@ -178,7 +178,6 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.getByRole("button", { name: "Terug naar casussen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Casusacties" })).toBeInTheDocument();
     expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
-    expect(await screen.findByText("Operationele keten")).toBeInTheDocument();
     expect(screen.getByTestId("casus-flow-progress")).toBeInTheDocument();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
@@ -205,7 +204,7 @@ describe("CaseExecutionPage workspace", () => {
 
     expectCasusDetailMode();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
-    expect(screen.getByText("Operationele keten")).toBeInTheDocument();
+    expect(screen.getByTestId("casus-flow-progress")).toBeInTheDocument();
     expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
     expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
@@ -235,12 +234,10 @@ describe("CaseExecutionPage workspace", () => {
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
     expect(await screen.findByText("Matching & validatie")).toBeInTheDocument();
-    expect(screen.getByTestId("next-best-action-reason")).toHaveTextContent(
-      "Gemeentelijke validatie is vereist",
-    );
+    expect(screen.queryByTestId("next-best-action-reason")).not.toBeInTheDocument();
     const stepper = screen.getByTestId("casus-flow-progress");
-    expect(within(stepper).getByText("Actief")).toBeInTheDocument();
-    expect(within(stepper).getAllByText(/Matching & validatie/i).length).toBeGreaterThan(0);
+    const matchingStep = within(stepper).getByText("Matching & validatie").closest("button");
+    expect(matchingStep).toHaveClass("care-flow-step__card--active");
   });
 
   it("shows dominant blocked state and missing-summary guidance", async () => {

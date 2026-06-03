@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
-import { ProcessTimeline } from "../design/ProcessTimeline";
 import { cn } from "../ui/utils";
 import { getShortReasonLabel } from "../../lib/uxCopy";
-import { BlockingNotice } from "./CareDesignPrimitives";
+import { ProcessTimeline } from "../design/ProcessTimeline";
+import { BlockingNotice, CareFlowBoard, CareFlowStepCard } from "./CareDesignPrimitives";
 
 export type CaseStepperStep = {
   id: string;
@@ -16,96 +16,41 @@ export type CaseStepperStep = {
 export function CaseOperationalStepper({
   steps,
   activeIndex,
-  warningStepIndexes = [],
 }: {
   steps: readonly CaseStepperStep[];
   activeIndex: number;
-  warningStepIndexes?: number[];
 }) {
-  const progressPct =
-    steps.length <= 1 ? 0 : Math.min(100, Math.max(8, (activeIndex / (steps.length - 1)) * 100));
-
-  const chipLabel = (index: number) => {
-    if (index < activeIndex) return "Klaar";
-    if (index === activeIndex) return "Actief";
-    if (index === activeIndex + 1) return "Volgende";
-    return "Open";
-  };
-
   return (
-    <ProcessTimeline className="surface-context rounded-xl px-4 py-3.5 md:px-5 md:py-4">
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-        Operationele keten
-      </h2>
-      <div className="care-flow-pipeline relative px-0 py-0" aria-label="Operationele keten">
-        <div className="care-flow-pipeline__track hidden md:block" aria-hidden />
-        <div
-          className="care-flow-pipeline__progress hidden md:block"
-          style={{ width: `${progressPct}%` }}
-          aria-hidden
-        />
-        <div className="relative z-[1] grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-1">
-          {steps.map((step, index) => {
-            const isCurrent = index === activeIndex;
-            const isCompleted = index < activeIndex;
-            const hasWarning = warningStepIndexes.includes(index);
-            return (
-              <div
-                key={step.id}
-                className={cn(
-                  "min-w-0 rounded-lg px-2 py-2 md:text-center",
-                  isCurrent && "bg-muted/25",
-                )}
-              >
-                <div className="flex items-center gap-2 md:flex-col md:items-center md:gap-1">
+    <ProcessTimeline className="surface-context rounded-xl px-4 py-3 md:px-4 md:py-3.5">
+      <CareFlowBoard variant="pipeline" activeStepIndex={activeIndex} stepCount={steps.length}>
+        {steps.map((step, index) => {
+          const isCurrent = index === activeIndex;
+          const isCompleted = index < activeIndex;
+          return (
+            <CareFlowStepCard
+              key={step.id}
+              icon={
                   <span
                     className={cn(
-                      "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                      isCurrent
-                        ? "bg-primary/90 text-primary-foreground"
-                        : isCompleted
-                          ? "bg-emerald-500/15 text-emerald-200"
-                          : "bg-muted/50 text-muted-foreground",
-                    )}
-                  >
-                    {index + 1}
-                  </span>
-                  <p
-                    className={cn(
-                      "min-w-0 text-[12px] font-semibold leading-tight",
-                      isCurrent ? "text-foreground" : "text-foreground/80",
-                    )}
-                  >
-                    {step.label}
-                  </p>
-                </div>
-                <div className="mt-1 flex flex-wrap items-center gap-1 md:justify-center">
-                  <span
-                    className={cn(
-                      "inline-flex h-5 items-center rounded-sm px-1.5 text-[10px] font-medium",
-                      isCurrent
-                        ? "bg-primary/15 text-primary"
-                        : isCompleted
-                          ? "bg-emerald-500/10 text-emerald-200"
-                          : "bg-muted/40 text-muted-foreground",
-                    )}
-                  >
-                    {chipLabel(index)}
-                  </span>
-                  {hasWarning ? (
-                    <span
-                      className="inline-flex h-5 items-center gap-0.5 rounded-sm bg-amber-500/12 px-1.5 text-[10px] font-medium text-amber-200"
-                      title="Aandacht vereist"
-                    >
-                      <AlertTriangle size={10} aria-hidden />
-                    </span>
-                  ) : null}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+                    "flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold",
+                    isCurrent
+                      ? "bg-primary/90 text-primary-foreground"
+                      : isCompleted
+                        ? "bg-emerald-500/15 text-emerald-200"
+                        : "bg-muted/50 text-muted-foreground",
+                  )}
+                >
+                  {index + 1}
+                </span>
+              }
+              metric={null}
+              title={<span className="text-[12px] leading-tight md:text-[12px]">{step.label}</span>}
+              active={isCurrent}
+              completed={isCompleted}
+            />
+          );
+        })}
+      </CareFlowBoard>
     </ProcessTimeline>
   );
 }
@@ -137,38 +82,29 @@ export function CasePrimaryActionPanel({
   errorMessage?: string | null;
 }) {
   return (
-    <div data-testid="next-best-action" data-priority="primary" className="space-y-4">
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-lg bg-muted/20 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Status</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{statusLabel}</p>
+    <div data-testid="next-best-action" data-priority="primary" className="space-y-2">
+      <div className="grid gap-2 sm:grid-cols-3">
+        <div className="rounded-md bg-muted/12 px-2.5 py-1">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Status</p>
+          <p className="mt-0.5 text-[11px] font-medium leading-tight text-muted-foreground">{statusLabel}</p>
         </div>
-        <div className="rounded-lg bg-muted/20 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Actiehouder</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{actionHolderLabel}</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">{waitingOnLabel}</p>
+        <div className="rounded-md border border-primary/20 bg-primary/8 px-2.5 py-1.5">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary/80">Actiehouder</p>
+          <p className="mt-0.5 text-[12px] font-semibold leading-tight text-foreground">{actionHolderLabel}</p>
+          <p className="mt-0.5 text-[10px] leading-tight text-primary/70">{waitingOnLabel}</p>
         </div>
-        <div className="rounded-lg bg-muted/20 px-3 py-2.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Volgende stap</p>
-          <p className="mt-1 text-sm font-semibold text-foreground">{nextStepLabel}</p>
+        <div className="rounded-md border border-primary/20 bg-primary/8 px-2.5 py-1.5">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary/80">Volgende stap</p>
+          <p className="mt-0.5 text-[12px] font-semibold leading-tight text-foreground">{nextStepLabel}</p>
         </div>
       </div>
-      {nextActionReason?.trim() ? (
-        <p
-          data-testid="next-best-action-reason"
-          className="text-[12px] leading-snug text-muted-foreground"
-        >
-          <span className="font-medium text-foreground/90">Waarom: </span>
-          {nextActionReason.trim()}
-        </p>
-      ) : null}
       {primaryCtaLabel ? (
-        <div className="flex flex-col gap-2 border-t border-border/40 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-t border-border/40 pt-2 sm:flex-row sm:items-center sm:justify-start">
           <Button
             type="button"
             onClick={onPrimaryAction}
             disabled={primaryDisabled}
-            className="h-11 min-h-[44px] w-full gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto sm:min-w-[220px]"
+            className="h-10 min-h-10 w-full gap-2 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto sm:min-w-[180px]"
           >
             {primaryPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
             {primaryCtaLabel}

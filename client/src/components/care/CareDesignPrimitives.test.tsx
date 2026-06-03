@@ -133,7 +133,6 @@ describe("CareDesignPrimitives", () => {
             icon={<span>i</span>}
             metric={index + 1}
             title={`Stap ${index + 1}`}
-            subStatusLines={["Regel 1", "Regel 2"]}
           />
         ))}
       </CareFlowBoard>,

@@ -461,7 +461,6 @@ export function CareFlowStepCard({
   icon,
   metric,
   title,
-  subStatusLines,
   active = false,
   completed = false,
   onClick,
@@ -470,7 +469,6 @@ export function CareFlowStepCard({
   icon: ReactNode;
   metric: ReactNode;
   title: ReactNode;
-  subStatusLines: ReactNode[];
   active?: boolean;
   completed?: boolean;
   onClick?: () => void;
@@ -500,7 +498,6 @@ export function CareFlowStepCard({
           </span>
         ) : null}
       </div>
-      {subStatusLines[0] ? <div className="min-w-0">{subStatusLines[0]}</div> : null}
     </button>
   );
 }

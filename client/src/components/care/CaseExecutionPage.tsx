@@ -884,10 +884,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
     };
   });
 
-  const stepWarningIndexes = dominantBlocker || summaryNeedsCaseCompletion
-    ? [decisionTimelineIndex]
-    : [];
-
   const caseFacts = [
     { label: "Zorgvraag", value: spaCase.zorgtype || "—", title: spaCase.zorgtype },
     { label: "Regio", value: spaCase.regio || "—" },
@@ -928,7 +924,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
     <CaseOperationalStepper
       steps={decisionTimelineSteps}
       activeIndex={decisionTimelineIndex}
-      warningStepIndexes={stepWarningIndexes}
     />
   );
 
