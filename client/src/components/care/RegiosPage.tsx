@@ -71,7 +71,7 @@ export function RegiosPage({
   const [capacityFilter, setCapacityFilter] = useState<"all" | "stabiel" | "druk" | "tekort" | "kritiek">("all");
   const [sortBy, setSortBy] = useState<"cases" | "capacity" | "waittime">("cases");
 
-  const { regions, loading, error, refetch } = useRegions({ regionType: "JEUGDREGIO" });
+  const { regions, loading, error, refetch } = useRegions({ q: searchQuery, regionType: "JEUGDREGIO" });
 
   const openSignalen = useCallback(() => {
     if (onNavigateToSignalen) {

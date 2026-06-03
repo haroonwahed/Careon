@@ -102,5 +102,12 @@ describe("RegiosPage", () => {
       expect(screen.getAllByRole("button", { name: "Aanbieders" })).toHaveLength(1);
       expect(screen.getByRole("button", { name: "Zoek jeugdregio" })).toHaveTextContent("Riv");
     });
+
+    expect(mockUseRegions).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        q: "Riv",
+        regionType: "JEUGDREGIO",
+      }),
+    );
   });
 });
