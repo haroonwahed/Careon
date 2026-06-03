@@ -3468,6 +3468,9 @@ def regions_api(request):
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(region_name__icontains=q) | Q(region_code__icontains=q))
+        region_type = request.GET.get('region_type', '')
+        if region_type:
+            qs = qs.filter(region_type=region_type)
         page = int(request.GET.get('page', 1))
         page_size = int(request.GET.get('page_size', 100))
         paginator = Paginator(qs, page_size)

@@ -160,6 +160,7 @@ export interface SpaRegion {
 
 interface UseRegionsOptions {
   q?: string;
+  regionType?: string;
 }
 
 interface UseRegionsResult {
@@ -171,7 +172,7 @@ interface UseRegionsResult {
 }
 
 export function useRegions(options: UseRegionsOptions = {}): UseRegionsResult {
-  const { q = '' } = options;
+  const { q = '', regionType = '' } = options;
   const [rawRegions, setRawRegions] = useState<RawRegion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -210,6 +211,7 @@ export function useRegions(options: UseRegionsOptions = {}): UseRegionsResult {
     setError(null);
     const params: Record<string, string> = { page_size: '100' };
     if (q) params.q = q;
+    if (regionType) params.region_type = regionType;
 
     apiClient.get('/care/api/regions/health/', params)
       .then((data: { regions: RawRegion[]; total_count: number }) => {
