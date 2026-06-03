@@ -1093,7 +1093,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
         onBack={onBack}
         flowProgress={flowProgress}
         title={`CASUS #${spaCase.id.replace(/\D/g, "") || spaCase.id} — ${spaCase.title}`}
-        metaLine={null}
         phaseLabel={currentPhaseLabel}
         phaseId={phasePresentation.decisionUiPhaseId}
         statusVariant={workspaceStatusVariant}
