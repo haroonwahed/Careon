@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { CasePrimaryActionPanel } from "./CaseExecutionWorkspaceSections";
 
 describe("CasePrimaryActionPanel", () => {
-  it("shows blocked-action guidance as a visible alert", () => {
+  it("keeps blocked state quiet while disabling the CTA", () => {
     render(
       <CasePrimaryActionPanel
         statusLabel="Wacht op besluit"
@@ -17,8 +17,8 @@ describe("CasePrimaryActionPanel", () => {
       />,
     );
 
-    const alert = screen.getByRole("alert");
-    expect(alert).toHaveTextContent("Actie geblokkeerd");
-    expect(alert).toHaveTextContent("Vul het persoonsbeeld in om door te gaan.");
+    expect(screen.getByTestId("next-best-action")).toHaveAttribute("data-blocked", "true");
+    expect(screen.getByRole("button", { name: "Volgende" })).toBeDisabled();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

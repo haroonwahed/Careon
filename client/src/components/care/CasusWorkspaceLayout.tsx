@@ -2,7 +2,6 @@ import type { ReactNode } from "react";
 import { ArrowLeft, RefreshCw } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
-import { cn } from "../ui/utils";
 import {
   CasusWorkspaceStatusBadges,
   FlowPhaseBadge,
@@ -56,20 +55,6 @@ export function CasusWorkspaceLayout({
   decisionPanel,
   contextStack,
 }: CasusWorkspaceLayoutProps) {
-  const operationalShellClassName =
-    statusVariant === "blocked"
-      ? "border-red-500/30 bg-red-500/[0.06] shadow-[0_24px_60px_rgba(127,29,29,0.16)]"
-      : statusVariant === "progress"
-        ? "border-amber-500/20 bg-amber-500/[0.05] shadow-[0_20px_48px_rgba(146,64,14,0.10)]"
-        : "border-primary/12 bg-card/70 shadow-[0_20px_48px_rgba(11,16,32,0.12)]";
-
-  const heroBandClassName =
-    statusVariant === "blocked"
-      ? "border-red-500/25 bg-red-500/[0.06]"
-      : statusVariant === "progress"
-        ? "border-amber-500/18 bg-amber-500/[0.04]"
-        : "border-border/70 bg-background/45";
-
   return (
     <div className="w-full min-w-0 space-y-4 bg-background px-0 pb-8 pt-0 text-foreground">
       <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
@@ -130,27 +115,27 @@ export function CasusWorkspaceLayout({
 
       <section
         data-testid="casus-operational-cluster"
-        className={cn("space-y-4 rounded-[28px] border p-4 md:p-5", operationalShellClassName)}
+        className="space-y-4 rounded-[24px] border border-border/60 bg-card/50 p-4 md:p-5"
       >
         {flowProgress ? (
           <div
             data-testid="casus-flow-progress"
-            className="rounded-2xl border border-border/60 bg-background/35 p-3 md:p-3.5"
+            className="rounded-xl bg-background/35 p-3 md:p-3.5"
           >
             {flowProgress}
           </div>
         ) : null}
 
-        <section
+        <div
           data-testid="casus-hero-band"
-          className={cn("rounded-2xl border p-4 shadow-sm md:p-5", heroBandClassName)}
+          className="rounded-xl bg-background/35 p-4 md:p-5"
         >
           {caseHero}
-        </section>
+        </div>
       </section>
 
       {decisionPanel ? (
-        <section data-testid="casus-decision-panel" className="rounded-2xl border border-border/70 bg-card/45 p-4 md:p-5">
+        <section data-testid="casus-decision-panel" className="rounded-xl border border-border/60 bg-card/40 p-4 md:p-5">
           {decisionPanel}
         </section>
       ) : null}

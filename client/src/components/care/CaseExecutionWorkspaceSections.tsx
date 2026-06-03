@@ -3,9 +3,8 @@ import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { cn } from "../ui/utils";
-import { getShortReasonLabel } from "../../lib/uxCopy";
 import { ProcessTimeline } from "../design/ProcessTimeline";
-import { BlockingNotice, CareFlowBoard, CareFlowStepCard } from "./CareDesignPrimitives";
+import { CareFlowBoard, CareFlowStepCard } from "./CareDesignPrimitives";
 
 export type CaseStepperStep = {
   id: string;
@@ -81,36 +80,31 @@ export function CasePrimaryActionPanel({
   disabledReason?: string | null;
   errorMessage?: string | null;
 }) {
-  const isBlocked = Boolean(primaryDisabled && (disabledReason || errorMessage));
-
   return (
     <div
       data-testid="next-best-action"
       data-priority="primary"
-      className={cn(
-        "space-y-3 rounded-2xl border p-3.5 md:p-4",
-        isBlocked
-          ? "border-red-500/25 bg-red-500/[0.05]"
-          : "border-primary/15 bg-background/30",
-      )}
+      data-blocked={Boolean(primaryDisabled && (disabledReason || errorMessage))}
+      data-reason-present={Boolean(nextActionReason)}
+      className="space-y-3"
     >
-      <div className="grid gap-2 sm:grid-cols-[0.82fr_1.28fr_0.9fr]">
-        <div className={cn("rounded-xl px-3 py-2", isBlocked ? "border border-red-500/20 bg-red-500/[0.08]" : "bg-muted/12")}>
+      <div className="grid gap-3 md:grid-cols-[0.74fr_1.06fr_1fr] md:items-end">
+        <div className="space-y-1">
           <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Status</p>
-          <p className={cn("mt-0.5 text-[11px] font-semibold leading-tight", isBlocked ? "text-red-100" : "text-muted-foreground")}>{statusLabel}</p>
+          <p className="text-[12px] font-semibold leading-tight text-foreground">{statusLabel}</p>
         </div>
-        <div className="rounded-xl border border-primary/25 bg-primary/10 px-3 py-2 shadow-sm">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary/80">Actiehouder</p>
-          <p className="mt-0.5 text-[13px] font-semibold leading-tight text-foreground">{actionHolderLabel}</p>
-          <p className="mt-0.5 text-[10px] leading-tight text-primary/70">{waitingOnLabel}</p>
+        <div className="space-y-1">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Actiehouder</p>
+          <p className="text-[14px] font-semibold leading-tight text-foreground">{actionHolderLabel}</p>
+          <p className="text-[10px] leading-tight text-muted-foreground">{waitingOnLabel}</p>
         </div>
-        <div className="rounded-xl border border-primary/18 bg-primary/8 px-3 py-2">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-primary/80">Volgende stap</p>
-          <p className="mt-0.5 text-[12px] font-semibold leading-tight text-foreground">{nextStepLabel}</p>
+        <div className="space-y-1 md:text-right">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">Volgende stap</p>
+          <p className="text-[12px] font-semibold leading-tight text-foreground">{nextStepLabel}</p>
         </div>
       </div>
       {primaryCtaLabel ? (
-        <div className="flex flex-col gap-2 border-t border-border/40 pt-2 sm:flex-row sm:items-center sm:justify-start">
+        <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center sm:justify-start">
           <Button
             type="button"
             onClick={onPrimaryAction}
@@ -122,13 +116,6 @@ export function CasePrimaryActionPanel({
             {!primaryPending ? <ArrowRight size={16} aria-hidden /> : null}
           </Button>
         </div>
-      ) : null}
-      {(primaryDisabled && (disabledReason || errorMessage)) ? (
-        <BlockingNotice
-          title="Actie geblokkeerd"
-          message={errorMessage ?? getShortReasonLabel(disabledReason ?? "", 110)}
-          className="mt-1"
-        />
       ) : null}
     </div>
   );
