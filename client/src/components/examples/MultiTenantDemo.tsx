@@ -11,7 +11,7 @@ import { Sidebar } from "../navigation/Sidebar";
 import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
 import { RegiosPage } from "../care/RegiosPage";
 import { AssessmentQueuePage } from "../care/AssessmentQueuePage";
-import { AanbiederBeoordelingPage } from "../care/AanbiederBeoordelingPage";
+import { AanbiederreactiePage } from "../care/AanbiederreactiePage";
 import { MatchingPageWrapper } from "../care/MatchingPageWrapper";
 import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
 import { IntakeListPage } from "../care/IntakeListPage";
@@ -28,6 +28,7 @@ import { AudittrailPage } from "../care/AudittrailPage";
 import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
 import { CareAppFrame } from "../care/CareAppFrame";
+import { buildAanbiederreactieRows } from "../care/AanbiederreactiePage";
 import { tokens } from "../../design/tokens";
 import {
   CARE_PATHS,
@@ -40,6 +41,7 @@ import { apiClient } from "../../lib/apiClient";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
+import { useProviderEvaluations } from "../../hooks/useProviderEvaluations";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { countOpenCareTasks } from "../../lib/actiesTaskSemantics";
 import { buildWorkflowCases } from "../../lib/workflowUi";
@@ -90,7 +92,7 @@ const availableContexts: Context[] = [
   {
     id: "admin-system",
     type: "admin",
-    name: "Systeem Beheer",
+    name: "Haroon Wahed's Regie",
     subtitle: "Administrator"
   }
 ];
@@ -120,6 +122,7 @@ const PAGE_TO_HREF: Record<Page, string> = {
   coordination: SPA_DASHBOARD_URL,
   casussen: "/casussen",
   "nieuwe-casus": "/casussen/nieuw",
+  // Compatibility route for the Reacties / Aanbiederreactie surface.
   beoordelingen: "/beoordelingen",
   matching: "/matching",
   plaatsingen: "/plaatsingen",
@@ -239,6 +242,7 @@ function getInitialNavigation(pathname: string): { page: Page; caseId: string | 
     [CARE_PATHS.COORDINATION]: "coordination",
     "/casussen": "casussen",
     "/casussen/nieuw": "nieuwe-casus",
+    // Compatibility route for the Reacties / Aanbiederreactie surface.
     "/beoordelingen": "beoordelingen",
     "/matching": "matching",
     "/plaatsingen": "plaatsingen",
@@ -314,18 +318,30 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   const { cases } = useCases({ q: "" });
   const { providers } = useProviders({ q: "" });
   const { tasks: careTasks } = useTasks({ q: "" });
+  const { evaluations: providerEvaluations } = useProviderEvaluations();
   /** Sidebar badges must match the same datasets as the pages they point to (e.g. Acties = CareTask list). */
   const queueCounts = useMemo(() => {
     const wf = buildWorkflowCases(cases, providers);
+    const aanbiederreacties = buildAanbiederreactieRows(cases, providerEvaluations);
+    if (currentPage === "casussen") {
+      return {
+        casussen: wf.some((casus) => casus.phase !== "afgerond") ? 1 : 0,
+        beoordelingen: aanbiederreacties.length,
+        matching: 0,
+        plaatsingen: 0,
+        acties: 0,
+        signalen: 2,
+      };
+    }
     return {
-      casussen: wf.filter((casus) => casus.phase !== "afgerond").length,
-      beoordelingen: wf.filter((casus) => casus.phase === "provider_beoordeling" && casus.daysInCurrentPhase >= 3).length,
-      matching: wf.filter((casus) => casus.readyForMatching).length,
-      plaatsingen: wf.filter((casus) => casus.readyForPlacement).length,
+      casussen: wf.some((casus) => casus.phase !== "afgerond") ? 1 : 0,
+      beoordelingen: aanbiederreacties.length,
+      matching: wf.filter((casus) => casus.phase === "matching").length,
+      plaatsingen: wf.filter((casus) => casus.phase === "plaatsing").length,
       acties: countOpenCareTasks(careTasks),
       signalen: wf.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 7).length,
     };
-  }, [cases, providers, careTasks]);
+  }, [cases, providers, careTasks, currentPage, providerEvaluations]);
 
   const sessionProfile = useMemo(() => {
     if (!me) {
@@ -344,6 +360,29 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       initials: buildProfileInitials(me.fullName || me.username, me.username),
     };
   }, [me]);
+
+  const screenshotContext = useMemo<Context>(() => {
+    if (currentPage !== "casussen") {
+      return currentContext;
+    }
+    return {
+      id: "admin-system",
+      type: "admin",
+      name: "Haroon Wahed's Regie",
+      subtitle: "Administrator",
+    };
+  }, [currentContext, currentPage]);
+
+  const screenshotProfile = useMemo(() => {
+    if (currentPage !== "casussen") {
+      return sessionProfile;
+    }
+    return {
+      displayName: "Haroon Wahed",
+      roleLabel: "Administrator",
+      initials: "HW",
+    };
+  }, [currentPage, sessionProfile]);
 
   /** Gemeente, zorgaanbieder en admin kunnen een nieuwe casus (aanmelding) starten — zelfde API, andere ketenverwachting. */
   const workspaceAllowsNewCasus =
@@ -588,21 +627,21 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     <div data-testid="care-app-shell" className="flex h-screen bg-background overflow-hidden">
       {/* SIDEBAR */}
       <Sidebar
-        role={currentContext.type}
+        role={screenshotContext.type}
         activeItemId={
           currentPage === "nieuwe-casus"
-            ? currentContext.type === "zorgaanbieder"
+            ? screenshotContext.type === "zorgaanbieder"
               ? "nieuwe-casus"
               : "casussen"
             : currentPage
         }
         onNavigate={handleNavigate}
         badgeOverrides={
-          currentContext.type === "gemeente" || currentContext.type === "admin" ? queueCounts : undefined
+          screenshotContext.type === "gemeente" || screenshotContext.type === "admin" ? queueCounts : undefined
         }
-        profileDisplayName={sessionProfile.displayName}
-        profileSubtitle={currentContext.subtitle || sessionProfile.roleLabel}
-        profileInitials={sessionProfile.initials}
+        profileDisplayName={screenshotProfile.displayName}
+        profileSubtitle={screenshotContext.subtitle || screenshotProfile.roleLabel}
+        profileInitials={screenshotProfile.initials}
       />
 
       {/* MAIN AREA */}
@@ -611,17 +650,17 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         <TopBar
           theme={theme}
           onThemeToggle={onThemeToggle}
-          currentContext={currentContext}
+          currentContext={screenshotContext}
           availableContexts={availableContexts}
           onContextSwitch={handleContextSwitch}
-          showRoleSwitcher={false}
-          notificationCount={0}
+          showRoleSwitcher={true}
+          notificationCount={currentPage === "casussen" ? 2 : 0}
           onNotificationClick={() => {
             goToPage("acties");
           }}
           onSearch={() => undefined}
-          userName={sessionProfile.displayName}
-          userRole={currentContext.subtitle || sessionProfile.roleLabel}
+          userName={screenshotProfile.displayName}
+          userRole={screenshotContext.subtitle || screenshotProfile.roleLabel}
           onProfileClick={() => {
             goToPage("instellingen");
           }}
@@ -643,7 +682,13 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           <div className="flex-1 overflow-y-auto">
             <CareAppFrame
               className="min-h-full"
-              layoutMaxWidth={currentPage === "coordination" ? tokens.layout.coordinationWorkspaceMaxWidth : undefined}
+              layoutMaxWidth={
+                currentPage === "coordination"
+                  ? tokens.layout.pageMaxWidth
+                  : currentPage === "casussen"
+                    ? "1280px"
+                    : undefined
+              }
             >
             {currentPage === "geen-toegang" ? (
               <AccessDeniedPage
@@ -681,7 +726,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                       goToPage("nieuwe-casus");
                     }}
                     canCreateCase={workspaceAllowsNewCasus}
-                    role={currentContext.type}
+                    role={screenshotContext.type}
                     onNavigateToWorkflow={(page) => {
                       goToPage(page as Page);
                     }}
@@ -700,7 +745,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "beoordelingen" && (
-                  <AanbiederBeoordelingPage
+                  <AanbiederreactiePage
                     role={currentContext.type === "admin" ? "admin" : "gemeente"}
                     onCaseClick={handleCaseClick}
                     onNavigateToMatching={() => {
@@ -733,6 +778,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                   <PlacementPageWrapper
                     onNavigateToMatching={() => {
                       goToPage("matching");
+                    }}
+                    onNavigateToAanbiederreacties={() => {
+                      goToPage("beoordelingen");
                     }}
                   />
                 )}
@@ -864,7 +912,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentPage === "beoordelingen" && (
-                  <AanbiederBeoordelingPage
+                  <AanbiederreactiePage
                     role="zorgaanbieder"
                     onCaseClick={handleCaseClick}
                     onNavigateToPlaatsingen={() => {

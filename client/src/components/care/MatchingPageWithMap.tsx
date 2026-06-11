@@ -14,7 +14,6 @@ import {
   Home,
   Info,
   MapPin,
-  Shield,
   Scale,
   TrendingUp,
   UserRound,
@@ -596,10 +595,9 @@ export function MatchingPageWithMap({
             <div className="flex min-w-[760px] items-center gap-0">
               {(
                 [
-                  { Icon: CheckCircle2, label: "Casus", state: "done" as const },
+                  { Icon: CheckCircle2, label: "Aanmelding", state: "done" as const },
                   { Icon: Scale, label: "Matching", state: "current" as const },
-                  { Icon: Shield, label: "Validatie", state: "pending" as const },
-                  { Icon: UserRound, label: "Aanbieder", state: "idle" as const },
+                  { Icon: UserRound, label: "Aanbiederreactie", state: "pending" as const },
                   { Icon: Home, label: "Plaatsing", state: "idle" as const },
                   { Icon: CheckCircle2, label: "Intake", state: "idle" as const },
                 ] as const
@@ -824,7 +822,7 @@ export function MatchingPageWithMap({
                                   handleRequestSelection(item);
                                 }}
                               >
-                                Selecteer & verzoek
+                                Selecteer aanbieder
                               </Button>
                               <Button
                                 type="button"
@@ -836,7 +834,7 @@ export function MatchingPageWithMap({
                                   handleSelectProvider(item.provider.id);
                                 }}
                               >
-                                Bekijk profiel
+                                Bekijk onderbouwing
                               </Button>
                             </div>
                           </div>
@@ -864,7 +862,7 @@ export function MatchingPageWithMap({
                       const bullets =
                         (resolved?.strongPoints?.length && resolved.strongPoints.length > 0)
                           ? resolved.strongPoints
-                          : [`${row.provider.region} · type ${row.provider.type}`, resolved?.advisoryLabel ?? "Beoordeling nodig"];
+                          : [`${row.provider.region} · type ${row.provider.type}`, resolved?.advisoryLabel ?? "Onderbouwing nodig"];
                       return (
                         <article
                           key={`all-${row.provider.id}`}
@@ -933,7 +931,7 @@ export function MatchingPageWithMap({
                                   if (resolved) handleRequestSelection(resolved);
                                 }}
                               >
-                                Selecteer & verzoek
+                                Selecteer aanbieder
                               </Button>
                               <Button
                                 type="button"
@@ -945,7 +943,7 @@ export function MatchingPageWithMap({
                                   handleSelectProvider(row.provider.id);
                                 }}
                               >
-                                Bekijk profiel
+                                Bekijk onderbouwing
                               </Button>
                             </div>
                           </div>
@@ -1162,7 +1160,7 @@ export function MatchingPageWithMap({
                   </p>
                   <p>Dit betekent:</p>
                   <ul className="list-disc space-y-1 pl-5">
-                    <li>De casus gaat naar aanbiederbeoordeling (advies; geen automatische plaatsing).</li>
+                    <li>De casus gaat naar aanbiederreactie (advies; geen automatische plaatsing).</li>
                     <li>
                       Andere aanbieders worden niet automatisch afgewezen; dit legt een voorkeurskeuze vast voor deze
                       doorleiding. Bij een andere route kun je opnieuw matchen.

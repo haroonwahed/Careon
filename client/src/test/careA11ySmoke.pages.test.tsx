@@ -10,7 +10,7 @@ import { NieuweCasusPage } from "../components/care/NieuweCasusPage";
 import { WorkloadPage } from "../components/care/WorkloadPage";
 import { SystemAwarenessPage } from "../components/care/SystemAwarenessPage";
 import { MatchingQueuePage } from "../components/care/MatchingQueuePage";
-import { AanbiederBeoordelingPage } from "../components/care/AanbiederBeoordelingPage";
+import { AanbiederreactiePage } from "../components/care/AanbiederreactiePage";
 import { PlacementTrackingPage } from "../components/care/PlacementTrackingPage";
 import { ActiesPage } from "../components/care/ActiesPage";
 
@@ -281,6 +281,11 @@ beforeEach(() => {
   });
   mockUseRailCollapsed.mockReturnValue({ collapsed: false, toggle: vi.fn(), setCollapsed: vi.fn() });
   mockUseProviderEvaluations.mockReturnValue({
+    evaluations: [],
+    totalCount: 0,
+    loading: false,
+    error: null,
+    refetch: vi.fn(),
     submitDecision: vi.fn(),
     submitting: false,
     submitError: null,
@@ -297,14 +302,14 @@ describe("Care accessibility smoke: core pages", () => {
     expect(screen.getByRole("heading", { name: "Geef basisgegevens op" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Toelichting" })).toHaveAttribute("aria-expanded", "false");
     expect(screen.getByRole("button", { name: "Volgende stap" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Woonplaatsbeginsel *" }));
+    await user.click(screen.getByRole("button", { name: "Gemeente (woonplaatsbeginsel) *" }));
     const municipalityInput = screen.getByPlaceholderText("Zoek gemeente...");
     await user.clear(municipalityInput);
     await user.type(municipalityInput, "Utrecht");
     const choice = document.querySelector('[cmdk-item][data-value="Utrecht"]') as HTMLElement | null;
     expect(choice).not.toBeNull();
     await user.click(choice!);
-    expect(screen.getByLabelText("Regio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(screen.getByLabelText("Jeugdregio *")).toHaveDisplayValue("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Volgende stap" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Terug" }).length).toBe(1);
@@ -324,7 +329,7 @@ describe("Care accessibility smoke: core pages", () => {
     expect(screen.getByText("Laat namen, adressen, telefoons, e-mailadressen en BSN achterwege.")).toBeInTheDocument();
     await user.type(screen.getByLabelText("Persoonsbeeld *"), "Korte persoonsbeeldschets.");
     await user.click(screen.getByRole("button", { name: "Volgende" }));
-    expect(screen.getByRole("heading", { name: "Regio & Verantwoordelijkheid" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Randvoorwaarden" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "Samenvatting voor verzending" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Casus aanmaken" }).length).toBeGreaterThan(1);
     await expectNoA11yViolations(container, "Nieuwe casus");
@@ -340,9 +345,10 @@ describe("Care accessibility smoke: core pages", () => {
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
     const { container } = renderWithA11y(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe aanmelding" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Overzicht" })).toBeInTheDocument();
     await expectNoA11yViolations(container, "Casussen");
   });
 
@@ -350,15 +356,14 @@ describe("Care accessibility smoke: core pages", () => {
     mockUseOverview.mockReturnValue({ data: makeOverview(), loading: false, error: null, refetch: vi.fn() });
 
     const { container } = renderWithA11y(<SystemAwarenessPage onCaseClick={vi.fn()} />);
-    expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
     expect(screen.getByTestId("coordination-dominant-primary-cta")).toBeVisible();
-    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
     await expectNoA11yViolations(container, "Coördinatie");
   });
 
   it("Matching queue", async () => {
     mockUseCases.mockReturnValue({
-      cases: [makeCase({ id: "C-M1", title: "Cliënt A", status: "matching", urgencyValidated: false })],
+      cases: [makeCase({ id: "C-M1", title: "Cliënt A", status: "matching", urgencyValidated: true })],
       loading: false,
       error: null,
       refetch: vi.fn(),
@@ -367,46 +372,91 @@ describe("Care accessibility smoke: core pages", () => {
 
     const { container } = renderWithA11y(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vergelijk aanbieders" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Naar casussen" }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("tab", { name: "Matching (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start matching" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Bekijk aanmeldingen" }).length).toBeGreaterThan(0);
     await expectNoA11yViolations(container, "Matching");
   });
 
-  it("Aanbieder beoordeling", async () => {
+  it("Aanbiederreactie", async () => {
     mockUseCases.mockReturnValue({
       cases: [makeCase({ id: "C-G1", title: "Monitor casus", status: "provider_beoordeling", arrangementProvider: "Levvel Jeugd & Opvoedhulp" })],
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
+    mockUseProviderEvaluations.mockReturnValue({
+      evaluations: [
+        {
+          id: "ev-1",
+          caseId: "C-G1",
+          caseTitle: "Monitor casus",
+          clientLabel: "CLI-00001",
+          region: "Amsterdam",
+          urgency: "Spoed",
+          complexity: "Hoog",
+          careType: "Gedrag & ontwikkeling",
+          providerId: "p-1",
+          providerName: "Levvel Jeugd & Opvoedhulp",
+          municipalityId: "m-1",
+          selectedMatchId: null,
+          status: "PENDING",
+          rejectionReasonCode: null,
+          providerComment: null,
+          informationRequestType: null,
+          informationRequestComment: null,
+          requestedAt: "2026-06-10T10:00:00.000Z",
+          respondedAt: null,
+          decidedAt: null,
+          createdAt: "2026-06-10T10:00:00.000Z",
+          updatedAt: "2026-06-10T10:00:00.000Z",
+          daysPending: 1,
+          slaDeadlineAt: null,
+          matchScore: null,
+        },
+      ],
+      totalCount: 1,
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+      submitDecision: vi.fn(),
+      submitting: false,
+      submitError: null,
+      clearSubmitError: vi.fn(),
+    });
 
     const { container } = renderWithA11y(
-      <AanbiederBeoordelingPage
+      <AanbiederreactiePage
         role="gemeente"
         onCaseClick={vi.fn()}
         onNavigateToMatching={vi.fn()}
-        onNavigateToCasussen={vi.fn()}
       />,
     );
-    expect(screen.getByRole("heading", { name: "Reacties" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Terug naar casus" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
-    await expectNoA11yViolations(container, "Reacties");
+    expect(screen.getByRole("heading", { name: "Aanbiederreactie" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk matching" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Volg aanbiederreactie op" }).length).toBeGreaterThan(0);
+    await expectNoA11yViolations(container, "Aanbiederreactie");
   });
 
   it("Plaatsingen", async () => {
     mockUseCases.mockReturnValue({
-      cases: [makeCase({ id: "C-P1", title: "Cliënt B", status: "plaatsing", arrangementProvider: "Aanbieder X" })],
+      cases: [makeCase({ id: "CO-2026-C533C8", title: "Cliënt B", status: "plaatsing", arrangementProvider: "Aanbieder X", workflowState: "PROVIDER_ACCEPTED" })],
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    const { container } = renderWithA11y(<PlacementTrackingPage onCaseClick={vi.fn()} onNavigateToMatching={vi.fn()} />);
+    const { container } = renderWithA11y(
+      <PlacementTrackingPage
+        onCaseClick={vi.fn()}
+        onNavigateToMatching={vi.fn()}
+        onNavigateToAanbiederreacties={vi.fn()}
+      />,
+    );
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Naar matching" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bevestig plaatsing" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Bevestig plaatsing" }).length).toBeGreaterThan(0);
     await expectNoA11yViolations(container, "Plaatsingen");
   });
 
@@ -421,8 +471,8 @@ describe("Care accessibility smoke: core pages", () => {
 
     const { container } = renderWithA11y(<ActiesPage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "Acties" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Open casussen" }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
+    expect(screen.getByText("Geen openstaande acties")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk actieve casussen" })).toBeInTheDocument();
     await expectNoA11yViolations(container, "Acties");
   });
 });

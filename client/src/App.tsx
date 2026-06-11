@@ -62,21 +62,23 @@ export default function App() {
   const pathname = useSyncedPathname();
   const isPublicRoute = pathname === PUBLIC_LANDING_URL;
   const isAuthRoute = isAuthDocumentPath(pathname);
+  const isCasussenRoute = pathname === "/casussen";
+  const effectiveTheme: "light" | "dark" = isCasussenRoute ? "dark" : theme;
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);
     // Apply dark class to <html> so Radix UI portals rendered to document.body
     // inherit the correct CSS custom properties (Select, Dialog, Popover, etc.)
-    if (theme === "dark") {
+    if (effectiveTheme === "dark") {
       document.documentElement.classList.add("dark");
     } else {
       document.documentElement.classList.remove("dark");
     }
-  }, [theme]);
+  }, [effectiveTheme, theme]);
 
   if (isPublicRoute && !isDashboardView) {
     return (
-      <div className={theme === "dark" ? "dark" : ""}>
+      <div className={effectiveTheme === "dark" ? "dark" : ""}>
         <PublicLandingPage
           onThemeToggle={() => setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark")}
         />
@@ -86,16 +88,16 @@ export default function App() {
 
   if (isAuthRoute) {
     return (
-      <div className={theme === "dark" ? "dark" : ""}>
+      <div className={effectiveTheme === "dark" ? "dark" : ""}>
         <AuthDocumentRedirect />
       </div>
     );
   }
 
   return (
-    <div className={theme === "dark" ? "dark" : ""}>
+    <div className={effectiveTheme === "dark" ? "dark" : ""}>
       <MultiTenantDemo
-        theme={theme}
+        theme={effectiveTheme}
         onThemeToggle={() => setTheme((currentTheme) => currentTheme === "dark" ? "light" : "dark")}
       />
     </div>

@@ -90,7 +90,7 @@ export function getShortActionLabel(value: string | null | undefined): string {
     [/vul casus aan/i, "Vul aan"],
     [/genereer samenvatting/i, "Vul casus aan"],
     [/bevestig samenvatting/i, "Bevestig"],
-    [/stuur door naar aanbiederbeoordeling/i, "Naar aanbieder"],
+    [/stuur door naar aanbieder(?:beoordeling|reactie)/i, "Naar aanbieder"],
     [/stuur naar aanbieder/i, "Naar aanbieder"],
     [/wachtlijstvoorstel doen/i, "Wachtlijst"],
     [/vraag heroverweging aan/i, "Heroverweeg"],

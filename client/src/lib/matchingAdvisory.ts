@@ -16,15 +16,15 @@ export type MatchingAdvisoryTier =
 
 export const MATCHING_ADVISORY_LABELS: Record<MatchingAdvisoryTier, string> = {
   strong_fit: "Sterke aansluiting",
-  review_needed: "Beoordeling nodig",
+  review_needed: "Onderbouwing nodig",
   capacity_uncertain: "Capaciteit onzeker",
-  manual_coordination: "Handmatige afstemming nodig",
+  manual_coordination: "Afstemming nodig",
   preliminary: "Voorlopige match",
 };
 
 export const MATCHING_ADVISORY_HINTS: Record<MatchingAdvisoryTier, string> = {
   strong_fit: "Arrangement sluit grotendeels aan — bevestig in casus.",
-  review_needed: "Aanvullende beoordeling nodig vóór doorstroom.",
+  review_needed: "Aanvullende onderbouwing nodig vóór doorstroom.",
   capacity_uncertain: "Capaciteit nog niet bevestigd.",
   manual_coordination: "Afstemming tussen coördinatie en aanbieder vereist.",
   preliminary: "Matchadvies nog in opbouw of onvolledig.",
@@ -191,10 +191,11 @@ export function matchingProposalStatusLabel(args: {
 }
 
 export function signalSeverityForAdvisoryLabel(label: string): "critical" | "warning" | "info" {
-  if (label.includes("Handmatige") || label.includes("onzeker")) {
+  const normalized = label.toLowerCase();
+  if (normalized.includes("afstemming") || normalized.includes("handmatige") || normalized.includes("onzeker")) {
     return "warning";
   }
-  if (label.includes("Voorlopige") || label.includes("Beoordeling")) {
+  if (normalized.includes("voorlopige") || normalized.includes("beoordeling") || normalized.includes("onderbouwing")) {
     return "info";
   }
   return "info";

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ActiesPage } from "./ActiesPage";
 
@@ -18,7 +18,7 @@ vi.mock("../../hooks/useCurrentUser", () => ({
 }));
 
 describe("ActiesPage", () => {
-  it("shows Open casussen in empty state when navigation handler is provided", () => {
+  it("shows the operational empty state when no open actions exist", () => {
     const refetch = vi.fn();
     mockUseTasks.mockReturnValue({
       tasks: [],
@@ -31,41 +31,43 @@ describe("ActiesPage", () => {
     const onNavigate = vi.fn();
     render(<ActiesPage onCaseClick={vi.fn()} onNavigateToCasussen={onNavigate} />);
 
-    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Acties" })).toBeInTheDocument();
     expect(screen.getByText("Geen openstaande acties")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("acties-empty-open-casussen"));
+    expect(screen.getByText("Er zijn geen taken die jouw beslissing of opvolging vragen.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Bekijk actieve casussen" }));
     expect(onNavigate).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Ververs" }));
-    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).not.toHaveBeenCalled();
   });
 
-  it("omits Open casussen when no navigation handler", () => {
-    const refetch = vi.fn();
+  it("omits the empty-state CTA when navigation is unavailable", () => {
     mockUseTasks.mockReturnValue({
       tasks: [],
       loading: false,
       error: null,
       totalCount: 0,
-      refetch,
+      refetch: vi.fn(),
     });
 
     render(<ActiesPage onCaseClick={vi.fn()} />);
 
-    expect(screen.queryByTestId("acties-empty-open-casussen")).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Bekijk actieve casussen" })).not.toBeInTheDocument();
   });
 
-  it("shows a dominant attention bar for urgent work", () => {
+  it("renders the dominant task surface and worklist when actions exist", () => {
     mockUseTasks.mockReturnValue({
       tasks: [
         {
           id: "task-1",
           linkedCaseId: "case-1",
           title: "Casusgegevens invullen",
-          caseTitle: "Test",
+          description: "Aanvullende informatie nodig",
+          caseTitle: "Test casus",
           actionStatus: "overdue",
           dueDate: "2026-05-08",
           assignedTo: "Jane Doe",
           priority: "URGENT",
+          status: "OPEN",
+          createdAt: "2026-06-08T08:00:00.000Z",
         },
       ],
       loading: false,
@@ -74,10 +76,25 @@ describe("ActiesPage", () => {
       refetch: vi.fn(),
     });
 
-    render(<ActiesPage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
+    const onCaseClick = vi.fn();
+    render(<ActiesPage onCaseClick={onCaseClick} onNavigateToCasussen={vi.fn()} />);
 
-    expect(screen.getByText(/kritieke actie/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Toon te laat" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Naar aanvragen" })).toBeInTheDocument();
+    expect(screen.getByTestId("care-page-scaffold")).toBeInTheDocument();
+    expect(screen.getByText(/1 actie vraagt opvolging/i)).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId("acties-dominant-action")).getByRole("button", { name: "Maak casus compleet" }),
+    ).toBeInTheDocument();
+
+    const row = screen.getByText("Casusgegevens invullen").closest("article");
+    expect(row).not.toBeNull();
+    const rowEl = row as HTMLElement;
+    expect(within(rowEl).getByText("Casusgegevens invullen")).toBeInTheDocument();
+    expect(within(rowEl).getByText(/CAS-2026-CASE1/i)).toBeInTheDocument();
+    expect(within(rowEl).getByText(/Taakopvolger: Jane Doe/i)).toBeInTheDocument();
+    expect(within(rowEl).getByText(/Reden: Info nodig/i)).toBeInTheDocument();
+    expect(within(rowEl).getByRole("button", { name: "Maak casus compleet" })).toBeInTheDocument();
+
+    fireEvent.click(within(rowEl).getByRole("button", { name: "Maak casus compleet" }));
+    expect(onCaseClick).toHaveBeenCalledWith("case-1");
   });
 });

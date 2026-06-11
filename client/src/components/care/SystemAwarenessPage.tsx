@@ -22,7 +22,7 @@ import {
   SheetTitle,
 } from "../ui/sheet";
 import { cn } from "../ui/utils";
-import { CareInfoPopover } from "./CareUnifiedPage";
+import { CareAttentionSurface, CareInfoPopover } from "./CareUnifiedPage";
 import {
   GuidanceContextBanner,
   InlineHelpChip,
@@ -87,6 +87,7 @@ import {
   DECISION_UI_PHASE_LABELS,
   isDecisionUiPhaseId,
   mapApiPhaseToDecisionUiPhase,
+  normalizeApiPhaseId,
   normalizeCoordinationPhaseQueryParam,
   type DecisionUiPhaseId,
 } from "../../lib/decisionPhaseUi";
@@ -104,27 +105,19 @@ interface SystemAwarenessPageProps {
 type PriorityFilter = "all" | "critical" | "high" | "medium";
 type IssueFilter = "all" | "blockers" | "risks" | "alerts" | "SLA" | "rejection" | "intake";
 type TaxonomyFilter = "all" | string;
-type PhaseFilter =
-  | "all"
-  | DecisionUiPhaseId
-  | "casus"
-  | "samenvatting"
-  | "matching"
-  | "gemeente_validatie"
-  | "aanbieder_beoordeling"
-  | "plaatsing"
-  | "intake";
+type PhaseFilter = "all" | DecisionUiPhaseId;
 type OwnershipFilter = "all" | CoordinationOwnershipRole;
 
 const PRIORITY_PARAM_VALUES = new Set<PriorityFilter>(["all", "critical", "high", "medium"]);
 const ISSUE_PARAM_VALUES = new Set<IssueFilter>(["all", "blockers", "risks", "alerts", "SLA", "rejection", "intake"]);
-const PHASE_PARAM_VALUES = new Set<PhaseFilter>([
+const PHASE_PARAM_VALUES = new Set<string>([
   "all",
   ...DECISION_UI_PHASE_IDS,
   "casus",
   "samenvatting",
   "matching",
   "gemeente_validatie",
+  "wacht_op_validatie",
   "aanbieder_beoordeling",
   "plaatsing",
   "intake",
@@ -361,14 +354,16 @@ function severityBadgeClasses(severity?: string | null) {
 
 function phaseCardIcon(phase: CoordinationFlowPhase) {
   switch (phase) {
-    case "casus_gestart":
+    case "aanmelding":
       return FolderOpen;
-    case "klaar_voor_matching":
+    case "matching":
       return Users;
-    case "in_beoordeling":
+    case "aanbiederreactie":
       return UserCheck;
-    case "plaatsing_intake":
+    case "plaatsing":
       return Home;
+    case "intake":
+      return Clock3;
     default:
       return FileText;
   }
@@ -517,7 +512,7 @@ function actionableProblemLabel(item: CoordinationDecisionOverviewItem): string 
       return "Matching wacht op gemeente";
     case "NO_MATCH_AVAILABLE":
       if (nextAction === "START_MATCHING") {
-        return "Matching & validatie";
+        return "Klaar voor matching";
       }
       return "Geen aanbieder toegewezen";
     case "PROVIDER_REVIEW_PENDING_SLA":
@@ -534,7 +529,7 @@ function actionableProblemLabel(item: CoordinationDecisionOverviewItem): string 
 
 function formatHours(hours: number | null) {
   if (hours === null || Number.isNaN(hours)) {
-    return "Onbekend";
+    return "Geen recente activiteit";
   }
   if (hours < 24) {
     return `${Math.round(hours)} uur`;
@@ -557,6 +552,9 @@ function issueTone(item: CoordinationDecisionOverviewItem) {
 
 function primaryProblemText(item: CoordinationDecisionOverviewItem): string {
   if (item.top_blocker?.message) {
+    if (/gemeentevalidatie/i.test(item.top_blocker.message)) {
+      return "Goedkeuring nodig vóór versturen naar aanbieder.";
+    }
     return item.top_blocker.message;
   }
   if (item.top_blocker?.title) {
@@ -672,6 +670,337 @@ function buildTaxonomySummaryLabel(item: CoordinationDecisionOverviewItem): stri
     return `${category} · ${specific}`;
   }
   return category || specific || "";
+}
+
+type RegiekamerFlowStepId =
+  | "aanmelding"
+  | "matching"
+  | "aanbiederreactie"
+  | "plaatsing"
+  | "intake";
+
+const REGIEKAMER_FLOW_STEPS: Array<{
+  id: RegiekamerFlowStepId;
+  label: string;
+  subtitle: string;
+}> = [
+  { id: "aanmelding", label: "Aanmelding", subtitle: "Wacht op aanmelder" },
+  { id: "matching", label: "Matching", subtitle: "Klaar om te starten" },
+  { id: "aanbiederreactie", label: "Aanbiederreactie", subtitle: "Wacht op reactie" },
+  { id: "plaatsing", label: "Plaatsing", subtitle: "Klaar voor plaatsing" },
+  { id: "intake", label: "Intake", subtitle: "Intake gepland" },
+];
+
+function normalizeInspectableItem(item: CoordinationDecisionOverviewItem): Record<string, unknown> {
+  return item as unknown as Record<string, unknown>;
+}
+
+function pickItemString(item: CoordinationDecisionOverviewItem, keys: string[]): string {
+  const source = normalizeInspectableItem(item);
+  for (const key of keys) {
+    const raw = source[key];
+    if (typeof raw === "string" && raw.trim()) {
+      return raw.trim();
+    }
+  }
+  return "";
+}
+
+function pickItemDate(item: CoordinationDecisionOverviewItem): Date | null {
+  const source = normalizeInspectableItem(item);
+  const candidates = [
+    source.updated_at,
+    source.updatedAt,
+    source.last_action_at,
+    source.lastActionAt,
+    source.last_activity_at,
+    source.lastActivityAt,
+    source.case_updated_at,
+    source.caseUpdatedAt,
+    source.generated_at,
+  ];
+  for (const candidate of candidates) {
+    if (typeof candidate !== "string" || !candidate.trim()) {
+      continue;
+    }
+    const date = new Date(candidate);
+    if (!Number.isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  return null;
+}
+
+function formatRegiekamerDate(date: Date | null): string {
+  if (!date) {
+    return "Geen recente activiteit";
+  }
+  const datePart = new Intl.DateTimeFormat("nl-NL", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+  const timePart = new Intl.DateTimeFormat("nl-NL", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+  return `${datePart}, ${timePart}`;
+}
+
+function formatRegiekamerRelativeTime(hours: number | null): string {
+  if (hours === null || Number.isNaN(hours)) {
+    return "Geen recente activiteit";
+  }
+  if (hours < 24) {
+    return `${Math.max(1, Math.round(hours))} uur geleden`;
+  }
+  const days = Math.max(1, Math.round(hours / 24));
+  return `${days} dag${days === 1 ? "" : "en"} geleden`;
+}
+
+function phaseMatchesFlowStep(item: CoordinationDecisionOverviewItem, stepId: RegiekamerFlowStepId): boolean {
+  const phase = normalizeApiPhaseId(item.phase);
+  switch (stepId) {
+    case "aanmelding":
+      return phase === "casus" || phase === "samenvatting";
+    case "matching":
+      return phase === "matching" || phase === "gemeente_validatie" || phase === "wacht_op_validatie";
+    case "aanbiederreactie":
+      return phase === "aanbieder_beoordeling";
+    case "plaatsing":
+      return phase === "plaatsing";
+    case "intake":
+      return phase === "intake";
+  }
+}
+
+function priorityDotLabel(item: CoordinationDecisionOverviewItem): string {
+  if (item.priority_score >= 100 || item.urgency === "critical") {
+    return "Spoed";
+  }
+  if (item.priority_score >= 70 || item.urgency === "high") {
+    return "Hoog";
+  }
+  if (item.priority_score >= 30 || item.urgency === "medium") {
+    return "Normaal";
+  }
+  return "Laag";
+}
+
+function rowStatusLabel(item: CoordinationDecisionOverviewItem): string {
+  const actionCode = (item.next_best_action?.action ?? "").toUpperCase();
+  const phase = normalizeApiPhaseId(item.phase);
+  if (
+    phase === "casus" ||
+    phase === "samenvatting" ||
+    actionCode === "COMPLETE_CASE_DATA" ||
+    actionCode === "GENERATE_SUMMARY" ||
+    actionCode === "VIEW_SUMMARY"
+  ) {
+    return "Wacht op aanmelder";
+  }
+  if (phase === "matching" || phase === "gemeente_validatie" || actionCode === "START_MATCHING" || actionCode === "VALIDATE_MATCHING") {
+    return "Wacht op gemeente";
+  }
+  if (phase === "aanbieder_beoordeling" || actionCode === "SEND_TO_PROVIDER" || actionCode === "WAIT_PROVIDER_RESPONSE" || actionCode === "FOLLOW_UP_PROVIDER") {
+    return "Wacht op reactie";
+  }
+  if (phase === "plaatsing") {
+    return "Plaatsing";
+  }
+  if (phase === "intake") {
+    return "Intake";
+  }
+  return "In behandeling";
+}
+
+function rowStatusReason(item: CoordinationDecisionOverviewItem): string {
+  const actionCode = (item.next_best_action?.action ?? "").toUpperCase();
+  if (
+    item.top_blocker?.code === "GEMEENTE_VALIDATION_REQUIRED" ||
+    actionCode === "VALIDATE_MATCHING"
+  ) {
+    return "Goedkeuring nodig vóór versturen naar aanbieder.";
+  }
+  return (
+    item.next_best_action?.reason?.trim() ||
+    item.top_blocker?.message?.trim() ||
+    item.top_alert?.message?.trim() ||
+    item.top_risk?.message?.trim() ||
+    "Aanvullende informatie nodig"
+  );
+}
+
+function rowNextActionLabel(item: CoordinationDecisionOverviewItem): string {
+  const actionCode = (item.next_best_action?.action ?? "").toUpperCase();
+  switch (actionCode) {
+    case "COMPLETE_CASE_DATA":
+    case "GENERATE_SUMMARY":
+      return "Maak casus compleet";
+    case "START_MATCHING":
+      return "Start matching";
+    case "VALIDATE_MATCHING":
+      return "Controleer voorstel";
+    case "SEND_TO_PROVIDER":
+      return "Vraag reactie aan";
+    case "WAIT_PROVIDER_RESPONSE":
+      return "Wacht op reactie";
+    case "FOLLOW_UP_PROVIDER":
+      return "Herinner aanbieder";
+    case "CONFIRM_PLACEMENT":
+      return "Bevestig plaatsing";
+    case "START_INTAKE":
+      return "Plan intake";
+    default:
+      break;
+  }
+  const actionLabel = imperativeLabelForActionCode(
+    item.next_best_action?.action ?? "",
+    item.next_best_action?.label ?? undefined,
+  );
+  return actionLabel?.trim() || item.next_best_action?.label?.trim() || "Bekijk casus";
+}
+
+function rowRegionLabel(item: CoordinationDecisionOverviewItem): string {
+  return (
+    pickItemString(item, [
+      "region",
+      "regio",
+      "region_label",
+      "regionLabel",
+      "region_name",
+      "regionName",
+      "municipality",
+      "municipality_label",
+      "municipalityLabel",
+      "municipality_name",
+      "municipalityName",
+    ]) || "Regio ontbreekt"
+  );
+}
+
+function rowLastActionLabel(item: CoordinationDecisionOverviewItem): string {
+  return formatRegiekamerRelativeTime(item.hours_in_current_state ?? item.age_hours ?? null);
+}
+
+function rowLastActionDateLabel(item: CoordinationDecisionOverviewItem): string {
+  return formatRegiekamerDate(pickItemDate(item));
+}
+
+function buildRegiekamerFlowCounts(items: CoordinationDecisionOverviewItem[]): Record<RegiekamerFlowStepId, number> {
+  const counts: Record<RegiekamerFlowStepId, number> = {
+    aanmelding: 0,
+    matching: 0,
+    aanbiederreactie: 0,
+    plaatsing: 0,
+    intake: 0,
+  };
+  for (const item of items) {
+    for (const step of REGIEKAMER_FLOW_STEPS) {
+      if (phaseMatchesFlowStep(item, step.id)) {
+        counts[step.id] += 1;
+      }
+    }
+  }
+  return counts;
+}
+
+function regiekamerFlowStepIcon(stepId: RegiekamerFlowStepId) {
+  switch (stepId) {
+    case "aanmelding":
+      return FolderOpen;
+    case "matching":
+      return Users;
+    case "aanbiederreactie":
+      return UserCheck;
+    case "plaatsing":
+      return Home;
+    case "intake":
+      return Clock3;
+  }
+}
+
+function RegiekamerWorkRow({
+  item,
+  onCaseClick,
+}: {
+  item: CoordinationDecisionOverviewItem;
+  onCaseClick: (caseId: string) => void;
+}) {
+  const rowId = String(item.case_id);
+  const urgencyTone =
+    item.priority_score >= 100 || item.urgency === "critical"
+      ? "critical"
+      : item.priority_score >= 70 || item.urgency === "high"
+        ? "warning"
+        : "neutral";
+  const statusTone =
+    item.priority_score >= 100 || item.urgency === "critical"
+      ? "border-red-500/35 bg-red-500/10 text-red-100"
+      : "border-amber-500/35 bg-amber-500/10 text-amber-100";
+  const actionLabel = rowNextActionLabel(item);
+
+  return (
+    <article
+      data-care-work-row
+      data-testid="coordination-worklist-item"
+      className="grid min-w-[980px] grid-cols-[5.5rem_16rem_minmax(11rem,1fr)_11rem_9rem_12rem] items-center gap-x-4 border-b border-border/35 px-4 py-3 last:border-b-0 md:px-5"
+    >
+      <div className="flex items-center">
+        <span
+          className={cn(
+            "inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[12px] font-medium leading-none",
+            urgencyTone === "critical"
+              ? "border-red-500/35 bg-red-500/10 text-red-100"
+              : urgencyTone === "warning"
+                ? "border-amber-500/35 bg-amber-500/10 text-amber-100"
+                : "border-border/60 bg-muted/20 text-muted-foreground",
+          )}
+        >
+          <span className={cn("size-2 rounded-full", urgencyTone === "critical" ? "bg-red-400" : "bg-amber-400")} aria-hidden />
+          {priorityDotLabel(item)}
+        </span>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onCaseClick(rowId)}
+        className="min-w-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1"
+      >
+        <span className="block truncate text-[14px] font-semibold leading-tight text-foreground">{item.case_reference}</span>
+        <span className="mt-0.5 block truncate text-[12px] leading-tight text-muted-foreground">{item.title}</span>
+      </button>
+
+      <div className="min-w-0 text-[13px] leading-tight text-muted-foreground">
+        <span className="block truncate">{rowRegionLabel(item)}</span>
+      </div>
+
+      <div className="min-w-0">
+        <span className={cn("inline-flex rounded-full border px-2.5 py-1 text-[12px] font-semibold leading-none", statusTone)}>
+          {rowStatusLabel(item)}
+        </span>
+        <span className="mt-1 block truncate text-[12px] leading-tight text-muted-foreground">{rowStatusReason(item)}</span>
+      </div>
+
+      <div className="min-w-0 text-[13px] leading-tight">
+        <span className="block truncate font-medium text-foreground">{rowLastActionLabel(item)}</span>
+        <span className="mt-1 block truncate text-muted-foreground">{rowLastActionDateLabel(item)}</span>
+      </div>
+
+      <div className="flex min-w-0 justify-end">
+        <Button
+          type="button"
+          variant="default"
+          onClick={() => onCaseClick(rowId)}
+          className="h-10 rounded-full px-4 text-[13px] font-semibold shadow-md shadow-primary/20"
+        >
+          {actionLabel}
+          <ChevronRight size={16} className="ml-2" aria-hidden />
+        </Button>
+      </div>
+    </article>
+  );
 }
 
 export function SystemAwarenessPage({
@@ -958,8 +1287,8 @@ export function SystemAwarenessPage({
       },
       {
         key: "gemeente",
-        label: "Gemeentelijke validatie",
-        help: "Aanvragen waarbij matching gereed is en de gemeente het arrangement, budget of de vervolgstap moet valideren.",
+        label: "Goedkeuring nodig",
+        help: "Aanvragen waarbij matching gereed is en de gemeente het arrangement, budget of de vervolgstap moet goedkeuren.",
         ids: q.cases_waiting_gemeente_validation,
       },
       {
@@ -1103,7 +1432,7 @@ export function SystemAwarenessPage({
     setSearchQuery("");
     setPriorityFilter("all");
     setIssueFilter("SLA");
-    setPhaseFilter("in_beoordeling");
+    setPhaseFilter("aanbiederreactie");
     setOwnershipFilter("all");
   }, []);
 
@@ -1111,7 +1440,7 @@ export function SystemAwarenessPage({
     setSearchQuery("");
     setPriorityFilter("all");
     setIssueFilter("alerts");
-    setPhaseFilter("klaar_voor_matching");
+    setPhaseFilter("matching");
     setOwnershipFilter("all");
   }, []);
 
@@ -1246,13 +1575,11 @@ export function SystemAwarenessPage({
       ? "1 casus vraagt directe afstemming"
       : `${dominantMetric} aanvragen vragen directe afstemming`;
   const dominantAlertDescription =
-    uiMode === "crisis" ? gemeenteActieLine : dominantPanelDescription;
-  const dominantPrimaryLabel = uiMode === "crisis"
-    ? `Open aanvragen (${coordinationNba.panel.linkCount})`
-    : coordinationNba.primaryAction.label;
-  const dominantSecondaryLabel = uiMode === "crisis"
-    ? "Bekijk kritieke aanvragen"
-    : coordinationNba.secondaryAction?.label;
+    uiMode === "crisis" ? "1 casus blokkeert de doorstroom" : dominantPanelDescription;
+  const dominantPrimaryLabel =
+    uiMode === "crisis" ? "Los kritieke blokkades op" : coordinationNba.primaryAction.label;
+  const dominantSecondaryLabel =
+    uiMode === "crisis" ? "SLA-signalen bekijken" : coordinationNba.secondaryAction?.label;
 
   const clearFilters = () => {
     setSearchQuery("");
@@ -1264,223 +1591,138 @@ export function SystemAwarenessPage({
     setSubcategoryFilter("all");
   };
 
+  const regiekamerFlowCounts = useMemo(() => buildRegiekamerFlowCounts(allOverviewItems), [allOverviewItems]);
+  const activeRegiekamerStepIndex = useMemo(() => {
+    const firstActive = REGIEKAMER_FLOW_STEPS.findIndex((step) => regiekamerFlowCounts[step.id] > 0);
+    return firstActive >= 0 ? firstActive : 0;
+  }, [regiekamerFlowCounts]);
   const showCoordinationPhaseBoard = !loading && !error && hasActiveData && allOverviewItems.length > 0;
 
   return (
-    <div className="flex w-full flex-col gap-6 xl:flex-row xl:items-start xl:gap-6">
-      <div className="min-w-0 flex-1">
-        <CarePageScaffold
-          archetype="command"
-          className="pb-8"
-          title={
-            <span className="inline-flex flex-wrap items-center gap-2">
-              Operationele coördinatie
-              <CareInfoPopover ariaLabel="Uitleg coördinatie" testId="coordination-page-info">
-                <div className="space-y-2 text-muted-foreground">
-                  <p>
-                    Operationele coördinatie: actieve aanvragen, open matching, reacties van aanbieders, wachtende validaties
-                    en de eerstvolgende veilige stap — compact, zonder dashboardruis.
-                  </p>
-                  <p>Gebruik dit overzicht om snel te zien wat wacht, wie eigenaar is en wat de volgende actie is.</p>
-                </div>
-              </CareInfoPopover>
-            </span>
-          }
-          actions={(
-            <div className="flex flex-col items-start gap-1 md:items-end">
-              <div className="flex flex-wrap items-center gap-2">
-                {filtersActive && (
-                  <Button variant="outline" onClick={clearFilters} className="gap-2">
-                    Wis filters
-                  </Button>
-                )}
-                {canCreateCase && onCreateCase && hasActiveData ? (
-                  // Demoted to outline so the dominantAction below holds the operational focus.
-                  // Outline in header when data exists; empty-state uses restrained default CTA.
-                  <Button variant="outline" onClick={onCreateCase} className="gap-2">
-                    Nieuwe casus
-                  </Button>
-                ) : null}
-                <Button variant="outline" onClick={refetch} className="gap-2">
-                  <RefreshCw size={14} />
-                  Ververs
+    <CarePageScaffold
+      archetype="command"
+      className="pb-8"
+      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
+      title="Regiekamer"
+      subtitle="Stuur op doorstroom, blokkades en urgente casussen."
+      actions={(
+        <Button
+          type="button"
+          variant="default"
+          className="h-12 rounded-full px-5 text-[14px] font-semibold shadow-lg shadow-primary/20"
+          onClick={uiMode === "crisis" ? applyModeCasesLink : runModePrimary}
+          data-testid="coordination-header-primary-cta"
+        >
+          Los blokkades op
+          <ChevronRight size={16} aria-hidden className="ml-2" />
+        </Button>
+      )}
+      dominantAction={
+        hasActiveData ? (
+          <CareAlertCard
+            density="compact"
+            testId="coordination-dominant-action"
+            data-coordination-mode={uiMode}
+            tone="warning"
+            icon={<AlertCircle size={18} aria-hidden />}
+            metric={0}
+            showMetric={false}
+            title={coordinationNba.title}
+            description={dominantAlertDescription}
+            primaryAction={(
+                <Button
+                  type="button"
+                  className="h-10 rounded-full bg-amber-400 px-5 text-[13px] font-semibold text-amber-950 shadow-sm hover:bg-amber-300"
+                  onClick={uiMode === "crisis" ? applyModeCasesLink : runModePrimary}
+                  data-testid="coordination-dominant-primary-cta"
+                >
+                  {dominantPrimaryLabel}
+                  <ChevronRight size={16} className="ml-2" aria-hidden />
                 </Button>
+            )}
+            secondaryAction={(
+              <Button
+                type="button"
+                variant="outline"
+                className="h-10 rounded-full border-border/70 px-5 text-[13px] font-semibold text-foreground hover:bg-muted/20"
+                onClick={uiMode === "crisis" ? applyModeCasesLink : runModeSecondary}
+                data-testid="coordination-dominant-secondary-cta"
+              >
+                {dominantSecondaryLabel}
+              </Button>
+            )}
+          />
+        ) : undefined
+      }
+      workflow={
+        showCoordinationPhaseBoard ? (
+          <CareSection tone="context" testId="coordination-phase-board" aria-label="Aantallen per beslisstap">
+            <CareSectionHeader
+              title="Doorstroom"
+              action={
                 <Button
                   type="button"
                   variant="ghost"
-                  className="gap-2 xl:hidden"
-                  onClick={() => setRailSheetOpen(true)}
-                  data-testid="coordination-mobile-control-panel"
+                  className="gap-1 px-2 text-[13px] font-semibold text-primary hover:bg-muted/35 hover:text-primary"
+                  onClick={() => {
+                    setCasussenPreferredFocus("pipeline");
+                    onAppNavigate?.("/casussen");
+                  }}
+                  data-testid="coordination-doorstroom-open-werkvoorraad"
                 >
-                  <PanelRight size={14} aria-hidden />
-                  Coördinatiepaneel
+                  Bekijk gehele stroom
+                  <ChevronRight size={14} aria-hidden />
                 </Button>
-                <CoordinationRailToggleButton
-                  collapsed={railCollapsed}
-                  onToggle={toggleRail}
-                  testId="coordination-rail-toggle"
-                />
-              </div>
-              {lastUpdateLabel ? (
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <p className="text-xs text-muted-foreground">{lastUpdateLabel}</p>
-                  {urgencyApplicationsOpen > 0 ? (
-                    <CareMetaChip className="h-6 rounded-full px-2.5 text-[11px] font-medium text-amber-300">
-                      Urgentie aangevraagd: {urgencyApplicationsOpen}
-                    </CareMetaChip>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          )}
-          dominantAction={
-            <div className={CARE_RHYTHM.attentionStack}>
-          {hasActiveData && (
-            <CareAlertCard
-              density="compact"
-              testId="coordination-dominant-action"
-              data-coordination-mode={uiMode}
-              tone={
-                coordinationNba.panel.tone === "urgent"
-                  ? "critical"
-                  : coordinationNba.panel.tone === "attention"
-                    ? "warning"
-                    : "info"
-              }
-              icon={<AlertCircle size={showDominantHeroMetric ? 22 : 18} />}
-              metric={dominantMetric}
-              showMetric={showDominantHeroMetric}
-              title={coordinationNba.title}
-              description={dominantAlertDescription}
-              supportingLink={
-                uiMode === "crisis" && coordinationNba.panel.linkCount > 0 ? (
-                  <button
-                    type="button"
-                    hidden
-                    className="text-left text-sm font-medium text-primary underline-offset-4 hover:underline"
-                    onClick={applyModeCasesLink}
-                    data-testid="coordination-dominant-cases-link"
-                  >
-                    Bekijk kritieke aanvragen ({coordinationNba.panel.linkCount})
-                  </button>
-                ) : undefined
-              }
-              primaryAction={
-                <CareQueueInlineAction
-                  type="button"
-                  onClick={uiMode === "crisis" ? applyModeCasesLink : runModePrimary}
-                  className={uiMode === "crisis" ? "gap-2" : undefined}
-                  data-testid="coordination-dominant-primary-cta"
-                >
-                  <span>{dominantPrimaryLabel}</span>
-                  {uiMode === "crisis" ? <ChevronRight size={14} aria-hidden /> : null}
-                </CareQueueInlineAction>
-              }
-              secondaryAction={
-                coordinationNba.secondaryAction || uiMode === "crisis" ? (
-                  <CareQueueInlineAction
-                    type="button"
-                    onClick={uiMode === "crisis" ? applyModeCasesLink : runModeSecondary}
-                    data-testid="coordination-dominant-secondary-cta"
-                  >
-                    {dominantSecondaryLabel}
-                  </CareQueueInlineAction>
-                ) : undefined
               }
             />
-          )}
-
-          {hasActiveData && criticalBlockers > 0 ? (
-            <GuidanceContextBanner testId="coordination-blokkades-banner">
-              Los blokkades eerst op om doorstroom te behouden.
-            </GuidanceContextBanner>
-          ) : null}
-
-          {hasActiveData &&
-            criticalBlockers === 0 &&
-            providerSlaBreaches === 0 &&
-            intakeDelaysTotal === 0 &&
-            (data?.totals.repeated_rejections ?? 0) === 0 &&
-            noMatchUrgentCount === 0 &&
-            highPriorityAlerts === 0 && (
-              <div
-                data-testid="coordination-calm-state"
-                className="rounded-lg bg-muted/25 px-3 py-2 text-sm text-foreground"
+            <CareSectionBody>
+              <CareFlowBoard
+                testId="coordination-flow-board"
+                variant="pipeline"
+                activeStepIndex={activeRegiekamerStepIndex}
+                stepCount={REGIEKAMER_FLOW_STEPS.length}
               >
-                <p className="font-medium">Geen operationele blokkades</p>
-                <p className="mt-1 text-xs text-muted-foreground">Geen spoedsignalen in dit overzicht.</p>
-              </div>
-            )}
-        </div>
-      }
-      kpiStrip={
-        showCoordinationPhaseBoard || governanceQueuesStrip ? (
-          <div className={CARE_RHYTHM.zoneStack}>
-            {governanceQueuesStrip}
-            {showCoordinationPhaseBoard ? (
-              <CareSection tone="context" testId="coordination-phase-board" aria-label="Aantallen per beslisstap">
-                <CareSectionHeader
-                  title="Doorstroom"
-                  action={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="gap-1 px-2 text-sm font-semibold text-primary hover:bg-muted/35 hover:text-primary"
+                {REGIEKAMER_FLOW_STEPS.map((step, stepIndex) => {
+                  const Icon = regiekamerFlowStepIcon(step.id);
+                  const count = regiekamerFlowCounts[step.id];
+                  const isBottleneck = count > 0 && stepIndex === activeRegiekamerStepIndex;
+                  const completed = stepIndex < activeRegiekamerStepIndex && !isBottleneck;
+                  return (
+                    <CareFlowStepCard
+                      key={step.id}
+                      testId={`coordination-phase-column-${step.id}`}
                       onClick={() => {
-                        // Distinct from "Bekijk kritieke casussen" (critical-only) and from a
-                        // plain /casussen entry: hand off `pipeline` so the worklist opens on
-                        // casussen die in de stroom zitten (gemeentelijke aandacht of bij aanbieder).
-                        setCasussenPreferredFocus("pipeline");
-                        onAppNavigate?.("/casussen");
+                        const phaseMap: Record<RegiekamerFlowStepId, CoordinationFlowPhase> = {
+                          aanmelding: "aanmelding",
+                          matching: "matching",
+                          aanbiederreactie: "aanbiederreactie",
+                          plaatsing: "plaatsing",
+                          intake: "intake",
+                        };
+                        applyPhaseBoardFilter(phaseMap[step.id]);
                       }}
-                      data-testid="coordination-doorstroom-open-werkvoorraad"
-                    >
-                      Bekijk gehele stroom
-                      <ChevronRight size={14} aria-hidden />
-                    </Button>
-                  }
-                />
-                <CareSectionBody>
-                  <CareFlowBoard
-                    testId="coordination-flow-board"
-                    variant="pipeline"
-                    activeStepIndex={activeFlowIndex}
-                    stepCount={phaseBoardColumns.length}
-                  >
-                    {phaseBoardColumns.map((col, phaseIndex) => {
-                      const isBottleneck =
-                        dominantPhaseColumn?.phase === col.phase && col.count > 0 && (dominantPhaseColumn?.count ?? 0) > 0;
-                      const completed = phaseIndex < activeFlowIndex && !isBottleneck;
-                      const Icon = phaseCardIcon(col.phase);
-                      return (
-                        <div key={col.phase} className="relative">
-                          <CareFlowStepCard
-                            testId={`coordination-phase-column-${col.phase}`}
-                            onClick={() => applyPhaseBoardFilter(col.phase)}
-                            active={isBottleneck}
-                            completed={completed}
-                            icon={<Icon size={18} className="text-current" />}
-                            metric={col.count}
-                            title={col.label}
-                          />
-                        </div>
-                      );
-                    })}
-                  </CareFlowBoard>
-                </CareSectionBody>
-              </CareSection>
-            ) : null}
-          </div>
+                      active={isBottleneck}
+                      completed={completed}
+                      icon={<Icon size={18} className="text-current" />}
+                      metric={count}
+                      subtitle={step.subtitle}
+                      title={step.label}
+                    />
+                  );
+                })}
+              </CareFlowBoard>
+            </CareSectionBody>
+          </CareSection>
         ) : undefined
       }
     >
       {loading && (
-        <LoadingState title="Coördinatie synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
+        <LoadingState title="Regiekamer synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
       )}
 
       {!loading && error && (
         <ErrorState
-          title="Coördinatie kon niet worden geladen"
+          title="Regiekamer kon niet worden geladen"
           copy={error}
           action={<Button variant="outline" onClick={refetch}>Opnieuw proberen</Button>}
         />
@@ -1540,255 +1782,145 @@ export function SystemAwarenessPage({
       )}
 
       {!loading && !error && coordinationListItems.length > 0 && (
-        <CareWorkspaceSection
-          testId="coordination-uitvoerlijst"
+        <section
+          data-testid="coordination-uitvoerlijst"
           aria-labelledby="coordination-uitvoerlijst-heading"
-          bodyBleedX
-          header={(
-          <CareSectionHeader
-            className="lg:flex-col lg:items-stretch"
-            title={
-              <span id="coordination-uitvoerlijst-heading">Werkvoorraad</span>
-            }
-            meta={
-              <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
-                <span className="inline-flex w-fit items-center rounded-full bg-muted/35 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
-                  {coordinationListItems.length} in coördinatie-aandacht
-                </span>
-                {coordinationListCapped ? (
-                  <FieldHelperBox className="mt-0" data-testid="coordination-coordination-hint">
-                    <p>Eerste coördinatie-aandacht — volledige werkvoorraad staat onder Aanvragen.</p>
-                  </FieldHelperBox>
-                ) : null}
-                <CareSearchFiltersBar
-                  variant="workspace"
-                  className="px-0"
-                  searchValue={searchQuery}
-                  onSearchChange={setSearchQuery}
-                  searchPlaceholder="Zoek aanvragen, regio's, aanbieders…"
-                  showSecondaryFilters={showSecondaryFilters}
-                  onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-                  secondaryFiltersLabel="Filters"
-                  secondaryFilters={(
-                    <>
-                    <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-4">
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        <span className="inline-flex flex-wrap items-center gap-1.5">
-                          Prioriteit
-                          <InlineHelpChip
-                            title="Waarom staat dit bovenaan?"
-                            triggerLabel="Uitleg"
-                            testId="coordination-prioriteit-help"
-                          >
-                            <p>Items worden geprioriteerd op urgentie, blokkades en benodigde actie.</p>
-                          </InlineHelpChip>
-                        </span>
-                        <CareOperationalSelect
-                          aria-label="Prioriteit"
-                          value={priorityFilter}
-                          onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
-                        >
-                          {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        Type
-                        <CareOperationalSelect
-                          aria-label="Type"
-                          value={issueFilter}
-                          onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
-                        >
-                          {Object.entries(ISSUE_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        Stap
-                        <CareOperationalSelect
-                          aria-label="Stap in de keten"
-                          value={phaseFilter}
-                          onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
-                        >
-                          <option value="all">Alles</option>
-                          {DECISION_UI_PHASE_IDS.map((id) => (
-                            <option key={id} value={id}>{DECISION_UI_PHASE_LABELS[id]}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        Rol
-                        <CareOperationalSelect
-                          aria-label="Rol"
-                          value={ownershipFilter}
-                          onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
-                        >
-                          {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
-                            <option key={key} value={key}>{label}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                    </div>
-                    <div className="grid items-end gap-2 md:grid-cols-2">
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        Zorgbehoefte categorie
-                        <CareOperationalSelect
-                          aria-label="Zorgbehoefte categorie"
-                          value={categoryFilter}
-                          onChange={(event) => {
-                            setCategoryFilter(event.target.value);
-                            setSubcategoryFilter("all");
-                          }}
-                        >
-                          <option value="all">Alle categorieën</option>
-                          {taxonomyCategoryOptions.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                        Specifieke zorgbehoefte
-                        <CareOperationalSelect
-                          aria-label="Specifieke zorgbehoefte"
-                          value={subcategoryFilter}
-                          disabled={categoryFilter === "all" || taxonomySubcategoryOptions.length === 0}
-                          onChange={(event) => setSubcategoryFilter(event.target.value)}
-                        >
-                          <option value="all">Alle specifieke behoeften</option>
-                          {taxonomySubcategoryOptions.map((option) => (
-                            <option key={option.value} value={option.value}>{option.label}</option>
-                          ))}
-                        </CareOperationalSelect>
-                      </label>
-                    </div>
-                    </>
-                  )}
-                />
-              </div>
-            }
-          />
-          )}
-          footer={
-            onAppNavigate ? (
-              <div className="flex justify-center pt-3">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => onAppNavigate("/casussen")}
-                  data-testid="coordination-bekijk-alle-casussen"
-                >
-                  Volledige werkvoorraad in Aanvragen
-                  <ChevronDown size={16} aria-hidden />
-                </Button>
-              </div>
-            ) : undefined
-          }
+          className="surface-workspace rounded-[22px] border border-border/60 bg-card/45 p-4 shadow-sm md:p-5"
         >
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <InlineHelpChip
-              title="Waarom wachten?"
-              triggerLabel="Waarom wachten?"
-              testId="coordination-wachten-help"
-            >
-              <p>Er is nu geen actie nodig totdat externe opvolging of reactie binnenkomt.</p>
-            </InlineHelpChip>
-          </div>
-          <CareWorkListCard
-            header={
-              <CareOperationalQueueHeader
-                labels={["Prioriteit", "Casus", "Blokkade / aandacht", "Eigenaar", "Wachttijd", "Volgende actie"]}
-              />
-            }
-          >
-            <div className="divide-y divide-border/40">
-              {coordinationListItems.map((item) => (
-                <CoordinationWorkItemCard
-                  key={item.case_id}
-                  item={item}
-                  onCaseClick={onCaseClick}
-                />
-              ))}
+          <div className="space-y-4">
+            <div className="space-y-1">
+              <h2 id="coordination-uitvoerlijst-heading" className="text-[22px] font-semibold tracking-tight text-foreground">
+                Werkvoorraad
+              </h2>
+              <p className="text-[13px] leading-6 text-muted-foreground">Actuele casussen die jouw aandacht vragen.</p>
             </div>
-          </CareWorkListCard>
-        </CareWorkspaceSection>
-      )}
-        </CarePageScaffold>
-      </div>
 
-      {!loading && !error && hasActiveData ? (
-        <>
-          {!railCollapsed && (
-            <aside
-              data-testid="coordination-right-rail"
-              className="hidden w-[300px] shrink-0 rounded-[28px] border border-border/60 bg-card/35 p-3 shadow-sm backdrop-blur xl:block xl:sticky xl:top-4 xl:z-10 xl:overflow-y-auto xl:self-start"
-              style={{ maxHeight: tokens.layout.coordinationRailMaxHeight }}
-            >
-              <div className="space-y-4">
-                <CoordinationInsightsPanels
-                  gemeenteDisplayName={gemeenteDisplayName}
-                  activeCasesTotal={activeCasesTotal}
-                  avgDoorloopDays={avgDoorloopDays}
-                  slaRiskTotal={slaRiskTotal}
-                  criticalBlockers={criticalBlockers}
-                  phaseBoardColumns={phaseBoardColumns}
-                  onCriticalClick={applyCriticalDrillFilter}
-                  onPhaseClick={applyPhaseBoardFilter}
-                  onNavigateCasussen={() => {
-                    onAppNavigate?.("/casussen");
-                  }}
-                />
-              </div>
-            </aside>
-          )}
-
-          {railCollapsed && (
-            <CoordinationRailEdgeTab
-              onExpand={() => setRailCollapsed(false)}
-              testId="coordination-rail-edge-tab"
-            />
-          )}
-
-          <div className="contents xl:hidden">
-            <Sheet open={railSheetOpen} onOpenChange={setRailSheetOpen}>
-              <SheetContent
-                id="coordination-rail-sheet"
-                side="right"
-                data-testid="coordination-rail-sheet"
-                className="flex w-full max-w-md flex-col gap-0 border-border/60 p-0 sm:max-w-md"
-              >
-                <SheetHeader className="shrink-0 space-y-1 border-b border-border/50 px-4 py-4">
-                  <SheetTitle>Coördinatiepaneel</SheetTitle>
-                  <SheetDescription className="sr-only">
-                    Coördinatie-overzicht, snelle filters en notities voor deze pagina.
-                  </SheetDescription>
-                </SheetHeader>
-                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-                  <div className="space-y-4 rounded-[24px] border border-border/60 bg-card/30 p-3 shadow-sm">
-                    <CoordinationInsightsPanels
-                      gemeenteDisplayName={gemeenteDisplayName}
-                      activeCasesTotal={activeCasesTotal}
-                      avgDoorloopDays={avgDoorloopDays}
-                      slaRiskTotal={slaRiskTotal}
-                      criticalBlockers={criticalBlockers}
-                      phaseBoardColumns={phaseBoardColumns}
-                      onCriticalClick={applyCriticalDrillFilter}
-                      onPhaseClick={applyPhaseBoardFilter}
-                      onNavigateCasussen={() => {
-                        onAppNavigate?.("/casussen");
-                      }}
-                      onAfterAction={() => setRailSheetOpen(false)}
-                    />
+            <CareSearchFiltersBar
+              variant="workspace"
+              className="px-0"
+              searchValue={searchQuery}
+              onSearchChange={setSearchQuery}
+              searchPlaceholder="Zoek casussen, regio's, aanbieders..."
+              showSecondaryFilters={showSecondaryFilters}
+              onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+              secondaryFiltersLabel="Filters"
+              secondaryFilters={(
+                <>
+                  <div className="grid items-end gap-2 md:grid-cols-2 xl:grid-cols-4">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      <span className="inline-flex flex-wrap items-center gap-1.5">
+                        Prioriteit
+                        <InlineHelpChip
+                          title="Waarom staat dit bovenaan?"
+                          triggerLabel="Uitleg"
+                          testId="coordination-prioriteit-help"
+                        >
+                          <p>Items worden geprioriteerd op urgentie, blokkades en benodigde actie.</p>
+                        </InlineHelpChip>
+                      </span>
+                      <CareOperationalSelect
+                        aria-label="Prioriteit"
+                        value={priorityFilter}
+                        onChange={(event) => setPriorityFilter(event.target.value as PriorityFilter)}
+                      >
+                        {Object.entries(PRIORITY_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Type
+                      <CareOperationalSelect
+                        aria-label="Type"
+                        value={issueFilter}
+                        onChange={(event) => setIssueFilter(event.target.value as IssueFilter)}
+                      >
+                        {Object.entries(ISSUE_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Stap
+                      <CareOperationalSelect
+                        aria-label="Stap in de keten"
+                        value={phaseFilter}
+                        onChange={(event) => setPhaseFilter(event.target.value as PhaseFilter)}
+                      >
+                        <option value="all">Alles</option>
+                        {DECISION_UI_PHASE_IDS.map((id) => (
+                          <option key={id} value={id}>{DECISION_UI_PHASE_LABELS[id]}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Rol
+                      <CareOperationalSelect
+                        aria-label="Rol"
+                        value={ownershipFilter}
+                        onChange={(event) => setOwnershipFilter(event.target.value as OwnershipFilter)}
+                      >
+                        {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                  <div className="grid items-end gap-2 md:grid-cols-2">
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Zorgbehoefte categorie
+                      <CareOperationalSelect
+                        aria-label="Zorgbehoefte categorie"
+                        value={categoryFilter}
+                        onChange={(event) => {
+                          setCategoryFilter(event.target.value);
+                          setSubcategoryFilter("all");
+                        }}
+                      >
+                        <option value="all">Alle categorieën</option>
+                        {taxonomyCategoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
+                      Specifieke zorgbehoefte
+                      <CareOperationalSelect
+                        aria-label="Specifieke zorgbehoefte"
+                        value={subcategoryFilter}
+                        disabled={categoryFilter === "all" || taxonomySubcategoryOptions.length === 0}
+                        onChange={(event) => setSubcategoryFilter(event.target.value)}
+                      >
+                        <option value="all">Alle specifieke behoeften</option>
+                        {taxonomySubcategoryOptions.map((option) => (
+                          <option key={option.value} value={option.value}>{option.label}</option>
+                        ))}
+                      </CareOperationalSelect>
+                    </label>
+                  </div>
+                </>
+              )}
+            />
+
+            <div className="overflow-hidden rounded-[20px] border border-border/45 bg-background/20">
+              <div className="grid min-w-[980px] grid-cols-[5.5rem_16rem_minmax(11rem,1fr)_11rem_9rem_12rem] border-b border-border/35 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:px-5">
+                <span>Urgentie</span>
+                <span>Casus</span>
+                <span>Regio</span>
+                <span>Status</span>
+                <span>Laatste actie</span>
+                <span>Volgende actie</span>
+              </div>
+              <div className="divide-y divide-border/35">
+                {coordinationListItems.map((item) => (
+                  <RegiekamerWorkRow key={item.case_id} item={item} onCaseClick={onCaseClick} />
+                ))}
+              </div>
+            </div>
           </div>
-        </>
-      ) : null}
-    </div>
+        </section>
+      )}
+    </CarePageScaffold>
   );
 }
 

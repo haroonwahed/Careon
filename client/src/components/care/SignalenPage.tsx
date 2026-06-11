@@ -394,18 +394,7 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
       archetype="command"
       className="pb-8"
       title="Signalen"
-      subtitleInfoTestId="signalen-page-uitleg"
-      subtitleAriaLabel="Uitleg signalenoverzicht"
-      subtitle={
-        <>
-          <p className="mb-2 font-semibold text-foreground">Hoe dit overzicht werkt</p>
-          <p>
-            Signalen worden afgeleid van doorlooptijd, capaciteit en casusstatus. Dit is het coördinatie-overzicht; sidebar
-            Acties blijft de aparte takenlijst.
-          </p>
-          <p>Filter op ernst of zoek op tekst; open een rij voor de primaire vervolgstap.</p>
-        </>
-      }
+      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
       metric={
         <span
           title="Telling voor je huidige tabblad en zoekfilter — geen knop, alleen status."

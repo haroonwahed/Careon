@@ -17,7 +17,6 @@ export type CoordinationFlowPhase = DecisionUiPhaseId;
 /** Coordination-only labels for horizontal doorstroom (may differ from compact workload chips). */
 export const REGIEKAMER_PHASE_BOARD_LABELS: Record<CoordinationFlowPhase, string> = {
   ...DECISION_UI_PHASE_LABELS,
-  in_beoordeling: "Wacht op aanbieder",
 };
 
 /** Filter snapshot applied when user clicks an attention chip (matches SystemAwarenessPage state). */
@@ -60,7 +59,7 @@ export function deriveAttentionSignals(
       id: "no_match",
       label: "Matching-urgent",
       count: noMatchUrgentCount,
-      filter: { issue: "alerts", phase: "klaar_voor_matching", priority: "all" },
+      filter: { issue: "alerts", phase: "matching", priority: "all" },
     });
   }
   if (r(totals.repeated_rejections) > 0) {
@@ -84,7 +83,7 @@ export function deriveAttentionSignals(
       id: "weak_matching",
       label: "Zwakke match / capaciteit",
       count: weakMatchingCount,
-      filter: { issue: "risks", phase: "klaar_voor_matching", priority: "all" },
+      filter: { issue: "risks", phase: "matching", priority: "all" },
     });
   }
 

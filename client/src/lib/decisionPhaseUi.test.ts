@@ -12,24 +12,24 @@ describe("normalizeCoordinationPhaseQueryParam", () => {
     expect(normalizeCoordinationPhaseQueryParam("   ")).toBe("");
   });
 
-  it("maps legacy wacht_op_validatie bookmarks to klaar_voor_matching", () => {
-    expect(normalizeCoordinationPhaseQueryParam("wacht_op_validatie")).toBe("klaar_voor_matching");
-    expect(normalizeCoordinationPhaseQueryParam("wacht-op-validatie")).toBe("klaar_voor_matching");
+  it("maps legacy validation bookmarks to matching", () => {
+    expect(normalizeCoordinationPhaseQueryParam("wacht_op_validatie")).toBe("matching");
+    expect(normalizeCoordinationPhaseQueryParam("wacht-op-validatie")).toBe("matching");
   });
 
-  it("passes through other phase keys unchanged", () => {
+  it("passes through the canonical phase keys unchanged", () => {
     expect(normalizeCoordinationPhaseQueryParam("matching")).toBe("matching");
-    expect(normalizeCoordinationPhaseQueryParam("gemeente_validatie")).toBe("gemeente_validatie");
+    expect(normalizeCoordinationPhaseQueryParam("aanbiederreactie")).toBe("aanbiederreactie");
   });
 });
 
 describe("mapApiPhaseToDecisionUiPhase", () => {
-  it("maps legacy wacht_op_validatie id to klaar_voor_matching", () => {
-    expect(mapApiPhaseToDecisionUiPhase("wacht_op_validatie")).toBe("klaar_voor_matching");
+  it("maps legacy validation id to matching", () => {
+    expect(mapApiPhaseToDecisionUiPhase("wacht_op_validatie")).toBe("matching");
   });
 
-  it("does not treat WorkflowState enum as API phase (would fall back to casus_gestart)", () => {
-    expect(mapApiPhaseToDecisionUiPhase("MATCHING_READY")).toBe("casus_gestart");
+  it("does not treat WorkflowState enum as API phase (would fall back to aanmelding)", () => {
+    expect(mapApiPhaseToDecisionUiPhase("MATCHING_READY")).toBe("aanmelding");
   });
 });
 
@@ -40,8 +40,8 @@ describe("resolveCaseExecutionPhasePresentation", () => {
       currentState: "DRAFT_CASE",
     });
     expect(result.apiPhase).toBe("matching");
-    expect(result.decisionUiPhaseId).toBe("klaar_voor_matching");
-    expect(result.badgeLabel).toBe("Matching & validatie");
+    expect(result.decisionUiPhaseId).toBe("matching");
+    expect(result.badgeLabel).toBe("Matching");
   });
 
   it("derives API phase from canonical workflow state when evaluation phase absent", () => {
@@ -50,7 +50,7 @@ describe("resolveCaseExecutionPhasePresentation", () => {
       currentState: "MATCHING_READY",
     });
     expect(result.apiPhase).toBe("matching");
-    expect(result.decisionUiPhaseId).toBe("klaar_voor_matching");
+    expect(result.decisionUiPhaseId).toBe("matching");
   });
 
   it("surfaces gemeente validatie sub-status on merged bucket", () => {
@@ -59,6 +59,6 @@ describe("resolveCaseExecutionPhasePresentation", () => {
       currentState: "GEMEENTE_VALIDATED",
     });
     expect(result.subStatusLabel).toBeTruthy();
-    expect(result.decisionUiPhaseId).toBe("klaar_voor_matching");
+    expect(result.decisionUiPhaseId).toBe("matching");
   });
 });

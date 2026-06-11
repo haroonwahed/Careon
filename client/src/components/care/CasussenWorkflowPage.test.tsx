@@ -1,13 +1,16 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpaCase } from "../../hooks/useCases";
 import type { SpaProvider } from "../../hooks/useProviders";
 import { expectCasussenMode } from "../../test/utils/modeGuards";
+import type { CaseDecisionState, WorkflowCaseView } from "../../lib/workflowUi";
 import { WorkloadPage } from "./WorkloadPage";
 
 const mockUseCases = vi.fn();
 const mockUseProviders = vi.fn();
+const mockBuildWorkflowCases = vi.fn();
+const mockGetCaseDecisionState = vi.fn();
+const mockClassifyCasusWorkboardState = vi.fn();
 
 vi.mock("../../hooks/useCases", () => ({
   useCases: (...args: unknown[]) => mockUseCases(...args),
@@ -15,6 +18,15 @@ vi.mock("../../hooks/useCases", () => ({
 
 vi.mock("../../hooks/useProviders", () => ({
   useProviders: (...args: unknown[]) => mockUseProviders(...args),
+}));
+
+vi.mock("../../lib/workflowUi", () => ({
+  buildWorkflowCases: (...args: unknown[]) => mockBuildWorkflowCases(...args),
+  getCaseDecisionState: (...args: unknown[]) => mockGetCaseDecisionState(...args),
+}));
+
+vi.mock("./casusWorkboardClassification", () => ({
+  classifyCasusWorkboardState: (...args: unknown[]) => mockClassifyCasusWorkboardState(...args),
 }));
 
 function makeCase(overrides: Partial<SpaCase>): SpaCase {
@@ -25,12 +37,12 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
     zorgtype: "Ambulante zorg",
     wachttijd: 1,
     status: "intake",
-    urgency: "normal",
+    urgency: "critical",
     problems: [],
     systemInsight: "",
     recommendedAction: "",
-    urgencyValidated: true,
-    urgencyDocumentPresent: true,
+    urgencyValidated: false,
+    urgencyDocumentPresent: false,
     urgencyGrantedDate: null,
     waitlistBucket: 1,
     intakeStartDate: null,
@@ -78,7 +90,94 @@ function makeProvider(): SpaProvider {
   };
 }
 
-function mockData(cases: SpaCase[]) {
+function makeWorkflowView(overrides: Partial<WorkflowCaseView> = {}): WorkflowCaseView {
+  return {
+    id: "C-1",
+    title: "Casus",
+    clientLabel: "Cliënt",
+    clientAge: 14,
+    careType: "Jeugdhulp",
+    region: "Rotterdam Rijnmond",
+    municipality: "Rotterdam",
+    lastUpdatedLabel: "1 dag geleden",
+    urgency: "critical",
+    urgencyLabel: "Spoed",
+    placementPressureBand: "critical",
+    placementPressureLabel: "Spoed",
+    placementPressureReason: "",
+    placementPressureImplication: "",
+    phase: "casus",
+    phaseLabel: "Aanmelding",
+    boardColumn: "casus",
+    boardColumnLabel: "Aanmelding",
+    currentPhaseLabel: "Aanmelding",
+    daysInCurrentPhase: 1,
+    tags: ["Jeugdhulp"],
+    nextBestAction: "Maak casus compleet",
+    nextBestActionLabel: "Maak casus compleet",
+    nextBestActionUrl: "casussen",
+    isBlocked: true,
+    blockReason: "Casusaanvulling vereist",
+    readyForMatching: false,
+    readyForPlacement: false,
+    recommendedProvidersCount: 0,
+    recommendedProviderName: null,
+    intakeDateLabel: null,
+    placementStatusLabel: "",
+    workflowState: "blocked" as never,
+    canonicalWorkflowState: null,
+    summarySnippet: "",
+    whyInThisStep: "De casus is onvolledig en kan nog niet door naar matching.",
+    responsibleParty: "Gemeente",
+    primaryActionLabel: "Maak casus compleet",
+    primaryActionEnabled: true,
+    primaryActionReason: null,
+    decisionBadges: [],
+    missingDataItems: ["Casusaanvulling vereist"],
+    matchConfidenceLabel: null,
+    matchAdvisoryHint: null,
+    matchConfidenceScore: null,
+    providerStatusLabel: null,
+    providerStatusTone: null,
+    waitlistBucket: 1,
+    urgencyGrantedDate: null,
+    urgencyApplied: false,
+    urgencyAppliedSince: null,
+    intakeStartDate: null,
+    arrangementTypeCode: "",
+    arrangementProvider: "",
+    arrangementEndDate: null,
+    placementRequestStatus: null,
+    placementProviderResponseStatus: null,
+    zorgbehoefteCategorie: "Gedrag & ontwikkeling",
+    zorgbehoefteCategorieCode: "GEDRAG_EN_ONTWIKKELING",
+    zorgbehoefteSpecifiek: "Zelfredzaamheid",
+    zorgbehoefteSpecifiekCode: "GEDRAG_EN_ONTWIKKELING_ZELFREDZAAMHEID",
+    taxonomieLijn: "Taxonomie: Gedrag & ontwikkeling → Zelfredzaamheid",
+    taxonomieCodeLijn: "Taxonomiecode: GEDRAG_EN_ONTWIKKELING → GEDRAG_EN_ONTWIKKELING_ZELFREDZAAMHEID",
+    ...overrides,
+  } as WorkflowCaseView;
+}
+
+function makeDecisionState(overrides: Partial<CaseDecisionState> = {}): CaseDecisionState {
+  return {
+    phaseLabel: "Aanmelding",
+    statusLabel: "Casus onvolledig",
+    responsibleParty: "Gemeente",
+    severity: "critical",
+    whyHere: "De casus is onvolledig en kan nog niet door naar matching.",
+    nextActionLabel: "Maak casus compleet",
+    nextActionRoute: "casussen",
+    primaryActionEnabled: true,
+    blockedReason: "Casusaanvulling vereist",
+    secondaryActions: [],
+    requiresCurrentUserAction: true,
+    providerReviewActions: [],
+    ...overrides,
+  };
+}
+
+function mockData(cases: SpaCase[], views: WorkflowCaseView[] = [makeWorkflowView()]) {
   mockUseCases.mockReturnValue({
     cases,
     loading: false,
@@ -89,245 +188,108 @@ function mockData(cases: SpaCase[]) {
   mockUseProviders.mockReturnValue({
     providers: [makeProvider()],
   });
+
+  mockBuildWorkflowCases.mockReturnValue(views);
+  mockGetCaseDecisionState.mockReturnValue(makeDecisionState());
+  mockClassifyCasusWorkboardState.mockReturnValue({ section: "attention" });
 }
 
 describe("WorkloadPage", () => {
-  it("renders Casussen shell: ketenstrip, operatieve werklijst en samenvatting", () => {
-    mockData([
-      makeCase({ id: "C-101", title: "Casus Utrecht" }),
-      makeCase({ id: "C-102", title: "Casus Matching", status: "matching", urgency: "warning" }),
-    ]);
-
-    const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
-    const firstRowButton = within(screen.getByTestId("worklist")).getByRole("button", { name: "Open casus Casus Utrecht" });
-    const firstRow = firstRowButton.closest("article");
-
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByText(/2 casussen ·/)).toBeInTheDocument();
-    const worklist = screen.getByTestId("worklist");
-    expect(worklist).toHaveAttribute("data-layout", "queue");
-    expect(screen.queryByTestId("casussen-werkvoorraad-column-headers")).not.toBeInTheDocument();
-    const queueHeadings = within(worklist).getAllByRole("heading", { level: 2 });
-    expect(queueHeadings.length).toBeGreaterThan(0);
-    expect(
-      queueHeadings.some((el) =>
-        /Wacht op aanmelder|Financiële validatie|Klaar voor matching|Wacht op aanbieder|Plaatsing|Zonder urgente wachtrij/.test(el.textContent ?? ""),
-      ),
-    ).toBe(true);
-    expect(firstRow).not.toBeNull();
-    expect(firstRow).toHaveTextContent("Wonen & verblijf");
-    expect(firstRow).toHaveTextContent("Woonvoorziening");
-    expect(container.innerHTML).not.toContain(`#${"0F172A"}`);
-    expect(container.innerHTML).not.toContain(`#${"111c31"}`);
-    expect(container.innerHTML).not.toContain(`#${"E5E7EB"}`);
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it("surfaces Casussen as a municipal worklist with an explicit top attention bar", () => {
-    mockData([
-      makeCase({ id: "C-103", title: "Casus blokkade", status: "intake", urgencyValidated: false, urgencyDocumentPresent: false }),
-    ]);
+  it("renders the approved operational Aanmeldingen state", () => {
+    const views = [
+      makeWorkflowView({
+        id: "CO-2026-C533C8",
+        title: "Aanvraag 41",
+        region: "Rotterdam Rijnmond",
+        municipality: "Rotterdam",
+        lastUpdatedLabel: "5 dagen geleden",
+        urgency: "critical",
+        urgencyLabel: "Spoed",
+        placementPressureLabel: "Spoed",
+      }),
+    ];
+
+    mockData([makeCase({ id: "C-101", title: "Casus Utrecht" })], views);
+    mockGetCaseDecisionState.mockImplementation((item: WorkflowCaseView) => {
+      if (item.id === "CO-2026-C533C8") {
+        return makeDecisionState({
+          phaseLabel: "Casus onvolledig",
+          statusLabel: "Casus onvolledig",
+          whyHere: "Casusaanvulling vereist",
+          blockedReason: "Casusaanvulling vereist",
+          nextActionLabel: "Maak casus compleet",
+        });
+      }
+      return makeDecisionState();
+    });
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
-
-    expect(screen.getByText(/wachten op vervolgactie in de keten/i)).toBeInTheDocument();
-    expect(screen.getByText(/blokkades en wachttijd bepalen de eigenaar/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
-  });
-
-  it("enforces casussen screen responsibility boundaries", () => {
-    mockData([
-      makeCase({ id: "C-901", title: "Casus triage", status: "provider_beoordeling", wachttijd: 4, urgency: "warning" }),
-      makeCase({ id: "C-902", title: "Casus stabiel", status: "matching", urgency: "normal" }),
-    ]);
-
-    const { container } = render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
     expectCasussenMode();
-    expect(screen.getByRole("heading", { name: "Casussen" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Zoek casussen, regio's, aanbieders…")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-    expect(screen.getByText("Casus triage")).toBeInTheDocument();
-    expect(container.querySelectorAll("[data-care-work-row-cta]").length).toBeGreaterThan(0);
-
-    expect(screen.queryByText(/^SLA$/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Alerts$/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Afwijzingen$/)).not.toBeInTheDocument();
-    expect(screen.queryByText("Volgende stap")).not.toBeInTheDocument();
-    expect(screen.queryByText(/Processtatus|Process status/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Genereer samenvatting" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
+    expect(screen.getByText("Controleer nieuwe zorgvragen en maak casussen klaar voor matching.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nieuwe aanmelding" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Overzicht" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Archief" })).toBeInTheDocument();
+    expect(screen.getByText("WACHT OP JOUW ACTIE")).toBeInTheDocument();
+    expect(screen.getByText("1 casus heeft jouw aandacht nodig")).toBeInTheDocument();
+    expect(screen.getByText("De casus is onvolledig en kan nog niet door naar matching.")).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Maak casus compleet" })).toHaveLength(2);
+    expect(screen.getByRole("button", { name: /Filters/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
+    expect(screen.getByText("CO-2026-C533C8")).toBeInTheDocument();
+    expect(screen.getByText("Aanvraag 41")).toBeInTheDocument();
+    expect(screen.getByText("Rotterdam Rijnmond")).toBeInTheDocument();
+    expect(screen.getByText("Gedrag & ontwikkeling")).toBeInTheDocument();
+    expect(screen.getByText("Zelfredzaamheid")).toBeInTheDocument();
+    expect(screen.getByText("Casus onvolledig")).toBeInTheDocument();
+    expect(screen.getByText("Casusaanvulling vereist")).toBeInTheDocument();
+    expect(screen.getByText("5 dagen geleden")).toBeInTheDocument();
+    expect(screen.queryByText("Geen casussen.")).not.toBeInTheDocument();
+    expect(screen.getByTestId("worklist-pagination-hint")).toHaveTextContent("1–1 van 1 aanmeldingen");
+    expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Onvolledig 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Wacht op aanmelder 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Klaar voor matching 0" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Archief 0" })).toBeInTheDocument();
   });
 
-  it("keeps advanced filters collapsed by default and exposes werkvoorraad controls in filters", () => {
-    mockData([
-      makeCase({ id: "C-201", title: "Casus filter test", status: "provider_beoordeling", wachttijd: 5 }),
-    ]);
-
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
-
-    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-    expect(screen.queryByText("Verantwoordelijke")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
-    expect(screen.getByLabelText("Werkvoorraad-weergave")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Lay-out")).not.toBeInTheDocument();
-    expect(screen.getByText("Verantwoordelijke")).toBeInTheDocument();
-  });
-
-  it("filters the worklist by zorgbehoefte categorie and subcategorie", async () => {
-    const user = userEvent.setup();
-    mockData([
-      makeCase({
-        id: "C-211",
-        title: "Wonen casus",
-        status: "matching",
-        taxonomieLijn: "Taxonomie: Wonen & verblijf → Woonvoorziening",
-        taxonomieCodeLijn: "Taxonomiecode: WONEN_VERBLIJF → WONEN_VERBLIJF_WOONVOORZIENING",
-      }),
-      makeCase({
-        id: "C-212",
-        title: "Veiligheid casus",
-        status: "matching",
-        zorgbehoefteCategorie: "Veiligheid & bescherming",
-        zorgbehoefteCategorieCode: "VEILIGHEID_BESCHERMING",
-        zorgbehoefteSpecifiek: "Acute veiligheid",
-        zorgbehoefteSpecifiekCode: "VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID",
-        taxonomieLijn: "Taxonomie: Veiligheid & bescherming → Acute veiligheid",
-        taxonomieCodeLijn: "Taxonomiecode: VEILIGHEID_BESCHERMING → VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID",
-      }),
-    ]);
-
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
-
-    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
-    await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie"), "VEILIGHEID_BESCHERMING");
-    expect(screen.getByLabelText("Specifieke zorgbehoefte")).not.toBeDisabled();
-    await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID");
-
-    expect(screen.getByText("Veiligheid casus")).toBeInTheDocument();
-    expect(screen.queryByText("Wonen casus")).not.toBeInTheDocument();
-  });
-
-  it("opens casus detail when card is clicked", () => {
+  it("keeps the dominant action aligned with the row action", () => {
     const onCaseClick = vi.fn();
-    mockData([
-      makeCase({ id: "C-301", title: "Provider review", status: "provider_beoordeling", wachttijd: 4, urgency: "warning" }),
-    ]);
+    mockData([makeCase({ id: "C-103", title: "Casus blokkade" })]);
 
-    render(<WorkloadPage onCaseClick={onCaseClick} role="zorgaanbieder" />);
+    render(<WorkloadPage onCaseClick={onCaseClick} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
 
-    fireEvent.click(screen.getByText("Provider review"));
-    expect(onCaseClick).toHaveBeenCalledWith("C-301");
+    fireEvent.click(screen.getAllByRole("button", { name: "Maak casus compleet" })[0]);
+    expect(onCaseClick).toHaveBeenCalledWith("C-1");
   });
 
-  it("filters list when waiting werkvoorraad-view is selected", () => {
-    mockData([
-      makeCase({ id: "C-401", title: "Lang wachtend", status: "provider_beoordeling", wachttijd: 5 }),
-      makeCase({ id: "C-402", title: "Geblokkeerde intake", status: "intake", urgencyValidated: false, urgencyDocumentPresent: false }),
-      makeCase({ id: "C-403", title: "Stabiele casus", status: "intake", wachttijd: 1 }),
-    ]);
+  it("switches the phase filter without collapsing the page shell", () => {
+    mockData([makeCase({ id: "C-201", title: "Casus filter test" })]);
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
-    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanmelder 1" }));
 
-    expect(screen.getByText("Lang wachtend")).toBeInTheDocument();
-    expect(screen.getByText("Geblokkeerde intake")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
+    expect(screen.queryByText("Geen casussen.")).not.toBeInTheDocument();
   });
 
-  it("keeps summary count aligned with filtered visible results", () => {
-    mockData([
-      makeCase({ id: "C-501", title: "Wacht op provider", status: "provider_beoordeling", wachttijd: 5 }),
-      makeCase({ id: "C-502", title: "Stabiel", status: "matching", wachttijd: 1 }),
-    ]);
+  it("shows the inline empty state only when no rows are visible", () => {
+    mockData([makeCase({ id: "C-202", title: "Casus archief filter" })]);
 
     render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
 
-    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
-    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
+    fireEvent.click(screen.getByRole("tab", { name: "Archief 0" }));
 
-    expect(screen.getByText(/\d+ casussen ·/)).toBeInTheDocument();
-  });
-
-  it("keeps CTA navigation aligned with classified waiting-provider state", () => {
-    const onNavigateToWorkflow = vi.fn();
-    const onCaseClick = vi.fn();
-    mockData([
-      makeCase({ id: "C-601", title: "Wacht op beoordeling", status: "provider_beoordeling", wachttijd: 6 }),
-    ]);
-
-    render(<WorkloadPage onCaseClick={onCaseClick} role="gemeente" onNavigateToWorkflow={onNavigateToWorkflow} />);
-    fireEvent.click(screen.getByRole("button", { name: /^Filters$/i }));
-    fireEvent.change(screen.getByLabelText("Werkvoorraad-weergave"), { target: { value: "pipeline" } });
-    fireEvent.click(screen.getByRole("button", { name: /Bekijk aanbiederreactie/ }));
-
-    expect(onNavigateToWorkflow).toHaveBeenCalledWith("beoordelingen");
-    expect(onCaseClick).not.toHaveBeenCalled();
-  });
-
-  it("renders werkvoorraad queue item with volledige blokkade-tekst (geen tabel-truncate)", () => {
-    mockData([
-      makeCase({ id: "C-701", title: "test", status: "intake", urgencyValidated: false }),
-    ]);
-
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
-
-    const worklist = screen.getByTestId("worklist");
-    expect(worklist).toBeInTheDocument();
-    expect(screen.getByText("test")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Open casus test/ })).toBeInTheDocument();
-    expect(within(worklist).getAllByText(/Urgentie is nog niet gevalideerd/).length).toBeGreaterThan(0);
-    expect(screen.getByRole("button", { name: /Vul casus aan/ })).toBeInTheDocument();
-    expect(within(worklist).getByText(/dag geleden|Vandaag/)).toBeInTheDocument();
-    expect(screen.queryByText(/^Blokkade:/)).not.toBeInTheDocument();
-  });
-
-  it("after Bekijk kritieke casussen shows context hint and Toon alle casussen (button does not vanish)", () => {
-    mockData([
-      makeCase({
-        id: "C-901",
-        title: "Onvolledig",
-        status: "intake",
-        urgencyValidated: false,
-        urgencyDocumentPresent: false,
-      }),
-    ]);
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
-
-    fireEvent.click(screen.getByRole("button", { name: "Bekijk kritieke casussen" }));
-
-    expect(screen.getByTestId("worklist-blocked-filter-hint")).toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("worklist-blocked-filter-hint"));
-    expect(screen.getByText(/Weergave: kritiek \/ geblokkeerd/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Toon alle casussen" })).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole("button", { name: "Toon alle casussen" }));
-
-    expect(screen.queryByTestId("worklist-blocked-filter-hint")).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk kritieke casussen" })).toBeInTheDocument();
-  });
-
-  it("omits worklist tab shortcut when there are no dossiers but keeps regiecasus CTA when allowed", () => {
-    mockData([]);
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" canCreateCase onCreateCase={vi.fn()} />);
-
-    expect(screen.queryByRole("button", { name: "Bekijk mijn werkvoorraad" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Bekijk kritieke casussen" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Nieuwe casus" })).toBeInTheDocument();
-  });
-
-  it("shows debug block only when running in dev mode", () => {
-    mockData([
-      makeCase({ id: "C-801", title: "debug test", status: "matching" }),
-    ]);
-
-    render(<WorkloadPage onCaseClick={vi.fn()} role="gemeente" />);
-
-    if (import.meta.env.DEV) {
-      expect(screen.getByLabelText("Open debug classificatie")).toBeInTheDocument();
-    } else {
-      expect(screen.queryByLabelText("Open debug classificatie")).not.toBeInTheDocument();
-    }
+    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
+    expect(screen.getByText("Geen casussen.")).toBeInTheDocument();
+    expect(screen.getByText("Pas filters aan.")).toBeInTheDocument();
+    expect(screen.queryByTestId("worklist-pagination-hint")).not.toBeInTheDocument();
   });
 });

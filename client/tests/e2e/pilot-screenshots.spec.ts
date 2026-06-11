@@ -77,7 +77,7 @@ test.describe("pilot deterministic screenshots", () => {
   test("settings page uses the new slim authenticated shell", async ({ page }, testInfo) => {
     await loginGemeente(page);
     await page.goto(new URL("/settings/", BASE_URL).toString());
-    await expect(page.getByRole("heading", { name: /Operationele coördinatie/i })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
     await expect(page.getByText("Careon ZORGREGIE")).toHaveCount(0);
     await expect(page.getByText("CASUSMANAGEMENT")).toHaveCount(0);
     await expect(page.getByText("Rapportages & coördinatie")).toHaveCount(0);

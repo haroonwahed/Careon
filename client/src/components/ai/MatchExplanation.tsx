@@ -13,7 +13,7 @@ interface MatchExplanationProps {
 
 export function MatchExplanation({
   score: _score,
-  advisoryLabel = "Beoordeling nodig",
+  advisoryLabel = "Onderbouwing nodig",
   strengths,
   tradeoffs = [],
   confidence = "high",

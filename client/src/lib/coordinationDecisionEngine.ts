@@ -325,7 +325,7 @@ export function buildCoordinationDecisionSummary(
     },
     {
       key: "klaar_voor_matching",
-      title: "Matching & validatie",
+      title: "Matching",
       value: issue_buckets.klaar_voor_matching,
       subtitle: "Wachten op matching",
       severity: issue_buckets.klaar_voor_matching > 0 ? "info" : "good",

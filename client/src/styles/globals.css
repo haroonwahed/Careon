@@ -14,9 +14,9 @@
   --surface-hover: #EEF1F6;
   --border-default: #D8DEE8;
   --border-strong: #C2CAD6;
-  --primary: #7C5CFF;
+  --primary: #7C4DFF;
   --primary-hover: #8B7CFF;
-  --primary-light: rgba(124, 92, 255, 0.1);
+  --primary-light: rgba(124, 77, 255, 0.1);
   --red-base: #C96B6B;
   --red-light: #F8ECEC;
   --red-border: rgba(201, 107, 107, 0.45);
@@ -62,13 +62,13 @@
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-normal: 400;
-  --ring: rgba(124, 92, 255, 0.38);
+  --ring: rgba(124, 77, 255, 0.38);
   --chart-1: var(--primary);
   --chart-2: var(--blue-base);
   --chart-3: var(--green-base);
   --chart-4: var(--yellow-base);
   --chart-5: var(--red-base);
-  --chart-1-soft: rgba(124, 92, 255, 0.16);
+  --chart-1-soft: rgba(124, 77, 255, 0.16);
   --chart-2-soft: rgba(75, 127, 212, 0.14);
   --chart-4-soft: rgba(217, 164, 65, 0.16);
   --radius: 0.75rem;
@@ -82,8 +82,8 @@
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--ring);
 
-  --glow-primary: rgba(124, 92, 255, 0.06);
-  --glow-primary-soft: rgba(124, 92, 255, 0.04);
+  --glow-primary: rgba(124, 77, 255, 0.06);
+  --glow-primary-soft: rgba(124, 77, 255, 0.04);
   --kpi-value: #141A24;
   --delta-positive: var(--green-base);
   --delta-negative: var(--red-base);
@@ -103,9 +103,9 @@
   --surface-hover: #1B2236;
   --border-default: rgba(255, 255, 255, 0.06);
   --border-strong: rgba(255, 255, 255, 0.1);
-  --primary: #7C5CFF;
+  --primary: #7C4DFF;
   --primary-hover: #8B7CFF;
-  --primary-light: rgba(124, 92, 255, 0.12);
+  --primary-light: rgba(124, 77, 255, 0.12);
   --red-base: #C96B6B;
   --red-light: rgba(201, 107, 107, 0.12);
   --red-border: rgba(201, 107, 107, 0.32);
@@ -138,7 +138,7 @@
   --input: rgba(255, 255, 255, 0.08);
   --input-background: var(--surface-2);
   --switch-background: rgba(255, 255, 255, 0.14);
-  --ring: rgba(124, 92, 255, 0.38);
+  --ring: rgba(124, 77, 255, 0.38);
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-normal: 400;
@@ -147,7 +147,7 @@
   --chart-3: var(--green-base);
   --chart-4: var(--yellow-base);
   --chart-5: var(--red-base);
-  --chart-1-soft: rgba(124, 92, 255, 0.14);
+  --chart-1-soft: rgba(124, 77, 255, 0.14);
   --chart-2-soft: rgba(107, 154, 212, 0.14);
   --chart-4-soft: rgba(217, 164, 65, 0.14);
 
@@ -165,8 +165,8 @@
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--ring);
 
-  --glow-primary: rgba(124, 92, 255, 0.08);
-  --glow-primary-soft: rgba(124, 92, 255, 0.04);
+  --glow-primary: rgba(124, 77, 255, 0.08);
+  --glow-primary-soft: rgba(124, 77, 255, 0.04);
 
   --badge-red-bg: rgba(201, 107, 107, 0.16);
   --badge-red-text: #E8B4B4;
@@ -174,7 +174,7 @@
   --badge-yellow-text: #E8D4A8;
   --badge-blue-bg: rgba(107, 154, 212, 0.16);
   --badge-blue-text: #B8D4F0;
-  --badge-purple-bg: rgba(124, 92, 255, 0.14);
+  --badge-purple-bg: rgba(124, 77, 255, 0.14);
   --badge-purple-text: #C9BFFF;
   --badge-green-bg: rgba(63, 163, 124, 0.16);
   --badge-green-text: #A8DCC4;
@@ -1029,19 +1029,19 @@ select:not([multiple]):not([size]):disabled {
 }
 
 .surface-workspace {
-  background-color: color-mix(in srgb, var(--surface-elevated) 42%, var(--surface-2) 58%);
+  background-color: color-mix(in srgb, var(--surface-elevated) 30%, var(--surface-2) 70%);
   box-shadow:
-    0 1px 0 color-mix(in srgb, white 5%, transparent) inset,
-    0 18px 44px rgba(11, 16, 32, 0.22);
+    0 1px 0 color-mix(in srgb, white 4%, transparent) inset,
+    0 12px 30px rgba(11, 16, 32, 0.16);
 }
 .dark .surface-workspace {
   box-shadow:
-    0 1px 0 color-mix(in srgb, white 4%, transparent) inset,
-    0 20px 48px rgba(0, 0, 0, 0.32);
+    0 1px 0 color-mix(in srgb, white 3%, transparent) inset,
+    0 14px 34px rgba(0, 0, 0, 0.24);
 }
 
 .surface-workspace-header {
-  background-color: color-mix(in srgb, var(--surface-elevated) 35%, transparent);
+  background-color: transparent;
 }
 
 /* Doorstroom — horizontal orchestration lane */
@@ -1471,12 +1471,12 @@ select:not([multiple]):not([size]):disabled {
 }
 
 .care-queue-shell__toolbar {
-  padding-bottom: var(--care-rhythm-queue-lead);
+  padding-bottom: calc(var(--care-rhythm-queue-lead) * 0.75);
 }
 
 .care-queue-shell__header {
-  padding-top: var(--care-rhythm-queue-lead);
-  padding-bottom: var(--care-rhythm-queue-header);
+  padding-top: calc(var(--care-rhythm-queue-lead) * 0.7);
+  padding-bottom: calc(var(--care-rhythm-queue-header) * 0.75);
 }
 
 .care-queue-shell__rows {

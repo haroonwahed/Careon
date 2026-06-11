@@ -1,5 +1,5 @@
 import { useId, type ComponentProps, type CSSProperties, type ReactNode } from "react";
-import { ChevronDown, ChevronUp, Info, Search } from "lucide-react";
+import { ChevronDown, ChevronUp, Filter, Info, Search } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
@@ -13,32 +13,39 @@ import {
   normalizeApiPhaseId,
 } from "../../lib/decisionPhaseUi";
 
-/** Vertical rhythm for unified care list pages (header → optional attention → filters → list). */
+/** Vertical rhythm for unified care list pages (header → optional attention → optional workflow → filters → list). */
 export const CARE_UNIFIED_PAGE_STACK = CARE_RHYTHM.pageStack;
 
 /**
- * Shared list-page shell: header, optional attention strip, optional filters, then main content
- * (loading / empty / error / primary list). Keeps spacing consistent across care workspace routes.
+ * Shared list-page shell: header, optional attention strip, optional workflow strip, optional filters,
+ * then main content (loading / empty / error / primary list) and optional detail surface.
+ * Keeps spacing consistent across care workspace routes.
  */
 export function CarePageTemplate({
   header,
   attention,
+  workflow,
   filters,
   children,
+  detail,
   className,
 }: {
   header: ReactNode;
   attention?: ReactNode;
+  workflow?: ReactNode;
   filters?: ReactNode;
   children: ReactNode;
+  detail?: ReactNode;
   className?: string;
 }) {
   return (
     <div className={cn(CARE_RHYTHM.pageStack, className)}>
       <div className={CARE_RHYTHM.zoneHeader}>{header}</div>
       {attention ? <div className={CARE_RHYTHM.zoneAlert}>{attention}</div> : null}
+      {workflow ? <div className={CARE_RHYTHM.zoneControl}>{workflow}</div> : null}
       {filters ? <div className={CARE_RHYTHM.zoneControl}>{filters}</div> : null}
       <div className={CARE_RHYTHM.zoneMain}>{children}</div>
+      {detail ? <div className={CARE_RHYTHM.zoneStack}>{detail}</div> : null}
     </div>
   );
 }
@@ -165,7 +172,7 @@ export function CanonicalPhaseBadge({ phaseId }: { phaseId: string }) {
         decisionUiPhaseBadgeShellClass(decisionId),
       )}
       style={{ maxWidth: tokens.layout.phaseBadgeMaxWidth }}
-      title="Stap in de keten (vier beslissingen)"
+      title="Stap in de keten (vijf beslissingen)"
     >
       <span className="size-1.5 shrink-0 rounded-full bg-current opacity-90" aria-hidden />
       <span className="truncate">{label}</span>
@@ -200,6 +207,7 @@ export function CareContextHint({
 
 export function CareUnifiedHeader({
   title,
+  subtitle,
   metric,
   actions,
   titleClassName,
@@ -209,9 +217,6 @@ export function CareUnifiedHeader({
   metric?: ReactNode;
   actions?: ReactNode;
   titleClassName?: string;
-  subtitleClassName?: string;
-  subtitleInfoTestId?: string;
-  subtitleAriaLabel?: string;
 }) {
   return (
     <section
@@ -238,8 +243,95 @@ export function CareUnifiedHeader({
             <div className="flex flex-col items-start gap-1 md:shrink-0 md:items-end">{actions}</div>
           ) : null}
         </div>
+        {subtitle ? <p className="max-w-3xl text-[14px] leading-6 text-muted-foreground">{subtitle}</p> : null}
         {metric ? <div className="flex w-full min-w-0 flex-wrap items-center gap-2">{metric}</div> : null}
       </div>
+    </section>
+  );
+}
+
+const ATTENTION_SURFACE_CLASSES: Record<
+  "neutral" | "attention" | "critical",
+  {
+    shell: string;
+    icon: string;
+    label: string;
+  }
+> = {
+  neutral: {
+    shell: "border-l-border border border-border/45 bg-muted/10 text-foreground",
+    icon: "border-border/50 bg-background/55 text-muted-foreground",
+    label: "Neutrale aandacht",
+  },
+  attention: {
+    shell: "border-l-amber-500/70 border border-amber-500/20 bg-amber-500/10 text-foreground",
+    icon: "border-amber-500/25 bg-amber-500/10 text-amber-200",
+    label: "Operatieve aandacht",
+  },
+  critical: {
+    shell: "border-l-red-500/80 border border-red-500/25 bg-red-500/10 text-foreground",
+    icon: "border-red-500/20 bg-red-500/10 text-red-100",
+    label: "Kritieke aandacht",
+  },
+};
+
+export function CareAttentionSurface({
+  variant = "attention",
+  title,
+  message,
+  action,
+  icon,
+  density = "default",
+  className,
+  testId,
+  ...props
+}: {
+  variant?: "neutral" | "attention" | "critical";
+  title?: ReactNode;
+  message: ReactNode;
+  action?: ReactNode;
+  icon?: ReactNode;
+  density?: "default" | "compact";
+  className?: string;
+  testId?: string;
+} & ComponentProps<"section">) {
+  const surface = ATTENTION_SURFACE_CLASSES[variant];
+  const compact = density === "compact";
+
+  return (
+    <section
+      data-component="care-attention-surface"
+      data-testid={testId}
+      data-variant={variant}
+      data-density={density}
+      className={cn(
+        "flex items-start justify-between gap-3 border-l-2 px-4 py-3 md:px-5",
+        compact ? "rounded-xl" : "rounded-[22px]",
+        surface.shell,
+        className,
+      )}
+      {...props}
+    >
+      <div className="flex min-w-0 flex-1 items-start gap-3">
+        {icon ? (
+          <div
+            className={cn(
+              "mt-0.5 flex shrink-0 items-center justify-center rounded-full border",
+              compact ? "h-9 w-9" : "h-10 w-10",
+              surface.icon,
+            )}
+          >
+            {icon}
+          </div>
+        ) : null}
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+            {title ?? surface.label}
+          </p>
+          <p className={cn("min-w-0 text-sm leading-6", compact && "text-[13px]")}>{message}</p>
+        </div>
+      </div>
+      {action ? <div className="flex shrink-0 items-center justify-end">{action}</div> : null}
     </section>
   );
 }
@@ -261,30 +353,18 @@ export function CareAttentionBar({
   layout?: "default" | "compact";
 }) {
   if (!visible) return null;
-  const isCompact = layout === "compact";
-  const accent =
-    tone === "critical" ? "border-l-red-500/80" : tone === "warning" ? "border-l-amber-500/70" : "border-l-border";
+  const variant = tone === "critical" ? "critical" : tone === "warning" ? "attention" : "neutral";
   return (
-    <div
+    <CareAttentionSurface
+      variant={variant}
+      density={layout === "compact" ? "compact" : "default"}
+      title="Operatieve aandacht"
+      message={message}
+      action={action}
+      icon={icon}
       data-component="care-attention-bar"
-      data-layout={isCompact ? "compact" : "default"}
-      className={cn(
-        "flex min-h-[44px] items-center justify-between gap-3 border-l-2",
-        isCompact
-          ? "border-b border-border/40 bg-muted/10 px-4 py-2"
-          : "min-h-[52px] rounded-xl bg-muted/20 px-3 py-2.5 shadow-sm",
-        accent,
-      )}
-    >
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        {icon ? <div className="shrink-0 text-muted-foreground">{icon}</div> : null}
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Operatieve aandacht</p>
-          <p className={cn("text-foreground", isCompact ? "truncate text-[13px]" : "truncate text-sm")}>{message}</p>
-        </div>
-      </div>
-      {action ? <div className="flex shrink-0 items-center justify-end">{action}</div> : null}
-    </div>
+      data-layout={layout}
+    />
   );
 }
 
@@ -430,7 +510,7 @@ export function CareSearchFiltersBar({
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
         <div
           className={cn(
-            "flex w-full min-w-0 flex-1 items-center gap-2.5 px-3 shadow-sm",
+            "flex w-full min-w-0 flex-1 items-center gap-2.5 px-3 shadow-none",
             variant === "workspace"
               ? "care-op-search-field"
               : "border border-border/60 bg-card/55",
@@ -460,8 +540,9 @@ export function CareSearchFiltersBar({
               onClick={onToggleSecondaryFilters}
               aria-expanded={expanded}
               aria-controls={secondaryFiltersId}
-              className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-border/60 bg-card/35 px-3 text-[13px] font-medium text-primary shadow-sm transition-colors hover:bg-muted/30 hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/45 bg-card/20 px-3 text-[13px] font-medium text-primary transition-colors hover:bg-muted/18 hover:text-foreground"
             >
+              <Filter size={14} aria-hidden />
               {secondaryFiltersLabel}
               {showSecondaryFilters ? <ChevronUp size={14} aria-hidden /> : <ChevronDown size={14} aria-hidden />}
             </button>
@@ -507,8 +588,11 @@ export function CarePrimaryList({
 
 export type CareWorkRowProps = {
   title: ReactNode;
+  titleAriaLabel?: string;
   context: ReactNode;
   status: ReactNode;
+  owner?: ReactNode;
+  nextAction?: ReactNode;
   time?: ReactNode;
   contextInfo?: ReactNode;
   actionLabel: ReactNode;
@@ -542,18 +626,22 @@ export const OPERATIONAL_QUEUE_GRID_CLASS = cn(
 /** Shared column header grid for operational queue tables (Casussen, Acties, Matching, …). */
 export const OPERATIONAL_QUEUE_HEADER_GRID_CLASS = cn(
   OPERATIONAL_QUEUE_GRID_CLASS,
-  "border-b border-border/40 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground md:px-5",
+  "border-b border-border/40 px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:px-5",
 );
 
 export function CareOperationalQueueHeader({
   labels,
   testId = "operational-queue-column-headers",
+  gridClassName,
+  className,
 }: {
-  labels: readonly [string, string, string, string, string, string];
+  labels: readonly ReactNode[];
   testId?: string;
+  gridClassName?: string;
+  className?: string;
 }) {
   return (
-    <div className={OPERATIONAL_QUEUE_HEADER_GRID_CLASS} data-testid={testId}>
+    <div className={cn(gridClassName ?? OPERATIONAL_QUEUE_HEADER_GRID_CLASS, className)} data-testid={testId}>
       {labels.map((label) => (
         <span key={label} className="min-w-0 truncate">
           {label}
@@ -569,8 +657,11 @@ export function CareOperationalQueueHeader({
  */
 export function CareWorkRow({
   title,
+  titleAriaLabel,
   context,
   status,
+  owner,
+  nextAction,
   time,
   contextInfo,
   actionLabel,
@@ -613,11 +704,11 @@ export function CareWorkRow({
       data-density={isOperational ? "operational" : "comfortable"}
       data-queue-variant={queueVariant}
       style={{ minHeight: rowMinHeight }}
-      className={cn(
-        "group relative border-b border-border/35 border-l-2 bg-transparent transition-colors hover:bg-muted/12",
-        isCommand && "bg-muted/[0.05]",
-        accentClass,
-        className,
+        className={cn(
+          "group relative border-b border-border/35 border-l-2 bg-transparent transition-colors hover:bg-muted/12",
+          isCommand && "bg-muted/[0.05]",
+          accentClass,
+          className,
       )}
     >
       <div className={cn(OPERATIONAL_QUEUE_GRID_CLASS, "px-4 py-2 md:px-5")}>
@@ -629,14 +720,17 @@ export function CareWorkRow({
           className={cn(
             "min-w-0 truncate text-left font-semibold leading-tight text-foreground outline-none",
             "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1",
-            isOperational ? "text-[13px]" : "text-[14px]",
+            isOperational ? "text-[12.5px]" : "text-[14px]",
           )}
-          aria-label={`Open casus ${title}`}
+          aria-label={
+            titleAriaLabel ??
+            (typeof title === "string" || typeof title === "number" ? `Open casus ${title}` : undefined)
+          }
         >
           {title}
         </button>
 
-        <div className="min-w-0 overflow-hidden text-[11px] leading-snug text-muted-foreground">
+        <div className="min-w-0 overflow-hidden text-[10.5px] leading-snug text-muted-foreground">
           <div className="flex min-w-0 items-center gap-1.5 overflow-hidden [&>*]:max-w-full [&>*]:shrink">
             {context}
           </div>
@@ -644,7 +738,9 @@ export function CareWorkRow({
 
         <div className="min-w-0 overflow-hidden">{status}</div>
 
-        <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden text-[11px] text-muted-foreground">
+        <div className="flex min-w-0 flex-col gap-0.5 overflow-hidden text-[10.5px] text-muted-foreground">
+          {owner ? <div className="min-w-0 truncate">{owner}</div> : null}
+          {nextAction ? <div className="min-w-0 truncate">{nextAction}</div> : null}
           {time ? <div className="min-w-0 truncate">{time}</div> : null}
           {contextInfo ? <div className="min-w-0 truncate">{contextInfo}</div> : null}
         </div>

@@ -156,7 +156,7 @@ describe("MatchingPageWithMap", () => {
 
     expect(await screen.findByRole("heading", { name: /Matching voor casus/i })).toBeVisible();
 
-    const selectButtons = screen.getAllByRole("button", { name: /Selecteer & verzoek/i });
+    const selectButtons = screen.getAllByRole("button", { name: /Selecteer aanbieder/i });
     expect(selectButtons.length).toBeGreaterThanOrEqual(1);
     await user.click(selectButtons[0]);
 
@@ -203,7 +203,7 @@ describe("MatchingPageWithMap", () => {
     expect(await screen.findByRole("heading", { name: /Matching voor casus/i })).toBeVisible();
     expect(screen.getAllByText("Zorggroep A").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Verouderde naam uit API")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Selecteer & verzoek/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("button", { name: /Selecteer aanbieder/i }).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows submit errors as a visible blocker near the matching workspace", async () => {

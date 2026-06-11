@@ -185,6 +185,7 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
     <CarePageScaffold
       archetype="exception"
       className="pb-8"
+      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
           Audittrail

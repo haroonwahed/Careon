@@ -1,5 +1,4 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { SpaCase } from "../../hooks/useCases";
 import type { SpaProvider } from "../../hooks/useProviders";
@@ -26,7 +25,7 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
     status: "matching",
     urgency: "normal",
     problems: [],
-    systemInsight: "",
+    systemInsight: "Casusoverzicht gereed",
     recommendedAction: "",
     urgencyValidated: true,
     urgencyDocumentPresent: true,
@@ -59,7 +58,7 @@ function makeProvider(): SpaProvider {
     availableSpots: 3,
     region: "Utrecht",
     type: "ambulant",
-    specializations: [],
+    specializations: ["Jeugd"],
     latitude: null,
     longitude: null,
     hasCoordinates: false,
@@ -72,36 +71,33 @@ function makeProvider(): SpaProvider {
 }
 
 describe("MatchingQueuePage", () => {
-  it("shows Controleer match when matching is blocked (no advies)", () => {
+  it("shows the operational empty state when no matchable cases exist", () => {
     mockUseCases.mockReturnValue({
-      cases: [
-        makeCase({
-          id: "C-M0",
-          title: "Capaciteit test",
-          status: "matching",
-          urgencyValidated: false,
-          regio: "Groningen",
-        }),
-      ],
+      cases: [],
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
     mockUseProviders.mockReturnValue({ providers: [] });
 
-    render(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
+    const onNavigate = vi.fn();
+    render(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={onNavigate} />);
 
-    expect(screen.getByRole("button", { name: "Controleer matchadvies" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
+    expect(screen.getByText("Geen casussen klaar voor matching")).toBeInTheDocument();
+    expect(screen.getByText("Er zijn op dit moment geen complete aanmeldingen die naar matching kunnen.")).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("button", { name: "Bekijk aanmeldingen" })[1]);
+    expect(onNavigate).toHaveBeenCalledTimes(1);
   });
 
-  it("uses unified header, search, and work row CTA copy", () => {
+  it("renders the canonical workflow strip and matchable worklist", () => {
     mockUseCases.mockReturnValue({
       cases: [
         makeCase({
           id: "C-M1",
           title: "Cliënt A",
           status: "matching",
-          urgencyValidated: false,
+          urgency: "critical",
         }),
       ],
       loading: false,
@@ -110,22 +106,38 @@ describe("MatchingQueuePage", () => {
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    render(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
+    const onCaseClick = vi.fn();
+    render(<MatchingQueuePage onCaseClick={onCaseClick} onNavigateToCasussen={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Naar casussen" })).toBeInTheDocument();
-    expect(screen.getByPlaceholderText(/Zoek casussen, regio's, aanbieders/i)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vergelijk aanbieders" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanmelding (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Matching (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanbiederreactie (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Plaatsing (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Intake (0)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start matching" })).toBeInTheDocument();
+
+    const row = screen.getByText("C-M1").closest("article");
+    expect(row).not.toBeNull();
+    const rowEl = row as HTMLElement;
+    expect(within(rowEl).getByText("C-M1")).toBeInTheDocument();
+    expect(within(rowEl).getByText("Utrecht")).toBeInTheDocument();
+    expect(within(rowEl).getByText("Onderbouwing")).toBeInTheDocument();
+    expect(within(rowEl).getByTitle("Onderbouwing nodig")).toBeInTheDocument();
+    expect(within(rowEl).getByRole("button", { name: "Bekijk onderbouwing" })).toBeInTheDocument();
+
+    fireEvent.click(within(rowEl).getByRole("button", { name: "Bekijk onderbouwing" }));
+    expect(onCaseClick).toHaveBeenCalledWith("C-M1");
   });
 
-  it("describes matching as advisory in the page-info popover", async () => {
+  it("keeps the worklist visible when filters are cleared", () => {
     mockUseCases.mockReturnValue({
       cases: [
         makeCase({
           id: "C-M2",
           title: "Cliënt B",
           status: "matching",
-          urgencyValidated: true,
+          urgency: "warning",
         }),
       ],
       loading: false,
@@ -134,11 +146,9 @@ describe("MatchingQueuePage", () => {
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    const user = userEvent.setup();
     render(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
 
-    await user.click(screen.getByTestId("matching-page-info"));
-    expect(screen.getByText(/topkandidaten/i)).toBeInTheDocument();
-    expect(screen.getByText(/gemeente valideert de selectie/i)).toBeInTheDocument();
+    expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
+    expect(screen.getByText("C-M2")).toBeInTheDocument();
   });
 });

@@ -18,7 +18,7 @@ vi.mock("../../hooks/useProviders", () => ({
 
 function makeCase(overrides: Partial<SpaCase>): SpaCase {
   return {
-    id: "C-1",
+    id: "CO-2026-C533C8",
     title: "Casus",
     regio: "Utrecht",
     zorgtype: "Ambulante zorg",
@@ -31,6 +31,8 @@ function makeCase(overrides: Partial<SpaCase>): SpaCase {
     urgencyValidated: true,
     urgencyDocumentPresent: true,
     urgencyGrantedDate: null,
+    urgencyApplied: false,
+    urgencyAppliedSince: null,
     waitlistBucket: 1,
     intakeStartDate: null,
     arrangementTypeCode: "",
@@ -75,48 +77,38 @@ function makeProvider(): SpaProvider {
 }
 
 describe("PlacementTrackingPage", () => {
-  it("shows intake stall attention when placement ages without intake", () => {
+  it("shows the placement attention surface and active worklist", () => {
     mockUseCases.mockReturnValue({
-      cases: [makeCase({ id: "C-P2", title: "Stall", status: "plaatsing", wachttijd: 6, arrangementProvider: "Aanbieder Y" })],
+      cases: [makeCase({ workflowState: "PROVIDER_ACCEPTED" })],
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} onNavigateToMatching={vi.fn()} />);
-
-    expect(screen.getByText(/zonder duidelijke intake/i)).toBeInTheDocument();
-  });
-
-  it("uses unified tabs, header, and intake-oriented CTA", () => {
-    mockUseCases.mockReturnValue({
-      cases: [makeCase({ id: "C-P1", title: "Cliënt B", status: "plaatsing", arrangementProvider: "Aanbieder X" })],
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
-
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} onNavigateToMatching={vi.fn()} />);
+    render(
+      <PlacementTrackingPage
+        onCaseClick={vi.fn()}
+        onNavigateToMatching={vi.fn()}
+        onNavigateToAanbiederreacties={vi.fn()}
+      />,
+    );
 
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Naar matching" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk matching" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Te bevestigen ·/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bevestig plaatsing" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Bevestig plaatsing" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /Plaatsing voorbereid \(1\)/ })).toBeInTheDocument();
+    expect(screen.getByText("1 casus heeft jouw aandacht nodig")).toBeInTheDocument();
   });
 
-  it("shows Plan intake when placement is confirmed in canonical state (row-level, not tab)", async () => {
+  it("shows Plan intake once the placement is confirmed and a start date exists", async () => {
     const user = userEvent.setup();
     mockUseCases.mockReturnValue({
       cases: [
         makeCase({
-          id: "C-PC",
-          title: "Cliënt C",
-          status: "plaatsing",
-          wachttijd: 1,
           workflowState: "PLACEMENT_CONFIRMED",
+          intakeStartDate: "2026-06-20",
         }),
       ],
       loading: false,
@@ -127,57 +119,31 @@ describe("PlacementTrackingPage", () => {
 
     render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
-    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
+    await user.click(screen.getByRole("tab", { name: /Startdatum gepland \(1\)/ }));
+    expect(screen.getAllByRole("button", { name: "Plan intake" }).length).toBeGreaterThan(0);
+    expect(screen.getByText("Startdatum")).toBeInTheDocument();
+    expect(screen.getByTitle("Startdatum gepland")).toBeInTheDocument();
   });
 
-  it("infers Plan intake from placement APPROVED without workflow_state", async () => {
-    const user = userEvent.setup();
+  it("renders the calm empty state when there are no active placements", () => {
     mockUseCases.mockReturnValue({
-      cases: [
-        makeCase({
-          id: "C-PA",
-          title: "Cliënt A",
-          status: "plaatsing",
-          wachttijd: 1,
-          workflowState: undefined,
-          placementRequestStatus: "APPROVED",
-        }),
-      ],
+      cases: [],
       loading: false,
       error: null,
       refetch: vi.fn(),
     });
     mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
 
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
+    render(
+      <PlacementTrackingPage
+        onCaseClick={vi.fn()}
+        onNavigateToMatching={vi.fn()}
+        onNavigateToAanbiederreacties={vi.fn()}
+      />,
+    );
 
-    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
-    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
-  });
-
-  it("infers Plan intake from arrangement end date without workflow_state", async () => {
-    const user = userEvent.setup();
-    mockUseCases.mockReturnValue({
-      cases: [
-        makeCase({
-          id: "C-PE",
-          title: "Cliënt E",
-          status: "plaatsing",
-          wachttijd: 1,
-          workflowState: undefined,
-          arrangementEndDate: "2027-08-15",
-        }),
-      ],
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-    mockUseProviders.mockReturnValue({ providers: [makeProvider()] });
-
-    render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
-
-    await user.click(screen.getByRole("tab", { name: /Lopend ·/ }));
-    expect(screen.getByRole("button", { name: "Plan intake" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
+    expect(screen.getByText("Geen openstaande plaatsingen")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
   });
 });

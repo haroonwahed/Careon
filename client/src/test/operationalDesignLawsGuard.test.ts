@@ -23,7 +23,7 @@ const QUEUE_PAGE_FILES = [
   "PlacementTrackingPage.tsx",
   "IntakeListPage.tsx",
   "SignalenPage.tsx",
-  "AanbiederBeoordelingPage.tsx",
+  "AanbiederreactiePage.tsx",
   "AssessmentQueuePage.tsx",
   "DocumentenPage.tsx",
   "PlacementTrackingPage.tsx",
@@ -36,7 +36,7 @@ const QUEUE_LIST_GUARD_FILES = [
   "PlacementTrackingPage.tsx",
   "IntakeListPage.tsx",
   "SignalenPage.tsx",
-  "AanbiederBeoordelingPage.tsx",
+  "AanbiederreactiePage.tsx",
   "SystemAwarenessPage.tsx",
 ];
 
@@ -211,4 +211,5 @@ describe("operationalDesignLawsGuard", () => {
     expect(tokens).toMatch(/filterQueue:/);
     expect(tokens).toMatch(/queueHeader:/);
   });
+
 });

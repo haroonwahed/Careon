@@ -123,7 +123,7 @@ test.describe("Care list visual regression (SPA)", () => {
 
   test("Casussen: operatieve werkrij (queue) + optionele dumps", async ({ page }) => {
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /^Aanmeldingen$/i })).toBeVisible({ timeout: 30_000 });
     const worklist = page.getByTestId("worklist");
     await expect(worklist).toHaveAttribute("data-layout", "queue");
     await maybeDump(page, "casussen-werkvoorraad-queue-desktop");
@@ -136,7 +136,7 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(page.getByTestId("worklist-pagination-hint")).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 900 });
-    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: /^Aanmeldingen$/i })).toBeVisible({ timeout: 30_000 });
     const firstRow = worklist.locator("[data-care-work-row]").first();
     await expect(firstRow).toBeVisible({ timeout: 30_000 });
     await expect(firstRow.locator('[data-component="care-meta-chip"]').first()).toBeVisible();
@@ -245,8 +245,8 @@ test.describe("Care list visual regression (SPA)", () => {
     await expect(page.getByPlaceholder(/Zoek casus, naam of type/i)).toBeVisible();
 
     await goSidebar(page, "Casussen");
-    await expect(page.getByRole("heading", { name: /^Aanvragen$/i })).toBeVisible();
-    await expect(page.getByPlaceholder(/Zoek aanvragen, regio's, aanbieders/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Aanmeldingen$/i })).toBeVisible();
+    await expect(page.getByPlaceholder(/Zoek in aanmeldingen/i)).toBeVisible();
 
     await goSidebar(page, "Matching");
     await expect(page.getByRole("heading", { name: /^Matching$/i })).toBeVisible();

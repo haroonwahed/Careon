@@ -12,6 +12,8 @@ This repository is **production-oriented infrastructure**, not a Figma-only prot
 
 **Doctrine:** [`docs/Careon_Operational_Constitution_v2.md`](docs/Careon_Operational_Constitution_v2.md) (export) · [`docs/Careon_Operational_Constitution_v2.docx`](docs/Careon_Operational_Constitution_v2.docx) (Word master) · [`docs/FOUNDATION_LOCK.md`](docs/FOUNDATION_LOCK.md) (states, API phases, endpoints, UI density).
 
+**UI contract:** [`docs/design/CAREON_UI_CONTRACT.md`](docs/design/CAREON_UI_CONTRACT.md) — hard visual rules for layout, spacing, radii, surfaces, and CTAs.
+
 **Agents / contributors:** [`AGENTS.md`](AGENTS.md).
 
 **Release evidence (GO/NO-GO):** [`docs/PILOT_PROOF_PACKAGE.md`](docs/PILOT_PROOF_PACKAGE.md) — includes the **default pilot rehearsal ritual** (GitHub Actions artifact + local `./scripts/run_full_pilot_rehearsal.sh`).

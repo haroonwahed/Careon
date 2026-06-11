@@ -60,9 +60,6 @@ export function AccessDeniedPage({ onGoDashboard, onGoCasussen }: AccessDeniedPa
       archetype="exception"
       className="pb-8"
       title={copy.title}
-      subtitle={copy.message}
-      subtitleInfoTestId="access-denied-info"
-      subtitleAriaLabel={`Uitleg: ${copy.title}`}
     >
       <ErrorState
         title={copy.title}

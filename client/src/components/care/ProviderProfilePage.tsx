@@ -252,7 +252,7 @@ export function ProviderProfilePage({
                 </h2>
                 
                 <MatchExplanation
-                  advisoryLabel={advisoryQualitativeFromNumericScore(matchScore) ?? "Beoordeling nodig"}
+                  advisoryLabel={advisoryQualitativeFromNumericScore(matchScore) ?? "Onderbouwing nodig"}
                   strengths={[
                     "Ervaring met vergelijkbare casussen",
                     "Aansluiting op gevraagd zorgtype",

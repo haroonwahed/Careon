@@ -185,7 +185,7 @@ describe("CoordinationControlCenter", () => {
     vi.clearAllMocks();
   });
 
-  it("loads the overview and renders Doorstroom, right rail, and Werkvoorraad", () => {
+  it("loads the overview and renders Doorstroom and Werkvoorraad", () => {
   mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -195,13 +195,12 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
     expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
     expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-right-rail")).toBeInTheDocument();
     expect(screen.getByText("Doorstroom")).toBeInTheDocument();
     expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(within(screen.getByTestId("coordination-uitvoerlijst")).getByText(/\d+\s+in coördinatie-aandacht/)).toBeInTheDocument();
+    expect(screen.getByText("Actuele casussen die jouw aandacht vragen.")).toBeInTheDocument();
   });
 
   it("enforces coordination screen responsibility boundaries", () => {
@@ -218,9 +217,8 @@ describe("CoordinationControlCenter", () => {
     expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
     expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Ververs" })).toBeInTheDocument();
     expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Open aanvragen \(1\)/i);
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los kritieke blokkades op/i);
 
     expect(screen.queryByText(/Casusdetail|Case detail/i)).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Genereer samenvatting" })).not.toBeInTheDocument();
@@ -237,26 +235,16 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    fireEvent.click(screen.getByTestId("coordination-page-info"));
-    expect(screen.getByRole("heading", { name: /^Operationele coördinatie$/i })).toBeInTheDocument();
-    expect(screen.getByText(/wat wacht, wie eigenaar is en wat de volgende actie is/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
+    expect(screen.getByText("Stuur op doorstroom, blokkades en urgente casussen.")).toBeInTheDocument();
     expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
     expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
+    expect(screen.queryByText("Eigenaarschap volgt de taak")).not.toBeInTheDocument();
   });
 
-  it("renders governance queues as Wachtrijen with explicit gemeentelijke validatie copy", () => {
+  it("renders the doorstroom board with the Regiekamer flow steps", () => {
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
-        governance_queues: {
-          wijkteam_intakes_needing_assessment: [],
-          zorgvraag_beoordeling_open: [],
-          cases_waiting_gemeente_validation: ["case-gemeente-1", "case-gemeente-2"],
-          budget_approvals_pending: [],
-          provider_transition_requests_pending: [],
-          evaluations_upcoming: [],
-          evaluations_overdue: [],
-          active_placements_care_intensity_changed: [],
-        },
       }),
       loading: false,
       error: null,
@@ -265,16 +253,10 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("coordination-governance-queues")).toBeInTheDocument();
-    expect(screen.getByText("Wachtrijen")).toBeInTheDocument();
-    expect(screen.queryByText("Levenscyclus")).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Open eerste casus in wachtrij Gemeentelijke validatie \(2\)/i }),
-    ).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-governance-gemeente")).toHaveAttribute(
-      "title",
-      expect.stringMatching(/matching gereed is en de gemeente het arrangement/i),
-    );
+    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
+    expect(screen.getByText("Doorstroom")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bekijk gehele stroom/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Matching.*Klaar om te starten.*1/i })).toBeInTheDocument();
   });
 
   it("renders the priority worklist in score order", () => {
@@ -290,8 +272,9 @@ describe("CoordinationControlCenter", () => {
     const rows = screen.getAllByTestId("coordination-worklist-item");
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("Casus A");
-    expect(rows[0]).toHaveTextContent("Kritiek");
-    expect(rows[0]).toHaveTextContent("Vul casus aan");
+    expect(rows[0]).toHaveTextContent("Spoed");
+    expect(rows[0]).toHaveTextContent("Wacht op gemeente");
+    expect(rows[0]).toHaveTextContent("Vraag reactie aan");
   });
 
   it("renders compact card content on each worklist card", () => {
@@ -306,11 +289,78 @@ describe("CoordinationControlCenter", () => {
 
     const first = screen.getAllByTestId("coordination-worklist-item")[0];
     expect(within(first).getByText("Casus A")).toBeInTheDocument();
-    expect(first).toHaveTextContent("Gemeente");
+    expect(first).toHaveTextContent("Regio ontbreekt");
     expect(first).toHaveTextContent("Samenvatting is compleet");
-    expect(first).toHaveTextContent("Wonen & verblijf");
-    expect(first).toHaveTextContent("Woonvoorziening");
-    expect(within(first).getByRole("button", { name: /Vul casus aan/i })).toBeInTheDocument();
+    expect(first).toHaveTextContent("2 dagen geleden");
+    expect(first).toHaveTextContent("Vraag reactie aan");
+    expect(within(first).getByRole("button", { name: /Vraag reactie aan/i })).toBeInTheDocument();
+  });
+
+  it("replaces visible gemeentevalidatie copy with neutral operational terminology", () => {
+    mockUseCoordinationDecisionOverview.mockReturnValue({
+      data: makeOverview({
+        items: [
+          makeItem({
+            case_id: 104,
+            case_reference: "C-104",
+            title: "Casus D",
+            phase: "matching",
+            next_best_action: {
+              action: "VALIDATE_MATCHING",
+              label: "Valideer match",
+              priority: "high",
+              reason: "Gemeentevalidatie is verplicht vóór versturen naar aanbieder.",
+            },
+            top_blocker: {
+              code: "GEMEENTE_VALIDATION_REQUIRED",
+              severity: "critical",
+              message: "Gemeentevalidatie is verplicht vóór versturen naar aanbieder.",
+              blocking_actions: ["VALIDATE_MATCHING"],
+            },
+            top_alert: null,
+            top_risk: null,
+            issue_tags: ["blockers"],
+          }),
+        ],
+      }),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
+
+    expect(screen.queryByText(/Gemeentevalidatie/i)).not.toBeInTheDocument();
+    const row = screen.getByTestId("coordination-worklist-item");
+    expect(row).toHaveTextContent("Goedkeuring nodig vóór versturen naar aanbieder.");
+    expect(within(row).getByRole("button", { name: /Controleer voorstel/i })).toBeInTheDocument();
+  });
+
+  it("uses an operational fallback when recent activity is unavailable", () => {
+    mockUseCoordinationDecisionOverview.mockReturnValue({
+      data: makeOverview({
+        generated_at: "",
+        items: [
+          makeItem({
+            case_id: 105,
+            case_reference: "C-105",
+            title: "Casus E",
+            phase: "matching",
+            hours_in_current_state: null,
+            age_hours: null,
+          }),
+        ],
+      }),
+      loading: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
+
+    const row = screen.getByTestId("coordination-worklist-item");
+    expect(row).toHaveTextContent("Geen recente activiteit");
+    expect(within(row).queryByText("Onbekend")).not.toBeInTheDocument();
   });
 
   it("never renders mixed summary CTA labels", () => {
@@ -402,8 +452,8 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Vraag reactie aanbieder" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Vul casus aan" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Vraag reactie aan" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Maak casus compleet" })).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /Zorgvraag wordt automatisch verwerkt/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(/Generatie vereist/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Samenvatting wordt verwerkt/i).length).toBeGreaterThan(0);
@@ -605,7 +655,7 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    expect(screen.getByTestId("coordination-calm-state")).toHaveTextContent("Geen operationele blokkades");
+    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "stable");
     expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getAllByTestId("coordination-worklist-item")).toHaveLength(2);
     fireEvent.click(
@@ -659,10 +709,10 @@ describe("CoordinationControlCenter", () => {
 
     expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "stable");
     expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-phase-column-plaatsing_intake")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-phase-column-aanbiederreactie")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-    expect(screen.getByRole("option", { name: "Aanbieder reacties" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Aanbiederreactie" })).toBeInTheDocument();
   });
 
   it("renders crisis dominant NBA with open-requests emphasis", () => {
@@ -676,7 +726,7 @@ describe("CoordinationControlCenter", () => {
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Open aanvragen \(1\)/i);
+    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los kritieke blokkades op/i);
   });
 
   it("renders critical alert regions with metric, text block, and actions", () => {
@@ -689,11 +739,10 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByTestId("coordination-dominant-action-metric")).toHaveTextContent("1");
     expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent(/verhoogde coördinatie-aandacht/i);
-    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent("1 casus vraagt directe afstemming");
-    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("Bekijk kritieke aanvragen");
-    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("Open aanvragen (1)");
+    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent("1 casus blokkeert de doorstroom");
+    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("Los kritieke blokkades op");
+    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("SLA-signalen bekijken");
   });
 
   it("places search and filters inside the Werkvoorraad section header", () => {
@@ -709,7 +758,7 @@ describe("CoordinationControlCenter", () => {
     const workSection = screen.getByTestId("coordination-uitvoerlijst");
     expect(within(workSection).getByText("Werkvoorraad")).toBeInTheDocument();
     expect(within(workSection).getByTestId("care-search-control-stack")).toBeInTheDocument();
-    expect(within(workSection).getByRole("searchbox", { name: /Zoek aanvragen, regio's, aanbieders/i })).toBeInTheDocument();
+    expect(within(workSection).getByRole("searchbox", { name: /Zoek casussen, regio's, aanbieders/i })).toBeInTheDocument();
     expect(within(workSection).getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
   });
 
@@ -723,10 +772,10 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const casusCard = screen.getByTestId("coordination-phase-column-casus_gestart");
-    expect(within(casusCard).getAllByText("Aanmelding & zorgvraag")).toHaveLength(1);
+    const casusCard = screen.getByTestId("coordination-phase-column-aanmelding");
+    expect(within(casusCard).getAllByText("Aanmelding")).toHaveLength(1);
     expect(within(casusCard).getByText("0")).toBeInTheDocument();
-    expect(within(casusCard).queryByText("Matching & validatie")).not.toBeInTheDocument();
+    expect(within(casusCard).queryByText("Aanbiederreactie")).not.toBeInTheDocument();
   });
 
   it("supplemental NBA link navigates to /casussen with a critical focus hand-off", () => {
@@ -746,11 +795,8 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    const link = screen.getByTestId("coordination-dominant-cases-link");
-    expect(link).toHaveTextContent(/Bekijk kritieke aanvragen \(1\)/);
-
-    fireEvent.click(link);
-
+    expect(screen.queryByTestId("coordination-dominant-cases-link")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("coordination-dominant-primary-cta"));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
     expect(window.sessionStorage.getItem("careon.casussen.preferredFocus")).toBe("critical");
 
@@ -827,7 +873,7 @@ describe("CoordinationControlCenter", () => {
     expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
   });
 
-  it("surfaces urgency applications in the coordination header summary", () => {
+  it("keeps urgency applications out of the Regiekamer hero copy", () => {
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
         totals: {
@@ -847,7 +893,8 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expect(screen.getByText(/Urgentie aangevraagd: 3/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Urgentie aangevraagd: 3/i)).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
   });
 
   it("clicking a quick-link phase row applies the keten filter", async () => {
@@ -861,10 +908,10 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByTestId("coordination-quick-phase-klaar_voor_matching"));
+    await user.click(screen.getByTestId("coordination-phase-column-matching"));
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
 
-    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("klaar_voor_matching");
+    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("matching");
   });
 
   it("clicking a phase board column applies the phase filter", async () => {
@@ -878,10 +925,10 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByTestId("coordination-phase-column-in_beoordeling"));
+    await user.click(screen.getByTestId("coordination-phase-column-aanbiederreactie"));
     await user.click(screen.getByRole("button", { name: /^Filters$/i }));
 
-    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("in_beoordeling");
+    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("aanbiederreactie");
   });
 
   it("filters coordination rows by zorgbehoefte categorie and subcategorie", async () => {

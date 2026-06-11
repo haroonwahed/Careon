@@ -1,14 +1,12 @@
 import { useMemo, useState } from "react";
-import { CheckCircle2, Clock3, Loader2, Send, XCircle } from "lucide-react";
+import { Clock3, Loader2, Send, XCircle } from "lucide-react";
 import { apiClient } from "../../lib/apiClient";
 import { useCases, type SpaCase } from "../../hooks/useCases";
 import { Button } from "../ui/button";
 import {
   CareAttentionBar,
   CareQueueInlineAction,
-  CareContextHint,
   CareDominantStatus,
-  CareInfoPopover,
   CareMetaChip,
   CareMetricBadge,
   CareOperationalQueueHeader,
@@ -23,7 +21,6 @@ import {
   EmptyState,
   ErrorState,
   LoadingState,
-  PrimaryActionButton,
 } from "./CareDesignPrimitives";
 import { cn } from "../ui/utils";
 
@@ -68,8 +65,8 @@ function requestBadge(view: IntakeListPageProps["view"]): { title: string; descr
   switch (view) {
     case "intake":
       return {
-        title: "Intake en plaatsing",
-        description: "Geaccepteerde casussen in plaatsing of intake.",
+        title: "Intake",
+        description: "Plan en volg intakes na bevestigde plaatsing.",
       };
     case "responses":
       return {
@@ -78,8 +75,8 @@ function requestBadge(view: IntakeListPageProps["view"]): { title: string; descr
       };
     default:
       return {
-        title: "Nieuwe casussen",
-        description: "Beoordeel nieuwe verzoeken.",
+        title: "Aanvragen",
+        description: "Nieuwe verzoeken die opvolging vragen.",
       };
   }
 }
@@ -103,11 +100,11 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   const visibleCases = view === "requests" ? pendingRequests : intakeCases;
   const attentionMessage =
     feedback ??
-    (pendingRequests.length > 0
-      ? pendingRequests.length === 1
-        ? "1 open casus — beoordeling nodig"
-        : `${pendingRequests.length} open casussen — beoordeling nodig`
-      : "Geen open casussen");
+    (visibleCases.length > 0
+      ? visibleCases.length === 1
+        ? "1 casus wacht op opvolging"
+        : `${visibleCases.length} casussen wachten op opvolging`
+      : "Geen intakes om op te volgen");
 
   const handleDecision = async (caseId: string, status: "ACCEPTED" | "REJECTED") => {
     if (submittingCaseId) {
@@ -138,34 +135,20 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
     <CarePageScaffold
       archetype="queue"
       className="pb-8"
-      title={
-        <span className="inline-flex flex-wrap items-center gap-2">
-          {summary.title}
-          <CareInfoPopover ariaLabel="Intake-overzicht" testId="intake-page-info">
-            <p className="text-muted-foreground">{summary.description}</p>
-          </CareInfoPopover>
-        </span>
-      }
-      metric={
-        <CareMetricBadge>
-          {visibleCases.length} zichtbaar · {pendingRequests.length} open{" "}
-          {pendingRequests.length === 1 ? "casus" : "casussen"} · {intakeCases.length} plaatsing/intake
-        </CareMetricBadge>
-      }
+      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
+      title={summary.title}
+      subtitle={summary.description}
+      metric={<CareMetricBadge>{visibleCases.length} zichtbaar</CareMetricBadge>}
       dominantAction={
-        <CareAttentionBar
-          layout="compact"
-          tone={pendingRequests.length > 0 ? "warning" : "info"}
-          icon={<Send size={16} />}
-          message={attentionMessage}
-          action={
-            visibleCases.length > 0 ? (
-              <CareQueueInlineAction onClick={() => onCaseClick(visibleCases[0].id)}>
-                Bekijk eerste casus
-              </CareQueueInlineAction>
-            ) : undefined
-          }
-        />
+        visibleCases.length > 0 ? (
+          <CareAttentionBar
+            layout="compact"
+            tone="warning"
+            icon={<Send size={16} />}
+            message={attentionMessage}
+            action={<CareQueueInlineAction onClick={() => onCaseClick(visibleCases[0].id)}>Bekijk eerste casus</CareQueueInlineAction>}
+          />
+        ) : undefined
       }
       actions={
         <Button variant="outline" onClick={() => void refetch()}>
@@ -210,8 +193,8 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
 
         {!loading && !error && visibleCases.length === 0 && (
           <EmptyState
-            title={view === "requests" ? "Geen open casussen" : "Geen casussen in dit overzicht"}
-            copy={view === "requests" ? "Pas de zoekopdracht of kom later terug." : "Geen plaatsingen of intakes die aan dit filter voldoen."}
+            title="Geen intakes om op te volgen"
+            copy="Er zijn geen geplande of openstaande intakes die nu opvolging vragen."
           />
         )}
 
@@ -261,7 +244,11 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                       }
                       status={
                         <CareDominantStatus>
-                          {isPending ? "In beoordeling" : "Intake / plaatsing"}
+                          {view === "intake"
+                            ? (caseItem.intakeStartDate ? "Intake gepland" : "Plaatsing bevestigd")
+                            : isPending
+                              ? "In beoordeling"
+                              : "Intake / plaatsing"}
                         </CareDominantStatus>
                       }
                       time={
@@ -310,12 +297,6 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
           </CareWorkListCard>
         )}
       </CareWorkspaceSection>
-
-      <CareContextHint
-        icon={<CheckCircle2 className="text-primary" size={20} />}
-        title="Workflow"
-        copy="Accepteren zet door naar plaatsing en intake. Afwijzen stuurt de casus terug naar matching."
-      />
     </CarePageScaffold>
   );
 }

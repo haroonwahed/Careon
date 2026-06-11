@@ -444,7 +444,7 @@ function renderCasePhase(
     case "intake_initial":
       return <IntakeInitialPanel casus={casus} state={state} onAction={onAction} />;
     case "beoordeling":
-      return <AanbiederBeoordelingPanel casus={casus} state={state} onAction={onAction} />;
+      return <AanbiederreactiePanel casus={casus} state={state} onAction={onAction} />;
     case "matching":
       return <MatchingPanel casus={casus} state={state} role={role} onAction={onAction} />;
     case "plaatsing":
@@ -504,7 +504,7 @@ function IntakeInitialPanel({
 
 // ── Phase: beoordeling ────────────────────────────────────────────────────────
 
-function AanbiederBeoordelingPanel({
+function AanbiederreactiePanel({
   casus,
   state,
   onAction,
@@ -720,7 +720,7 @@ function ProviderCard({
   isSelected: boolean;
   onSelect: () => void;
 }) {
-  const advisoryLabel = advisoryQualitativeFromNumericScore(result.score) ?? "Beoordeling nodig";
+  const advisoryLabel = advisoryQualitativeFromNumericScore(result.score) ?? "Onderbouwing nodig";
 
   const badgeColor =
     result.recommendationType === "perfect" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
@@ -791,7 +791,7 @@ function PlaatsingPanel({
 
   const provider = providers.find(p => p.id === placement.providerId);
   const matchResult = casus.matchResults.find(r => r.providerId === placement.providerId);
-  const advisoryLabel = advisoryQualitativeFromNumericScore(matchResult?.score) ?? "Beoordeling nodig";
+  const advisoryLabel = advisoryQualitativeFromNumericScore(matchResult?.score) ?? "Onderbouwing nodig";
 
   return (
     <div className="space-y-3">

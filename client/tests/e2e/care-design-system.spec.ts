@@ -60,7 +60,7 @@ test.describe("Care design system (SPA)", () => {
   test("shell + landmarks: target gemeente routes stay inside unified chrome", async ({ page }) => {
     const routes: Array<{ nav: string; heading: RegExp | string }> = [
       { nav: "Coördinatie", heading: /Coördinatie/i },
-      { nav: "Aanvragen", heading: /^Aanvragen$/i },
+      { nav: "Aanmeldingen", heading: /^Aanmeldingen$/i },
       { nav: "Matching", heading: /^Matching$/i },
       { nav: "Acties", heading: /^Acties$/i },
       { nav: "Signalen", heading: /^Signalen$/i },
@@ -106,7 +106,7 @@ test.describe("Care design system (SPA)", () => {
 
   test("shared CareSearchFiltersBar on list-heavy pages (incl. Zorgaanbieders)", async ({ page }) => {
     const pages: Array<{ nav: string; heading: RegExp | string }> = [
-      { nav: "Aanvragen", heading: /^Aanvragen$/i },
+      { nav: "Aanmeldingen", heading: /^Aanmeldingen$/i },
       { nav: "Matching", heading: /^Matching$/i },
       { nav: "Acties", heading: /^Acties$/i },
       { nav: "Signalen", heading: /^Signalen$/i },
@@ -128,10 +128,10 @@ test.describe("Care design system (SPA)", () => {
     await expect(page.getByRole("button", { name: /Meer filters/i })).toBeVisible();
   });
 
-  test("operational rows: Aanvragen + Matching + Coordination + Signalen share work-row contract", async ({ page }) => {
+  test("operational rows: Aanmeldingen + Matching + Coordination + Signalen share work-row contract", async ({ page }) => {
     await assertOperationalRowContract(page);
 
-    await goSidebar(page, "Aanvragen");
+    await goSidebar(page, "Aanmeldingen");
     await expect(page.getByTestId("worklist")).toBeVisible({ timeout: 30_000 });
     await assertOperationalRowContract(page);
 
@@ -149,9 +149,9 @@ test.describe("Care design system (SPA)", () => {
   });
 
   test("casus workspace: next-best-action + single context panel", async ({ page }) => {
-    await goSidebar(page, "Aanvragen");
-    await expect(page.getByRole("heading", { name: /^Aanvragen$/i, level: 1 })).toBeVisible({ timeout: 30_000 });
-    // Scope to Aanvragen worklist — Coördinatie may surface the same stub casus in embedded rows.
+    await goSidebar(page, "Aanmeldingen");
+    await expect(page.getByRole("heading", { name: /^Aanmeldingen$/i, level: 1 })).toBeVisible({ timeout: 30_000 });
+    // Scope to Aanmeldingen worklist — Coördinatie may surface the same stub casus in embedded rows.
     const row = page
       .getByTestId("worklist")
       .locator("[data-care-work-row]")

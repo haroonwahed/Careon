@@ -115,9 +115,6 @@ describe("ZorgaanbiedersPage operatieve aandacht action", () => {
     render(<ZorgaanbiedersPage theme="light" />);
 
     expect(screen.queryByRole("button", { name: "Pagina-uitleg" })).not.toBeInTheDocument();
-    expect(
-      screen.queryByText("Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."),
-    ).not.toBeInTheDocument();
   });
 
   it("keeps split-view count copy consistent between list and map headers", () => {

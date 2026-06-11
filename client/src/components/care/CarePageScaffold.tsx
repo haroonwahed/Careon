@@ -16,10 +16,6 @@ export type CarePageScaffoldProps = {
   /** Small label above the title row (optional). */
   eyebrow?: ReactNode;
   titleClassName?: string;
-  subtitleClassName?: string;
-  /** Optional test id for the page subtitle info trigger (when `subtitle` is set). */
-  subtitleInfoTestId?: string;
-  subtitleAriaLabel?: string;
   /** Right column on `CareUnifiedHeader` (refresh, etc.). */
   actions?: ReactNode;
   /** Status/metric row below the title row (e.g. `CareMetricBadge`) — same as `CareUnifiedHeader.metric`. */
@@ -28,7 +24,11 @@ export type CarePageScaffoldProps = {
   dominantAction?: ReactNode;
   /** Block KPI strip below dominant action, above filters (e.g. coördinatie `metric-strip`). */
   kpiStrip?: ReactNode;
+  /** Workflow strip between attention and filters (e.g. phase board or canonical flow). */
+  workflow?: ReactNode;
   filters?: ReactNode;
+  /** Optional subordinate detail surface below the main work surface. */
+  detail?: ReactNode;
   /** Collapsible or static insights below main content. */
   insights?: ReactNode;
   children: ReactNode;
@@ -47,13 +47,16 @@ export function CarePageScaffold({
   testId = "care-page-scaffold",
   className,
   title,
+  subtitle,
   eyebrow,
   titleClassName,
   actions,
   metric,
   dominantAction,
   kpiStrip,
+  workflow,
   filters,
+  detail,
   insights,
   children,
 }: CarePageScaffoldProps) {
@@ -72,6 +75,7 @@ export function CarePageScaffold({
       ) : null}
       <CareUnifiedHeader
         title={title}
+        subtitle={subtitle}
         metric={metric}
         actions={actions}
         titleClassName={titleClassName}
@@ -81,7 +85,14 @@ export function CarePageScaffold({
 
   return (
     <div data-testid={testId} data-care-page-archetype={archetype} className="contents">
-      <CarePageTemplate className={className} header={headerNode} attention={attention} filters={filters}>
+      <CarePageTemplate
+        className={className}
+        header={headerNode}
+        attention={attention}
+        workflow={workflow}
+        filters={filters}
+        detail={detail}
+      >
         <div data-testid="care-page-content">{children}</div>
         {insights ? <div data-testid="care-page-insights">{insights}</div> : null}
       </CarePageTemplate>

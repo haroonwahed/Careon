@@ -216,7 +216,7 @@ describe("CaseExecutionPage workspace", () => {
     expect(screen.queryByText("Alerts")).not.toBeInTheDocument();
     expect(screen.queryByText("SLA")).not.toBeInTheDocument();
     expect(screen.queryByText("Afwijzingen")).not.toBeInTheDocument();
-    expect(screen.getByText("Plaatsing & intake")).toBeInTheDocument();
+    expect(screen.getByText("Plaatsing")).toBeInTheDocument();
   });
 
   it("maps workflow state to decision UI phase and surfaces NBA reason", async () => {
@@ -233,10 +233,10 @@ describe("CaseExecutionPage workspace", () => {
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
-    expect(await screen.findByText("Matching & validatie")).toBeInTheDocument();
+    expect(await screen.findByRole("tab", { name: "Matching" })).toBeInTheDocument();
     expect(screen.queryByTestId("next-best-action-reason")).not.toBeInTheDocument();
     const stepper = screen.getByTestId("casus-flow-progress");
-    const matchingStep = within(stepper).getByText("Matching & validatie").closest("button");
+    const matchingStep = within(stepper).getByRole("button", { name: /Matching/i });
     expect(matchingStep).toHaveClass("care-flow-step__card--active");
   });
 

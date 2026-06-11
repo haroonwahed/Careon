@@ -73,9 +73,9 @@ describe("deriveAttentionSignals", () => {
     expect(sigs.find((s) => s.id === "rejections")?.count).toBe(2);
   });
 
-  it("maps matching-urgent filter to alerts+klaar_voor_matching (view, not execution)", () => {
+  it("maps matching-urgent filter to alerts+matching (view, not execution)", () => {
     const sigs = deriveAttentionSignals([], totals({}), 2);
-    expect(sigs[0]?.filter).toEqual({ issue: "alerts", phase: "klaar_voor_matching", priority: "all" });
+    expect(sigs[0]?.filter).toEqual({ issue: "alerts", phase: "matching", priority: "all" });
   });
 });
 
@@ -89,10 +89,10 @@ describe("derivePhaseBoard", () => {
     ];
     const board = derivePhaseBoard(rows, 2);
     expect(board).toHaveLength(REGIEKAMER_FLOW_PHASES.length);
-    const m = board.find((c) => c.phase === "klaar_voor_matching");
+    const m = board.find((c) => c.phase === "matching");
     expect(m?.count).toBe(3);
     expect(m?.sample).toHaveLength(2);
     const dom = getDominantPhaseColumn(board);
-    expect(dom?.phase).toBe("klaar_voor_matching");
+    expect(dom?.phase).toBe("matching");
   });
 });

@@ -57,8 +57,8 @@ describe("IntakeListPage", () => {
 
     render(<IntakeListPage onCaseClick={vi.fn()} view="intake" />);
 
-    expect(screen.getByRole("heading", { name: "Intake en plaatsing" })).toBeInTheDocument();
-    expect(screen.getByText("Geen casussen in dit overzicht")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Intake" })).toBeInTheDocument();
+    expect(screen.getByText("Geen intakes om op te volgen")).toBeInTheDocument();
   });
 
   it("lists placement cases with Bekijk casus", () => {
@@ -86,7 +86,7 @@ describe("IntakeListPage", () => {
 
     render(<IntakeListPage onCaseClick={vi.fn()} view="requests" role="gemeente" />);
 
-    expect(screen.getByRole("heading", { name: "Nieuwe casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Aanvragen" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Accepteren" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Afwijzen" })).not.toBeInTheDocument();
   });

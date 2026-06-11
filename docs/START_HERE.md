@@ -39,4 +39,6 @@ Supporting: [`ZORG_OS_FOUNDATION_APPROACH.md`](./ZORG_OS_FOUNDATION_APPROACH.md)
 - [`PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md`](./PRODUCT_ENGINEERING_BACKLOG_PRIORITIZED.md) — **single prioritized queue** (Must/Should/Could/Won’t + top 15).
 - [`ACTOR_PROFILES_ROADMAP.md`](./ACTOR_PROFILES_ROADMAP.md) — Aanmelder vs `WorkflowRole` alignment.
 - [`FRONTEND_UI_MODE_AUDIT.md`](./FRONTEND_UI_MODE_AUDIT.md) — Metric strip / NBA / timeline placement rules.
+- [`CAREON_DESIGN_LAW_AUDIT_AND_ROADMAP.md`](./CAREON_DESIGN_LAW_AUDIT_AND_ROADMAP.md) — current-platform audit against the CareOn Design Laws plus the implementation roadmap.
+- [`CAREON_DESIGN_LAW_BACKLOG.md`](./CAREON_DESIGN_LAW_BACKLOG.md) — ordered execution backlog derived from the design-law roadmap.
 - [`MATCHING_EXPLAINABILITY.md`](./MATCHING_EXPLAINABILITY.md) — Advisory matching, factors, rejection signals.

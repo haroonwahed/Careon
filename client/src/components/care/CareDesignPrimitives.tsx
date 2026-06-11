@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import { CARE_RHYTHM } from "../../lib/operationalRhythm";
-import { CareInfoPopover } from "./CareUnifiedPage";
+import { CareAttentionSurface, CareInfoPopover } from "./CareUnifiedPage";
 import { CareEmptyState } from "./CareSurface";
 import { CareAppFrame } from "./CareAppFrame";
 import { CarePageHeader } from "./CareSurface";
@@ -30,6 +30,7 @@ export { CARE_RHYTHM } from "../../lib/operationalRhythm";
 export {
   CARE_UNIFIED_PAGE_STACK,
   CareAttentionBar,
+  CareAttentionSurface,
   CareContextHint,
   CareInfoPopover,
   CareDominantStatus,
@@ -166,19 +167,15 @@ export function BlockingNotice({
   className?: string;
 }) {
   return (
-    <div
+    <CareAttentionSurface
       role="alert"
-      className={cn(
-        "flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3",
-        className,
-      )}
-    >
-      <AlertTriangle size={16} className="mt-0.5 shrink-0 text-destructive" aria-hidden />
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-foreground">{title}</p>
-        <p className="mt-1 text-sm text-destructive/90">{message}</p>
-      </div>
-    </div>
+      variant="critical"
+      density="compact"
+      className={cn(className)}
+      title={title}
+      message={message}
+      icon={<AlertTriangle size={16} className="text-destructive" aria-hidden />}
+    />
   );
 }
 
@@ -460,6 +457,7 @@ export function CareAlertCard({
 export function CareFlowStepCard({
   icon,
   metric,
+  subtitle,
   title,
   active = false,
   completed = false,
@@ -468,6 +466,7 @@ export function CareFlowStepCard({
 }: {
   icon: ReactNode;
   metric: ReactNode;
+  subtitle?: ReactNode;
   title: ReactNode;
   active?: boolean;
   completed?: boolean;
@@ -485,12 +484,19 @@ export function CareFlowStepCard({
         completed && !active && "care-flow-step__card--completed",
       )}
     >
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
-          <span className="shrink-0 text-muted-foreground" aria-hidden>
+      <div className="flex min-w-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2">
+          <span className="mt-0.5 shrink-0 text-muted-foreground" aria-hidden>
             {icon}
           </span>
-          <span className="truncate text-[13px] font-medium leading-tight text-foreground">{title}</span>
+          <div className="min-w-0">
+            <span className="block truncate text-[13px] font-medium leading-tight text-foreground">{title}</span>
+            {subtitle != null ? (
+              <span className="mt-0.5 block text-[10px] font-medium leading-none text-primary">
+                {subtitle}
+              </span>
+            ) : null}
+          </div>
         </div>
         {metric != null ? (
           <span className={cn("shrink-0 text-[16px] font-semibold leading-none tabular-nums", active ? "text-foreground" : "text-muted-foreground")}>
@@ -584,12 +590,12 @@ export function CareWorkListCard({
       className={cn(
         CARE_RHYTHM.queueShell,
         // `min-w-0` + horizontal scroll: wide grid rows (e.g. Werkvoorraad min-w-[980px]) stay usable beside rails / narrow main columns.
-        "overflow-x-auto rounded-[22px] border border-border/60 bg-card/45 shadow-sm surface-workspace",
+        "overflow-x-auto rounded-[22px] border border-border/60 bg-card/45 shadow-sm",
         className,
       )}
     >
       {header ? (
-        <div className={cn(CARE_RHYTHM.queueHeader, "min-w-0 surface-workspace-header")}>{header}</div>
+        <div className={cn(CARE_RHYTHM.queueHeader, "min-w-0 border-b border-border/30 bg-transparent")}>{header}</div>
       ) : null}
       <div className={cn(CARE_RHYTHM.queueRows)}>{children}</div>
     </div>

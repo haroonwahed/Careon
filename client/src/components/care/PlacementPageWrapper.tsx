@@ -10,9 +10,10 @@ import { useProviders } from "../../hooks/useProviders";
 
 interface PlacementPageWrapperProps {
   onNavigateToMatching?: () => void;
+  onNavigateToAanbiederreacties?: () => void;
 }
 
-export function PlacementPageWrapper({ onNavigateToMatching }: PlacementPageWrapperProps) {
+export function PlacementPageWrapper({ onNavigateToMatching, onNavigateToAanbiederreacties }: PlacementPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const { providers } = useProviders({ q: "" });
 
@@ -43,5 +44,11 @@ export function PlacementPageWrapper({ onNavigateToMatching }: PlacementPageWrap
   }
 
   // Otherwise show the list view
-  return <PlacementTrackingPage onCaseClick={handleCaseClick} onNavigateToMatching={onNavigateToMatching} />;
+  return (
+    <PlacementTrackingPage
+      onCaseClick={handleCaseClick}
+      onNavigateToMatching={onNavigateToMatching}
+      onNavigateToAanbiederreacties={onNavigateToAanbiederreacties}
+    />
+  );
 }

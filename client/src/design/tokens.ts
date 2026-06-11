@@ -80,7 +80,7 @@ export const tokens = {
     textPrimary: "#E8ECF3",
     textSecondary: "#94A3B8",
 
-    accentPrimary: "#7C5CFF",
+    accentPrimary: "#7C4DFF",
     accentSecondary: "#8B7CFF",
     accentWarning: "#D9A441",
     accentDanger: "#C96B6B",
@@ -88,7 +88,7 @@ export const tokens = {
     accentInfo: "#6B9AD4",
 
     /** Casussen list chrome — aligned with operational shell (accent used sparingly). */
-    casussenAccent: "#7C5CFF",
+    casussenAccent: "#7C4DFF",
     casussenSurfaceRaised: "#1B2236",
     casussenPageChrome: "#0B1020",
     casussenMetricBg: "rgba(21, 27, 46, 0.92)",
@@ -96,6 +96,22 @@ export const tokens = {
     casussenMetricText: "#E8ECF3",
     casussenMetricDot: "#6B9AD4",
     casussenUrgencyNormal: "#3FA37C",
+  },
+
+  visualContract: {
+    sidebarWidth: "280px",
+    topbarHeight: "72px",
+    mainContentMaxWidth: "none",
+    pageHorizontalPadding: "32px",
+    pageTopPadding: "56px",
+    cardRadius: "24px",
+    sectionCardRadius: "22px",
+    primaryCta: "#7C4DFF",
+    warningCta: "#F5A900",
+    background: "#070B18",
+    surface1: "#0E1424",
+    surface2: "#121A2C",
+    border: "rgba(148,163,184,0.12)",
   },
 
   radius: {

@@ -1054,7 +1054,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
             {blockedTimeline.map((item, index) => (
               <div key={`${item.title}-${index}`} className="flex items-start gap-3">
                 <div className="mt-1 flex flex-col items-center">
-                  <span className={`size-3 rounded-full ${index === 0 ? "bg-primary shadow-[0_0_0_4px_rgba(124,92,255,0.18)]" : "bg-muted-foreground/60"}`} />
+                  <span className={`size-3 rounded-full ${index === 0 ? "bg-primary ring-4 ring-primary/20" : "bg-muted-foreground/60"}`} />
                   {index < blockedTimeline.length - 1 ? <span className="h-10 w-px bg-border/70" /> : null}
                 </div>
                 <div className="min-w-0 flex-1">

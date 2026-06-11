@@ -40,7 +40,7 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
   await expect(page.getByRole("heading", { name: "Coördinatie" })).toBeVisible();
   await expect(page.getByTestId("care-sidebar")).toBeVisible();
 
-  await clickSidebarNav(page, /Aanvragen/);
+  await clickSidebarNav(page, /Aanmeldingen/);
   await expect(page.getByTestId("casussen-uitvoerlijst")).toBeVisible();
 
   await page.goto(`${GOLDEN_PATH_BASE_URL}/care/cases/${seeded.goldenCaseId}/`);

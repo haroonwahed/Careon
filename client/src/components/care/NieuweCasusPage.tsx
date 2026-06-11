@@ -1301,7 +1301,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </div>
       ) : null}
 
-      <section className="rounded-[20px] border border-border/70 bg-panel/70 p-3 shadow-sm backdrop-blur-sm md:p-4">
+      <section className="rounded-[22px] border border-border/70 bg-panel/70 p-3 shadow-sm backdrop-blur-sm md:p-4">
         <div className="space-y-3">
           <nav className="grid grid-cols-1 gap-2 md:grid-cols-3" aria-label="Wizard stappen">
             {stepMeta.map((step) => {
@@ -1310,7 +1310,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               const isCompleted = isFinalStep || currentStep > step.id;
               const isClickable = isCompleted || isActive;
               const stepToneClass = isActive
-                ? "border-primary/35 bg-primary/10 text-foreground shadow-[0_0_0_1px_rgba(124,90,255,0.08)]"
+                ? "border-primary/35 bg-primary/10 text-foreground ring-1 ring-primary/20"
                 : isCompleted
                   ? "border-emerald-500/20 bg-emerald-500/8 text-foreground hover:border-emerald-400/30"
                   : "border-border/70 bg-card/20 text-muted-foreground hover:border-primary/20 hover:bg-card/30 hover:text-foreground";

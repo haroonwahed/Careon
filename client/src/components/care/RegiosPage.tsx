@@ -210,9 +210,6 @@ export function RegiosPage({
       archetype="network"
       className="pb-8"
       title="Regio's"
-      subtitleInfoTestId="regios-page-info"
-      subtitleAriaLabel="Uitleg regio-overzicht"
-      subtitle="Structuur- en capaciteitsoverzicht van regio's. Gebruik signalen voor druk, tekort en herverdeling."
       dominantAction={
         <CareAttentionBar
           tone={systemState.criticalRegions.length > 0 || systemState.shortageRegions.length > 0 ? "critical" : "warning"}

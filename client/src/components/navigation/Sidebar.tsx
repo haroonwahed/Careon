@@ -66,14 +66,14 @@ const gemeenteNavigation: NavSection[] = [
     items: [
       {
         id: "coordination",
-        label: "Coördinatie",
+        label: "Regiekamer",
         icon: LayoutDashboard,
         href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
-        label: "Aanvragen",
+        label: "Aanmeldingen",
         icon: FileText,
         href: "/casussen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -235,14 +235,14 @@ const adminNavigation: NavSection[] = [
     items: [
       {
         id: "coordination",
-        label: "Coördinatie",
+        label: "Regiekamer",
         icon: LayoutDashboard,
         href: SPA_DASHBOARD_URL,
         surfaceStatus: "ACTIVE_PRODUCT",
       },
       {
         id: "casussen",
-        label: "Aanvragen",
+        label: "Aanmeldingen",
         icon: FileText,
         href: "/casussen",
         surfaceStatus: "ACTIVE_PRODUCT",
@@ -451,8 +451,8 @@ export function Sidebar({
       <div className="h-16 flex items-center justify-between px-4 border-b border-border">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/80 bg-muted/30 text-foreground">
-              <Shield size={20} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-violet-500/25 bg-violet-500/15 text-violet-400 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.12)]">
+              <Shield size={20} strokeWidth={2.1} />
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground">CareOn</h1>

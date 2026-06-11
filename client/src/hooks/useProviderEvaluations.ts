@@ -1,10 +1,10 @@
 /**
- * useProviderEvaluations — manages provider evaluation (Aanbieder Beoordeling) records.
+ * useProviderEvaluations — manages provider response (Aanbiederreactie) records.
  *
  * Business rules:
  * - Gemeente creates a case, performs matching, selects a provider, then sends the case
- *   to the provider for beoordeling (Aanbieder Beoordeling).
- * - Only the zorgaanbieder performs the actual beoordeling (accept/reject/request info).
+ *   to the provider for response handling.
+ * - Only the zorgaanbieder performs the actual response (accept/reject/request info).
  * - Gemeente monitors the outcome but never decides.
  *
  * The hook falls back gracefully when the /care/api/provider-evaluations/ endpoint is not
@@ -179,7 +179,7 @@ export function useProviderEvaluations(): UseProviderEvaluationsResult {
       })
       .catch(() => {
         // Endpoint not yet deployed — degrade gracefully.
-        // AanbiederBeoordelingPage falls back to useCases() for display.
+        // AanbiederreactiePage falls back to useCases() for display.
         if (!cancelled) {
           setEvaluations([]);
           setTotalCount(0);

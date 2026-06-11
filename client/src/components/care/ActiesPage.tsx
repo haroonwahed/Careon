@@ -1,44 +1,34 @@
-import { type MouseEvent, type ReactNode, useMemo, useState } from "react";
-import { Calendar, ClipboardList, Clock, ShieldAlert } from "lucide-react";
+import { type ReactNode, useMemo, useState } from "react";
+import { AlertCircle, ArrowRight } from "lucide-react";
 import { Button } from "../ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
 import { cn } from "../ui/utils";
 import { useTasks, type SpaTask } from "../../hooks/useTasks";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import {
-  countOpenCareTasks,
   isOpenCareTask,
   normalizeTaskPriority,
-  sortTasksByCaseId,
-  sortTasksByDueDate,
   sortTasksByUrgency,
   type TaskPriorityKey,
 } from "../../lib/actiesTaskSemantics";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
-  CareAttentionBar,
-  CareQueueInlineAction,
+  CareAlertCard,
   CareDominantStatus,
   CareMetaChip,
-  CareMetricBadge,
   CarePageScaffold,
+  CareOperationalQueueHeader,
+  CareSearchFiltersBar,
+  CareWorkListCard,
+  CareWorkspaceSection,
+  CareWorkRow,
+  CareQueueInlineAction,
   CarePrimaryList,
   CareSectionHeader,
-  CareWorkspaceSection,
-  CareSearchFiltersBar,
-  CareOperationalQueueHeader,
-  CareWorkListCard,
-  CARE_RHYTHM,
-  CareWorkRow,
+  CareOperationalSelect,
+  PrimaryActionButton,
   EmptyState,
   ErrorState,
   LoadingState,
-  PrimaryActionButton,
 } from "./CareDesignPrimitives";
 
 interface ActiesPageProps {
@@ -47,15 +37,11 @@ interface ActiesPageProps {
 }
 
 type ListTab = "mine" | "waiting" | "all";
-type SortMode = "urgency" | "due" | "case";
 type DueBucketFilter = "all" | "overdue" | "today" | "week";
 
 const PRIORITY_KEYS: TaskPriorityKey[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 
-const PRIORITY_UI: Record<
-  TaskPriorityKey,
-  { label: string; chipClass: string }
-> = {
+const PRIORITY_UI: Record<TaskPriorityKey, { label: string; chipClass: string }> = {
   URGENT: {
     label: "Kritiek",
     chipClass: "border-red-500/35 bg-red-500/10 text-red-200",
@@ -82,13 +68,20 @@ function formatCasReference(linkedCaseId: string): string {
   return `CAS-${y}-${tail}`;
 }
 
-function formatDeadlinePresent(task: SpaTask): string {
-  if (task.actionStatus === "overdue") return "Te laat";
-  if (task.actionStatus === "today") return "Vervalt vandaag";
-  if (!task.dueDate) return "Geen vervaldatum";
-  const d = new Date(`${task.dueDate}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return task.dueDate;
-  return `Vervalt ${d.toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}`;
+function formatRelativeActivity(createdAt: string): string {
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) {
+    return "Onbekend";
+  }
+
+  const now = new Date();
+  const diffMs = Math.max(0, now.getTime() - created.getTime());
+  const diffHours = diffMs / (60 * 60 * 1000);
+  if (diffHours < 24) {
+    return `${Math.max(1, Math.round(diffHours))} uur geleden`;
+  }
+  const diffDays = Math.max(1, Math.round(diffHours / 24));
+  return `${diffDays} dag${diffDays === 1 ? "" : "en"} geleden`;
 }
 
 function taskAssignedToMe(task: SpaTask, fullName: string | undefined): boolean {
@@ -154,12 +147,56 @@ function priorityLeading(task: SpaTask): ReactNode {
   );
 }
 
+function taskStatusLabel(task: SpaTask): string {
+  if (task.actionStatus === "overdue") return "Te laat";
+  if (task.actionStatus === "today") return "Vandaag";
+  if (task.actionStatus === "upcoming") return "Binnenkort";
+  return "Afgerond";
+}
+
+function taskReasonLabel(task: SpaTask): string {
+  const source = `${task.title} ${task.description}`.trim();
+  const reason = getShortReasonLabel(source, 56);
+  if (!reason || reason === "Geen toelichting") {
+    return "Opvolging nodig";
+  }
+  return reason;
+}
+
+function taskNextActionLabel(task: SpaTask): string {
+  const source = `${task.title} ${task.description}`.toLowerCase();
+  if (/(casusgegevens|casus.*invull|aanvraag.*invull|casus.*compleet|aanvraag.*compleet|ontbreekt|vul.*aan|casus.*aanvull)/i.test(source)) {
+    return "Maak casus compleet";
+  }
+  if (/opvragen|informatie vragen|info nodig|aanvullende informatie/i.test(source)) {
+    return "Vraag gegevens op";
+  }
+  if (/start matching|matching/i.test(source)) {
+    return "Start matching";
+  }
+  if (/verstuur|stuur.+aanbieder|naar aanbieder/i.test(source)) {
+    return "Verstuur naar aanbieder";
+  }
+  if (/volg.+aanbieder|reactie op|aanbiederreactie/i.test(source)) {
+    return "Volg aanbiederreactie op";
+  }
+  if (/bevestig.+plaatsing|plaatsing/i.test(source)) {
+    return "Bevestig plaatsing";
+  }
+  if (/plan.+intake|intake/i.test(source)) {
+    return "Plan intake";
+  }
+  if (task.actionStatus === "overdue" || task.actionStatus === "today") {
+    return "Maak casus compleet";
+  }
+  return "Maak casus compleet";
+}
+
 export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProps) {
   const { me } = useCurrentUser();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const [listTab, setListTab] = useState<ListTab>("all");
-  const [sortMode, setSortMode] = useState<SortMode>("urgency");
   const [dueBucket, setDueBucket] = useState<DueBucketFilter>("all");
   const [prioritySelected, setPrioritySelected] = useState<Set<TaskPriorityKey>>(
     () => new Set(PRIORITY_KEYS),
@@ -168,7 +205,6 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
   const { tasks, loading, error, refetch } = useTasks({ q: searchQuery });
 
   const openTasks = useMemo(() => tasks.filter(isOpenCareTask), [tasks]);
-  const openTaskTotal = countOpenCareTasks(tasks);
 
   const scopedTasks = useMemo(
     () => applyListTab(openTasks, listTab, me?.fullName),
@@ -181,107 +217,7 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
     return list;
   }, [scopedTasks, dueBucket, prioritySelected]);
 
-  const sortedTasks = useMemo(() => {
-    if (sortMode === "due") return sortTasksByDueDate(filteredTasks);
-    if (sortMode === "case") return sortTasksByCaseId(filteredTasks);
-    return sortTasksByUrgency(filteredTasks);
-  }, [filteredTasks, sortMode]);
-
-  const counts = useMemo(() => {
-    const urgent = openTasks.filter((t) => normalizeTaskPriority(t.priority) === "URGENT").length;
-    const today = openTasks.filter((t) => t.actionStatus === "today").length;
-    const waitingOthers = openTasks.filter((t) => {
-      if (!me?.fullName) return Boolean(t.assignedTo);
-      return Boolean(t.assignedTo) && !taskAssignedToMe(t, me.fullName);
-    }).length;
-    return { urgent, today, waitingOthers };
-  }, [openTasks, me?.fullName]);
-
-  const dominantAction = useMemo(() => {
-    if (openTaskTotal === 0) {
-      return {
-        tone: "info" as const,
-        icon: <ClipboardList size={16} aria-hidden />,
-        message: "Geen open taken in deze weergave.",
-        action: onNavigateToCasussen ? (
-          <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={onNavigateToCasussen}>
-            Open casussen
-          </Button>
-        ) : undefined,
-      };
-    }
-
-    if (counts.urgent > 0) {
-      return {
-        tone: "critical" as const,
-        icon: <ShieldAlert size={16} aria-hidden />,
-        message: `${counts.urgent} kritieke actie${counts.urgent === 1 ? "" : "s"} staan nu open voor jou; pak de oudste eerst op om de blokkade niet te laten oplopen.`,
-        action: (
-          <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-[12px] font-medium"
-            onClick={() => {
-              setShowSecondaryFilters(true);
-              setDueBucket("overdue");
-            }}
-          >
-            Toon te laat
-          </Button>
-        ),
-      };
-    }
-
-    if (counts.today > 0) {
-      return {
-        tone: "warning" as const,
-        icon: <Clock size={16} aria-hidden />,
-        message: `${counts.today} actie${counts.today === 1 ? "" : "s"} vervalt vandaag; werk deze eerst af voordat je verder filtert.`,
-        action: (
-          <Button type="button" variant="outline" className="h-8 rounded-lg px-3 text-[12px] font-medium"
-            onClick={() => {
-              setShowSecondaryFilters(true);
-              setDueBucket("today");
-            }}
-          >
-            Toon vandaag
-          </Button>
-        ),
-      };
-    }
-
-    if (counts.waitingOthers > 0) {
-      return {
-        tone: "info" as const,
-        icon: <ClipboardList size={16} aria-hidden />,
-        message: `${counts.waitingOthers} actie${counts.waitingOthers === 1 ? "" : "s"} wachten op anderen; houd jouw eigen werkvoorraad vooraan.`,
-        action: (
-          <Button
-            type="button"
-            variant="outline"
-            className="rounded-xl px-4 font-semibold"
-            onClick={() => setListTab("waiting")}
-          >
-            Wacht op mij
-          </Button>
-        ),
-      };
-    }
-
-    return {
-      tone: "info" as const,
-      icon: <ClipboardList size={16} aria-hidden />,
-      message: `${openTaskTotal} open actie${openTaskTotal === 1 ? "" : "s"} staan klaar; pak ze in urgentie-volgorde op.`,
-      action: onNavigateToCasussen ? (
-        <Button
-          type="button"
-          variant="outline"
-          className="rounded-xl px-4 font-semibold"
-          onClick={onNavigateToCasussen}
-        >
-          Open casussen
-        </Button>
-      ) : undefined,
-    };
-  }, [counts.today, counts.urgent, counts.waitingOthers, openTaskTotal, onNavigateToCasussen]);
-
+  const sortedTasks = useMemo(() => sortTasksByUrgency(filteredTasks), [filteredTasks]);
   const pc = useMemo(() => priorityCounts(openTasks), [openTasks]);
 
   const togglePriority = (key: TaskPriorityKey) => {
@@ -295,6 +231,7 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
 
   const clearSidebarFilters = () => {
     setSearchQuery("");
+    setListTab("all");
     setDueBucket("all");
     setPrioritySelected(new Set(PRIORITY_KEYS));
   };
@@ -302,257 +239,235 @@ export function ActiesPage({ onCaseClick, onNavigateToCasussen }: ActiesPageProp
   const selectTriggerClass =
     "h-10 border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30";
 
+  const hasOpenActions = !loading && !error && openTasks.length > 0;
+  const hasVisibleActions = !loading && !error && sortedTasks.length > 0;
+  const emptyByDefault = !loading && !error && openTasks.length === 0;
+  const emptyByFilters = !loading && !error && openTasks.length > 0 && sortedTasks.length === 0;
+  const topTask = sortedTasks[0];
+
   return (
     <CarePageScaffold
       archetype="queue"
       className="pb-8"
       title="Acties"
-      subtitleInfoTestId="acties-page-info"
-      subtitleAriaLabel="Uitleg Acties"
-      subtitle="Open taken met eigenaar, verval en volgende stap, zodat je direct weet wat nu aandacht vraagt."
-      actions={
-        <div className="flex flex-wrap items-center gap-2">
-          {onNavigateToCasussen ? (
-            <CareQueueInlineAction type="button" onClick={onNavigateToCasussen}>
-              Naar casussen
-            </CareQueueInlineAction>
-          ) : null}
-          <Button type="button" variant="outline" className="rounded-xl px-4 font-semibold" onClick={() => refetch()}>
-            Ververs
-          </Button>
-        </div>
-      }
+      subtitle="Volg taken op die jouw beslissing of opvolging vragen."
+      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
       dominantAction={
-        <CareAttentionBar
-          layout="compact"
-          tone={dominantAction.tone}
-          icon={dominantAction.icon}
-          message={dominantAction.message}
-          action={dominantAction.action}
-        />
-      }
-      metric={
-        <CareMetricBadge>
-          {loading
-            ? "Laden…"
-            : `${sortedTasks.length} weergave · ${openTaskTotal} open · ${counts.urgent} kritiek · ${counts.today} vandaag`}
-        </CareMetricBadge>
+        hasVisibleActions && topTask ? (
+          <CareAlertCard
+            density="compact"
+            testId="acties-dominant-action"
+            tone="warning"
+            icon={<AlertCircle size={18} aria-hidden />}
+            metric={0}
+            showMetric={false}
+            title={`${sortedTasks.length} actie${sortedTasks.length === 1 ? " vraagt" : " vragen"} opvolging`}
+            description={`${taskStatusLabel(topTask)} · ${taskReasonLabel(topTask)}. ${topTask.caseTitle?.trim() ? topTask.caseTitle : "Deze casus"} vraagt opvolging.`}
+            primaryAction={(
+              <PrimaryActionButton
+                type="button"
+                className="h-10 rounded-full px-5 text-[13px] font-semibold"
+                onClick={() => onCaseClick(topTask.linkedCaseId)}
+              >
+                {taskNextActionLabel(topTask)}
+                <ArrowRight size={16} aria-hidden className="ml-2" />
+              </PrimaryActionButton>
+            )}
+          />
+        ) : undefined
       }
     >
-      <CareWorkspaceSection
-        testId="acties-uitvoerlijst"
-        aria-labelledby="acties-werkvoorraad-heading"
-        bodyBleedX
-        header={(
-        <CareSectionHeader
-          className="lg:flex-col lg:items-stretch"
-          title={
-            <span id="acties-werkvoorraad-heading">Werkvoorraad</span>
-          }
-          meta={
-            <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
-              <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-muted/30 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
-                {loading ? "…" : `${sortedTasks.length} acties`}
-              </span>
-              <CareSearchFiltersBar
-                className="px-0"
-                searchValue={searchQuery}
-                onSearchChange={setSearchQuery}
-                searchPlaceholder="Zoek acties of casus-ID..."
-                showSecondaryFilters={showSecondaryFilters}
-                onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-                secondaryFiltersLabel="Filters"
-                secondaryFilters={
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-[12px] leading-snug text-muted-foreground">
-                        Prioriteit en verval gelden direct; zoeken via het veld hierboven.
-                      </p>
-                      <button
-                        type="button"
-                        className="shrink-0 text-[13px] font-semibold text-primary hover:text-foreground"
-                        onClick={clearSidebarFilters}
-                      >
-                        Wissen
-                      </button>
-                    </div>
-                    <div className="grid items-end gap-2 md:grid-cols-2">
-                      <label className="flex min-w-0 flex-col gap-1">
-                        <span className="text-[11px] font-medium text-muted-foreground">Weergave</span>
-                        <Select value={listTab} onValueChange={(v) => setListTab(v as ListTab)}>
-                          <SelectTrigger aria-label="Weergave" className={cn("h-10", selectTriggerClass)}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="border-border bg-card text-foreground">
-                            <SelectItem value="mine">Mijn acties</SelectItem>
-                            <SelectItem value="waiting">Wacht op mij</SelectItem>
-                            <SelectItem value="all">Alle acties</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </label>
-                      <label className="flex min-w-0 flex-col gap-1">
-                        <span className="text-[11px] font-medium text-muted-foreground">Sorteren op</span>
-                        <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-                          <SelectTrigger aria-label="Sorteren op" className={cn("h-10", selectTriggerClass)}>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="border-border bg-card text-foreground">
-                            <SelectItem value="urgency">Urgentie</SelectItem>
-                            <SelectItem value="due">Vervaldatum</SelectItem>
-                            <SelectItem value="case">Casus-ID</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </label>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie</p>
-                      {PRIORITY_KEYS.map((key) => (
-                        <label
-                          key={key}
-                          className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/40 bg-background/30 px-2.5 py-2 text-[13px]"
-                        >
-                          <span className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={prioritySelected.has(key)}
-                              onChange={() => togglePriority(key)}
-                              className="size-4 rounded border-border accent-primary"
-                            />
-                            <span className="font-medium text-foreground">{PRIORITY_UI[key].label}</span>
-                          </span>
-                          <span className="tabular-nums text-muted-foreground">{pc[key]}</span>
-                        </label>
-                      ))}
-                    </div>
-                    <label className="block space-y-1.5">
-                      <span className="text-[11px] font-medium text-muted-foreground">Type actie</span>
-                      <select disabled className="h-9 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-muted-foreground">
-                        <option>Alle typen</option>
-                      </select>
-                    </label>
-                    <label className="block space-y-1.5">
-                      <span className="text-[11px] font-medium text-muted-foreground">Fase</span>
-                      <select disabled className="h-9 w-full rounded-xl border border-border/50 bg-muted/20 px-3 text-sm text-muted-foreground">
-                        <option>Openstaande taak</option>
-                      </select>
-                    </label>
-                    <label className="block space-y-1.5">
-                      <span className="text-[11px] font-medium text-muted-foreground">Vervaldatum</span>
-                      <select
-                        value={dueBucket}
-                        onChange={(e) => setDueBucket(e.target.value as DueBucketFilter)}
-                        className="h-9 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                      >
-                        <option value="all">Alle</option>
-                        <option value="overdue">Te laat</option>
-                        <option value="today">Vandaag</option>
-                        <option value="week">Deze week</option>
-                      </select>
-                    </label>
-                  </div>
-                }
-              />
-            </div>
-          }
+      {loading && <LoadingState title="Acties laden…" copy="Takenlijst wordt opgebouwd." />}
+      {!loading && error && (
+        <ErrorState
+          title="Kon acties niet laden"
+          copy={error}
+          action={<Button variant="outline" onClick={() => refetch()}>Opnieuw proberen</Button>}
         />
-        )}
-      >
-          <div id="acties-werklijst" data-testid="acties-werklijst" className={CARE_RHYTHM.zoneStack}>
-            {loading && <LoadingState title="Acties laden…" copy="Takenlijst wordt opgebouwd." />}
-            {!loading && error && (
-              <ErrorState
-                title="Kon acties niet laden"
-                copy={error}
-                action={<Button variant="outline" size="sm" onClick={() => refetch()}>Opnieuw proberen</Button>}
-                className="border-destructive/35 bg-destructive/5"
+      )}
+
+      {!loading && !error && (
+        <CareWorkspaceSection
+          testId="acties-uitvoerlijst"
+          aria-labelledby="acties-werkvoorraad-heading"
+          bodyBleedX
+          header={(
+            <CareSectionHeader
+              className="lg:flex-col lg:items-stretch"
+              title={<span id="acties-werkvoorraad-heading">Werkvoorraad</span>}
+              meta={(
+                <CareSearchFiltersBar
+                  variant="workspace"
+                  className="px-0"
+                  searchValue={searchQuery}
+                  onSearchChange={setSearchQuery}
+                  searchPlaceholder="Zoek taken of casus-ID..."
+                  showSecondaryFilters={showSecondaryFilters}
+                  onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
+                  secondaryFiltersLabel="Filters"
+                  secondaryFilters={(
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[12px] leading-snug text-muted-foreground">
+                          Gebruik de filters om te schakelen tussen eigen werk, opvolging en urgentie.
+                        </p>
+                        <CareQueueInlineAction type="button" onClick={clearSidebarFilters}>
+                          Wissen
+                        </CareQueueInlineAction>
+                      </div>
+                      <div className="grid items-end gap-2 md:grid-cols-2">
+                        <label className="flex min-w-0 flex-col gap-1">
+                          <span className="text-[11px] font-medium text-muted-foreground">Weergave</span>
+                          <CareOperationalSelect
+                            aria-label="Weergave"
+                            value={listTab}
+                            onChange={(event) => setListTab(event.target.value as ListTab)}
+                            className={selectTriggerClass}
+                          >
+                            <option value="mine">Mijn acties</option>
+                            <option value="waiting">Wacht op mij</option>
+                            <option value="all">Alle acties</option>
+                          </CareOperationalSelect>
+                        </label>
+                        <label className="flex min-w-0 flex-col gap-1">
+                          <span className="text-[11px] font-medium text-muted-foreground">Vervalt</span>
+                          <CareOperationalSelect
+                            aria-label="Vervalt"
+                            value={dueBucket}
+                            onChange={(event) => setDueBucket(event.target.value as DueBucketFilter)}
+                            className={selectTriggerClass}
+                          >
+                            <option value="all">Alle</option>
+                            <option value="overdue">Te laat</option>
+                            <option value="today">Vandaag</option>
+                            <option value="week">Deze week</option>
+                          </CareOperationalSelect>
+                        </label>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Urgentie</p>
+                        {PRIORITY_KEYS.map((key) => (
+                          <label
+                            key={key}
+                            className="flex cursor-pointer items-center justify-between gap-2 rounded-lg border border-border/40 bg-background/30 px-2.5 py-2 text-[13px]"
+                          >
+                            <span className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={prioritySelected.has(key)}
+                                onChange={() => togglePriority(key)}
+                                className="size-4 rounded border-border accent-primary"
+                              />
+                              <span className="font-medium text-foreground">{PRIORITY_UI[key].label}</span>
+                            </span>
+                            <span className="tabular-nums text-muted-foreground">{pc[key]}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                />
+              )}
+            />
+          )}
+        >
+          <CareWorkListCard
+            header={
+              <CareOperationalQueueHeader
+                labels={["Urgentie", "Taak", "Casus", "Status", "Opvolging", "Volgende actie"]}
               />
+            }
+          >
+            {emptyByDefault ? (
+              <div className="p-4 md:p-5">
+                <EmptyState
+                  title="Geen openstaande acties"
+                  copy="Er zijn geen taken die jouw beslissing of opvolging vragen."
+                  action={
+                    onNavigateToCasussen ? (
+                      <CareQueueInlineAction
+                        type="button"
+                        onClick={onNavigateToCasussen}
+                      >
+                        Bekijk actieve casussen
+                      </CareQueueInlineAction>
+                    ) : undefined
+                  }
+                />
+              </div>
+            ) : emptyByFilters ? (
+              <div className="p-4 md:p-5">
+                <EmptyState
+                  title="Geen acties in dit filter"
+                  copy="Wis filters of kies een andere weergave."
+                  action={<CareQueueInlineAction type="button" onClick={clearSidebarFilters}>Wis filters</CareQueueInlineAction>}
+                />
+              </div>
+            ) : (
+              <CarePrimaryList>
+                {sortedTasks.map((task) => {
+                  const priority = normalizeTaskPriority(task.priority);
+                  const ui = PRIORITY_UI[priority];
+                  const nextActionLabel = taskNextActionLabel(task);
+                  const actionStatusTone =
+                    task.actionStatus === "overdue"
+                      ? "critical"
+                      : task.actionStatus === "today"
+                        ? "warning"
+                        : "neutral";
+                  return (
+                    <CareWorkRow
+                      key={task.id}
+                      titleAriaLabel={task.title}
+                      leading={priorityLeading(task)}
+                      title={<span className="block truncate text-[18px] font-semibold tracking-tight text-foreground">{task.title}</span>}
+                      context={(
+                        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                          <CareMetaChip>{formatCasReference(task.linkedCaseId)}</CareMetaChip>
+                          <span className="min-w-0 truncate text-[11px] text-muted-foreground">
+                            {task.caseTitle?.trim() ? task.caseTitle : "Onbekende casus"}
+                          </span>
+                        </div>
+                      )}
+                      status={
+                        <CareDominantStatus className={ui.chipClass}>{taskStatusLabel(task)}</CareDominantStatus>
+                      }
+                      owner={
+                        <div className="min-w-0 truncate">
+                          Taakopvolger: {task.assignedTo?.trim() ? task.assignedTo : "Onbekend"}
+                        </div>
+                      }
+                      nextAction={
+                        <div className="min-w-0 truncate">
+                          Volgende actie: {nextActionLabel}
+                        </div>
+                      }
+                      time={
+                        <div className="min-w-0 truncate">
+                          Laatste activiteit: {formatRelativeActivity(task.createdAt)}
+                        </div>
+                      }
+                      contextInfo={
+                        <div className="min-w-0 truncate text-muted-foreground/75">
+                          Reden: {getShortReasonLabel(task.description || task.status || "Opvolging nodig", 56)}
+                        </div>
+                      }
+                      actionLabel={nextActionLabel}
+                      onOpen={() => onCaseClick(task.linkedCaseId)}
+                      onAction={(event) => {
+                        event.stopPropagation();
+                        onCaseClick(task.linkedCaseId);
+                      }}
+                      accentTone={actionStatusTone}
+                      actionVariant={task.actionStatus === "overdue" || task.actionStatus === "today" ? "primary" : "ghost"}
+                    />
+                  );
+                })}
+              </CarePrimaryList>
             )}
-            {!loading && !error && sortedTasks.length > 0 && (
-              <CareWorkListCard
-                header={
-                  <CareOperationalQueueHeader
-                    labels={["Prioriteit", "Taak", "Casus", "Verval", "Eigenaar", "Volgende actie"]}
-                  />
-                }
-              >
-                <div className="divide-y divide-border/45">
-                  <CarePrimaryList>
-                    {sortedTasks.map((task) => {
-                      const p = normalizeTaskPriority(task.priority);
-                      const ui = PRIORITY_UI[p];
-                      const casRef = formatCasReference(task.linkedCaseId);
-                      return (
-                        <CareWorkRow
-                          key={task.id}
-                          leading={priorityLeading(task)}
-                          title={task.title}
-                          context={
-                            <>
-                              <CareMetaChip>{casRef}</CareMetaChip>
-                              <CareMetaChip>{task.caseTitle?.trim() ? task.caseTitle : "—"}</CareMetaChip>
-                            </>
-                          }
-                          status={
-                            <CareDominantStatus className={ui.chipClass}>{ui.label}</CareDominantStatus>
-                          }
-                          time={
-                            <CareMetaChip>
-                              <Clock size={12} aria-hidden />
-                              {formatDeadlinePresent(task)}
-                            </CareMetaChip>
-                          }
-                          contextInfo={
-                            task.assignedTo ? (
-                              <CareMetaChip title={task.assignedTo}>@ {task.assignedTo}</CareMetaChip>
-                            ) : undefined
-                          }
-                          actionLabel={task.actionStatus === "overdue" ? "Open casus nu" : "Bekijk actie"}
-                          actionVariant={
-                            task.actionStatus === "overdue" || task.actionStatus === "today" ? "primary" : "ghost"
-                          }
-                          onOpen={() => onCaseClick(task.linkedCaseId)}
-                          onAction={(event: MouseEvent<HTMLButtonElement>) => {
-                            event.stopPropagation();
-                            onCaseClick(task.linkedCaseId);
-                          }}
-                          accentTone={
-                            task.actionStatus === "overdue"
-                              ? "critical"
-                              : task.actionStatus === "today"
-                                ? "warning"
-                                : "neutral"
-                          }
-                        />
-                      );
-                    })}
-                  </CarePrimaryList>
-                </div>
-              </CareWorkListCard>
-            )}
-            {!loading && !error && sortedTasks.length === 0 && (
-              <EmptyState
-                title="Geen openstaande acties"
-                copy={
-                  searchQuery.trim() || dueBucket !== "all" || prioritySelected.size < PRIORITY_KEYS.length
-                    ? `Er zijn ${openTaskTotal} openstaande ${openTaskTotal === 1 ? "taak" : "taken"} in totaal. Pas tabblad, zoekopdracht of filters aan.`
-                    : "Alle taken zijn voltooid. Er staat nu niets open dat jouw directe aandacht vraagt."
-                }
-                action={
-                  onNavigateToCasussen ? (
-                    <CareQueueInlineAction
-                      type="button"
-                      className="mt-1"
-                      onClick={onNavigateToCasussen}
-                      data-testid="acties-empty-open-casussen"
-                    >
-                      Open casussen
-                    </CareQueueInlineAction>
-                  ) : undefined
-                }
-              />
-            )}
-          </div>
-      </CareWorkspaceSection>
+          </CareWorkListCard>
+        </CareWorkspaceSection>
+      )}
     </CarePageScaffold>
   );
 }

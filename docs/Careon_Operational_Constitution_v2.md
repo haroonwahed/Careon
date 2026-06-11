@@ -440,6 +440,10 @@ Avoid:
 	•	hard separators
 	•	card overload
 
+10.2.1 Hard UI Contract
+The concrete shell, spacing, surface, radius, and CTA values are pinned in [`docs/design/CAREON_UI_CONTRACT.md`](design/CAREON_UI_CONTRACT.md) and mirrored in `client/src/design/tokens.ts`.
+If the contract and implementation differ, the contract governs the intended visual law and the token layer must be updated to match.
+
 10.3 Typography
 Typography should feel:
 	•	editorial

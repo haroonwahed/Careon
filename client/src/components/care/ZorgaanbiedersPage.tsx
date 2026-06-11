@@ -308,7 +308,6 @@ export function ZorgaanbiedersPage({
           </CareInfoPopover>
         </span>
       }
-      subtitle="Netwerkoverzicht van capaciteit en regionale dekking. Gebruik Matching om casusvoorkeuren vast te leggen."
       dominantAction={
         <CareAttentionBar
           tone={activeCaseContext ? "info" : "warning"}

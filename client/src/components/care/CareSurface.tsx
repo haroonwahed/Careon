@@ -222,22 +222,20 @@ export function CareEmptyState({
   return (
     <div
       role="status"
-      className={cn("care-empty-state relative px-6 py-10 text-left md:px-8 md:py-12", className)}
+      className={cn(
+        "care-empty-state relative max-h-[220px] overflow-hidden rounded-xl border border-border/45 bg-card/20 px-4 py-4 text-left md:px-5 md:py-5",
+        className,
+      )}
     >
-      <div className="relative z-[1] flex max-w-prose flex-col gap-4">
-        <div className="flex items-start gap-4">
-          <div className="care-empty-state__icon shrink-0" aria-hidden>
-            {icon ?? <Layers size={20} strokeWidth={1.75} />}
-          </div>
-          <div className="min-w-0 space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-              Werkruimte gereed
-            </p>
-            <p className="text-lg font-semibold tracking-tight text-foreground">{title}</p>
-            {copy ? <p className="text-sm leading-relaxed text-muted-foreground">{copy}</p> : null}
-          </div>
+      <div className="relative z-[1] flex max-w-prose items-start gap-3">
+        <div className="care-empty-state__icon mt-0.5 shrink-0" aria-hidden>
+          {icon ?? <Layers size={18} strokeWidth={1.75} />}
         </div>
-        {action ? <div className="pl-[3.25rem] pt-1">{action}</div> : null}
+        <div className="min-w-0 space-y-1.5">
+          <p className="text-base font-semibold tracking-tight text-foreground">{title}</p>
+          {copy ? <p className="text-sm leading-relaxed text-muted-foreground">{copy}</p> : null}
+          {action ? <div className="pt-1">{action}</div> : null}
+        </div>
       </div>
     </div>
   );

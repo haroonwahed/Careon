@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   AppShell,
   CareAlertCard,
+  CareAttentionSurface,
   CareFlowBoard,
   CareFlowStepCard,
   CareSearchFiltersBar,
@@ -29,16 +30,22 @@ describe("CareDesignPrimitives", () => {
     expect(screen.getByTestId("inner")).toBeInTheDocument();
   });
 
-  it("renders PageHeader (CareUnifiedHeader) without subtitle chrome", () => {
-    render(<PageHeader title="Coördinatie" subtitle="Operatief overzicht" />);
+  it("renders PageHeader (CareUnifiedHeader) with optional subtitle text", () => {
+    render(<PageHeader title="Coördinatie" subtitle="Stuur op doorstroom." />);
     expect(screen.getByTestId("care-unified-header")).toHaveTextContent("Coördinatie");
-    expect(screen.queryByText("Operatief overzicht")).not.toBeInTheDocument();
+    expect(screen.getByText("Stuur op doorstroom.")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Pagina-uitleg" })).not.toBeInTheDocument();
+  });
+
+  it("renders attention surfaces with standardized variants", () => {
+    render(<CareAttentionSurface testId="care-attention-surface" variant="critical" message="Behandeling is geblokkeerd" />);
+    expect(screen.getByTestId("care-attention-surface")).toHaveAttribute("data-variant", "critical");
+    expect(screen.getByText("Behandeling is geblokkeerd")).toBeInTheDocument();
   });
 
   it("renders FlowPhaseBadge mapped to decision phases", () => {
     render(<FlowPhaseBadge phaseId="gemeente_validatie" />);
-    expect(screen.getByTitle("Stap in de keten (vier beslissingen)")).toHaveTextContent("Matching & validatie");
+    expect(screen.getByTitle("Stap in de keten (vijf beslissingen)")).toHaveTextContent("Matching");
   });
 
   it("LoadingState sets busy status", () => {

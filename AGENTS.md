@@ -140,6 +140,36 @@ Avoid:
 
 ---
 
+---
+
+## CareOn UI Rules for Codex
+
+Before changing any UI page:
+
+1. Read `docs/design/CAREON_UI_CONTRACT.md`
+2. Read `docs/design/CAREON_PAGE_PATTERNS.md` if it exists
+3. Do not invent new card styles, badge styles, spacing, or CTA hierarchy
+4. Use existing primitives only:
+   - `CarePageScaffold`
+   - `CareTopBar`
+   - `CareSidebar`
+   - `PageHeroHeader`
+   - `CareAlertCard`
+   - `FlowPhaseTabs`
+   - `CareWorkTable`
+   - `PrimaryActionButton`
+   - `SecondaryActionButton`
+   - `CareStatusBadge`
+5. Every operational page must have:
+   - one page title
+   - one optional subtitle
+   - one dominant CTA max
+   - one alert/attention surface max
+   - one workvoorraad section
+6. Do not create new visual patterns unless explicitly asked
+
+If the page needs a pattern that is not covered by the contract, extend the contract or the shared primitives first instead of introducing a one-off page-local variant.
+
 ## Matching Rules
 
 Matching must:
