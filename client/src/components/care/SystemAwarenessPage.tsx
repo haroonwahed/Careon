@@ -1546,6 +1546,18 @@ export function SystemAwarenessPage({
     onAppNavigate?.("/casussen");
   }, [coordinationNba, onAppNavigate, uiMode]);
 
+  const applyModeSignalenLink = useCallback(() => {
+    emitCoordinationNbaEvent(
+      "nba_secondary_clicked",
+      buildCoordinationNbaInstrumentationPayload({
+        actionKey: "FOCUS_SLA",
+        uiMode,
+        reasonCount: coordinationNba.reasons.length,
+      }),
+    );
+    onAppNavigate?.("/signalen");
+  }, [coordinationNba, onAppNavigate, uiMode]);
+
   useEffect(() => {
     if (!hasActiveData) {
       return;
@@ -1633,7 +1645,7 @@ export function SystemAwarenessPage({
                 type="button"
                 variant="outline"
                 className="h-10 rounded-full border-border/70 px-5 text-[13px] font-semibold leading-none text-foreground hover:bg-muted/20"
-                onClick={uiMode === "crisis" ? applyModeCasesLink : runModeSecondary}
+                onClick={uiMode === "crisis" ? applyModeSignalenLink : runModeSecondary}
                 data-testid="coordination-dominant-secondary-cta"
               >
                 {dominantSecondaryLabel}

@@ -193,14 +193,22 @@ class Command(BaseCommand):
         # Ephemeral E2E casuistry (e.g. golden-path Playwright) lives outside PILOT_CASE_TITLES — remove so rehearsal_verify stays deterministic.
         CaseIntakeProcess.objects.filter(organization=organization).exclude(title__in=case_titles).delete()
         CareCase.objects.filter(organization=organization).exclude(title__in=case_titles).delete()
-        ProviderRegioDekking.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names).delete()
-        ContractRelatie.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names, organization=organization).delete()
-        PrestatieProfiel.objects.filter(zorgprofiel__zorgaanbieder__name__in=zorgaanbieder_names).delete()
-        CapaciteitRecord.objects.filter(vestiging__zorgaanbieder__name__in=zorgaanbieder_names).delete()
-        Zorgprofiel.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names).delete()
-        AanbiederVestiging.objects.filter(zorgaanbieder__name__in=zorgaanbieder_names).delete()
-        Zorgaanbieder.objects.filter(name__in=zorgaanbieder_names).delete()
-        TrustAccount.objects.filter(provider__name__in=provider_names).delete()
+        # Scope provider-related deletes to seed-origin records only (bron_type=SEEDED)
+        # to prevent accidental cross-org deletion when provider names collide.
+        demo_za_ids = list(
+            Zorgaanbieder.objects.filter(
+                name__in=zorgaanbieder_names,
+                bron_type=Zorgaanbieder.BronType.SEEDED,
+            ).values_list('id', flat=True)
+        )
+        ProviderRegioDekking.objects.filter(zorgaanbieder_id__in=demo_za_ids).delete()
+        ContractRelatie.objects.filter(zorgaanbieder_id__in=demo_za_ids, organization=organization).delete()
+        PrestatieProfiel.objects.filter(zorgprofiel__zorgaanbieder_id__in=demo_za_ids).delete()
+        CapaciteitRecord.objects.filter(vestiging__zorgaanbieder_id__in=demo_za_ids).delete()
+        Zorgprofiel.objects.filter(zorgaanbieder_id__in=demo_za_ids).delete()
+        AanbiederVestiging.objects.filter(zorgaanbieder_id__in=demo_za_ids).delete()
+        Zorgaanbieder.objects.filter(id__in=demo_za_ids).delete()
+        TrustAccount.objects.filter(provider__organization=organization, provider__name__in=provider_names).delete()
         Client.objects.filter(organization=organization, name__in=provider_names).delete()
 
     def _municipality_code(self, name: str) -> str:

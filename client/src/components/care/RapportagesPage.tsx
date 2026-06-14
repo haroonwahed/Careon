@@ -64,30 +64,13 @@ const reportTemplates: ReportTemplate[] = [
     title: "Audit en compliance",
     description: "Autorisaties, wijzigingen en audittrail-controles.",
     category: "compliance",
-    lastRun: "16 apr 2026",
-    frequency: "Maandelijks",
-    status: "building"
+    lastRun: "Live auditlog",
+    frequency: "Op aanvraag",
+    status: "ready"
   }
 ];
 
-const exportHistory: ExportHistoryItem[] = [
-  {
-    id: "EXP-001",
-    templateId: "RPT-001",
-    label: "Doorstroomoverzicht",
-    format: "csv",
-    exportedAt: "Vandaag 09:15",
-    source: "auto",
-  },
-  {
-    id: "EXP-002",
-    templateId: "RPT-002",
-    label: "Matchkwaliteit",
-    format: "pdf",
-    exportedAt: "16 apr 2026 17:02",
-    source: "auto",
-  },
-];
+const exportHistory: ExportHistoryItem[] = [];
 
 export function RapportagesPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -116,6 +99,17 @@ export function RapportagesPage() {
   const handleDownloadTemplate = (report: ReportTemplate, _sourceLabel = "Template") => {
     if (report.status !== "ready") {
       toast.warning("Deze rapportage wordt nog klaargezet en is nog niet te downloaden.");
+      return;
+    }
+    if (report.id === "RPT-003") {
+      const url = "/care/api/audit-log/export/?format=csv";
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "audit-log.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success("Audit-export gestart.");
       return;
     }
     toast.info(`Exportfunctie voor "${report.title}" is in ontwikkeling. Exports worden binnenkort via de server beschikbaar gesteld.`);
@@ -192,7 +186,7 @@ export function RapportagesPage() {
       }    >
       <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-sm text-amber-300">
         <Construction size={16} className="mt-0.5 shrink-0" />
-        <span>Rapportages zijn <strong>in ontwikkeling</strong>. De catalogus en filters zijn operationeel; exportfunctionaliteit wordt binnenkort via de server beschikbaar gesteld.</span>
+        <span><strong>Audit en compliance</strong> exporteert live vanuit het auditlog. Doorstroom- en matchkwaliteitsrapporten zijn <strong>in ontwikkeling</strong>.</span>
       </div>
 
       <CareSection>

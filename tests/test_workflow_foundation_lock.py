@@ -951,3 +951,88 @@ class WorkflowFoundationLockTests(TestCase):
             )
         # Size check passed — may succeed or fail for other form reasons, but not 413
         self.assertNotEqual(response.status_code, 413)
+
+    # ------------------------------------------------------------------
+    # P3-2: JSON document upload API
+    # ------------------------------------------------------------------
+
+    def test_documents_api_post_creates_document(self):
+        """POST /api/documents/ with a file should create a Document and return 201."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        f = SimpleUploadedFile('test.pdf', b'%PDF hello', content_type='application/pdf')
+        response = self.client.post(
+            reverse('careon:documents_api'),
+            data={'title': 'Pilotdocument', 'file': f},
+        )
+        self.assertEqual(response.status_code, 201)
+        body = response.json()
+        self.assertIn('document', body)
+        self.assertEqual(body['document']['name'], 'Pilotdocument')
+        self.assertTrue(Document.objects.filter(organization=self.organization, title='Pilotdocument').exists())
+
+    def test_documents_api_post_rejects_oversized_file(self):
+        """POST /api/documents/ with a file over the limit must return 413."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        f = SimpleUploadedFile('big.pdf', b'x', content_type='application/pdf')
+        with self.settings(CAREON_MAX_DOCUMENT_UPLOAD_MB=0):
+            response = self.client.post(
+                reverse('careon:documents_api'),
+                data={'title': 'Groot bestand', 'file': f},
+            )
+        self.assertEqual(response.status_code, 413)
+
+    def test_documents_api_post_provider_forbidden(self):
+        """Zorgaanbieder must not be able to upload documents via the standalone endpoint."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.login(username='provider_user', password='testpass123')
+        f = SimpleUploadedFile('doc.pdf', b'hello', content_type='application/pdf')
+        response = self.client.post(
+            reverse('careon:documents_api'),
+            data={'title': 'Provider upload', 'file': f},
+        )
+        self.assertEqual(response.status_code, 403)
+
+    def test_documents_api_post_requires_login(self):
+        """Unauthenticated POST to /api/documents/ must be rejected."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        f = SimpleUploadedFile('doc.pdf', b'hello', content_type='application/pdf')
+        response = self.client.post(
+            reverse('careon:documents_api'),
+            data={'title': 'Anon upload', 'file': f},
+        )
+        self.assertIn(response.status_code, [302, 401])
+
+    # ------------------------------------------------------------------
+    # P3-4: Seed-reset org isolation
+    # ------------------------------------------------------------------
+
+    def test_seed_demo_data_clear_does_not_affect_other_org_providers(self):
+        """_clear_existing_demo_data must not delete Zorgaanbieder records from another org."""
+        from contracts.management.commands.seed_demo_data import Command as SeedCommand
+        from contracts.models import Zorgaanbieder
+
+        other_org = Organization.objects.create(name='Other Org', slug='other-org')
+
+        # Create a Zorgaanbieder with a pilot name but NOT seeded (production import)
+        pilot_name = "Groei & Co"  # a name that appears in PILOT_PROVIDER_CLIENT_NAMES
+        za = Zorgaanbieder.objects.create(
+            name=pilot_name,
+            bron_type=Zorgaanbieder.BronType.MANUAL,  # NOT seeded
+        )
+
+        cmd = SeedCommand()
+        # Run clear against demo org — should not delete the non-seeded provider
+        cmd._clear_existing_demo_data(organization=self.organization)
+
+        self.assertTrue(
+            Zorgaanbieder.objects.filter(pk=za.pk).exists(),
+            "Non-seeded Zorgaanbieder with pilot name must not be deleted by reset.",
+        )
+        za.delete()
+        other_org.delete()

@@ -2745,9 +2745,13 @@ def _serialize_document_row(d):
 
 
 @login_required
-@require_http_methods(["GET"])
+@require_http_methods(["GET", "POST"])
 def documents_api(request):
     organization = get_user_organization(request.user)
+
+    if request.method == "POST":
+        return _documents_upload_api(request, organization)
+
     try:
         qs = Document.objects.filter(organization=organization).select_related(
             'uploaded_by', 'contract'
@@ -2764,6 +2768,59 @@ def documents_api(request):
         return JsonResponse({'documents': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
     except Exception:
         return _internal_server_error(request, context='documents_api_failed')
+
+
+def _documents_upload_api(request, organization):
+    """POST /api/documents/ — multipart file upload scoped to the actor's organization."""
+    actor_role = resolve_actor_role(user=request.user, organization=organization)
+    if actor_role == WorkflowRole.ZORGAANBIEDER:
+        return JsonResponse({'error': 'Zorgaanbieders kunnen geen losse documenten uploaden.'}, status=403)
+
+    uploaded_file = request.FILES.get('file')
+    if not uploaded_file:
+        return JsonResponse({'error': 'Geen bestand ontvangen. Stuur het bestand als "file" veld.'}, status=400)
+
+    max_mb = getattr(settings, 'CAREON_MAX_DOCUMENT_UPLOAD_MB', 20)
+    if uploaded_file.size > max_mb * 1024 * 1024:
+        return JsonResponse(
+            {'error': f'Bestand "{uploaded_file.name}" is te groot (max {max_mb} MB).'},
+            status=413,
+        )
+
+    title = (request.POST.get('title') or '').strip() or uploaded_file.name
+    document_type = (request.POST.get('document_type') or Document.DocType.OTHER).strip()
+    description = (request.POST.get('description') or '').strip()
+    tags = (request.POST.get('tags') or '').strip()
+
+    case_id = request.POST.get('case_id') or request.POST.get('contract')
+    contract = None
+    if case_id:
+        try:
+            contract = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=int(case_id))
+        except (Http404, ValueError, TypeError):
+            return JsonResponse({'error': 'Casus niet gevonden.'}, status=404)
+
+    import mimetypes
+    mime_type = uploaded_file.content_type or mimetypes.guess_type(uploaded_file.name)[0] or 'application/octet-stream'
+
+    try:
+        doc = Document.objects.create(
+            organization=organization,
+            title=title[:300],
+            document_type=document_type if document_type in Document.DocType.values else Document.DocType.OTHER,
+            description=description,
+            tags=tags,
+            file=uploaded_file,
+            file_size=uploaded_file.size,
+            mime_type=mime_type,
+            uploaded_by=request.user,
+            contract=contract,
+        )
+    except Exception:
+        return _internal_server_error(request, context='documents_upload_failed')
+
+    doc.refresh_from_db()
+    return JsonResponse({'document': _serialize_document_row(doc)}, status=201)
 
 
 @login_required
