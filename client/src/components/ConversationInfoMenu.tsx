@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
 import { Language, t } from "../lib/i18n";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface ConversationInfoMenuProps {
   hasLabel: boolean;

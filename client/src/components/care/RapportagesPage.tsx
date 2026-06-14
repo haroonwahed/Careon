@@ -3,7 +3,7 @@ import { Construction, Download, Eye, ShieldCheck } from "lucide-react";
 import { Button } from "../ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../ui/dialog";
 import { FieldHelperBox } from "../ui/form";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 import { tokens } from "../../design/tokens";
 import {
   CareBadge,

@@ -35,6 +35,10 @@ CSRF_COOKIE_SECURE = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 SECURE_SSL_REDIRECT = base._bool_env('SECURE_SSL_REDIRECT', default=True)
 WHITENOISE_USE_FINDERS = False
+# In production, file downloads MUST go through the authenticated download endpoint.
+# Django never serves /media/ directly (no static(MEDIA_URL) in urlpatterns at DEBUG=False).
+# Set to True so _serve_field_file emits X-Accel-Redirect → nginx internal alias only.
+NGINX_MEDIA_ACCEL_REDIRECT = base._bool_env('NGINX_MEDIA_ACCEL_REDIRECT', default=True)
 SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '3600'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = base._bool_env('SECURE_HSTS_INCLUDE_SUBDOMAINS', default=True)
 SECURE_HSTS_PRELOAD = base._bool_env('SECURE_HSTS_PRELOAD', default=True)

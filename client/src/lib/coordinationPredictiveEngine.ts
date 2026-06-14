@@ -201,7 +201,7 @@ export function buildCoordinationPredictiveSummary(
       text: `${assessmentDelayIds.length} aanvragen dreigen te blijven hangen in beoordeling`,
       severity: assessmentDelayIds.length > 3 ? "critical" : "warning",
       affected_case_ids: assessmentDelayIds,
-      target_stage: "beoordelingen",
+      target_stage: "casussen",
     });
   }
 

@@ -36,7 +36,8 @@ class OutcomeReasonCode(models.TextChoices):
 
 
 def document_upload_path(instance, filename):
-    return f'documents/{instance.matter.id if instance.matter else "general"}/{filename}'
+    ext = os.path.splitext(filename)[1].lower()
+    return f'documents/{uuid.uuid4().hex}{ext}'
 
 
 def _generate_source_reference(prefix: str = 'BR') -> str:

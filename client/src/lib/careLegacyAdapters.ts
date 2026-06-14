@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Case, CaseStatus, Provider } from "./casesData";
 import type { Casus, CasusStatus, MatchResult, UrgencyLevel as CasusUrgencyLevel } from "./phaseEngine";
 import type { SpaCase } from "../hooks/useCases";

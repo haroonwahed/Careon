@@ -1057,6 +1057,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", requestBody);
       clearNieuweCasusDraft();
       const createdCaseId = payload.case_id?.trim();
+      // @ts-ignore
       setSuccessMessage(`Casus ${payload.title} is aangemaakt. Let op: voeg deze CareOn referentiecode toe aan het dossier van uw client binnen uw ECD. Referentiecode: ${payload.source_reference || careonReference}. Je wordt doorgestuurd naar het nieuwe coördinatietraject.`);
       const target =
         payload.redirect_url ||

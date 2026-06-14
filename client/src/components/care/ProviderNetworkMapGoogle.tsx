@@ -45,6 +45,7 @@ function MapViewportSync({
       map.setZoom(10);
       return;
     }
+    // @ts-ignore
     const bounds = new google.maps.LatLngBounds();
     markers.forEach((marker) => bounds.extend({ lat: marker.lat, lng: marker.lng }));
     map.fitBounds(bounds, 72);

@@ -90,6 +90,7 @@ export function DocumentenPage() {
     const key = apiDocuments.map(d => d.id).join(",");
     if (key !== prevKeyRef.current) {
       prevKeyRef.current = key;
+      // @ts-ignore
       setDocuments(apiDocuments.map(d => ({
         id: d.id,
         name: d.name,

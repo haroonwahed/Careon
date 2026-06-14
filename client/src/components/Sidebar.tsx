@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "./ui/tooltip";
 import { Language, t } from "../lib/i18n";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 export type Page = "dashboard" | "orders" | "notifications" | "messages" | "launcher" | "stock" | "publisher" | "published" | "settings" | "tracking-products" | "tracking-vendors" | "tracking-public";
 

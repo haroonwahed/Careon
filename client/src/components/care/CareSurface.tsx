@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Layers } from "lucide-react";
 import { cn } from "../ui/utils";
+import { tokens } from "../../design/tokens";
 
 type CareTone = "neutral" | "primary" | "success" | "warning" | "danger" | "info";
 

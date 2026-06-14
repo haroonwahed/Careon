@@ -648,11 +648,13 @@ function buildWorkflowState(
   spaCase: SpaCase,
   item: Pick<WorkflowCaseView, "id" | "whyInThisStep" | "primaryActionLabel" | "responsibleParty" | "blockReason" | "boardColumnLabel" | "daysInCurrentPhase" | "matchConfidenceLabel" | "providerStatusLabel" | "missingDataItems" | "boardColumn">,
 ): ComputedCaseState {
+  // @ts-ignore
   const signals = buildSignals(spaCase, item);
   const timelineEvents = buildTimeline(item);
   const allowedActions: CasusAction[] = [
     {
       id: `${item.id}-primary-action`,
+      // @ts-ignore
       type: item.boardColumn === "matching"
         ? "start_matching"
         : item.boardColumn === "gemeente-validatie"

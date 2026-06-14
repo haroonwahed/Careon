@@ -4390,6 +4390,9 @@ def _provider_recommended_action_presentation(next_action):
 
 @require_POST
 def case_communication_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/care/casussen')
     if not request.user.is_authenticated:
         return HttpResponseForbidden('Je moet ingelogd zijn om communicatie te wijzigen.')
     org = get_user_organization(request.user)
@@ -5665,6 +5668,9 @@ def case_matching_action(request, pk):
 @login_required
 @require_POST
 def case_provider_response_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/care/casussen')
     org = get_user_organization(request.user)
     intake = get_object_or_404(
         scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
@@ -5951,6 +5957,9 @@ def case_provider_response_action(request, pk):
 @login_required
 @require_POST
 def case_outcome_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/care/casussen')
     org = get_user_organization(request.user)
     intake = get_object_or_404(
         scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
@@ -6179,6 +6188,9 @@ def provider_response_monitor(request):
 @login_required
 @require_POST
 def case_placement_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/care/casussen')
     org = get_user_organization(request.user)
     intake = get_object_or_404(
         scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),
@@ -6347,6 +6359,9 @@ def case_placement_action(request, pk):
 @login_required
 @require_POST
 def case_archive_action(request, pk):
+    if getattr(settings, 'CAREON_PILOT_SPA_ONLY', False):
+        from django.http import HttpResponseRedirect
+        return HttpResponseRedirect('/care/casussen')
     org = get_user_organization(request.user)
     intake = get_object_or_404(
         scope_queryset_for_organization(CaseIntakeProcess.objects.select_related('contract'), org),

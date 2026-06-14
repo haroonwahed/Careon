@@ -315,6 +315,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Pilot: server-driven UI (hide demo role switch) and optional single SPA workflow rail
 CAREON_PILOT_UI = _bool_env('CAREON_PILOT_UI', False)
 CAREON_PILOT_SPA_ONLY = _bool_env('CAREON_PILOT_SPA_ONLY', False)
+# Upload: maximum document size accepted by the API (in megabytes)
+CAREON_MAX_DOCUMENT_UPLOAD_MB = int(os.getenv('CAREON_MAX_DOCUMENT_UPLOAD_MB', '20'))
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/dashboard/'

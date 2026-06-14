@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/documents/', api_views.documents_api, name='documents_api'),
     path('api/documents/<int:document_id>/', api_views.document_detail_api, name='document_detail_api'),
     path('api/documents/<int:document_id>/download/', api_views.serve_case_document_api, name='serve_case_document_api'),
+    path('api/cases/<int:case_id>/documents/<int:document_id>/download/', api_views.serve_case_document_scoped_api, name='serve_case_document_scoped_api'),
     path('api/cases/<int:case_id>/urgency-document/download/', api_views.serve_urgency_document_api, name='serve_urgency_document_api'),
     path('api/audit-log/', api_views.audit_log_api, name='audit_log_api'),
     path('api/audit-log/export/', api_views.audit_log_export_api, name='audit_log_export_api'),

@@ -451,7 +451,7 @@ export function PublicLandingPage({ onThemeToggle: _onThemeToggle }: PublicLandi
               aria-hidden="true"
             />
             <div className="flex w-max items-center gap-10 py-2 [animation:partner-marquee_34s_linear_infinite] motion-reduce:animate-none group-hover:[animation-play-state:paused]">
-              {partnerMarqueeBrands.map(({ primary, secondary, logoSrc, logoClassName }, index) => (
+              {partnerMarqueeBrands.map(({ primary, secondary, logoSrc, logoClassName }: any, index) => (
                 <div
                   key={`${primary}-${secondary}-${index}`}
                   className="flex min-w-[156px] items-center justify-center px-2 text-center text-slate-400 transition-transform duration-300 hover:-translate-y-0.5"

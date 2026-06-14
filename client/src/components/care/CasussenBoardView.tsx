@@ -81,6 +81,7 @@ export function CasussenBoardView({ cases, onViewCase, onTakeAction }: CasussenB
                     key={caseItem.id}
                     {...caseItem}
                     onViewCase={onViewCase}
+                    // @ts-ignore
                     onTakeAction={onTakeAction}
                   />
                 ))

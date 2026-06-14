@@ -314,7 +314,7 @@ export const translations = {
         refunded: "Refunded",
         waiting_label: "Waiting for label",
         label_sent: "Label sent to seller",
-        shipped: "Order shipped",
+        shipped_tracking: "Order shipped",
         in_transit: "In transit",
         return_initiated: "Return initiated",
         cancelled_buyer: "Cancelled by buyer",

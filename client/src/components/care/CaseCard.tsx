@@ -195,7 +195,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
             </div>
 
             {/* Status Badge */}
-            <CareMetaChip className={cn("whitespace-nowrap text-xs font-semibold", caseStatusToneClass(status))}>
+            <CareMetaChip className={cn("whitespace-nowrap text-xs font-semibold", caseStatusToneClass(status as any))}>
               {getStatusLabel(status)}
             </CareMetaChip>
           </div>

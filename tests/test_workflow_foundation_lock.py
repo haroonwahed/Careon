@@ -11,6 +11,7 @@ from contracts.models import (
     CaseDecisionLog,
     CaseIntakeProcess,
     Client as CareProvider,
+    Document,
     MunicipalityConfiguration,
     Organization,
     OrganizationMembership,
@@ -750,3 +751,203 @@ class WorkflowFoundationLockTests(TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json().get('success'))
+
+    # ------------------------------------------------------------------
+    # P0-1: case-scoped document download
+    # ------------------------------------------------------------------
+
+    def test_case_scoped_document_download_returns_404_for_wrong_case(self):
+        """Document looked up under the wrong case_id must 404 — prevents cross-case fishing."""
+        intake = self._create_matching_ready_case()
+        case = intake.contract
+
+        other_case = CareCase.objects.create(
+            organization=self.organization,
+            title='Other Case',
+            created_by=self.gemeente_user,
+        )
+
+        doc = Document.objects.create(
+            organization=self.organization,
+            contract=case,
+            title='Test doc',
+        )
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        response = self.client.get(
+            reverse('careon:serve_case_document_scoped_api', kwargs={'case_id': other_case.pk, 'document_id': doc.pk}),
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_case_scoped_document_download_returns_404_for_cross_tenant(self):
+        """Cross-tenant user must receive 404 on case-scoped document download."""
+        intake = self._create_matching_ready_case()
+        doc = Document.objects.create(
+            organization=self.organization,
+            contract=intake.contract,
+            title='Test doc',
+        )
+
+        other_org = Organization.objects.create(name='Foreign Org', slug='foreign-org-p0')
+        outsider = User.objects.create_user(username='outsider_p0', password='testpass123')
+        OrganizationMembership.objects.create(
+            organization=other_org,
+            user=outsider,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.update_or_create(user=outsider, defaults={'role': UserProfile.Role.ASSOCIATE})
+
+        self.client.login(username='outsider_p0', password='testpass123')
+        response = self.client.get(
+            reverse('careon:serve_case_document_scoped_api', kwargs={'case_id': intake.contract_id, 'document_id': doc.pk}),
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_case_scoped_document_download_returns_404_for_unlinked_provider(self):
+        """Provider not linked to the case via PlacementRequest must receive 404."""
+        intake = self._create_matching_ready_case()
+        doc = Document.objects.create(
+            organization=self.organization,
+            contract=intake.contract,
+            title='Test doc',
+        )
+
+        unlinked_user = User.objects.create_user(username='unlinked_provider_p0', password='testpass123')
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=unlinked_user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+        UserProfile.objects.update_or_create(user=unlinked_user, defaults={'role': UserProfile.Role.CLIENT})
+        CareProvider.objects.create(
+            organization=self.organization,
+            name='Unlinked Provider',
+            status=CareProvider.Status.ACTIVE,
+            created_by=self.gemeente_user,
+            responsible_coordinator=unlinked_user,
+        )
+
+        self.client.login(username='unlinked_provider_p0', password='testpass123')
+        response = self.client.get(
+            reverse('careon:serve_case_document_scoped_api', kwargs={'case_id': intake.contract_id, 'document_id': doc.pk}),
+        )
+        self.assertEqual(response.status_code, 404)
+
+    def test_case_scoped_document_download_requires_authentication(self):
+        """Unauthenticated request to case-scoped download must redirect to login."""
+        intake = self._create_matching_ready_case()
+        doc = Document.objects.create(
+            organization=self.organization,
+            contract=intake.contract,
+            title='Auth guard doc',
+        )
+        response = self.client.get(
+            reverse('careon:serve_case_document_scoped_api', kwargs={'case_id': intake.contract_id, 'document_id': doc.pk}),
+        )
+        self.assertIn(response.status_code, [302, 401])
+
+    # ------------------------------------------------------------------
+    # P2-8: SPA-only enforcement — legacy HTML action views redirect
+    # ------------------------------------------------------------------
+
+    def test_spa_only_blocks_legacy_case_communication_action(self):
+        """When CAREON_PILOT_SPA_ONLY=True, case_communication_action must redirect to /care/casussen."""
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        with self.settings(CAREON_PILOT_SPA_ONLY=True):
+            response = self.client.post(
+                reverse('careon:case_communication_action', kwargs={'pk': intake.pk}),
+                data={'action': 'add_message', 'content': 'test'},
+            )
+        self.assertRedirects(response, '/care/casussen', fetch_redirect_response=False)
+
+    def test_spa_only_blocks_legacy_case_placement_action(self):
+        """When CAREON_PILOT_SPA_ONLY=True, case_placement_action must redirect to /care/casussen."""
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        with self.settings(CAREON_PILOT_SPA_ONLY=True):
+            response = self.client.post(
+                reverse('careon:case_placement_action', kwargs={'pk': intake.pk}),
+                data={'action': 'confirm'},
+            )
+        self.assertRedirects(response, '/care/casussen', fetch_redirect_response=False)
+
+    def test_spa_only_blocks_legacy_case_archive_action(self):
+        """When CAREON_PILOT_SPA_ONLY=True, case_archive_action must redirect to /care/casussen."""
+        intake = self._create_matching_ready_case()
+        self.client.login(username='gemeente_user', password='testpass123')
+        with self.settings(CAREON_PILOT_SPA_ONLY=True):
+            response = self.client.post(
+                reverse('careon:case_archive_action', kwargs={'pk': intake.pk}),
+                data={'reason': 'test'},
+            )
+        self.assertRedirects(response, '/care/casussen', fetch_redirect_response=False)
+
+    # ------------------------------------------------------------------
+    # P2-9: Upload size limit
+    # ------------------------------------------------------------------
+
+    def test_intake_create_api_rejects_oversized_file(self):
+        """File exceeding CAREON_MAX_DOCUMENT_UPLOAD_MB must return 413."""
+        from io import BytesIO
+        from django.core.files.uploadedfile import SimpleUploadedFile
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        # Create a 1-byte file and pretend the size is over the limit
+        tiny_content = b'x'
+        oversize_file = SimpleUploadedFile('big.pdf', tiny_content, content_type='application/pdf')
+        # Patch the size attribute so validation sees it as too large
+        oversize_file.size = 1  # 1 byte, but max will be set to 0 MB (0 bytes) via override
+
+        with self.settings(CAREON_MAX_DOCUMENT_UPLOAD_MB=0):
+            response = self.client.post(
+                reverse('careon:intake_create_api'),
+                data={'title': 'Test', 'document': oversize_file},
+                format='multipart',
+            )
+        self.assertEqual(response.status_code, 413)
+        body = response.json()
+        self.assertIn('te groot', body.get('error', ''))
+
+    def test_intake_create_api_accepts_file_within_limit(self):
+        """Small file within CAREON_MAX_DOCUMENT_UPLOAD_MB must not trigger size rejection."""
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        from contracts.models import MunicipalityConfiguration, RegionalConfiguration, RegionType
+
+        municipality = MunicipalityConfiguration.objects.create(
+            organization=self.organization,
+            municipality_name='Teststad',
+            municipality_code='TST',
+            created_by=self.gemeente_user,
+        )
+        region = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Regio Test',
+            region_code='RT',
+            region_type=RegionType.JEUGDREGIO,
+            created_by=self.gemeente_user,
+        )
+        region.served_municipalities.add(municipality)
+
+        self.client.login(username='gemeente_user', password='testpass123')
+        small_file = SimpleUploadedFile('small.pdf', b'hello', content_type='application/pdf')
+        bootstrap = self.client.get(reverse('careon:intake_form_options_api'))
+        payload = bootstrap.json().get('initial_values', {})
+        payload.update({
+            'title': 'Upload test',
+            'urgency': CaseIntakeProcess.Urgency.MEDIUM,
+            'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'start_date': str(date.today()),
+            'target_completion_date': str(date.today() + timedelta(days=30)),
+            'service_region': str(region.pk),
+            'document': small_file,
+        })
+        with self.settings(CAREON_MAX_DOCUMENT_UPLOAD_MB=20):
+            response = self.client.post(
+                reverse('careon:intake_create_api'),
+                data=payload,
+            )
+        # Size check passed — may succeed or fail for other form reasons, but not 413
+        self.assertNotEqual(response.status_code, 413)

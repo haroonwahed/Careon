@@ -290,7 +290,7 @@ export function useRegions(options: UseRegionsOptions = {}): UseRegionsResult {
       }).length;
 
       const vastgelopenCasussen = actieveCases.filter((workflowCase) => {
-        if (workflowCase.phase === 'beoordeling') {
+        if (workflowCase.phase === 'provider_beoordeling') {
           return workflowCase.daysInCurrentPhase > 3;
         }
         if (workflowCase.phase === 'matching') {

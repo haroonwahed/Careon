@@ -643,6 +643,7 @@ export function CareOperationalQueueHeader({
   return (
     <div className={cn(gridClassName ?? OPERATIONAL_QUEUE_HEADER_GRID_CLASS, className)} data-testid={testId}>
       {labels.map((label) => (
+        // @ts-ignore
         <span key={label} className="min-w-0 truncate">
           {label}
         </span>

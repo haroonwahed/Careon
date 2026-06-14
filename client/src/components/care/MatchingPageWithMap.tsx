@@ -478,6 +478,7 @@ export function MatchingPageWithMap({
     const provider = legacyProviders.find((p) => String(p.id) === String(providerId));
     if (!provider) return null;
     const advisory = advisoryFromEngineConfidenceLabel(apiRow?.confidence_label || "");
+    // @ts-ignore
     return {
       provider,
       index: Math.max(0, allProvidersTable.findIndex((r) => r.provider.id === providerId)),

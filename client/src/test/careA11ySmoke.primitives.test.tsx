@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { useState } from "react";

@@ -22,7 +22,7 @@ interface ValidationPanelProps {
 const levelConfig: Record<ValidationLevel, {
   icon: any;
   text: string;
-  alertClass: string;
+  shell: string;
 }> = {
   error: {
     icon: AlertTriangle,
@@ -91,7 +91,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
             return (
               <div
                 key={idx}
-                className={`p-3 rounded-lg border ${config.alertClass}`}
+                className={`p-3 rounded-lg border ${config.shell}`}
               >
               <div className="flex items-start gap-2">
                   <Icon size={16} className={`${config.text} flex-shrink-0 mt-0.5`} aria-hidden="true" />

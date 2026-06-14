@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import { cn } from "../ui/utils";
 import { CareFlowBoard, CareFlowStepCard } from "./CareDesignPrimitives";
+import { getShortReasonLabel } from "../../lib/uxCopy";
 
 export type CaseStepperStep = {
   id: string;

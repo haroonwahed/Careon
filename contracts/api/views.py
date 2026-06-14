@@ -2406,6 +2406,16 @@ def intake_create_api(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Ongeldige JSON payload.'}, status=400)
 
+    if uploaded_files is not None:
+        max_mb = getattr(settings, 'CAREON_MAX_DOCUMENT_UPLOAD_MB', 20)
+        max_bytes = max_mb * 1024 * 1024
+        for field_name, f in uploaded_files.items():
+            if f.size > max_bytes:
+                return JsonResponse(
+                    {'error': f'Bestand "{f.name}" is te groot (max {max_mb} MB).'},
+                    status=413,
+                )
+
     organization = get_user_organization(request.user)
     actor_role, role_error = _require_workflow_role(
         user=request.user,
@@ -4166,6 +4176,39 @@ def serve_case_document_api(request, document_id):
             ensure_provider_case_visible_or_404(request.user, doc.contract)
         except Http404:
             return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    if not doc.file:
+        return JsonResponse({'error': 'Dit document heeft geen bijlage'}, status=404)
+
+    filename = os.path.basename(doc.file.name)
+    return _serve_field_file(doc.file, filename)
+
+
+@login_required
+@require_http_methods(["GET"])
+def serve_case_document_scoped_api(request, case_id, document_id):
+    """Download a document scoped to a specific case — enforces case ownership before doc lookup."""
+    organization = get_user_organization(request.user)
+    try:
+        case_record = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+    except Http404:
+        return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    actor_role = resolve_actor_role(user=request.user, organization=organization)
+    if actor_role == WorkflowRole.ZORGAANBIEDER:
+        try:
+            ensure_provider_case_visible_or_404(request.user, case_record)
+        except Http404:
+            return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    try:
+        doc = Document.objects.get(
+            pk=document_id,
+            organization=organization,
+            contract=case_record,
+        )
+    except Document.DoesNotExist:
+        return JsonResponse({'error': 'Document niet gevonden'}, status=404)
 
     if not doc.file:
         return JsonResponse({'error': 'Dit document heeft geen bijlage'}, status=404)

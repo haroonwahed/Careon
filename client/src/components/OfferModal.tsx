@@ -5,7 +5,7 @@ import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Language, t, formatCurrency } from "../lib/i18n";
-import { toast } from "sonner@2.0.3";
+import { toast } from "sonner";
 
 interface OfferModalProps {
   open: boolean;

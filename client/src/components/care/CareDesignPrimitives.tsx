@@ -197,7 +197,7 @@ export function BlockingNotice({
   message,
   className,
 }: {
-  title?: ReactNode;
+  title?: string;
   message: ReactNode;
   className?: string;
 }) {

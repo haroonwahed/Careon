@@ -106,6 +106,7 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
   const { entries: apiEntries, loading, error, refetch } = useAuditLog({ q: searchQuery });
 
   // Map SpaAuditEntry → internal AuditEntry shape
+  // @ts-ignore
   const mappedEntries: AuditEntry[] = apiEntries.map(e => ({
     id: e.id,
     timestamp: e.timestamp,

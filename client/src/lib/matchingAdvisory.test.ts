@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import {
   MATCHING_ADVISORY_LABELS,

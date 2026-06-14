@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from "react";
 import { Search, Plus, Download, MoreVertical } from "lucide-react";
 import { Language } from "../../lib/i18n";

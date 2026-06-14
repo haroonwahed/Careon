@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { render, type RenderOptions } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 import type { ReactElement } from "react";

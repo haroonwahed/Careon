@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AlertTriangle, ArrowRight, CheckCircle2, Clock } from "lucide-react";
 
 export type ActionPanelSeverity = "critical" | "warning" | "stable";

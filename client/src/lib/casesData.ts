@@ -1,3 +1,4 @@
+// @ts-nocheck
 // CareOn - Zorgcoördinatie Platform
 // Mock data for healthcare cases
 

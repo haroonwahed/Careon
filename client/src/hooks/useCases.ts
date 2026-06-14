@@ -75,7 +75,7 @@ export type UrgencyLevel = 'critical' | 'warning' | 'normal' | 'stable';
 export interface SpaCase {
   id: string;
   title: string;
-  owner: string;
+  owner?: string;
   regio: string;
   zorgtype: string;
   wachttijd: number;

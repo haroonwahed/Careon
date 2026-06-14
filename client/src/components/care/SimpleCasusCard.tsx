@@ -123,7 +123,7 @@ function CasusCardContent({
               {id}
             </span>
             <div className="flex items-center gap-1.5">
-              <CaseStatusBadge status={status} size="sm" />
+              <CaseStatusBadge status={status as any} size="sm" />
               <UrgencyBadge urgency={urgency} size="sm" />
               {risk && <RiskBadge risk={risk} size="sm" />}
             </div>

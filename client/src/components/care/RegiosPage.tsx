@@ -274,7 +274,7 @@ export function RegiosPage({
               {showSecondaryFilters ? (
                 <div className="rounded-xl border border-border/50 bg-card/30 px-3 py-2.5">
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <Select value={capacityFilter} onValueChange={setCapacityFilter}>
+                    <Select value={capacityFilter} onValueChange={setCapacityFilter as any}>
                       <SelectTrigger className="h-10 w-full border-border bg-card text-foreground hover:bg-muted/35 focus-visible:border-primary/40 focus-visible:ring-2 focus-visible:ring-primary/30">
                         <SelectValue placeholder="Alle capaciteit statussen" />
                       </SelectTrigger>
@@ -369,7 +369,7 @@ export function RegiosPage({
                   <p className="text-sm font-medium text-foreground">Geen capaciteitsdata</p>
                   <p className="mt-1 text-xs text-muted-foreground">Koppel aanbieders om de verdeling te tonen.</p>
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={openZorgaanbieders}>Ga naar zorgaanbieders</Button>
+                    <Button variant="outline" size="sm" onClick={openZorgaanbieders as any}>Ga naar zorgaanbieders</Button>
                   </div>
                 </div>
               ) : (

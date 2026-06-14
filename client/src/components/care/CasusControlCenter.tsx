@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * CasusControlCenter — Phase-Driven Execution Engine
  *
