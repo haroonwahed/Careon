@@ -4,12 +4,13 @@ API views for CareOn case workspace functionality.
 """
 import json
 import logging
+import os
 import re
 import sys
 from datetime import date
 
 from django.conf import settings
-from django.http import Http404, JsonResponse
+from django.http import FileResponse, Http404, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
 from django.views.decorators.http import require_http_methods
@@ -996,7 +997,7 @@ def _build_intake_form_payload(form, coordinator_field):
             return []
         if field_name == 'gemeente':
             return _serialize_unique_municipality_choices(field)
-        if field_name in {'regio', 'preferred_region'}:
+        if field_name in {'jeugdhulpregio', 'regio', 'preferred_region'}:
             return _serialize_unique_region_choices(field)
         return _serialize_model_choices(field)
 
@@ -1016,7 +1017,8 @@ def _build_intake_form_payload(form, coordinator_field):
             'care_category_sub': '',
             'assessment_summary': '',
             'gemeente': '',
-            'regio': '',
+            'regio': str(form.initial.get('regio') or form.initial.get('preferred_region') or form.initial.get('jeugdhulpregio') or ''),
+            'jeugdhulpregio': str(form.initial.get('jeugdhulpregio') or form.initial.get('preferred_region') or form.initial.get('regio') or ''),
             'urgency': CaseIntakeProcess.Urgency.MEDIUM,
             'complexity': CaseIntakeProcess.Complexity.SIMPLE,
             'placement_pressure_horizon': CaseIntakeProcess.PlacementPressureHorizon.MORE_THAN_TWO_WEEKS,
@@ -1030,8 +1032,8 @@ def _build_intake_form_payload(form, coordinator_field):
             'diagnostiek': [],
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
-            'preferred_region_type': form.initial.get('preferred_region_type', 'JEUGDREGIO'),
-            'preferred_region': '',
+            'preferred_region_type': form.initial.get('preferred_region_type', RegionType.JEUGDREGIO),
+            'preferred_region': str(form.initial.get('preferred_region') or form.initial.get('jeugdhulpregio') or form.initial.get('regio') or ''),
             'max_toelaatbare_wachttijd_dagen': '',
             'leeftijd': '',
             'setting_voorkeur': '',
@@ -1050,6 +1052,7 @@ def _build_intake_form_payload(form, coordinator_field):
             'care_category_main': _serialize_taxonomy_choices(form.fields['care_category_main']) if form.fields.get('care_category_main') is not None else [],
             'care_category_sub': care_category_sub,
             'gemeente': _model_options('gemeente'),
+            'jeugdhulpregio': _model_options('jeugdhulpregio'),
             'regio': _model_options('regio'),
             'urgency': _simple_options('urgency'),
             'complexity': _simple_options('complexity'),
@@ -1345,7 +1348,10 @@ def _assessment_decision_payload(*, case_record, intake, assessment):
 
 
 def _require_workflow_role(*, user, organization, allowed_roles: set[str]):
-    actor_role = resolve_actor_role(user=user, organization=organization)
+    # strict=True: if the role cannot be resolved (e.g. DB error) this returns the
+    # UNRESOLVED sentinel, which is never in allowed_roles, so the gate fails closed
+    # (403) instead of degrading to the privileged GEMEENTE role.
+    actor_role = resolve_actor_role(user=user, organization=organization, strict=True)
     if actor_role not in allowed_roles:
         return actor_role, JsonResponse(
             {
@@ -1509,36 +1515,36 @@ def assessment_decision_api(request, case_id):
         intake.status = CaseIntakeProcess.ProcessStatus.INTAKE
         case_record.case_phase = CareCase.CasePhase.INTAKE
 
-    intake.workflow_state = WorkflowState.MATCHING_READY if decision == 'matching' else WorkflowState.SUMMARY_READY
-    intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'workflow_state', 'updated_at'])
-    case_record.save(update_fields=['case_phase', 'updated_at'])
-    assessment.assessed_by = request.user
-    assessment.save()
-
     new_state = WorkflowState.MATCHING_READY if decision == 'matching' else WorkflowState.SUMMARY_READY
     try:
-        if decision == 'matching' and transition_steps:
-            for old_state, target_state, action in transition_steps:
+        with transaction.atomic():
+            intake.workflow_state = new_state
+            intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'workflow_state', 'updated_at'])
+            case_record.save(update_fields=['case_phase', 'updated_at'])
+            assessment.assessed_by = request.user
+            assessment.save()
+            if decision == 'matching' and transition_steps:
+                for old_state, target_state, action in transition_steps:
+                    log_transition_event(
+                        intake=intake,
+                        actor_user=request.user,
+                        actor_role=actor_role,
+                        old_state=old_state,
+                        new_state=target_state,
+                        action=action,
+                        source='assessment_decision_api',
+                    )
+            else:
+                action = WorkflowAction.START_MATCHING if decision == 'matching' else WorkflowAction.COMPLETE_SUMMARY
                 log_transition_event(
                     intake=intake,
                     actor_user=request.user,
                     actor_role=actor_role,
-                    old_state=old_state,
-                    new_state=target_state,
+                    old_state=previous_state,
+                    new_state=new_state,
                     action=action,
                     source='assessment_decision_api',
                 )
-        else:
-            action = WorkflowAction.START_MATCHING if decision == 'matching' else WorkflowAction.COMPLETE_SUMMARY
-            log_transition_event(
-                intake=intake,
-                actor_user=request.user,
-                actor_role=actor_role,
-                old_state=previous_state,
-                new_state=new_state,
-                action=action,
-                source='assessment_decision_api',
-            )
     except AuditLoggingError as exc:
         return JsonResponse({'ok': False, 'error': str(exc)}, status=503)
 
@@ -4091,3 +4097,72 @@ def transition_request_financial_api(request, case_id, transition_id):
         strict=True,
     )
     return JsonResponse({'ok': True, 'id': str(tr.pk), 'financialValidationStatus': tr.financial_validation_status})
+
+
+# ---------------------------------------------------------------------------
+# Authenticated media serving
+# ---------------------------------------------------------------------------
+
+def _serve_field_file(field_file, filename: str):
+    """Serve a FieldFile via FileResponse (dev) or nginx X-Accel-Redirect (prod)."""
+    if getattr(settings, 'NGINX_MEDIA_ACCEL_REDIRECT', False):
+        from django.http import HttpResponse
+        response = HttpResponse()
+        response['X-Accel-Redirect'] = f'/protected_media/{field_file.name}'
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response['Content-Type'] = ''
+        return response
+    if not field_file.storage.exists(field_file.name):
+        return JsonResponse({'error': 'Bestand niet gevonden op schijf'}, status=404)
+    return FileResponse(field_file.open('rb'), as_attachment=True, filename=filename)
+
+
+@login_required
+@require_http_methods(["GET"])
+def serve_case_document_api(request, document_id):
+    """Authenticated download for CareDocument files — enforces org-scope and provider visibility."""
+    organization = get_user_organization(request.user)
+    try:
+        doc = Document.objects.select_related('contract').get(
+            pk=document_id,
+            organization=organization,
+        )
+    except Document.DoesNotExist:
+        return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    actor_role = resolve_actor_role(user=request.user, organization=organization)
+    if actor_role == WorkflowRole.ZORGAANBIEDER:
+        if doc.contract_id is None:
+            return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+        try:
+            ensure_provider_case_visible_or_404(request.user, doc.contract)
+        except Http404:
+            return JsonResponse({'error': 'Document niet gevonden'}, status=404)
+
+    if not doc.file:
+        return JsonResponse({'error': 'Dit document heeft geen bijlage'}, status=404)
+
+    filename = os.path.basename(doc.file.name)
+    return _serve_field_file(doc.file, filename)
+
+
+@login_required
+@require_http_methods(["GET"])
+def serve_urgency_document_api(request, case_id):
+    """Authenticated download for urgency_document on CaseIntakeProcess — enforces org-scope."""
+    organization = get_user_organization(request.user)
+    try:
+        case_record = get_scoped_object_or_404(CareCase.objects.all(), organization, pk=case_id)
+        intake = get_scoped_object_or_404(
+            CaseIntakeProcess.objects.all(),
+            organization,
+            contract=case_record,
+        )
+    except Http404:
+        return JsonResponse({'error': 'Casus niet gevonden'}, status=404)
+
+    if not intake.urgency_document:
+        return JsonResponse({'error': 'Geen urgentiedocument aanwezig'}, status=404)
+
+    filename = os.path.basename(intake.urgency_document.name)
+    return _serve_field_file(intake.urgency_document, filename)

@@ -189,7 +189,10 @@ export function TopBar({
   const showActiveWorkspaceOutsidePilot = !pilotContextIds.has(currentContext.id);
 
   return (
-    <header data-testid="care-top-bar" className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-40">
+    <header
+      data-testid="care-top-bar"
+      className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-border/60 bg-card/45 px-5 backdrop-blur-[2px]"
+    >
       
       {/* LEFT: ROLE/CONTEXT SWITCHER */}
       <div className="shrink-0">
@@ -197,9 +200,9 @@ export function TopBar({
           <button
             type="button"
             onClick={() => canSwitchRole && setRoleDropdownOpen(!roleDropdownOpen)}
-            className="flex items-center gap-3 px-4 py-2 rounded-lg hover:bg-muted/30 transition-colors group"
+            className="group flex items-center gap-3 rounded-xl border border-transparent px-4 py-2 transition-colors hover:border-border/55 hover:bg-card/35"
           >
-            <div className="w-8 h-8 rounded-lg bg-muted/40 flex items-center justify-center border border-border/70">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/35">
               <RoleIcon size={16} className="text-foreground" />
             </div>
             

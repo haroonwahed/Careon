@@ -686,11 +686,11 @@ export function MatchingPageWithMap({
                 </div>
               )}
 
-            <div className="flex gap-1 border-b border-border/60">
+              <div className="flex gap-1 border-b border-border/60">
                 <button
                   type="button"
                   className={cn(
-                    "-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "-mb-px inline-flex items-center justify-center border-b-2 px-4 py-2.5 text-sm font-semibold leading-none transition-colors",
                     listTab === "recommended"
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
@@ -702,7 +702,7 @@ export function MatchingPageWithMap({
                 <button
                   type="button"
                   className={cn(
-                    "-mb-px border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors",
+                    "-mb-px inline-flex items-center justify-center border-b-2 px-4 py-2.5 text-sm font-semibold leading-none transition-colors",
                     listTab === "all"
                       ? "border-primary text-foreground"
                       : "border-transparent text-muted-foreground hover:text-foreground",
@@ -1126,14 +1126,14 @@ export function MatchingPageWithMap({
 
           <Button
             type="button"
-            className="h-12 w-full gap-2 rounded-xl text-base font-semibold text-white shadow-md hover:opacity-95"
+            className="h-12 w-full gap-2 rounded-xl text-base font-semibold leading-none text-white shadow-md hover:opacity-95"
             style={{ backgroundColor: MATCH_BRAND }}
             onClick={() => {
               setListTab("all");
               scrollToFocusZone();
             }}
           >
-            <Users className="size-5" aria-hidden />
+            <Users className="size-5 translate-y-px" aria-hidden />
             Handmatig toewijzen
           </Button>
         </aside>

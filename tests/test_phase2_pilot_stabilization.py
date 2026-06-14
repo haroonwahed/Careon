@@ -20,6 +20,8 @@ from contracts.models import (
     OrganizationMembership,
     PlacementRequest,
     ProviderProfile,
+    RegionalConfiguration,
+    RegionType,
     UserProfile,
 )
 
@@ -74,6 +76,13 @@ class Phase2PilotStabilizationTests(TestCase):
             is_active=True,
         )
         UserProfile.objects.update_or_create(user=self.provider_actor, defaults={'role': UserProfile.Role.CLIENT})
+        self.jeugdregio = RegionalConfiguration.objects.create(
+            organization=self.organization,
+            region_name='Jeugdregio Phase2',
+            region_code='JRP2',
+            region_type=RegionType.JEUGDREGIO,
+            created_by=self.owner,
+        )
 
     def _grant_provider_actor_case_edit(self, intake):
         case = intake.case_record
@@ -97,6 +106,7 @@ class Phase2PilotStabilizationTests(TestCase):
             'urgency': CaseIntakeProcess.Urgency.MEDIUM,
             'preferred_care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
+            'jeugdhulpregio': str(self.jeugdregio.pk),
             'case_coordinator': str(self.owner.pk),
         })
         response = self.client.post(

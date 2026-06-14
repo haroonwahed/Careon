@@ -17,6 +17,11 @@ class WorkflowRole:
     GEMEENTE = 'gemeente'
     ZORGAANBIEDER = 'zorgaanbieder'
     ADMIN = 'admin'
+    # Sentinel returned only by resolve_actor_role(strict=True) when the actor role
+    # cannot be determined (e.g. DB error). It is intentionally absent from
+    # _ROLE_ACTIONS and from every endpoint's allowed_roles, so any authorization
+    # check fails closed instead of silently degrading to a privileged role.
+    UNRESOLVED = 'unresolved'
 
 
 class WorkflowState:
@@ -148,12 +153,17 @@ class TransitionDecision:
     current_state: str
 
 
-def resolve_actor_role(*, user: User, organization=None) -> str:
+def resolve_actor_role(*, user: User, organization=None, strict: bool = False) -> str:
     """
     Resolve workflow actor role for policy checks.
 
     Must never raise: this is called while building querysets (e.g. cases list / Coördinatie)
     before iteration; a DB or profile edge case should degrade to gemeente, not HTTP 500.
+
+    strict=True is for authorization gates (e.g. write-path transition endpoints): when the
+    role genuinely cannot be resolved, return WorkflowRole.UNRESOLVED instead of degrading to
+    the privileged GEMEENTE role, so the caller fails closed (denies) rather than open.
+    Read-path callers keep strict=False to preserve the no-raise degrade-to-gemeente contract.
     """
     try:
         membership = None
@@ -185,10 +195,13 @@ def resolve_actor_role(*, user: User, organization=None) -> str:
         return WorkflowRole.GEMEENTE
     except Exception:
         logger.exception(
-            "resolve_actor_role_failed user_id=%s org_id=%s",
+            "resolve_actor_role_failed user_id=%s org_id=%s strict=%s",
             getattr(user, "pk", "?"),
             getattr(organization, "pk", None),
+            strict,
         )
+        if strict:
+            return WorkflowRole.UNRESOLVED
         return WorkflowRole.GEMEENTE
 
 

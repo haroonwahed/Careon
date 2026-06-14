@@ -220,6 +220,7 @@ beforeEach(() => {
       preferred_care_form: "",
       preferred_region_type: "JEUGDREGIO",
       preferred_region: "utrecht-stad",
+      jeugdhulpregio: "utrecht-stad",
       max_toelaatbare_wachttijd_dagen: "",
       leeftijd: "",
       setting_voorkeur: "",
@@ -235,6 +236,7 @@ beforeEach(() => {
       care_category_main: [{ value: "WONEN_VERBLIJF", label: "Wonen & verblijf" }],
       care_category_sub: [{ value: "WONEN_VERBLIJF_WOONVOORZIENING", label: "Woonvoorziening", mainCategoryId: "WONEN_VERBLIJF" }],
       gemeente: [{ value: "utrecht", label: "Utrecht", urgencyDocumentRequestUrl: "https://www.utrecht.nl/wonen-en-leven/wonen/woning-zoeken/urgentie-voor-een-woning/" }],
+      jeugdhulpregio: [{ value: "utrecht-stad", label: "Utrecht Stad" }],
       regio: [{ value: "utrecht-stad", label: "Utrecht Stad" }],
       urgency: [
         { value: "LOW", label: "Laag" },
@@ -309,7 +311,7 @@ describe("Care accessibility smoke: core pages", () => {
     const choice = document.querySelector('[cmdk-item][data-value="Utrecht"]') as HTMLElement | null;
     expect(choice).not.toBeNull();
     await user.click(choice!);
-    expect(screen.getByLabelText("Jeugdregio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Volgende stap" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Terug" }).length).toBe(1);

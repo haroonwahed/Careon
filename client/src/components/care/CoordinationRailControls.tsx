@@ -18,9 +18,9 @@ export function CoordinationRailToggleButton({ collapsed, onToggle, testId }: Co
       onClick={onToggle}
       aria-expanded={!collapsed}
       aria-label={collapsed ? "Coördinatie-rail openen" : "Coördinatie-rail inklappen"}
-      className="h-9 gap-2 rounded-xl px-3 text-[13px] font-semibold"
+      className="h-9 gap-2 rounded-xl px-3 text-[13px] font-semibold leading-none"
     >
-      <PanelRightOpen size={14} aria-hidden />
+      <PanelRightOpen size={14} aria-hidden className="translate-y-px" />
       Open rail
     </Button>
   );
@@ -39,11 +39,11 @@ export function CoordinationRailEdgeTab({ onExpand, testId }: CoordinationRailEd
       onClick={onExpand}
       aria-label="Coördinatie-rail openen"
       className={cn(
-        "fixed right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-xl border border-border/70 bg-card px-2.5 py-3 text-muted-foreground shadow-md",
+        "fixed right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-xl border border-border/70 bg-card px-2.5 py-3 leading-none text-muted-foreground shadow-md",
         "hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
       )}
     >
-      <ChevronLeft size={16} aria-hidden />
+      <ChevronLeft size={16} aria-hidden className="translate-y-px" />
     </button>
   );
 }

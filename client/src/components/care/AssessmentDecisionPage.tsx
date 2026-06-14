@@ -232,7 +232,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                         key={option.value}
                         type="button"
                         onClick={() => updateField('urgency', option.value)}
-                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
+                        className={`flex items-center rounded-2xl border px-3 py-3 text-left text-sm leading-none ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
                       >
                         {option.label}
                       </button>
@@ -251,7 +251,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                         key={option.value}
                         type="button"
                         onClick={() => updateField('complexity', option.value)}
-                        className={`rounded-2xl border px-3 py-3 text-left text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
+                        className={`flex items-center rounded-2xl border px-3 py-3 text-left text-sm leading-none ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}
                       >
                         {option.label}
                       </button>
@@ -266,7 +266,7 @@ export function AssessmentDecisionPage({ caseId, onBack, onSaved }: AssessmentDe
                   {data.options.constraints.map((option) => {
                     const active = formState.constraints.includes(option.value);
                     return (
-                      <label key={option.value} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
+                      <label key={option.value} className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-3 py-3 text-sm leading-none ${active ? 'border-primary/45 bg-primary/10 text-foreground' : 'border-border bg-card text-muted-foreground hover:border-border/80'}`}>
                         <input
                           type="checkbox"
                           checked={active}

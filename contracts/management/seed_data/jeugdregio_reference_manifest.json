@@ -1,0 +1,4388 @@
+{
+  "snapshot": {
+    "peildatum": "2026-06-14",
+    "source": {
+      "regions": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "municipality_mapping": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv",
+      "municipality_mvp": "contracts/management/seed_data/gemeenten_jeugdregio_mvp.csv",
+      "pdok_municipalities": "https://service.pdok.nl/kadaster/bestuurlijkegebieden/wfs/v1_0?service=WFS&version=2.0.0&request=GetFeature&typeName=Gemeentegebied&outputFormat=application/json&srsName=EPSG:4326",
+      "lnaz_zorgregios": "https://www.lnaz.nl/traumacentra/",
+      "mapping_policy": "CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)"
+    },
+    "notes": "This snapshot is a CareOn reference package. It is not treated as a live authoritative source during runtime; it documents the checked-in mapping only."
+  },
+  "regions": [
+    {
+      "name": "Amsterdam-Amstelland",
+      "code": "JRG-001-AMSTERDAMAMSTE",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Aalsmeer",
+        "Amstelveen",
+        "Amsterdam",
+        "Diemen",
+        "Ouder-Amstel",
+        "Uithoorn"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Zaanstreek-Waterland",
+      "code": "JRG-002-ZAANSTREEKWATE",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Edam-Volendam",
+        "Landsmeer",
+        "Purmerend",
+        "Waterland",
+        "Wormerland",
+        "Zaanstad"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Kennemerland",
+      "code": "JRG-003-KENNEMERLAND",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Beverwijk",
+        "Bloemendaal",
+        "Haarlem",
+        "Heemskerk",
+        "Heemstede",
+        "Velsen",
+        "Zandvoort"
+      ],
+      "participating_municipality_count": 7
+    },
+    {
+      "name": "Alkmaar",
+      "code": "JRG-004-ALKMAAR",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Alkmaar",
+        "Bergen (NH)",
+        "Castricum",
+        "Dijk en Waard",
+        "Heiloo",
+        "Oostzaan",
+        "Uitgeest"
+      ],
+      "participating_municipality_count": 7
+    },
+    {
+      "name": "Westfriesland",
+      "code": "JRG-005-WESTFRIESLAND",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Drechterland",
+        "Enkhuizen",
+        "Hoorn",
+        "Koggenland",
+        "Medemblik",
+        "Opmeer",
+        "Stede Broec"
+      ],
+      "participating_municipality_count": 7
+    },
+    {
+      "name": "Kop van Noord-Holland",
+      "code": "JRG-006-KOPVANNOORDHOL",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Den Helder",
+        "Hollands Kroon",
+        "Schagen",
+        "Texel"
+      ],
+      "participating_municipality_count": 4
+    },
+    {
+      "name": "Gooi en Vechtstreek",
+      "code": "JRG-007-GOOIENVECHTSTR",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Blaricum",
+        "Gooise Meren",
+        "Hilversum",
+        "Huizen",
+        "Laren",
+        "Wijdemeren"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Haarlemmermeer",
+      "code": "JRG-008-HAARLEMMERMEER",
+      "province": "Noord-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Haarlemmermeer"
+      ],
+      "participating_municipality_count": 1
+    },
+    {
+      "name": "Haaglanden",
+      "code": "JRG-009-HAAGLANDEN",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Delft",
+        "Leidschendam-Voorburg",
+        "Midden-Delfland",
+        "Pijnacker-Nootdorp",
+        "Rijswijk",
+        "Wassenaar",
+        "Westland",
+        "Zoetermeer"
+      ],
+      "participating_municipality_count": 8
+    },
+    {
+      "name": "Holland Rijnland",
+      "code": "JRG-010-HOLLANDRIJNLAN",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Alphen aan den Rijn",
+        "Leiden",
+        "Leiderdorp",
+        "Lisse",
+        "Noordwijk",
+        "Oegstgeest",
+        "Teylingen",
+        "Voorschoten",
+        "Zoeterwoude"
+      ],
+      "participating_municipality_count": 9
+    },
+    {
+      "name": "Midden-Holland",
+      "code": "JRG-011-MIDDENHOLLAND",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Bodegraven-Reeuwijk",
+        "Gouda",
+        "Krimpenerwaard",
+        "Waddinxveen",
+        "Zuidplas"
+      ],
+      "participating_municipality_count": 5
+    },
+    {
+      "name": "Zuid-Holland Noord",
+      "code": "JRG-012-ZUIDHOLLANDNOO",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "Rotterdam-Rijnmond",
+      "code": "JRG-013-ROTTERDAMRIJNM",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "'s-Gravenhage",
+        "Alblasserdam",
+        "Albrandswaard",
+        "Barendrecht",
+        "Capelle aan den IJssel",
+        "Goeree-Overflakkee",
+        "Hillegom",
+        "Hoeksche Waard",
+        "Kaag en Braassem",
+        "Katwijk",
+        "Krimpen aan den IJssel",
+        "Lansingerland",
+        "Maassluis",
+        "Nieuwkoop",
+        "Nissewaard",
+        "Ridderkerk",
+        "Rotterdam",
+        "Schiedam",
+        "Vlaardingen",
+        "Voorne aan Zee"
+      ],
+      "participating_municipality_count": 20
+    },
+    {
+      "name": "Zuid-Holland Zuid",
+      "code": "JRG-014-ZUIDHOLLANDZUI",
+      "province": "Zuid-Holland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Dordrecht",
+        "Gorinchem",
+        "Hardinxveld-Giessendam",
+        "Hendrik-Ido-Ambacht",
+        "Molenlanden",
+        "Papendrecht",
+        "Sliedrecht",
+        "Zwijndrecht"
+      ],
+      "participating_municipality_count": 8
+    },
+    {
+      "name": "Utrecht Stad",
+      "code": "JRG-015-UTRECHTSTAD",
+      "province": "Utrecht",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Utrecht"
+      ],
+      "participating_municipality_count": 1
+    },
+    {
+      "name": "Utrecht West",
+      "code": "JRG-016-UTRECHTWEST",
+      "province": "Utrecht",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Bunnik",
+        "De Bilt",
+        "De Fryske Marren",
+        "De Ronde Venen",
+        "Montfoort",
+        "Ooststellingwerf",
+        "Oudewater",
+        "Renswoude",
+        "Rhenen",
+        "Stichtse Vecht",
+        "Utrechtse Heuvelrug",
+        "Veenendaal",
+        "Vlieland",
+        "Weststellingwerf",
+        "Wijk bij Duurstede",
+        "Woerden",
+        "Zeist"
+      ],
+      "participating_municipality_count": 17
+    },
+    {
+      "name": "Lekstroom",
+      "code": "JRG-017-LEKSTROOM",
+      "province": "Utrecht",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Houten",
+        "IJsselstein",
+        "Lopik",
+        "Nieuwegein",
+        "Vijfheerenlanden"
+      ],
+      "participating_municipality_count": 5
+    },
+    {
+      "name": "Amersfoort",
+      "code": "JRG-018-AMERSFOORT",
+      "province": "Utrecht",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Amersfoort",
+        "Baarn",
+        "Bunschoten",
+        "Eemnes",
+        "Leusden",
+        "Soest",
+        "Woudenberg"
+      ],
+      "participating_municipality_count": 7
+    },
+    {
+      "name": "West-Brabant West",
+      "code": "JRG-019-WESTBRABANTWES",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Breda"
+      ],
+      "participating_municipality_count": 1
+    },
+    {
+      "name": "West-Brabant Oost",
+      "code": "JRG-020-WESTBRABANTOOS",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "Hart van Brabant",
+      "code": "JRG-021-HARTVANBRABANT",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "'s-Hertogenbosch",
+        "Alphen-Chaam",
+        "Altena",
+        "Baarle-Nassau",
+        "Bergeijk",
+        "Bergen op Zoom",
+        "Bernheze",
+        "Best",
+        "Bladel",
+        "Boekel",
+        "Boxtel",
+        "Cranendonck",
+        "Dongen",
+        "Drimmelen",
+        "Eersel",
+        "Etten-Leur",
+        "Geertruidenberg",
+        "Geldrop-Mierlo",
+        "Gilze en Rijen",
+        "Goirle",
+        "Halderberge",
+        "Heeze-Leende",
+        "Heusden",
+        "Hilvarenbeek",
+        "Land van Cuijk",
+        "Loon op Zand",
+        "Maashorst",
+        "Meierijstad",
+        "Moerdijk",
+        "Nuenen, Gerwen en Nederwetten",
+        "Oirschot",
+        "Oisterwijk",
+        "Oosterhout",
+        "Oss",
+        "Reusel-De Mierden",
+        "Roosendaal",
+        "Rucphen",
+        "Sint-Michielsgestel",
+        "Son en Breugel",
+        "Steenbergen",
+        "Tilburg",
+        "Valkenswaard",
+        "Veldhoven",
+        "Vught",
+        "Waalre",
+        "Waalwijk",
+        "Woensdrecht",
+        "Zundert"
+      ],
+      "participating_municipality_count": 48
+    },
+    {
+      "name": "Noordoost Brabant",
+      "code": "JRG-022-NOORDOOSTBRABA",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "Zuidoost Brabant",
+      "code": "JRG-023-ZUIDOOSTBRABAN",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Eindhoven"
+      ],
+      "participating_municipality_count": 1
+    },
+    {
+      "name": "Helmond-De Peel",
+      "code": "JRG-024-HELMONDDEPEEL",
+      "province": "Noord-Brabant",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Asten",
+        "Deurne",
+        "Gemert-Bakel",
+        "Helmond",
+        "Laarbeek",
+        "Someren"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Arnhem",
+      "code": "JRG-025-ARNHEM",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Arnhem",
+        "Renkum",
+        "Rheden",
+        "Rozendaal"
+      ],
+      "participating_municipality_count": 4
+    },
+    {
+      "name": "Centraal Gelderland",
+      "code": "JRG-026-CENTRAALGELDER",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Aalten",
+        "Berkelland",
+        "Bronckhorst",
+        "Brummen",
+        "Buren",
+        "Culemborg",
+        "Doesburg",
+        "Doetinchem",
+        "Druten",
+        "Duiven",
+        "Elburg",
+        "Epe",
+        "Ermelo",
+        "Harderwijk",
+        "Hattem",
+        "Heerde",
+        "Lingewaard",
+        "Lochem",
+        "Maasdriel",
+        "Montferland",
+        "Neder-Betuwe",
+        "Nijkerk",
+        "Nunspeet",
+        "Oldebroek",
+        "Oost Gelre",
+        "Oude IJsselstreek",
+        "Overbetuwe",
+        "Putten",
+        "Scherpenzeel",
+        "Tiel",
+        "Voorst",
+        "Wageningen",
+        "West Betuwe",
+        "West Maas en Waal",
+        "Westervoort",
+        "Winterswijk",
+        "Zaltbommel",
+        "Zevenaar",
+        "Zutphen"
+      ],
+      "participating_municipality_count": 39
+    },
+    {
+      "name": "FoodValley",
+      "code": "JRG-027-FOODVALLEY",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Apeldoorn",
+        "Barneveld",
+        "Ede"
+      ],
+      "participating_municipality_count": 3
+    },
+    {
+      "name": "Rijk van Nijmegen",
+      "code": "JRG-028-RIJKVANNIJMEGE",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Berg en Dal",
+        "Beuningen",
+        "Heumen",
+        "Mook en Middelaar",
+        "Nijmegen",
+        "Wijchen"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Rivierenland",
+      "code": "JRG-029-RIVIERENLAND",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "Achterhoek",
+      "code": "JRG-030-ACHTERHOEK",
+      "province": "Gelderland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "West-Overijssel",
+      "code": "JRG-031-WESTOVERIJSSEL",
+      "province": "Overijssel",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Almelo",
+        "Borne",
+        "Dalfsen",
+        "Deventer",
+        "Dinkelland",
+        "Enschede",
+        "Haaksbergen",
+        "Hardenberg",
+        "Hellendoorn",
+        "Hengelo (O)",
+        "Hof van Twente",
+        "Kampen",
+        "Losser",
+        "Oldenzaal",
+        "Olst-Wijhe",
+        "Ommen",
+        "Raalte",
+        "Rijssen-Holten",
+        "Staphorst",
+        "Steenwijkerland",
+        "Tubbergen",
+        "Twenterand",
+        "Wierden",
+        "Zwartewaterland",
+        "Zwolle"
+      ],
+      "participating_municipality_count": 25
+    },
+    {
+      "name": "Twente",
+      "code": "JRG-032-TWENTE",
+      "province": "Overijssel",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "IJsselland",
+      "code": "JRG-033-IJSSELLAND",
+      "province": "Overijssel",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [],
+      "participating_municipality_count": 0
+    },
+    {
+      "name": "Flevoland",
+      "code": "JRG-034-FLEVOLAND",
+      "province": "Flevoland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Almere",
+        "Dronten",
+        "Lelystad",
+        "Noordoostpolder",
+        "Urk",
+        "Zeewolde"
+      ],
+      "participating_municipality_count": 6
+    },
+    {
+      "name": "Drenthe",
+      "code": "JRG-035-DRENTHE",
+      "province": "Drenthe",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Aa en Hunze",
+        "Assen",
+        "Borger-Odoorn",
+        "Coevorden",
+        "De Wolden",
+        "Emmen",
+        "Hoogeveen",
+        "Meppel",
+        "Midden-Drenthe",
+        "Noordenveld",
+        "Tynaarlo",
+        "Westerveld"
+      ],
+      "participating_municipality_count": 12
+    },
+    {
+      "name": "Friesland",
+      "code": "JRG-036-FRIESLAND",
+      "province": "Friesland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Achtkarspelen",
+        "Ameland",
+        "Dantumadiel",
+        "Harlingen",
+        "Heerenveen",
+        "Leeuwarden",
+        "Noardeast-Fryslân",
+        "Opsterland",
+        "Schiermonnikoog",
+        "Smallingerland",
+        "Súdwest-Fryslân",
+        "Terschelling",
+        "Tytsjerksteradiel",
+        "Waadhoeke"
+      ],
+      "participating_municipality_count": 14
+    },
+    {
+      "name": "Groningen",
+      "code": "JRG-037-GRONINGEN",
+      "province": "Groningen",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Eemsdelta",
+        "Groningen",
+        "Het Hogeland",
+        "Midden-Groningen",
+        "Oldambt",
+        "Pekela",
+        "Stadskanaal",
+        "Veendam",
+        "Westerkwartier",
+        "Westerwolde"
+      ],
+      "participating_municipality_count": 10
+    },
+    {
+      "name": "Noord-Limburg",
+      "code": "JRG-038-NOORDLIMBURG",
+      "province": "Limburg",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Venlo"
+      ],
+      "participating_municipality_count": 1
+    },
+    {
+      "name": "Midden-Limburg",
+      "code": "JRG-039-MIDDENLIMBURG",
+      "province": "Limburg",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Beek",
+        "Beekdaelen",
+        "Beesel",
+        "Bergen (L)",
+        "Brunssum",
+        "Echt-Susteren",
+        "Eijsden-Margraten",
+        "Gennep",
+        "Gulpen-Wittem",
+        "Horst aan de Maas",
+        "Kerkrade",
+        "Landgraaf",
+        "Leudal",
+        "Maasgouw",
+        "Meerssen",
+        "Nederweert",
+        "Peel en Maas",
+        "Roerdalen",
+        "Roermond",
+        "Simpelveld",
+        "Stein",
+        "Vaals",
+        "Valkenburg aan de Geul",
+        "Venray",
+        "Voerendaal",
+        "Weert"
+      ],
+      "participating_municipality_count": 26
+    },
+    {
+      "name": "Zuid-Limburg",
+      "code": "JRG-040-ZUIDLIMBURG",
+      "province": "Limburg",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Heerlen",
+        "Maastricht",
+        "Sittard-Geleen"
+      ],
+      "participating_municipality_count": 3
+    },
+    {
+      "name": "Zeeland",
+      "code": "JRG-041-ZEELAND",
+      "province": "Zeeland",
+      "active": true,
+      "active_period": {
+        "start": "2026-06-14",
+        "end": null
+      },
+      "source": "contracts/management/seed_data/regios_jeugdregio.csv",
+      "peildatum": "2026-06-14",
+      "participating_municipalities": [
+        "Borsele",
+        "Goes",
+        "Hulst",
+        "Kapelle",
+        "Middelburg",
+        "Noord-Beveland",
+        "Reimerswaal",
+        "Schouwen-Duiveland",
+        "Sluis",
+        "Terneuzen",
+        "Tholen",
+        "Veere",
+        "Vlissingen"
+      ],
+      "participating_municipality_count": 13
+    }
+  ],
+  "municipality_links": [
+    {
+      "municipality_name": "'s-Gravenhage",
+      "municipality_code": "GM-SGRAVENHAGE",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "'s-Hertogenbosch",
+      "municipality_code": "GM-SHERTOGENBOSCH",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Aa en Hunze",
+      "municipality_code": "GM-AAENHUNZE",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Aalsmeer",
+      "municipality_code": "GM-AALSMEER",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Aalten",
+      "municipality_code": "GM-AALTEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Achtkarspelen",
+      "municipality_code": "GM-ACHTKARSPELEN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Alblasserdam",
+      "municipality_code": "GM-ALBLASSERDAM",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Albrandswaard",
+      "municipality_code": "GM-ALBRANDSWAARD",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Alkmaar",
+      "municipality_code": "GM-ALKMAAR",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Almelo",
+      "municipality_code": "GM-ALMELO",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Almere",
+      "municipality_code": "GM-ALMERE",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Alphen aan den Rijn",
+      "municipality_code": "GM-ALPHENAANDENRIJN",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Alphen-Chaam",
+      "municipality_code": "GM-ALPHENCHAAM",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Altena",
+      "municipality_code": "GM-ALTENA",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ameland",
+      "municipality_code": "GM-AMELAND",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Amersfoort",
+      "municipality_code": "GM-AMERSFOORT",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Amstelveen",
+      "municipality_code": "GM-AMSTELVEEN",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Amsterdam",
+      "municipality_code": "GM-AMSTERDAM",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Apeldoorn",
+      "municipality_code": "GM-APELDOORN",
+      "province": "Gelderland",
+      "region_name": "FoodValley",
+      "region_code": "JRG-027-FOODVALLEY",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Arnhem",
+      "municipality_code": "GM-ARNHEM",
+      "province": "Gelderland",
+      "region_name": "Arnhem",
+      "region_code": "JRG-025-ARNHEM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Assen",
+      "municipality_code": "GM-ASSEN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Asten",
+      "municipality_code": "GM-ASTEN",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Baarle-Nassau",
+      "municipality_code": "GM-BAARLENASSAU",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Baarn",
+      "municipality_code": "GM-BAARN",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Barendrecht",
+      "municipality_code": "GM-BARENDRECHT",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Barneveld",
+      "municipality_code": "GM-BARNEVELD",
+      "province": "Gelderland",
+      "region_name": "FoodValley",
+      "region_code": "JRG-027-FOODVALLEY",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Beek",
+      "municipality_code": "GM-BEEK",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Beekdaelen",
+      "municipality_code": "GM-BEEKDAELEN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Beesel",
+      "municipality_code": "GM-BEESEL",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Berg en Dal",
+      "municipality_code": "GM-BERGENDAL",
+      "province": "Gelderland",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bergeijk",
+      "municipality_code": "GM-BERGEIJK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bergen (L)",
+      "municipality_code": "GM-BERGENL",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bergen (NH)",
+      "municipality_code": "GM-BERGENNH",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bergen op Zoom",
+      "municipality_code": "GM-BERGENOPZOOM",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Berkelland",
+      "municipality_code": "GM-BERKELLAND",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bernheze",
+      "municipality_code": "GM-BERNHEZE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Best",
+      "municipality_code": "GM-BEST",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Beuningen",
+      "municipality_code": "GM-BEUNINGEN",
+      "province": "Gelderland",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Beverwijk",
+      "municipality_code": "GM-BEVERWIJK",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bladel",
+      "municipality_code": "GM-BLADEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Blaricum",
+      "municipality_code": "GM-BLARICUM",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bloemendaal",
+      "municipality_code": "GM-BLOEMENDAAL",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bodegraven-Reeuwijk",
+      "municipality_code": "GM-BODEGRAVENREEUWIJK",
+      "province": "Zuid-Holland",
+      "region_name": "Midden-Holland",
+      "region_code": "JRG-011-MIDDENHOLLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Boekel",
+      "municipality_code": "GM-BOEKEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Borger-Odoorn",
+      "municipality_code": "GM-BORGERODOORN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Borne",
+      "municipality_code": "GM-BORNE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Borsele",
+      "municipality_code": "GM-BORSELE",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Boxtel",
+      "municipality_code": "GM-BOXTEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Breda",
+      "municipality_code": "GM-BREDA",
+      "province": "Noord-Brabant",
+      "region_name": "West-Brabant West",
+      "region_code": "JRG-019-WESTBRABANTWES",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bronckhorst",
+      "municipality_code": "GM-BRONCKHORST",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Brummen",
+      "municipality_code": "GM-BRUMMEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Brunssum",
+      "municipality_code": "GM-BRUNSSUM",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bunnik",
+      "municipality_code": "GM-BUNNIK",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Bunschoten",
+      "municipality_code": "GM-BUNSCHOTEN",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Buren",
+      "municipality_code": "GM-BUREN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Capelle aan den IJssel",
+      "municipality_code": "GM-CAPELLEAANDENIJSSE",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Castricum",
+      "municipality_code": "GM-CASTRICUM",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Coevorden",
+      "municipality_code": "GM-COEVORDEN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Cranendonck",
+      "municipality_code": "GM-CRANENDONCK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Culemborg",
+      "municipality_code": "GM-CULEMBORG",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dalfsen",
+      "municipality_code": "GM-DALFSEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dantumadiel",
+      "municipality_code": "GM-DANTUMADIEL",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "De Bilt",
+      "municipality_code": "GM-DEBILT",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "De Fryske Marren",
+      "municipality_code": "GM-DEFRYSKEMARREN",
+      "province": "Fryslân",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "De Ronde Venen",
+      "municipality_code": "GM-DERONDEVENEN",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "De Wolden",
+      "municipality_code": "GM-DEWOLDEN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Delft",
+      "municipality_code": "GM-DELFT",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Den Helder",
+      "municipality_code": "GM-DENHELDER",
+      "province": "Noord-Holland",
+      "region_name": "Kop van Noord-Holland",
+      "region_code": "JRG-006-KOPVANNOORDHOL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Deurne",
+      "municipality_code": "GM-DEURNE",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Deventer",
+      "municipality_code": "GM-DEVENTER",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Diemen",
+      "municipality_code": "GM-DIEMEN",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dijk en Waard",
+      "municipality_code": "GM-DIJKENWAARD",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dinkelland",
+      "municipality_code": "GM-DINKELLAND",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Doesburg",
+      "municipality_code": "GM-DOESBURG",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Doetinchem",
+      "municipality_code": "GM-DOETINCHEM",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dongen",
+      "municipality_code": "GM-DONGEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dordrecht",
+      "municipality_code": "GM-DORDRECHT",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Drechterland",
+      "municipality_code": "GM-DRECHTERLAND",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Drimmelen",
+      "municipality_code": "GM-DRIMMELEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Dronten",
+      "municipality_code": "GM-DRONTEN",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Druten",
+      "municipality_code": "GM-DRUTEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Duiven",
+      "municipality_code": "GM-DUIVEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Echt-Susteren",
+      "municipality_code": "GM-ECHTSUSTEREN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Edam-Volendam",
+      "municipality_code": "GM-EDAMVOLENDAM",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ede",
+      "municipality_code": "GM-EDE",
+      "province": "Gelderland",
+      "region_name": "FoodValley",
+      "region_code": "JRG-027-FOODVALLEY",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Eemnes",
+      "municipality_code": "GM-EEMNES",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Eemsdelta",
+      "municipality_code": "GM-EEMSDELTA",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Eersel",
+      "municipality_code": "GM-EERSEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Eijsden-Margraten",
+      "municipality_code": "GM-EIJSDENMARGRATEN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Eindhoven",
+      "municipality_code": "GM-EINDHOVEN",
+      "province": "Noord-Brabant",
+      "region_name": "Zuidoost Brabant",
+      "region_code": "JRG-023-ZUIDOOSTBRABAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Elburg",
+      "municipality_code": "GM-ELBURG",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Emmen",
+      "municipality_code": "GM-EMMEN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Enkhuizen",
+      "municipality_code": "GM-ENKHUIZEN",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Enschede",
+      "municipality_code": "GM-ENSCHEDE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Epe",
+      "municipality_code": "GM-EPE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ermelo",
+      "municipality_code": "GM-ERMELO",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Etten-Leur",
+      "municipality_code": "GM-ETTENLEUR",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Geertruidenberg",
+      "municipality_code": "GM-GEERTRUIDENBERG",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Geldrop-Mierlo",
+      "municipality_code": "GM-GELDROPMIERLO",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gemert-Bakel",
+      "municipality_code": "GM-GEMERTBAKEL",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gennep",
+      "municipality_code": "GM-GENNEP",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gilze en Rijen",
+      "municipality_code": "GM-GILZEENRIJEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Goeree-Overflakkee",
+      "municipality_code": "GM-GOEREEOVERFLAKKEE",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Goes",
+      "municipality_code": "GM-GOES",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Goirle",
+      "municipality_code": "GM-GOIRLE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gooise Meren",
+      "municipality_code": "GM-GOOISEMEREN",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gorinchem",
+      "municipality_code": "GM-GORINCHEM",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gouda",
+      "municipality_code": "GM-GOUDA",
+      "province": "Zuid-Holland",
+      "region_name": "Midden-Holland",
+      "region_code": "JRG-011-MIDDENHOLLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Groningen",
+      "municipality_code": "GM-GRONINGEN",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Gulpen-Wittem",
+      "municipality_code": "GM-GULPENWITTEM",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Haaksbergen",
+      "municipality_code": "GM-HAAKSBERGEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Haarlem",
+      "municipality_code": "GM-HAARLEM",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Haarlemmermeer",
+      "municipality_code": "GM-HAARLEMMERMEER",
+      "province": "Noord-Holland",
+      "region_name": "Haarlemmermeer",
+      "region_code": "JRG-008-HAARLEMMERMEER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Halderberge",
+      "municipality_code": "GM-HALDERBERGE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hardenberg",
+      "municipality_code": "GM-HARDENBERG",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Harderwijk",
+      "municipality_code": "GM-HARDERWIJK",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hardinxveld-Giessendam",
+      "municipality_code": "GM-HARDINXVELDGIESSEN",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Harlingen",
+      "municipality_code": "GM-HARLINGEN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hattem",
+      "municipality_code": "GM-HATTEM",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heemskerk",
+      "municipality_code": "GM-HEEMSKERK",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heemstede",
+      "municipality_code": "GM-HEEMSTEDE",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heerde",
+      "municipality_code": "GM-HEERDE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heerenveen",
+      "municipality_code": "GM-HEERENVEEN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heerlen",
+      "municipality_code": "GM-HEERLEN",
+      "province": "Limburg",
+      "region_name": "Zuid-Limburg",
+      "region_code": "JRG-040-ZUIDLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heeze-Leende",
+      "municipality_code": "GM-HEEZELEENDE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heiloo",
+      "municipality_code": "GM-HEILOO",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hellendoorn",
+      "municipality_code": "GM-HELLENDOORN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Helmond",
+      "municipality_code": "GM-HELMOND",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hendrik-Ido-Ambacht",
+      "municipality_code": "GM-HENDRIKIDOAMBACHT",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hengelo (O)",
+      "municipality_code": "GM-HENGELOO",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Het Hogeland",
+      "municipality_code": "GM-HETHOGELAND",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heumen",
+      "municipality_code": "GM-HEUMEN",
+      "province": "Gelderland",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Heusden",
+      "municipality_code": "GM-HEUSDEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hillegom",
+      "municipality_code": "GM-HILLEGOM",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hilvarenbeek",
+      "municipality_code": "GM-HILVARENBEEK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hilversum",
+      "municipality_code": "GM-HILVERSUM",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hoeksche Waard",
+      "municipality_code": "GM-HOEKSCHEWAARD",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hof van Twente",
+      "municipality_code": "GM-HOFVANTWENTE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hollands Kroon",
+      "municipality_code": "GM-HOLLANDSKROON",
+      "province": "Noord-Holland",
+      "region_name": "Kop van Noord-Holland",
+      "region_code": "JRG-006-KOPVANNOORDHOL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hoogeveen",
+      "municipality_code": "GM-HOOGEVEEN",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hoorn",
+      "municipality_code": "GM-HOORN",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Horst aan de Maas",
+      "municipality_code": "GM-HORSTAANDEMAAS",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Houten",
+      "municipality_code": "GM-HOUTEN",
+      "province": "Utrecht",
+      "region_name": "Lekstroom",
+      "region_code": "JRG-017-LEKSTROOM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Huizen",
+      "municipality_code": "GM-HUIZEN",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Hulst",
+      "municipality_code": "GM-HULST",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "IJsselstein",
+      "municipality_code": "GM-IJSSELSTEIN",
+      "province": "Utrecht",
+      "region_name": "Lekstroom",
+      "region_code": "JRG-017-LEKSTROOM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Kaag en Braassem",
+      "municipality_code": "GM-KAAGENBRAASSEM",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Kampen",
+      "municipality_code": "GM-KAMPEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Kapelle",
+      "municipality_code": "GM-KAPELLE",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Katwijk",
+      "municipality_code": "GM-KATWIJK",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Kerkrade",
+      "municipality_code": "GM-KERKRADE",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Koggenland",
+      "municipality_code": "GM-KOGGENLAND",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Krimpen aan den IJssel",
+      "municipality_code": "GM-KRIMPENAANDENIJSSE",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Krimpenerwaard",
+      "municipality_code": "GM-KRIMPENERWAARD",
+      "province": "Zuid-Holland",
+      "region_name": "Midden-Holland",
+      "region_code": "JRG-011-MIDDENHOLLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Laarbeek",
+      "municipality_code": "GM-LAARBEEK",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Land van Cuijk",
+      "municipality_code": "GM-LANDVANCUIJK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Landgraaf",
+      "municipality_code": "GM-LANDGRAAF",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Landsmeer",
+      "municipality_code": "GM-LANDSMEER",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lansingerland",
+      "municipality_code": "GM-LANSINGERLAND",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Laren",
+      "municipality_code": "GM-LAREN",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leeuwarden",
+      "municipality_code": "GM-LEEUWARDEN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leiden",
+      "municipality_code": "GM-LEIDEN",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leiderdorp",
+      "municipality_code": "GM-LEIDERDORP",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leidschendam-Voorburg",
+      "municipality_code": "GM-LEIDSCHENDAMVOORBU",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lelystad",
+      "municipality_code": "GM-LELYSTAD",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leudal",
+      "municipality_code": "GM-LEUDAL",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Leusden",
+      "municipality_code": "GM-LEUSDEN",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lingewaard",
+      "municipality_code": "GM-LINGEWAARD",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lisse",
+      "municipality_code": "GM-LISSE",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lochem",
+      "municipality_code": "GM-LOCHEM",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Loon op Zand",
+      "municipality_code": "GM-LOONOPZAND",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Lopik",
+      "municipality_code": "GM-LOPIK",
+      "province": "Utrecht",
+      "region_name": "Lekstroom",
+      "region_code": "JRG-017-LEKSTROOM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Losser",
+      "municipality_code": "GM-LOSSER",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Maasdriel",
+      "municipality_code": "GM-MAASDRIEL",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Maasgouw",
+      "municipality_code": "GM-MAASGOUW",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Maashorst",
+      "municipality_code": "GM-MAASHORST",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Maassluis",
+      "municipality_code": "GM-MAASSLUIS",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Maastricht",
+      "municipality_code": "GM-MAASTRICHT",
+      "province": "Limburg",
+      "region_name": "Zuid-Limburg",
+      "region_code": "JRG-040-ZUIDLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Medemblik",
+      "municipality_code": "GM-MEDEMBLIK",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Meerssen",
+      "municipality_code": "GM-MEERSSEN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Meierijstad",
+      "municipality_code": "GM-MEIERIJSTAD",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Meppel",
+      "municipality_code": "GM-MEPPEL",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Middelburg",
+      "municipality_code": "GM-MIDDELBURG",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Midden-Delfland",
+      "municipality_code": "GM-MIDDENDELFLAND",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Midden-Drenthe",
+      "municipality_code": "GM-MIDDENDRENTHE",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Midden-Groningen",
+      "municipality_code": "GM-MIDDENGRONINGEN",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Moerdijk",
+      "municipality_code": "GM-MOERDIJK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Molenlanden",
+      "municipality_code": "GM-MOLENLANDEN",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Montferland",
+      "municipality_code": "GM-MONTFERLAND",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Montfoort",
+      "municipality_code": "GM-MONTFOORT",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Mook en Middelaar",
+      "municipality_code": "GM-MOOKENMIDDELAAR",
+      "province": "Limburg",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Neder-Betuwe",
+      "municipality_code": "GM-NEDERBETUWE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nederweert",
+      "municipality_code": "GM-NEDERWEERT",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nieuwegein",
+      "municipality_code": "GM-NIEUWEGEIN",
+      "province": "Utrecht",
+      "region_name": "Lekstroom",
+      "region_code": "JRG-017-LEKSTROOM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nieuwkoop",
+      "municipality_code": "GM-NIEUWKOOP",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nijkerk",
+      "municipality_code": "GM-NIJKERK",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nijmegen",
+      "municipality_code": "GM-NIJMEGEN",
+      "province": "Gelderland",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nissewaard",
+      "municipality_code": "GM-NISSEWAARD",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Noardeast-Fryslân",
+      "municipality_code": "GM-NOARDEASTFRYSLAN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Noord-Beveland",
+      "municipality_code": "GM-NOORDBEVELAND",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Noordenveld",
+      "municipality_code": "GM-NOORDENVELD",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Noordoostpolder",
+      "municipality_code": "GM-NOORDOOSTPOLDER",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Noordwijk",
+      "municipality_code": "GM-NOORDWIJK",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nuenen, Gerwen en Nederwetten",
+      "municipality_code": "GM-NUENENGERWENENNEDE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Nunspeet",
+      "municipality_code": "GM-NUNSPEET",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oegstgeest",
+      "municipality_code": "GM-OEGSTGEEST",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oirschot",
+      "municipality_code": "GM-OIRSCHOT",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oisterwijk",
+      "municipality_code": "GM-OISTERWIJK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oldambt",
+      "municipality_code": "GM-OLDAMBT",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oldebroek",
+      "municipality_code": "GM-OLDEBROEK",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oldenzaal",
+      "municipality_code": "GM-OLDENZAAL",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Olst-Wijhe",
+      "municipality_code": "GM-OLSTWIJHE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ommen",
+      "municipality_code": "GM-OMMEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oost Gelre",
+      "municipality_code": "GM-OOSTGELRE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oosterhout",
+      "municipality_code": "GM-OOSTERHOUT",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ooststellingwerf",
+      "municipality_code": "GM-OOSTSTELLINGWERF",
+      "province": "Fryslân",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oostzaan",
+      "municipality_code": "GM-OOSTZAAN",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Opmeer",
+      "municipality_code": "GM-OPMEER",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Opsterland",
+      "municipality_code": "GM-OPSTERLAND",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oss",
+      "municipality_code": "GM-OSS",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oude IJsselstreek",
+      "municipality_code": "GM-OUDEIJSSELSTREEK",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ouder-Amstel",
+      "municipality_code": "GM-OUDERAMSTEL",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Oudewater",
+      "municipality_code": "GM-OUDEWATER",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Overbetuwe",
+      "municipality_code": "GM-OVERBETUWE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Papendrecht",
+      "municipality_code": "GM-PAPENDRECHT",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Peel en Maas",
+      "municipality_code": "GM-PEELENMAAS",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Pekela",
+      "municipality_code": "GM-PEKELA",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Pijnacker-Nootdorp",
+      "municipality_code": "GM-PIJNACKERNOOTDORP",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Purmerend",
+      "municipality_code": "GM-PURMEREND",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Putten",
+      "municipality_code": "GM-PUTTEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Raalte",
+      "municipality_code": "GM-RAALTE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Reimerswaal",
+      "municipality_code": "GM-REIMERSWAAL",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Renkum",
+      "municipality_code": "GM-RENKUM",
+      "province": "Gelderland",
+      "region_name": "Arnhem",
+      "region_code": "JRG-025-ARNHEM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Renswoude",
+      "municipality_code": "GM-RENSWOUDE",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Reusel-De Mierden",
+      "municipality_code": "GM-REUSELDEMIERDEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rheden",
+      "municipality_code": "GM-RHEDEN",
+      "province": "Gelderland",
+      "region_name": "Arnhem",
+      "region_code": "JRG-025-ARNHEM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rhenen",
+      "municipality_code": "GM-RHENEN",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Ridderkerk",
+      "municipality_code": "GM-RIDDERKERK",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rijssen-Holten",
+      "municipality_code": "GM-RIJSSENHOLTEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rijswijk",
+      "municipality_code": "GM-RIJSWIJK",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Roerdalen",
+      "municipality_code": "GM-ROERDALEN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Roermond",
+      "municipality_code": "GM-ROERMOND",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Roosendaal",
+      "municipality_code": "GM-ROOSENDAAL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rotterdam",
+      "municipality_code": "GM-ROTTERDAM",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rozendaal",
+      "municipality_code": "GM-ROZENDAAL",
+      "province": "Gelderland",
+      "region_name": "Arnhem",
+      "region_code": "JRG-025-ARNHEM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Rucphen",
+      "municipality_code": "GM-RUCPHEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Schagen",
+      "municipality_code": "GM-SCHAGEN",
+      "province": "Noord-Holland",
+      "region_name": "Kop van Noord-Holland",
+      "region_code": "JRG-006-KOPVANNOORDHOL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Scherpenzeel",
+      "municipality_code": "GM-SCHERPENZEEL",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Schiedam",
+      "municipality_code": "GM-SCHIEDAM",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Schiermonnikoog",
+      "municipality_code": "GM-SCHIERMONNIKOOG",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Schouwen-Duiveland",
+      "municipality_code": "GM-SCHOUWENDUIVELAND",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Simpelveld",
+      "municipality_code": "GM-SIMPELVELD",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Sint-Michielsgestel",
+      "municipality_code": "GM-SINTMICHIELSGESTEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Sittard-Geleen",
+      "municipality_code": "GM-SITTARDGELEEN",
+      "province": "Limburg",
+      "region_name": "Zuid-Limburg",
+      "region_code": "JRG-040-ZUIDLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Sliedrecht",
+      "municipality_code": "GM-SLIEDRECHT",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Sluis",
+      "municipality_code": "GM-SLUIS",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Smallingerland",
+      "municipality_code": "GM-SMALLINGERLAND",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Soest",
+      "municipality_code": "GM-SOEST",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Someren",
+      "municipality_code": "GM-SOMEREN",
+      "province": "Noord-Brabant",
+      "region_name": "Helmond-De Peel",
+      "region_code": "JRG-024-HELMONDDEPEEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Son en Breugel",
+      "municipality_code": "GM-SONENBREUGEL",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Stadskanaal",
+      "municipality_code": "GM-STADSKANAAL",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Staphorst",
+      "municipality_code": "GM-STAPHORST",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Stede Broec",
+      "municipality_code": "GM-STEDEBROEC",
+      "province": "Noord-Holland",
+      "region_name": "Westfriesland",
+      "region_code": "JRG-005-WESTFRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Steenbergen",
+      "municipality_code": "GM-STEENBERGEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Steenwijkerland",
+      "municipality_code": "GM-STEENWIJKERLAND",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Stein",
+      "municipality_code": "GM-STEIN",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Stichtse Vecht",
+      "municipality_code": "GM-STICHTSEVECHT",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Súdwest-Fryslân",
+      "municipality_code": "GM-SUDWESTFRYSLAN",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Terneuzen",
+      "municipality_code": "GM-TERNEUZEN",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Terschelling",
+      "municipality_code": "GM-TERSCHELLING",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Texel",
+      "municipality_code": "GM-TEXEL",
+      "province": "Noord-Holland",
+      "region_name": "Kop van Noord-Holland",
+      "region_code": "JRG-006-KOPVANNOORDHOL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Teylingen",
+      "municipality_code": "GM-TEYLINGEN",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tholen",
+      "municipality_code": "GM-THOLEN",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tiel",
+      "municipality_code": "GM-TIEL",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tilburg",
+      "municipality_code": "GM-TILBURG",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tubbergen",
+      "municipality_code": "GM-TUBBERGEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Twenterand",
+      "municipality_code": "GM-TWENTERAND",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tynaarlo",
+      "municipality_code": "GM-TYNAARLO",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Tytsjerksteradiel",
+      "municipality_code": "GM-TYTSJERKSTERADIEL",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Uitgeest",
+      "municipality_code": "GM-UITGEEST",
+      "province": "Noord-Holland",
+      "region_name": "Alkmaar",
+      "region_code": "JRG-004-ALKMAAR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Uithoorn",
+      "municipality_code": "GM-UITHOORN",
+      "province": "Noord-Holland",
+      "region_name": "Amsterdam-Amstelland",
+      "region_code": "JRG-001-AMSTERDAMAMSTE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Urk",
+      "municipality_code": "GM-URK",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Utrecht",
+      "municipality_code": "GM-UTRECHT",
+      "province": "Utrecht",
+      "region_name": "Utrecht Stad",
+      "region_code": "JRG-015-UTRECHTSTAD",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Utrechtse Heuvelrug",
+      "municipality_code": "GM-UTRECHTSEHEUVELRUG",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vaals",
+      "municipality_code": "GM-VAALS",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Valkenburg aan de Geul",
+      "municipality_code": "GM-VALKENBURGAANDEGEU",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Valkenswaard",
+      "municipality_code": "GM-VALKENSWAARD",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Veendam",
+      "municipality_code": "GM-VEENDAM",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Veenendaal",
+      "municipality_code": "GM-VEENENDAAL",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Veere",
+      "municipality_code": "GM-VEERE",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Veldhoven",
+      "municipality_code": "GM-VELDHOVEN",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Velsen",
+      "municipality_code": "GM-VELSEN",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Venlo",
+      "municipality_code": "GM-VENLO",
+      "province": "Limburg",
+      "region_name": "Noord-Limburg",
+      "region_code": "JRG-038-NOORDLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Venray",
+      "municipality_code": "GM-VENRAY",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vijfheerenlanden",
+      "municipality_code": "GM-VIJFHEERENLANDEN",
+      "province": "Utrecht",
+      "region_name": "Lekstroom",
+      "region_code": "JRG-017-LEKSTROOM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vlaardingen",
+      "municipality_code": "GM-VLAARDINGEN",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vlieland",
+      "municipality_code": "GM-VLIELAND",
+      "province": "Fryslân",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vlissingen",
+      "municipality_code": "GM-VLISSINGEN",
+      "province": "Zeeland",
+      "region_name": "Zeeland",
+      "region_code": "JRG-041-ZEELAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Voerendaal",
+      "municipality_code": "GM-VOERENDAAL",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Voorne aan Zee",
+      "municipality_code": "GM-VOORNEAANZEE",
+      "province": "Zuid-Holland",
+      "region_name": "Rotterdam-Rijnmond",
+      "region_code": "JRG-013-ROTTERDAMRIJNM",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Voorschoten",
+      "municipality_code": "GM-VOORSCHOTEN",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Voorst",
+      "municipality_code": "GM-VOORST",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Vught",
+      "municipality_code": "GM-VUGHT",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Waadhoeke",
+      "municipality_code": "GM-WAADHOEKE",
+      "province": "Friesland",
+      "region_name": "Friesland",
+      "region_code": "JRG-036-FRIESLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Waalre",
+      "municipality_code": "GM-WAALRE",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Waalwijk",
+      "municipality_code": "GM-WAALWIJK",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Waddinxveen",
+      "municipality_code": "GM-WADDINXVEEN",
+      "province": "Zuid-Holland",
+      "region_name": "Midden-Holland",
+      "region_code": "JRG-011-MIDDENHOLLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wageningen",
+      "municipality_code": "GM-WAGENINGEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wassenaar",
+      "municipality_code": "GM-WASSENAAR",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Waterland",
+      "municipality_code": "GM-WATERLAND",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Weert",
+      "municipality_code": "GM-WEERT",
+      "province": "Limburg",
+      "region_name": "Midden-Limburg",
+      "region_code": "JRG-039-MIDDENLIMBURG",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "West Betuwe",
+      "municipality_code": "GM-WESTBETUWE",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "West Maas en Waal",
+      "municipality_code": "GM-WESTMAASENWAAL",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Westerkwartier",
+      "municipality_code": "GM-WESTERKWARTIER",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Westerveld",
+      "municipality_code": "GM-WESTERVELD",
+      "province": "Drenthe",
+      "region_name": "Drenthe",
+      "region_code": "JRG-035-DRENTHE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Westervoort",
+      "municipality_code": "GM-WESTERVOORT",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Westerwolde",
+      "municipality_code": "GM-WESTERWOLDE",
+      "province": "Groningen",
+      "region_name": "Groningen",
+      "region_code": "JRG-037-GRONINGEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Westland",
+      "municipality_code": "GM-WESTLAND",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Weststellingwerf",
+      "municipality_code": "GM-WESTSTELLINGWERF",
+      "province": "Fryslân",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wierden",
+      "municipality_code": "GM-WIERDEN",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wijchen",
+      "municipality_code": "GM-WIJCHEN",
+      "province": "Gelderland",
+      "region_name": "Rijk van Nijmegen",
+      "region_code": "JRG-028-RIJKVANNIJMEGE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wijdemeren",
+      "municipality_code": "GM-WIJDEMEREN",
+      "province": "Noord-Holland",
+      "region_name": "Gooi en Vechtstreek",
+      "region_code": "JRG-007-GOOIENVECHTSTR",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wijk bij Duurstede",
+      "municipality_code": "GM-WIJKBIJDUURSTEDE",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Winterswijk",
+      "municipality_code": "GM-WINTERSWIJK",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Woensdrecht",
+      "municipality_code": "GM-WOENSDRECHT",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Woerden",
+      "municipality_code": "GM-WOERDEN",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Wormerland",
+      "municipality_code": "GM-WORMERLAND",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Woudenberg",
+      "municipality_code": "GM-WOUDENBERG",
+      "province": "Utrecht",
+      "region_name": "Amersfoort",
+      "region_code": "JRG-018-AMERSFOORT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zaanstad",
+      "municipality_code": "GM-ZAANSTAD",
+      "province": "Noord-Holland",
+      "region_name": "Zaanstreek-Waterland",
+      "region_code": "JRG-002-ZAANSTREEKWATE",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zaltbommel",
+      "municipality_code": "GM-ZALTBOMMEL",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zandvoort",
+      "municipality_code": "GM-ZANDVOORT",
+      "province": "Noord-Holland",
+      "region_name": "Kennemerland",
+      "region_code": "JRG-003-KENNEMERLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zeewolde",
+      "municipality_code": "GM-ZEEWOLDE",
+      "province": "Flevoland",
+      "region_name": "Flevoland",
+      "region_code": "JRG-034-FLEVOLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zeist",
+      "municipality_code": "GM-ZEIST",
+      "province": "Utrecht",
+      "region_name": "Utrecht West",
+      "region_code": "JRG-016-UTRECHTWEST",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zevenaar",
+      "municipality_code": "GM-ZEVENAAR",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zoetermeer",
+      "municipality_code": "GM-ZOETERMEER",
+      "province": "Zuid-Holland",
+      "region_name": "Haaglanden",
+      "region_code": "JRG-009-HAAGLANDEN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zoeterwoude",
+      "municipality_code": "GM-ZOETERWOUDE",
+      "province": "Zuid-Holland",
+      "region_name": "Holland Rijnland",
+      "region_code": "JRG-010-HOLLANDRIJNLAN",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zuidplas",
+      "municipality_code": "GM-ZUIDPLAS",
+      "province": "Zuid-Holland",
+      "region_name": "Midden-Holland",
+      "region_code": "JRG-011-MIDDENHOLLAND",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zundert",
+      "municipality_code": "GM-ZUNDERT",
+      "province": "Noord-Brabant",
+      "region_name": "Hart van Brabant",
+      "region_code": "JRG-021-HARTVANBRABANT",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zutphen",
+      "municipality_code": "GM-ZUTPHEN",
+      "province": "Gelderland",
+      "region_name": "Centraal Gelderland",
+      "region_code": "JRG-026-CENTRAALGELDER",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zwartewaterland",
+      "municipality_code": "GM-ZWARTEWATERLAND",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zwijndrecht",
+      "municipality_code": "GM-ZWIJNDRECHT",
+      "province": "Zuid-Holland",
+      "region_name": "Zuid-Holland Zuid",
+      "region_code": "JRG-014-ZUIDHOLLANDZUI",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    },
+    {
+      "municipality_name": "Zwolle",
+      "municipality_code": "GM-ZWOLLE",
+      "province": "Overijssel",
+      "region_name": "West-Overijssel",
+      "region_code": "JRG-031-WESTOVERIJSSEL",
+      "active": true,
+      "source": "contracts/management/seed_data/gemeenten_jeugdregio_full.csv + CareOn curated mapping policy from contracts/management/commands/seed_jeugdregio_backbone.py (province defaults + municipality overrides)",
+      "peildatum": "2026-06-14"
+    }
+  ]
+}

@@ -445,7 +445,7 @@ export function CareFilterTabButton({
           : undefined
       }
       className={cn(
-        "h-9 min-w-[4.75rem] flex-1 rounded-xl px-3 text-[13px] font-medium transition-colors sm:flex-none sm:px-4",
+        "inline-flex h-9 min-w-[4.75rem] flex-1 items-center justify-center rounded-xl px-3 text-[13px] font-medium leading-none transition-colors sm:flex-none sm:px-4",
         selected
           ? accentSelected && accentHex
             ? "shadow-sm ring-1 ring-white/20"

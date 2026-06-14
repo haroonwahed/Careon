@@ -77,7 +77,7 @@ export const E2E_PROVIDER_TWO_USERNAME = pilotDemoProviderTwoUsername();
 
 export const E2E_PROVIDER_ONE_NAME = process.env.E2E_PROVIDER_ONE_NAME ?? "Horizon Jeugdzorg";
 export const E2E_PROVIDER_TWO_NAME = process.env.E2E_PROVIDER_TWO_NAME ?? "Kompas Zorg";
-/** Labels from `seed_demo_data` MunicipalityConfiguration / RegionalConfiguration (see intake-form API). */
+/** Labels from `seed_demo_data` MunicipalityConfiguration / JEUGDREGIO RegionalConfiguration (see intake-form API). */
 export const E2E_MUNICIPALITY_NAME = process.env.E2E_MUNICIPALITY_NAME ?? "Utrecht";
 export const E2E_REGION_NAME = process.env.E2E_REGION_NAME ?? "Utrecht Stad";
 export const E2E_DEMO_CASE_TITLE =

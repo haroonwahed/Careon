@@ -62,8 +62,7 @@ export default function App() {
   const pathname = useSyncedPathname();
   const isPublicRoute = pathname === PUBLIC_LANDING_URL;
   const isAuthRoute = isAuthDocumentPath(pathname);
-  const isCasussenRoute = pathname === "/casussen";
-  const effectiveTheme: "light" | "dark" = isCasussenRoute ? "dark" : theme;
+  const effectiveTheme: "light" | "dark" = theme;
 
   useEffect(() => {
     window.localStorage.setItem("careon-theme", theme);

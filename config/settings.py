@@ -42,9 +42,29 @@ def _invalid_database_url(message: str) -> ImproperlyConfigured:
     )
 
 
+def _looks_like_placeholder_database_url(database_url: str) -> bool:
+    """
+    Treat obvious template or placeholder DATABASE_URL values as "unset".
+
+    This keeps local development usable when .env contains a copied production
+    connection string skeleton such as INSERT_YOUR_SUPABASE_DB_PASSWORD.
+    """
+    lowered = database_url.strip().lower()
+    return any(
+        marker in lowered
+        for marker in (
+            'insert_your_',
+            'your_db_host',
+            'your_password',
+            'change_me',
+            'placeholder',
+        )
+    )
+
+
 def _database_config() -> dict[str, object]:
     database_url = os.getenv('DATABASE_URL', '').strip()
-    if not database_url:
+    if not database_url or _looks_like_placeholder_database_url(database_url):
         return {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
@@ -134,10 +154,16 @@ if '*' not in ALLOWED_HOSTS:
 _LOCAL_CSRF_ORIGINS = [
     'http://localhost:3000',
     'https://localhost:3000',
+    'http://localhost:5173',
+    'https://localhost:5173',
     'http://127.0.0.1:3000',
     'https://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+    'https://127.0.0.1:5173',
     'http://[::1]:3000',
     'https://[::1]:3000',
+    'http://[::1]:5173',
+    'https://[::1]:5173',
     # Vite proxy may forward with Django as Host; allow same-origin checks when needed.
     'http://127.0.0.1:8000',
     'https://127.0.0.1:8000',
@@ -149,11 +175,9 @@ _LOCAL_CSRF_ORIGINS = [
     'https://*.riker.replit.dev:8000',
 ]
 _csrf_from_env = _csv_env('CSRF_TRUSTED_ORIGINS', default=_LOCAL_CSRF_ORIGINS)
-# .env may list production origins only; keep local Vite/Django origins when DEBUG.
-if DEBUG:
-    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_from_env + _LOCAL_CSRF_ORIGINS))
-else:
-    CSRF_TRUSTED_ORIGINS = _csrf_from_env
+# Always keep local Vite/Django origins for developer workflows; production
+# settings remove loopback entries explicitly after importing this module.
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(_csrf_from_env + _LOCAL_CSRF_ORIGINS))
 
 
 # Application definition
@@ -384,6 +408,9 @@ if SSO_ENABLED:
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+# Authenticated media serving. When True, download views emit X-Accel-Redirect and rely on nginx:
+#   location /protected_media/ { internal; alias /path/to/media/; }
+NGINX_MEDIA_ACCEL_REDIRECT = _bool_env('NGINX_MEDIA_ACCEL_REDIRECT', default=False)
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_USE_FINDERS = True
 

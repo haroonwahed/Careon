@@ -25,6 +25,7 @@ type IntakeFormResponse = {
   options: {
     case_coordinator?: Array<{ value: string; label: string }>;
     gemeente?: Array<{ value: string; label: string }>;
+    jeugdhulpregio?: Array<{ value: string; label: string }>;
     preferred_region?: Array<{ value: string; label: string }>;
   };
 };
@@ -253,8 +254,8 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Coordina
   const municipality = (bootstrap.json?.options.gemeente || []).length > 0
     ? findOptionByLabel(bootstrap.json?.options.gemeente, MUNICIPALITY_NAME)
     : null;
-  const region = (bootstrap.json?.options.preferred_region || []).length > 0
-    ? findOptionByLabel(bootstrap.json?.options.preferred_region, REGION_NAME)
+  const region = (bootstrap.json?.options.jeugdhulpregio || []).length > 0
+    ? findOptionByLabel(bootstrap.json?.options.jeugdhulpregio, REGION_NAME)
     : null;
   const coordinator = (bootstrap.json?.options.case_coordinator || []).length > 0
     ? findOptionByContains(bootstrap.json?.options.case_coordinator, GEMEENTE_USERNAME)
@@ -272,7 +273,9 @@ test("pilot demo part 1 creates case, summary, matching, rejection, and Coordina
     zorgvorm_gewenst: "OUTPATIENT",
     preferred_care_form: "OUTPATIENT",
     preferred_region_type: bootstrap.json?.initial_values.preferred_region_type ?? "JEUGDREGIO",
+    jeugdhulpregio: region?.value ?? bootstrap.json?.initial_values.jeugdhulpregio,
     preferred_region: region?.value ?? bootstrap.json?.initial_values.preferred_region,
+    regio: region?.value ?? bootstrap.json?.initial_values.regio,
     gemeente: municipality?.value ?? bootstrap.json?.initial_values.gemeente,
     case_coordinator: coordinator?.value ?? bootstrap.json?.initial_values.case_coordinator,
     problematiek_types: "thuiszitproblematiek, gezinsstress",

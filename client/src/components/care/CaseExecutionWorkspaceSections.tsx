@@ -271,7 +271,7 @@ export function CaseExecutionDetailTabs({
         <TabsTrigger value="overzicht" className="text-[12px]">Overzicht</TabsTrigger>
         <TabsTrigger value="arrangement" className="text-[12px]">Arrangement</TabsTrigger>
         <TabsTrigger value="matching" className="text-[12px]">Matching</TabsTrigger>
-        <TabsTrigger value="validatie" className="text-[12px]">Validatie</TabsTrigger>
+        <TabsTrigger value="validatie" className="text-[12px]">Toetsing</TabsTrigger>
         <TabsTrigger value="historie" className="text-[12px]">Historie</TabsTrigger>
         <TabsTrigger value="documenten" className="text-[12px]">Documenten</TabsTrigger>
       </TabsList>
@@ -331,7 +331,7 @@ export function shortenAttentionLabel(headline: string, body: string): string {
   const raw = body.trim();
   if (!raw) return headline;
   const lower = raw.toLowerCase();
-  if (lower.includes("casusoverzicht") && lower.includes("ontbreekt")) return "Casusoverzicht ontbreekt";
+  if ((lower.includes("casusoverzicht") || lower.includes("aanmelding")) && lower.includes("ontbreekt")) return "Aanmelding ontbreekt";
   if (lower.includes("gemeentelijke validatie") || lower.includes("gemeentevalidatie")) {
     return "Toetsing vereist";
   }

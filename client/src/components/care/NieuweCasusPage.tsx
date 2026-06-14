@@ -34,6 +34,7 @@ type IntakeFormState = {
   care_category_sub: string;
   assessment_summary: string;
   gemeente: string;
+  jeugdhulpregio: string;
   regio: string;
   urgency: string;
   complexity: string;
@@ -68,6 +69,7 @@ type IntakeFormPayload = {
     care_category_main: Option[];
     care_category_sub: SubcategoryOption[];
     gemeente: MunicipalityOption[];
+    jeugdhulpregio: Option[];
     regio: Option[];
     urgency: Option[];
     complexity: Option[];
@@ -103,7 +105,7 @@ const baseTextareaClass = "w-full rounded-2xl border border-border bg-card px-3 
 const compactLabelClass = "mb-1 block text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
 const compactGroupLabelClass = "mb-2 text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
 const wizardFieldGridClass = "grid gap-5 md:grid-cols-2";
-const quietToggleClass = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/55 px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground";
+const quietToggleClass = "inline-flex items-center gap-1 rounded-full border border-border/70 bg-card/55 px-2 py-1 text-[11px] font-medium leading-none text-muted-foreground transition-colors hover:border-border/70 hover:text-foreground";
 const placementPressureHorizonChoices = [
   { value: "TODAY", label: "Directe inzet" },
   { value: "3_DAYS", label: "Binnen 72 uur" },
@@ -672,10 +674,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         }
 
         const draft = readNieuweCasusDraft();
-        const payloadOptions = payload.options ?? {
+        // Merge over an all-empty base so a partial options payload (e.g. a backend that
+        // omits a newer key like jeugdhulpregio) can never crash the wizard on `.map`.
+        const payloadOptions = {
           care_category_main: [],
           care_category_sub: [],
           gemeente: [],
+          jeugdhulpregio: [],
           regio: [],
           urgency: [],
           complexity: [],
@@ -688,6 +693,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           client_age_category: [],
           family_situation: [],
           case_coordinator: [],
+          ...(payload.options ?? {}),
         };
 
         const today = new Date();
@@ -700,26 +706,32 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           ?? payloadOptions.complexity[0]?.value
           ?? "";
 
-        const preferredRegionTypeDefault = payloadOptions.preferred_region_type[0]?.value ?? "";
+        const preferredRegionTypeDefault = payloadOptions.preferred_region_type[0]?.value ?? "JEUGDREGIO";
         const preferredCareFormDefault = payloadOptions.preferred_care_form[0]?.value
           ?? payloadOptions.zorgvorm_gewenst[0]?.value
           ?? "";
-        const regionOptionValues = new Set(payloadOptions.regio.map((option) => option.value));
+        const jeugdhulpregioOptionValues = new Set(payloadOptions.jeugdhulpregio.map((option) => option.value));
         const preferredRegionTypeOptionValues = new Set(payloadOptions.preferred_region_type.map((option) => option.value));
 
-        const regionDefault = payload.initial_values.regio
-          || payloadOptions.regio[0]?.value
+        const regionDefault = payload.initial_values.jeugdhulpregio
+          || payload.initial_values.preferred_region
+          || payload.initial_values.regio
+          || payloadOptions.jeugdhulpregio[0]?.value
           || payloadOptions.preferred_region[0]?.value
+          || payloadOptions.regio[0]?.value
           || "";
         const draftPreferredRegionType = draft?.formState?.preferred_region_type;
         const normalizedDraftPreferredRegionType =
-          draftPreferredRegionType && draftPreferredRegionType !== "GEMEENTELIJK" && preferredRegionTypeOptionValues.has(draftPreferredRegionType)
+          draftPreferredRegionType && draftPreferredRegionType === "JEUGDREGIO" && preferredRegionTypeOptionValues.has(draftPreferredRegionType)
             ? draftPreferredRegionType
             : "";
-        const draftRegion = draft?.formState?.regio && regionOptionValues.has(draft.formState.regio)
+        const draftRegion = draft?.formState?.jeugdhulpregio && jeugdhulpregioOptionValues.has(draft.formState.jeugdhulpregio)
+          ? draft.formState.jeugdhulpregio
+          : "";
+        const draftLegacyRegion = draft?.formState?.regio && jeugdhulpregioOptionValues.has(draft.formState.regio)
           ? draft.formState.regio
           : "";
-        const draftPreferredRegion = draft?.formState?.preferred_region && regionOptionValues.has(draft.formState.preferred_region)
+        const draftPreferredRegion = draft?.formState?.preferred_region && jeugdhulpregioOptionValues.has(draft.formState.preferred_region)
           ? draft.formState.preferred_region
           : "";
         const withDefaults: IntakeFormState = {
@@ -738,6 +750,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           preferred_region_type: payload.initial_values.preferred_region_type || preferredRegionTypeDefault,
           preferred_care_form: payload.initial_values.preferred_care_form || preferredCareFormDefault,
           zorgvorm_gewenst: payload.initial_values.zorgvorm_gewenst || preferredCareFormDefault,
+          jeugdhulpregio: payload.initial_values.jeugdhulpregio || regionDefault,
           regio: payload.initial_values.regio || regionDefault,
           preferred_region: payload.initial_values.preferred_region || regionDefault,
           max_toelaatbare_wachttijd_dagen: payload.initial_values.max_toelaatbare_wachttijd_dagen || "7",
@@ -751,7 +764,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           withDefaults.care_category_sub = draft.formState.care_category_sub || withDefaults.care_category_sub;
           withDefaults.assessment_summary = draft.formState.assessment_summary ?? withDefaults.assessment_summary;
           withDefaults.gemeente = draft.formState.gemeente || withDefaults.gemeente;
-          withDefaults.regio = draftRegion || withDefaults.regio;
+          withDefaults.jeugdhulpregio = draftRegion || draftLegacyRegion || draftPreferredRegion || withDefaults.jeugdhulpregio;
+          withDefaults.regio = draftRegion || draftLegacyRegion || draftPreferredRegion || withDefaults.regio;
           withDefaults.urgency = draft.formState.urgency || withDefaults.urgency;
           withDefaults.complexity = draft.formState.complexity || withDefaults.complexity;
           withDefaults.placement_pressure_horizon = draft.formState.placement_pressure_horizon || withDefaults.placement_pressure_horizon;
@@ -766,8 +780,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           withDefaults.zorgvorm_gewenst = draft.formState.zorgvorm_gewenst || withDefaults.zorgvorm_gewenst;
           withDefaults.preferred_care_form = draft.formState.preferred_care_form || withDefaults.preferred_care_form;
           withDefaults.preferred_region_type = normalizedDraftPreferredRegionType || withDefaults.preferred_region_type;
-          withDefaults.regio = draftRegion || withDefaults.regio;
-          withDefaults.preferred_region = draftPreferredRegion || withDefaults.preferred_region;
+          withDefaults.jeugdhulpregio = draftRegion || draftLegacyRegion || draftPreferredRegion || withDefaults.jeugdhulpregio;
+          withDefaults.regio = draftRegion || draftLegacyRegion || draftPreferredRegion || withDefaults.regio;
+          withDefaults.preferred_region = draftPreferredRegion || draftLegacyRegion || draftRegion || withDefaults.preferred_region;
           withDefaults.max_toelaatbare_wachttijd_dagen = draft.formState.max_toelaatbare_wachttijd_dagen || withDefaults.max_toelaatbare_wachttijd_dagen;
           withDefaults.leeftijd = draft.formState.leeftijd || withDefaults.leeftijd;
           withDefaults.setting_voorkeur = draft.formState.setting_voorkeur || withDefaults.setting_voorkeur;
@@ -905,21 +920,21 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
   const selectedGemeenteLabel = selectedGemeenteOption?.label ?? formState?.gemeente ?? "";
   const selectedGemeenteUrgencyRequestUrl = selectedGemeenteOption?.urgencyDocumentRequestUrl?.trim() ?? "";
-  const selectedRegionOption = useMemo(() => {
+  const selectedJeugdhulpregioOption = useMemo(() => {
     if (!options || !formState) {
       return null;
     }
-    const selectedRegionId = formState.regio || formState.preferred_region || "";
+    const selectedRegionId = formState.jeugdhulpregio || formState.preferred_region || formState.regio || "";
     if (!selectedRegionId) {
       return null;
     }
-    const regionOptions = options.regio ?? [];
+    const regionOptions = options.jeugdhulpregio ?? [];
     const preferredRegionOptions = options.preferred_region ?? [];
     return regionOptions.find((option) => option.value === selectedRegionId)
       ?? preferredRegionOptions.find((option) => option.value === selectedRegionId)
       ?? null;
-  }, [formState?.preferred_region, formState?.regio, options]);
-  const selectedRegionLabel = selectedRegionOption?.label ?? formState?.regio ?? formState?.preferred_region ?? "";
+  }, [formState?.jeugdhulpregio, formState?.preferred_region, formState?.regio, options]);
+  const selectedJeugdhulpregioLabel = selectedJeugdhulpregioOption?.label ?? formState?.jeugdhulpregio ?? formState?.preferred_region ?? formState?.regio ?? "";
 
   const updateField = <K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) => {
     setFormState((current) => current ? { ...current, [field]: value } : current);
@@ -931,6 +946,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       delete nextErrors[field];
       return nextErrors;
     });
+  };
+
+  const updateJeugdhulpregio = (value: string) => {
+    updateField("jeugdhulpregio", value);
+    updateField("regio", value);
+    updateField("preferred_region", value);
+    updateField("preferred_region_type", "JEUGDREGIO");
   };
 
   const toggleDiagnostiek = (value: string) => {
@@ -1094,8 +1116,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (step === 3) {
-      if (!formState.regio && !formState.preferred_region) {
-        setStepError("Kies minimaal een regio binnen de randvoorwaarden.");
+      if (!formState.jeugdhulpregio && !formState.regio && !formState.preferred_region) {
+        setStepError("Kies minimaal een jeugdhulpregio binnen de randvoorwaarden.");
         return false;
       }
     }
@@ -1182,8 +1204,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     {
       phase: "matching",
       label: "Matching",
-      gemeente: "Leeftijdscategorie, regio, zorgvraag, urgentie",
-      zorgaanbieder: "Leeftijdscategorie + regio (geen NAW)",
+      gemeente: "Leeftijdscategorie, jeugdhulpregio, zorgvraag, urgentie",
+      zorgaanbieder: "Leeftijdscategorie + jeugdhulpregio (geen NAW)",
       coordinatie: "Need-to-know coördinatiesignalen",
     },
     {
@@ -1224,9 +1246,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         <button
           type="button"
           onClick={() => onCancel?.()}
-          className="inline-flex items-center gap-1.5 text-[15px] font-medium text-primary transition-colors hover:text-muted-foreground"
+          className="inline-flex items-center gap-1.5 text-[15px] font-medium leading-none text-primary transition-colors hover:text-muted-foreground"
         >
-          <ArrowLeft size={15} />
+          <ArrowLeft size={15} className="translate-y-px" />
           Terug naar casussen
         </button>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
@@ -1246,11 +1268,11 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           </div>
           {currentStep === 3 ? (
             <Button
-              className="h-11 gap-2 rounded-full px-5 text-[15px] font-medium shadow-sm"
+              className="h-11 gap-2 rounded-full px-5 text-[15px] font-medium leading-none shadow-sm"
               onClick={handleAdvance}
             >
               Casus aanmaken
-              <Save size={15} />
+              <Save size={15} className="translate-y-px" />
             </Button>
           ) : null}
         </div>
@@ -1411,21 +1433,21 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
                 <div>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <label className={compactLabelClass}>Jeugdregio *</label>
+                    <label className={compactLabelClass}>Jeugdhulpregio *</label>
                     <span aria-hidden className="h-8 w-8 shrink-0" />
                   </div>
                   <select
-                    value={formState.regio}
-                    onChange={(event) => updateField("regio", event.target.value)}
+                    value={formState.jeugdhulpregio}
+                    onChange={(event) => updateJeugdhulpregio(event.target.value)}
                     className={baseFieldClass}
-                    aria-label="Jeugdregio *"
+                    aria-label="Jeugdhulpregio *"
                   >
-                    <option value="">Selecteer jeugdregio</option>
-                    {options.regio.map((option) => (
+                    <option value="">Selecteer jeugdhulpregio</option>
+                    {options.jeugdhulpregio.map((option) => (
                       <option key={option.value} value={option.value}>{option.label}</option>
                     ))}
                   </select>
-                  <FieldError message={formErrors.regio} />
+                  <FieldError message={formErrors.jeugdhulpregio ?? formErrors.regio} />
                 </div>
               </div>
 
@@ -1866,30 +1888,27 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1.9fr)_minmax(350px,1fr)]">
               <div className="space-y-3">
                 <section className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
-              <div className="mb-3 flex items-start justify-between gap-3">
-                <h3 className="text-[17px] font-semibold text-foreground">Jeugdregio &amp; Verantwoordelijkheid</h3>
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="text-[17px] font-semibold text-foreground">Gemeente &amp; Jeugdhulpregio</h3>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                     <div>
-                      <label htmlFor="nieuw-casus-regio" className={compactLabelClass}>Jeugdregio *</label>
+                      <label htmlFor="nieuw-casus-regio" className={compactLabelClass}>Jeugdhulpregio *</label>
                       <select
                         id="nieuw-casus-regio"
-                        value={formState.regio}
+                        value={formState.jeugdhulpregio}
                         onChange={(event) => {
-                          updateField("regio", event.target.value);
-                          if (!formState.preferred_region) {
-                            updateField("preferred_region", event.target.value);
-                          }
+                          updateJeugdhulpregio(event.target.value);
                         }}
                         className={baseFieldClass}
                       >
-                        <option value="">Selecteer jeugdregio</option>
-                        {options.regio.map((option) => (
+                        <option value="">Selecteer jeugdhulpregio</option>
+                        {options.jeugdhulpregio.map((option) => (
                           <option key={option.value} value={option.value}>{option.label}</option>
                         ))}
                       </select>
-                      <FieldError message={formErrors.regio} />
+                      <FieldError message={formErrors.jeugdhulpregio ?? formErrors.regio} />
                     </div>
 
                     <div>
@@ -1909,23 +1928,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </div>
                   </div>
 
-                  <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
                       <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Gemeente (woonplaatsbeginsel)</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedGemeenteLabel || "Wordt afgeleid uit gemeente"}</p>
                     </div>
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Zorgregio</p>
-                      <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedRegionLabel || "Wordt afgeleid uit regio"}</p>
-                    </div>
-                    <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Plaatsingsregio</p>
-                      <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedRegionLabel || "Volgt regio voor plaatsing"}</p>
+                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Jeugdhulpregio</p>
+                      <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedJeugdhulpregioLabel || "Wordt afgeleid uit jeugdhulpregio"}</p>
                     </div>
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
                       <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Herbeoordeling</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">
-                        {formState.gemeente && formState.regio ? "Alleen bij grensverschil" : "Nog niet bepaald"}
+                        {formState.gemeente && formState.jeugdhulpregio ? "Alleen bij grensverschil" : "Nog niet bepaald"}
                       </p>
                     </div>
                   </div>
@@ -2044,8 +2059,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     <span className="min-w-0 break-words text-right font-medium text-foreground">{(selectedGemeenteLabel || "-")}</span>
                   </div>
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
-                    <span className="text-muted-foreground">Regio</span>
-                    <span className="min-w-0 break-words text-right font-medium text-foreground">{(options.regio.find((option) => option.value === formState.regio)?.label ?? formState.regio) || "-"}</span>
+                    <span className="text-muted-foreground">Jeugdhulpregio</span>
+                    <span className="min-w-0 break-words text-right font-medium text-foreground">{(options.jeugdhulpregio.find((option) => option.value === formState.jeugdhulpregio)?.label ?? formState.jeugdhulpregio) || (options.preferred_region.find((option) => option.value === formState.preferred_region)?.label ?? formState.preferred_region) || "-"}</span>
                   </div>
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
                     <span className="text-muted-foreground">Zoekradius</span>

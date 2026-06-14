@@ -17,6 +17,7 @@ from contracts.models import (
     OutcomeReasonCode,
     PlacementRequest,
     RegionalConfiguration,
+    RegionType,
     UserProfile,
 )
 from contracts.decision_engine import evaluate_case
@@ -124,6 +125,7 @@ class WorkflowFoundationLockTests(TestCase):
             organization=self.organization,
             region_name='Regio Utrecht',
             region_code='RU',
+            region_type=RegionType.JEUGDREGIO,
             created_by=self.provider_user,
         )
         region.served_municipalities.add(municipality)
@@ -145,6 +147,7 @@ class WorkflowFoundationLockTests(TestCase):
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_region_type': region.region_type,
             'preferred_region': str(region.pk),
+            'jeugdhulpregio': str(region.pk),
             'gemeente': str(municipality.pk),
             'case_coordinator': str(self.provider_user.pk),
         })

@@ -17,6 +17,8 @@ from contracts.models import (
     OrganizationMembership,
     PlacementRequest,
     ProviderCareTransitionRequest,
+    RegionalConfiguration,
+    RegionType,
     UserProfile,
 )
 from contracts.workflow_state_machine import WorkflowState
@@ -152,6 +154,13 @@ class GovernanceV12WijkteamTests(TestCase):
         self.user = User.objects.create_user(username='v12_wijkteam_u', password='pw-v12')
         OrganizationMembership.objects.create(organization=self.org, user=self.user, role=OrganizationMembership.Role.MEMBER, is_active=True)
         UserProfile.objects.update_or_create(user=self.user, defaults={'role': UserProfile.Role.ASSOCIATE})
+        self.jeugdregio = RegionalConfiguration.objects.create(
+            organization=self.org,
+            region_name='Jeugdregio V12',
+            region_code='JRV12',
+            region_type=RegionType.JEUGDREGIO,
+            created_by=self.user,
+        )
 
     def test_intake_create_wijkteam_sets_workflow(self):
         self.client.login(username='v12_wijkteam_u', password='pw-v12')
@@ -162,7 +171,8 @@ class GovernanceV12WijkteamTests(TestCase):
             'urgency': CaseIntakeProcess.Urgency.MEDIUM,
             'complexity': CaseIntakeProcess.Complexity.SIMPLE,
             'preferred_care_form': CaseIntakeProcess.CareForm.LOW_THRESHOLD_CONSULT,
-            'preferred_region_type': 'GEMEENTELIJK',
+            'preferred_region_type': RegionType.JEUGDREGIO,
+            'jeugdhulpregio': str(self.jeugdregio.pk),
             'entry_route': 'WIJKTEAM',
             'case_coordinator': self.user.pk,
         }

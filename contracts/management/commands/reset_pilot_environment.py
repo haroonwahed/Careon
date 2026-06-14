@@ -24,8 +24,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("[reset_pilot_environment] seed_demo_data --reset --locked-time …")
         call_command("seed_demo_data", reset=True, locked_time=True, verbosity=1)
-        self.stdout.write("[reset_pilot_environment] seed_jeugdregio_backbone …")
-        call_command("seed_jeugdregio_backbone", verbosity=1)
+        self.stdout.write("[reset_pilot_environment] sync_nl_reference_geo --replace-links …")
+        call_command("sync_nl_reference_geo", replace_links=True, verbosity=1)
         self.stdout.write("[reset_pilot_environment] seed_pilot_e2e …")
         call_command("seed_pilot_e2e", verbosity=1)
         record_rehearsal_run(command="reset_pilot_environment")

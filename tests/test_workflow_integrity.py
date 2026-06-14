@@ -4,8 +4,11 @@ Workflow integrity — canonical flow is law (no skips, no illegal jumps, tenanc
 Casus → Samenvatting → Matching → Gemeente Validatie → Aanbieder Beoordeling → Plaatsing → Intake
 """
 
+from unittest import mock
+
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.db import DatabaseError
 from django.test import Client, TestCase
 from django.urls import reverse
 
@@ -22,6 +25,7 @@ from contracts.workflow_state_machine import (
     WorkflowAction,
     WorkflowRole,
     WorkflowState,
+    can_role_execute_action,
     can_transition,
     evaluate_transition,
     resolve_actor_role,
@@ -163,6 +167,38 @@ class WorkflowResolveActorTests(TestCase):
         UserProfile.objects.filter(user=user).delete()
         self.assertFalse(UserProfile.objects.filter(user=user).exists())
         self.assertEqual(resolve_actor_role(user=user, organization=org), WorkflowRole.GEMEENTE)
+
+    def test_strict_resolution_fails_closed_on_error(self):
+        """
+        R2: when role resolution genuinely fails, the write-path authorization gate must
+        NOT degrade to the privileged GEMEENTE role. strict=True returns UNRESOLVED so the
+        caller denies; strict=False preserves the no-raise degrade-to-gemeente read contract.
+        """
+        org = Organization.objects.create(name="WF Org Strict", slug="wf-org-strict")
+        user = User.objects.create_user(username="wf_strict", password="pw-wf-test")
+        OrganizationMembership.objects.create(
+            organization=org,
+            user=user,
+            role=OrganizationMembership.Role.MEMBER,
+            is_active=True,
+        )
+
+        # Force the exception path inside resolve_actor_role by making the membership
+        # lookup raise, simulating a DB hiccup during role resolution.
+        with mock.patch(
+            "contracts.workflow_state_machine.OrganizationMembership.objects.filter",
+            side_effect=DatabaseError("simulated db failure"),
+        ):
+            strict_role = resolve_actor_role(user=user, organization=org, strict=True)
+            lenient_role = resolve_actor_role(user=user, organization=org, strict=False)
+
+        # strict gate fails closed...
+        self.assertEqual(strict_role, WorkflowRole.UNRESOLVED)
+        # ...and the sentinel grants no workflow action and matches no real role.
+        self.assertFalse(can_role_execute_action(WorkflowRole.UNRESOLVED, WorkflowAction.VALIDATE_MATCHING))
+        self.assertNotIn(WorkflowRole.UNRESOLVED, {WorkflowRole.GEMEENTE, WorkflowRole.ZORGAANBIEDER, WorkflowRole.ADMIN})
+        # ...while read-path callers keep the documented degrade-to-gemeente behavior.
+        self.assertEqual(lenient_role, WorkflowRole.GEMEENTE)
 
 
 class UnauthorizedApiReadsTests(TestCase):

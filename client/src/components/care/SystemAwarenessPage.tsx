@@ -1605,18 +1605,6 @@ export function SystemAwarenessPage({
       titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
       title="Regiekamer"
       subtitle="Stuur op doorstroom, blokkades en urgente casussen."
-      actions={(
-        <Button
-          type="button"
-          variant="default"
-          className="h-12 rounded-full px-5 text-[14px] font-semibold shadow-lg shadow-primary/20"
-          onClick={uiMode === "crisis" ? applyModeCasesLink : runModePrimary}
-          data-testid="coordination-header-primary-cta"
-        >
-          Los blokkades op
-          <ChevronRight size={16} aria-hidden className="ml-2" />
-        </Button>
-      )}
       dominantAction={
         hasActiveData ? (
           <CareAlertCard
@@ -1632,19 +1620,19 @@ export function SystemAwarenessPage({
             primaryAction={(
                 <Button
                   type="button"
-                  className="h-10 rounded-full bg-amber-400 px-5 text-[13px] font-semibold text-amber-950 shadow-sm hover:bg-amber-300"
+                  className="h-10 rounded-full bg-amber-400 px-5 text-[13px] font-semibold leading-none text-amber-950 shadow-sm hover:bg-amber-300"
                   onClick={uiMode === "crisis" ? applyModeCasesLink : runModePrimary}
                   data-testid="coordination-dominant-primary-cta"
                 >
                   {dominantPrimaryLabel}
-                  <ChevronRight size={16} className="ml-2" aria-hidden />
+                  <ChevronRight size={16} className="ml-2 translate-y-px" aria-hidden />
                 </Button>
             )}
             secondaryAction={(
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 rounded-full border-border/70 px-5 text-[13px] font-semibold text-foreground hover:bg-muted/20"
+                className="h-10 rounded-full border-border/70 px-5 text-[13px] font-semibold leading-none text-foreground hover:bg-muted/20"
                 onClick={uiMode === "crisis" ? applyModeCasesLink : runModeSecondary}
                 data-testid="coordination-dominant-secondary-cta"
               >

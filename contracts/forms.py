@@ -8,6 +8,7 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 from .models import (
     CareCase, PlacementRequest, CareTask, CareSignal,
     Workflow, WorkflowTemplate, WorkflowTemplateStep, WorkflowStep,
@@ -17,8 +18,9 @@ from .models import (
     OrganizationInvitation,
     CareCategoryMain,
     CareCategorySubcategory,
-    MunicipalityConfiguration, RegionalConfiguration,
+    MunicipalityConfiguration, RegionalConfiguration, RegionType,
 )
+from .region_integrity import is_municipality_mirror_region_data
 
 User = get_user_model()
 
@@ -608,6 +610,12 @@ class OrganizationInvitationForm(forms.ModelForm):
 
 class CaseIntakeProcessForm(forms.ModelForm):
     source_reference = forms.CharField(required=False, widget=forms.HiddenInput())
+    jeugdhulpregio = forms.ModelChoiceField(
+        queryset=RegionalConfiguration.objects.none(),
+        required=True,
+        widget=forms.Select(attrs={'class': TAILWIND_SELECT}),
+        label='Jeugdhulpregio',
+    )
     placement_pressure_horizon = forms.ChoiceField(
         required=False,
         choices=CaseIntakeProcess.PlacementPressureHorizon.choices,
@@ -721,13 +729,13 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'care_category_sub': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'assessment_summary': forms.Textarea(attrs={'class': TAILWIND_TEXTAREA, 'rows': 4}),
             'gemeente': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'regio': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'regio': forms.HiddenInput(),
             'urgency': forms.HiddenInput(),
             'complexity': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'zorgvorm_gewenst': forms.Select(attrs={'class': TAILWIND_SELECT}),
             'preferred_care_form': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'preferred_region_type': forms.Select(attrs={'class': TAILWIND_SELECT}),
-            'preferred_region': forms.Select(attrs={'class': TAILWIND_SELECT}),
+            'preferred_region_type': forms.HiddenInput(),
+            'preferred_region': forms.HiddenInput(),
             'max_toelaatbare_wachttijd_dagen': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'min': 0}),
             'leeftijd': forms.NumberInput(attrs={'class': TAILWIND_INPUT, 'min': 0, 'max': 120}),
             'setting_voorkeur': forms.TextInput(attrs={'class': TAILWIND_INPUT}),
@@ -749,7 +757,7 @@ class CaseIntakeProcessForm(forms.ModelForm):
             'care_category_sub': 'Specifieke zorgbehoefte',
             'assessment_summary': 'Persoonsbeeld',
             'gemeente': 'Gemeente',
-            'regio': 'Regio (automatisch bepaald)',
+            'regio': 'Jeugdhulpregio (intern)',
             'complexity': 'Complexiteit',
             'placement_pressure_horizon': 'Huidige situatie houdbaar tot',
             'safety_pressure': 'Veiligheidsdruk',
@@ -783,7 +791,7 @@ class CaseIntakeProcessForm(forms.ModelForm):
         }
 
     def __init__(self, *args, organization=None, **kwargs):
-        # `organization` scopes Regio/Voorkeursregio querysets to the requesting tenant
+        # `organization` scopes municipality / jeugdregio querysets to the requesting tenant
         # (with NULL-org rows kept as a shared/system fallback). Passed by API views
         # that have request context; safe default of None preserves legacy behaviour.
         self._organization = organization
@@ -799,38 +807,61 @@ class CaseIntakeProcessForm(forms.ModelForm):
             visible_in_mvp=True,
         ).select_related('main_category').order_by('main_category__order', 'order', 'name')
 
-        # Resolve the region type the user is currently working with. Defaults to
-        # JEUGDREGIO so the dropdown opens with actual youth-region rows on first load.
-        selected_region_type = (
-            self.data.get('preferred_region_type')
-            or self.initial.get('preferred_region_type')
-            or 'JEUGDREGIO'
-        )
-        if not self.initial.get('preferred_region_type'):
-            self.initial['preferred_region_type'] = selected_region_type
-
-        # Build the Regio queryset narrowed by:
-        #   (A) the selected region_type — eliminates same-name duplicates that only
-        #       differ by type (e.g. "Utrecht (gemeentelijk)" vs "Utrecht (regionaal)").
-        #   (B) the requesting tenant — eliminates cross-organization leakage when
-        #       multiple tenants seed their own copy of the same region. NULL-org rows
-        #       are retained as a shared/system fallback.
-        region_qs = RegionalConfiguration.objects.filter(
+        jeugdregio_qs = RegionalConfiguration.objects.filter(
             status=RegionalConfiguration.Status.ACTIVE,
-            region_type=selected_region_type,
+            region_type=RegionType.JEUGDREGIO,
         )
         if self._organization is not None:
-            region_qs = region_qs.filter(
+            jeugdregio_qs = jeugdregio_qs.filter(
                 Q(organization=self._organization) | Q(organization__isnull=True)
             )
-        region_qs = region_qs.order_by('region_name')
+        jeugdregio_qs = jeugdregio_qs.order_by('region_name')
 
-        self.fields['preferred_region'].queryset = region_qs
-        self.fields['regio'].queryset = region_qs
+        # Intake now uses a dedicated jeugdregio selector. Hidden compatibility fields
+        # are kept in sync so older payloads and downstream code continue to work.
+        selected_region_id = (
+            self.data.get('jeugdhulpregio')
+            or self.data.get('preferred_region')
+            or self.data.get('regio')
+            or self.initial.get('jeugdhulpregio')
+            or self.initial.get('preferred_region')
+            or self.initial.get('regio')
+            or ''
+        )
+        selected_region = None
+        if selected_region_id:
+            selected_region = jeugdregio_qs.filter(pk=selected_region_id).first()
+        if selected_region is None and jeugdregio_qs.exists():
+            selected_region = jeugdregio_qs.first()
+
+        selected_region_pk = str(selected_region.pk) if selected_region is not None else ''
+
+        self.fields['jeugdhulpregio'].queryset = jeugdregio_qs
+        self.fields['preferred_region'].queryset = jeugdregio_qs
+        self.fields['regio'].queryset = jeugdregio_qs
+        self.fields['regio'].required = False
+        self.fields['preferred_region'].required = False
+        self.fields['preferred_region_type'].required = False
+        self.fields['preferred_region_type'].initial = RegionType.JEUGDREGIO
+
+        if selected_region_pk:
+            self.initial.setdefault('jeugdhulpregio', selected_region_pk)
+            self.initial.setdefault('preferred_region', selected_region_pk)
+            self.initial.setdefault('regio', selected_region_pk)
+            self.initial.setdefault('preferred_region_type', RegionType.JEUGDREGIO)
+
         self.fields['gemeente'].queryset = MunicipalityConfiguration.objects.filter(
             status=MunicipalityConfiguration.Status.ACTIVE
         ).order_by('municipality_name')
-        self.fields['regio'].required = False
+        self.initial['preferred_region_type'] = RegionType.JEUGDREGIO
+
+        # Backfill compatibility fields from the explicit jeugdregio selection.
+        if selected_region is not None:
+            self.initial['jeugdhulpregio'] = selected_region_pk
+            self.initial['preferred_region'] = selected_region_pk
+            self.initial['regio'] = selected_region_pk
+            self.fields['preferred_region'].initial = selected_region_pk
+            self.fields['regio'].initial = selected_region_pk
 
         if self.instance and isinstance(self.instance.problematiek_types, list):
             self.initial['problematiek_types'] = ', '.join(
@@ -878,7 +909,36 @@ class CaseIntakeProcessForm(forms.ModelForm):
         urgency_document = cleaned_data.get('urgency_document')
         if pressure_assessment['urgency'] in {CaseIntakeProcess.Urgency.HIGH, CaseIntakeProcess.Urgency.CRISIS} and has_urgency_declaration and not urgency_document:
             self.add_error('urgency_document', 'Voeg een urgentieverklaring toe bij hoge urgentie.')
+
+        selected_region = (
+            cleaned_data.get('jeugdhulpregio')
+            or cleaned_data.get('preferred_region')
+            or cleaned_data.get('regio')
+        )
+        if selected_region is not None:
+            cleaned_data['jeugdhulpregio'] = selected_region
+            cleaned_data['preferred_region'] = selected_region
+            cleaned_data['regio'] = selected_region
+            cleaned_data['preferred_region_type'] = RegionType.JEUGDREGIO
+        elif not self.errors.get('jeugdhulpregio'):
+            self.add_error('jeugdhulpregio', 'Kies een jeugdhulpregio.')
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        selected_region = (
+            self.cleaned_data.get('jeugdhulpregio')
+            or self.cleaned_data.get('preferred_region')
+            or self.cleaned_data.get('regio')
+        )
+        if selected_region is not None:
+            instance.preferred_region = selected_region
+            instance.regio = selected_region
+            instance.preferred_region_type = RegionType.JEUGDREGIO
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
 
     def clean_latitude(self):
         latitude = self.cleaned_data.get('latitude')
@@ -1209,6 +1269,20 @@ class RegionalConfigurationForm(forms.ModelForm):
             'escalatie_contact': 'Escalatiecontact',
             'notes': 'Notities',
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if is_municipality_mirror_region_data(
+            region_type=cleaned_data.get('region_type', ''),
+            region_name=cleaned_data.get('region_name', ''),
+            region_code=cleaned_data.get('region_code', ''),
+            served_municipalities=cleaned_data.get('served_municipalities') or [],
+        ):
+            raise ValidationError(
+                'Een gemeentelijke spiegelregio met exact dezelfde naam/code als één gemeente is niet toegestaan. '
+                'Koppel gemeenten alleen aan een echte JEUGDREGIO of een apart operationeel gebied.',
+            )
+        return cleaned_data
 
 
 # Deprecated aliases removed: concrete form classes above are authoritative.

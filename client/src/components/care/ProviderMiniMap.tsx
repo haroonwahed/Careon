@@ -70,8 +70,8 @@ export function ProviderMiniMap({
 
       {/* Get Directions Button */}
       {showDirections && (
-        <button className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted/30 transition-colors">
-          <Navigation size={14} className="text-primary" />
+        <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 leading-none transition-colors hover:bg-muted/30">
+          <Navigation size={14} className="translate-y-px text-primary" />
           <span className="text-sm font-semibold text-foreground">
             Toon routebeschrijving
           </span>

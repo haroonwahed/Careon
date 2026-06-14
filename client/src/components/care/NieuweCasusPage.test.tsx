@@ -69,6 +69,7 @@ function makeIntakeFormPayload() {
       preferred_care_form: "",
       preferred_region_type: "JEUGDREGIO",
       preferred_region: "utrecht-stad",
+      jeugdhulpregio: "utrecht-stad",
       max_toelaatbare_wachttijd_dagen: "",
       leeftijd: "",
       setting_voorkeur: "",
@@ -87,6 +88,10 @@ function makeIntakeFormPayload() {
         { value: "aalten", label: "Aalten", urgencyDocumentRequestUrl: "https://www.aalten.nl/ontwerp-volkshuisvestingsprogramma" },
         { value: "amsterdam", label: "Amsterdam", urgencyDocumentRequestUrl: "https://www.amsterdam.nl/wonen-bouwen-verbouwen/woonruimte-vinden/urgentieverklaring-aanvragen/" },
         { value: "utrecht", label: "Utrecht", urgencyDocumentRequestUrl: "https://www.utrecht.nl/wonen-en-leven/wonen/woning-zoeken/urgentie-voor-een-woning/" },
+      ],
+      jeugdhulpregio: [
+        { value: "utrecht-stad", label: "Utrecht Stad" },
+        { value: "amsterdam-stad", label: "Amsterdam Stad" },
       ],
       regio: [
         { value: "utrecht-stad", label: "Utrecht Stad" },
@@ -137,6 +142,7 @@ function makeReadyIntakeFormPayload() {
       urgency: "MEDIUM",
       complexity: "MULTIPLE",
       placement_pressure_horizon: ">2_WEEKS",
+      jeugdhulpregio: "utrecht-stad",
       regio: "utrecht-stad",
       preferred_region: "utrecht-stad",
       preferred_region_type: "JEUGDREGIO",
@@ -202,7 +208,7 @@ describe("NieuweCasusPage", () => {
     expect(screen.getByText("Vanaf wanneer de client zoekt naar (vervolg)plaatsing.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Waarom deze gemeente?" }));
     expect(screen.getByText("Kies de gemeente die leidend is voor het woonplaatsbeginsel.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Jeugdregio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Toelichting" }));
     expect(await screen.findByRole("dialog", { name: "Toelichting nieuwe casus" })).toBeInTheDocument();
     const dialog = screen.getByRole("dialog", { name: "Toelichting nieuwe casus" });
@@ -335,7 +341,7 @@ describe("NieuweCasusPage", () => {
     render(<NieuweCasusPage />);
 
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText("Jeugdregio *")).toHaveDisplayValue("Utrecht Stad"));
+    await waitFor(() => expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad"));
     expect(screen.getByRole("button", { name: "Gemeente (woonplaatsbeginsel) *" })).toHaveTextContent("Zoek gemeente");
   });
 
@@ -368,8 +374,10 @@ describe("NieuweCasusPage", () => {
     const formData = body as FormData;
     expect(formData.get("title")).toMatch(/^CO-\d{4}-[A-F0-9]{6}$/);
     expect(formData.get("gemeente")).toBe("utrecht");
+    expect(formData.get("jeugdhulpregio")).toBe("utrecht-stad");
     expect(formData.get("regio")).toBe("utrecht-stad");
     expect(formData.get("preferred_region")).toBe("utrecht-stad");
+    expect(formData.get("preferred_region_type")).toBe("JEUGDREGIO");
     expect(formData.get("source_reference")).toBe("");
     expect(["HIGH", "CRISIS"]).toContain(formData.get("urgency"));
     expect(formData.get("has_urgency_declaration")).toBe("true");

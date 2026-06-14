@@ -1,7 +1,7 @@
 """
 Diagnose RegionalConfiguration coverage for the SPA intake form (/care/api/cases/intake-form/).
 
-Mirrors CaseIntakeProcessForm region_qs scoping (tenant + shared NULL-org rows).
+Mirrors CaseIntakeProcessForm municipality + JEUGDREGIO scoping (tenant + shared NULL-org rows).
 """
 
 from __future__ import annotations
@@ -60,7 +60,7 @@ def _raw_counts_snapshot(org: Organization | None) -> dict[str, dict[str, int]]:
 class Command(BaseCommand):
     help = (
         "Report region dropdown coverage per organization for nieuwe-casus (same rules as CaseIntakeProcessForm). "
-        "Use after seed/reset when regio dropdown is empty."
+        "Use after seed/reset when jeugdhulpregio dropdown is empty."
     )
 
     def add_arguments(self, parser):
@@ -115,17 +115,17 @@ class Command(BaseCommand):
                 default_type = default_type.value
             default_type = str(default_type)
 
-            regio_qs = form_default.fields["regio"].queryset
+            regio_qs = form_default.fields["jeugdhulpregio"].queryset
             pref_qs = form_default.fields["preferred_region"].queryset
             self.stdout.write(
                 f"  Intake form default preferred_region_type: {default_type!r} "
-                f"(regio queryset count={regio_qs.count()}, same as preferred_region={pref_qs.count()})"
+                f"(jeugdhulpregio queryset count={regio_qs.count()}, same as preferred_region={pref_qs.count()})"
             )
 
             if regio_qs.count() == 0:
                 self.stdout.write(
                     self.style.WARNING(
-                        "  [!] Geen regio's voor dit tenant + gedeelde (NULL-org) rijen bij dit regiotype — "
+                        "  [!] Geen jeugdregio's voor dit tenant + gedeelde (NULL-org) rijen — "
                         "dropdown blijft leeg. Seed RegionalConfiguration (ACTIVE) voor dit org of gebruik gedeelde rijen."
                     )
                 )
@@ -137,7 +137,7 @@ class Command(BaseCommand):
                     data={"preferred_region_type": rt},
                     organization=org,
                 )
-                n_form = form_rt.fields["regio"].queryset.count()
+                n_form = form_rt.fields["jeugdhulpregio"].queryset.count()
                 self.stdout.write(
                     f"    {rt}: intake queryset={n_form} "
                     f"(active_total_db={row['active_total_db']}, tenant_or_shared={row['intake_visible_for_org']})"
@@ -145,6 +145,6 @@ class Command(BaseCommand):
 
         self.stdout.write("")
         self.stdout.write(
-            "Tip: default SPA intake uses JEUGDREGIO. "
-            "Zorg dat RegionalConfiguration met status=ACTIVE en region_type=JEUGDREGIO bestaat voor deze tenant."
+            "Tip: the SPA intake now defaults to JEUGDREGIO for the explicit jeugdregio selector. "
+            "Zorg dat RegionalConfiguration met status=ACTIVE bestaat voor deze tenant en dat er minstens één JEUGDREGIO is gekoppeld aan de gemeente."
         )

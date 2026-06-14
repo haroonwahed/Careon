@@ -27,8 +27,8 @@ import { cn } from "../ui/utils";
 import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
-import { consumeCasussenPreferredFocus } from "../../lib/casussenNavigation";
 import { tokens } from "../../design/tokens";
+import { consumeCasussenPreferredFocus } from "../../lib/casussenNavigation";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import {
   buildWorkflowCases,
@@ -37,11 +37,6 @@ import {
   type WorkflowCaseView,
 } from "../../lib/workflowUi";
 import { classifyCasusWorkboardState } from "./casusWorkboardClassification";
-
-const AANMELDING_QUEUE_GRID_CLASS =
-  "grid w-full min-w-[72rem] items-center gap-x-4 grid-cols-[5.75rem_minmax(16rem,1.2fr)_minmax(11rem,0.95fr)_minmax(13rem,1fr)_minmax(12rem,0.95fr)_minmax(11rem,0.85fr)_minmax(12rem,1fr)]";
-
-type _SharedWorkRowPrimitive = typeof CareWorkRow;
 
 interface WorkloadPageProps {
   onCaseClick: (caseId: string) => void;
@@ -155,72 +150,52 @@ function CasussenInboxRow({
   const lastUpdatedDetail = displayOverride?.lastUpdatedDetail;
 
   return (
-    <article
-      data-testid="coordination-worklist-item"
-      data-care-work-row="true"
-      data-density="compact"
-      className={cn(
-        AANMELDING_QUEUE_GRID_CLASS,
-        "items-start border-b border-border/35 px-4 py-3 last:border-b-0 md:px-5",
-        item.isBlocked && "border-l-2 border-l-red-500/70",
-      )}
-    >
-      <div className="flex min-w-0 items-start pt-0.5">
+    <CareWorkRow
+      testId="coordination-worklist-item"
+      density="operational"
+      accentTone={item.isBlocked ? "critical" : "neutral"}
+      titleAriaLabel={`Open casus ${caseId}`}
+      leading={(
         <CareMetaChip className="inline-flex h-7 items-center gap-1.5 border-red-500/45 bg-red-500/10 px-2.5 text-[11px] font-semibold text-foreground">
           <span className="size-2 rounded-full bg-red-500" aria-hidden />
           {urgencyLabel}
         </CareMetaChip>
-      </div>
-
-      <button
-        type="button"
-        onClick={onOpenCase}
-        className="min-w-0 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1"
-        aria-label={`Open casus ${caseId}`}
-      >
-        <div className="min-w-0 truncate text-[18px] font-semibold leading-tight tracking-tight text-foreground">{caseId}</div>
-        <div className="mt-0.5 truncate text-[12px] text-muted-foreground/85">{caseTitle}</div>
-      </button>
-
-      <div className="min-w-0 pt-0.5">
-        <div className="truncate text-[13px] leading-tight text-foreground">{region}</div>
-      </div>
-
-      <div className="min-w-0 pt-0.5">
-        <CareDominantStatus className="max-w-full">
-          <span className="truncate">{careNeedPrimary}</span>
-        </CareDominantStatus>
-        {careNeedSecondary ? <div className="mt-1 truncate text-[11px] text-muted-foreground/80">{careNeedSecondary}</div> : null}
-      </div>
-
-      <div className="min-w-0 pt-0.5">
-        <CareDominantStatus className="max-w-full">{statusLabel}</CareDominantStatus>
-        <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground/80">{statusDetail}</div>
-      </div>
-
-      <div className="min-w-0 pt-0.5">
-        <div className="truncate text-[13px] font-medium text-foreground/90">{lastUpdatedLabel}</div>
-        {lastUpdatedDetail ? <div className="mt-1 truncate text-[11px] text-muted-foreground/75">{lastUpdatedDetail}</div> : null}
-      </div>
-
-      <div className="flex min-w-0 items-center justify-end pt-0.5">
-        <Button
-          type="button"
-          variant="default"
-          className={cn(
-            "h-9 max-w-full justify-center rounded-xl px-4 text-[13px] font-medium shadow-sm",
-            !showPrimaryCta && "opacity-90",
-          )}
-          onClick={(event) => {
-            event.stopPropagation();
-            onWorkflowAction();
-          }}
-        >
-          {actionLabel}
-          <ChevronRight className="ml-2 size-3.5" aria-hidden />
-        </Button>
-      </div>
-    </article>
+      )}
+      title={(
+        <span className="block min-w-0">
+          <span className="block truncate text-[14px] font-semibold leading-tight tracking-tight text-foreground">{caseId}</span>
+          <span className="block truncate text-[11px] font-normal text-muted-foreground/85">{caseTitle}</span>
+        </span>
+      )}
+      context={(
+        <div className="min-w-0">
+          <div className="truncate text-[12px] leading-tight text-foreground">{region}</div>
+          <div className="mt-0.5 truncate text-[11px] text-muted-foreground/80">
+            {careNeedPrimary}
+            {careNeedSecondary ? ` · ${careNeedSecondary}` : ""}
+          </div>
+        </div>
+      )}
+      status={(
+        <div className="min-w-0">
+          <CareDominantStatus className="max-w-full">{statusLabel}</CareDominantStatus>
+          <div className="mt-1 line-clamp-1 text-[11px] text-muted-foreground/80">{statusDetail}</div>
+        </div>
+      )}
+      time={(
+        <div className="min-w-0">
+          <div className="truncate text-[12px] font-medium text-foreground/90">{lastUpdatedLabel}</div>
+          {lastUpdatedDetail ? <div className="truncate text-[11px] text-muted-foreground/75">{lastUpdatedDetail}</div> : null}
+        </div>
+      )}
+      actionLabel={actionLabel}
+      actionVariant={showPrimaryCta ? "primary" : "ghost"}
+      onOpen={onOpenCase}
+      onAction={(event) => {
+        event.stopPropagation();
+        onWorkflowAction();
+      }}
+    />
   );
 }
 
@@ -435,11 +410,7 @@ export function WorkloadPage({
 
   const worklistHeader = (
     <CareOperationalQueueHeader
-      labels={["Urgentie", "Casus", "Regio", "Zorgbehoefte", "Status", "Laatste activiteit", "Volgende actie"]}
-      gridClassName={cn(
-        AANMELDING_QUEUE_GRID_CLASS,
-        "border-b border-border/35 px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground md:px-5",
-      )}
+      labels={["Urgentie", "Casus", "Context", "Status", "Laatste activiteit", "Volgende actie"]}
     />
   );
 
@@ -461,11 +432,11 @@ export function WorkloadPage({
               <Button
                 type="button"
                 variant="default"
-                className="h-12 rounded-full bg-primary px-5 text-[14px] font-semibold shadow-lg shadow-primary/20"
+                className="h-12 rounded-full bg-primary px-5 text-[14px] font-semibold leading-none shadow-lg shadow-primary/20"
                 onClick={onCreateCase}
               >
                 Nieuwe aanmelding
-                <Plus className="ml-2 size-4" aria-hidden />
+                <Plus className="ml-2 size-4 translate-y-px" aria-hidden />
               </Button>
             ) : null
           )}
@@ -488,12 +459,12 @@ export function WorkloadPage({
                 primaryAction={(
                   <Button
                     type="button"
-                    className="h-10 rounded-full px-5 text-[13px] font-semibold text-black shadow-sm hover:brightness-105"
+                    className="h-10 rounded-full px-5 text-[13px] font-semibold leading-none text-black shadow-sm hover:brightness-105"
                     style={{ backgroundColor: tokens.visualContract.warningCta }}
                     onClick={dominantAttentionAction}
                   >
                     Maak casus compleet
-                    <ChevronRight className="ml-2 size-4" aria-hidden />
+                    <ChevronRight className="ml-2 size-4 translate-y-px" aria-hidden />
                   </Button>
                 )}
               />
@@ -541,7 +512,7 @@ export function WorkloadPage({
 
                   {visibleRows.length > 0 ? (
                     <>
-                      <CareWorkListCard className="overflow-x-auto">
+                      <CareWorkListCard className="overflow-hidden">
                         {worklistHeader}
                         {visibleRows.map(({ item, decision }) => (
                           <CasussenInboxRow

@@ -126,7 +126,7 @@ export function canonicalPhaseSubStatusLabel(normalizedApiPhase: string): string
     return `${CARE_TERMS.workflow.samenvatting} vastgelegd`;
   }
   if (key === "gemeente_validatie" || key === "wacht_op_validatie") {
-    return CARE_TERMS.workflow.gemeenteValidatie;
+    return "Toetsing";
   }
   return null;
 }

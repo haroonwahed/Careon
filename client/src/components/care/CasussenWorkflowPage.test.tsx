@@ -233,8 +233,8 @@ describe("WorkloadPage", () => {
     expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
     expect(screen.getByText("Controleer nieuwe zorgvragen en maak casussen klaar voor matching.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Nieuwe aanmelding" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Overzicht" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Archief" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Archief 0" })).toBeInTheDocument();
     expect(screen.getByText("WACHT OP JOUW ACTIE")).toBeInTheDocument();
     expect(screen.getByText("1 casus heeft jouw aandacht nodig")).toBeInTheDocument();
     expect(screen.getByText("De casus is onvolledig en kan nog niet door naar matching.")).toBeInTheDocument();
@@ -244,8 +244,6 @@ describe("WorkloadPage", () => {
     expect(screen.getByText("CO-2026-C533C8")).toBeInTheDocument();
     expect(screen.getByText("Aanvraag 41")).toBeInTheDocument();
     expect(screen.getByText("Rotterdam Rijnmond")).toBeInTheDocument();
-    expect(screen.getByText("Gedrag & ontwikkeling")).toBeInTheDocument();
-    expect(screen.getByText("Zelfredzaamheid")).toBeInTheDocument();
     expect(screen.getByText("Casus onvolledig")).toBeInTheDocument();
     expect(screen.getByText("Casusaanvulling vereist")).toBeInTheDocument();
     expect(screen.getByText("5 dagen geleden")).toBeInTheDocument();

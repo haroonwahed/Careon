@@ -1,4 +1,5 @@
 import os
+from urllib.parse import urlparse
 
 from django.core.exceptions import ImproperlyConfigured
 
@@ -7,6 +8,13 @@ from .settings import *  # noqa: F401,F403
 
 
 DEBUG = base._bool_env('DJANGO_DEBUG', default=False)
+
+_PRODUCTION_LOCAL_HOSTS = {'localhost', '127.0.0.1', '[::1]', '::1'}
+CSRF_TRUSTED_ORIGINS = [
+    origin
+    for origin in CSRF_TRUSTED_ORIGINS
+    if urlparse(origin).hostname not in _PRODUCTION_LOCAL_HOSTS
+]
 
 if DEBUG:
     raise ImproperlyConfigured('DJANGO_DEBUG must be false in production settings.')

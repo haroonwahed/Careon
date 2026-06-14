@@ -19,6 +19,7 @@ from django.conf import settings
 from django.db import models, connection, DatabaseError
 from django.utils.dateparse import parse_date
 from django.utils.cache import patch_cache_control
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.http import url_has_allowed_host_and_scheme
 from datetime import timedelta, date
 from collections import defaultdict
@@ -6425,12 +6426,14 @@ def case_archive_action(request, pk):
 
 # ==================== DASHBOARD VIEW ====================
 
+@ensure_csrf_cookie
 def dashboard(request):
     # Dashboard is SPA-first: always serve the React frontend shell.
     # Legacy coördinatie backend pages are retired; workspace always loads the SPA.
     return _render_spa_shell_response()
 
 
+@ensure_csrf_cookie
 def workflow_case_spa_shell(request, pk):  # noqa: ARG001
     """Serve the SPA shell for workflow case dossier URLs (/care/cases/<id>/)."""
     return _render_spa_shell_response()

@@ -455,17 +455,17 @@ export function Sidebar({
       ref={asideRef}
       data-testid="care-sidebar"
       className={`
-        h-screen bg-card border-r border-border
+        h-screen bg-card/45 border-r border-border/60 backdrop-blur-[2px]
         transition-all duration-300 ease-in-out
         flex flex-col
         ${collapsed ? "w-20" : "w-64"}
       `}
     >
       {/* LOGO / HEADER */}
-      <div className="h-16 flex items-center justify-between px-4 border-b border-border">
+      <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
         {!collapsed && (
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-violet-500/25 bg-violet-500/15 text-violet-400 shadow-[inset_0_0_0_1px_rgba(168,85,247,0.12)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/25 bg-primary/12 text-primary">
               <Shield size={20} strokeWidth={2.1} />
             </div>
             <div>
@@ -477,7 +477,7 @@ export function Sidebar({
         
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="p-2 rounded-lg hover:bg-muted/30 text-muted-foreground hover:text-foreground transition-colors"
+          className="rounded-xl border border-border/60 bg-background/35 p-2 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -485,18 +485,18 @@ export function Sidebar({
       </div>
 
       {/* NAVIGATION */}
-      <nav className="flex-1 overflow-y-auto py-6 px-3" aria-label="Hoofdnavigatie">
+      <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Hoofdnavigatie">
         {navigationStructure.map((section, sectionIndex) => (
           <div 
             key={section.id}
             style={{
-              marginTop: sectionIndex === 0 ? 0 : collapsed ? 24 : 28
+              marginTop: sectionIndex === 0 ? 0 : collapsed ? 20 : 24
             }}
           >
             {/* Section Label */}
             {!collapsed && (
-              <div className="px-3 mb-3">
-                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+              <div className="mb-2 px-3">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                   {section.label}
                 </span>
               </div>
@@ -519,12 +519,12 @@ export function Sidebar({
                     className={`
                       w-full group relative
                       flex items-center gap-3
-                      px-3 py-2.5 rounded-lg
-                      transition-all duration-200
+                      rounded-xl border px-3 py-2.5
+                      transition-colors duration-200
                       ${collapsed ? "justify-center" : ""}
                       ${isActive
-                        ? "bg-primary/10 text-primary border border-primary/20 shadow-none"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground border border-transparent"
+                        ? "border-primary/20 bg-primary/8 text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-card/35 hover:text-foreground"
                       }
                     `}
                     title={collapsed ? item.label : undefined}
@@ -534,14 +534,14 @@ export function Sidebar({
                       size={20} 
                       className={`
                         flex-shrink-0 transition-colors
-                        ${isActive ? "text-primary" : ""}
+                        ${isActive ? "text-primary" : "text-muted-foreground/80"}
                       `}
                     />
 
                     {/* Label */}
                     {!collapsed && (
                       <span className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
-                        <span className={isActive ? "text-primary" : ""}>
+                        <span className={isActive ? "text-foreground" : ""}>
                           {item.label}
                         </span>
                       </span>
@@ -550,10 +550,10 @@ export function Sidebar({
                     {/* Badge */}
                     {!collapsed && badgeValue !== undefined && (
                       <span className={`
-                        min-w-6 px-2 py-0.5 rounded-full text-xs font-semibold text-center border
+                        min-w-6 rounded-full border px-2 py-0.5 text-center text-xs font-semibold
                         ${isActive 
-                          ? "bg-primary text-white" 
-                          : "bg-muted/40 text-foreground/70 border-border"
+                          ? "border-primary/20 bg-primary/12 text-primary"
+                          : "border-border/60 bg-background/35 text-foreground/70"
                         }
                       `}>
                         {badgeValue}
@@ -562,16 +562,16 @@ export function Sidebar({
 
                     {/* Badge (collapsed) */}
                     {collapsed && badgeValue !== undefined && (
-                      <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-muted text-foreground border border-border rounded-full flex items-center justify-center text-[10px] font-semibold">
+                      <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full border border-border/60 bg-background/85 px-1 text-[10px] font-semibold text-foreground">
                         {badgeValue}
                       </span>
                     )}
 
                     {/* Tooltip (collapsed) */}
                     {collapsed && (
-                      <div className="
+                        <div className="
                         absolute left-full ml-2 px-3 py-2 rounded-lg
-                        bg-card border border-border shadow-lg
+                        bg-card/95 border border-border/70 shadow-xl backdrop-blur-[2px]
                         opacity-0 invisible group-hover:opacity-100 group-hover:visible
                         transition-all duration-200 pointer-events-none
                         whitespace-nowrap z-50
@@ -601,8 +601,8 @@ export function Sidebar({
             return (
               <>
           {!collapsed && (
-            <div className="px-3 mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground/60">
+            <div className="mb-2 px-3">
+              <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
                 STURING
               </span>
             </div>
@@ -614,30 +614,33 @@ export function Sidebar({
             className={`
               w-full group relative
               flex items-center gap-3
-              px-3 py-2.5 rounded-lg
-              transition-all duration-200
+              rounded-xl border px-3 py-2.5
+              transition-colors duration-200
               ${collapsed ? "justify-center" : ""}
               ${activeItemId === gemeenteBottomSignalItem.id
-                ? "bg-primary-light text-primary shadow-sm border border-transparent"
-                : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"
+                ? "border-primary/20 bg-primary/8 text-foreground"
+                : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-card/35 hover:text-foreground"
               }
             `}
             title={collapsed ? gemeenteBottomSignalItem.label : undefined}
           >
-            <SignalIcon size={20} className={activeItemId === gemeenteBottomSignalItem.id ? "text-primary" : ""} />
+            <SignalIcon
+              size={20}
+              className={activeItemId === gemeenteBottomSignalItem.id ? "text-primary" : "text-muted-foreground/80"}
+            />
             {!collapsed && (
               <span className="flex flex-1 items-center gap-2 text-left text-sm font-medium">
-                <span className={activeItemId === gemeenteBottomSignalItem.id ? "text-primary" : ""}>
+                <span className={activeItemId === gemeenteBottomSignalItem.id ? "text-foreground" : ""}>
                   {gemeenteBottomSignalItem.label}
                 </span>
               </span>
             )}
             {!collapsed && (badgeOverrides[gemeenteBottomSignalItem.id] ?? gemeenteBottomSignalItem.badge) !== undefined && (
               <span className={`
-                min-w-6 px-2 py-0.5 rounded-full text-xs font-semibold text-center border
+                min-w-6 rounded-full border px-2 py-0.5 text-center text-xs font-semibold
                 ${activeItemId === gemeenteBottomSignalItem.id
-                  ? "bg-primary text-white"
-                  : "bg-muted/40 text-foreground/70 border-border"
+                  ? "border-primary/20 bg-primary/12 text-primary"
+                  : "border-border/60 bg-background/35 text-foreground/70"
                 }
               `}>
                 {badgeOverrides[gemeenteBottomSignalItem.id] ?? gemeenteBottomSignalItem.badge}
@@ -651,13 +654,12 @@ export function Sidebar({
       )}
 
       {/* FOOTER (Optional - User Profile) */}
-      <div className="p-3 border-t border-border">
+      <div className="border-t border-border/50 p-3">
         <div className={`
-          flex items-center gap-3 p-2 rounded-lg
-          hover:bg-muted/30 transition-colors cursor-pointer
+          flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-border/55 hover:bg-card/35
           ${collapsed ? "justify-center" : ""}
         `}>
-          <div className="w-8 h-8 rounded-full bg-muted/40 flex items-center justify-center flex-shrink-0">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border/50 bg-background/35">
             <span className="text-xs font-bold text-foreground">{profileInitials}</span>
           </div>
           

@@ -26,6 +26,7 @@ from contracts.models import (
     ProviderProfile,
     MunicipalityConfiguration,
     RegionalConfiguration,
+    RegionType,
 )
 from contracts.governance import AuditLoggingError
 from contracts.views import sync_case_flow_state
@@ -206,6 +207,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             organization=self.organization,
             region_name='Regio Utrecht',
             region_code='RU',
+            region_type=RegionType.JEUGDREGIO,
             created_by=self.user,
         )
         region.served_municipalities.add(municipality)
@@ -226,6 +228,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_region_type': region.region_type,
             'preferred_region': str(region.pk),
+            'jeugdhulpregio': str(region.pk),
             'gemeente': str(municipality.pk),
             'case_coordinator': str(self.user.pk),
         })
@@ -275,6 +278,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             organization=self.organization,
             region_name='Regio Utrecht',
             region_code='RU',
+            region_type=RegionType.JEUGDREGIO,
             created_by=self.user,
         )
         region.served_municipalities.add(municipality)
@@ -295,6 +299,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_region_type': region.region_type,
             'preferred_region': str(region.pk),
+            'jeugdhulpregio': str(region.pk),
             'gemeente': str(municipality.pk),
             'case_coordinator': str(self.user.pk),
         })
@@ -332,6 +337,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             organization=self.organization,
             region_name='Regio Utrecht',
             region_code='RU',
+            region_type=RegionType.JEUGDREGIO,
             created_by=self.user,
         )
         region.served_municipalities.add(municipality)
@@ -352,6 +358,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_region_type': region.region_type,
             'preferred_region': str(region.pk),
+            'jeugdhulpregio': str(region.pk),
             'gemeente': str(municipality.pk),
             'case_coordinator': str(self.user.pk),
         })
@@ -387,6 +394,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             organization=self.organization,
             region_name='Regio Utrecht',
             region_code='RU',
+            region_type=RegionType.JEUGDREGIO,
             created_by=self.user,
         )
         region.served_municipalities.add(municipality)
@@ -407,6 +415,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             'zorgvorm_gewenst': CaseIntakeProcess.CareForm.OUTPATIENT,
             'preferred_region_type': region.region_type,
             'preferred_region': str(region.pk),
+            'jeugdhulpregio': str(region.pk),
             'gemeente': str(municipality.pk),
             'case_coordinator': str(self.user.pk),
         })
@@ -516,6 +525,59 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(intake.urgency, CaseIntakeProcess.Urgency.HIGH)
         self.assertEqual(intake.complexity, CaseIntakeProcess.Complexity.MULTIPLE)
         self.assertEqual(intake.zorgvorm_gewenst, CaseIntakeProcess.CareForm.DAY_TREATMENT)
+
+    @patch(
+        'contracts.api.views.log_transition_event',
+        side_effect=AuditLoggingError('Kan auditlog voor assessment-besluit niet vastleggen.'),
+    )
+    def test_assessment_decision_api_rollbacks_state_on_audit_failure(self, _mock_log_transition):
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title='Assessment Audit Rollback Intake',
+            status=CaseIntakeProcess.ProcessStatus.MATCHING,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            zorgvorm_gewenst=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+        )
+        case_record = intake.ensure_case_record(created_by=self.user)
+        state_before = intake.workflow_state
+
+        with _quiet_logs_for_expected_client_errors():
+            response = self.client.post(
+                reverse('careon:assessment_decision_api', kwargs={'case_id': case_record.pk}),
+                data=json.dumps({
+                    'decision': 'matching',
+                    'zorgtype': CaseIntakeProcess.CareForm.OUTPATIENT,
+                    'shortDescription': 'Test rollback bij audit-fout.',
+                    'urgency': CaseIntakeProcess.Urgency.HIGH,
+                    'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+                    'workflow_summary': {
+                        'context': (
+                            'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.'
+                        ),
+                        'urgency': CaseIntakeProcess.Urgency.HIGH,
+                        'risks': ['test_risk'],
+                        'missing_information': '',
+                        'risks_none_ack': False,
+                    },
+                }),
+                content_type='application/json',
+            )
+
+        self.assertEqual(response.status_code, 503, response.content.decode())
+        body = response.json()
+        self.assertFalse(body['ok'])
+        self.assertIn('Kan auditlog voor assessment-besluit niet vastleggen', body['error'])
+        intake.refresh_from_db()
+        self.assertEqual(
+            intake.workflow_state,
+            state_before,
+            'workflow_state must not be persisted when audit logging fails (transaction rolled back)',
+        )
 
     def test_matching_dashboard_empty_state_without_approved_assessments(self):
         intake = CaseIntakeProcess.objects.create(

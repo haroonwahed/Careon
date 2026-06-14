@@ -205,7 +205,7 @@ describe("CaseExecutionPage workspace", () => {
     expectCasusDetailMode();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     expect(screen.getByTestId("casus-flow-progress")).toBeInTheDocument();
-    expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Aanmelding onvolledig")).length).toBeGreaterThan(0);
     expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
     expect(within(heroBand).getByRole("button", { name: /Vul casus aan|Controleer casusstatus/i })).toBeInTheDocument();
@@ -261,7 +261,7 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect((await screen.findAllByText("Casusgegevens onvolledig")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Aanmelding onvolledig")).length).toBeGreaterThan(0);
     expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
   });
 

@@ -6,6 +6,34 @@ Use this when a Render deploy fails because production settings are missing or m
 
 The production startup path requires a real PostgreSQL `DATABASE_URL`. If Render has an empty value or a placeholder value, startup fails before Django can finish booting.
 
+## Local staticfiles refresh for UI verification
+
+When you are checking CareOn theme or login page changes locally, stale hashed static assets can make the page look unchanged or broken even after the source CSS/template has been updated. This is a local render-verify issue, not a product defect.
+
+### Symptoms of stale staticfiles
+
+- CSS or JS changes do not appear in the browser after editing templates or theme assets.
+- The page renders with old styling, missing layout changes, or fallback/error output.
+- A new local server session still serves an older hashed asset path from the manifest.
+
+### Refresh command
+
+Run this from the project root when you need a fresh local render verification:
+
+```bash
+DATABASE_URL=sqlite:///db.sqlite3 python manage.py collectstatic --noinput
+```
+
+If your local environment uses the bundled Codex runtime Python, use that interpreter instead of the system Python.
+
+### Verification step
+
+After refreshing, restart the local Django server and reload the page you are checking. Confirm the updated CSS/template now renders as expected.
+
+### Generated artifacts
+
+`collectstatic` writes generated files under `staticfiles/`. Keep those artifacts out of commits unless the project convention explicitly requires them for the change you are making.
+
 ## Start command drift (your logs look “old”)
 
 If deploy logs still show **`Starting careon-web revision=`** and **“Set it on the careon-web service”**, but this repo’s **`render.yaml`** uses **`Starting web revision=`**, different `DATABASE_URL` error text, and a direct **gunicorn startup** after `render_startup_checks.py`, then Render is **not** running the current `startCommand` from Git — usually because the service has a **manual Start Command** saved in the dashboard (from an older setup) that overrides the blueprint.

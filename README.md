@@ -44,7 +44,7 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-If your local `.env` still contains an old external `DATABASE_URL`, leave it unset or blank for normal local development so Django falls back to SQLite. Pass a production or staging `DATABASE_URL` explicitly only when you are running preflight or deploy checks.
+If your local `.env` still contains an old external `DATABASE_URL`, leave it unset or blank for normal local development so Django falls back to SQLite. Template-style placeholder URLs such as `INSERT_YOUR_SUPABASE_DB_PASSWORD` are also treated as unset locally. Pass a production or staging `DATABASE_URL` explicitly only when you are running preflight or deploy checks.
 
 ### Python tests
 

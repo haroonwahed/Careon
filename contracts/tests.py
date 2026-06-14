@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from .tenancy import ensure_user_organization
 from .models import CareSignal, CareCase
@@ -30,3 +31,9 @@ class Phase5ModelTests(TestCase):
     def test_contract_currency_defaults_to_eur(self):
         """Test that care cases default to EUR currency."""
         self.assertEqual(self.contract.currency, CareCase.Currency.EUR)
+
+    def test_spa_shell_sets_csrf_cookie_for_logout(self):
+        """The SPA shell must emit a CSRF cookie so the logout POST can succeed."""
+        response = self.client.get(reverse('dashboard'))
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('csrftoken', response.cookies)

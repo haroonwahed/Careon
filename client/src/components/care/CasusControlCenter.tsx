@@ -248,9 +248,9 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${classes} ${fullWidth ? "w-full" : ""}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium leading-none transition-all ${classes} ${fullWidth ? "w-full" : ""}`}
     >
-      {Icon && <Icon size={15} />}
+      {Icon && <Icon size={15} className="translate-y-px" />}
       {action.label}
     </button>
   );
@@ -296,10 +296,10 @@ function DecisionStrip({
           <div className="shrink-0">
             <button
               onClick={() => onAction(primaryAction.type)}
-              className={`${colors.btn} inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm`}
+              className={`${colors.btn} inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm leading-none`}
             >
               {primaryAction.label}
-              <ArrowRight size={14} />
+              <ArrowRight size={14} className="translate-y-px" />
             </button>
           </div>
         )}

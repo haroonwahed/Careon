@@ -186,6 +186,10 @@ MUNICIPALITY_JEUGDREGIO_OVERRIDES = {
     'Someren': 'Helmond-De Peel',
 }
 
+MUNICIPALITY_NAME_ALIASES = {
+    "'s-Gravenhage": 'Den Haag',
+}
+
 
 @dataclass
 class RegioRow:
@@ -197,6 +201,7 @@ class RegioRow:
 
 @dataclass
 class GemeenteRow:
+    source_name: str
     naam: str
     provincie: str
     regio: str
@@ -204,8 +209,15 @@ class GemeenteRow:
 
 @dataclass
 class MunicipalityRef:
+    source_name: str
     naam: str
     provincie: str
+    official_code: str
+
+
+def _normalize_municipality_name(value: str) -> str:
+    value = (value or '').strip()
+    return MUNICIPALITY_NAME_ALIASES.get(value, value)
 
 
 def _parse_bool(raw: str) -> bool:
@@ -243,14 +255,15 @@ def _load_gemeenten(path: Path) -> list[GemeenteRow]:
     with path.open('r', encoding='utf-8', newline='') as handle:
         reader = csv.DictReader(handle)
         for index, row in enumerate(reader, start=2):
-            naam = (row.get('naam') or '').strip()
+            source_name = (row.get('naam') or '').strip()
+            naam = _normalize_municipality_name(source_name)
             provincie = (row.get('provincie') or '').strip()
             regio = (row.get('regio') or '').strip()
 
             if not naam or not regio:
                 raise CommandError(f'Gemeente mapping incompleet op regel {index} in {path}')
 
-            rows.append(GemeenteRow(naam=naam, provincie=provincie, regio=regio))
+            rows.append(GemeenteRow(source_name=source_name, naam=naam, provincie=provincie, regio=regio))
 
     return rows
 
@@ -269,11 +282,17 @@ def _load_pdok_municipalities(url: str) -> list[MunicipalityRef]:
     rows: list[MunicipalityRef] = []
     for feature in data.get('features', []):
         props = feature.get('properties', {})
-        naam = (props.get('naam') or '').strip()
+        source_name = (props.get('naam') or '').strip()
+        naam = _normalize_municipality_name(source_name)
         provincie = (props.get('ligtInProvincieNaam') or '').strip()
+        official_code = (props.get('identificatie') or '').strip()
+        if not official_code:
+            code = (props.get('code') or '').strip()
+            if code:
+                official_code = f'GM{code}'
         if not naam or not provincie:
             continue
-        rows.append(MunicipalityRef(naam=naam, provincie=provincie))
+        rows.append(MunicipalityRef(source_name=source_name or naam, naam=naam, provincie=provincie, official_code=official_code))
     rows.sort(key=lambda item: item.naam)
     return rows
 
@@ -294,6 +313,7 @@ def _build_full_mapping_from_pdok(url: str) -> list[GemeenteRow]:
     refs = _load_pdok_municipalities(url)
     rows = [
         GemeenteRow(
+            source_name=ref.source_name,
             naam=ref.naam,
             provincie=ref.provincie,
             regio=_resolve_jeugdregio(ref.naam, ref.provincie),
@@ -430,25 +450,58 @@ class Command(BaseCommand):
                 )
 
             target_region = regions_by_name[key]
-            municipality, created = MunicipalityConfiguration.objects.get_or_create(
-                organization=organization,
-                municipality_name=row.naam,
-                defaults={
-                    'municipality_code': _municipality_code(row.naam),
-                    'province': row.provincie,
-                    'status': MunicipalityConfiguration.Status.ACTIVE,
-                },
-            )
+            municipality_name = _normalize_municipality_name(row.naam)
+            municipality = None
+            if row.source_name and row.source_name != municipality_name:
+                municipality = (
+                    MunicipalityConfiguration.objects.filter(
+                        organization=organization,
+                        municipality_name=row.source_name,
+                    )
+                    .order_by('municipality_code', 'id')
+                    .first()
+                )
+            if municipality is None:
+                municipality = (
+                    MunicipalityConfiguration.objects.filter(
+                        organization=organization,
+                        municipality_name=municipality_name,
+                        municipality_code__startswith='GM-',
+                    )
+                    .order_by('municipality_code', 'id')
+                    .first()
+                )
+            if municipality is None:
+                municipality = (
+                    MunicipalityConfiguration.objects.filter(
+                        organization=organization,
+                        municipality_name=municipality_name,
+                    )
+                    .order_by('municipality_code', 'id')
+                    .first()
+                )
+            created = municipality is None
+            if municipality is None:
+                municipality = MunicipalityConfiguration.objects.create(
+                    organization=organization,
+                    municipality_name=municipality_name,
+                    municipality_code=_municipality_code(municipality_name),
+                    province=row.provincie,
+                    status=MunicipalityConfiguration.Status.ACTIVE,
+                )
 
             municipality_needs_update = False
+            if municipality.municipality_name != municipality_name:
+                municipality.municipality_name = municipality_name
+                municipality_needs_update = True
             if municipality.province != row.provincie:
                 municipality.province = row.provincie
                 municipality_needs_update = True
             if municipality.status != MunicipalityConfiguration.Status.ACTIVE:
                 municipality.status = MunicipalityConfiguration.Status.ACTIVE
                 municipality_needs_update = True
-            if not municipality.municipality_code:
-                municipality.municipality_code = _municipality_code(row.naam)
+            if created and not municipality.municipality_code:
+                municipality.municipality_code = _municipality_code(municipality_name)
                 municipality_needs_update = True
 
             if created:

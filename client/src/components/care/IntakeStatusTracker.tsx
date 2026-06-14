@@ -135,7 +135,7 @@ export function IntakeStatusTracker({
             {currentStatus === "not-started" && (
               <button
                 onClick={() => onStatusChange("planned")}
-                className="w-full px-3 py-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-sm font-medium hover:bg-cyan-500/15 transition-colors"
+                className="flex w-full items-center justify-center px-3 py-2 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-sm font-medium leading-none hover:bg-cyan-500/15 transition-colors"
               >
                 Markeer als gepland
               </button>
@@ -143,7 +143,7 @@ export function IntakeStatusTracker({
             {currentStatus === "planned" && (
               <button
                 onClick={() => onStatusChange("in-progress")}
-                className="w-full px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm font-medium hover:bg-amber-500/15 transition-colors"
+                className="flex w-full items-center justify-center px-3 py-2 rounded-lg border border-amber-500/30 bg-amber-500/10 text-sm font-medium leading-none hover:bg-amber-500/15 transition-colors"
               >
                 Start intake
               </button>
@@ -151,7 +151,7 @@ export function IntakeStatusTracker({
             {currentStatus === "in-progress" && (
               <button
                 onClick={() => onStatusChange("completed")}
-                className="w-full px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm font-medium hover:bg-emerald-500/15 transition-colors"
+                className="flex w-full items-center justify-center px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 text-sm font-medium leading-none hover:bg-emerald-500/15 transition-colors"
               >
                 Markeer als afgerond
               </button>

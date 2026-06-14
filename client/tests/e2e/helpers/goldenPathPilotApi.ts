@@ -145,6 +145,7 @@ type IntakeFormResponse = {
   initial_values: Record<string, unknown>;
   options: {
     gemeente?: Array<{ value: string; label: string }>;
+    jeugdhulpregio?: Array<{ value: string; label: string }>;
     preferred_region?: Array<{ value: string; label: string }>;
     case_coordinator?: Array<{ value: string; label: string }>;
   };
@@ -215,8 +216,8 @@ export async function seedGoldenPathCases(page: import("@playwright/test").Page)
   const municipality = (bootstrap.json?.options.gemeente || []).length > 0
     ? findOptionByLabel(bootstrap.json?.options.gemeente, E2E_MUNICIPALITY_NAME)
     : null;
-  const region = (bootstrap.json?.options.preferred_region || []).length > 0
-    ? findOptionByLabel(bootstrap.json?.options.preferred_region, E2E_REGION_NAME)
+  const region = (bootstrap.json?.options.jeugdhulpregio || []).length > 0
+    ? findOptionByLabel(bootstrap.json?.options.jeugdhulpregio, E2E_REGION_NAME)
     : null;
   const coordinator = (bootstrap.json?.options.case_coordinator || []).length > 0
     ? findOptionByContains(bootstrap.json?.options.case_coordinator, GEMEENTE_USERNAME)
@@ -232,7 +233,9 @@ export async function seedGoldenPathCases(page: import("@playwright/test").Page)
     zorgvorm_gewenst: "OUTPATIENT",
     preferred_care_form: "OUTPATIENT",
     preferred_region_type: bootstrap.json?.initial_values.preferred_region_type ?? "JEUGDREGIO",
+    jeugdhulpregio: region?.value ?? bootstrap.json?.initial_values.jeugdhulpregio,
     preferred_region: region?.value ?? bootstrap.json?.initial_values.preferred_region,
+    regio: region?.value ?? bootstrap.json?.initial_values.regio,
     gemeente: municipality?.value ?? bootstrap.json?.initial_values.gemeente,
     case_coordinator: coordinator?.value ?? bootstrap.json?.initial_values.case_coordinator,
     problematiek_types: "thuiszitproblematiek",

@@ -4,9 +4,11 @@ import os
 from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
+from django.utils.text import slugify
 
 from contracts.pilot_universe import (
     PILOT_CASE_TITLES,
@@ -101,6 +103,7 @@ class Command(BaseCommand):
             self._clear_existing_demo_data(organization=organization)
 
         categories = self._ensure_categories()
+        self._ensure_jeugdregio_backbone(organization=organization)
         municipality_map, region_map = self._ensure_network(organization=organization, demo_user=demo_user, categories=categories)
         provider_specs = self._provider_specs(categories=categories, region_map=region_map)
         providers = self._ensure_providers(
@@ -200,6 +203,27 @@ class Command(BaseCommand):
         TrustAccount.objects.filter(provider__name__in=provider_names).delete()
         Client.objects.filter(organization=organization, name__in=provider_names).delete()
 
+    def _municipality_code(self, name: str) -> str:
+        suffix = slugify(name).replace('-', '').upper()
+        return f"GM-{suffix[:18]}"
+
+    def _normalize_municipality_name(self, name: str) -> str:
+        aliases = {
+            "'s-Gravenhage": "Den Haag",
+        }
+        return aliases.get(name, name)
+
+    def _municipality_lookup_names(self, name: str) -> list[str]:
+        normalized = self._normalize_municipality_name(name)
+        lookup_names = [normalized]
+        reverse_aliases = {
+            "Den Haag": "'s-Gravenhage",
+        }
+        legacy_name = reverse_aliases.get(normalized)
+        if legacy_name and legacy_name not in lookup_names:
+            lookup_names.insert(0, legacy_name)
+        return lookup_names
+
     def _ensure_categories(self):
         ensure_zorgbehoefte_taxonomy()
         category_map = {
@@ -221,26 +245,17 @@ class Command(BaseCommand):
         municipalities = [
             {
                 'name': 'Utrecht',
-                'code': 'DEMO-UTR',
                 'province': 'Utrecht',
-                'region_code': 'DEMO-UTR-REG',
-                'region_name': 'Utrecht Regio',
                 'urgency_document_request_url': 'https://www.utrecht.nl/wonen-en-leven/wonen/woning-zoeken/urgentie-voor-een-woning/',
             },
             {
                 'name': 'Amsterdam',
-                'code': 'DEMO-AMS',
                 'province': 'Noord-Holland',
-                'region_code': 'DEMO-AMS-REG',
-                'region_name': 'Amsterdam Regio',
                 'urgency_document_request_url': 'https://www.amsterdam.nl/wonen-bouwen-verbouwen/woonruimte-vinden/urgentieverklaring-aanvragen/',
             },
             {
                 'name': 'Rotterdam',
-                'code': 'DEMO-RTM',
                 'province': 'Zuid-Holland',
-                'region_code': 'DEMO-RTM-REG',
-                'region_name': 'Rotterdam Regio',
                 'urgency_document_request_url': 'https://www.rotterdam.nl/sociaal-medische-advisering',
             },
         ]
@@ -248,43 +263,80 @@ class Command(BaseCommand):
         municipality_map = {}
         region_map = {}
         for entry in municipalities:
-            municipality, _ = MunicipalityConfiguration.objects.update_or_create(
-                organization=organization,
-                municipality_code=entry['code'],
-                defaults={
-                    'municipality_name': entry['name'],
-                    'province': entry['province'],
-                    'status': MunicipalityConfiguration.Status.ACTIVE,
-                    'responsible_coordinator': demo_user,
-                    'created_by': demo_user,
-                    'max_wait_days': 21,
-                    'priority_rules': 'Demo prioritering volgens canonical flow.',
-                    'urgency_document_request_url': entry['urgency_document_request_url'],
-                    'notes': 'Demo gemeenteconfiguratie.',
-                },
+            municipality_name = self._normalize_municipality_name(entry['name'])
+            lookup_names = self._municipality_lookup_names(entry['name'])
+            municipality = (
+                MunicipalityConfiguration.objects
+                .filter(
+                    organization=organization,
+                    municipality_name__in=lookup_names,
+                    municipality_code__startswith='GM-',
+                )
+                .order_by('municipality_code')
+                .first()
             )
-            municipality.care_domains.set(categories.values())
-            municipality_map[entry['name']] = municipality
+            if municipality is None:
+                municipality = (
+                    MunicipalityConfiguration.objects
+                    .filter(
+                        organization=organization,
+                        municipality_name__in=lookup_names,
+                    )
+                    .order_by('municipality_code')
+                    .first()
+                )
 
-            region, _ = RegionalConfiguration.objects.update_or_create(
-                organization=organization,
-                region_code=entry['region_code'],
-                defaults={
-                    'region_type': RegionType.GEMEENTELIJK,
-                    'region_name': entry['region_name'],
-                    'province': entry['province'],
-                    'status': RegionalConfiguration.Status.ACTIVE,
-                    'responsible_coordinator': demo_user,
-                    'created_by': demo_user,
-                    'max_wait_days': 21,
-                    'priority_rules': 'Demo regioregels.',
-                },
+            if municipality is None:
+                municipality = MunicipalityConfiguration.objects.create(
+                    organization=organization,
+                    municipality_name=municipality_name,
+                    municipality_code=self._municipality_code(municipality_name),
+                    province=entry['province'],
+                    status=MunicipalityConfiguration.Status.ACTIVE,
+                    responsible_coordinator=demo_user,
+                    created_by=demo_user,
+                    max_wait_days=21,
+                    priority_rules='Demo prioritering volgens canonical flow.',
+                    urgency_document_request_url=entry['urgency_document_request_url'],
+                    notes='Demo gemeenteconfiguratie.',
+                )
+            else:
+                municipality.municipality_name = municipality_name
+                municipality.province = entry['province']
+                municipality.status = MunicipalityConfiguration.Status.ACTIVE
+                municipality.responsible_coordinator = demo_user
+                municipality.created_by = demo_user
+                municipality.max_wait_days = 21
+                municipality.priority_rules = 'Demo prioritering volgens canonical flow.'
+                municipality.urgency_document_request_url = entry['urgency_document_request_url']
+                municipality.notes = 'Demo gemeenteconfiguratie.'
+                if not municipality.municipality_code.startswith('GM-'):
+                    municipality.municipality_code = self._municipality_code(municipality_name)
+                municipality.save()
+            municipality.care_domains.set(categories.values())
+            municipality_map[municipality_name] = municipality
+
+            region = (
+                RegionalConfiguration.objects
+                .filter(
+                    organization=organization,
+                    region_type=RegionType.JEUGDREGIO,
+                    status=RegionalConfiguration.Status.ACTIVE,
+                    served_municipalities=municipality,
+                )
+                .order_by('region_name', 'pk')
+                .first()
             )
-            region.care_domains.set(categories.values())
-            region.served_municipalities.set([municipality])
-            region_map[entry['name']] = region
+            if region is None:
+                raise RegionalConfiguration.DoesNotExist(
+                    f'No active JEUGDREGIO found for municipality {entry["name"]!r}. Run seed_jeugdregio_backbone first.'
+                )
+            region_map[municipality_name] = region
 
         return municipality_map, region_map
+
+    def _ensure_jeugdregio_backbone(self, *, organization):
+        call_command("seed_jeugdregio_backbone", organization_id=organization.id, verbosity=0)
 
     def _provider_specs(self, *, categories, region_map):
         # Pilot trio: één regio-kern per aanbieder (Utrecht / Rotterdam / Amsterdam).
@@ -972,10 +1024,21 @@ class Command(BaseCommand):
 
     def _ensure_case(self, *, organization, demo_user, spec, providers):
         case_index = CASE_TITLES.index(spec['title'])
-        municipality = MunicipalityConfiguration.objects.get(
+        municipality_qs = MunicipalityConfiguration.objects.filter(
             organization=organization,
-            municipality_name=spec['city'],
+            municipality_name__in=self._municipality_lookup_names(spec['city']),
         )
+        municipality = (
+            municipality_qs.filter(municipality_code__startswith='GM-')
+            .order_by('municipality_code', 'id')
+            .first()
+        )
+        if municipality is None:
+            municipality = municipality_qs.order_by('municipality_code', 'id').first()
+        if municipality is None:
+            raise MunicipalityConfiguration.DoesNotExist(
+                f'No municipality configuration found for {spec["city"]!r}.'
+            )
         region = (
             RegionalConfiguration.objects
             .filter(
@@ -1013,7 +1076,7 @@ class Command(BaseCommand):
             'complexity': spec['complexity'],
             'preferred_care_form': spec['care_form'],
             'zorgvorm_gewenst': spec['care_form'],
-            'preferred_region_type': RegionType.GEMEENTELIJK,
+            'preferred_region_type': RegionType.JEUGDREGIO,
             'preferred_region': region,
             'gemeente': municipality,
             'entry_route': spec.get('entry_route', CaseIntakeProcess.EntryRoute.STANDARD),
