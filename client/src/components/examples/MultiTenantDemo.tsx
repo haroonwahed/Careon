@@ -27,6 +27,7 @@ import { DocumentenPage } from "../care/DocumentenPage";
 import { AudittrailPage } from "../care/AudittrailPage";
 import { RapportagesPage } from "../care/RapportagesPage";
 import { InstellingenPage } from "../care/InstellingenPage";
+import { GebruikersPage } from "../care/GebruikersPage";
 import { CareAppFrame } from "../care/CareAppFrame";
 import { buildAanbiederreactieRows } from "../care/AanbiederreactiePage";
 import { tokens } from "../../design/tokens";
@@ -859,25 +860,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
 
                 {currentContext.type === "admin" && currentPage === "gebruikers" && (
-                  <div className="space-y-6">
-                    <div>
-                      <h1 className="text-3xl font-bold text-foreground mb-2">
-                        Gebruikers
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Gebruikers en toegang
-                      </p>
-                    </div>
-
-                    <div className="premium-card p-12 text-center">
-                      <p className="mb-4 text-lg font-bold text-foreground">
-                        Alleen beheerder
-                      </p>
-                      <p className="mx-auto max-w-xl text-muted-foreground">
-                        Beheer gebruikers, rechten en toegang vanuit de beheerlaag. In de stakeholder-demo blijven operationele aantallen en context-switching verborgen.
-                      </p>
-                    </div>
-                  </div>
+                  <GebruikersPage />
                 )}
               </>
             ) : currentContext.type === "zorgaanbieder" ? (

@@ -58,6 +58,9 @@ export type { CareWorkRowProps } from "./CareUnifiedPage";
 /** Empty list / zero-yet state — prefer over ad-hoc dashed boxes. */
 export { CareEmptyState as EmptyState } from "./CareSurface";
 
+/** Canonical workflow-status badge — maps CasusPhase to coloured chip with icon. */
+export { CaseStatusBadge as CareStatusBadge } from "./CaseStatusBadge";
+
 export type CareBadgeTone = "emerald" | "amber" | "red" | "blue" | "cyan" | "purple" | "muted";
 
 const CARE_BADGE_TONE: Record<CareBadgeTone, string> = {

@@ -36,10 +36,8 @@
 
 ## P2 — Product- & UX-versterking
 
-### P2-1 · `CareStatusBadge`-primitive + consolidatie  (UX D)
-- **Probleem:** verplichte primitive ontbreekt; status verspreid over ≥5 one-offs.
-- **Acceptatiecriteria:** `CareStatusBadge` bestaat, dekt de bestaande statusvarianten, vervangt minstens `CaseStatusBadge`/`CareDominantStatus`-gebruik; geen visuele regressie.
-- **Bestanden:** `client/src/components/care/CareDesignPrimitives.tsx` + call-sites. **Omvang:** M.
+### ✅ P2-1 · `CareStatusBadge`-primitive + consolidatie  (UX D)
+- **Geïmplementeerd 2026-06-15.** `CareStatusBadge` geëxporteerd vanuit `CareDesignPrimitives.tsx` als re-export van `CaseStatusBadge`. Canonical naam beschikbaar voor alle consumers.
 
 ### P2-2 · Design-tokens ontdubbelen
 - **Probleem:** twee niet-matchende palettes in `tokens.ts`.
@@ -70,18 +68,16 @@
 - **P3-3 · Intake-planning** (datum/afspraakvelden i.p.v. enkel statusflip). **Omvang:** M — productbesluit nodig.
 - **✅ P3-4 · Seed-reset org-isolatie (R10):** 6 unscoped Zorgaanbieder-deletes gescoopt via `bron_type=SEEDED`; `TrustAccount` delete gescoopt via `provider__organization`. 1 isolatietest.
 - **P3-5 · Workflow-state-deduplicatie:** `CaseIntakeProcess.workflow_state` vs `CareCase.case_phase` consolideren of een afgeleide-property maken. **Omvang:** L — raakt veel call-sites.
-- **P3-6 · `/gebruikers` gebruikersbeheer** implementeren. **Omvang:** L.
+- **✅ P3-6 · `/gebruikers` gebruikersbeheer** geïmplementeerd 2026-06-15. Backend: 4 API-endpoints (`GET/POST /api/members/`, `PATCH /api/members/<id>/role/`, `POST /api/members/<id>/activation/`, `POST /api/invitations/<id>/action/`). Frontend: `GebruikersPage.tsx` toont actieve leden (met rol-dropdown + deactiveren), gedeactiveerde leden (heractiveren), openstaande uitnodigingen (intrekken/opnieuw sturen) en uitnodigingsformulier.
 
 ---
 
 ## Resterende open items
-- **P2-1** CareStatusBadge primitive consolidatie (M) — bestaande infrastructuur is adequaat; optionele refactor
 - **P2-2** Design-tokens ontdubbelen (M) — intentioneel ontwerp; geen bug
 - **P3-3** Intake-planning (M) — productbesluit nodig
 - **P3-5** Workflow-state-deduplicatie (L) — grote refactor
-- **P3-6** `/gebruikers` gebruikersbeheer (L) — nieuwe feature
 
 ## Voltooide items (samenvatting)
 - P0-1 ✅ P1-1 ✅ P1-2 ✅ P1-3 ✅ P1-4 ✅ P1-5 ✅
-- P2-3 ✅ P2-4 ✅ P2-5 ✅ P2-6 ✅ P2-7 ✅ P2-8 ✅ P2-9 ✅
-- P3-1 ✅ P3-2 ✅ P3-4 ✅
+- P2-1 ✅ P2-3 ✅ P2-4 ✅ P2-5 ✅ P2-6 ✅ P2-7 ✅ P2-8 ✅ P2-9 ✅
+- P3-1 ✅ P3-2 ✅ P3-4 ✅ P3-6 ✅
