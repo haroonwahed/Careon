@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-from django.urls import path, include
+from django.urls import path, include, re_path
 from django.views.generic import RedirectView
 from django.conf import settings
 from django.conf.urls.static import static
@@ -37,10 +37,6 @@ urlpatterns = [
         name='internal_build_info_redirect',
     ),
     path('dashboard/', careon_views.dashboard, name='dashboard'),
-    # Client-side routes (MultiTenantDemo): same SPA shell as dashboard for deep links (e.g. /instellingen?section=…).
-    path('instellingen/', careon_views.dashboard, name='spa_instellingen'),
-    path('casussen/nieuw/', careon_views.dashboard, name='spa_nieuwe_casus'),
-    path('geen-toegang/', careon_views.dashboard, name='spa_geen_toegang'),
     path('care/', include(('contracts.urls', 'careon'), namespace='careon')),
     path('profile/', careon_views.profile, name='profile'),
     path('settings/', careon_views.settings_hub, name='settings_hub'),
@@ -48,6 +44,8 @@ urlpatterns = [
     path('register/', careon_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    # Catch-all: serve the SPA shell for all client-side routes not matched above.
+    re_path(r'^(?!admin/|care/|static/|media/|favicon\.ico|_health/|build-info/|ops/|internal/|profile/|settings/|register/|login/|logout/|oidc/).*$', careon_views.dashboard, name='spa_catchall'),
 ]
 
 if settings.DEBUG and getattr(settings, 'ENABLE_DJANGO_BROWSER_RELOAD', False):
