@@ -961,6 +961,7 @@ function getPhaseStyleInfo(phase: string): { label: string; className: string } 
  * exact dezelfde grenzen hanteren.
  */
 const SLA_TARGET_HOURS = {
+  aanmelding: 24, // aanmelding_sla_hours — Aanmelding (casus + samenvatting)
   urgentIdle: 48, // urgent_idle_hours — HIGH/CRISIS in elke fase
   providerResponse: 72, // provider_response_sla_hours — Aanbiederreactie
   intakeStart: 120, // intake_start_sla_days (5d) — Plaatsing/Intake
@@ -975,6 +976,7 @@ function getSlaTarget(item: CoordinationDecisionOverviewItem): { hours: number; 
   const phaseLabel = getPhaseStyleInfo(item.phase).label;
   const candidates: Array<{ hours: number; basis: string }> = [];
   if (isUrgent) candidates.push({ hours: SLA_TARGET_HOURS.urgentIdle, basis: "Urgentie" });
+  if (phaseLabel === "Aanmelding") candidates.push({ hours: SLA_TARGET_HOURS.aanmelding, basis: "Aanmelding" });
   if (phaseLabel === "Aanbiederreactie") candidates.push({ hours: SLA_TARGET_HOURS.providerResponse, basis: "Aanbiederreactie" });
   if (phaseLabel === "Plaatsing" || phaseLabel === "Intake") candidates.push({ hours: SLA_TARGET_HOURS.intakeStart, basis: "Intake-start" });
   if (candidates.length === 0) return null;

@@ -45,6 +45,7 @@ def _safe_related(instance: Any, attr: str) -> Any:
 
 DECISION_ENGINE_THRESHOLDS = {
     "low_match_confidence": 0.65,
+    "aanmelding_sla_hours": 24,
     "provider_response_sla_hours": 72,
     "urgent_idle_hours": 48,
     "intake_start_sla_days": 5,
@@ -172,7 +173,7 @@ def _derive_issue_tags(
         add("risks")
     if alerts:
         add("alerts")
-    if _has_item_code(alerts, {"PROVIDER_REVIEW_PENDING_SLA"}):
+    if _has_item_code(alerts, {"PROVIDER_REVIEW_PENDING_SLA", "AANMELDING_PENDING_SLA"}):
         add("SLA")
     if _has_item_code(alerts, _REJECTION_CODES) or _has_item_code(risks, {"REPEATED_PROVIDER_REJECTIONS"}):
         add("rejection")
@@ -1574,6 +1575,25 @@ def _build_blockers_and_alerts(
             )
         )
         return blockers, risks, alerts, {"provider_pending_sla_breached": False}
+
+    # Aanmelding-SLA: een nieuwe aanmelding moet binnen de termijn compleet zijn
+    # (casus + samenvatting). Toegevoegd vóór de vroege returns hieronder zodat
+    # ook incomplete/zonder-samenvatting aanmeldingen het signaal meekrijgen.
+    if (
+        current_state in {WorkflowState.DRAFT_CASE, WorkflowState.SUMMARY_READY}
+        and hours_in_current_state is not None
+        and hours_in_current_state >= DECISION_ENGINE_THRESHOLDS["aanmelding_sla_hours"]
+    ):
+        add_alert(
+            _serialize_alert(
+                "AANMELDING_PENDING_SLA",
+                "high",
+                "Aanmelding wacht te lang",
+                "De aanmelding is SLA-overschreden; rond casus en samenvatting af.",
+                "COMPLETE_CASE_DATA",
+                {"hours_in_current_state": hours_in_current_state},
+            )
+        )
 
     if not required_data_complete:
         blockers.append(
