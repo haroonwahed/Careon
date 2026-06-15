@@ -17,11 +17,7 @@ import {
   User,
   FileText,
   Clock,
-  AlertCircle,
   CheckCircle2,
-  Edit,
-  Trash2,
-  UserPlus,
   Upload,
   Settings,
   Eye,
@@ -180,7 +176,6 @@ export function AudittrailPage({ onOpenEntity }: AudittrailPageProps) {
   const groupedEntries = groupByDate(filteredEntries);
   const totalEntries = filteredEntries.length;
   const todayCount = groupedEntries["Vandaag"].length;
-  const yesterdayCount = groupedEntries["Gisteren"].length;
   const distinctUsers = new Set(filteredEntries.map((entry) => entry.userId).filter(Boolean)).size;
 
   return (

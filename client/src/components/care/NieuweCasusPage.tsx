@@ -1117,7 +1117,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (step === 3) {
-      if (!formState.jeugdhulpregio && !formState.regio && !formState.preferred_region) {
+      const hasRegionOptions = (options.jeugdhulpregio?.length ?? 0) > 0;
+      if (hasRegionOptions && !formState.jeugdhulpregio && !formState.regio && !formState.preferred_region) {
         setStepError("Kies minimaal een jeugdhulpregio binnen de randvoorwaarden.");
         return false;
       }
@@ -1885,6 +1886,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               step="3"
               title="Randvoorwaarden"
             />
+
+            {(options.jeugdhulpregio?.length ?? 0) === 0 && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-sm text-amber-200">
+                <span className="font-semibold">Geen jeugdhulpregio's geconfigureerd.</span>{" "}
+                Ga naar <a href="/care/regio's/" className="underline underline-offset-2 hover:text-amber-100">Regio's</a> om er een aan te maken voordat je een casus plaatst. De casus wordt opgeslagen zonder regiokoppeling.
+              </div>
+            )}
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1.9fr)_minmax(350px,1fr)]">
               <div className="space-y-3">

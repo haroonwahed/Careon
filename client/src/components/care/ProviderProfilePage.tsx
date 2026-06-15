@@ -22,7 +22,6 @@ import {
   Clock,
   Star,
   CheckCircle2,
-  AlertCircle,
   ChevronDown,
   ChevronUp,
   Phone,

@@ -11,6 +11,8 @@ export interface UseCoordinationDecisionOverviewResult {
   refetch: () => void;
 }
 
+const POLL_INTERVAL_MS = 30_000;
+
 export function useCoordinationDecisionOverview(): UseCoordinationDecisionOverviewResult {
   const [data, setData] = useState<CoordinationDecisionOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,6 +49,13 @@ export function useCoordinationDecisionOverview(): UseCoordinationDecisionOvervi
       cancelled = true;
     };
   }, [tick]);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTick((value) => value + 1);
+    }, POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, []);
 
   return { data, loading, error, refetch };
 }

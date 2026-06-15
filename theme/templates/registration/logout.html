@@ -1,26 +1,126 @@
 {% extends 'base_fullscreen.html' %}
 {% load static %}
 
-{% block title %}Uitgelogd - Careon{% endblock %}
+{% block title %}Uitgelogd — CareOn{% endblock %}
 
 {% block body %}
-<div class="auth-layout auth-layout-center auth-shell">
-    <div class="auth-form-container text-center auth-logout-card">
-        <div class="absolute top-4 right-4">
-            <button onclick="toggleTheme()" class="theme-toggle" title="Wissel thema">
-                <svg class="w-4 h-4 icon-sun" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                <svg class="w-4 h-4 icon-moon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-            </button>
-        </div>
-        <div class="w-16 h-16 rounded-2xl mx-auto mb-6 flex items-center justify-center auth-logout-icon-wrap">
-            <svg class="w-8 h-8 auth-link-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-        </div>
-        <h1 class="text-2xl font-bold mb-2 login-title">Je bent uitgelogd</h1>
-        <p class="text-sm mb-8 login-subtitle">Bedankt voor het gebruik van Careon. Tot de volgende keer.</p>
-        <a href="{% url 'login' %}" class="inline-flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold text-sm transition shadow-lg glow-btn">
-            Opnieuw inloggen
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
-        </a>
-    </div>
+<style>
+html, body { margin: 0; padding: 0; }
+body {
+  background: #070b12;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.sa-card {
+  position: relative;
+  background: rgba(15,23,42,0.8);
+  border: 1px solid rgba(51,65,85,0.5);
+  border-radius: 20px;
+  padding: 48px 40px 40px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  backdrop-filter: blur(12px);
+}
+
+.sa-theme-btn {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  border: 1px solid rgba(51,65,85,0.5);
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+}
+.sa-theme-btn:hover { color: #94a3b8; border-color: rgba(100,116,139,0.6); }
+
+.sa-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 24px;
+}
+.sa-icon svg { width: 28px; height: 28px; color: #818cf8; }
+
+.sa-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #f1f5f9;
+  margin: 0 0 8px;
+}
+.sa-sub {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.55;
+  margin: 0 0 32px;
+}
+
+.sa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 28px;
+  border-radius: 10px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.sa-btn:hover { background: #5254cc; box-shadow: 0 4px 16px rgba(99,102,241,0.35); }
+.sa-btn svg { width: 14px; height: 14px; }
+
+[data-theme="light"] body { background: #f8fafc; }
+[data-theme="light"] .sa-card {
+  background: rgba(255,255,255,0.9);
+  border-color: rgba(203,213,225,0.6);
+}
+.icon-sun { display: none; }
+.icon-moon { display: block; }
+[data-theme="light"] .icon-sun { display: block; }
+[data-theme="light"] .icon-moon { display: none; }
+</style>
+
+<div class="sa-card">
+  <button onclick="toggleTheme()" class="sa-theme-btn" title="Wissel thema">
+    <svg class="icon-sun w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    <svg class="icon-moon w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+  </button>
+
+  <div class="sa-icon">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+    </svg>
+  </div>
+
+  <h1 class="sa-title">Je bent uitgelogd</h1>
+  <p class="sa-sub">Bedankt voor het gebruik van CareOn. Tot de volgende keer.</p>
+
+  <a href="{% url 'login' %}" class="sa-btn">
+    Opnieuw inloggen
+    <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+    </svg>
+  </a>
 </div>
+
 {% endblock %}

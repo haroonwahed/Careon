@@ -6,24 +6,15 @@ import { OrdersEmptyState } from "./OrdersEmptyState";
 import { LoadingSkeleton } from "../LoadingSkeleton";
 
 interface OrdersBoardProps {
-  // Status cards at the top
   statusCards: StatusCard[];
-  
-  // Tabs configuration
   tabs: BoardTab[];
   activeTab: string;
   onTabChange: (key: string) => void;
-  
-  // Rows data
   rows: OrdersListRowData[];
   isLoading?: boolean;
-  
-  // Empty state
   emptyIcon: LucideIcon;
   emptyTitle: string;
   emptyDescription: string;
-  
-  // Row click handler
   onRowClick: (rowId: string) => void;
 }
 
@@ -41,21 +32,16 @@ export function OrdersBoard({
 }: OrdersBoardProps) {
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      {/* Status Cards */}
-      <OrdersStatusCards 
-        items={statusCards} 
-        activeKey={activeTab} 
-        onPick={onTabChange} 
+      <OrdersStatusCards
+        items={statusCards}
+        activeKey={activeTab}
+        onPick={onTabChange}
       />
-
-      {/* Tabs */}
-      <OrdersTabs 
-        tabs={tabs} 
-        activeTab={activeTab} 
-        onTabChange={onTabChange} 
+      <OrdersTabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
       />
-
-      {/* Rows List */}
       <div>
         {isLoading ? (
           <div className="p-6">

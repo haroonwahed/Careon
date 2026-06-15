@@ -56,6 +56,11 @@ interface Context {
   subtitle?: string;
 }
 
+interface AuditEntry {
+  entityType: string;
+  entityId?: string;
+}
+
 /** Maps UI workspace chips to Django Organization.slug (pilot uses one tenant for all demo chips). */
 const CONTEXT_ORGANIZATION_SLUG: Record<string, string> = {
   "gemeente-demo": "gemeente-demo",
@@ -482,10 +487,6 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     [currentContext.type],
   );
 
-  const handleProviderSelect = (providerId: string) => {
-    void providerId;
-  };
-
   const handleRegionClick = (_regionId: string) => {
     goToPage("regios");
   };
@@ -610,7 +611,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
       });
   }, [me, refetchMe]);
 
-  const handleOpenEntityFromAudit = (entry: any) => {
+  const handleOpenEntityFromAudit = (entry: AuditEntry) => {
     if (entry.entityType === "casus" && entry.entityId) {
       handleCaseClick(entry.entityId);
       return;

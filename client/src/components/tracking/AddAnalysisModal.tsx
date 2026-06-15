@@ -117,13 +117,10 @@ export function AddAnalysisModal({
               className="w-full px-4 py-2.5 rounded-xl bg-muted border border-border text-foreground placeholder:placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
               required
             />
-            <button
-              type="button"
-              className="flex items-center gap-1.5 mt-2 text-xs dark:text-primary text-primary hover:underline"
-            >
+            <span className="flex items-center gap-1.5 mt-2 text-xs dark:text-primary text-primary">
               <HelpCircle className="w-3.5 h-3.5" />
               {language === "fr" ? "Comment trouver l'URL ?" : "How to find the URL?"}
-            </button>
+            </span>
           </div>
 
           {/* Actions */}

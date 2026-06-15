@@ -22,7 +22,6 @@ interface StatisticsTabProps {
   isLoading?: boolean;
 }
 
-// Mock data - remplacer par vraies données
 const mockDistributionData = [
   { price: "0-10", count: 12 },
   { price: "10-20", count: 28 },
@@ -72,7 +71,6 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
           value="32,50 €"
           subtitle={language === "fr" ? "Sur 175 ventes" : "Over 175 sales"}
           iconColor="text-primary"
-          language={language}
         />
         <KPICard
           icon={Package}
@@ -84,7 +82,6 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
           value="68%"
           subtitle="175 / 258"
           iconColor="text-green-500"
-          language={language}
         />
         <KPICard
           icon={Clock}
@@ -92,7 +89,6 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
           value="12 jours"
           subtitle={language === "fr" ? "Médiane 8 jours" : "Median 8 days"}
           iconColor="text-blue-500"
-          language={language}
         />
       </div>
 
@@ -110,7 +106,6 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
             language === "fr" ? "Produits dans l'analyse" : "Products in analysis"
           }
           iconColor="text-purple-500"
-          language={language}
         />
         <KPICard
           icon={ShoppingBag}
@@ -122,7 +117,6 @@ export function StatisticsTab({ language, isLoading }: StatisticsTabProps) {
               : "175 sales, 14.6 per day"
           }
           iconColor="text-orange-500"
-          language={language}
         />
       </div>
 
@@ -246,7 +240,6 @@ interface KPICardProps {
   value: string;
   subtitle: string;
   iconColor: string;
-  language: Language;
 }
 
 function KPICard({

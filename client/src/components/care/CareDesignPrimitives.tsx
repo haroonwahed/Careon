@@ -1,5 +1,5 @@
 import { Children, Fragment, type ComponentProps, type ReactNode } from "react";
-import { AlertTriangle, ChevronRight } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { Badge } from "../ui/badge";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";

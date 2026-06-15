@@ -21,7 +21,7 @@ from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.utils import timezone
 
-from contracts.domain.contracts import CareCaseData, ListParams, ListResult
+from contracts.domain.contracts import CareCaseData, ListParams
 from contracts.forms import CaseIntakeProcessForm
 from contracts.middleware import log_action
 from contracts.observability import log_escalation_hint
@@ -81,13 +81,12 @@ from contracts.permissions import (
     visible_provider_scoped_care_cases,
 )
 from contracts.provider_workspace import build_provider_workspace_summary
-from contracts.legacy_backend.provider_matching_service import MatchContext, MatchEngine
+from contracts.legacy_backend.provider_matching_service import MatchContext
 from contracts.views import _assign_provider_to_intake, _prepare_waitlist_proposal_for_intake
 from contracts.case_timeline import (
     record_gemeente_validation_to_provider_review_boundary,
     serialize_timeline_events_for_api,
 )
-from contracts.navigation import SPA_DASHBOARD_URL
 from contracts.operational_failures import build_operational_failure_payload
 from contracts.provider_matching_service import MatchEngine
 from contracts.workflow_state_machine import (
@@ -331,17 +330,6 @@ def _get_intake_for_case_api_id(case_id, organization, *, lock=False, select_rel
         organization,
         contract=case_record,
     )
-
-
-def _coerce_coordinate(value, *, minimum, maximum):
-    try:
-        numeric_value = float(value)
-    except (TypeError, ValueError):
-        return None
-
-    if numeric_value < minimum or numeric_value > maximum:
-        return None
-    return round(numeric_value, 6)
 
 
 def _provider_regions_payload(profile):
@@ -1429,7 +1417,7 @@ def assessment_decision_api(request, case_id):
     zorgtype = (payload.get('zorgtype') or intake.zorgvorm_gewenst or intake.preferred_care_form or '').strip()
     constraints = payload.get('constraints') or []
 
-    raw_ws = payload.get('workflow_summary')
+    raw_ws = payload.get('workflow_summary') or payload.get('workflowSummary')
     if isinstance(raw_ws, dict):
         risks_in = raw_ws.get('risks')
         risks_list: list[str] = []

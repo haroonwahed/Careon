@@ -13,6 +13,7 @@ export type VideoHelpTriggerProps = {
   title: string;
   description?: string;
   script: string;
+  videoSrc?: string;
   triggerLabel?: string;
   testId?: string;
   className?: string;
@@ -22,6 +23,7 @@ export function VideoHelpTrigger({
   title,
   description,
   script,
+  videoSrc,
   triggerLabel = "Bekijk uitleg",
   testId,
   className,
@@ -56,15 +58,20 @@ export function VideoHelpTrigger({
               <DialogDescription className="sr-only">Video-uitleg voor {title}</DialogDescription>
             )}
           </DialogHeader>
-          <div
-            className="flex aspect-video items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/20"
-            role="img"
-            aria-label="Videoplaceholder"
-          >
-            <div className="text-center">
-              <Play className="mx-auto size-10 text-muted-foreground/60" aria-hidden />
-              <p className="mt-2 text-sm font-medium text-muted-foreground">Video volgt</p>
-            </div>
+          <div className="aspect-video overflow-hidden rounded-xl border border-border/70 bg-muted/20">
+            {videoSrc ? (
+              <iframe
+                src={videoSrc}
+                title={title}
+                className="size-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <div className="flex size-full items-center justify-center">
+                <Play className="size-10 text-muted-foreground/60" aria-hidden />
+              </div>
+            )}
           </div>
           <div className="space-y-2 rounded-xl border border-border/50 bg-muted/10 px-4 py-3">
             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">

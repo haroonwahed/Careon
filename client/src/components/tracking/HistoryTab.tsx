@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, ExternalLink, ChevronDown } from "lucide-react";
+import { Search, ExternalLink } from "lucide-react";
 import { Language, formatCurrency } from "../../lib/i18n";
 import { Badge } from "../ui/badge";
 
@@ -106,7 +106,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "sold"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "text-muted-foreground border-transparent hover:hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Ventes" : "Sold"}
@@ -116,7 +116,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "removed"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "text-muted-foreground border-transparent hover:hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Retirés" : "Removed"}
@@ -126,7 +126,7 @@ export function HistoryTab({ language }: HistoryTabProps) {
           className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
             activeSubTab === "unsold"
               ? "dark:text-primary text-primary dark:border-primary border-primary"
-              : "text-muted-foreground border-transparent hover:hover:text-foreground"
+              : "text-muted-foreground border-transparent hover:text-foreground"
           }`}
         >
           {language === "fr" ? "Invendus" : "Unsold"}

@@ -1,4 +1,4 @@
-import { AlertTriangle, AlertCircle, Info, AlertOctagon } from "lucide-react";
+import { AlertTriangle, Info, AlertOctagon } from "lucide-react";
 
 interface RiskSignal {
   severity: "critical" | "warning" | "info";

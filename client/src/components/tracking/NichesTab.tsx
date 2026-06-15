@@ -151,7 +151,7 @@ export function NichesTab({ language }: NichesTabProps) {
             </tr>
           </thead>
           <tbody>
-            {paginatedNiches.map((niche, index) => (
+            {paginatedNiches.map((niche) => (
               <tr
                 key={niche.id}
                 className={`

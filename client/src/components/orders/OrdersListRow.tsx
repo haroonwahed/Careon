@@ -43,7 +43,7 @@ interface OrdersListRowProps {
 
 export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
   return (
-    <div className="p-4 hover:bg-primary/5 hover:bg-gray-50 transition-colors cursor-pointer group">
+    <div className="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
       <div className="flex items-center justify-between gap-4">
         {/* LEFT: Image + Title + Badges */}
         <div className="flex items-center gap-4 min-w-0 flex-1" onClick={onClick}>
@@ -110,9 +110,9 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
                   action.type === "primary" &&
                     "bg-primary hover:bg-primary/90 dark:text-white text-primary-foreground px-4 py-2",
                   action.type === "secondary" &&
-                    "text-foreground hover:bg-primary/10 hover:bg-gray-100",
+                    "text-foreground hover:bg-gray-100",
                   action.type === "ghost" &&
-                    "text-foreground hover:bg-primary/10 hover:bg-gray-100"
+                    "text-foreground hover:bg-gray-100"
                 )}
                 style={
                   action.type === "primary"
@@ -135,7 +135,7 @@ export function OrdersListRow({ row, onClick }: OrdersListRowProps) {
                     variant="ghost"
                     size="icon"
                     onClick={(e) => e.stopPropagation()}
-                    className="h-8 w-8 rounded-lg hover:bg-primary/10 hover:bg-gray-100"
+                    className="h-8 w-8 rounded-lg hover:bg-gray-100"
                   >
                     <MoreVertical className="w-4 h-4 text-muted-foreground" />
                   </Button>

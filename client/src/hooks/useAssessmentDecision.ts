@@ -78,6 +78,14 @@ export interface AssessmentDecisionPayload {
   };
 }
 
+export interface WorkflowSummaryPayload {
+  context: string;
+  urgency?: string;
+  risks: string[];
+  risks_none_ack: boolean;
+  missing_information?: string;
+}
+
 export interface SaveAssessmentDecisionPayload {
   decision: string;
   zorgtype: string;
@@ -85,6 +93,7 @@ export interface SaveAssessmentDecisionPayload {
   urgency: string;
   complexity: string;
   constraints: string[];
+  workflowSummary?: WorkflowSummaryPayload;
 }
 
 export interface SaveAssessmentDecisionResult {

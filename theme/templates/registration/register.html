@@ -1,116 +1,648 @@
 {% extends 'base_fullscreen.html' %}
 {% load static %}
 
-{% block title %}Account aanmaken - Careon{% endblock %}
+{% block title %}Account aanmaken — CareOn{% endblock %}
 
 {% block body %}
-<div class="auth-layout auth-shell">
-    <div class="auth-marketing-panel login-panel-left">
-        <div class="login-divider"></div>
-        <div class="absolute top-1/3 left-1/2 -translate-x-1/2 w-96 h-96 rounded-full login-glow-large"></div>
-        <div class="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full login-glow-small"></div>
-        <div class="auth-marketing-copy">
-            <div class="auth-kicker">
-                <span class="auth-kicker-dot"></span>
-                Nieuwe organisatie
-            </div>
-            <div class="w-14 h-14 rounded-2xl flex items-center justify-center login-icon-tile">
-                <svg class="w-7 h-7 login-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            </div>
-            <div>
-                <h2 class="login-title">Start vandaag met effectieve zorgregie</h2>
-                <p class="login-subtitle">Richt je werkomgeving in enkele minuten in en stap direct in hetzelfde ontwerp- en besluitritme als het nieuwe dashboard.</p>
-            </div>
-            <div class="auth-stat-grid">
-                <div class="auth-stat-card">
-                    <p class="auth-stat-label">Modules</p>
-                    <p class="auth-stat-value">15+</p>
-                </div>
-                <div class="auth-stat-card">
-                    <p class="auth-stat-label">Privacy</p>
-                    <p class="auth-stat-value">AVG</p>
-                </div>
-                <div class="auth-stat-card">
-                    <p class="auth-stat-label">Toegang</p>
-                    <p class="auth-stat-value">RBAC</p>
-                </div>
-            </div>
+<style>
+/* ── Auth shell (same tokens as login) ──────────────────── */
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  background: #070b12;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.sa-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  height: 100dvh;
+  overflow: hidden;
+}
+@media (min-width: 1024px) {
+  .sa-shell { grid-template-columns: 1.1fr 0.9fr; }
+}
+
+/* ── Left brand panel ───────────────────────────────────── */
+.sa-brand {
+  display: none;
+  position: relative;
+  padding: 40px 60px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0d1424 0%, #080e1c 100%);
+  border-right: 1px solid rgba(51,65,85,0.35);
+}
+@media (min-width: 1024px) {
+  .sa-brand { display: flex; flex-direction: column; overflow: hidden; }
+}
+.sa-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(248,250,252,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248,250,252,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+}
+.sa-brand::after {
+  content: "";
+  position: absolute;
+  top: -120px; left: -120px;
+  width: 480px; height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.sa-brand-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 20px;
+}
+
+.sa-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sa-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+}
+.sa-logo-mark svg { width: 22px; height: 22px; color: #a5b4fc; }
+.sa-logo-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: #f1f5f9; }
+.sa-logo-tag { font-size: 12px; color: #64748b; margin-top: 1px; }
+
+.sa-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.sa-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sa-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 16px; height: 2px;
+  background: #6366f1;
+  border-radius: 2px;
+}
+
+.sa-headline {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 36px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #f1f5f9;
+}
+.sa-headline em {
+  font-style: normal;
+  color: #a5b4fc;
+}
+
+.sa-subline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+  max-width: 420px;
+}
+
+.sa-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.sa-check-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  color: #94a3b8;
+}
+.sa-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.25);
+  flex-shrink: 0;
+}
+.sa-check-icon svg { width: 11px; height: 11px; color: #818cf8; }
+
+.sa-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(51,65,85,0.4);
+}
+.sa-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sa-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #e2e8f0;
+}
+.sa-stat-label { font-size: 12px; color: #475569; }
+
+/* ── Right form panel ───────────────────────────────────── */
+.sa-form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 32px;
+  background: #070b12;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.sa-mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+}
+@media (min-width: 1024px) { .sa-mobile-logo { display: none; } }
+.sa-mobile-logo-mark {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 9px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+}
+.sa-mobile-logo-mark svg { width: 18px; height: 18px; color: #a5b4fc; }
+.sa-mobile-logo-name { font-size: 16px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.02em; }
+
+.sa-card {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sa-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sa-card-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6366f1;
+}
+.sa-card-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #f1f5f9;
+  margin: 0;
+}
+.sa-card-sub {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Error box */
+.sa-alert {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  font-size: 13px;
+  color: #fca5a5;
+  line-height: 1.5;
+}
+
+/* Form */
+.sa-form { display: flex; flex-direction: column; gap: 10px; }
+
+.sa-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.sa-field { display: flex; flex-direction: column; gap: 5px; }
+
+.sa-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+
+.sa-input-wrap { position: relative; }
+
+.sa-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 9px;
+  border: 1px solid rgba(51,65,85,0.7);
+  background: rgba(15,23,42,0.8);
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+.sa-input::placeholder { color: #475569; }
+.sa-input:focus {
+  border-color: rgba(99,102,241,0.6);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+.sa-input--pw { padding-right: 44px; }
+.sa-input--error {
+  border-color: rgba(239,68,68,0.5) !important;
+}
+
+.sa-pw-toggle {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.sa-pw-toggle:hover { color: #94a3b8; }
+.sa-pw-toggle svg { width: 17px; height: 17px; }
+
+/* Strength meter */
+.sa-strength {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+.sa-strength-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(51,65,85,0.5);
+  transition: background 0.2s;
+}
+.sa-strength-bar--weak { background: #ef4444; }
+.sa-strength-bar--fair { background: #f59e0b; }
+.sa-strength-bar--good { background: #22c55e; }
+
+.sa-field-error {
+  font-size: 12px;
+  color: #f87171;
+}
+
+/* Submit */
+.sa-submit {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+  letter-spacing: -0.01em;
+  margin-top: 4px;
+}
+.sa-submit:hover { background: #5254cc; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.sa-submit:active { background: #4547b0; }
+.sa-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.sa-terms {
+  font-size: 12px;
+  color: #475569;
+  text-align: center;
+  line-height: 1.5;
+}
+.sa-terms a { color: #6366f1; text-decoration: none; }
+.sa-terms a:hover { color: #818cf8; }
+
+/* Footer */
+.sa-card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.sa-foot-text { font-size: 13px; color: #475569; }
+.sa-foot-link { color: #6366f1; text-decoration: none; font-weight: 600; }
+.sa-foot-link:hover { color: #818cf8; }
+.sa-foot-back { font-size: 12px; color: #334155; text-decoration: none; }
+.sa-foot-back:hover { color: #64748b; }
+</style>
+
+<div class="sa-shell">
+
+  <!-- Left: brand panel -->
+  <aside class="sa-brand" aria-hidden="true">
+    <div class="sa-brand-inner">
+
+      <div class="sa-logo">
+        <div class="sa-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M 15.7 6.3 A 8 8 0 1 0 15.7 17.7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M 13.2 8.8 A 4.5 4.5 0 1 0 13.2 15.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="20.5" cy="12" r="2" fill="currentColor"/>
+          </svg>
         </div>
+        <div>
+          <div class="sa-logo-name">CareOn</div>
+          <div class="sa-logo-tag">Regieplatform</div>
+        </div>
+      </div>
+
+      <div class="sa-hero">
+        <div class="sa-eyebrow">Start vandaag</div>
+        <h1 class="sa-headline">Effectieve zorgregie<br>in <em>minuten</em> ingericht</h1>
+        <p class="sa-subline">Richt je werkomgeving in en stap direct in hetzelfde besluit- en ontwerpritme als je team.</p>
+
+        <div class="sa-checklist">
+          <div class="sa-check-item">
+            <div class="sa-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span>Rolzuivere toegang voor gemeente en aanbieder</span>
+          </div>
+          <div class="sa-check-item">
+            <div class="sa-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span>AVG-conform met volledige audittrail</span>
+          </div>
+          <div class="sa-check-item">
+            <div class="sa-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span>Één platform voor 15+ modules</span>
+          </div>
+          <div class="sa-check-item">
+            <div class="sa-check-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </div>
+            <span>Directe doorstroom zonder losse afstemming</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sa-stats">
+        <div class="sa-stat">
+          <span class="sa-stat-value">15+</span>
+          <span class="sa-stat-label">Modules</span>
+        </div>
+        <div class="sa-stat">
+          <span class="sa-stat-value">AVG</span>
+          <span class="sa-stat-label">Compliant</span>
+        </div>
+        <div class="sa-stat">
+          <span class="sa-stat-value">RBAC</span>
+          <span class="sa-stat-label">Toegangsmodel</span>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- Right: form panel -->
+  <main class="sa-form-panel">
+
+    <!-- Mobile logo -->
+    <div class="sa-mobile-logo" aria-hidden="true">
+      <div class="sa-mobile-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <span class="sa-mobile-logo-name">CareOn</span>
     </div>
 
-    <div class="auth-form-panel login-panel-right">
-        <div class="auth-form-container">
-            <div class="flex items-center justify-between mb-10">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center auth-brand-tile">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-                    </div>
-                    <span class="text-xl font-bold tracking-tight login-title">Careon</span>
-                </div>
-                <button onclick="toggleTheme()" class="theme-toggle" title="Wissel thema">
-                    <svg class="w-4 h-4 icon-sun" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                    <svg class="w-4 h-4 icon-moon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-                </button>
-            </div>
+    <div class="sa-card">
 
-            <div class="auth-panel-eyebrow">Account aanmaken</div>
-            <h1 class="text-2xl font-bold mb-1.5 login-title">Maak je account aan</h1>
-            <p class="text-sm mb-8 login-subtitle">Start met CareOn in een paar stappen en ga daarna direct verder in dezelfde dashboardstructuur.</p>
+      <div class="sa-card-head">
+        <div class="sa-card-eyebrow">Nieuw account</div>
+        <h2 class="sa-card-title">Maak je account aan</h2>
+      </div>
 
-            {% if form.non_field_errors %}
-            <div class="mb-6 p-4 rounded-xl auth-error-box">
-                {% for error in form.non_field_errors %}
-                <p class="text-sm auth-error-text">{{ error }}</p>
-                {% endfor %}
-            </div>
-            {% endif %}
+      {% if form.non_field_errors %}
+      <div class="sa-alert" role="alert">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+      {% endif %}
 
-            <form method="post" class="space-y-5">
-                {% csrf_token %}
-                <div>
-                    <label for="{{ form.username.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">Gebruikersnaam</label>
-                    <input type="text" name="username" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" autofocus required autocomplete="username"
-                        class="login-input{% if form.username.errors %} has-error{% endif %}"
-                        placeholder="Kies een gebruikersnaam">
-                    {% if form.username.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.username.errors %}{{ e }}{% endfor %}</p>{% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.email.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">E-mailadres</label>
-                    <input type="email" name="email" id="{{ form.email.id_for_label }}" value="{{ form.email.value|default:'' }}" required autocomplete="email"
-                        class="login-input{% if form.email.errors %} has-error{% endif %}"
-                        placeholder="naam@organisatie.nl">
-                    {% if form.email.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.email.errors %}{{ e }}{% endfor %}</p>{% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.password1.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">Wachtwoord</label>
-                    <input type="password" name="password1" id="{{ form.password1.id_for_label }}" required autocomplete="new-password"
-                        class="login-input{% if form.password1.errors %} has-error{% endif %}"
-                        placeholder="Maak een sterk wachtwoord">
-                    {% if form.password1.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.password1.errors %}{{ e }}{% endfor %}</p>{% endif %}
-                </div>
-                <div>
-                    <label for="{{ form.password2.id_for_label }}" class="block text-sm font-semibold mb-2 login-title">Bevestig wachtwoord</label>
-                    <input type="password" name="password2" id="{{ form.password2.id_for_label }}" required autocomplete="new-password"
-                        class="login-input{% if form.password2.errors %} has-error{% endif %}"
-                        placeholder="Bevestig je wachtwoord">
-                    {% if form.password2.errors %}<p class="mt-1.5 text-xs auth-error-text">{% for e in form.password2.errors %}{{ e }}{% endfor %}</p>{% endif %}
-                </div>
-                <button type="submit" class="glow-btn w-full py-3.5 text-white rounded-xl font-semibold text-sm transition-all duration-200">
-                    Account aanmaken
-                </button>
-            </form>
+      <form method="post" class="sa-form" novalidate id="register-form">
+        {% csrf_token %}
 
-            <p class="text-xs text-center mt-6 leading-relaxed login-dim">
-                Door een account aan te maken ga je akkoord met onze servicevoorwaarden en privacyverklaring.
-            </p>
-
-            <div class="auth-form-meta">
-                <div class="auth-helper-row">
-                    <p class="auth-form-note">Heb je al een account? <a href="/login/" class="auth-link-primary">Inloggen</a></p>
-                    <a href="/" class="auth-page-link">Terug naar home</a>
-                </div>
-            </div>
+        <div class="sa-row">
+          <div class="sa-field">
+            <label for="{{ form.first_name.id_for_label }}" class="sa-label">Voornaam</label>
+            <input type="text" name="first_name" id="{{ form.first_name.id_for_label }}"
+              value="{{ form.first_name.value|default:'' }}"
+              autocomplete="given-name"
+              class="sa-input{% if form.first_name.errors %} sa-input--error{% endif %}"
+              placeholder="Jan">
+            {% if form.first_name.errors %}<div class="sa-field-error">{{ form.first_name.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="sa-field">
+            <label for="{{ form.last_name.id_for_label }}" class="sa-label">Achternaam</label>
+            <input type="text" name="last_name" id="{{ form.last_name.id_for_label }}"
+              value="{{ form.last_name.value|default:'' }}"
+              autocomplete="family-name"
+              class="sa-input{% if form.last_name.errors %} sa-input--error{% endif %}"
+              placeholder="de Vries">
+            {% if form.last_name.errors %}<div class="sa-field-error">{{ form.last_name.errors.0 }}</div>{% endif %}
+          </div>
         </div>
+
+        <div class="sa-field">
+          <label for="{{ form.email.id_for_label }}" class="sa-label">E-mailadres</label>
+          <input type="email" name="email" id="{{ form.email.id_for_label }}"
+            value="{{ form.email.value|default:'' }}"
+            autofocus
+            required
+            autocomplete="email"
+            class="sa-input{% if form.email.errors %} sa-input--error{% endif %}"
+            placeholder="naam@organisatie.nl">
+          {% if form.email.errors %}<div class="sa-field-error">{{ form.email.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="sa-field">
+          <label for="{{ form.username.id_for_label }}" class="sa-label">Gebruikersnaam</label>
+          <input type="text" name="username" id="{{ form.username.id_for_label }}"
+            value="{{ form.username.value|default:'' }}"
+            required
+            autocomplete="username"
+            class="sa-input{% if form.username.errors %} sa-input--error{% endif %}"
+            placeholder="Kies een gebruikersnaam">
+          {% if form.username.errors %}<div class="sa-field-error">{{ form.username.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="sa-field">
+          <label for="{{ form.password1.id_for_label }}" class="sa-label">Wachtwoord</label>
+          <div class="sa-input-wrap">
+            <input type="password" name="password1" id="{{ form.password1.id_for_label }}"
+              required
+              autocomplete="new-password"
+              class="sa-input sa-input--pw{% if form.password1.errors %} sa-input--error{% endif %}"
+              placeholder="Kies een sterk wachtwoord"
+              id="id_password1">
+            <button type="button" class="sa-pw-toggle" data-pw-toggle="{{ form.password1.id_for_label }}" aria-label="Toon wachtwoord">
+              <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-7.25 9.75-7.25S21.75 12 21.75 12s-3.75 7.25-9.75 7.25S2.25 12 2.25 12z"/>
+                <circle cx="12" cy="12" r="3.25"/>
+              </svg>
+              <svg class="icon-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.58 10.58A3 3 0 0012 15a3 3 0 003-3 2.99 2.99 0 00-.42-1.5M8.82 8.82A8.3 8.3 0 002.25 12s3.75 7.25 9.75 7.25c1.36 0 2.65-.24 3.82-.68m2.12-1.32A16.18 16.18 0 0021.75 12s-3.75-7.25-9.75-7.25a12.2 12.2 0 00-2.03.17"/>
+              </svg>
+            </button>
+          </div>
+          <div class="sa-strength" id="pw-strength" aria-hidden="true">
+            <div class="sa-strength-bar" id="bar-1"></div>
+            <div class="sa-strength-bar" id="bar-2"></div>
+            <div class="sa-strength-bar" id="bar-3"></div>
+            <div class="sa-strength-bar" id="bar-4"></div>
+          </div>
+          {% if form.password1.errors %}<div class="sa-field-error">{{ form.password1.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="sa-field">
+          <label for="{{ form.password2.id_for_label }}" class="sa-label">Bevestig wachtwoord</label>
+          <div class="sa-input-wrap">
+            <input type="password" name="password2" id="{{ form.password2.id_for_label }}"
+              required
+              autocomplete="new-password"
+              class="sa-input sa-input--pw{% if form.password2.errors %} sa-input--error{% endif %}"
+              placeholder="Herhaal je wachtwoord">
+            <button type="button" class="sa-pw-toggle" data-pw-toggle="{{ form.password2.id_for_label }}" aria-label="Toon wachtwoord">
+              <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-7.25 9.75-7.25S21.75 12 21.75 12s-3.75 7.25-9.75 7.25S2.25 12 2.25 12z"/>
+                <circle cx="12" cy="12" r="3.25"/>
+              </svg>
+              <svg class="icon-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.58 10.58A3 3 0 0012 15a3 3 0 003-3 2.99 2.99 0 00-.42-1.5M8.82 8.82A8.3 8.3 0 002.25 12s3.75 7.25 9.75 7.25c1.36 0 2.65-.24 3.82-.68m2.12-1.32A16.18 16.18 0 0021.75 12s-3.75-7.25-9.75-7.25a12.2 12.2 0 00-2.03.17"/>
+              </svg>
+            </button>
+          </div>
+          {% if form.password2.errors %}<div class="sa-field-error">{{ form.password2.errors.0 }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="sa-submit" id="register-submit">Account aanmaken</button>
+
+        <p class="sa-terms">
+          Door een account aan te maken ga je akkoord met onze
+          <a href="#">servicevoorwaarden</a> en <a href="#">privacyverklaring</a>.
+        </p>
+      </form>
+
+      <div class="sa-card-footer">
+        <p class="sa-foot-text">Al een account? <a href="{% url 'login' %}" class="sa-foot-link">Inloggen</a></p>
+        <a href="/" class="sa-foot-back">← Terug naar CareOn</a>
+      </div>
+
     </div>
+  </main>
+
 </div>
+
+<script>
+// Password show/hide
+document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
+  const input = document.getElementById(btn.dataset.pwToggle);
+  if (!input) return;
+  btn.addEventListener('click', () => {
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.icon-show').style.display = isHidden ? 'none' : '';
+    btn.querySelector('.icon-hide').style.display = isHidden ? '' : 'none';
+    btn.setAttribute('aria-label', isHidden ? 'Verberg wachtwoord' : 'Toon wachtwoord');
+  });
+});
+
+// Password strength meter
+const pwInput = document.getElementById('{{ form.password1.id_for_label }}');
+const bars = [
+  document.getElementById('bar-1'),
+  document.getElementById('bar-2'),
+  document.getElementById('bar-3'),
+  document.getElementById('bar-4'),
+];
+function scorePassword(pw) {
+  let score = 0;
+  if (pw.length >= 8) score++;
+  if (pw.length >= 12) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return Math.min(4, score);
+}
+function levelClass(score, barIndex) {
+  if (score === 0 || barIndex >= score) return '';
+  if (score <= 1) return 'sa-strength-bar--weak';
+  if (score <= 2) return 'sa-strength-bar--fair';
+  return 'sa-strength-bar--good';
+}
+if (pwInput) {
+  pwInput.addEventListener('input', () => {
+    const score = scorePassword(pwInput.value);
+    bars.forEach((bar, i) => {
+      bar.className = 'sa-strength-bar';
+      const cls = levelClass(score, i);
+      if (cls) bar.classList.add(cls);
+    });
+  });
+}
+
+// Loading state on submit
+document.getElementById('register-form')?.addEventListener('submit', () => {
+  const btn = document.getElementById('register-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Account aanmaken…'; }
+});
+</script>
 {% endblock %}

@@ -1,328 +1,641 @@
 {% extends 'base_fullscreen.html' %}
 {% load static %}
 
-{% block title %}Inloggen - CareOn{% endblock %}
+{% block title %}Inloggen — CareOn{% endblock %}
 
 {% block body %}
-<script>
-  document.body.classList.add('careon-login-body');
-</script>
-<div class="careon-login-page">
-  <div class="careon-login-shell">
-    <section class="careon-login-left" aria-label="Secure access context">
-      <div class="careon-login-left-inner">
-        <div class="careon-login-hero-badge" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.45" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+<style>
+/* ── Auth shell ─────────────────────────────────────────── */
+html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+body {
+  background: #070b12;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.sa-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  height: 100dvh;
+  overflow: hidden;
+}
+@media (min-width: 1024px) {
+  .sa-shell { grid-template-columns: 1.1fr 0.9fr; }
+}
+
+/* ── Left brand panel ───────────────────────────────────── */
+.sa-brand {
+  display: none;
+  position: relative;
+  padding: 40px 60px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #0d1424 0%, #080e1c 100%);
+  border-right: 1px solid rgba(51,65,85,0.35);
+}
+@media (min-width: 1024px) {
+  .sa-brand { display: flex; flex-direction: column; overflow: hidden; }
+}
+.sa-brand::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(248,250,252,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(248,250,252,0.025) 1px, transparent 1px);
+  background-size: 44px 44px;
+  pointer-events: none;
+}
+.sa-brand::after {
+  content: "";
+  position: absolute;
+  top: -120px; left: -120px;
+  width: 480px; height: 480px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.sa-brand-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 20px;
+}
+
+.sa-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.sa-logo-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+}
+.sa-logo-mark svg { width: 22px; height: 22px; color: #a5b4fc; }
+.sa-logo-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; color: #f1f5f9; }
+.sa-logo-tag { font-size: 12px; color: #64748b; margin-top: 1px; }
+
+.sa-hero {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+}
+
+.sa-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6366f1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sa-eyebrow::before {
+  content: "";
+  display: inline-block;
+  width: 16px; height: 2px;
+  background: #6366f1;
+  border-radius: 2px;
+}
+
+.sa-headline {
+  margin: 0;
+  font-size: clamp(24px, 2.4vw, 36px);
+  font-weight: 700;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+  color: #f1f5f9;
+}
+.sa-headline em {
+  font-style: normal;
+  color: #a5b4fc;
+}
+
+.sa-subline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #94a3b8;
+  max-width: 420px;
+}
+
+.sa-features {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sa-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.sa-feature-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.sa-feature-icon svg { width: 16px; height: 16px; color: #818cf8; }
+.sa-feature-title { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+.sa-feature-copy { font-size: 13px; color: #64748b; line-height: 1.5; }
+
+.sa-flow {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(51,65,85,0.4);
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+.sa-flow-step {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+  white-space: nowrap;
+}
+.sa-flow-step--active { color: #94a3b8; }
+.sa-flow-div {
+  display: inline-block;
+  width: 16px;
+  height: 1px;
+  background: rgba(51,65,85,0.6);
+  flex-shrink: 0;
+  margin: 0 6px;
+}
+
+/* ── Right form panel ───────────────────────────────────── */
+.sa-form-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 32px;
+  background: #070b12;
+  height: 100%;
+  overflow-y: auto;
+}
+
+/* mobile logo */
+.sa-mobile-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 40px;
+}
+@media (min-width: 1024px) { .sa-mobile-logo { display: none; } }
+.sa-mobile-logo-mark {
+  display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 9px;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.3);
+}
+.sa-mobile-logo-mark svg { width: 18px; height: 18px; color: #a5b4fc; }
+.sa-mobile-logo-name { font-size: 16px; font-weight: 700; color: #f1f5f9; letter-spacing: -0.02em; }
+
+.sa-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sa-card-head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sa-card-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6366f1;
+}
+.sa-card-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #f1f5f9;
+  margin: 0;
+}
+.sa-card-sub {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* SSO */
+.sa-sso-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(51,65,85,0.7);
+  background: rgba(15,23,42,0.6);
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sa-sso-btn:hover {
+  border-color: rgba(99,102,241,0.4);
+  background: rgba(99,102,241,0.07);
+}
+.sa-sso-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+.sa-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.sa-divider::before, .sa-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(51,65,85,0.5);
+}
+
+/* Alert */
+.sa-alert {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  font-size: 13px;
+  color: #fca5a5;
+  line-height: 1.5;
+}
+
+/* Form */
+.sa-form { display: flex; flex-direction: column; gap: 16px; }
+
+.sa-field { display: flex; flex-direction: column; gap: 6px; }
+
+.sa-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #cbd5e1;
+}
+.sa-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sa-forgot {
+  font-size: 12px;
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 500;
+}
+.sa-forgot:hover { color: #818cf8; }
+
+.sa-input-wrap { position: relative; }
+
+.sa-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(51,65,85,0.7);
+  background: rgba(15,23,42,0.8);
+  color: #f1f5f9;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  -webkit-appearance: none;
+}
+.sa-input::placeholder { color: #475569; }
+.sa-input:focus {
+  border-color: rgba(99,102,241,0.6);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+}
+.sa-input--pw { padding-right: 44px; }
+
+.sa-pw-toggle {
+  position: absolute;
+  right: 12px; top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #475569;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.sa-pw-toggle:hover { color: #94a3b8; }
+.sa-pw-toggle svg { width: 17px; height: 17px; }
+
+.sa-field-error {
+  font-size: 12px;
+  color: #f87171;
+}
+
+/* Remember */
+.sa-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #94a3b8;
+  cursor: pointer;
+  user-select: none;
+}
+.sa-checkbox {
+  width: 15px; height: 15px;
+  border-radius: 4px;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+/* Submit */
+.sa-submit {
+  width: 100%;
+  padding: 11px 16px;
+  border-radius: 10px;
+  border: none;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
+  letter-spacing: -0.01em;
+}
+.sa-submit:hover { background: #5254cc; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.sa-submit:active { background: #4547b0; }
+.sa-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* Footer */
+.sa-card-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+.sa-foot-text {
+  font-size: 13px;
+  color: #475569;
+}
+.sa-foot-link {
+  color: #6366f1;
+  text-decoration: none;
+  font-weight: 600;
+}
+.sa-foot-link:hover { color: #818cf8; }
+.sa-foot-back {
+  font-size: 12px;
+  color: #334155;
+  text-decoration: none;
+}
+.sa-foot-back:hover { color: #64748b; }
+</style>
+
+<div class="sa-shell">
+
+  <!-- Left: brand panel -->
+  <aside class="sa-brand" aria-hidden="true">
+    <div class="sa-brand-inner">
+
+      <div class="sa-logo">
+        <div class="sa-logo-mark">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M 15.7 6.3 A 8 8 0 1 0 15.7 17.7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+            <path d="M 13.2 8.8 A 4.5 4.5 0 1 0 13.2 15.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/>
+            <circle cx="20.5" cy="12" r="2" fill="currentColor"/>
           </svg>
         </div>
-
-        <div class="careon-login-copy">
-          <h1 class="careon-login-headline">
-            Veilige toegang<br>
-            tot <span class="careon-login-headline-accent">zorgregie</span>.
-          </h1>
-          <p class="careon-login-lead">
-            CareOn geeft gemeenten, coördinatoren en zorgaanbieders rolzuivere toegang tot casussen, matching en plaatsingen.
-          </p>
+        <div>
+          <div class="sa-logo-name">CareOn</div>
+          <div class="sa-logo-tag">Regieplatform</div>
         </div>
+      </div>
 
-        <div class="careon-login-relationship-bar" aria-hidden="true">
-          <span class="careon-login-relationship-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 19V5m0 14h16M7 16V9m4 7V7m4 9v-4m4 4v-9" />
-            </svg>
-            Gemeente
-          </span>
-          <span class="careon-login-relationship-divider"></span>
-          <span class="careon-login-relationship-item careon-login-relationship-item--center">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            CareOn
-          </span>
-          <span class="careon-login-relationship-divider"></span>
-          <span class="careon-login-relationship-item">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 16v-2m-6-6H4m16 0h-2M7.5 7.5 6 6m12 12-1.5-1.5M16.5 7.5 18 6M6 18l1.5-1.5" />
-            </svg>
-            Zorgaanbieder
-          </span>
-        </div>
+      <div class="sa-hero">
+        <div class="sa-eyebrow">Zorgcoördinatie</div>
+        <h1 class="sa-headline">Operationele regie<br>voor gemeenten en<br><em>zorgaanbieders</em></h1>
+        <p class="sa-subline">Eén platform voor casussen, matching en plaatsingen — met rolzuivere toegang voor elke partij.</p>
 
-        <div class="careon-login-workflow">
-          <div class="careon-login-workflow-title">CAREON REGIELAAG</div>
-          <div class="careon-login-workflow-track" aria-hidden="true">
-            <span class="careon-login-workflow-line"></span>
-            <span class="careon-login-workflow-step">
-              <span class="careon-login-workflow-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 7.5h15m-7.5-3v3m-6 0v9m12-9v9M7.5 10.5h9M6 19.5h12" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 16.5h6" />
-                </svg>
-              </span>
-              <span class="careon-login-workflow-label">Aanmelding</span>
-            </span>
-            <span class="careon-login-workflow-step">
-              <span class="careon-login-workflow-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7.5 9h9m-9 3h5m5.25 5.25L20.25 21l-1.5-3.75M10.5 3.75A7.5 7.5 0 1018 11.25a7.5 7.5 0 00-7.5-7.5z" />
-                </svg>
-              </span>
-              <span class="careon-login-workflow-label">Matching</span>
-            </span>
-            <span class="careon-login-workflow-step">
-              <span class="careon-login-workflow-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 7.5h15v9h-15z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 10.5h10M7 13.5h7M8.5 16.5l2.5-2 2.5 2" />
-                </svg>
-              </span>
-              <span class="careon-login-workflow-label">Aanbiederreactie</span>
-            </span>
-            <span class="careon-login-workflow-step">
-              <span class="careon-login-workflow-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 9h12v10H6z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 9V6.75A3.75 3.75 0 0112 3a3.75 3.75 0 013.75 3.75V9" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 13l1.25 1.25L15 11.5" />
-                </svg>
-              </span>
-              <span class="careon-login-workflow-label">Plaatsing</span>
-            </span>
-            <span class="careon-login-workflow-step">
-              <span class="careon-login-workflow-badge">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5a7.5 7.5 0 100 15 7.5 7.5 0 000-15z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8.25v3.5l2.25 1.25" />
-                </svg>
-              </span>
-              <span class="careon-login-workflow-label">Intake</span>
-            </span>
-          </div>
-        </div>
-
-        <div class="careon-login-trust-grid" aria-label="Trust indicators">
-          <div class="careon-login-trust-card">
-            <div class="careon-login-trust-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true">
+        <div class="sa-features">
+          <div class="sa-feature">
+            <div class="sa-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3l7 3v5c0 5-3.5 9.7-7 10-3.5-.3-7-5-7-10V6l7-3z" />
               </svg>
             </div>
-            <div class="careon-login-trust-copy">
-              <p class="careon-login-trust-title">Rolgebaseerde toegang</p>
-              <p class="careon-login-trust-meta">Iedere gebruiker ziet alleen wat nodig is.</p>
+            <div>
+              <p class="sa-feature-title">Rolgebaseerde toegang</p>
+              <p class="sa-feature-copy">Iedere gebruiker ziet alleen wat nodig is voor de eigen taak.</p>
             </div>
           </div>
-          <div class="careon-login-trust-card">
-            <div class="careon-login-trust-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true">
+          <div class="sa-feature">
+            <div class="sa-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
             </div>
-            <div class="careon-login-trust-copy">
-              <p class="careon-login-trust-title">Auditbare acties</p>
-              <p class="careon-login-trust-meta">Besluiten en overdrachten blijven herleidbaar.</p>
+            <div>
+              <p class="sa-feature-title">Auditbare acties</p>
+              <p class="sa-feature-copy">Besluiten en overdrachten blijven volledig herleidbaar.</p>
             </div>
           </div>
-          <div class="careon-login-trust-card">
-            <div class="careon-login-trust-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" aria-hidden="true">
+          <div class="sa-feature">
+            <div class="sa-feature-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <div class="careon-login-trust-copy">
-              <p class="careon-login-trust-title">Afgeschermde zichtbaarheid</p>
-              <p class="careon-login-trust-meta">Aanbieders zien casussen pas na koppeling.</p>
+            <div>
+              <p class="sa-feature-title">Directe doorstroom</p>
+              <p class="sa-feature-copy">Minder handovers, minder wachttijd, minder losse afstemming.</p>
             </div>
           </div>
         </div>
-
-        <div class="careon-login-cityline" aria-hidden="true"></div>
       </div>
-    </section>
 
-    <section class="careon-login-right">
-      <div class="careon-login-card">
-        <div class="careon-login-card-top">
-          <div class="careon-login-brand">
-            <div class="careon-login-brand-badge" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.45" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-            </div>
-            <div class="careon-login-brand-copy">
-              <div class="careon-login-brand-title">CareOn</div>
-              <div class="careon-login-brand-subtitle">Regieplatform</div>
-            </div>
-          </div>
-          <button type="button" onclick="toggleTheme()" class="theme-toggle careon-login-theme-toggle" title="Wissel thema" aria-label="Wissel thema">
-            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-          </button>
-        </div>
+      <div class="sa-flow">
+        <span class="sa-flow-step sa-flow-step--active">Aanmelding</span>
+        <span class="sa-flow-div"></span>
+        <span class="sa-flow-step sa-flow-step--active">Matching</span>
+        <span class="sa-flow-div"></span>
+        <span class="sa-flow-step">Aanbiederreactie</span>
+        <span class="sa-flow-div"></span>
+        <span class="sa-flow-step">Plaatsing</span>
+        <span class="sa-flow-div"></span>
+        <span class="sa-flow-step">Intake</span>
+      </div>
 
-        <div class="careon-login-eyebrow">BEVEILIGDE TOEGANG</div>
-        <h1 class="careon-login-heading">Welkom terug</h1>
-        <p class="careon-login-intro">
-          Log in om verder te gaan met openstaande casussen, matching en plaatsingen.
-        </p>
+    </div>
+  </aside>
 
-        {% if form.errors %}
-        <div class="careon-login-alert" role="alert" aria-live="polite">
-          {% if form.non_field_errors %}
-            {% for error in form.non_field_errors %}
-              <p>{{ error }}</p>
-            {% endfor %}
-          {% else %}
-            <p>De gebruikersnaam of het wachtwoord is onjuist. Probeer opnieuw.</p>
-          {% endif %}
-        </div>
+  <!-- Right: form panel -->
+  <main class="sa-form-panel">
+
+    <!-- Mobile logo -->
+    <div class="sa-mobile-logo" aria-hidden="true">
+      <div class="sa-mobile-logo-mark">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M 15.7 6.3 A 8 8 0 1 0 15.7 17.7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/>
+          <path d="M 13.2 8.8 A 4.5 4.5 0 1 0 13.2 15.2" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.35"/>
+          <circle cx="20.5" cy="12" r="2" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="sa-mobile-logo-name">CareOn</span>
+    </div>
+
+    <div class="sa-card">
+
+      <div class="sa-card-head">
+        <div class="sa-card-eyebrow">Beveiligde toegang</div>
+        <h2 class="sa-card-title">Welkom terug</h2>
+        <p class="sa-card-sub">Log in om verder te gaan met openstaande casussen en plaatsingen.</p>
+      </div>
+
+      {% if SSO_ENABLED %}
+      {% with next_url=SPA_ORIGIN|add:"/dashboard/" %}
+      {% url 'oidc_authentication_init' as oidc_path %}
+      <a href="{{ OIDC_PUBLIC_BASE_URL }}{{ oidc_path }}?next={{ next_url|urlencode }}" class="sa-sso-btn">
+        <svg class="sa-sso-icon" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M12 10.2v3.9h5.5c-.2 1.2-1.5 3.5-5.5 3.5-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.8 2.9 14.7 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.7 0 9.5-4 9.5-9.7 0-.7-.1-1.2-.2-1.8H12Z"/>
+          <path fill="#34A853" d="M4.5 7.5l3.4 2.5C8.7 8.1 10.2 7 12 7c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.8 2.9 14.7 2 12 2 8.6 2 5.6 4 4.5 7.5Z"/>
+          <path fill="#FBBC05" d="M12 22c2.6 0 4.8-.9 6.4-2.4l-3-2.5c-.9.6-2.1 1-3.4 1-2.7 0-5-1.7-5.8-4.1l-3.5 2.7C4.8 19.8 8 22 12 22Z"/>
+          <path fill="#EA4335" d="M19.4 19.6c1.4-1.5 2.1-3.6 2.1-5.6 0-.7-.1-1.2-.2-1.8H12v3.9h5.5c-.3 1.6-1.1 2.6-2 3.1l3.9.4Z"/>
+        </svg>
+        Doorgaan met organisatieaccount
+      </a>
+      {% endwith %}
+      <div class="sa-divider">of</div>
+      {% endif %}
+
+      {% if form.errors %}
+      <div class="sa-alert" role="alert" aria-live="polite">
+        {% if form.non_field_errors %}
+          {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+        {% else %}
+          De gebruikersnaam of het wachtwoord is onjuist.
         {% endif %}
+      </div>
+      {% endif %}
 
-        <form method="post" class="careon-login-form" novalidate>
-          {% csrf_token %}
-          {% if next %}
-            <input type="hidden" name="next" value="{{ next }}">
-          {% endif %}
+      <form method="post" class="sa-form" novalidate id="login-form">
+        {% csrf_token %}
+        {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
 
-          <div class="careon-login-field">
-            <label for="id_username" class="careon-login-label">Gebruikersnaam</label>
+        <div class="sa-field">
+          <label for="id_username" class="sa-label">Gebruikersnaam</label>
+          <input
+            type="text"
+            name="username"
+            id="id_username"
+            autofocus
+            required
+            autocomplete="username"
+            value="{{ form.username.value|default_if_none:'' }}"
+            class="sa-input"
+            placeholder="Jouw gebruikersnaam"
+          >
+          {% if form.username.errors %}<div class="sa-field-error">{{ form.username.errors.0 }}</div>{% endif %}
+        </div>
+
+        <div class="sa-field">
+          <div class="sa-label-row">
+            <label for="id_password" class="sa-label">Wachtwoord</label>
+            <a href="#" class="sa-forgot" tabindex="-1">Wachtwoord vergeten?</a>
+          </div>
+          <div class="sa-input-wrap">
             <input
-              type="text"
-              name="username"
-              id="id_username"
-              autofocus
+              type="password"
+              name="password"
+              id="id_password"
               required
-              autocomplete="username"
-              value="{{ form.username.value|default_if_none:'' }}"
-              class="careon-login-input"
-              style="background: rgba(13, 24, 39, 0.82) !important; color: #f8fafc !important; border-color: rgba(98, 114, 164, 0.26) !important; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;"
+              autocomplete="current-password"
+              class="sa-input sa-input--pw"
+              placeholder="••••••••"
             >
-            {% if form.username.errors %}
-              <div class="careon-login-field-error" role="alert">{{ form.username.errors.0 }}</div>
-            {% endif %}
+            <button type="button" class="sa-pw-toggle" data-pw-toggle="id_password" aria-label="Toon wachtwoord">
+              <svg class="icon-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-7.25 9.75-7.25S21.75 12 21.75 12s-3.75 7.25-9.75 7.25S2.25 12 2.25 12z"/>
+                <circle cx="12" cy="12" r="3.25"/>
+              </svg>
+              <svg class="icon-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.58 10.58A3 3 0 0012 15a3 3 0 003-3 2.99 2.99 0 00-.42-1.5M8.82 8.82A8.3 8.3 0 002.25 12s3.75 7.25 9.75 7.25c1.36 0 2.65-.24 3.82-.68m2.12-1.32A16.18 16.18 0 0021.75 12s-3.75-7.25-9.75-7.25a12.2 12.2 0 00-2.03.17"/>
+              </svg>
+            </button>
           </div>
-
-          <div class="careon-login-field">
-            <label for="id_password" class="careon-login-label">Wachtwoord</label>
-            <div class="careon-login-input-wrap">
-              <input
-                type="password"
-                name="password"
-                id="id_password"
-                required
-                autocomplete="current-password"
-                class="careon-login-input careon-login-input--password"
-                style="background: rgba(13, 24, 39, 0.82) !important; color: #f8fafc !important; border-color: rgba(98, 114, 164, 0.26) !important; box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25) !important;"
-              >
-              <button type="button" class="careon-login-password-toggle" data-password-toggle aria-label="Toon wachtwoord">
-                <svg class="careon-login-password-icon careon-login-password-icon--show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-7.25 9.75-7.25S21.75 12 21.75 12s-3.75 7.25-9.75 7.25S2.25 12 2.25 12z" />
-                  <circle cx="12" cy="12" r="3.25" />
-                </svg>
-                <svg class="careon-login-password-icon careon-login-password-icon--hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l18 18" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.58 10.58A3 3 0 0012 15a3 3 0 003-3 2.99 2.99 0 00-.42-1.5M8.82 8.82A8.3 8.3 0 002.25 12s3.75 7.25 9.75 7.25c1.36 0 2.65-.24 3.82-.68m2.12-1.32A16.18 16.18 0 0021.75 12s-3.75-7.25-9.75-7.25a12.2 12.2 0 00-2.03.17" />
-                </svg>
-              </button>
-            </div>
-            {% if form.password.errors %}
-              <div class="careon-login-field-error" role="alert">{{ form.password.errors.0 }}</div>
-            {% endif %}
-          </div>
-
-          <label class="careon-login-checkbox-row">
-            <input id="remember" name="remember" type="checkbox" class="careon-login-checkbox" {% if request.POST.remember %}checked{% endif %}>
-            <span>Onthoud mij</span>
-          </label>
-
-          <button type="submit" class="careon-login-submit">Inloggen</button>
-        </form>
-
-        {% if SSO_ENABLED %}
-        <div class="careon-login-divider" aria-hidden="true">
-          <span class="careon-login-divider-line"></span>
-          <span class="careon-login-divider-text">OF</span>
-          <span class="careon-login-divider-line"></span>
+          {% if form.password.errors %}<div class="sa-field-error">{{ form.password.errors.0 }}</div>{% endif %}
         </div>
 
-        {% with next_url=SPA_ORIGIN|add:"/dashboard/" %}
-        {% url 'oidc_authentication_init' as oidc_authentication_path %}
-        <a href="{{ OIDC_PUBLIC_BASE_URL }}{{ oidc_authentication_path }}?next={{ next_url|urlencode }}" class="careon-login-sso">
-          <svg class="careon-login-sso-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#4285F4" d="M12 10.2v3.9h5.5c-.2 1.2-1.5 3.5-5.5 3.5-3.3 0-6-2.7-6-6s2.7-6 6-6c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.8 2.9 14.7 2 12 2 6.5 2 2 6.5 2 12s4.5 10 10 10c5.7 0 9.5-4 9.5-9.7 0-.7-.1-1.2-.2-1.8H12Z"/>
-            <path fill="#34A853" d="M4.5 7.5l3.4 2.5C8.7 8.1 10.2 7 12 7c1.9 0 3.2.8 3.9 1.5l2.7-2.6C16.8 2.9 14.7 2 12 2 8.6 2 5.6 4 4.5 7.5Z"/>
-            <path fill="#FBBC05" d="M12 22c2.6 0 4.8-.9 6.4-2.4l-3-2.5c-.9.6-2.1 1-3.4 1-2.7 0-5-1.7-5.8-4.1l-3.5 2.7C4.8 19.8 8 22 12 22Z"/>
-            <path fill="#EA4335" d="M19.4 19.6c1.4-1.5 2.1-3.6 2.1-5.6 0-.7-.1-1.2-.2-1.8H12v3.9h5.5c-.3 1.6-1.1 2.6-2 3.1l3.9.4Z"/>
-          </svg>
-          Inloggen met organisatieaccount
-        </a>
-        {% endwith %}
-        {% endif %}
+        <label class="sa-checkbox-row">
+          <input id="remember" name="remember" type="checkbox" class="sa-checkbox" {% if request.POST.remember %}checked{% endif %}>
+          <span>Onthoud mij op dit apparaat</span>
+        </label>
 
-        <div class="careon-login-support">
-          <p class="careon-login-support-copy">
-            Toegang nodig? Neem contact op met je beheerder.
-          </p>
-          <a href="/" class="careon-login-link">Terug naar CareOn</a>
-        </div>
+        <button type="submit" class="sa-submit" id="login-submit">Inloggen</button>
+      </form>
+
+      <div class="sa-card-footer">
+        <p class="sa-foot-text">
+          Geen account? <a href="{% url 'register' %}" class="sa-foot-link">Account aanmaken</a>
+        </p>
+        <a href="/" class="sa-foot-back">← Terug naar CareOn</a>
       </div>
 
-      <div class="careon-login-mobile-summary" aria-label="Secure access summary">
-        <div class="careon-login-mobile-summary-title">CAREON REGIELAAG</div>
-        <div class="careon-login-mobile-summary-chips">
-          <span class="careon-login-mobile-summary-chip">Aanmelding</span>
-          <span class="careon-login-mobile-summary-chip">Matching</span>
-          <span class="careon-login-mobile-summary-chip">Aanbiederreactie</span>
-          <span class="careon-login-mobile-summary-chip">Plaatsing</span>
-          <span class="careon-login-mobile-summary-chip">Intake</span>
-        </div>
-        <div class="careon-login-mobile-summary-trust">
-          <div class="careon-login-mobile-summary-trust-row">
-            <span class="careon-login-mobile-summary-trust-icon" aria-hidden="true"></span>
-            <span>Rolgebaseerde toegang</span>
-          </div>
-          <div class="careon-login-mobile-summary-trust-row">
-            <span class="careon-login-mobile-summary-trust-icon" aria-hidden="true"></span>
-            <span>Auditbare acties</span>
-          </div>
-          <div class="careon-login-mobile-summary-trust-row">
-            <span class="careon-login-mobile-summary-trust-icon" aria-hidden="true"></span>
-            <span>Afgeschermde zichtbaarheid</span>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
+    </div>
+  </main>
+
 </div>
 
 <script>
-(() => {
-  const button = document.querySelector('[data-password-toggle]');
-  const input = document.getElementById('id_password');
-  if (!button || !input) return;
-
-  const showIcon = button.querySelector('.careon-login-password-icon--show');
-  const hideIcon = button.querySelector('.careon-login-password-icon--hide');
-
-  const sync = () => {
-    const hidden = input.type === 'password';
-    button.setAttribute('aria-label', hidden ? 'Toon wachtwoord' : 'Verberg wachtwoord');
-    if (showIcon) showIcon.style.display = hidden ? 'block' : 'none';
-    if (hideIcon) hideIcon.style.display = hidden ? 'none' : 'block';
-  };
-
-  button.addEventListener('click', () => {
-    input.type = input.type === 'password' ? 'text' : 'password';
-    sync();
+// Password show/hide
+document.querySelectorAll('[data-pw-toggle]').forEach(btn => {
+  const input = document.getElementById(btn.dataset.pwToggle);
+  if (!input) return;
+  btn.addEventListener('click', () => {
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    btn.querySelector('.icon-show').style.display = isHidden ? 'none' : '';
+    btn.querySelector('.icon-hide').style.display = isHidden ? '' : 'none';
+    btn.setAttribute('aria-label', isHidden ? 'Verberg wachtwoord' : 'Toon wachtwoord');
   });
+});
 
-  sync();
-})();
+// Loading state on submit
+document.getElementById('login-form')?.addEventListener('submit', () => {
+  const btn = document.getElementById('login-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Inloggen…'; }
+});
 </script>
 {% endblock %}

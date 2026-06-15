@@ -1,14 +1,11 @@
 import { ReactNode, useState } from "react";
 import { Menu, X } from "lucide-react";
-import { Language } from "../../lib/i18n";
-
 interface TrackingLayoutProps {
   sidebar: ReactNode;
   children: ReactNode;
-  language: Language;
 }
 
-export function TrackingLayout({ sidebar, children, language }: TrackingLayoutProps) {
+export function TrackingLayout({ sidebar, children }: TrackingLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (

@@ -612,7 +612,7 @@ class CaseIntakeProcessForm(forms.ModelForm):
     source_reference = forms.CharField(required=False, widget=forms.HiddenInput())
     jeugdhulpregio = forms.ModelChoiceField(
         queryset=RegionalConfiguration.objects.none(),
-        required=True,
+        required=False,
         widget=forms.Select(attrs={'class': TAILWIND_SELECT}),
         label='Jeugdhulpregio',
     )
@@ -920,7 +920,7 @@ class CaseIntakeProcessForm(forms.ModelForm):
             cleaned_data['preferred_region'] = selected_region
             cleaned_data['regio'] = selected_region
             cleaned_data['preferred_region_type'] = RegionType.JEUGDREGIO
-        elif not self.errors.get('jeugdhulpregio'):
+        elif not self.errors.get('jeugdhulpregio') and self.fields['jeugdhulpregio'].queryset.exists():
             self.add_error('jeugdhulpregio', 'Kies een jeugdhulpregio.')
         return cleaned_data
 

@@ -1,5 +1,5 @@
-// @ts-nocheck
 import { useState } from "react";
+import { ReactNode } from "react";
 import { Search, Plus, Download, MoreVertical } from "lucide-react";
 import { Language } from "../../lib/i18n";
 import { Badge } from "../ui/badge";
@@ -21,6 +21,8 @@ interface AnalysisListProps {
   onExport: () => void;
   language: Language;
   type: "products" | "vendors" | "publics";
+  email: string;
+  version: string;
 }
 
 export function AnalysisList({
@@ -31,6 +33,8 @@ export function AnalysisList({
   onExport,
   language,
   type,
+  email,
+  version,
 }: AnalysisListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
@@ -185,8 +189,8 @@ export function AnalysisList({
       {/* Footer - Account info */}
       <div className="p-6 border-t border-border">
         <div className="text-xs text-muted-foreground">
-          <p className="mb-1">user@vintsy.com</p>
-          <p className="opacity-60">v2.4.1</p>
+          <p className="mb-1">{email}</p>
+          <p className="opacity-60">{version}</p>
         </div>
       </div>
     </div>
@@ -197,7 +201,7 @@ interface AnalysisCardProps {
   analysis: Analysis;
   isSelected: boolean;
   onSelect: () => void;
-  getStatusBadge: (status: Analysis["status"]) => JSX.Element;
+  getStatusBadge: (status: Analysis["status"]) => ReactNode;
   menuOpen: boolean;
   onMenuToggle: () => void;
   language: Language;
@@ -220,7 +224,7 @@ function AnalysisCard({
         ${
           isSelected
             ? "bg-muted dark:border-primary border-primary"
-            : "bg-card border-border hover:hover:border-border/60"
+            : "bg-card border-border hover:border-border/60"
         }
       `}
       style={

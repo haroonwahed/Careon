@@ -2,10 +2,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView
 from django.urls import reverse_lazy, reverse
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Sum, Count, Q, Avg, Min
+from django.db.models import Sum, Count, Q, Avg
 from django.db.models.functions import Coalesce
 from django.utils import timezone
-from django.utils.text import slugify
 from django.views.decorators.http import require_GET, require_POST
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -87,7 +86,7 @@ from .governance import (
 )
 from .case_timeline import record_gemeente_validation_to_provider_review_boundary
 from .error_pages import render_safe_error_page
-from .build_info import gather_build_info, gather_ops_cockpit
+from .build_info import gather_ops_cockpit
 from .navigation import SPA_DASHBOARD_URL
 # Temporary blocker: active matching flow still depends on legacy_backend module.
 # Keep until a non-legacy matching service is introduced and migrated here.
@@ -1744,13 +1743,6 @@ PHASE_TO_PROCESS_STATUS = {
 }
 
 
-def get_case_section_url(case, section=None):
-    url = reverse('careon:case_detail', kwargs={'pk': case.pk})
-    if section:
-        return f'{url}#{section}'
-    return url
-
-
 def _coerce_case_process_defaults(case):
     start_date = case.start_date or case.created_at.date() or date.today()
     target_date = case.end_date or start_date + timedelta(days=14)
@@ -1879,7 +1871,6 @@ def sync_case_flow_state(case, user=None):
 
 
 sync_contract_phase_auto_tasks = sync_case_phase_auto_tasks
-get_contract_section_url = get_case_section_url
 _coerce_contract_process_defaults = _coerce_case_process_defaults
 ensure_contract_flow = ensure_case_flow
 sync_contract_flow_state = sync_case_flow_state
@@ -1898,15 +1889,6 @@ def _normalize_design_mode(value):
     if candidate in {DESIGN_MODE_SPA, 'legacy'}:
         return DESIGN_MODE_SPA
     return None
-
-
-def _get_design_mode(request):
-    stored = request.session.get(DESIGN_MODE_SESSION_KEY)
-    normalized = _normalize_design_mode(stored)
-    if normalized != DESIGN_MODE_SPA:
-        request.session[DESIGN_MODE_SESSION_KEY] = DESIGN_MODE_SPA
-        request.session.modified = True
-    return DESIGN_MODE_SPA
 
 
 def _render_spa_shell_response():
@@ -2419,52 +2401,6 @@ class CareConfigurationDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin,
         ctx['risks'] = self.object.risks.all()[:10]
         ctx.update(get_configuration_scope_content(self.object.scope))
         return ctx
-
-
-class CareConfigurationCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
-    model = CareConfiguration
-    form_class = CareConfigurationForm
-    template_name = 'contracts/configuration_form.html'
-
-    def get_initial(self):
-        initial = super().get_initial()
-        raw_scope = (self.request.GET.get('scope') or '').strip()
-        normalized_scope = _SCOPE_QUERY_ALIASES.get(raw_scope, _SCOPE_QUERY_ALIASES.get(raw_scope.upper()))
-        if normalized_scope:
-            initial['scope'] = normalized_scope
-        client_id = (self.request.GET.get('client') or '').strip()
-        if client_id.isdigit():
-            org = get_user_organization(self.request.user)
-            client = scope_queryset_for_organization(Client.objects.all(), org).filter(pk=int(client_id)).first()
-            if client:
-                initial['linked_providers'] = [client.pk]
-        return initial
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        scope = ctx['form'].initial.get('scope') or CareConfiguration.Scope.GEMEENTE
-        ctx.update(get_configuration_scope_content(scope))
-        ctx['cancel_url'] = reverse('careon:regional_list') if scope == CareConfiguration.Scope.REGIO else reverse('careon:municipality_list')
-        ctx['is_edit'] = False
-        selected_provider_ids = ctx['form'].initial.get('linked_providers') or []
-        ctx['prefilled_provider'] = ctx['form'].fields['linked_providers'].queryset.filter(pk__in=selected_provider_ids).first()
-        return ctx
-
-    def get_success_url(self):
-        return reverse('careon:configuration_detail', kwargs={'pk': self.object.pk})
-
-    def form_valid(self, form):
-        set_organization_on_instance(form.instance, get_user_organization(self.request.user))
-        form.instance.created_by = self.request.user
-        form.instance.status = CareConfiguration.Status.ACTIVE if form.cleaned_data.get('is_active') else CareConfiguration.Status.ON_HOLD
-        response = super().form_valid(form)
-        if not self.object.client_id and self.object.linked_providers.exists():
-            self.object.client = self.object.linked_providers.first()
-            self.object.save(update_fields=['client'])
-        log_action(self.request.user, 'CREATE', 'CareConfiguration', self.object.id, str(self.object), request=self.request)
-        scope_content = get_configuration_scope_content(self.object.scope)
-        messages.success(self.request, f'{scope_content["entity_label"]} "{self.object.title}" aangemaakt.')
-        return response
 
 
 class CareConfigurationUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
@@ -7323,52 +7259,6 @@ class CaseIntakeDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, Detail
         })
 
         return ctx
-
-
-class CaseIntakeCreateView(TenantAssignCreateMixin, LoginRequiredMixin, CreateView):
-    """Create a new care intake."""
-    model = CaseIntakeProcess
-    form_class = CaseIntakeProcessForm
-    template_name = 'contracts/intake_form.html'
-
-    def render_to_response(self, context, **response_kwargs):
-        response = super().render_to_response(context, **response_kwargs)
-        response['X-Careon-Template-Version'] = 'intake_form'
-        return _disable_response_caching(response)
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx.update({
-            'is_edit': False,
-            'page_title': 'Nieuwe casus',
-            'button_text': 'Casus aanmaken',
-        })
-        return ctx
-
-    def form_valid(self, form):
-        org = get_user_organization(self.request.user)
-        set_organization_on_instance(form.instance, org)
-        if hasattr(form.instance, 'contra_indicaties') and form.instance.contra_indicaties is None:
-            form.instance.contra_indicaties = ''
-        if hasattr(form.instance, 'problematiek_types') and form.instance.problematiek_types is None:
-            form.instance.problematiek_types = []
-        if hasattr(form.instance, 'zorgvorm_gewenst') and form.instance.zorgvorm_gewenst is None:
-            form.instance.zorgvorm_gewenst = ''
-        if hasattr(form.instance, 'setting_voorkeur') and form.instance.setting_voorkeur is None:
-            form.instance.setting_voorkeur = ''
-        if not form.instance.start_date:
-            form.instance.start_date = date.today()
-        response = super().form_valid(form)
-        self.object.ensure_case_record(created_by=self.request.user)
-        log_action(self.request.user, 'CREATE', 'CaseIntakeProcess', self.object.id, str(self.object), request=self.request)
-        messages.success(self.request, f'Casus "{self.object.title}" aangemaakt en toegevoegd aan het casusoverzicht.')
-        return response
-
-    def get_success_url(self):
-        case_record = getattr(self.object, 'contract', None)
-        if case_record:
-            return f"/care/cases/{case_record.pk}/"
-        return reverse('careon:case_list')
 
 
 class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, UpdateView):
