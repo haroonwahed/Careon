@@ -29,6 +29,11 @@ const QUEUE_PAGE_FILES = [
   "PlacementTrackingPage.tsx",
 ];
 
+// NOTE: SystemAwarenessPage (Regiekamer) was redesigned to a bespoke action-list
+// (RegiekamerWorkRow + CasusdetailsPanel) and intentionally no longer uses the shared
+// CareWorkRow / CareOperationalQueueHeader / CareWorkspaceSection primitives or the
+// FOCUS_PIPELINE NBA. See docs/design/REGIEKAMER_DESIGN_SYSTEM.md. It is therefore
+// exempt from LAW 06/08/10 below.
 const QUEUE_LIST_GUARD_FILES = [
   "WorkloadPage.tsx",
   "ActiesPage.tsx",
@@ -37,7 +42,6 @@ const QUEUE_LIST_GUARD_FILES = [
   "IntakeListPage.tsx",
   "SignalenPage.tsx",
   "AanbiederreactiePage.tsx",
-  "SystemAwarenessPage.tsx",
 ];
 
 describe("operationalDesignLawsGuard", () => {
@@ -83,7 +87,8 @@ describe("operationalDesignLawsGuard", () => {
     expect(nba).not.toMatch(/OPEN_REPORTS/);
     expect(nba).not.toMatch(/uiMode:\s*"optimization"/);
     expect(page).not.toMatch(/\/rapportages/);
-    expect(page).toMatch(/FOCUS_PIPELINE/);
+    // FOCUS_PIPELINE requirement dropped: the redesigned Regiekamer replaced the NBA
+    // dominant-action with KPI cards + SLA-sorted worklist (see REGIEKAMER_DESIGN_SYSTEM.md).
   });
 
   it("LAW 05 — workflow list surfaces do not fabricate match confidence percentages", () => {
@@ -171,7 +176,6 @@ describe("operationalDesignLawsGuard", () => {
       "PlacementTrackingPage.tsx",
       "IntakeListPage.tsx",
       "SignalenPage.tsx",
-      "SystemAwarenessPage.tsx",
       "AssessmentQueuePage.tsx",
     ];
     for (const file of mustHeader) {
@@ -190,7 +194,6 @@ describe("operationalDesignLawsGuard", () => {
       "MatchingQueuePage.tsx",
       "PlacementTrackingPage.tsx",
       "SignalenPage.tsx",
-      "SystemAwarenessPage.tsx",
     ];
     const violations: string[] = [];
     for (const file of mustWorkspace) {
