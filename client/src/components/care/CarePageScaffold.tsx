@@ -71,7 +71,7 @@ export function CarePageScaffold({
   const headerNode = (
     <div data-testid="care-page-header">
       {eyebrow ? (
-        <div className="px-1 pb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{eyebrow}</div>
+        <div className="px-1 pb-1 care-text-eyebrow text-muted-foreground">{eyebrow}</div>
       ) : null}
       <CareUnifiedHeader
         title={title}

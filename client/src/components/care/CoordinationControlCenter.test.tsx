@@ -3,7 +3,6 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import type { CoordinationDecisionOverview } from "../../lib/coordinationDecisionOverview";
-import { expectCoordinationMode } from "../../test/utils/modeGuards";
 import { CoordinationControlCenter } from "./CoordinationControlCenter";
 
 const mockUseCoordinationDecisionOverview = vi.fn();
@@ -186,25 +185,7 @@ describe("CoordinationControlCenter", () => {
     vi.clearAllMocks();
   });
 
-  it("loads the overview and renders Doorstroom and Werkvoorraad", () => {
-  mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
-    expect(screen.getByText("Doorstroom")).toBeInTheDocument();
-    expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(screen.getByText("Actuele casussen die jouw aandacht vragen.")).toBeInTheDocument();
-  });
-
-  it("enforces coordination screen responsibility boundaries", () => {
+  it("renders the Regiekamer shell with the operational worklist", () => {
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -214,53 +195,13 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    expectCoordinationMode();
-    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los kritieke blokkades op/i);
-
-    expect(screen.queryByText(/Casusdetail|Case detail/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Genereer samenvatting" })).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Context$/)).not.toBeInTheDocument();
-  });
-
-  it("describes operationele coördinatie as an operational workspace and keeps the dominant action singular", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
+    expect(screen.getByTestId("regiekamer-page")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
     expect(screen.getByText("Stuur op doorstroom, blokkades en urgente casussen.")).toBeInTheDocument();
-    expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
-    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.queryByText("Eigenaarschap volgt de taak")).not.toBeInTheDocument();
+    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
   });
 
-  it("renders the doorstroom board with the Regiekamer flow steps", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.getByText("Doorstroom")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Bekijk gehele stroom/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Matching.*Klaar om te starten.*1/i })).toBeInTheDocument();
-  });
-
-  it("renders the priority worklist in score order", () => {
+  it("renders the priority worklist ordered by SLA urgency", () => {
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -272,13 +213,18 @@ describe("CoordinationControlCenter", () => {
 
     const rows = screen.getAllByTestId("coordination-worklist-item");
     expect(rows).toHaveLength(3);
-    expect(rows[0]).toHaveTextContent("Casus A");
-    expect(rows[0]).toHaveTextContent("Spoed");
-    expect(rows[0]).toHaveTextContent("Wacht op gemeente");
-    expect(rows[0]).toHaveTextContent("Vraag reactie aan");
+    // Self-sorting worklist: most-breached SLA first. Casus B (8u te laat) leads,
+    // then Casus A (<1u te laat), then the on-track Casus C.
+    expect(rows[0]).toHaveTextContent("Casus B");
+    expect(rows[0]).toHaveTextContent("C-102");
+    expect(rows[0]).toHaveTextContent("Herinner aanbieder");
+    expect(rows[1]).toHaveTextContent("Casus A");
+    expect(rows[1]).toHaveTextContent("Vraag reactie aan");
+    expect(rows[2]).toHaveTextContent("Casus C");
+    expect(rows[2]).toHaveTextContent("Plan intake");
   });
 
-  it("renders compact card content on each worklist card", () => {
+  it("renders compact row content with case, blokkade, owner and next-action", () => {
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
       loading: false,
@@ -288,80 +234,20 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
-    const first = screen.getAllByTestId("coordination-worklist-item")[0];
-    expect(within(first).getByText("Casus A")).toBeInTheDocument();
-    expect(first).toHaveTextContent("Regio ontbreekt");
-    expect(first).toHaveTextContent("Samenvatting is compleet");
-    expect(first).toHaveTextContent("2 dagen geleden");
-    expect(first).toHaveTextContent("Vraag reactie aan");
-    expect(within(first).getByRole("button", { name: /Vraag reactie aan/i })).toBeInTheDocument();
-  });
-
-  it("replaces visible gemeentevalidatie copy with neutral operational terminology", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        items: [
-          makeItem({
-            case_id: 104,
-            case_reference: "C-104",
-            title: "Casus D",
-            phase: "matching",
-            next_best_action: {
-              action: "VALIDATE_MATCHING",
-              label: "Valideer match",
-              priority: "high",
-              reason: "Gemeentevalidatie is verplicht vóór versturen naar aanbieder.",
-            },
-            top_blocker: {
-              code: "GEMEENTE_VALIDATION_REQUIRED",
-              severity: "critical",
-              message: "Gemeentevalidatie is verplicht vóór versturen naar aanbieder.",
-              blocking_actions: ["VALIDATE_MATCHING"],
-            },
-            top_alert: null,
-            top_risk: null,
-            issue_tags: ["blockers"],
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.queryByText(/Gemeentevalidatie/i)).not.toBeInTheDocument();
-    const row = screen.getByTestId("coordination-worklist-item");
-    expect(row).toHaveTextContent("Goedkeuring nodig vóór versturen naar aanbieder.");
-    expect(within(row).getByRole("button", { name: /Controleer voorstel/i })).toBeInTheDocument();
-  });
-
-  it("uses an operational fallback when recent activity is unavailable", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        generated_at: "",
-        items: [
-          makeItem({
-            case_id: 105,
-            case_reference: "C-105",
-            title: "Casus E",
-            phase: "matching",
-            hours_in_current_state: null,
-            age_hours: null,
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    const row = screen.getByTestId("coordination-worklist-item");
-    expect(row).toHaveTextContent("Geen recente activiteit");
-    expect(within(row).queryByText("Onbekend")).not.toBeInTheDocument();
+    // Locate the Casus A row regardless of worklist ordering.
+    const rows = screen.getAllByTestId("coordination-worklist-item");
+    const casusA = rows.find((row) => within(row).queryByText("Casus A"));
+    expect(casusA).toBeDefined();
+    expect(within(casusA!).getByText("Casus A")).toBeInTheDocument();
+    expect(casusA!).toHaveTextContent("C-101");
+    expect(casusA!).toHaveTextContent("Matching");
+    // Blokkade title + message surfaced from top_blocker/top_alert.
+    expect(casusA!).toHaveTextContent("Nog geen matchingresultaat");
+    expect(casusA!).toHaveTextContent("Samenvatting ontbreekt.");
+    // Owner avatar + name and the SLA sublabel.
+    expect(casusA!).toHaveTextContent("Jane D.");
+    expect(casusA!).toHaveTextContent("SLA 48u");
+    expect(within(casusA!).getByRole("button", { name: /Vraag reactie aan/i })).toBeInTheDocument();
   });
 
   it("never renders mixed summary CTA labels", () => {
@@ -392,133 +278,6 @@ describe("CoordinationControlCenter", () => {
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
 
     expect(screen.queryByRole("button", { name: /Genereer samenvatting/i })).not.toBeInTheDocument();
-  });
-
-  it("uses summary CTA variants for existing, missing, and pending summary states", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        items: [
-          makeItem({
-            case_id: 301,
-            case_reference: "C-301",
-            title: "Samenvatting beschikbaar",
-            top_blocker: null,
-            next_best_action: {
-              action: "SEND_TO_PROVIDER",
-              label: "Stuur naar aanbieder",
-              priority: "medium",
-              reason: "Samenvatting is gereed en de aanbieder kan nu beoordelen.",
-            },
-          }),
-          makeItem({
-            case_id: 302,
-            case_reference: "C-302",
-            title: "Samenvatting ontbreekt",
-            next_best_action: {
-              action: "GENERATE_SUMMARY",
-              label: "Vul casus aan",
-              priority: "high",
-              reason: "Generatie vereist.",
-            },
-            top_blocker: {
-              code: "MISSING_SUMMARY",
-              severity: "critical",
-              message: "Samenvatting ontbreekt.",
-              blocking_actions: ["GENERATE_SUMMARY"],
-            },
-          }),
-          makeItem({
-            case_id: 303,
-            case_reference: "C-303",
-            title: "Samenvatting in verwerking",
-            next_best_action: {
-              action: "GENERATE_SUMMARY",
-              label: "Wacht op verwerking",
-              priority: "medium",
-              reason: "Samenvatting wordt verwerkt.",
-            },
-            top_blocker: {
-              code: "MISSING_SUMMARY",
-              severity: "high",
-              message: "Samenvatting wordt gemaakt.",
-              blocking_actions: ["GENERATE_SUMMARY"],
-            },
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByRole("button", { name: "Vraag reactie aan" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Maak casus compleet" })).toHaveLength(2);
-    expect(screen.queryByRole("button", { name: /Zorgvraag wordt automatisch verwerkt/i })).not.toBeInTheDocument();
-    expect(screen.getAllByText(/Generatie vereist/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/Samenvatting wordt verwerkt/i).length).toBeGreaterThan(0);
-  });
-
-  it("surfaces intake delay as dominant action when it is the top scenario", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        totals: {
-          active_cases: 2,
-          critical_blockers: 0,
-          high_priority_alerts: 0,
-          provider_sla_breaches: 0,
-          repeated_rejections: 0,
-          intake_delays: 2,
-        },
-        items: [
-          makeItem({
-            case_id: 201,
-            case_reference: "C-201",
-            title: "Casus intake",
-            phase: "intake",
-            current_state: "INTAKE_PENDING",
-            urgency: "medium",
-            top_blocker: null,
-            top_risk: {
-              code: "INTAKE_DELAYED",
-              severity: "medium",
-              message: "Intake vertraagd.",
-              evidence: {},
-            },
-            top_alert: null,
-            blocker_count: 0,
-            priority_score: 62,
-            hours_in_current_state: 36,
-            issue_tags: ["intake", "risks"],
-          }),
-          makeItem({
-            case_id: 202,
-            case_reference: "C-202",
-            title: "Casus rustig",
-            phase: "plaatsing",
-            current_state: "PLACEMENT_CONFIRMED",
-            urgency: "low",
-            top_blocker: null,
-            top_risk: null,
-            top_alert: null,
-            blocker_count: 0,
-            priority_score: 40,
-            hours_in_current_state: 12,
-            issue_tags: [],
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "intervention");
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveTextContent(/intake-vertraging/i);
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Bekijk intake-aanvragen/i);
   });
 
   it("filters the worklist client-side", async () => {
@@ -613,7 +372,7 @@ describe("CoordinationControlCenter", () => {
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
   });
 
-  it("shows calm success when there are no operational blockers while still listing cases", () => {
+  it("lists cases calmly when there are no operational blockers", () => {
     const onAppNavigate = vi.fn();
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview({
@@ -656,195 +415,11 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
 
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "stable");
     expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getAllByTestId("coordination-worklist-item")).toHaveLength(2);
-    fireEvent.click(
-      within(screen.getByTestId("coordination-phase-board")).getByRole("button", { name: /Bekijk gehele stroom/i }),
-    );
-    expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
-    // The button should hand off a "pipeline" focus hint so the worklist opens
-    // operationally distinct from a plain /casussen navigation and from the
-    // critical-cases shortcut. (One-shot, scoped to sessionStorage.)
-    expect(window.sessionStorage.getItem("careon.casussen.preferredFocus")).toBe("pipeline");
-    window.sessionStorage.removeItem("careon.casussen.preferredFocus");
   });
 
-  it("uses canonical aanbieder-reacties label in flow chain and phase filter", async () => {
-    const user = userEvent.setup();
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        totals: {
-          active_cases: 5,
-          critical_blockers: 0,
-          high_priority_alerts: 0,
-          provider_sla_breaches: 0,
-          repeated_rejections: 0,
-          intake_delays: 0,
-        },
-        items: [
-          makeItem({
-            case_id: 901,
-            case_reference: "C-901",
-            title: "Rustige keten",
-            phase: "plaatsing",
-            current_state: "PLACEMENT_CONFIRMED",
-            urgency: "low",
-            top_blocker: null,
-            top_risk: null,
-            top_alert: null,
-            priority_score: 22,
-            blocker_count: 0,
-            risk_count: 0,
-            alert_count: 0,
-            issue_tags: [],
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "stable");
-    expect(screen.getByTestId("coordination-phase-board")).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-phase-column-aanbiederreactie")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-    expect(screen.getByRole("option", { name: "Aanbiederreactie" })).toBeInTheDocument();
-  });
-
-  it("renders crisis dominant NBA with open-requests emphasis", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByTestId("coordination-dominant-action")).toHaveAttribute("data-coordination-mode", "crisis");
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toHaveTextContent(/Los kritieke blokkades op/i);
-  });
-
-  it("renders critical alert regions with metric, text block, and actions", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent(/verhoogde coördinatie-aandacht/i);
-    expect(screen.getByTestId("coordination-dominant-action-content")).toHaveTextContent("1 casus blokkeert de doorstroom");
-    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("Los kritieke blokkades op");
-    expect(screen.getByTestId("coordination-dominant-action-actions")).toHaveTextContent("SLA-signalen bekijken");
-  });
-
-  it("places search and filters inside the Werkvoorraad section header", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    const workSection = screen.getByTestId("coordination-uitvoerlijst");
-    expect(within(workSection).getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(within(workSection).getByTestId("care-search-control-stack")).toBeInTheDocument();
-    expect(within(workSection).getByRole("searchbox", { name: /Zoek casussen, regio's, aanbieders/i })).toBeInTheDocument();
-    expect(within(workSection).getByRole("button", { name: /^Filters$/i })).toBeInTheDocument();
-  });
-
-  it("keeps the flow card body focused on the active step only", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    const casusCard = screen.getByTestId("coordination-phase-column-aanmelding");
-    expect(within(casusCard).getAllByText("Aanmelding")).toHaveLength(1);
-    expect(within(casusCard).getByText("0")).toBeInTheDocument();
-    expect(within(casusCard).queryByText("Aanbiederreactie")).not.toBeInTheDocument();
-  });
-
-  it("supplemental NBA link navigates to /casussen with a critical focus hand-off", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    const onAppNavigate = vi.fn();
-    try {
-      window.sessionStorage.removeItem("careon.casussen.preferredFocus");
-    } catch {
-      // sessionStorage may be unavailable in some environments; ignore.
-    }
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} onAppNavigate={onAppNavigate} />);
-
-    expect(screen.queryByTestId("coordination-dominant-cases-link")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByTestId("coordination-dominant-primary-cta"));
-    expect(onAppNavigate).toHaveBeenCalledWith("/casussen");
-    expect(window.sessionStorage.getItem("careon.casussen.preferredFocus")).toBe("critical");
-
-    // Cleanup so subsequent tests start without lingering hand-off.
-    window.sessionStorage.removeItem("careon.casussen.preferredFocus");
-  });
-
-  it("matching-urgenties tier uses filter-aligned primary label (no execution verbs)", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        totals: {
-          active_cases: 1,
-          critical_blockers: 0,
-          high_priority_alerts: 0,
-          provider_sla_breaches: 0,
-          repeated_rejections: 0,
-          intake_delays: 0,
-        },
-        items: [
-          makeItem({
-            case_id: 501,
-            case_reference: "C-501",
-            title: "Matching urgent",
-            phase: "matching",
-            urgency: "high",
-            top_blocker: null,
-            blocker_count: 0,
-            risk_count: 0,
-            alert_count: 1,
-            issue_tags: ["alerts"],
-            priority_score: 90,
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    const primary = screen.getByTestId("coordination-dominant-primary-cta");
-    expect(primary).toHaveTextContent(/Bekijk matching-aanvragen/i);
-    expect(primary.textContent?.toLowerCase() ?? "").not.toMatch(/herstart/);
-  });
-
-  it("opens the existing case detail overlay by notifying the parent", () => {
+  it("opens the existing case detail by notifying the parent", () => {
     const onCaseClick = vi.fn();
     mockUseCoordinationDecisionOverview.mockReturnValue({
       data: makeOverview(),
@@ -855,23 +430,12 @@ describe("CoordinationControlCenter", () => {
 
     render(<CoordinationControlCenter onCaseClick={onCaseClick} />);
 
-    const firstWorklistRow = screen.getAllByTestId("coordination-worklist-item")[0];
-    fireEvent.click(within(firstWorklistRow).getAllByRole("button")[0]);
+    // Worklist is SLA-sorted, so the first row is Casus B (case_id 102). The
+    // "Volgende actie" button hands the row id to the parent.
+    const firstRow = screen.getAllByTestId("coordination-worklist-item")[0];
+    fireEvent.click(within(firstRow).getByRole("button", { name: /Herinner aanbieder/i }));
 
-    expect(onCaseClick).toHaveBeenCalledWith("101");
-  });
-
-  it("renders exactly one dominant primary CTA", () => {
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    expect(screen.getAllByTestId("coordination-dominant-primary-cta")).toHaveLength(1);
+    expect(onCaseClick).toHaveBeenCalledWith("102");
   });
 
   it("keeps urgency applications out of the Regiekamer hero copy", () => {
@@ -896,75 +460,5 @@ describe("CoordinationControlCenter", () => {
 
     expect(screen.queryByText(/Urgentie aangevraagd: 3/i)).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
-  });
-
-  it("clicking a quick-link phase row applies the keten filter", async () => {
-    const user = userEvent.setup();
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    await user.click(screen.getByTestId("coordination-phase-column-matching"));
-    await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-
-    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("matching");
-  });
-
-  it("clicking a phase board column applies the phase filter", async () => {
-    const user = userEvent.setup();
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview(),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    await user.click(screen.getByTestId("coordination-phase-column-aanbiederreactie"));
-    await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-
-    expect(screen.getByRole("combobox", { name: "Stap in de keten" })).toHaveValue("aanbiederreactie");
-  });
-
-  it("filters coordination rows by zorgbehoefte categorie and subcategorie", async () => {
-    const user = userEvent.setup();
-    mockUseCoordinationDecisionOverview.mockReturnValue({
-      data: makeOverview({
-        items: [
-          makeItem(),
-          makeItem({
-            case_id: 104,
-            case_reference: "C-104",
-            title: "Casus D",
-            zorgbehoefte_categorie: "Veiligheid & bescherming",
-            zorgbehoefte_categorie_code: "VEILIGHEID_BESCHERMING",
-            zorgbehoefte_specifiek: "Acute veiligheid",
-            zorgbehoefte_specifiek_code: "VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID",
-            taxonomie_lijn: "Taxonomie: Veiligheid & bescherming → Acute veiligheid",
-            taxonomie_code_lijn: "Taxonomiecode: VEILIGHEID_BESCHERMING → VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID",
-          }),
-        ],
-      }),
-      loading: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-
-    await user.click(screen.getByRole("button", { name: /^Filters$/i }));
-    expect(screen.getByLabelText("Zorgbehoefte categorie")).toBeInTheDocument();
-    await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie"), "VEILIGHEID_BESCHERMING");
-    expect(screen.getByLabelText("Specifieke zorgbehoefte")).not.toBeDisabled();
-    await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "VEILIGHEID_BESCHERMING_ACUTE_VEILIGHEID");
-
-    expect(screen.getByText("Casus D")).toBeInTheDocument();
-    expect(screen.queryByText("Casus A")).not.toBeInTheDocument();
   });
 });

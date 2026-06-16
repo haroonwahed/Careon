@@ -35,7 +35,7 @@ export function CaseOperationalStepper({
                   isCurrent
                     ? "bg-primary/90 text-primary-foreground"
                     : isCompleted
-                      ? "bg-emerald-500/15 text-emerald-200"
+                      ? "bg-care-success-bg text-care-success-text"
                       : "bg-muted/50 text-muted-foreground",
                 )}
               >
@@ -109,7 +109,7 @@ export function CasePrimaryActionPanel({
           <Lock size={32} strokeWidth={2.1} aria-hidden />
         </div>
         <div className="min-w-0 space-y-2">
-          <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Huidige situatie</p>
+          <p className="care-text-eyebrow text-muted-foreground">Huidige situatie</p>
           <p className="text-[18px] font-semibold leading-tight text-foreground md:text-[20px]">{leadTitle}</p>
           <p className="max-w-[34rem] text-[13px] leading-6 text-muted-foreground md:text-[14px]">
             {leadDescription}
@@ -117,7 +117,7 @@ export function CasePrimaryActionPanel({
         </div>
       </div>
       <div className="space-y-1 md:border-r md:border-border/40 md:px-5">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Actiehouder</p>
+        <p className="care-text-eyebrow text-muted-foreground">Actiehouder</p>
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background/60 text-muted-foreground ring-1 ring-border/60">
             <UserRound size={18} aria-hidden />
@@ -129,7 +129,7 @@ export function CasePrimaryActionPanel({
         </div>
       </div>
       <div className="space-y-3 md:pl-0 md:text-left">
-        <p className="text-[9px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Volgende actie</p>
+        <p className="care-text-eyebrow text-muted-foreground">Volgende actie</p>
         <p className="text-[14px] font-semibold leading-tight text-foreground">{nextStepLabel}</p>
         {primaryCtaLabel ? (
           <div className="pt-1">
@@ -163,7 +163,7 @@ export function CaseKeyFactsCard({ facts }: { facts: CaseFactRow[] }) {
       className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
       aria-label="Kerngegevens casus"
     >
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+      <h2 className="mb-3 care-text-eyebrow text-muted-foreground">
         Kerngegevens
       </h2>
       <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
@@ -202,7 +202,7 @@ export function CaseAttentionPointsCard({
       className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
       aria-label="Aandachtspunten"
     >
-      <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+      <h2 className="mb-3 care-text-eyebrow text-muted-foreground">
         Aandachtspunten
       </h2>
       {visible.length === 0 ? (

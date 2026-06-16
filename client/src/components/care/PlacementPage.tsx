@@ -243,7 +243,7 @@ export function PlacementPage({
       >
         <CarePanel className="p-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-emerald-300" aria-hidden />
+            <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-care-success-solid" aria-hidden />
             <div className="min-w-0 space-y-1">
               <h2 className="text-base font-semibold text-foreground">Plaatsing bevestigd</h2>
               <p className="text-sm text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
@@ -358,9 +358,9 @@ export function PlacementPage({
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
                 {providerAccepted ? (
-                  <CheckCircle2 size={16} className="text-emerald-300" />
+                  <CheckCircle2 size={16} className="text-care-success-solid" />
                 ) : (
-                  <AlertTriangle size={16} className="text-amber-300" />
+                  <AlertTriangle size={16} className="text-care-warning-solid" />
                 )}
                 <span className="text-muted-foreground">
                   {providerAccepted ? "Aanbieder heeft geaccepteerd" : "Wacht op beoordeling door aanbieder"}
@@ -368,7 +368,7 @@ export function PlacementPage({
               </div>
               {provider.availableSpots > 0 ? (
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 size={16} className="text-emerald-300" />
+                  <CheckCircle2 size={16} className="text-care-success-solid" />
                   <span className="text-muted-foreground">Capaciteit beschikbaar</span>
                 </div>
               ) : null}
@@ -380,8 +380,8 @@ export function PlacementPage({
             <span className={`
               inline-block px-4 py-2 rounded-lg text-sm font-semibold border-2
               ${caseData.urgency === "high" ? "border-destructive/40 bg-destructive/15 text-destructive" : ""}
-              ${caseData.urgency === "medium" ? "border-amber-500/40 bg-amber-500/15 text-amber-300" : ""}
-              ${caseData.urgency === "low" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : ""}
+              ${caseData.urgency === "medium" ? "border bg-care-warning-bg text-care-warning-text border-care-warning-border" : ""}
+              ${caseData.urgency === "low" ? "border bg-care-success-bg text-care-success-text border-care-success-border" : ""}
             `}>
               {caseData.urgency === "high" ? "Hoge urgentie" : 
                caseData.urgency === "medium" ? "Gemiddelde urgentie" : 
@@ -431,8 +431,8 @@ export function PlacementPage({
                 <span className={`
                   inline-block px-2 py-1 rounded-md text-xs font-semibold
                   ${caseData.urgency === "high" ? "border-destructive/40 bg-destructive/15 text-destructive" : ""}
-                  ${caseData.urgency === "medium" ? "border-amber-500/40 bg-amber-500/15 text-amber-300" : ""}
-                  ${caseData.urgency === "low" ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-300" : ""}
+                  ${caseData.urgency === "medium" ? "border bg-care-warning-bg text-care-warning-text border-care-warning-border" : ""}
+                  ${caseData.urgency === "low" ? "border bg-care-success-bg text-care-success-text border-care-success-border" : ""}
                 `}>
                   {caseData.urgency === "high" ? "Hoog" : 
                    caseData.urgency === "medium" ? "Gemiddeld" : 
@@ -465,9 +465,9 @@ export function PlacementPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             {providerAccepted && allValid && !hasErrors ? (
-              <CheckCircle2 size={18} className="text-emerald-300" />
+              <CheckCircle2 size={18} className="text-care-success-solid" />
             ) : (
-              <AlertTriangle size={18} className="text-amber-300" />
+              <AlertTriangle size={18} className="text-care-warning-solid" />
             )}
             <span className="text-sm text-muted-foreground">
               {providerAccepted && allValid && !hasErrors
@@ -515,8 +515,8 @@ export function PlacementPage({
               </div>
             </div>
 
-            <div className="rounded-lg border border-cyan-500/40 bg-cyan-500/15 p-4">
-              <p className="text-sm leading-relaxed text-cyan-300">
+            <div className="rounded-lg border bg-care-info-bg border-care-info-border p-4">
+              <p className="text-sm leading-relaxed text-care-info-text">
                 De aanbieder heeft deze match al geaccepteerd. Met deze stap bevestig je
                 dat de casus door gaat naar plaatsing en daarna naar intake. Je volgt de voortgang
                 daarna vanuit het plaatsingenoverzicht.

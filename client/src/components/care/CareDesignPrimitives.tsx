@@ -143,21 +143,21 @@ export function CasusWorkspaceStatusBadges({
   return (
     <>
       {variant === "blocked" && (
-        <Badge className="border-destructive/30 bg-destructive/10 text-[12px] font-semibold text-destructive">Geblokkeerd</Badge>
+        <Badge className="border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border text-[12px] font-semibold">Geblokkeerd</Badge>
       )}
       {variant === "active" && (
-        <Badge className="border-emerald-500/30 bg-emerald-500/10 text-[12px] font-semibold text-emerald-300">Actief</Badge>
+        <Badge className="border bg-care-success-bg text-care-success-text border-care-success-border text-[12px] font-semibold">Actief</Badge>
       )}
       {variant === "progress" && (
-        <Badge className="border-blue-500/30 bg-blue-500/10 text-[12px] font-semibold text-blue-300">In behandeling</Badge>
+        <Badge className="border bg-care-info-bg text-care-info-text border-care-info-border text-[12px] font-semibold">In behandeling</Badge>
       )}
       {hint && variant === "blocked" ? (
         <Badge
           className={cn(
-            "max-w-[min(100%,20rem)] truncate text-[12px] font-semibold",
+            "max-w-[min(100%,20rem)] truncate border text-[12px] font-semibold",
             /matching/i.test(hint)
-              ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
-              : "border-destructive/30 bg-destructive/10 text-destructive",
+              ? "bg-care-warning-bg text-care-warning-text border-care-warning-border"
+              : "bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
           )}
           title={hint}
         >
@@ -256,7 +256,7 @@ export function BlockingNotice({
     tone === "critical"
       ? "text-destructive"
       : tone === "warning"
-        ? "text-amber-400"
+        ? "text-care-warning-solid"
         : "text-muted-foreground";
   return (
     <CareAttentionSurface
@@ -292,23 +292,23 @@ const CARE_ALERT_TONE_CLASSES: Record<
 > = {
   critical: {
     shell: "care-dominant-focus care-alert-shell care-alert-shell--critical",
-    icon: "border border-yellow-500/15 bg-yellow-500/10 text-red-100",
-    metric: "text-yellow-100",
+    icon: "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
+    metric: "text-care-urgent-solid",
   },
   warning: {
     shell: "care-dominant-focus care-alert-shell care-alert-shell--warning",
-    icon: "border border-yellow-500/12 bg-yellow-500/8 text-yellow-100",
-    metric: "text-yellow-100",
+    icon: "border bg-care-warning-bg text-care-warning-text border-care-warning-border",
+    metric: "text-care-warning-solid",
   },
   info: {
     shell: "care-dominant-focus care-alert-shell care-alert-shell--info",
-    icon: "border border-sky-500/20 bg-sky-500/10 text-sky-100",
-    metric: "text-sky-100",
+    icon: "border bg-care-info-bg text-care-info-text border-care-info-border",
+    metric: "text-care-info-solid",
   },
   success: {
     shell: "care-dominant-focus care-alert-shell care-alert-shell--success",
-    icon: "border border-emerald-500/20 bg-emerald-500/10 text-emerald-100",
-    metric: "text-emerald-100",
+    icon: "border bg-care-success-bg text-care-success-text border-care-success-border",
+    metric: "text-care-success-solid",
   },
 };
 

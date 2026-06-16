@@ -175,7 +175,7 @@ export function CareFilterDrawer({
           {/* Saved views */}
           {savedViews && savedViews.length > 0 && (
             <div className="mb-5">
-              <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
+              <p className="mb-2 care-text-eyebrow text-muted-foreground/70">
                 Opgeslagen weergaven
               </p>
               <div className="flex flex-wrap gap-2">

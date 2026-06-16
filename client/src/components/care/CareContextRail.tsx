@@ -75,7 +75,7 @@ function RailSection({
     <div className="flex min-w-0 gap-2.5">
       <span className="mt-0.5 shrink-0 text-muted-foreground/60" aria-hidden>{icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground/60">{label}</p>
+        <p className="care-text-eyebrow text-muted-foreground/60">{label}</p>
         {href ? (
           <a
             href={href}
@@ -135,7 +135,7 @@ export function CareContextRail({
       aria-label="Casuscontext"
     >
       {heading && (
-        <h2 className="mb-4 text-[12px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/70">
+        <h2 className="mb-4 care-text-eyebrow text-muted-foreground/70">
           {heading}
         </h2>
       )}
@@ -208,7 +208,7 @@ export function CareContextRail({
 
         {recentAuditEvent && (
           <div className="border-t border-border/40 pt-3">
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-muted-foreground/60">
+            <p className="mb-2 care-text-eyebrow text-muted-foreground/60">
               Laatste activiteit
             </p>
             <div className="flex min-w-0 gap-2.5">

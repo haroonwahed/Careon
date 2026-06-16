@@ -724,7 +724,7 @@ function ProviderCard({
 
   const badgeColor =
     result.recommendationType === "perfect" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
-    result.recommendationType === "good"    ? "bg-blue-500/10 text-blue-300 border-blue-500/25" :
+    result.recommendationType === "good"    ? "border bg-care-info-bg text-care-info-text border-care-info-border" :
                                               "bg-muted text-muted-foreground border-border";
 
   const badgeLabel =

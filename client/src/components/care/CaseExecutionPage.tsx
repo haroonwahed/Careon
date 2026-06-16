@@ -386,7 +386,7 @@ function ProviderDecisionDialog({
               rows={4}
             />
             {comment.length > 0 && comment.trim().length < 10 && (
-              <p className="text-xs text-red-400">Voeg minimaal 10 tekens toe.</p>
+              <p className="text-xs text-care-urgent-solid">Voeg minimaal 10 tekens toe.</p>
             )}
           </label>
         </div>
@@ -1180,11 +1180,11 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
               </div>
               <div className="border border-border/70 p-3 text-sm text-foreground space-y-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Aanmelding</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Aanmelding</p>
                   <p>Aanmelding wordt automatisch verwerkt zodra de casus compleet is.</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Volgende stap</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Volgende stap</p>
                   <p>Vul casus aan om matching te starten.</p>
                 </div>
               </div>
@@ -1200,11 +1200,11 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
               </div>
               <div className="border border-border/70 p-3 text-sm text-foreground space-y-3">
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Doel</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Doel</p>
                   <p>{summaryPreview}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Risico's</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Risico's</p>
                   <ul className="list-disc pl-4">
                     {summaryRiskItems.map((risk) => (
                       <li key={risk}>{risk}</li>
@@ -1212,7 +1212,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
                   </ul>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Inputs</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Inputs</p>
                   <ul className="list-disc pl-4">
                     {summaryMatchInputs.map((input) => (
                       <li key={input}>{input}</li>
@@ -1221,7 +1221,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, onAppNavi
                 </div>
               </div>
               {!matchingAllowed && (
-                <p className="text-xs text-red-400">{getShortReasonLabel(matchingBlockedReason, 120)}</p>
+                <p className="text-xs text-care-urgent-solid">{getShortReasonLabel(matchingBlockedReason, 120)}</p>
               )}
             </div>
           )}

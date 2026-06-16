@@ -18,23 +18,23 @@ const TONE_STYLES: Record<CareTone, { shell: string; icon: string; note: string 
   },
   success: {
     shell: "border-emerald-500/20 bg-emerald-500/6",
-    icon: "bg-emerald-500/10 text-emerald-300",
-    note: "text-emerald-300",
+    icon: "bg-care-success-bg text-care-success-text",
+    note: "text-care-success-solid",
   },
   warning: {
     shell: "border-amber-500/20 bg-amber-500/6",
-    icon: "bg-amber-500/10 text-amber-300",
-    note: "text-amber-300",
+    icon: "bg-care-warning-bg text-care-warning-text",
+    note: "text-care-warning-solid",
   },
   danger: {
     shell: "border-red-500/20 bg-red-500/6",
-    icon: "bg-red-500/10 text-red-300",
-    note: "text-red-300",
+    icon: "bg-care-urgent-bg text-care-urgent-text",
+    note: "text-care-urgent-solid",
   },
   info: {
     shell: "border-cyan-500/20 bg-cyan-500/6",
-    icon: "bg-cyan-500/10 text-cyan-300",
-    note: "text-cyan-300",
+    icon: "bg-care-info-bg text-care-info-text",
+    note: "text-care-info-solid",
   },
 };
 

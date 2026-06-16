@@ -340,7 +340,7 @@ export function ZorgaanbiedersPage({
             title={<span id="zorgaanbieders-netwerk-heading">Netwerkoverzicht</span>}
             meta={
               <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
-                <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                <span className="inline-flex w-fit items-center rounded-full border bg-care-info-bg text-care-info-text border-care-info-border px-2.5 py-0.5 text-[12px] font-semibold">
                   {visibleCountValue} zichtbaar · {availableCapacityValue} plekken · {waitDaysLabel}
                   {lastUpdatedLabel ? ` · ${lastUpdatedLabel}` : ""}
                 </span>
@@ -439,7 +439,7 @@ export function ZorgaanbiedersPage({
       {mapView === "full" ? (
         <div className={cn(networkResultsShell, "overflow-hidden")}>
           <div className="border-b border-border/50 bg-muted/40 px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kaartweergave</p>
+            <p className="care-text-eyebrow text-muted-foreground">Kaartweergave</p>
             <p className="mt-1 text-sm text-muted-foreground">
               Volledige kaartmodus · {sortedProviders.length} van {providers.length} aanbieders zichtbaar
             </p>
@@ -509,7 +509,7 @@ export function ZorgaanbiedersPage({
                           <div className="mb-2.5 flex items-start justify-between gap-3">
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
-                                <h3 className="text-[15px] font-semibold text-foreground">{provider.name}</h3>
+                                <h3 className="care-text-subheading text-foreground">{provider.name}</h3>
                                 {recommendation && (
                                   <span className="rounded-full border border-border/70 bg-muted/35 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-foreground">
                                     {recommendation}
@@ -636,7 +636,7 @@ export function ZorgaanbiedersPage({
                 <div className="border-b border-border/50 bg-card px-4 py-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted-foreground">Kaartweergave</p>
+                      <p className="care-text-eyebrow text-muted-foreground">Kaartweergave</p>
                       <p className="mt-1 text-sm font-medium text-foreground">Aanbieders op de kaart</p>
                     </div>
                     <span className="rounded-full border border-border/70 bg-muted/35 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">Live sync</span>

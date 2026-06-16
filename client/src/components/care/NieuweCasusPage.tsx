@@ -125,7 +125,7 @@ function FieldError({ message }: { message?: string | string[] }) {
   }
 
   return (
-    <p className="mt-1 text-xs font-medium text-red-400">
+    <p className="mt-1 text-xs font-medium text-care-urgent-solid">
       {Array.isArray(message) ? message[0] : message}
     </p>
   );
@@ -158,7 +158,7 @@ function SectionHeader({
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/25 text-[11px] font-semibold text-foreground">
             {step}
           </div>
-          <h2 className="min-w-0 text-[22px] font-semibold leading-tight tracking-tight text-foreground md:text-[24px]">
+          <h2 className="min-w-0 care-text-title text-foreground">
             {eyebrow ? (
               <>
                 <span>{eyebrow}</span>
@@ -1168,10 +1168,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   if (loadError || !formState || !options) {
     return (
       <div className="panel-surface rounded-[28px] border border-red-500/20 p-4">
-        <div className="flex items-start gap-3 text-red-300">
+        <div className="flex items-start gap-3 text-care-urgent-solid">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <div>
-            <h1 className="text-xl font-semibold text-foreground">Nieuwe casus kon niet worden geladen</h1>
+            <h1 className="care-text-title text-foreground">Nieuwe casus kon niet worden geladen</h1>
             <p className="mt-2 text-sm text-muted-foreground">{loadError ?? "Er is een onverwacht probleem opgetreden."}</p>
           </div>
         </div>
@@ -1255,7 +1255,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         </button>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground">Nieuwe casus</h1>
+            <h1 className="care-text-title text-foreground">Nieuwe casus</h1>
             <button
               type="button"
               onClick={() => setShowPageGuidanceDialog(true)}
@@ -1288,7 +1288,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
       {formErrors.__all__ && (
         <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3">
-          <div className="flex items-start gap-3 text-red-300">
+          <div className="flex items-start gap-3 text-care-urgent-solid">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-medium text-foreground">Controleer de invoer</p>
@@ -1300,7 +1300,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
       {successMessage && (
         <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
-          <div className="flex items-start gap-3 text-emerald-300">
+          <div className="flex items-start gap-3 text-care-success-solid">
             <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
             <p className="text-sm">{successMessage}</p>
           </div>
@@ -1316,10 +1316,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shadow-sm outline-none"
         >
           <div className="flex items-start gap-3">
-            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-300" />
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-care-warning-solid" />
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">Je kunt nog niet verder</p>
-              <p className="mt-1 text-sm text-amber-100/90">{stepError}</p>
+              <p className="mt-1 text-sm text-care-warning-solid">{stepError}</p>
             </div>
           </div>
         </div>
@@ -1353,7 +1353,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   disabled={!isClickable}
                 className={`flex min-h-[58px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${stepToneClass}`}
                 >
-                  <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold leading-none ${isActive ? "border-primary/20 bg-primary text-primary-foreground" : isCompleted ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" : "border-border/70 bg-background/20 text-foreground"}`}>
+                  <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold leading-none ${isActive ? "border-primary/20 bg-primary text-primary-foreground" : isCompleted ? "bg-care-success-bg text-care-success-text border-care-success-border" : "border-border/70 bg-background/20 text-foreground"}`}>
                     {isCompleted ? <CheckCircle2 size={15} aria-hidden /> : step.id}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -1538,16 +1538,16 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             <section className="rounded-[24px] border border-border/70 bg-card/35 p-4 shadow-sm">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h3 className="text-[17px] font-semibold text-foreground">Plaatsingsdruk &amp; urgentie</h3>
+                  <h3 className="care-text-heading text-foreground">Plaatsingsdruk &amp; urgentie</h3>
                 </div>
                 <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${
                   pressureAssessment?.band === "critical"
-                    ? "border-red-500/30 bg-red-500/10 text-red-200"
+                    ? "bg-care-urgent-bg text-care-urgent-text border-care-urgent-border"
                     : pressureAssessment?.band === "high"
-                      ? "border-amber-500/30 bg-amber-500/10 text-amber-200"
+                      ? "bg-care-warning-bg text-care-warning-text border-care-warning-border"
                       : pressureAssessment?.band === "normal"
-                        ? "border-sky-500/30 bg-sky-500/10 text-sky-200"
-                        : "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                        ? "bg-care-info-bg text-care-info-text border-care-info-border"
+                        : "bg-care-success-bg text-care-success-text border-care-success-border"
                 }`}>
                   {pressureAssessment?.label ?? "Normaal"}
                 </span>
@@ -1630,16 +1630,16 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
                 <div className="space-y-3">
                   <div className="rounded-2xl border border-border/60 bg-card/30 px-4 py-4">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Urgentieadvies</p>
+                    <p className="care-text-eyebrow text-muted-foreground">Urgentieadvies</p>
                     <div className="mt-2 flex items-center gap-2">
                       <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
                         pressureAssessment?.band === "critical"
-                          ? "bg-red-500/10 text-red-200"
+                          ? "bg-care-urgent-bg text-care-urgent-text"
                           : pressureAssessment?.band === "high"
-                            ? "bg-amber-500/10 text-amber-200"
+                            ? "bg-care-warning-bg text-care-warning-text"
                             : pressureAssessment?.band === "normal"
-                              ? "bg-sky-500/10 text-sky-200"
-                              : "bg-emerald-500/10 text-emerald-200"
+                              ? "bg-care-info-bg text-care-info-text"
+                              : "bg-care-success-bg text-care-success-text"
                       }`}>
                         {pressureAssessment?.label ?? "Normaal"}
                       </span>
@@ -1653,13 +1653,13 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   </div>
 
                   <div className="rounded-2xl border border-border/60 bg-card/30 px-4 py-4">
-                    <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Matchverwachting</p>
+                    <p className="care-text-eyebrow text-muted-foreground">Matchverwachting</p>
                     <p className="mt-2 text-sm font-medium leading-snug text-foreground">
                       {matchingPreview.label}
                     </p>
-                    <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Toelichting</p>
+                    <p className="mt-3 care-text-eyebrow text-muted-foreground">Toelichting</p>
                     <p className="mt-1 text-sm text-muted-foreground">{matchingPreview.detail}</p>
-                    <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-green-500/10 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/10 text-yellow-300" : "bg-red-500/10 text-red-300"}`}>
+                    <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-care-success-bg text-care-success-text" : matchingPreview.tone === "warning" ? "bg-care-warning-bg text-care-warning-text" : "bg-care-urgent-bg text-care-urgent-text"}`}>
                       {matchingPreview.label}
                     </span>
                   </div>
@@ -1834,7 +1834,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Wie ziet wat per fase</p>
+                  <p className="care-text-eyebrow text-muted-foreground">Wie ziet wat per fase</p>
                   <CareInfoPopover ariaLabel="Wie voeg ik toe?" testId="nieuwe-casus-partijen-help">
                     <p>Voeg alleen partijen toe die betrokken zijn bij beoordeling, plaatsing of opvolging.</p>
                   </CareInfoPopover>
@@ -1888,9 +1888,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             />
 
             {(options.jeugdhulpregio?.length ?? 0) === 0 && (
-              <div className="rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-sm text-amber-200">
+              <div className="rounded-xl border bg-care-warning-bg text-care-warning-text border-care-warning-border px-4 py-3 text-sm">
                 <span className="font-semibold">Geen jeugdhulpregio's geconfigureerd.</span>{" "}
-                Ga naar <a href="/care/regio's/" className="underline underline-offset-2 hover:text-amber-100">Regio's</a> om er een aan te maken voordat je een casus plaatst. De casus wordt opgeslagen zonder regiokoppeling.
+                Ga naar <a href="/care/regio's/" className="underline underline-offset-2 hover:text-care-warning-solid">Regio's</a> om er een aan te maken voordat je een casus plaatst. De casus wordt opgeslagen zonder regiokoppeling.
               </div>
             )}
 
@@ -1898,7 +1898,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               <div className="space-y-3">
                 <section className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
                   <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="text-[17px] font-semibold text-foreground">Gemeente &amp; Jeugdhulpregio</h3>
+                    <h3 className="care-text-heading text-foreground">Gemeente &amp; Jeugdhulpregio</h3>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
@@ -1939,15 +1939,15 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Gemeente (woonplaatsbeginsel)</p>
+                      <p className="care-text-eyebrow text-muted-foreground">Gemeente (woonplaatsbeginsel)</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedGemeenteLabel || "Wordt afgeleid uit gemeente"}</p>
                     </div>
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Jeugdhulpregio</p>
+                      <p className="care-text-eyebrow text-muted-foreground">Jeugdhulpregio</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedJeugdhulpregioLabel || "Wordt afgeleid uit jeugdhulpregio"}</p>
                     </div>
                     <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">Herbeoordeling</p>
+                      <p className="care-text-eyebrow text-muted-foreground">Herbeoordeling</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">
                         {formState.gemeente && formState.jeugdhulpregio ? "Alleen bij grensverschil" : "Nog niet bepaald"}
                       </p>
@@ -1957,7 +1957,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
                 <section className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
                   <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="text-[17px] font-semibold text-foreground">Ondersteuningsbehoeften</h3>
+                    <h3 className="care-text-heading text-foreground">Ondersteuningsbehoeften</h3>
                     <Button
                       type="button"
                       variant="outline"
@@ -2014,19 +2014,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   <section className="panel-surface h-full rounded-[24px] border border-border/70 p-4 shadow-sm">
                     <div className="flex h-full flex-col">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-amber-500/20 bg-amber-500/10 text-amber-400">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-care-warning-bg text-care-warning-text border-care-warning-border">
                           <AlertTriangle size={16} aria-hidden />
                         </div>
-                        <h3 className="min-w-0 text-[17px] font-semibold leading-snug text-foreground">Matchverwachting</h3>
+                        <h3 className="min-w-0 care-text-heading text-foreground">Matchverwachting</h3>
                       </div>
                       <div className="mt-4 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+                        <p className="care-text-eyebrow text-muted-foreground">
                           Verwachte uitkomst
                         </p>
                         <p className="mt-1 text-sm font-medium leading-snug text-foreground">
                           {matchingPreview.label}
                         </p>
-                        <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-green-500/10 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/10 text-yellow-300" : "bg-red-500/10 text-red-300"}`}>
+                        <span className={`mt-3 inline-flex rounded-full px-3 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-care-success-bg text-care-success-text" : matchingPreview.tone === "warning" ? "bg-care-warning-bg text-care-warning-text" : "bg-care-urgent-bg text-care-urgent-text"}`}>
                           {matchingPreview.label}
                         </span>
                       </div>
@@ -2036,19 +2036,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   <section className="panel-surface h-full rounded-[24px] border border-border/70 p-4 shadow-sm">
                     <div className="flex h-full flex-col">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-violet-500/20 bg-violet-500/10 text-violet-300">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-care-brand-bg text-care-brand-text border-care-brand-border">
                           <Lock size={16} aria-hidden />
                         </div>
-                        <h3 className="min-w-0 text-[17px] font-semibold leading-snug text-foreground">Privacy &amp; zichtbaarheid</h3>
+                        <h3 className="min-w-0 care-text-heading text-foreground">Privacy &amp; zichtbaarheid</h3>
                       </div>
                       <div className="mt-4 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
                         <div className="flex flex-col gap-2 text-sm text-foreground">
                           <p className="grid min-w-0 grid-cols-[14px_minmax(0,1fr)] items-start gap-2 leading-snug">
-                            <Lock size={14} className="text-violet-300" aria-hidden />
+                            <Lock size={14} className="text-care-brand-solid" aria-hidden />
                             <span className="min-w-0 break-words">Alleen pseudonieme gegevens zichtbaar</span>
                           </p>
                           <p className="grid min-w-0 grid-cols-[14px_minmax(0,1fr)] items-start gap-2 leading-snug">
-                            <ShieldCheck size={14} className="text-violet-300" aria-hidden />
+                            <ShieldCheck size={14} className="text-care-brand-solid" aria-hidden />
                             <span className="min-w-0 break-words">Openbaar voor: Gemeente, Matching</span>
                           </p>
                         </div>
@@ -2060,7 +2060,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
               <aside className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
                 <div className="mb-3">
-                  <h3 className="text-[17px] font-semibold text-foreground">Samenvatting voor verzending</h3>
+                  <h3 className="care-text-heading text-foreground">Samenvatting voor verzending</h3>
                 </div>
                 <div className="mt-4 divide-y divide-border/60">
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
@@ -2089,7 +2089,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </div>
                     <div className="flex flex-wrap gap-1.5">
                       {supportNeedPreview.map((label) => (
-                        <span key={label} className="rounded-full border border-violet-500/25 bg-violet-500/10 px-2.5 py-1 text-[11px] font-medium text-violet-200">
+                        <span key={label} className="rounded-full border bg-care-brand-bg text-care-brand-text border-care-brand-border px-2.5 py-1 text-[11px] font-medium">
                           {label}
                         </span>
                       ))}
@@ -2097,7 +2097,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   </div>
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
                     <span className="text-muted-foreground">Matchverwachting</span>
-                    <span className={`min-w-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-green-500/10 text-green-300" : matchingPreview.tone === "warning" ? "bg-yellow-500/10 text-yellow-300" : "bg-red-500/10 text-red-300"}`}>
+                    <span className={`min-w-0 rounded-full px-2.5 py-1 text-[11px] font-medium ${matchingPreview.tone === "good" ? "bg-care-success-bg text-care-success-text" : matchingPreview.tone === "warning" ? "bg-care-warning-bg text-care-warning-text" : "bg-care-urgent-bg text-care-urgent-text"}`}>
                       {matchingPreview.label}
                     </span>
                   </div>

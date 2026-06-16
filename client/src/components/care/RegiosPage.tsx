@@ -481,25 +481,25 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
   const statusConfig = {
     stabiel: {
       label: "Stabiel",
-      color: "text-green-400",
+      color: "text-care-success-solid",
       bg: "bg-green-500/10",
       border: "border-green-500/30"
     },
     druk: {
       label: "Druk",
-      color: "text-amber-400",
+      color: "text-care-warning-solid",
       bg: "bg-amber-500/10",
       border: "border-amber-500/30"
     },
     tekort: {
       label: "Tekort",
-      color: "text-red-400",
+      color: "text-care-urgent-solid",
       bg: "bg-red-500/10",
       border: "border-red-500/30"
     },
     kritiek: {
       label: "Kritiek",
-      color: "text-red-300",
+      color: "text-care-urgent-solid",
       bg: "bg-red-600/15",
       border: "border-red-500/50"
     }
@@ -532,10 +532,10 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
 
         {/* Trend Indicator */}
         {region.trend === "up" && (
-          <TrendingUp size={18} className="text-red-400" />
+          <TrendingUp size={18} className="text-care-urgent-solid" />
         )}
         {region.trend === "down" && (
-          <TrendingDown size={18} className="text-green-400" />
+          <TrendingDown size={18} className="text-care-success-solid" />
         )}
         {region.trend === "stable" && (
           <Activity size={18} className="text-muted-foreground" />
@@ -552,7 +552,7 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
         <div>
           <p className="text-xs text-muted-foreground mb-1">Gem. wachttijd</p>
           <p className={`text-xl font-bold ${
-            hasWaitData && region.gemiddelde_wachttijd_dagen > 14 ? "text-red-400" : "text-foreground"
+            hasWaitData && region.gemiddelde_wachttijd_dagen > 14 ? "text-care-urgent-solid" : "text-foreground"
           }`}>
             {hasWaitData ? `${region.gemiddelde_wachttijd_dagen}d` : "—"}
           </p>

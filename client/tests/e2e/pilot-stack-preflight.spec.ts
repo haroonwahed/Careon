@@ -52,7 +52,7 @@ test("pilot-demo: gemeente login succeeds", async ({ page }) => {
   test.skip(!runPilotDemo(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotDemoGemeenteUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotDemoGemeentePassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotDemoGemeentePassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.")).toHaveCount(0);
@@ -63,7 +63,7 @@ test("pilot-demo: provider login succeeds", async ({ page }) => {
   test.skip(!runPilotDemo(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotDemoProviderOneUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotDemoProviderPassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotDemoProviderPassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.")).toHaveCount(0);
@@ -74,7 +74,7 @@ test("pilot-demo: provider TWO (Kompas / golden-path) login succeeds", async ({ 
   test.skip(!runPilotDemo(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotDemoProviderTwoUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotDemoProviderPassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotDemoProviderPassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.")).toHaveCount(0);
@@ -85,7 +85,7 @@ test("pilot-smoke: owner login succeeds", async ({ page }) => {
   test.skip(!runPilotSmoke(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotSmokeUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotSmokePassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotSmokePassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.")).toHaveCount(0);
@@ -96,7 +96,7 @@ test("dashboard: care-sidebar + Coordination (demo user)", async ({ page }) => {
   test.skip(!runPilotDemo(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotDemoGemeenteUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotDemoGemeentePassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotDemoGemeentePassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await page.goto(`${E2E_BASE_URL}/dashboard/`);
@@ -108,7 +108,7 @@ test("dashboard: care-sidebar + Coordination (smoke user)", async ({ page }) => 
   test.skip(!runPilotSmoke(), `skipped: E2E_PROFILE=${PROFILE}`);
   await page.goto(`${E2E_BASE_URL}/login/`);
   await page.getByLabel("Gebruikersnaam").fill(pilotSmokeUsername());
-  await page.getByLabel("Wachtwoord").fill(pilotSmokePassword());
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(pilotSmokePassword());
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await page.goto(`${E2E_BASE_URL}/dashboard/`);

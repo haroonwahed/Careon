@@ -20,21 +20,21 @@ interface HandoverInfoPanelProps {
 
 const severityConfig = {
   low: {
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/30",
-    text: "text-blue-300",
+    bg: "bg-care-info-bg",
+    border: "border-care-info-border",
+    text: "text-care-info-text",
     icon: Info
   },
   medium: {
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/30",
-    text: "text-amber-300",
+    bg: "bg-care-warning-bg",
+    border: "border-care-warning-border",
+    text: "text-care-warning-text",
     icon: AlertTriangle
   },
   high: {
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    text: "text-red-300",
+    bg: "bg-care-urgent-bg",
+    border: "border-care-urgent-border",
+    text: "text-care-urgent-text",
     icon: AlertTriangle
   }
 };
@@ -46,7 +46,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
       {riskSignals.length > 0 && (
         <div className="panel-surface p-4">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <AlertTriangle size={16} className="text-amber-400" />
+            <AlertTriangle size={16} className="text-care-warning-solid" />
             Risicosignalen
           </h3>
           <div className="space-y-2">
@@ -108,7 +108,7 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
 
           <div className="flex items-start gap-2.5">
             <div className="w-6 h-6 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
-              <CheckCircle2 size={12} className="text-green-400" />
+              <CheckCircle2 size={12} className="text-care-success-solid" />
             </div>
             <p className="text-xs text-muted-foreground pt-0.5 break-words">
               Zorg gestart
@@ -148,9 +148,9 @@ export function HandoverInfoPanel({ riskSignals = [] }: HandoverInfoPanelProps) 
       {/* Responsibility Shift Indicator */}
       <div className="panel-surface p-4 border-2 border-green-500/30 bg-green-500/5">
         <div className="flex items-start gap-3">
-          <ArrowRight size={20} className="text-green-400 flex-shrink-0 mt-0.5" />
+          <ArrowRight size={20} className="text-care-success-solid flex-shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-green-300 mb-1">
+            <p className="text-sm font-semibold text-care-success-solid mb-1">
               Verantwoordelijkheid verschuift
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed break-words">

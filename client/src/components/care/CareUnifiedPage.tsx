@@ -265,12 +265,12 @@ const ATTENTION_SURFACE_CLASSES: Record<
   },
   attention: {
     shell: "border-l-amber-500/70 border border-amber-500/20 bg-amber-500/10 text-foreground",
-    icon: "border-amber-500/25 bg-amber-500/10 text-amber-200",
+    icon: "border bg-care-warning-bg text-care-warning-text border-care-warning-border",
     label: "Operatieve aandacht",
   },
   critical: {
     shell: "border-l-red-500/80 border border-red-500/25 bg-red-500/10 text-foreground",
-    icon: "border-red-500/20 bg-red-500/10 text-red-100",
+    icon: "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
     label: "Kritieke aandacht",
   },
 };
@@ -325,7 +325,7 @@ export function CareAttentionSurface({
           </div>
         ) : null}
         <div className="min-w-0 space-y-0.5">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             {title ?? surface.label}
           </p>
           <p className={cn("min-w-0 text-sm leading-6", compact && "text-[13px]")}>{message}</p>

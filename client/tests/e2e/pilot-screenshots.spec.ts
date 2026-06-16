@@ -23,7 +23,7 @@ async function loginGemeente(page: import("@playwright/test").Page): Promise<voi
   await page.goto(new URL("/login/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
   await page.getByLabel("Gebruikersnaam").fill(username);
-  await page.getByLabel("Wachtwoord").fill(password);
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   const loginError = page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.");
@@ -36,7 +36,7 @@ test.describe("pilot deterministic screenshots", () => {
     await loginGemeente(page);
     await page.goto(new URL("/dashboard/", BASE_URL).toString());
     await expect(page.getByTestId("care-sidebar")).toBeVisible({ timeout: 45_000 });
-    await expect(page.getByRole("heading", { name: /Coördinatie/i })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
 
     const out = path.join(testInfo.outputDir, "pilot-coordination-1440x900.png");
     await page.screenshot({ path: out, fullPage: true });
@@ -46,7 +46,7 @@ test.describe("pilot deterministic screenshots", () => {
     await loginGemeente(page);
     await page.goto(new URL("/login/", BASE_URL).toString());
     await expect(page).not.toHaveURL(/\/login\/?$/);
-    await expect(page.getByRole("heading", { name: /Coördinatie/i })).toBeVisible({ timeout: 45_000 });
+    await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
   });
 
   test("nieuwe casus uses the available workspace width", async ({ page }, testInfo) => {

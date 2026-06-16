@@ -111,11 +111,11 @@ function signalenPageMetricLabel(
 function SignalSeverityIcon({ severity }: { severity: SignalSeverity }) {
   switch (severity) {
     case "critical":
-      return <XCircle size={16} className="text-red-400" />;
+      return <XCircle size={16} className="text-care-urgent-solid" />;
     case "warning":
-      return <AlertTriangle size={16} className="text-amber-400" />;
+      return <AlertTriangle size={16} className="text-care-warning-solid" />;
     default:
-      return <Info size={16} className="text-blue-400" />;
+      return <Info size={16} className="text-care-info-solid" />;
   }
 }
 

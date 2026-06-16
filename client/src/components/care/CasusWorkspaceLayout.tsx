@@ -173,13 +173,13 @@ export function CasusWorkspaceLayout({
         <header className="space-y-3 border-b border-border/70 pb-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
             <div className="min-w-0 space-y-2">
-              <h1 className="text-[20px] font-semibold leading-tight tracking-tight text-foreground md:text-[22px]">
+              <h1 className="care-text-title text-foreground">
                 {title}
               </h1>
               <div className="flex flex-wrap items-center gap-2">
                 {phaseId ? (
                   <span className="inline-flex items-center gap-1.5" title={`Stap: ${phaseLabel}`}>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Stap</span>
+                    <span className="care-text-eyebrow text-muted-foreground">Stap</span>
                     <FlowPhaseBadge phaseId={phaseId} />
                   </span>
                 ) : phaseLabel ? (

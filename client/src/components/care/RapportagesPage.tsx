@@ -184,7 +184,7 @@ export function RapportagesPage() {
           {reportTemplates.length} templates · {readyCount} exporteerbaar
         </CareMetricBadge>
       }    >
-      <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/8 px-4 py-3 text-sm text-amber-300">
+      <div className="mb-4 flex items-start gap-3 rounded-xl border bg-care-warning-bg text-care-warning-text border-care-warning-border px-4 py-3 text-sm">
         <Construction size={16} className="mt-0.5 shrink-0" />
         <span><strong>Audit en compliance</strong> exporteert live vanuit het auditlog. Doorstroom- en matchkwaliteitsrapporten zijn <strong>in ontwikkeling</strong>.</span>
       </div>

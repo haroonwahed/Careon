@@ -172,7 +172,7 @@ function CasussenInboxRow({
           {region ? (
             <div className="truncate text-[12px] leading-tight text-foreground">{region}</div>
           ) : (
-            <div className="inline-flex items-center gap-1 rounded border border-amber-500/35 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-400">
+            <div className="inline-flex items-center gap-1 rounded border bg-care-warning-bg text-care-warning-text border-care-warning-border px-1.5 py-0.5 text-[10px] font-medium">
               <AlertTriangle size={10} aria-hidden />
               Regio ontbreekt
             </div>
@@ -451,7 +451,7 @@ export function WorkloadPage({
             {pageTabs}
 
             <div className="space-y-2">
-              <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--yellow-base)]">
+              <p className="px-1 care-text-eyebrow text-[var(--yellow-base)]">
                 WACHT OP JOUW ACTIE
               </p>
               <CareAlertCard
@@ -507,7 +507,7 @@ export function WorkloadPage({
                 className="gap-0"
                 header={(
                   <div className="space-y-1 px-4 pb-0 pt-4 md:px-5">
-                    <h2 id="worklist-heading" className="text-[22px] font-semibold tracking-tight text-foreground">
+                    <h2 id="worklist-heading" className="care-text-title text-foreground">
                       Werkvoorraad
                     </h2>
                     <p className="text-[13px] leading-6 text-muted-foreground">Actuele casussen die jouw aandacht vragen.</p>

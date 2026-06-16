@@ -100,13 +100,13 @@ function formatDateLabel(raw: string | null | undefined): string {
 function getStatusClass(statusTone: PlacementStatusTone): string {
   switch (statusTone) {
     case "critical":
-      return "border-red-500/25 bg-red-500/10 text-red-100";
+      return "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border";
     case "warning":
-      return "border-amber-500/25 bg-amber-500/10 text-amber-100";
+      return "border bg-care-warning-bg text-care-warning-text border-care-warning-border";
     case "info":
-      return "border-sky-500/20 bg-sky-500/10 text-sky-100";
+      return "border bg-care-info-bg text-care-info-text border-care-info-border";
     case "good":
-      return "border-emerald-500/20 bg-emerald-500/10 text-emerald-100";
+      return "border bg-care-success-bg text-care-success-text border-care-success-border";
     case "neutral":
       return "border-border/60 bg-card/35 text-muted-foreground";
   }
@@ -114,10 +114,10 @@ function getStatusClass(statusTone: PlacementStatusTone): string {
 
 function getUrgencyClass(item: WorkflowCaseView): string {
   if (item.urgency === "critical") {
-    return "border-red-500/35 bg-red-500/10 text-red-200";
+    return "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border";
   }
   if (item.urgency === "warning") {
-    return "border-amber-500/35 bg-amber-500/10 text-amber-100";
+    return "border bg-care-warning-bg text-care-warning-text border-care-warning-border";
   }
   return "border-border/60 bg-card/40 text-foreground";
 }

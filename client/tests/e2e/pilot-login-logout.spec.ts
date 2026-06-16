@@ -31,7 +31,7 @@ test("public landing → login → dashboard → logout returns to /login/", asy
   await page.goto(new URL("/login/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
   await page.getByLabel("Gebruikersnaam").fill(USERNAME);
-  await page.getByLabel("Wachtwoord").fill(PASSWORD);
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(PASSWORD);
   await page.getByRole("button", { name: "Inloggen" }).click();
 
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
@@ -39,7 +39,7 @@ test("public landing → login → dashboard → logout returns to /login/", asy
     page.getByTestId("care-sidebar"),
     "SPA shell did not mount on /dashboard/. Run ./scripts/prepare_pilot_e2e.sh.",
   ).toBeVisible({ timeout: 45_000 });
-  await expect(page.getByRole("heading", { name: /Coördinatie/i })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
 
   const csrf = await csrfFromCookie(page);
   await page.evaluate(async ({ csrf }) => {

@@ -20,7 +20,7 @@ const statusConfig: Record<ValidationStatus, {
 }> = {
   complete: {
     icon: CheckCircle2,
-    color: "text-emerald-300",
+    color: "text-care-success-solid",
     alertClass: "border-emerald-500/30 bg-emerald-500/10"
   },
   incomplete: {
@@ -30,7 +30,7 @@ const statusConfig: Record<ValidationStatus, {
   },
   warning: {
     icon: AlertTriangle,
-    color: "text-amber-300",
+    color: "text-care-warning-solid",
     alertClass: "border-amber-500/30 bg-amber-500/10"
   },
   error: {
@@ -96,8 +96,8 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
       <div className="mt-5 pt-4 border-t border-muted-foreground/20">
         {allComplete && (
           <div className="flex items-center gap-2 text-sm">
-            <CheckCircle2 size={16} className="text-emerald-300" />
-            <span className="font-medium text-emerald-300">
+            <CheckCircle2 size={16} className="text-care-success-solid" />
+            <span className="font-medium text-care-success-solid">
               Klaar voor plaatsing
             </span>
           </div>
@@ -112,8 +112,8 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
         )}
         {!allComplete && !hasErrors && hasWarnings && (
           <div className="flex items-center gap-2 text-sm">
-            <AlertTriangle size={16} className="text-amber-300" />
-            <span className="font-medium text-amber-300">
+            <AlertTriangle size={16} className="text-care-warning-solid" />
+            <span className="font-medium text-care-warning-solid">
               Controleer waarschuwingen voordat plaatsing start
             </span>
           </div>

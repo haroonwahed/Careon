@@ -156,7 +156,7 @@ function DecisionDialog({ state, onClose, onSuccess }: DecisionDialogProps) {
         className="bg-card border border-border/60 rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4"
       >
         <div>
-          <h2 className="text-[16px] font-semibold text-foreground">{actionLabel}</h2>
+          <h2 className="care-text-heading text-foreground">{actionLabel}</h2>
           <p className="text-[13px] text-muted-foreground mt-1 leading-snug">{state.caseTitle}</p>
         </div>
 

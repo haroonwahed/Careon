@@ -44,15 +44,15 @@ const PRIORITY_KEYS: TaskPriorityKey[] = ["URGENT", "HIGH", "MEDIUM", "LOW"];
 const PRIORITY_UI: Record<TaskPriorityKey, { label: string; chipClass: string }> = {
   URGENT: {
     label: "Kritiek",
-    chipClass: "border-red-500/35 bg-red-500/10 text-red-200",
+    chipClass: "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
   },
   HIGH: {
     label: "Hoog",
-    chipClass: "border-amber-500/35 bg-amber-500/10 text-amber-100",
+    chipClass: "border bg-care-warning-bg text-care-warning-text border-care-warning-border",
   },
   MEDIUM: {
     label: "Gemiddeld",
-    chipClass: "border-blue-500/35 bg-blue-500/10 text-blue-100",
+    chipClass: "border bg-care-info-bg text-care-info-text border-care-info-border",
   },
   LOW: {
     label: "Laag",

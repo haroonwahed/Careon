@@ -207,9 +207,9 @@ export function ProviderProfilePage({
                     : "bg-red-500/10 border-red-500/30"
                 }`}>
                   <p className={`text-xs font-semibold uppercase ${
-                    capacityStatus === "available" ? "text-green-400" :
-                    capacityStatus === "limited" ? "text-amber-400" :
-                    "text-red-400"
+                    capacityStatus === "available" ? "text-care-success-solid" :
+                    capacityStatus === "limited" ? "text-care-warning-solid" :
+                    "text-care-urgent-solid"
                   }`}>
                     {capacityStatus === "available" ? "Beschikbaar" :
                      capacityStatus === "limited" ? "Beperkt" : "Wachtlijst"}
@@ -290,25 +290,25 @@ export function ProviderProfilePage({
                   </h4>
                   <ul className="space-y-2">
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 size={16} className="text-care-success-solid mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
                         Intensieve Ambulante Begeleiding (IAB)
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 size={16} className="text-care-success-solid mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
                         Residentiële behandeling (24-uurs zorg)
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 size={16} className="text-care-success-solid mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
                         Gezinsbehandeling
                       </span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <CheckCircle2 size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                      <CheckCircle2 size={16} className="text-care-success-solid mt-0.5 flex-shrink-0" />
                       <span className="text-sm text-muted-foreground">
                         Dagbehandeling
                       </span>
@@ -480,8 +480,8 @@ export function ProviderProfilePage({
                     Reactietijd op verwijzing
                   </p>
                   <div className="flex items-center gap-2">
-                    <Clock size={14} className="text-green-400" />
-                    <span className="text-sm font-semibold text-green-400">
+                    <Clock size={14} className="text-care-success-solid" />
+                    <span className="text-sm font-semibold text-care-success-solid">
                       Binnen {provider.responseTime} uur
                     </span>
                   </div>

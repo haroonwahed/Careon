@@ -223,9 +223,9 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
                           className={cn(
                             "h-6 px-2 text-[11px] font-semibold",
                             caseItem.urgency === "critical"
-                              ? "border-red-500/35 bg-red-500/10 text-red-100"
+                              ? "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border"
                               : caseItem.urgency === "warning"
-                                ? "border-amber-500/35 bg-amber-500/10 text-amber-100"
+                                ? "border bg-care-warning-bg text-care-warning-text border-care-warning-border"
                                 : "border-border bg-muted/30 text-foreground",
                           )}
                         >

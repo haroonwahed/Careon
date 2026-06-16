@@ -218,9 +218,12 @@ describe("Screen mode separation", () => {
 
   it("enforces screen mode separation across core pages", async () => {
     render(<CoordinationControlCenter onCaseClick={vi.fn()} />);
-    const coordinationDominant = screen.getByTestId("coordination-dominant-action");
-    expect(coordinationDominant).toBeInTheDocument();
-    expect(coordinationDominant).toHaveAttribute("data-coordination-mode", "crisis");
+    // The coordination screen is an operational list/workspace, not a single
+    // dominant-action detail screen: it surfaces the worklist, never the
+    // case-detail next-best-action panel nor a dominant-action hero.
+    expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
+    expect(screen.getAllByTestId("coordination-worklist-item").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("coordination-dominant-action")).not.toBeInTheDocument();
     expect(screen.queryByTestId("next-best-action")).not.toBeInTheDocument();
     cleanup();
 

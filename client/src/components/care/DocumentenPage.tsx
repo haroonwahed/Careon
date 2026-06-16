@@ -544,7 +544,7 @@ function DocumentPreview({
     <div className="sticky space-y-3 rounded-[24px] border border-border/60 bg-card/45 p-4 shadow-sm backdrop-blur" style={{ top: tokens.layout.edgeZero }}>
       {/* Header */}
       <div className="flex items-start justify-between">
-        <h3 className="font-semibold">Document</h3>
+        <h3 className="care-text-heading">Document</h3>
         <Button
           size="sm"
           variant="ghost"

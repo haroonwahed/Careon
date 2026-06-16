@@ -62,12 +62,12 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
       {validations.length === 0 && (
         <CarePanel className="p-4 border border-emerald-500/40 bg-emerald-500/15">
           <div className="flex items-start gap-3">
-            <CheckCircle2 size={20} className="text-emerald-300 flex-shrink-0 mt-0.5" aria-hidden="true" />
+            <CheckCircle2 size={20} className="text-care-success-solid flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
-              <p className="text-sm font-medium text-emerald-300">
+              <p className="text-sm font-medium text-care-success-solid">
                 Samenvatting compleet
               </p>
-              <p className="text-xs text-emerald-300/80 mt-1">
+              <p className="text-xs text-care-success-solid mt-1">
                 Alle vereiste velden zijn ingevuld en gevalideerd.
               </p>
             </div>

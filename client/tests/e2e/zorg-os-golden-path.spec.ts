@@ -38,7 +38,7 @@ test("Zorg OS golden path — gemeente → matching → provider scope → accep
   await loginAs(page, gemeenteUser, gemeentePw);
 
   await page.goto(`${GOLDEN_PATH_BASE_URL}/dashboard/`);
-  await expect(page.getByRole("heading", { name: "Coördinatie" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Regiekamer" })).toBeVisible();
   await expect(page.getByTestId("care-sidebar")).toBeVisible();
 
   await clickSidebarNav(page, /Aanmeldingen/);

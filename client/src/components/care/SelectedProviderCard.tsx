@@ -92,11 +92,11 @@ export function SelectedProviderCard({
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Users size={14} className={hasCapacity ? "text-emerald-300" : "text-destructive"} />
+            <Users size={14} className={hasCapacity ? "text-care-success-solid" : "text-destructive"} />
             <span className="text-xs text-muted-foreground">Capaciteit</span>
           </div>
           <p className={`font-semibold text-sm ${
-            hasCapacity ? "text-emerald-300" : "text-destructive"
+            hasCapacity ? "text-care-success-solid" : "text-destructive"
           }`}>
             {provider.availableSpots}/{provider.capacity}
           </p>
@@ -104,19 +104,19 @@ export function SelectedProviderCard({
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Star size={14} className="text-emerald-300" />
+            <Star size={14} className="text-care-success-solid" />
             <span className="text-xs text-muted-foreground">Rating</span>
           </div>
-          <p className="font-semibold text-sm text-emerald-300">{provider.rating.toFixed(1)}</p>
+          <p className="font-semibold text-sm text-care-success-solid">{provider.rating.toFixed(1)}</p>
         </div>
         
         <div>
           <div className="flex items-center gap-1.5 mb-1">
-            <Clock size={14} className={fastResponse ? "text-emerald-300" : "text-amber-300"} />
+            <Clock size={14} className={fastResponse ? "text-care-success-solid" : "text-care-warning-solid"} />
             <span className="text-xs text-muted-foreground">Reactietijd</span>
           </div>
           <p className={`font-semibold text-sm ${
-            fastResponse ? "text-emerald-300" : "text-amber-300"
+            fastResponse ? "text-care-success-solid" : "text-care-warning-solid"
           }`}>
             {provider.responseTime}u
           </p>
@@ -140,16 +140,16 @@ export function SelectedProviderCard({
       {hasReasons ? (
         <div className="mb-5 p-4 rounded-lg border border-cyan-500/40 bg-cyan-500/15">
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <TrendingUp size={16} className="text-cyan-300" />
+            <TrendingUp size={16} className="text-care-info-solid" />
             Waarom deze aanbieder?
           </h3>
           <ul className="space-y-2">
             {reasons!.slice(0, 3).map((reason, idx) => (
               <li key={idx} className="flex items-start gap-2.5">
                 {reason.positive ? (
-                  <CheckCircle2 size={14} className="mt-0.5 text-emerald-300 flex-shrink-0" />
+                  <CheckCircle2 size={14} className="mt-0.5 text-care-success-solid flex-shrink-0" />
                 ) : (
-                  <AlertCircle size={14} className="mt-0.5 text-amber-300 flex-shrink-0" />
+                  <AlertCircle size={14} className="mt-0.5 text-care-warning-solid flex-shrink-0" />
                 )}
                 <span className="text-xs text-muted-foreground leading-relaxed break-words">
                   {reason.text}
@@ -169,11 +169,11 @@ export function SelectedProviderCard({
           <div className="grid grid-cols-2 gap-4">
             {tradeOffs.pros.length > 0 && (
               <div>
-                <p className="text-xs font-semibold text-emerald-300 mb-2">+ Voordelen</p>
+                <p className="text-xs font-semibold text-care-success-solid mb-2">+ Voordelen</p>
                 <ul className="space-y-1.5">
                   {tradeOffs.pros.map((pro, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-emerald-300 text-xs">•</span>
+                      <span className="text-care-success-solid text-xs">•</span>
                       <span className="text-xs text-muted-foreground leading-relaxed break-words">{pro}</span>
                     </li>
                   ))}

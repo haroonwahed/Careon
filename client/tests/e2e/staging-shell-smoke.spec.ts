@@ -22,7 +22,7 @@ async function login(page: import("@playwright/test").Page, username: string, pa
   await page.goto(new URL("/login/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
   await page.getByLabel("Gebruikersnaam").fill(username);
-  await page.getByLabel("Wachtwoord").fill(password);
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(
@@ -44,7 +44,7 @@ test("gemeente smoke: Coordination shell mounts", async ({ page }) => {
   await login(page, pilotDemoGemeenteUsername(), pilotDemoGemeentePassword());
   await page.goto(new URL("/coordination", BASE_URL).toString());
   await expect(page.getByTestId("care-sidebar")).toBeVisible({ timeout: 45_000 });
-  await expect(page.getByRole("heading", { name: /Coördinatie/i })).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole("heading", { name: /Regiekamer/i })).toBeVisible({ timeout: 45_000 });
 });
 
 test("provider smoke: Reacties route still mounts (cross-check)", async ({ page }) => {

@@ -360,7 +360,10 @@ describe("Care accessibility smoke: core pages", () => {
 
     const { container } = renderWithA11y(<SystemAwarenessPage onCaseClick={vi.fn()} />);
     expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
-    expect(screen.getByTestId("coordination-dominant-primary-cta")).toBeVisible();
+    // Regiekamer is an action-list: the dominant action is the (role="button") worklist rows.
+    const worklistItems = screen.getAllByTestId("coordination-worklist-item");
+    expect(worklistItems.length).toBeGreaterThan(0);
+    expect(worklistItems[0]).toBeVisible();
     await expectNoA11yViolations(container, "Coördinatie");
   });
 

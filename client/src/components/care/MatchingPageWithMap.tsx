@@ -550,7 +550,7 @@ export function MatchingPageWithMap({
                 Terug naar casus
               </Button>
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-[22px] font-bold tracking-tight md:text-[26px]">
+                <h1 className="care-text-title">
                   Matching voor casus {formatMatchingCaseTitle(caseId)}
                 </h1>
                 <span
@@ -569,7 +569,7 @@ export function MatchingPageWithMap({
               </p>
               {incompleteCode === "SUMMARY_INCOMPLETE" ? (
                 <p
-                  className="rounded-lg border border-amber-500/35 bg-amber-500/10 px-3 py-2 text-[12px] text-amber-100"
+                  className="rounded-lg border bg-care-warning-bg text-care-warning-text border-care-warning-border px-3 py-2 text-[12px]"
                   role="status"
                 >
                   Casusoverzicht nog incompleet — live matchscores volgen zodra het casusoverzicht gereed is. Onderstaande rangorde blijft indicatief.
@@ -619,13 +619,13 @@ export function MatchingPageWithMap({
                         "flex size-10 items-center justify-center rounded-xl border text-muted-foreground",
                         step.state === "done" && "border-primary/50 bg-primary/15 text-primary",
                         step.state === "current" && "border-primary/60 bg-primary/20 text-primary shadow-md",
-                        step.state === "pending" && "border-amber-500/40 bg-amber-500/10 text-amber-200",
+                        step.state === "pending" && "bg-care-warning-bg text-care-warning-text border-care-warning-border",
                         step.state === "idle" && "border-white/10 bg-background/50",
                       )}
                     >
                       <step.Icon className="size-5" aria-hidden />
                     </div>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">{step.label}</p>
+                    <p className="care-text-eyebrow text-muted-foreground">{step.label}</p>
                   </div>
                   {idx < arr.length - 1 ? (
                     <div className="flex h-8 w-4 shrink-0 items-center self-start pt-4" aria-hidden>
@@ -649,7 +649,7 @@ export function MatchingPageWithMap({
             )}
 
             {scenarioMessage && (
-              <div className="mb-4 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-200">
+              <div className="mb-4 rounded-2xl border bg-care-info-bg text-care-info-text border-care-info-border px-4 py-3 text-sm">
                 {scenarioMessage}
               </div>
             )}
@@ -723,7 +723,7 @@ export function MatchingPageWithMap({
                 </button>
               </div>
 
-              <div className="hidden gap-4 border-b border-border/60 pb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
+              <div className="hidden gap-4 border-b border-border/60 pb-2 care-text-eyebrow text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
                 <span className="sr-only">Rang</span>
                 <span>Aanbieder</span>
                 <span className="text-center">Advies</span>
@@ -769,7 +769,7 @@ export function MatchingPageWithMap({
                                   {item.provider.name.slice(0, 1)}
                                 </div>
                                 <div className="min-w-0 flex-1 space-y-1.5">
-                                  <h3 className="truncate text-[15px] font-semibold leading-tight text-foreground">{item.provider.name}</h3>
+                                  <h3 className="truncate care-text-subheading text-foreground">{item.provider.name}</h3>
                                   <p className="text-[12px] text-muted-foreground">
                                     {item.provider.region}{item.distance != null ? ` · ${item.distance.toFixed(1)} km` : ""}
                                   </p>
@@ -854,7 +854,7 @@ export function MatchingPageWithMap({
 
                           {item.warnings.length > 0 ? (
                             <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2 text-sm">
-                              <p className="text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-400">Let op</p>
+                              <p className="care-text-eyebrow text-amber-700 dark:text-amber-400">Let op</p>
                               <ul className="mt-1 space-y-1 text-muted-foreground">
                                 {item.warnings.map((w) => (
                                   <li key={w} className="flex gap-2">
@@ -912,7 +912,7 @@ export function MatchingPageWithMap({
                                   {row.provider.name.slice(0, 1)}
                                 </div>
                                 <div className="min-w-0 space-y-1.5">
-                                  <h3 className="truncate text-[15px] font-semibold text-foreground">{row.provider.name}</h3>
+                                  <h3 className="truncate care-text-subheading text-foreground">{row.provider.name}</h3>
                                   <p className="text-[12px] text-muted-foreground">
                                     {row.provider.region} · {row.provider.type}
                                   </p>
@@ -1050,7 +1050,7 @@ export function MatchingPageWithMap({
                         key={`map-option-${item.provider.id}`}
                         className={cn(
                           "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                          item.provider.availableSpots > 0 ? "bg-emerald-500/15 text-emerald-200" : "bg-muted text-muted-foreground",
+                          item.provider.availableSpots > 0 ? "bg-care-success-bg text-care-success-text" : "bg-muted text-muted-foreground",
                         )}
                       >
                         {item.provider.name}
@@ -1074,7 +1074,7 @@ export function MatchingPageWithMap({
         <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[360px]">
           <div className="rounded-[22px] border border-border/60 bg-card/45 p-4 shadow-sm">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Waarom deze match?</h3>
+              <h3 className="care-text-subheading text-foreground">Waarom deze match?</h3>
               <InlineHelpChip
                 title="Waarom deze aanbieder?"
                 triggerLabel="Waarom deze aanbieder?"
@@ -1105,7 +1105,7 @@ export function MatchingPageWithMap({
 
           <div className="care-hover-card rounded-[22px] border border-border/60 bg-card/40 p-4 shadow-sm">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Huidige voorkeuren</h3>
+              <h3 className="care-text-subheading text-foreground">Huidige voorkeuren</h3>
               <Button variant="ghost" size="sm" type="button" className="h-8 text-xs text-primary" onClick={() => scrollToFocusZone()}>
                 Aanpassen
               </Button>
@@ -1135,7 +1135,7 @@ export function MatchingPageWithMap({
 
           <div className="care-hover-card rounded-[22px] border border-border/60 bg-card/40 p-4 shadow-sm">
             <div className="flex items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold text-foreground">Alternatieven (lagere score)</h3>
+              <h3 className="care-text-subheading text-foreground">Alternatieven (lagere score)</h3>
               <span
                 className="rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums text-white"
                 style={{ backgroundColor: MATCH_BRAND }}

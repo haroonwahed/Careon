@@ -175,7 +175,7 @@ async function loginAs(page: import("@playwright/test").Page, username: string, 
   await page.goto(new URL("/login/", BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
   await page.getByLabel("Gebruikersnaam").fill(username);
-  await page.getByLabel("Wachtwoord").fill(password);
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   const loginError = page.getByText("Ongeldige gebruikersnaam of wachtwoord. Probeer opnieuw.");

@@ -389,7 +389,7 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                       )}
                       status={(
                         <span title={item.matchConfidenceLabel ?? statusLabel}>
-                          <CareDominantStatus className={cn(item.isBlocked ? "border-red-500/35 bg-red-500/10 text-red-200" : undefined)}>
+                          <CareDominantStatus className={cn(item.isBlocked ? "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border" : undefined)}>
                             {statusLabel}
                           </CareDominantStatus>
                         </span>

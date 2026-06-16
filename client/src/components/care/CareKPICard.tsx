@@ -34,8 +34,8 @@ export function CareKPICard({
       border: "border-destructive/35",
     },
     warning: {
-      icon: "text-amber-300",
-      value: "text-amber-200",
+      icon: "text-care-warning-solid",
+      value: "text-care-warning-solid",
       border: "border-amber-500/35",
     },
     normal: {
@@ -44,8 +44,8 @@ export function CareKPICard({
       border: "border-border",
     },
     positive: {
-      icon: "text-emerald-300",
-      value: "text-emerald-200",
+      icon: "text-care-success-solid",
+      value: "text-care-success-solid",
       border: "border-emerald-500/35",
     }
   };
@@ -68,7 +68,7 @@ export function CareKPICard({
 
       {trend && (
         <div className="mt-4 flex items-center gap-2 text-xs">
-          <span className={trend.direction === "up" ? "text-destructive" : "text-emerald-300"}>
+          <span className={trend.direction === "up" ? "text-destructive" : "text-care-success-solid"}>
             {trend.direction === "up" ? "↑" : "↓"} {Math.abs(trend.value)}%
           </span>
           <span className="text-muted-foreground">{trend.label}</span>

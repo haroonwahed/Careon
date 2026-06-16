@@ -156,19 +156,19 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
                   {urgencyConfig.label}
                 </CareMetaChip>
                 {urgencyValidated && (
-                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border border-emerald-500/40 bg-emerald-500/15 text-emerald-300">
+                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border bg-care-success-bg text-care-success-text border-care-success-border">
                     <ShieldCheck className="w-3 h-3" />
                     Gevalideerde urgentie
                   </CareMetaChip>
                 )}
                 {!urgencyValidated && urgencyApplied && (
-                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border border-amber-500/40 bg-amber-500/15 text-amber-300">
+                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border bg-care-warning-bg text-care-warning-text border-care-warning-border">
                     <Clock className="w-3 h-3" />
                     Urgentie aangevraagd
                   </CareMetaChip>
                 )}
                 {!urgencyValidated && urgencyDocumentPresent && (urgency === "urgent" || urgency === "warning") && (
-                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border border-amber-500/40 bg-amber-500/15 text-amber-300">
+                  <CareMetaChip className="inline-flex items-center gap-1 whitespace-nowrap border bg-care-warning-bg text-care-warning-text border-care-warning-border">
                     <AlertTriangle className="w-3 h-3" />
                     Urgentie vereist een geldige urgentieverklaring
                   </CareMetaChip>

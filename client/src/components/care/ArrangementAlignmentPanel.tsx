@@ -112,10 +112,10 @@ function ArrangementSuggestionCard({
     >
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             {hintIndex === 0 ? "Beste match" : `Alternatief ${hintIndex}`}
           </p>
-          <h3 className="text-[15px] font-semibold leading-snug text-foreground line-clamp-2">
+          <h3 className="care-text-subheading text-foreground line-clamp-2">
             {hint.target_label}
           </h3>
           <p className="text-[12px] text-muted-foreground">{municipalityLine}</p>
@@ -218,7 +218,7 @@ function ArrangementAlignmentCompact({
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             Arrangement-advies
           </p>
           <p className="text-[12px] text-muted-foreground">Advies, geen automatische toewijzing.</p>
@@ -229,8 +229,8 @@ function ArrangementAlignmentCompact({
       </div>
 
       <article className="mt-3 rounded-lg bg-muted/20 px-3 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">Beste match</p>
-        <h3 className="mt-1 text-[15px] font-semibold leading-snug text-foreground line-clamp-2">{topHint.target_label}</h3>
+        <p className="care-text-eyebrow text-muted-foreground">Beste match</p>
+        <h3 className="mt-1 care-text-subheading text-foreground line-clamp-2">{topHint.target_label}</h3>
         <div className="mt-2 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
           <span>Matchkwaliteit</span>
           <span className="font-semibold text-foreground">{pct}%</span>
@@ -396,10 +396,10 @@ export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full
           <LayoutGrid size={18} aria-hidden />
         </span>
         <div className="min-w-0 flex-1 space-y-1">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             Arrangement-afstemming (advies)
           </p>
-          <h2 className="text-base font-semibold leading-tight text-foreground sm:text-[17px]">
+          <h2 className="care-text-heading text-foreground">
             Vergelijk aangevraagde zorg met arrangementreferenties
           </h2>
           <p className="max-w-3xl text-[13px] leading-relaxed text-muted-foreground">
@@ -420,7 +420,7 @@ export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full
       <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
         {/* LEFT — requested care */}
         <div className="w-full shrink-0 space-y-2 xl:w-[min(100%,260px)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             Aangevraagde zorg
           </p>
           <div className="rounded-xl border border-border/55 bg-background/40 p-3.5">
@@ -464,7 +464,7 @@ export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full
 
         {/* CENTER — suggestions */}
         <div className="min-w-0 flex-1 space-y-3">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             Suggesties (max. 3)
           </p>
           <div className="space-y-3">
@@ -510,7 +510,7 @@ export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full
 
         {/* RIGHT — decision context */}
         <aside className="w-full shrink-0 space-y-3 xl:w-[min(100%,280px)]">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+          <p className="care-text-eyebrow text-muted-foreground">
             Besliscontext
           </p>
           <div className="rounded-xl border border-border/55 bg-background/40 p-3.5 space-y-3">
@@ -537,7 +537,7 @@ export function ArrangementAlignmentPanel({ caseId, careContext, variant = "full
               </li>
             </ul>
             <div className="border-t border-border/50 pt-3 space-y-2">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <p className="care-text-eyebrow text-muted-foreground">
                 Volgende stap
               </p>
               <p className="text-[12px] leading-snug text-muted-foreground">

@@ -96,7 +96,7 @@ export async function loginAs(page: import("@playwright/test").Page, username: s
   await page.goto(new URL("/login/", GOLDEN_PATH_BASE_URL).toString());
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
   await page.getByLabel("Gebruikersnaam").fill(username);
-  await page.getByLabel("Wachtwoord").fill(password);
+  await page.getByLabel("Wachtwoord", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Inloggen" }).click();
   await page.waitForURL(/\/dashboard\/?(\?.*)?$/, { timeout: 45_000 });
   await expect(
@@ -283,10 +283,12 @@ export async function seedGoldenPathCases(page: import("@playwright/test").Page)
   const assignGolden = await postJson(page, `/care/api/cases/${goldenCaseId}/matching/action/`, {
     action: "assign",
     provider_id: providerTwo.id,
+    // Assigning the golden provider is a manual override of the engine ranking; the backend
+    // requires a reason (OVERRIDE_REASON_REQUIRED) for any non-recommended assignment.
+    override_reason: "E2E golden-path: deterministische aanbiederselectie voor rehearsal",
   });
   if (!assignGolden.ok) {
-    // Seed shape may evolve: the case could already be in provider review, in which case the backend
-    // correctly rejects re-assigning.
+    // Already past matching on a warm re-run — the backend correctly rejects re-assigning.
     expect(String(assignGolden.text)).toContain("Ongeldige workflow-overgang");
   }
 
