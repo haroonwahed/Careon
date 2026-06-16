@@ -374,9 +374,9 @@ export function MatchingQueuePage({ onCaseClick, onNavigateToCasussen }: Matchin
                       leading={(
                         <CareMetaChip className={cn(
                           "inline-flex h-7 items-center gap-1.5 px-2.5 text-[11px] font-semibold",
-                          item.isBlocked ? "border-red-500/45 bg-red-500/10 text-foreground" : "border-border/60 bg-card/55 text-muted-foreground",
+                          item.isBlocked ? "border-care-urgent-border/60 bg-care-urgent-bg text-foreground" : "border-border/60 bg-card/55 text-muted-foreground",
                         )}>
-                          <span className={cn("size-2 rounded-full", item.isBlocked ? "bg-red-500" : item.urgency === "critical" ? "bg-amber-400" : "bg-primary")} aria-hidden />
+                          <span className={cn("size-2 rounded-full", item.isBlocked ? "bg-care-urgent-solid" : item.urgency === "critical" ? "bg-care-warning-solid" : "bg-primary")} aria-hidden />
                           {urgencyLabel(item)}
                         </CareMetaChip>
                       )}

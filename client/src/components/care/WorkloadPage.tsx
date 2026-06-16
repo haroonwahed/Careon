@@ -156,8 +156,8 @@ function CasussenInboxRow({
       accentTone={item.isBlocked ? "critical" : "neutral"}
       titleAriaLabel={`Open casus ${caseId}`}
       leading={(
-        <CareMetaChip className="inline-flex h-7 items-center gap-1.5 border-red-500/45 bg-red-500/10 px-2.5 text-[11px] font-semibold text-foreground">
-          <span className="size-2 rounded-full bg-red-500" aria-hidden />
+        <CareMetaChip className="inline-flex h-7 items-center gap-1.5 border-care-urgent-border/60 bg-care-urgent-bg px-2.5 text-[11px] font-semibold text-foreground">
+          <span className="size-2 rounded-full bg-care-urgent-solid" aria-hidden />
           {urgencyLabel}
         </CareMetaChip>
       )}

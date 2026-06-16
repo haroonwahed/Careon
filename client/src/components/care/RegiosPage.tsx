@@ -350,16 +350,16 @@ export function RegiosPage({
                 </div>
                 <div className="hidden items-center gap-3 text-[11px] text-muted-foreground sm:flex">
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-green-400" /> Normaal
+                    <span className="h-2 w-2 rounded-full bg-care-success-solid" /> Normaal
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-amber-400" /> Druk
+                    <span className="h-2 w-2 rounded-full bg-care-warning-solid" /> Druk
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-red-400" /> Tekort
+                    <span className="h-2 w-2 rounded-full bg-care-urgent-solid" /> Tekort
                   </span>
                   <span className="inline-flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full bg-red-600" /> Kritiek
+                    <span className="h-2 w-2 rounded-full bg-care-urgent-solid opacity-80" /> Kritiek
                   </span>
                 </div>
               </div>
@@ -389,10 +389,10 @@ export function RegiosPage({
                         <div className="relative h-2 overflow-hidden rounded-full bg-muted/20">
                           <div
                             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
-                              region.status === "kritiek" ? "bg-red-600" :
-                              utilization >= 90 ? "bg-red-400" :
-                              utilization >= 75 ? "bg-amber-400" :
-                              "bg-green-400"
+                              region.status === "kritiek" ? "bg-care-urgent-solid opacity-80" :
+                              utilization >= 90 ? "bg-care-urgent-solid" :
+                              utilization >= 75 ? "bg-care-warning-solid" :
+                              "bg-care-success-solid"
                             }`}
                             style={{ width: `${utilization}%` }}
                           />
@@ -482,26 +482,26 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
     stabiel: {
       label: "Stabiel",
       color: "text-care-success-solid",
-      bg: "bg-green-500/10",
-      border: "border-green-500/30"
+      bg: "bg-care-success-bg",
+      border: "border-care-success-border"
     },
     druk: {
       label: "Druk",
       color: "text-care-warning-solid",
-      bg: "bg-amber-500/10",
-      border: "border-amber-500/30"
+      bg: "bg-care-warning-bg",
+      border: "border-care-warning-border"
     },
     tekort: {
       label: "Tekort",
       color: "text-care-urgent-solid",
-      bg: "bg-red-500/10",
-      border: "border-red-500/30"
+      bg: "bg-care-urgent-bg",
+      border: "border-care-urgent-border"
     },
     kritiek: {
       label: "Kritiek",
       color: "text-care-urgent-solid",
-      bg: "bg-red-600/15",
-      border: "border-red-500/50"
+      bg: "bg-care-urgent-bg",
+      border: "border-care-urgent-border"
     }
   };
 
@@ -604,9 +604,9 @@ function RegionCard({ region, onClick, onViewGemeenten, onViewProviders }: Regio
         <div className="relative h-2 bg-muted/20 rounded-full overflow-hidden">
           <div
             className={`absolute inset-y-0 left-0 rounded-full transition-all duration-500 ${
-              utilization >= 90 ? "bg-red-400" :
-              utilization >= 75 ? "bg-amber-400" :
-              "bg-green-400"
+              utilization >= 90 ? "bg-care-urgent-solid" :
+              utilization >= 75 ? "bg-care-warning-solid" :
+              "bg-care-success-solid"
             }`}
             style={{ width: `${utilization}%` }}
           />
