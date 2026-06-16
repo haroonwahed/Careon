@@ -27,6 +27,14 @@ done
 
 mkdir -p logs
 
+# Build the SPA shell on first run (index.html is gitignored; it must be generated locally).
+SPA_INDEX="$ROOT_DIR/theme/static/spa/index.html"
+if [[ ! -f "$SPA_INDEX" ]]; then
+  echo "[dev_up] SPA shell not found — running npm run build (first-time setup)..."
+  npm run build --prefix "$ROOT_DIR/client"
+  echo "[dev_up] SPA build complete."
+fi
+
 start_proc() {
   local name="$1"
   local pid_file="$2"
