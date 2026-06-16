@@ -23,7 +23,7 @@ import {
   LoadingState,
 } from "./CareDesignPrimitives";
 import { CareSlaCountdown } from "./CareSlaCountdown";
-import { slaTargetHoursForStatus } from "../../lib/careSla";
+import { slaCountdownFromHours, slaTargetHoursForStatus } from "../../lib/careSla";
 import { cn } from "../ui/utils";
 
 interface IntakeListPageProps {
@@ -85,6 +85,7 @@ function requestBadge(view: IntakeListPageProps["view"]): { title: string; descr
 
 export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved, role = "zorgaanbieder" }: IntakeListPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [breachOnly, setBreachOnly] = useState(false);
   const [submittingCaseId, setSubmittingCaseId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
   const { cases, loading, error, refetch } = useCases({ q: searchQuery });
@@ -99,7 +100,15 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
   );
 
   const summary = requestBadge(view);
-  const visibleCases = view === "requests" ? pendingRequests : intakeCases;
+  const allVisibleCases = view === "requests" ? pendingRequests : intakeCases;
+  const breachedCases = useMemo(
+    () => allVisibleCases.filter((c) => {
+      const target = slaTargetHoursForStatus(c.status, c.urgency);
+      return target != null && slaCountdownFromHours(c.wachttijd * 24, target).status === "breached";
+    }),
+    [allVisibleCases],
+  );
+  const visibleCases = breachOnly ? breachedCases : allVisibleCases;
   const attentionMessage =
     feedback ??
     (visibleCases.length > 0
@@ -168,9 +177,27 @@ export function IntakeListPage({ onCaseClick, view = "intake", onRequestApproved
             title={<span id="intake-werkvoorraad-heading">Werkvoorraad</span>}
             meta={
               <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
-                <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-muted/30 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
-                  {visibleCases.length} casussen
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="inline-flex w-fit items-center rounded-full border border-border/60 bg-muted/30 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
+                    {allVisibleCases.length} casussen
+                  </span>
+                  {breachedCases.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setBreachOnly((v) => !v)}
+                      className={cn(
+                        "inline-flex w-fit items-center gap-1 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold transition-colors",
+                        breachOnly
+                          ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text"
+                          : "border-care-urgent-border/60 bg-care-urgent-bg/30 text-care-urgent-text hover:bg-care-urgent-bg",
+                      )}
+                      aria-pressed={breachOnly}
+                    >
+                      {breachedCases.length} verlopen SLA
+                      {breachOnly && <span aria-hidden> ×</span>}
+                    </button>
+                  )}
+                </div>
                 <CareSearchFiltersBar
                   variant="workspace"
                   className="px-0"

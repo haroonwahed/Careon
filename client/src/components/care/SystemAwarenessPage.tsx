@@ -366,26 +366,28 @@ function phaseMatchesFlowStep(item: CoordinationDecisionOverviewItem, stepId: Re
   }
 }
 
-function rowNextActionLabel(item: CoordinationDecisionOverviewItem): string {
+type ActionVariant = "blocking" | "active" | "waiting" | "default";
+
+function rowNextAction(item: CoordinationDecisionOverviewItem): { label: string; variant: ActionVariant } {
   const actionCode = (item.next_best_action?.action ?? "").toUpperCase();
   switch (actionCode) {
     case "COMPLETE_CASE_DATA":
     case "GENERATE_SUMMARY":
-      return "Maak casus compleet";
-    case "START_MATCHING":
-      return "Start matching";
+      return { label: "Maak casus compleet", variant: "blocking" };
     case "VALIDATE_MATCHING":
-      return "Controleer voorstel";
+      return { label: "Controleer voorstel", variant: "blocking" };
+    case "START_MATCHING":
+      return { label: "Start matching", variant: "active" };
     case "SEND_TO_PROVIDER":
-      return "Vraag reactie aan";
-    case "WAIT_PROVIDER_RESPONSE":
-      return "Wacht op reactie";
+      return { label: "Vraag reactie aan", variant: "active" };
     case "FOLLOW_UP_PROVIDER":
-      return "Herinner aanbieder";
+      return { label: "Herinner aanbieder", variant: "active" };
     case "CONFIRM_PLACEMENT":
-      return "Bevestig plaatsing";
+      return { label: "Bevestig plaatsing", variant: "active" };
     case "START_INTAKE":
-      return "Plan intake";
+      return { label: "Plan intake", variant: "active" };
+    case "WAIT_PROVIDER_RESPONSE":
+      return { label: "Wacht op reactie", variant: "waiting" };
     default:
       break;
   }
@@ -393,8 +395,20 @@ function rowNextActionLabel(item: CoordinationDecisionOverviewItem): string {
     item.next_best_action?.action ?? "",
     item.next_best_action?.label ?? undefined,
   );
-  return actionLabel?.trim() || item.next_best_action?.label?.trim() || "Bekijk casus";
+  const label = actionLabel?.trim() || item.next_best_action?.label?.trim() || "Bekijk casus";
+  return { label, variant: "default" };
 }
+
+const ACTION_BUTTON_CLASSES: Record<ActionVariant, string> = {
+  blocking:
+    "bg-foreground text-background hover:bg-foreground/85 border-transparent shadow-sm",
+  active:
+    "border-primary/50 text-primary bg-primary/5 hover:bg-primary/10 hover:border-primary/70",
+  waiting:
+    "border-border/40 text-muted-foreground/60 cursor-default pointer-events-none",
+  default:
+    "border-border/60 text-foreground bg-white dark:bg-muted/10 hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary shadow-sm",
+};
 
 function rowRegionLabel(item: CoordinationDecisionOverviewItem): string {
   return (
@@ -431,11 +445,11 @@ function regiekamerFlowStepIcon(stepId: RegiekamerFlowStepId) {
 
 type RegiekamerPhaseTab = "alle" | RegiekamerFlowStepId | "hoog-urgent";
 
-function getPriorityDotClass(item: CoordinationDecisionOverviewItem): string {
-  if (item.priority_score >= 100 || item.urgency === "critical") return "bg-care-urgent-solid";
-  if (item.priority_score >= 70 || item.urgency === "high") return "bg-care-warning-solid";
-  if (item.priority_score >= 30) return "bg-yellow-300"; // mid-level: categorical, no semantic token
-  return "bg-muted-foreground/40";
+function getPriorityAccentClass(item: CoordinationDecisionOverviewItem): string {
+  if (item.priority_score >= 100 || item.urgency === "critical") return "border-l-care-urgent-solid";
+  if (item.priority_score >= 70 || item.urgency === "high") return "border-l-care-warning-solid";
+  if (item.priority_score >= 30) return "border-l-yellow-300";
+  return "border-l-border/60";
 }
 
 function getPhaseStyleInfo(phase: string): { label: string; className: string } {
@@ -479,8 +493,8 @@ function RegiekamerWorkRow({
 }) {
   const rowId = String(item.case_id);
   const phaseInfo = getPhaseStyleInfo(item.phase);
-  const dotClass = getPriorityDotClass(item);
-  const actionLabel = rowNextActionLabel(item);
+  const accentClass = getPriorityAccentClass(item);
+  const { label: actionLabel, variant: actionVariant } = rowNextAction(item);
   const blokkadeTitle = item.top_blocker?.title || item.top_alert?.title || null;
   const blokkadeMsg = item.top_blocker?.message || item.top_alert?.message || null;
   const hasBlocker = !!(blokkadeTitle || blokkadeMsg);
@@ -492,25 +506,23 @@ function RegiekamerWorkRow({
       data-testid="coordination-worklist-item"
       role="listitem"
       className={cn(
-        "group relative grid cursor-pointer items-start border-b border-border/25",
-        "min-w-[860px] grid-cols-[1.75rem_minmax(13rem,2fr)_minmax(11rem,1.6fr)_9rem_minmax(8rem,1fr)_minmax(10rem,1.1fr)]",
-        "gap-x-4 px-6 py-3.5 transition-colors",
-        isSelected ? "bg-violet-50/60 dark:bg-primary/8" : "hover:bg-muted/10",
+        "group relative grid cursor-pointer items-start rounded-lg border border-l-[3px] transition-colors",
+        "min-w-[860px] grid-cols-[minmax(13rem,2fr)_minmax(11rem,1.6fr)_9rem_minmax(8rem,1fr)_minmax(10rem,1.1fr)]",
+        "gap-x-4 px-5 py-4",
+        accentClass,
+        isSelected
+          ? "border-primary/30 bg-primary/5 dark:bg-primary/8"
+          : "border-border/50 bg-white/[0.02] hover:border-border/80 hover:bg-white/[0.04] dark:bg-white/[0.015] dark:hover:bg-white/[0.035]",
       )}
     >
-      {/* Stretched primary action — selects/opens the row. Keyboard-accessible native
-          button; kept a sibling (not parent) of the action button to avoid nested interactives. */}
+      {/* Stretched primary action — kept a sibling (not parent) of the action button to avoid nested interactives. */}
       <button
         type="button"
         aria-pressed={isSelected}
         aria-label={`Open casus ${item.case_reference}: ${item.title}`}
         onClick={() => onSelect(rowId)}
-        className="absolute inset-0 z-0 cursor-pointer rounded-none border-0 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+        className="absolute inset-0 z-0 cursor-pointer rounded-lg border-0 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
       />
-      {/* Priority dot */}
-      <div className="flex pt-1 items-center justify-center">
-        <span className={cn("size-2 rounded-full shrink-0", dotClass)} aria-hidden />
-      </div>
 
       {/* Casus: fase badge + ref + name */}
       <div className="min-w-0">
@@ -527,31 +539,31 @@ function RegiekamerWorkRow({
             </span>
           )}
         </div>
-        <span className="mt-1 block text-[13px] font-medium leading-snug text-foreground line-clamp-2">
+        <span className="mt-1 block text-[13px] font-semibold leading-snug text-foreground line-clamp-2">
           {item.title}
         </span>
       </div>
 
-      {/* Blokkade — prominent, readable */}
+      {/* Blokkade — compact badge chip + muted detail line */}
       <div className="min-w-0">
         {hasBlocker ? (
-          <div className="flex items-start gap-1.5">
-            <AlertCircle size={13} className="mt-0.5 shrink-0 text-red-500 dark:text-red-400" aria-hidden />
-            <div className="min-w-0">
-              {blokkadeTitle && (
-                <p className="text-[12px] font-semibold leading-snug text-red-700 dark:text-red-400 line-clamp-1">{blokkadeTitle}</p>
-              )}
-              {blokkadeMsg && (
-                <p className="mt-0.5 text-[12px] leading-snug text-red-600/80 dark:text-red-400/70 line-clamp-2">{blokkadeMsg}</p>
-              )}
-            </div>
+          <div className="min-w-0">
+            {blokkadeTitle && (
+              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-care-urgent-border bg-care-urgent-bg px-1.5 py-0.5 text-[11px] font-semibold text-care-urgent-text">
+                <AlertCircle size={11} className="shrink-0" aria-hidden />
+                <span className="truncate">{blokkadeTitle}</span>
+              </span>
+            )}
+            {blokkadeMsg && (
+              <p className="mt-1 text-[12px] leading-snug text-muted-foreground line-clamp-2">{blokkadeMsg}</p>
+            )}
           </div>
         ) : (
           <span className="text-[12px] text-muted-foreground/50 italic">Geen blokkade</span>
         )}
       </div>
 
-      {/* Eigenaar — readable name */}
+      {/* Eigenaar */}
       <div className="flex items-start gap-2 pt-0.5">
         <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
           {currentUserName.charAt(0).toUpperCase()}
@@ -559,15 +571,18 @@ function RegiekamerWorkRow({
         <span className="text-[12px] leading-snug text-foreground/80 pt-0.5">{ownerDisplay}</span>
       </div>
 
-      {/* Wachttijd — SLA-aftelling: time-to-breach, niet verstreken tijd */}
+      {/* Wachttijd — SLA-aftelling */}
       <CareSlaCountdown item={item} />
 
-      {/* Volgende actie — always visible. relative/z-10 keeps it clickable above the stretched select button. */}
+      {/* Volgende actie */}
       <div className="relative z-10 flex items-start pt-0.5">
         <button
           type="button"
           aria-label={actionLabel}
-          className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-white dark:bg-muted/10 px-3 py-1.5 text-[12px] font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary transition-colors"
+          className={cn(
+            "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors",
+            ACTION_BUTTON_CLASSES[actionVariant],
+          )}
           onClick={(e) => { e.stopPropagation(); onCaseClick(rowId); }}
         >
           {actionLabel}
@@ -595,7 +610,22 @@ function CasusdetailsPanel({
   const isHoog = item.priority_score >= 70 || item.urgency === "high" || item.urgency === "critical";
   const blokkadeTitle = item.top_blocker?.title || item.top_alert?.title || null;
   const blokkadeMsg = item.top_blocker?.message || item.top_alert?.message || null;
-  const ctaLabel = rowNextActionLabel(item);
+  const { label: ctaLabel, variant: ctaVariant } = rowNextAction(item);
+  const actionItems = (() => {
+    const result: Array<{ label: string; due: string; urgent: boolean }> = [];
+    const blockerTitle = item.top_blocker?.title ?? item.top_blocker?.message ?? null;
+    const alertTitle = item.top_alert?.title ?? null;
+    if (blockerTitle) {
+      result.push({ label: `Los op: ${blockerTitle}`, due: "Vandaag", urgent: true });
+    }
+    if (alertTitle && alertTitle !== blockerTitle) {
+      result.push({ label: alertTitle, due: "Binnen 2 dagen", urgent: false });
+    }
+    if (result.length === 0 && ctaVariant !== "waiting" && ctaVariant !== "default") {
+      result.push({ label: ctaLabel, due: "Spoedig", urgent: ctaVariant === "blocking" });
+    }
+    return result;
+  })();
   const region = rowRegionLabel(item);
   const regionDisplay = region === "Regio ontbreekt" ? null : region;
   const provider = (item.assigned_provider ?? "").trim() || "Niet toegewezen";
@@ -765,26 +795,28 @@ function CasusdetailsPanel({
 
         <div className="px-5 py-4">
           <p className="mb-3 care-text-eyebrow text-muted-foreground/60">Actiepunten</p>
-          <div className="space-y-3">
-            {[
-              { label: blokkadeTitle ? `Los op: ${blokkadeTitle}` : "Controleer en upload geldige verwijzing", due: "Vandaag", urgent: true },
-              { label: "Vraag aanvullende informatie op bij verwijzer", due: "Binnen 2 dagen", urgent: false },
-            ].map((action, idx) => (
-              <div key={idx} className="flex items-start gap-2.5">
-                <div className="mt-0.5 size-4 shrink-0 rounded border-2 border-border/60 cursor-pointer hover:border-primary transition-colors" />
-                <p className="flex-1 text-[13px] text-foreground">{action.label}</p>
-                <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", action.urgent ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400")}>
-                  {action.due}
-                </span>
-              </div>
-            ))}
-          </div>
+          {actionItems.length > 0 ? (
+            <div className="space-y-3">
+              {actionItems.map((action, idx) => (
+                <div key={idx} className="flex items-start gap-2.5">
+                  <div className="mt-0.5 size-4 shrink-0 rounded border-2 border-border/60 cursor-pointer hover:border-primary transition-colors" />
+                  <p className="flex-1 text-[13px] text-foreground">{action.label}</p>
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", action.urgent ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400")}>
+                    {action.due}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[13px] text-muted-foreground/60 italic">Geen openstaande actiepunten.</p>
+          )}
         </div>
       </div>
 
       <div className="border-t border-border/40 p-5">
         <Button
           type="button"
+          disabled={ctaVariant === "waiting"}
           className="flex w-full items-center justify-between gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
           onClick={() => onCaseClick(String(item.case_id))}
         >
@@ -940,7 +972,9 @@ export function SystemAwarenessPage({
     if (!t) {
       return 0;
     }
-    return Math.max(0, (t.provider_sla_breaches ?? 0) + (t.high_priority_alerts ?? 0));
+    // sla_breaches (added in backend v2) counts every SLA-tagged item across all phases.
+    // Fall back to provider_sla_breaches for older API responses.
+    return Math.max(0, t.sla_breaches ?? t.provider_sla_breaches ?? 0);
   }, [data?.totals]);
 
   const applyCriticalDrillFilter = useCallback(() => {
@@ -1144,33 +1178,67 @@ export function SystemAwarenessPage({
         </div>
       </div>
 
-      {/* KPI cards */}
-      <div className="mb-5 grid grid-cols-3 gap-3">
-        <button
-          type="button"
-          onClick={applyCriticalDrillFilter}
-          className="flex flex-col gap-1 rounded-xl border border-red-200/60 dark:border-red-900/30 bg-red-50/60 dark:bg-red-950/20 px-4 py-3 text-left transition-colors hover:bg-red-100/60 dark:hover:bg-red-950/30"
-        >
-          <span className="text-[28px] font-bold tabular-nums leading-none text-red-600 dark:text-red-400">{directActieCount}</span>
-          <span className="text-[12px] font-medium text-red-700/70 dark:text-red-400/70">Direct actie nodig</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setIssueFilter("blockers")}
-          className="flex flex-col gap-1 rounded-xl border border-red-200/60 dark:border-red-900/30 bg-red-50/40 dark:bg-red-950/10 px-4 py-3 text-left transition-colors hover:bg-red-100/50 dark:hover:bg-red-950/20"
-        >
-          <span className="text-[28px] font-bold tabular-nums leading-none text-red-500 dark:text-red-400">{blockedCount}</span>
-          <span className="text-[12px] font-medium text-red-600/70 dark:text-red-400/70">Geblokkeerd</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setIssueFilter("SLA")}
-          className="flex flex-col gap-1 rounded-xl border border-amber-200/60 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/15 px-4 py-3 text-left transition-colors hover:bg-amber-100/60 dark:hover:bg-amber-950/25"
-        >
-          <span className="text-[28px] font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400">{slaRiskTotal}</span>
-          <span className="text-[12px] font-medium text-amber-700/70 dark:text-amber-400/70">Termijnrisico</span>
-        </button>
-      </div>
+      {/* KPI cards — clickable filters. Active card shows ring + dismiss cue; clicking again clears. */}
+      {(() => {
+        const isDirectActieActive = priorityFilter === "critical";
+        const isGeblokkeerddActive = issueFilter === "blockers" && priorityFilter !== "critical";
+        const isTermijnrisicoActive = issueFilter === "SLA";
+        return (
+          <div className="mb-5 grid grid-cols-3 gap-3">
+            <button
+              type="button"
+              aria-pressed={isDirectActieActive}
+              onClick={() => isDirectActieActive ? clearFilters() : applyCriticalDrillFilter()}
+              className={cn(
+                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
+                isDirectActieActive
+                  ? "border-red-400/70 dark:border-red-500/50 bg-red-100/70 dark:bg-red-950/40 ring-2 ring-red-400/30 dark:ring-red-500/25"
+                  : "border-red-200/60 dark:border-red-900/30 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/60 dark:hover:bg-red-950/30",
+              )}
+            >
+              <span className="text-[28px] font-bold tabular-nums leading-none text-red-600 dark:text-red-400">{directActieCount}</span>
+              <span className="flex items-center gap-1 text-[12px] font-medium text-red-700/70 dark:text-red-400/70">
+                Direct actie nodig
+                {isDirectActieActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={isGeblokkeerddActive}
+              onClick={() => isGeblokkeerddActive ? setIssueFilter("all") : setIssueFilter("blockers")}
+              className={cn(
+                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
+                isGeblokkeerddActive
+                  ? "border-red-400/70 dark:border-red-500/50 bg-red-100/60 dark:bg-red-950/35 ring-2 ring-red-400/30 dark:ring-red-500/25"
+                  : "border-red-200/60 dark:border-red-900/30 bg-red-50/40 dark:bg-red-950/10 hover:bg-red-100/50 dark:hover:bg-red-950/20",
+              )}
+            >
+              <span className="text-[28px] font-bold tabular-nums leading-none text-red-500 dark:text-red-400">{blockedCount}</span>
+              <span className="flex items-center gap-1 text-[12px] font-medium text-red-600/70 dark:text-red-400/70">
+                Geblokkeerd
+                {isGeblokkeerddActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
+              </span>
+            </button>
+            <button
+              type="button"
+              aria-pressed={isTermijnrisicoActive}
+              onClick={() => isTermijnrisicoActive ? setIssueFilter("all") : setIssueFilter("SLA")}
+              className={cn(
+                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
+                isTermijnrisicoActive
+                  ? "border-amber-400/70 dark:border-amber-500/50 bg-amber-100/70 dark:bg-amber-950/35 ring-2 ring-amber-400/30 dark:ring-amber-500/25"
+                  : "border-amber-200/60 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/15 hover:bg-amber-100/60 dark:hover:bg-amber-950/25",
+              )}
+            >
+              <span className="text-[28px] font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400">{slaRiskTotal}</span>
+              <span className="flex items-center gap-1 text-[12px] font-medium text-amber-700/70 dark:text-amber-400/70">
+                Termijnrisico
+                {isTermijnrisicoActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
+              </span>
+            </button>
+          </div>
+        );
+      })()}
       {loading && (
         <LoadingState title="Regiekamer synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
       )}
@@ -1334,17 +1402,16 @@ export function SystemAwarenessPage({
           {/* Table */}
           <div className="overflow-x-auto">
             <div
-              className="grid min-w-[860px] gap-x-4 border-b border-border/25 px-6 py-2 care-text-eyebrow text-muted-foreground"
-              style={{ gridTemplateColumns: "1.75rem minmax(13rem,2fr) minmax(11rem,1.6fr) 9rem minmax(8rem,1fr) minmax(10rem,1.1fr)" }}
+              className="grid min-w-[860px] gap-x-4 border-b border-border/35 px-[calc(1.25rem+3px)] py-2 care-text-eyebrow text-muted-foreground"
+              style={{ gridTemplateColumns: "minmax(13rem,2fr) minmax(11rem,1.6fr) 9rem minmax(8rem,1fr) minmax(10rem,1.1fr)" }}
             >
-              <span aria-hidden />
               <span>Casus</span>
               <span>Blokkade</span>
               <span>Eigenaar</span>
               <span>Wachttijd ↓</span>
               <span>Volgende actie</span>
             </div>
-            <div role="list">
+            <div role="list" className="flex flex-col gap-1.5 p-3">
               {tabFilteredItems.map((item) => (
                 <RegiekamerWorkRow
                   key={item.case_id}

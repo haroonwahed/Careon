@@ -429,6 +429,7 @@ def build_coordination_decision_overview(
         "critical_blockers": 0,
         "high_priority_alerts": 0,
         "provider_sla_breaches": 0,
+        "sla_breaches": 0,
         "repeated_rejections": 0,
         "intake_delays": 0,
         "urgency_applications_open": 0,
@@ -446,6 +447,7 @@ def build_coordination_decision_overview(
             totals["critical_blockers"] += int(any(str(blocker.get("severity") or "").lower() == "critical" for blocker in (evaluation.get("blockers") or [])))
             totals["high_priority_alerts"] += int(_has_any_alert_severity(evaluation.get("alerts") or [], {"high", "critical"}))
             totals["provider_sla_breaches"] += int(_has_item_code(evaluation.get("alerts") or [], {"PROVIDER_REVIEW_PENDING_SLA"}))
+            totals["sla_breaches"] += int("SLA" in (item.get("issue_tags") or []))
             totals["repeated_rejections"] += int(
                 _has_item_code(evaluation.get("risks") or [], {"REPEATED_PROVIDER_REJECTIONS"})
                 or _has_item_code(evaluation.get("alerts") or [], _REJECTION_CODES)

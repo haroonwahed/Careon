@@ -242,6 +242,9 @@ class RegiekamerDecisionOverviewTests(TestCase):
         payload = self._fetch_payload()
 
         self.assertEqual(payload["totals"]["provider_sla_breaches"], 1)
+        # sla_breaches counts all SLA-tagged items (>= provider_sla_breaches)
+        self.assertGreaterEqual(payload["totals"]["sla_breaches"], payload["totals"]["provider_sla_breaches"])
+        self.assertIn("sla_breaches", payload["totals"])
 
     def test_totals_include_repeated_rejection(self):
         self._login(self.admin)

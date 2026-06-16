@@ -24,7 +24,7 @@ import {
   PrimaryActionButton,
 } from "./CareDesignPrimitives";
 import { CareSlaCountdown } from "./CareSlaCountdown";
-import { SLA_TARGET_HOURS } from "../../lib/careSla";
+import { slaCountdownFromHours, SLA_TARGET_HOURS } from "../../lib/careSla";
 
 /** Placement phases where the 5-day intake-start SLA is ticking (confirmed, awaiting intake). */
 const INTAKE_SLA_FILTER_KEYS = new Set(["startdate", "startdetails", "confirmed"]);
@@ -363,6 +363,7 @@ export function PlacementTrackingPage({
 }: PlacementTrackingPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<PlacementFilterKey>("all");
+  const [breachOnly, setBreachOnly] = useState(false);
   const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
   const [regionFilter, setRegionFilter] = useState("all");
   const [providerFilter, setProviderFilter] = useState("all");
@@ -399,10 +400,18 @@ export function PlacementTrackingPage({
   }, [placementRows, regionFilter, providerFilter]);
 
   const counts = useMemo(() => countByFilter(scopedRows), [scopedRows]);
-  const visibleRows = useMemo(
+  const allVisibleRows = useMemo(
     () => filterPlacementRows(scopedRows, activeFilter),
     [scopedRows, activeFilter],
   );
+  const breachedRows = useMemo(
+    () => allVisibleRows.filter((row) =>
+      INTAKE_SLA_FILTER_KEYS.has(row.filterKey) &&
+      slaCountdownFromHours(row.item.daysInCurrentPhase * 24, SLA_TARGET_HOURS.intakeStart).status === "breached",
+    ),
+    [allVisibleRows],
+  );
+  const visibleRows = breachOnly ? breachedRows : allVisibleRows;
 
   const topRow = visibleRows[0] ?? null;
   const hasVisibleRows = visibleRows.length > 0;
@@ -457,11 +466,27 @@ export function PlacementTrackingPage({
         <CareSectionHeader
           className="lg:items-center"
           title={(
-            <div id="plaatsingen-werkvoorraad-heading" className="inline-flex items-center gap-2">
+            <div id="plaatsingen-werkvoorraad-heading" className="inline-flex items-center gap-2 flex-wrap">
               <span>Werkvoorraad</span>
               <span className="inline-flex items-center rounded-full border border-border/60 bg-card/55 px-2.5 py-0.5 text-[12px] font-semibold text-muted-foreground">
-                {visibleRows.length}
+                {allVisibleRows.length}
               </span>
+              {breachedRows.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setBreachOnly((v) => !v)}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[12px] font-semibold transition-colors",
+                    breachOnly
+                      ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text"
+                      : "border-care-urgent-border/60 bg-care-urgent-bg/30 text-care-urgent-text hover:bg-care-urgent-bg",
+                  )}
+                  aria-pressed={breachOnly}
+                >
+                  {breachedRows.length} verlopen SLA
+                  {breachOnly && <span aria-hidden> ×</span>}
+                </button>
+              )}
             </div>
           )}
           meta={(

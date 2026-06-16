@@ -60,6 +60,7 @@ export interface CoordinationDecisionOverviewTotals {
   critical_blockers: number;
   high_priority_alerts: number;
   provider_sla_breaches: number;
+  sla_breaches?: number;
   repeated_rejections: number;
   intake_delays: number;
   urgency_applications_open?: number;
