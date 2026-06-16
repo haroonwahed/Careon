@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Building2,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -11,7 +9,6 @@ import {
   Home,
   Mail,
   MoreHorizontal,
-  PanelRight,
   Phone,
   RefreshCw,
   Search,
@@ -29,29 +26,9 @@ import {
   SheetTitle,
 } from "../ui/sheet";
 import { cn } from "../ui/utils";
-import { CareAttentionSurface, CareInfoPopover } from "./CareUnifiedPage";
+import { CareInfoPopover } from "./CareUnifiedPage";
 import {
-  GuidanceContextBanner,
-  InlineHelpChip,
-} from "../guidance";
-import { FieldHelperBox } from "../ui/form";
-import {
-  CareMetaChip,
-  CarePageScaffold,
-  CareAlertCard,
-  CareFlowBoard,
-  CareFlowStepCard,
-  CareSection,
-  CareSectionBody,
-  CareSectionHeader,
   CareOperationalSelect,
-  CareSearchFiltersBar,
-  CareDominantStatus,
-  CareOperationalQueueHeader,
-  CareWorkListCard,
-  CareWorkRow,
-  CareQueueInlineAction,
-  CareWorkspaceSection,
   EmptyState,
   ErrorState,
   LoadingState,
@@ -60,7 +37,6 @@ import { useCoordinationDecisionOverview } from "../../hooks/useCoordinationDeci
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { useRailCollapsed } from "../../hooks/useRailCollapsed";
 import { CoordinationNotesPanel } from "./CoordinationNotesPanel";
-import { CoordinationRailEdgeTab, CoordinationRailToggleButton } from "./CoordinationRailControls";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
 import type {
@@ -77,12 +53,9 @@ import {
 import {
   derivePhaseBoard,
   getDominantPhaseColumn,
-  type PhaseBoardColumn,
   type CoordinationListFilter,
   type CoordinationFlowPhase,
 } from "../../lib/coordinationCommandCenter";
-import { tokens } from "../../design/tokens";
-import { CARE_RHYTHM } from "../../lib/operationalRhythm";
 import {
   buildCoordinationNbaInstrumentationPayload,
   emitCoordinationNbaEvent,
@@ -335,9 +308,9 @@ function priorityLabel(score: number): string {
 function priorityBadgeClasses(score: number) {
   switch (priorityBand(score)) {
     case "critical":
-      return "border-red-500/35 bg-red-500/10 text-red-200";
+      return "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border";
     case "high":
-      return "border-amber-500/35 bg-amber-500/10 text-amber-100";
+      return "border bg-care-warning-bg text-care-warning-text border-care-warning-border";
     case "medium":
       return "border-border bg-muted/30 text-foreground";
     default:
@@ -348,10 +321,10 @@ function priorityBadgeClasses(score: number) {
 function severityBadgeClasses(severity?: string | null) {
   switch ((severity || "").toLowerCase()) {
     case "critical":
-      return "border-red-500/35 bg-red-500/10 text-red-100";
+      return "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border";
     case "high":
     case "warning":
-      return "border-amber-500/35 bg-amber-500/10 text-amber-100";
+      return "border bg-care-warning-bg text-care-warning-text border-care-warning-border";
     case "medium":
       return "border-border bg-muted/30 text-foreground";
     default:
@@ -374,11 +347,6 @@ function phaseCardIcon(phase: CoordinationFlowPhase) {
     default:
       return FileText;
   }
-}
-
-function renderQuickPhaseIcon(phase: CoordinationFlowPhase) {
-  const Icon = phaseCardIcon(phase);
-  return <Icon size={16} className="text-muted-foreground" aria-hidden />;
 }
 
 function imperativeCtaLabel(item: CoordinationDecisionOverviewItem): string | null {
@@ -934,7 +902,7 @@ function getPriorityDotClass(item: CoordinationDecisionOverviewItem): string {
   if (item.priority_score >= 100 || item.urgency === "critical") return "bg-red-500";
   if (item.priority_score >= 70 || item.urgency === "high") return "bg-orange-400";
   if (item.priority_score >= 30) return "bg-yellow-300";
-  return "bg-gray-300";
+  return "bg-muted-foreground/40";
 }
 
 function getPhaseStyleInfo(phase: string): { label: string; className: string } {
@@ -951,7 +919,7 @@ function getPhaseStyleInfo(phase: string): { label: string; className: string } 
   };
   return map[normalized] ?? {
     label: normalized.charAt(0).toUpperCase() + normalized.slice(1),
-    className: "bg-gray-100 text-gray-600 dark:bg-muted/40 dark:text-muted-foreground",
+    className: "bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground",
   };
 }
 
@@ -1014,7 +982,7 @@ function getSlaCountdown(item: CoordinationDecisionOverviewItem): SlaCountdown {
       remainingHours: Number.POSITIVE_INFINITY,
       label: formatDurationShort(elapsed),
       sublabel: `in ${phaseLabel}`,
-      className: "text-gray-500 dark:text-muted-foreground",
+      className: "text-muted-foreground",
     };
   }
 
@@ -1083,21 +1051,26 @@ function RegiekamerWorkRow({
   const ownerDisplay = formatOwnerName(currentUserName);
 
   return (
-    <article
+    <div
       data-care-work-row
       data-testid="coordination-worklist-item"
-      tabIndex={0}
-      role="button"
-      aria-pressed={isSelected}
+      role="listitem"
       className={cn(
-        "group grid cursor-pointer items-start border-b border-gray-100 dark:border-border/25",
+        "group relative grid cursor-pointer items-start border-b border-border/25",
         "min-w-[860px] grid-cols-[1.75rem_minmax(13rem,2fr)_minmax(11rem,1.6fr)_9rem_minmax(8rem,1fr)_minmax(10rem,1.1fr)]",
         "gap-x-4 px-6 py-3.5 transition-colors",
-        isSelected ? "bg-violet-50/60 dark:bg-primary/8" : "hover:bg-gray-50 dark:hover:bg-muted/10",
+        isSelected ? "bg-violet-50/60 dark:bg-primary/8" : "hover:bg-muted/10",
       )}
-      onClick={() => onSelect(rowId)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(rowId); } }}
     >
+      {/* Stretched primary action — selects/opens the row. Keyboard-accessible native
+          button; kept a sibling (not parent) of the action button to avoid nested interactives. */}
+      <button
+        type="button"
+        aria-pressed={isSelected}
+        aria-label={`Open casus ${item.case_reference}: ${item.title}`}
+        onClick={() => onSelect(rowId)}
+        className="absolute inset-0 z-0 cursor-pointer rounded-none border-0 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
+      />
       {/* Priority dot */}
       <div className="flex pt-1 items-center justify-center">
         <span className={cn("size-2 rounded-full shrink-0", dotClass)} aria-hidden />
@@ -1109,7 +1082,7 @@ function RegiekamerWorkRow({
           <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0", phaseInfo.className)}>
             {phaseInfo.label}
           </span>
-          <span className="font-mono text-[12px] font-semibold tracking-tight text-gray-500 dark:text-muted-foreground">
+          <span className="font-mono text-[12px] font-semibold tracking-tight text-muted-foreground">
             {item.case_reference}
           </span>
           {item.urgency_applied && (
@@ -1118,7 +1091,7 @@ function RegiekamerWorkRow({
             </span>
           )}
         </div>
-        <span className="mt-1 block text-[13px] font-medium leading-snug text-gray-900 dark:text-foreground line-clamp-2">
+        <span className="mt-1 block text-[13px] font-medium leading-snug text-foreground line-clamp-2">
           {item.title}
         </span>
       </div>
@@ -1138,7 +1111,7 @@ function RegiekamerWorkRow({
             </div>
           </div>
         ) : (
-          <span className="text-[12px] text-gray-400 dark:text-muted-foreground/50 italic">Geen blokkade</span>
+          <span className="text-[12px] text-muted-foreground/50 italic">Geen blokkade</span>
         )}
       </div>
 
@@ -1147,7 +1120,7 @@ function RegiekamerWorkRow({
         <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
           {currentUserName.charAt(0).toUpperCase()}
         </span>
-        <span className="text-[12px] leading-snug text-gray-700 dark:text-foreground/80 pt-0.5">{ownerDisplay}</span>
+        <span className="text-[12px] leading-snug text-foreground/80 pt-0.5">{ownerDisplay}</span>
       </div>
 
       {/* Wachttijd — SLA-aftelling: time-to-breach, niet verstreken tijd */}
@@ -1156,22 +1129,22 @@ function RegiekamerWorkRow({
           {sla.status === "breached" && <AlertCircle size={12} className="shrink-0" aria-hidden />}
           {sla.label}
         </p>
-        <p className="mt-0.5 text-[11px] text-gray-400 dark:text-muted-foreground/60">{sla.sublabel}</p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/60">{sla.sublabel}</p>
       </div>
 
-      {/* Volgende actie — always visible */}
-      <div className="flex items-start pt-0.5">
+      {/* Volgende actie — always visible. relative/z-10 keeps it clickable above the stretched select button. */}
+      <div className="relative z-10 flex items-start pt-0.5">
         <button
           type="button"
           aria-label={actionLabel}
-          className="flex items-center gap-1.5 rounded-lg border border-gray-200 dark:border-border/60 bg-white dark:bg-muted/10 px-3 py-1.5 text-[12px] font-semibold text-gray-800 dark:text-foreground shadow-sm hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary transition-colors"
+          className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-white dark:bg-muted/10 px-3 py-1.5 text-[12px] font-semibold text-foreground shadow-sm hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary transition-colors"
           onClick={(e) => { e.stopPropagation(); onCaseClick(rowId); }}
         >
           {actionLabel}
           <ChevronRight size={12} className="shrink-0 opacity-60" aria-hidden />
         </button>
       </div>
-    </article>
+    </div>
   );
 }
 
@@ -1200,15 +1173,15 @@ function CasusdetailsPanel({
 
   return (
     <aside
-      className="fixed inset-y-0 right-0 z-40 flex w-[380px] flex-col border-l border-gray-200 dark:border-border/60 bg-white dark:bg-card"
+      className="fixed inset-y-0 right-0 z-40 flex w-[380px] flex-col border-l border-border/60 bg-white dark:bg-card"
       style={{ boxShadow: "-4px 0 24px rgba(0,0,0,0.06)" }}
     >
-      <div className="flex items-center justify-between border-b border-gray-100 dark:border-border/40 px-5 py-3.5">
+      <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2.5 min-w-0">
           <span className={cn("shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold", phaseInfo.className)}>
             {phaseInfo.label}
           </span>
-          <span className="truncate font-mono text-[13px] font-semibold tracking-tight text-gray-900 dark:text-foreground">
+          <span className="truncate font-mono text-[13px] font-semibold tracking-tight text-foreground">
             {item.case_reference}
           </span>
         </div>
@@ -1216,43 +1189,43 @@ function CasusdetailsPanel({
           type="button"
           onClick={onClose}
           aria-label="Paneel sluiten"
-          className="ml-2 shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 dark:hover:bg-muted/30 hover:text-gray-700 dark:hover:text-foreground transition-colors"
+          className="ml-2 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
         >
           <X size={16} />
         </button>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="border-b border-gray-100 dark:border-border/40 px-5 py-4">
+        <div className="border-b border-border/40 px-5 py-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="text-[16px] font-bold leading-snug text-gray-900 dark:text-foreground">{item.title}</h2>
-              {regionDisplay && <p className="mt-0.5 text-[12px] text-gray-500 dark:text-muted-foreground">{regionDisplay}</p>}
+              <h2 className="care-text-heading text-foreground">{item.title}</h2>
+              {regionDisplay && <p className="mt-0.5 text-[12px] text-muted-foreground">{regionDisplay}</p>}
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
-              <button type="button" className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-muted/30 hover:text-gray-700 dark:hover:text-foreground transition-colors">
+              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <Phone size={14} />
               </button>
-              <button type="button" className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-muted/30 hover:text-gray-700 dark:hover:text-foreground transition-colors">
+              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <Mail size={14} />
               </button>
-              <button type="button" className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 dark:hover:bg-muted/30 hover:text-gray-700 dark:hover:text-foreground transition-colors">
+              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <MoreHorizontal size={14} />
               </button>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold", isHoog ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" : "bg-gray-100 text-gray-600 dark:bg-muted/40 dark:text-muted-foreground")}>
+            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold", isHoog ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" : "bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground")}>
               {isHoog ? "Hoog" : "Normaal"}
             </span>
-            <span className={cn("inline-flex items-center rounded-full bg-gray-100 dark:bg-muted/40 px-2.5 py-0.5 text-[11px] font-semibold", sla.className)}>
+            <span className={cn("inline-flex items-center rounded-full bg-muted/40 px-2.5 py-0.5 text-[11px] font-semibold", sla.className)}>
               {sla.label}
             </span>
           </div>
         </div>
 
         {blokkadeTitle && (
-          <div className="border-b border-gray-100 dark:border-border/40 px-5 py-3.5">
+          <div className="border-b border-border/40 px-5 py-3.5">
             <button
               type="button"
               className="flex w-full items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-3.5 py-3 text-left transition-colors hover:bg-red-100/60 dark:hover:bg-red-950/30"
@@ -1268,46 +1241,46 @@ function CasusdetailsPanel({
           </div>
         )}
 
-        <div className="border-b border-gray-100 dark:border-border/40 px-5 py-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-muted-foreground/60">Casusinfo</p>
+        <div className="border-b border-border/40 px-5 py-4">
+          <p className="mb-3 care-text-eyebrow text-muted-foreground/60">Casusinfo</p>
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3">
             <div>
-              <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">Fase</dt>
+              <dt className="text-[11px] text-muted-foreground">Fase</dt>
               <dd className="mt-0.5">
                 <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold", phaseInfo.className)}>{phaseInfo.label}</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">Urgentie</dt>
-              <dd className="mt-0.5 text-[13px] font-medium text-gray-800 dark:text-foreground">{isHoog ? "Hoog" : "Normaal"}</dd>
+              <dt className="text-[11px] text-muted-foreground">Urgentie</dt>
+              <dd className="mt-0.5 text-[13px] font-medium text-foreground">{isHoog ? "Hoog" : "Normaal"}</dd>
             </div>
             {regionDisplay && (
               <div>
-                <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">Gemeente</dt>
-                <dd className="mt-0.5 text-[13px] text-gray-800 dark:text-foreground">{regionDisplay}</dd>
+                <dt className="text-[11px] text-muted-foreground">Gemeente</dt>
+                <dd className="mt-0.5 text-[13px] text-foreground">{regionDisplay}</dd>
               </div>
             )}
             <div>
-              <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">Aanbieder</dt>
-              <dd className={cn("mt-0.5 text-[13px]", provider === "Niet toegewezen" ? "text-gray-400 dark:text-muted-foreground/60" : "text-gray-800 dark:text-foreground")}>{provider}</dd>
+              <dt className="text-[11px] text-muted-foreground">Aanbieder</dt>
+              <dd className={cn("mt-0.5 text-[13px]", provider === "Niet toegewezen" ? "text-muted-foreground/60" : "text-foreground")}>{provider}</dd>
             </div>
             <div>
-              <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">Eigenaar</dt>
+              <dt className="text-[11px] text-muted-foreground">Eigenaar</dt>
               <dd className="mt-0.5 flex items-center gap-1.5">
                 <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
                   {currentUserName.charAt(0).toUpperCase()}
                 </span>
-                <span className="text-[13px] text-gray-800 dark:text-foreground">{currentUserName}</span>
+                <span className="text-[13px] text-foreground">{currentUserName}</span>
               </dd>
             </div>
             <div>
-              <dt className="text-[11px] text-gray-400 dark:text-muted-foreground">SLA</dt>
+              <dt className="text-[11px] text-muted-foreground">SLA</dt>
               <dd className={cn("mt-0.5 text-[13px]", sla.className)}>{sla.label}</dd>
             </div>
           </dl>
         </div>
 
-        <div className="flex overflow-x-auto border-b border-gray-100 dark:border-border/40 px-5">
+        <div className="flex overflow-x-auto border-b border-border/40 px-5">
           {(
             [
               { id: "overzicht" as const, label: "Overzicht" },
@@ -1324,13 +1297,13 @@ function CasusdetailsPanel({
               className={cn(
                 "flex shrink-0 items-center gap-1 border-b-2 px-3 py-2.5 text-[12px] font-medium whitespace-nowrap transition-colors",
                 activeDetailTab === tab.id
-                  ? "border-gray-900 dark:border-foreground text-gray-900 dark:text-foreground"
-                  : "border-transparent text-gray-500 dark:text-muted-foreground hover:text-gray-800 dark:hover:text-foreground",
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
               )}
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={cn("rounded-full px-1.5 text-[10px] font-bold", activeDetailTab === tab.id ? "bg-gray-900/10 dark:bg-foreground/10 text-gray-900 dark:text-foreground" : "bg-gray-100 dark:bg-muted/40 text-gray-500 dark:text-muted-foreground")}>
+                <span className={cn("rounded-full px-1.5 text-[10px] font-bold", activeDetailTab === tab.id ? "bg-foreground/10 text-foreground" : "bg-muted/40 text-muted-foreground")}>
                   {tab.count}
                 </span>
               )}
@@ -1338,20 +1311,20 @@ function CasusdetailsPanel({
           ))}
         </div>
 
-        <div className="border-b border-gray-100 dark:border-border/40 px-5 py-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-muted-foreground/60">Doorstroom</p>
+        <div className="border-b border-border/40 px-5 py-4">
+          <p className="mb-3 care-text-eyebrow text-muted-foreground/60">Doorstroom</p>
           <div className="relative flex justify-between">
-            <div className="absolute inset-x-3 top-[11px] h-px bg-gray-200 dark:bg-border/40" aria-hidden />
+            <div className="absolute inset-x-3 top-[11px] h-px bg-border/40" aria-hidden />
             {REGIEKAMER_FLOW_STEPS.map((step, idx) => {
               const Icon = regiekamerFlowStepIcon(step.id);
               const isActive = idx === currentPhaseIdx || (currentPhaseIdx < 0 && idx === 0);
               const isDone = idx < (currentPhaseIdx >= 0 ? currentPhaseIdx : 0);
               return (
                 <div key={step.id} className="relative z-10 flex flex-col items-center gap-1.5">
-                  <div className={cn("flex size-[22px] items-center justify-center rounded-full border-2 transition-colors", isActive ? "border-primary bg-primary text-white shadow-sm shadow-primary/30" : isDone ? "border-primary/40 bg-primary/10 text-primary/80" : "border-gray-200 dark:border-border/50 bg-white dark:bg-card text-gray-400")}>
+                  <div className={cn("flex size-[22px] items-center justify-center rounded-full border-2 transition-colors", isActive ? "border-primary bg-primary text-white shadow-sm shadow-primary/30" : isDone ? "border-primary/40 bg-primary/10 text-primary/80" : "border-border/50 bg-white dark:bg-card text-muted-foreground")}>
                     <Icon size={11} className="text-current" />
                   </div>
-                  <span className={cn("max-w-[3.5rem] text-center text-[10px] leading-tight", isActive ? "font-semibold text-primary" : isDone ? "text-primary/60 dark:text-primary/50" : "text-gray-400 dark:text-muted-foreground/50")}>
+                  <span className={cn("max-w-[3.5rem] text-center text-[10px] leading-tight", isActive ? "font-semibold text-primary" : isDone ? "text-primary/60 dark:text-primary/50" : "text-muted-foreground/50")}>
                     {step.label}
                   </span>
                 </div>
@@ -1361,15 +1334,15 @@ function CasusdetailsPanel({
         </div>
 
         <div className="px-5 py-4">
-          <p className="mb-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-muted-foreground/60">Actiepunten</p>
+          <p className="mb-3 care-text-eyebrow text-muted-foreground/60">Actiepunten</p>
           <div className="space-y-3">
             {[
               { label: blokkadeTitle ? `Los op: ${blokkadeTitle}` : "Controleer en upload geldige verwijzing", due: "Vandaag", urgent: true },
               { label: "Vraag aanvullende informatie op bij verwijzer", due: "Binnen 2 dagen", urgent: false },
             ].map((action, idx) => (
               <div key={idx} className="flex items-start gap-2.5">
-                <div className="mt-0.5 size-4 shrink-0 rounded border-2 border-gray-300 dark:border-border/60 cursor-pointer hover:border-primary transition-colors" />
-                <p className="flex-1 text-[13px] text-gray-800 dark:text-foreground">{action.label}</p>
+                <div className="mt-0.5 size-4 shrink-0 rounded border-2 border-border/60 cursor-pointer hover:border-primary transition-colors" />
+                <p className="flex-1 text-[13px] text-foreground">{action.label}</p>
                 <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", action.urgent ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400")}>
                   {action.due}
                 </span>
@@ -1379,7 +1352,7 @@ function CasusdetailsPanel({
         </div>
       </div>
 
-      <div className="border-t border-gray-100 dark:border-border/40 p-5">
+      <div className="border-t border-border/40 p-5">
         <Button
           type="button"
           className="flex w-full items-center justify-between gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
@@ -1390,7 +1363,7 @@ function CasusdetailsPanel({
         </Button>
         <button
           type="button"
-          className="mt-3 w-full text-center text-[12px] text-gray-400 dark:text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors"
+          className="mt-3 w-full text-center text-[12px] text-muted-foreground hover:text-primary dark:hover:text-primary transition-colors"
           onClick={() => onCaseClick(String(item.case_id))}
         >
           Bekijk alle taken en details →
@@ -1765,7 +1738,7 @@ export function SystemAwarenessPage({
         data-testid="coordination-governance-queues"
         className="flex max-h-16 flex-wrap items-center gap-x-3 gap-y-2 rounded-lg bg-muted/20 px-3 py-2 shadow-sm"
       >
-        <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+        <span className="inline-flex shrink-0 items-center gap-1 care-text-eyebrow text-muted-foreground">
           Wachtrijen
           <CareInfoPopover
             ariaLabel="Uitleg wachtrijen"
@@ -2049,12 +2022,12 @@ export function SystemAwarenessPage({
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 pb-5">
         <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-gray-900 dark:text-foreground">Regiekamer</h1>
-          <p className="mt-0.5 text-[14px] text-gray-500 dark:text-muted-foreground">Stuur op doorstroom, blokkades en urgente casussen.</p>
+          <h1 className="care-text-title text-foreground">Regiekamer</h1>
+          <p className="mt-0.5 care-text-body text-muted-foreground">Stuur op doorstroom, blokkades en urgente casussen.</p>
         </div>
-        <div className="flex shrink-0 items-center gap-2 pt-1 text-[12px] text-gray-400 dark:text-muted-foreground">
+        <div className="flex shrink-0 items-center gap-2 pt-1 text-[12px] text-muted-foreground">
           {lastUpdateLabel && <span>{lastUpdateLabel}</span>}
-          <button type="button" onClick={refetch} aria-label="Vernieuwen" className="rounded p-0.5 hover:text-gray-700 dark:hover:text-foreground transition-colors">
+          <button type="button" onClick={refetch} aria-label="Vernieuwen" className="rounded p-0.5 hover:text-foreground transition-colors">
             <RefreshCw size={13} />
           </button>
         </div>
@@ -2155,11 +2128,11 @@ export function SystemAwarenessPage({
       {!loading && !error && coordinationListItems.length > 0 && (
         <div
           data-testid="coordination-uitvoerlijst"
-          className="overflow-hidden rounded-xl border border-gray-200 dark:border-border/60 bg-white dark:bg-card/45"
+          className="overflow-hidden rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)]"
           style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
         >
           {/* Phase tabs */}
-          <div className="flex overflow-x-auto border-b border-gray-100 dark:border-border/35 px-2">
+          <div className="flex overflow-x-auto border-b border-border/35 px-2">
             {(
               [
                 { id: "alle" as const, label: "Alle casussen" },
@@ -2178,12 +2151,12 @@ export function SystemAwarenessPage({
                 className={cn(
                   "flex shrink-0 items-center gap-1.5 border-b-2 px-3.5 py-3 text-[13px] font-medium whitespace-nowrap transition-colors",
                   activeTab === tab.id
-                    ? "border-gray-900 dark:border-foreground text-gray-900 dark:text-foreground"
-                    : "border-transparent text-gray-500 dark:text-muted-foreground hover:text-gray-800 dark:hover:text-foreground",
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
                 {tab.label}
-                <span className={cn("rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums", activeTab === tab.id ? "bg-gray-900/10 dark:bg-foreground/10 text-gray-900 dark:text-foreground" : "bg-gray-100 dark:bg-muted/40 text-gray-500 dark:text-muted-foreground")}>
+                <span className={cn("rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums", activeTab === tab.id ? "bg-foreground/10 text-foreground" : "bg-muted/40 text-muted-foreground")}>
                   {phaseTabCounts[tab.id]}
                 </span>
               </button>
@@ -2191,15 +2164,15 @@ export function SystemAwarenessPage({
           </div>
 
           {/* Toolbar */}
-          <div className="flex items-center gap-3 border-b border-gray-100 dark:border-border/35 px-4 py-2.5">
+          <div className="flex items-center gap-3 border-b border-border/35 px-4 py-2.5">
             <div className="relative max-w-xs flex-1">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" aria-hidden />
+              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
               <input
                 type="search"
                 placeholder="Zoek in werkvoorraad..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 w-full rounded-lg border border-gray-200 dark:border-border/50 bg-transparent pl-8 pr-3 text-[13px] text-gray-900 dark:text-foreground placeholder:text-gray-400 dark:placeholder:text-muted-foreground outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-colors"
+                className="h-8 w-full rounded-lg border border-border/50 bg-transparent pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground dark:placeholder:text-muted-foreground outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-colors"
               />
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -2210,7 +2183,7 @@ export function SystemAwarenessPage({
                   "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
                   showFiltersBar || filtersActive
                     ? "border-primary/40 bg-primary/5 text-primary dark:border-primary/30 dark:bg-primary/10"
-                    : "border-gray-200 dark:border-border/60 text-gray-600 dark:text-muted-foreground hover:border-gray-300 hover:text-gray-900 dark:hover:text-foreground",
+                    : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground",
                 )}
               >
                 <SlidersHorizontal size={13} aria-hidden />
@@ -2222,21 +2195,21 @@ export function SystemAwarenessPage({
 
           {/* Inline filters */}
           {showFiltersBar && (
-            <div className="border-b border-gray-100 dark:border-border/35 bg-gray-50/50 dark:bg-muted/5 px-4 py-3">
+            <div className="border-b border-border/35 bg-muted/40 dark:bg-muted/5 px-4 py-3">
               <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-gray-500 dark:text-muted-foreground">
+                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
                   Prioriteit
                   <CareOperationalSelect aria-label="Prioriteit" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}>
                     {Object.entries(PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                   </CareOperationalSelect>
                 </label>
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-gray-500 dark:text-muted-foreground">
+                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
                   Type
                   <CareOperationalSelect aria-label="Type" value={issueFilter} onChange={(e) => setIssueFilter(e.target.value as IssueFilter)}>
                     {Object.entries(ISSUE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
                   </CareOperationalSelect>
                 </label>
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-gray-500 dark:text-muted-foreground">
+                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
                   Rol
                   <CareOperationalSelect aria-label="Rol" value={ownershipFilter} onChange={(e) => setOwnershipFilter(e.target.value as OwnershipFilter)}>
                     {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
@@ -2250,7 +2223,7 @@ export function SystemAwarenessPage({
           {/* Table */}
           <div className="overflow-x-auto">
             <div
-              className="grid min-w-[860px] gap-x-4 border-b border-gray-100 dark:border-border/25 px-6 py-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-muted-foreground"
+              className="grid min-w-[860px] gap-x-4 border-b border-border/25 px-6 py-2 care-text-eyebrow text-muted-foreground"
               style={{ gridTemplateColumns: "1.75rem minmax(13rem,2fr) minmax(11rem,1.6fr) 9rem minmax(8rem,1fr) minmax(10rem,1.1fr)" }}
             >
               <span aria-hidden />
@@ -2272,7 +2245,7 @@ export function SystemAwarenessPage({
                 />
               ))}
               {tabFilteredItems.length === 0 && (
-                <div className="px-6 py-8 text-center text-[13px] text-gray-400 dark:text-muted-foreground">
+                <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">
                   Geen casussen in dit filter.
                 </div>
               )}
@@ -2280,18 +2253,18 @@ export function SystemAwarenessPage({
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-gray-100 dark:border-border/35 px-6 py-3">
-            <p className="text-[12px] text-gray-500 dark:text-muted-foreground">
+          <div className="flex items-center justify-between border-t border-border/35 px-6 py-3">
+            <p className="text-[12px] text-muted-foreground">
               {tabFilteredItems.length} {tabFilteredItems.length === 1 ? "resultaat" : "resultaten"}
             </p>
             <div className="flex items-center gap-1">
-              <button type="button" disabled aria-label="Vorige pagina" className="flex size-7 items-center justify-center rounded-md border border-gray-200 dark:border-border/60 text-gray-400 disabled:opacity-40">
+              <button type="button" disabled aria-label="Vorige pagina" className="flex size-7 items-center justify-center rounded-md border border-border/60 text-muted-foreground disabled:opacity-40">
                 <ChevronLeft size={13} aria-hidden />
               </button>
-              <button type="button" className="flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-gray-900 dark:bg-foreground px-1.5 text-[12px] font-medium text-white dark:text-background">
+              <button type="button" className="flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-foreground px-1.5 text-[12px] font-medium text-background">
                 1
               </button>
-              <button type="button" disabled aria-label="Volgende pagina" className="flex size-7 items-center justify-center rounded-md border border-gray-200 dark:border-border/60 text-gray-500 hover:bg-gray-50 dark:hover:bg-muted/20 disabled:opacity-40 transition-colors">
+              <button type="button" disabled aria-label="Volgende pagina" className="flex size-7 items-center justify-center rounded-md border border-border/60 text-muted-foreground hover:bg-muted/20 disabled:opacity-40 transition-colors">
                 <ChevronRight size={13} aria-hidden />
               </button>
             </div>
@@ -2309,204 +2282,5 @@ export function SystemAwarenessPage({
         />
       )}
     </div>
-  );
-}
-
-function CoordinationInsightsPanels({
-  gemeenteDisplayName,
-  activeCasesTotal,
-  avgDoorloopDays,
-  slaRiskTotal,
-  criticalBlockers,
-  phaseBoardColumns,
-  onCriticalClick,
-  onPhaseClick,
-  onNavigateCasussen,
-  onAfterAction,
-}: {
-  gemeenteDisplayName: string;
-  activeCasesTotal: number;
-  avgDoorloopDays: number;
-  slaRiskTotal: number;
-  criticalBlockers: number;
-  phaseBoardColumns: PhaseBoardColumn[];
-  onCriticalClick: () => void;
-  onPhaseClick: (phase: CoordinationFlowPhase) => void;
-  onNavigateCasussen: () => void;
-  onAfterAction?: () => void;
-}) {
-  const done = onAfterAction;
-
-  return (
-    <>
-      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background/40">
-            <Building2 size={18} className="text-primary" aria-hidden />
-          </div>
-          <div className="min-w-0 space-y-3">
-            <p className="text-sm font-semibold leading-tight text-foreground">{gemeenteDisplayName}</p>
-            <dl className="space-y-2 text-sm">
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <dt className="text-muted-foreground">Actieve aanvragen</dt>
-                <dd className="min-w-0 break-words text-right tabular-nums font-semibold text-foreground">{activeCasesTotal}</dd>
-              </div>
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <dt className="text-muted-foreground">Gem. doorlooptijd</dt>
-                <dd className="min-w-0 break-words text-right tabular-nums text-sm text-muted-foreground">{avgDoorloopDays} dagen</dd>
-              </div>
-              <div className="flex min-w-0 items-start justify-between gap-3">
-                <dt className="text-muted-foreground">Doorlooptijd {'>'} SLA</dt>
-                <dd className={cn("min-w-0 break-words text-right tabular-nums font-semibold", slaRiskTotal > 0 ? "text-red-400" : "text-foreground")}>
-                  {slaRiskTotal}
-                </dd>
-              </div>
-            </dl>
-            <button
-              type="button"
-              className="text-sm font-semibold text-primary underline-offset-4 hover:underline"
-              onClick={() => {
-                onNavigateCasussen();
-                done?.();
-              }}
-              data-testid="coordination-bekijk-aanvragen-rail"
-            >
-              Naar aanvragen
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <section className="rounded-xl border border-border/50 bg-card/40 p-4 shadow-sm">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Snelle acties</p>
-        <ul className="mt-3 space-y-2">
-          <li>
-            <button
-              type="button"
-              data-testid="coordination-quick-critical"
-              onClick={() => {
-                onCriticalClick();
-                done?.();
-              }}
-              className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-border/80 hover:bg-muted/25"
-            >
-              <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                <AlertCircle size={16} className="shrink-0 text-red-400" aria-hidden />
-                Kritieke aanvragen
-              </span>
-              <span className="tabular-nums font-semibold text-foreground">{criticalBlockers}</span>
-            </button>
-          </li>
-          {phaseBoardColumns.map((col) => (
-            <li key={col.phase}>
-              <button
-                type="button"
-                data-testid={`coordination-quick-phase-${col.phase}`}
-                onClick={() => {
-                  onPhaseClick(col.phase);
-                  done?.();
-                }}
-                className="flex w-full items-center justify-between gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-2.5 text-left text-sm transition hover:border-border/80 hover:bg-muted/25"
-              >
-                <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
-                  <span className="shrink-0 opacity-90">{renderQuickPhaseIcon(col.phase)}</span>
-                  <span className="truncate">{col.label}</span>
-                </span>
-                <span className="tabular-nums font-semibold text-foreground">{col.count}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          className="mt-3 w-full text-left text-sm font-semibold text-primary underline-offset-4 hover:underline"
-          onClick={() => {
-            onNavigateCasussen();
-            done?.();
-          }}
-          data-testid="coordination-quick-werkvoorraad-link"
-        >
-          Bekijk werkvoorraad
-        </button>
-      </section>
-
-      <CoordinationNotesPanel testId="coordination-notes-panel" onAfterAction={done} />
-    </>
-  );
-}
-
-function CoordinationWorkItemCard({
-  item,
-  onCaseClick,
-}: {
-  item: CoordinationDecisionOverviewItem;
-  onCaseClick: (caseId: string) => void;
-}) {
-  const primaryAction = imperativeCtaLabel(item);
-  const normalizedPrimaryAction = normalizeWorklistActionLabel(item, primaryAction);
-  const summaryState = summaryWorkflowState(item);
-  const hasPrimaryNba = normalizedPrimaryAction != null && normalizedPrimaryAction.trim() !== "" && !summaryState?.processing;
-  const blockerDetail = actionableProblemLabel(item);
-  const processingOnly = Boolean(summaryState && summaryState.actionLabel == null);
-  const actionLabel = processingOnly
-    ? summaryState!.statusLabel
-    : hasPrimaryNba
-      ? normalizedPrimaryAction!
-      : "Bekijk casus";
-  const taxonomySummary = buildTaxonomySummaryLabel(item);
-
-  return (
-    <CareWorkRow
-      testId="coordination-worklist-item"
-      density="operational"
-      queueVariant="command"
-      leading={
-        <CareMetaChip className={cn("h-6 px-2 text-[11px] font-semibold", priorityBadgeClasses(item.priority_score))}>
-          {priorityLabel(item.priority_score)}
-        </CareMetaChip>
-      }
-      title={item.title}
-      context={
-        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-          <span className="font-mono text-[11px] text-muted-foreground/90">{item.case_reference}</span>
-          {item.urgency_applied ? (
-            <CareMetaChip className="text-[11px] font-medium text-amber-300">
-              Urgentie aangevraagd
-            </CareMetaChip>
-          ) : null}
-          {taxonomySummary ? (
-            <CareMetaChip className="max-w-[min(100%,16rem)] truncate text-[11px]" title={taxonomySummary}>
-              {taxonomySummary}
-            </CareMetaChip>
-          ) : null}
-        </div>
-      }
-      status={
-        <CareDominantStatus
-          className={cn(
-            "h-auto max-w-full whitespace-normal border px-2 py-1 text-left text-[11px] font-semibold leading-snug",
-            severityBadgeClasses(issueTone(item)),
-          )}
-        >
-          <span className="line-clamp-2">{blockerDetail}</span>
-        </CareDominantStatus>
-      }
-      time={
-        <CareMetaChip>
-          <Clock3 size={12} aria-hidden />
-          {formatHours(item.hours_in_current_state)}
-        </CareMetaChip>
-      }
-      contextInfo={<CareMetaChip>{ownerLabel(item)}</CareMetaChip>}
-      actionLabel={actionLabel}
-      actionVariant={processingOnly ? "ghost" : hasPrimaryNba ? "primary" : "ghost"}
-      hideAction={processingOnly}
-      accentTone={item.priority_score >= 80 ? "critical" : item.priority_score >= 50 ? "warning" : "neutral"}
-      onOpen={() => onCaseClick(String(item.case_id))}
-      onAction={(event) => {
-        event.stopPropagation();
-        onCaseClick(String(item.case_id));
-      }}
-    />
   );
 }

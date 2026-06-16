@@ -688,7 +688,11 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
         {/* CONTENT */}
         <main data-testid="care-app-main" className="flex-1 flex flex-col overflow-hidden">
-          <div id="main-content" className="flex-1 overflow-y-auto">
+          <div
+            id="main-content"
+            className="flex-1 overflow-y-auto"
+            style={{ backgroundColor: "var(--surface-2)" }}
+          >
             <CareAppFrame
               className="min-h-full"
               noVerticalPadding={currentPage === "coordination"}
