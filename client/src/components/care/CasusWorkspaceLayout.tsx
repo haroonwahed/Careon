@@ -240,8 +240,7 @@ export function CasusWorkspaceLayout({
             ref={heroBandRef}
             data-testid="casus-hero-band"
             className={cn(
-              "rounded-2xl border border-border/55 bg-card/35 p-5 md:p-6",
-              flowProgress ? "mt-6" : undefined,
+              flowProgress ? "mt-3 border-t border-border/30 pt-4" : undefined,
             )}
           >
             {caseHero}

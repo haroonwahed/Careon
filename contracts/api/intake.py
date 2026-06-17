@@ -93,7 +93,11 @@ def _serialize_unique_municipality_choices(field):
         if dedupe_key in seen:
             continue
         seen.add(dedupe_key)
-        region = obj.regions.filter(region_type=RegionType.JEUGDREGIO).first()
+        # Use Python-level filtering to avoid bypassing the prefetch cache.
+        region = next(
+            (r for r in obj.regions.all() if getattr(r, 'region_type', None) == RegionType.JEUGDREGIO),
+            None,
+        )
         region_label = (getattr(region, 'region_name', '') or str(region)).strip() if region else ''
         serialized.append({
             'value': str(obj.pk),
@@ -229,7 +233,10 @@ def intake_form_options_api(request):
                 organization_memberships__is_active=True,
             ).distinct().order_by('first_name', 'last_name', 'username')
 
-        return JsonResponse(_build_intake_form_payload(form, coordinator_field))
+        response = JsonResponse(_build_intake_form_payload(form, coordinator_field))
+        # Options are reference data that rarely change; allow browser/CDN to cache for 5 min.
+        response['Cache-Control'] = 'private, max-age=300'
+        return response
     except Exception as e:
         return JsonResponse({'error': f'Intake-form kon niet worden opgebouwd: {str(e)}'}, status=500)
 

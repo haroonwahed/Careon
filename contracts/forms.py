@@ -7,7 +7,6 @@ from tempfile import NamedTemporaryFile
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
-from django.db.models import Q
 from django.core.exceptions import ValidationError
 from .models import (
     CareCase, PlacementRequest, CareTask, CareSignal,
@@ -807,15 +806,12 @@ class CaseIntakeProcessForm(forms.ModelForm):
             visible_in_mvp=True,
         ).select_related('main_category').order_by('main_category__order', 'order', 'name')
 
+        # Jeugdregios are geographic units — not tenant-scoped. Show all active
+        # jeugdregios so that municipalities always resolve to a valid region.
         jeugdregio_qs = RegionalConfiguration.objects.filter(
             status=RegionalConfiguration.Status.ACTIVE,
             region_type=RegionType.JEUGDREGIO,
-        )
-        if self._organization is not None:
-            jeugdregio_qs = jeugdregio_qs.filter(
-                Q(organization=self._organization) | Q(organization__isnull=True)
-            )
-        jeugdregio_qs = jeugdregio_qs.order_by('region_name')
+        ).order_by('region_name')
 
         # Intake now uses a dedicated jeugdregio selector. Hidden compatibility fields
         # are kept in sync so older payloads and downstream code continue to work.

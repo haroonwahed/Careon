@@ -52,10 +52,10 @@ import {
 } from "../guidance";
 import { CasusWorkspaceLayout } from "./CasusWorkspaceLayout";
 import { CareContextRail } from "./CareContextRail";
-import { InteractiveCaseCompletionCard, type MissingItem } from "./InteractiveCaseCompletionCard";
 import { GuidedFieldWrapper } from "./GuidedFieldWrapper";
 import { useGuidedCaseCompletion } from "../../hooks/useGuidedCaseCompletion";
 import {
+  CaseActionWorkCard,
   CaseAttentionPointsCard,
   CaseDetailEvidenceList,
   CaseExecutionDetailTabs,
@@ -483,6 +483,20 @@ function ProviderDecisionDialog({
   );
 }
 
+type CasusVolledigheidsState = "onvolledig" | "verwerking" | "klaar" | "nvt";
+
+function resolveCasusVolledigheidsState(
+  summaryNeedsCaseCompletion: boolean,
+  requiredDataComplete: boolean | undefined,
+  hasSummary: boolean | undefined,
+  missingFieldsCount: number,
+): CasusVolledigheidsState {
+  if (!summaryNeedsCaseCompletion) return "nvt";
+  if (!requiredDataComplete || missingFieldsCount > 0) return "onvolledig";
+  if (!hasSummary) return "verwerking";
+  return "klaar";
+}
+
 export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel, onAppNavigate }: CaseExecutionPageProps) {
   const { cases, loading, error, refetch } = useCases({ q: "" });
   const { me } = useCurrentUser();
@@ -630,6 +644,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
 
   const missingRequiredFields = decisionEvaluation?.missing_required_fields ?? [];
 
+  const volledigheidsState = resolveCasusVolledigheidsState(
+    summaryNeedsCaseCompletion,
+    decisionEvaluation?.decision_context.required_data_complete,
+    decisionEvaluation?.decision_context.has_summary,
+    missingRequiredFields.length,
+  );
+
   useEffect(() => {
     const incompleteTabs = new Set(["overzicht", "aanmelding", "documenten", "activiteit"]);
     if (summaryNeedsCaseCompletion && !incompleteTabs.has(detailTab)) {
@@ -637,6 +658,38 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryNeedsCaseCompletion, detailTab]);
+
+  const attentionRollup = buildAttentionRollup(decisionEvaluation);
+
+  const validateRequiredData = useCallback(async (): Promise<boolean> => {
+    try {
+      setValidationErrors(prev => ({ ...prev, required_data: null }));
+      if (!decisionEvaluation?.decision_context.required_data_complete) {
+        setValidationErrors(prev => ({ ...prev, required_data: "Verplichte gegevens zijn nog niet volledig ingevuld. Controleer alle velden." }));
+        return false;
+      }
+      toast.success("Verplichte casusgegevens opgeslagen");
+      return true;
+    } catch (error) {
+      setValidationErrors(prev => ({ ...prev, required_data: error instanceof Error ? error.message : "Validatie mislukt" }));
+      return false;
+    }
+  }, [decisionEvaluation]);
+
+  const validateSummary = useCallback(async (): Promise<boolean> => {
+    try {
+      setValidationErrors(prev => ({ ...prev, summary: null }));
+      if (!decisionEvaluation?.decision_context.has_summary) {
+        setValidationErrors(prev => ({ ...prev, summary: "Casusoverzicht is nog niet gegenereerd. Wacht even en probeer opnieuw." }));
+        return false;
+      }
+      toast.success("Casusoverzicht gereed");
+      return true;
+    } catch (error) {
+      setValidationErrors(prev => ({ ...prev, summary: error instanceof Error ? error.message : "Validatie mislukt" }));
+      return false;
+    }
+  }, [decisionEvaluation]);
 
   if (loading) {
     return <div className="text-muted-foreground">Casus laden…</div>;
@@ -707,6 +760,7 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
   const missingGeo = (decisionEvaluation?.coverage_basis ?? "unknown") === "unknown";
   const actionButtonDisabled = decisionLoading
     || Boolean(pendingAction)
+    || volledigheidsState === "verwerking"
     || !nextBestAction
     || (nextBestAction?.action === "SEND_TO_PROVIDER" && !selectedProviderId);
   const primaryDisabledHint = !nextActionAllowed && nextBestAction
@@ -823,9 +877,11 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
     missingGeo ? "Locatie: onbekend (aanvullen aanbevolen)" : "Locatie: beschikbaar",
   ];
   const updatedAtLabel = formatUpdatedAtLabel(decisionEvaluation?.timeline_signals.latest_event_at);
-  const attentionRollup = buildAttentionRollup(decisionEvaluation);
-  const workspaceStatusVariant = decisionLoading ? "progress"
-    : blockerIsMissingSummary ? "onvolledig"
+  const workspaceStatusVariant =
+    volledigheidsState === "onvolledig" ? "onvolledig"
+    : volledigheidsState === "verwerking" ? "verwerking"
+    : volledigheidsState === "klaar" ? "klaar"
+    : decisionLoading ? "progress"
     : dominantBlocker ? "blocked"
     : "active";
   const workspaceStatusHint = blockerIsMissingSummary
@@ -836,8 +892,10 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
 
   const gateItems = operationalRequirementItems(decisionEvaluation);
   const activeStepLabel = DECISION_WORKSPACE_FLOW_STEPS[decisionTimelineIndex]?.label ?? "Onbekende fase";
-  const statusLine = summaryNeedsCaseCompletion
-    ? "Matching nog niet gestart."
+  const statusLine =
+    volledigheidsState === "onvolledig" ? "Matching nog niet gestart."
+    : volledigheidsState === "verwerking" ? "Casusgegevens worden verwerkt."
+    : volledigheidsState === "klaar" ? "Klaar voor matching."
     : dominantBlocker
       ? "Wacht op coördinatieactie."
       : activeStepLabel.toLowerCase() === "casus gestart"
@@ -965,99 +1023,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
   const trajectoryExited = resolvedState === "ARCHIVED";
   const showArrangementAlignment = (role === "gemeente" || role === "admin") && !summaryNeedsCaseCompletion;
 
-  // Build missing items for completion card
-  const missingItems: MissingItem[] = useMemo(() => {
-    if (!summaryNeedsCaseCompletion) return [];
-
-    const items: MissingItem[] = [];
-
-    if (!decisionEvaluation?.decision_context.required_data_complete) {
-      items.push({
-        key: "required_data",
-        label: "Verplichte casus gegevens",
-        reason: "Nog niet ingevuld",
-        actionLabel: "Aanvullen",
-      });
-    }
-
-    if (!decisionEvaluation?.decision_context.has_summary) {
-      items.push({
-        key: "summary",
-        label: "Casusoverzicht",
-        reason: "Wordt automatisch gegenereerd",
-        actionLabel: "Bekijk",
-      });
-    }
-
-    // Add attention items that are blockers
-    attentionRollup
-      .filter(row => row.key.startsWith("blocker"))
-      .slice(0, 3)
-      .forEach(row => {
-        items.push({
-          key: row.key,
-          label: row.headline,
-          reason: row.body.substring(0, 60) + (row.body.length > 60 ? "..." : ""),
-          actionLabel: "Oplossen",
-        });
-      });
-
-    return items;
-  }, [summaryNeedsCaseCompletion, decisionEvaluation, attentionRollup]);
-
-  const completedCount = useMemo(() => {
-    let count = 0;
-    if (decisionEvaluation?.decision_context.required_data_complete) count++;
-    if (decisionEvaluation?.decision_context.has_summary) count++;
-    return count;
-  }, [decisionEvaluation]);
-
-  const totalRequired = 2; // required_data + summary
-
-  const validateRequiredData = useCallback(async (): Promise<boolean> => {
-    try {
-      setValidationErrors(prev => ({ ...prev, required_data: null }));
-      // Backend validation: check if required_data_complete
-      if (!decisionEvaluation?.decision_context.required_data_complete) {
-        setValidationErrors(prev => ({
-          ...prev,
-          required_data: "Verplichte gegevens zijn nog niet volledig ingevuld. Controleer alle velden.",
-        }));
-        return false;
-      }
-      toast.success("Verplichte casusgegevens opgeslagen");
-      return true;
-    } catch (error) {
-      setValidationErrors(prev => ({
-        ...prev,
-        required_data: error instanceof Error ? error.message : "Validatie mislukt",
-      }));
-      return false;
-    }
-  }, [decisionEvaluation]);
-
-  const validateSummary = useCallback(async (): Promise<boolean> => {
-    try {
-      setValidationErrors(prev => ({ ...prev, summary: null }));
-      // Backend validation: check if has_summary
-      if (!decisionEvaluation?.decision_context.has_summary) {
-        setValidationErrors(prev => ({
-          ...prev,
-          summary: "Casusoverzicht is nog niet gegenereerd. Wacht even en probeer opnieuw.",
-        }));
-        return false;
-      }
-      toast.success("Casusoverzicht gereed");
-      return true;
-    } catch (error) {
-      setValidationErrors(prev => ({
-        ...prev,
-        summary: error instanceof Error ? error.message : "Validatie mislukt",
-      }));
-      return false;
-    }
-  }, [decisionEvaluation]);
-
   const attentionItems = attentionRollup.map((row) => {
     const severity = row.key.startsWith("blocker") ? "critical" : row.key.startsWith("risk") ? "warning" : "info";
     return {
@@ -1066,6 +1031,16 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
       tone: severity as "critical" | "warning" | "info",
     };
   });
+
+  const slaBreachLabel = (() => {
+    const hours = decisionEvaluation?.decision_context.hours_in_current_state;
+    if (hours == null) return null;
+    // Aanmelding SLA: 24h
+    const threshold = 24;
+    if (hours <= threshold) return null;
+    const breachDays = Math.ceil((hours - threshold) / 24);
+    return `SLA overschreden met ${breachDays} dag${breachDays === 1 ? "" : "en"}`;
+  })();
 
   const caseFacts = [
     { label: "Zorgvraag", value: zorgtypeLabel(spaCase.zorgtype), title: spaCase.zorgtype },
@@ -1080,17 +1055,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
     },
   ];
 
-  const primaryCtaLabel = nextBestAction
-    ? (
-      summaryNeedsCaseCompletion
-        ? "Maak casus compleet"
-        : (
-          imperativeLabelForActionCode(nextBestAction.action, nextBestAction.label)
-          ?? primaryButtonLabel
-          ?? getShortActionLabel(nextBestAction.label)
-        )
-    )
-    : null;
+  const primaryCtaLabel =
+    volledigheidsState === "onvolledig" ? "Maak casus compleet"
+    : volledigheidsState === "verwerking" ? "Verwerking bezig"
+    : volledigheidsState === "klaar" ? "Start matching"
+    : nextBestAction
+      ? (imperativeLabelForActionCode(nextBestAction.action, nextBestAction.label) ?? primaryButtonLabel ?? getShortActionLabel(nextBestAction.label))
+      : null;
 
   const historyEvents = (decisionEvaluation?.timeline_signals.recent_events ?? []).slice(0, 12).map((event) => ({
     timestamp: formatUpdatedAtLabel(event.timestamp) ?? event.timestamp,
@@ -1116,6 +1087,26 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
   );
   const blockedHeroDescription = nextActionReason;
 
+  const heroStatusTitle =
+    volledigheidsState === "onvolledig" ? "Casus is nog niet compleet"
+    : volledigheidsState === "verwerking" ? "Casusgegevens compleet"
+    : volledigheidsState === "klaar" ? "Casus is klaar voor matching"
+    : null;
+
+  const heroStatusDescription =
+    volledigheidsState === "onvolledig"
+      ? (missingRequiredFields.length === 1
+        ? "1 verplicht onderdeel ontbreekt — vul het aan om matching te starten."
+        : `${missingRequiredFields.length} verplichte onderdelen ontbreken — vul ze aan om matching te starten.`)
+    : volledigheidsState === "verwerking"
+      ? "Het casusoverzicht wordt automatisch gegenereerd. Dit duurt meestal minder dan een minuut."
+    : volledigheidsState === "klaar"
+      ? "Alle vereiste gegevens zijn gecontroleerd en verwerkt."
+    : blockedHeroDescription;
+
+  const heroSecondaryLabel = volledigheidsState === "onvolledig" ? "Vraag gegevens op" : null;
+  const heroSecondaryAction = volledigheidsState === "onvolledig" ? () => setProviderDialog("info") : undefined;
+
   const caseHero = (
     <div className="space-y-3">
       {trajectoryExited ? (
@@ -1129,8 +1120,8 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
       ) : null}
       <CasePrimaryActionPanel
         statusLabel={statusLine}
-        statusTitle={summaryNeedsCaseCompletion ? "Casus is nog niet compleet" : null}
-        statusDescription={summaryNeedsCaseCompletion ? "Matching kan starten zodra de verplichte gegevens zijn aangevuld." : blockedHeroDescription}
+        statusTitle={heroStatusTitle}
+        statusDescription={heroStatusDescription}
         statusTone="default"
         actionHolderLabel={actionHolderLabel}
         waitingOnLabel={waitingOnLabel}
@@ -1140,15 +1131,16 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
         onPrimaryAction={() => void handlePrimaryAction()}
         primaryDisabled={actionButtonDisabled}
         primaryPending={Boolean(pendingAction)}
-        disabledReason={primaryDisabledHint}
+        disabledReason={volledigheidsState === "verwerking" ? "Samenvatting wordt gegenereerd" : primaryDisabledHint}
         errorMessage={decisionError}
-        secondaryActionLabel={summaryNeedsCaseCompletion ? "Vraag gegevens op" : null}
-        onSecondaryAction={summaryNeedsCaseCompletion ? () => setProviderDialog("info") : undefined}
+        secondaryActionLabel={heroSecondaryLabel}
+        onSecondaryAction={heroSecondaryAction}
       />
-      {summaryNeedsCaseCompletion && (
+      {volledigheidsState === "onvolledig" && (
         <CaseMissingDataPanel
           missingFields={missingRequiredFields}
           caseId={caseId}
+          summaryPending={false}
         />
       )}
     </div>
@@ -1208,31 +1200,17 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
         </>
       ) : null}
       {summaryNeedsCaseCompletion ? (
-        <InteractiveCaseCompletionCard
-          isIncomplete={summaryNeedsCaseCompletion}
-          missingItems={missingItems}
-          completedCount={completedCount}
-          totalRequired={totalRequired}
-          onStartCompletion={() => {
-            setDetailTab("aanmelding");
-            guidedFlow.start();
-          }}
-          onRequestData={() => setProviderDialog("info")}
-          onMissingItemClick={(key) => {
-            if (key === "required_data" || key === "summary") {
-              setDetailTab("aanmelding");
-              guidedFlow.start();
-            } else {
-              setDetailTab("overzicht");
-            }
-          }}
+        <CaseActionWorkCard
+          missingFields={missingRequiredFields}
+          onPrimaryAction={handlePrimaryAction}
+          slaBreachLabel={slaBreachLabel}
         />
-      ) : (
+      ) : attentionItems.length > 0 ? (
         <CaseAttentionPointsCard
           items={attentionItems}
           onShowAll={attentionItems.length > 3 ? () => setDetailTab("overzicht") : undefined}
         />
-      )}
+      ) : null}
       <CaseExecutionDetailTabs
         activeTab={detailTab}
         onTabChange={setDetailTab}
@@ -1357,11 +1335,6 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
       onOwnerClick={() => {
         toast.info("Eigenaar wijzigen: functie volgt in volgende iteratie");
       }}
-      priority={spaCase.placementPressureLabel ?? spaCase.urgency}
-      onPriorityClick={() => {
-        toast.info(`Prioriteit: ${spaCase.placementPressureBand || spaCase.urgency || "normaal"}`);
-      }}
-      priorityTone={spaCase.placementPressureBand === "critical" ? "critical" : spaCase.placementPressureBand === "high" ? "warning" : "neutral"}
       elapsed={elapsedForRail ?? undefined}
       onElapsedClick={() => {
         toast.info(`Tijd in status: ${elapsedForRail || "onbekend"}`);

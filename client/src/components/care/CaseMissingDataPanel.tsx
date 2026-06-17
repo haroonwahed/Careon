@@ -12,6 +12,8 @@ interface CaseMissingDataPanelProps {
   className?: string;
   /** Force panel to be expanded (e.g. during guided flow) */
   forceExpanded?: boolean;
+  /** When true, suppress "Matching kan worden gestart" — summary may still be pending */
+  summaryPending?: boolean;
 }
 
 export function buildGuidedFieldUrl(
@@ -32,6 +34,7 @@ export function CaseMissingDataPanel({
   guidedStep,
   className,
   forceExpanded,
+  summaryPending = false,
 }: CaseMissingDataPanelProps) {
   const panelId = useId();
   const [expanded, setExpanded] = useState(forceExpanded ?? false);
@@ -50,8 +53,12 @@ export function CaseMissingDataPanel({
           className,
         )}
       >
-        <p className="text-[13px] font-semibold text-care-success-text">Casusgegevens compleet</p>
-        <p className="mt-0.5 text-[12px] text-care-success-text/70">Matching kan worden gestart.</p>
+        <p className="text-[13px] font-semibold text-care-success-text">Verplichte gegevens ingevuld</p>
+        <p className="mt-0.5 text-[12px] text-care-success-text/70">
+          {summaryPending
+            ? "Samenvatting wordt nog gegenereerd voordat matching kan starten."
+            : "Matching kan worden gestart."}
+        </p>
       </div>
     );
   }

@@ -128,7 +128,7 @@ export function PriorityBadge({
   );
 }
 
-export type CasusWorkspaceStatusVariant = "active" | "blocked" | "progress" | "onvolledig";
+export type CasusWorkspaceStatusVariant = "active" | "blocked" | "progress" | "onvolledig" | "verwerking" | "klaar";
 
 /**
  * Status chips for casus workspace header — maps to operational readiness, not API enum alone.
@@ -156,6 +156,18 @@ export function CasusWorkspaceStatusBadges({
       )}
       {variant === "progress" && (
         <Badge className="border bg-care-info-bg text-care-info-text border-care-info-border text-[12px] font-medium">In behandeling</Badge>
+      )}
+      {variant === "verwerking" && (
+        <Badge className="inline-flex items-center gap-1.5 border bg-care-info-bg text-care-info-text border-care-info-border text-[12px] font-medium">
+          <span className="size-1.5 shrink-0 animate-pulse rounded-full bg-care-info-solid" aria-hidden />
+          Wordt verwerkt
+        </Badge>
+      )}
+      {variant === "klaar" && (
+        <Badge className="inline-flex items-center gap-1.5 border bg-care-success-bg text-care-success-text border-care-success-border text-[12px] font-medium">
+          <span className="size-1.5 shrink-0 rounded-full bg-care-success-solid" aria-hidden />
+          Klaar voor matching
+        </Badge>
       )}
       {hint && variant === "blocked" ? (
         <Badge

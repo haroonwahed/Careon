@@ -1708,11 +1708,11 @@ export function SystemAwarenessPage({
             </div>
           </CareWorklistFilterPanel>
 
+          <CareWorklistColumnHeader
+            columns={["Casus", "Fase", "Prioriteit", "Blokkade / Risico", "Eigenaar", "Wachttijd ↓", "Volgende actie"]}
+            cols={REGIEKAMER_COLS}
+          />
           <div className="overflow-x-auto">
-            <CareWorklistColumnHeader
-              columns={["Casus", "Fase", "Prioriteit", "Blokkade / Risico", "Eigenaar", "Wachttijd ↓", "Volgende actie"]}
-              cols={REGIEKAMER_COLS}
-            />
             <CareWorklistBody>
               {tabFilteredItems.map((item) => (
                 <RegiekamerWorkRow

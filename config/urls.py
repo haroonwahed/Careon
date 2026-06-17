@@ -44,6 +44,10 @@ urlpatterns = [
     path('register/', careon_views.SignUpView.as_view(), name='register'),
     path('login/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('password-reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('password-reset/complete/', auth_views.PasswordResetCompleteView.as_view(), name='password_reset_complete'),
     # Named SPA entry points (served by the same shell as the catch-all, but
     # reversible by name so server-side redirects can target them).
     path('casussen/nieuw/', careon_views.dashboard, name='spa_nieuwe_casus'),

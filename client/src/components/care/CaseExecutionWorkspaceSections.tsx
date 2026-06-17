@@ -1,5 +1,5 @@
 import { Fragment, type ReactNode } from "react";
-import { ArrowRight, CheckCircle2, ChevronRight, FileWarning, Loader2, UserRound, Lock } from "lucide-react";
+import { ArrowRight, CheckCircle2, ChevronRight, Circle, FileWarning, Loader2, UserRound, Lock } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import {
@@ -224,6 +224,61 @@ export function CaseKeyFactsCard({ facts }: { facts: CaseFactRow[] }) {
   );
 }
 
+export function CaseActionWorkCard({
+  missingFields,
+  onPrimaryAction,
+  slaBreachLabel,
+}: {
+  missingFields: Array<{ id: string; label: string }>;
+  onPrimaryAction: () => void;
+  slaBreachLabel?: string | null;
+}) {
+  const count = missingFields.length;
+  return (
+    <section
+      data-testid="case-action-work-card"
+      className="rounded-2xl border border-care-warning-border bg-care-warning-bg px-4 py-4 md:px-5"
+      aria-label="Actiepunten casus"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-care-warning-text">Casus is nog niet compleet</p>
+          <p className="mt-0.5 text-[12px] text-care-warning-text/70">
+            {count === 1 ? "1 onderdeel ontbreekt" : `${count} onderdelen ontbreken`}
+          </p>
+        </div>
+        {slaBreachLabel && (
+          <span className="shrink-0 rounded-full bg-care-urgent-bg px-2 py-0.5 text-[11px] font-medium text-care-urgent-text">
+            {slaBreachLabel}
+          </span>
+        )}
+      </div>
+
+      {count > 0 && (
+        <ul className="mt-3 space-y-1" role="list">
+          {missingFields.map((field) => (
+            <li key={field.id} className="flex items-center gap-2 text-[13px] text-care-warning-text">
+              <Circle size={8} className="shrink-0 text-care-warning-text/40" aria-hidden />
+              {field.label}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4">
+        <Button
+          type="button"
+          onClick={onPrimaryAction}
+          className="h-9 w-full gap-1.5 rounded-full bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90"
+        >
+          Maak casus compleet
+          <ArrowRight size={14} aria-hidden />
+        </Button>
+      </div>
+    </section>
+  );
+}
+
 export function CaseAttentionPointsCard({
   items,
   onShowAll,
@@ -328,7 +383,7 @@ export function CaseExecutionDetailTabs({
                   Arrangement
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+              <TooltipContent>Beschikbaar zodra de aanmelding compleet is</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -337,7 +392,7 @@ export function CaseExecutionDetailTabs({
                   Matching
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+              <TooltipContent>Beschikbaar zodra de aanmelding compleet is</TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -346,7 +401,7 @@ export function CaseExecutionDetailTabs({
                   Toetsing
                 </TabsTrigger>
               </TooltipTrigger>
-              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+              <TooltipContent>Beschikbaar zodra de aanmelding compleet is</TooltipContent>
             </Tooltip>
           </TabsList>
           <TabsContent value="overzicht" className="mt-0 space-y-3">{overzicht}</TabsContent>

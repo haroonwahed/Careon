@@ -8,6 +8,10 @@
 /* ── Auth shell ─────────────────────────────────────────── */
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
+  display: block !important;
+  align-items: unset !important;
+  justify-content: unset !important;
+  padding: 0 !important;
   background: #070b12;
   color: #f1f5f9;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -95,7 +99,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6366f1;
+  color: #7C4DFF;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -104,7 +108,7 @@ body {
   content: "";
   display: inline-block;
   width: 16px; height: 2px;
-  background: #6366f1;
+  background: #7C4DFF;
   border-radius: 2px;
 }
 
@@ -226,7 +230,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #6366f1;
+  color: #7C4DFF;
 }
 .sa-card-title {
   font-size: 26px;
@@ -311,7 +315,7 @@ body {
 }
 .sa-forgot {
   font-size: 12px;
-  color: #6366f1;
+  color: #7C4DFF;
   text-decoration: none;
   font-weight: 500;
 }
@@ -331,6 +335,12 @@ body {
   box-sizing: border-box;
   transition: border-color 0.15s, box-shadow 0.15s;
   -webkit-appearance: none;
+}
+.sa-input:-webkit-autofill,
+.sa-input:-webkit-autofill:hover,
+.sa-input:-webkit-autofill:focus {
+  -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+  -webkit-text-fill-color: #f1f5f9 !important;
 }
 .sa-input::placeholder { color: #475569; }
 .sa-input:focus {
@@ -375,7 +385,7 @@ body {
 .sa-checkbox {
   width: 15px; height: 15px;
   border-radius: 4px;
-  accent-color: #6366f1;
+  accent-color: #7C4DFF;
   cursor: pointer;
 }
 
@@ -385,7 +395,7 @@ body {
   padding: 11px 16px;
   border-radius: 10px;
   border: none;
-  background: #6366f1;
+  background: #7C4DFF;
   color: #fff;
   font-size: 14px;
   font-weight: 600;
@@ -393,8 +403,8 @@ body {
   transition: background 0.15s, box-shadow 0.15s, opacity 0.15s;
   letter-spacing: -0.01em;
 }
-.sa-submit:hover { background: #5254cc; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
-.sa-submit:active { background: #4547b0; }
+.sa-submit:hover { background: #6F42E8; box-shadow: 0 4px 16px rgba(99,102,241,0.3); }
+.sa-submit:active { background: #5E35D0; }
 .sa-submit:disabled { opacity: 0.55; cursor: not-allowed; }
 
 /* Footer */
@@ -410,7 +420,7 @@ body {
   color: #475569;
 }
 .sa-foot-link {
-  color: #6366f1;
+  color: #7C4DFF;
   text-decoration: none;
   font-weight: 600;
 }
@@ -572,7 +582,7 @@ body {
         <div class="sa-field">
           <div class="sa-label-row">
             <label for="id_password" class="sa-label">Wachtwoord</label>
-            <a href="#" class="sa-forgot" tabindex="-1">Wachtwoord vergeten?</a>
+            <a href="{% url 'password_reset' %}" class="sa-forgot">Wachtwoord vergeten?</a>
           </div>
           <div class="sa-input-wrap">
             <input
