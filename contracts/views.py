@@ -1918,7 +1918,7 @@ def _render_spa_shell_response():
 
 
 def index(request):
-    return render(request, 'landing.html')
+    return dashboard(request)
 
 
 def health_check(request):
