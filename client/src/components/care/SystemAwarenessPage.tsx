@@ -413,13 +413,13 @@ function rowNextAction(item: CoordinationDecisionOverviewItem): { label: string;
 
 const ACTION_BUTTON_CLASSES: Record<ActionVariant, string> = {
   blocking:
-    "bg-foreground text-background hover:bg-foreground/85 border-transparent shadow-sm",
+    "bg-primary text-white hover:bg-primary/90 border-transparent shadow-sm",
   active:
-    "border-primary/50 text-primary bg-primary/5 hover:bg-primary/10 hover:border-primary/70",
+    "bg-primary text-white hover:bg-primary/90 border-primary shadow-sm",
   waiting:
     "border-border/40 text-muted-foreground/60 cursor-default pointer-events-none",
   default:
-    "border-border/60 text-foreground bg-white dark:bg-muted/10 hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary shadow-sm",
+    "border-primary/50 text-primary bg-primary/5 hover:bg-primary/10 hover:border-primary/70 shadow-sm",
 };
 
 const PRIORITY_BAND_LABELS: Record<string, string> = {
