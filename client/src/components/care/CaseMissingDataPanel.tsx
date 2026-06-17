@@ -10,6 +10,8 @@ interface CaseMissingDataPanelProps {
   /** Current guided step (1-based), if a guided flow is active. */
   guidedStep?: number;
   className?: string;
+  /** Force panel to be expanded (e.g. during guided flow) */
+  forceExpanded?: boolean;
 }
 
 export function buildGuidedFieldUrl(
@@ -29,10 +31,16 @@ export function CaseMissingDataPanel({
   caseId,
   guidedStep,
   className,
+  forceExpanded,
 }: CaseMissingDataPanelProps) {
   const panelId = useId();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(forceExpanded ?? false);
   const count = missingFields.length;
+
+  // Auto-expand when forceExpanded changes to true
+  if (forceExpanded && !expanded) {
+    setExpanded(true);
+  }
 
   if (count === 0) {
     return (

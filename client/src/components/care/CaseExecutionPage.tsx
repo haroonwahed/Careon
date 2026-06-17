@@ -1258,6 +1258,8 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
               <CaseMissingDataPanel
                 missingFields={missingRequiredFields}
                 caseId={caseId}
+                guidedStep={guidedFlow.isActive ? guidedFlow.currentStepIndex + 1 : undefined}
+                forceExpanded={guidedFlow.isActive}
               />
             </GuidedFieldWrapper>
             <GuidedFieldWrapper
@@ -1273,17 +1275,12 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
               onValidate={validateSummary}
               validationError={validationErrors.summary}
             >
-              <CaseDetailEvidenceList
-                rows={[
-                  { label: "Casusoverzicht", value: decisionEvaluation?.decision_context.has_summary ? "Beschikbaar" : "Wordt automatisch gegenereerd na aanvulling" },
-                ]}
-              />
+              <p className="text-[13px] text-muted-foreground">
+                {decisionEvaluation?.decision_context.has_summary
+                  ? "Het casusoverzicht is gereed. Dit wordt gebruikt voor matching."
+                  : "Het casusoverzicht wordt automatisch gegenereerd zodra de verplichte gegevens compleet zijn."}
+              </p>
             </GuidedFieldWrapper>
-            {!guidedFlow.isActive && (
-              <Button type="button" variant="outline" size="sm" className="rounded-full" asChild>
-                <a href={toCareCaseEdit(caseId, "casus")}>Casus bewerken (external)</a>
-              </Button>
-            )}
           </div>
         )}
         overzicht={(
