@@ -352,9 +352,9 @@ function PhaseBar({ currentPhase }: { currentPhase: CasusPhase }) {
         })}
 
         {isBlocked && (
-          <div className="ml-3 flex items-center gap-2 px-3 py-1.5 bg-red-500/10 border border-red-500/30 rounded-lg">
-            <Siren size={14} className="text-red-500" />
-            <span className="text-xs font-semibold text-red-500">Geblokkeerd</span>
+          <div className="ml-3 flex items-center gap-2 px-3 py-1.5 bg-care-urgent-bg border border-care-urgent-border rounded-lg">
+            <Siren size={14} className="text-care-urgent-text" />
+            <span className="text-xs font-semibold text-care-urgent-text">Geblokkeerd</span>
           </div>
         )}
       </div>
@@ -366,10 +366,10 @@ function PhaseBar({ currentPhase }: { currentPhase: CasusPhase }) {
 
 function ContextPanel({ casus }: { casus: Casus }) {
   const urgencyColors: Record<string, string> = {
-    critical: "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/30",
-    high:     "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30",
-    medium:   "bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30",
-    low:      "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    critical: "bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
+    high:     "bg-care-warning-bg text-care-warning-text border-care-warning-border",
+    medium:   "bg-care-warning-bg text-care-warning-text border-care-warning-border",
+    low:      "bg-care-success-bg text-care-success-text border-care-success-border",
   };
   const urgencyLabel: Record<string, string> = {
     critical: "Kritiek", high: "Hoog", medium: "Gemiddeld", low: "Laag",
@@ -394,7 +394,7 @@ function ContextPanel({ casus }: { casus: Casus }) {
           <Row label="Regio" value={<span className="flex items-center gap-1"><MapPin size={12} />{casus.region}</span>} />
           <Row label="Type zorg" value={casus.careType} />
           <Row label="Wachttijd" value={
-            <span className={`flex items-center gap-1 ${casus.waitingDays > 7 ? "text-red-500 font-semibold" : ""}`}>
+            <span className={`flex items-center gap-1 ${casus.waitingDays > 7 ? "text-care-urgent-text font-semibold" : ""}`}>
               <Clock size={12} />{casus.waitingDays} dagen
             </span>
           } />
@@ -527,10 +527,10 @@ function AanbiederreactiePanel({
   return (
     <div className="space-y-3">
       {isOverdue && (
-        <div className="flex items-start gap-3 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl text-sm">
-          <AlertTriangle size={16} className="text-amber-500 mt-0.5 shrink-0" />
+        <div className="flex items-start gap-3 p-4 bg-care-warning-bg border border-care-warning-border rounded-xl text-sm">
+          <AlertTriangle size={16} className="text-care-warning-text mt-0.5 shrink-0" />
           <div>
-            <p className="font-semibold text-amber-700 dark:text-amber-400">
+            <p className="font-semibold text-care-warning-text">
               Beoordeling {assessment.daysOverdue} {assessment.daysOverdue === 1 ? "dag" : "dagen"} over deadline
             </p>
             <p className="text-muted-foreground text-xs mt-0.5">
@@ -595,11 +595,11 @@ function AanbiederreactiePanel({
           </div>
 
           {assessment.missingFields.length > 0 && (
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
-              <p className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1.5">Ontbreekt:</p>
+            <div className="p-3 bg-care-warning-bg border border-care-warning-border rounded-lg">
+              <p className="text-xs font-medium text-care-warning-text mb-1.5">Ontbreekt:</p>
               <div className="flex flex-wrap gap-1.5">
                 {assessment.missingFields.map(f => (
-                  <span key={f} className="text-xs px-2 py-0.5 bg-amber-500/20 text-amber-700 dark:text-amber-400 rounded-full">
+                  <span key={f} className="text-xs px-2 py-0.5 bg-care-warning-bg text-care-warning-text border border-care-warning-border rounded-full">
                     {f}
                   </span>
                 ))}
@@ -646,10 +646,10 @@ function MatchingPanel({
     <div className="space-y-3">
       {noProviders ? (
         <div className="panel-surface p-4">
-          <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl mb-4">
-            <XCircle size={16} className="text-red-500 mt-0.5 shrink-0" />
+          <div className="flex items-start gap-3 p-4 bg-care-urgent-bg border border-care-urgent-border rounded-xl mb-4">
+            <XCircle size={16} className="text-care-urgent-text mt-0.5 shrink-0" />
             <div className="text-sm">
-              <p className="font-semibold text-red-600 dark:text-red-400">Geen aanbieder</p>
+              <p className="font-semibold text-care-urgent-text">Geen aanbieder</p>
               <p className="text-muted-foreground text-xs mt-0.5">Geen match binnen de huidige criteria.</p>
             </div>
           </div>
@@ -723,7 +723,7 @@ function ProviderCard({
   const advisoryLabel = advisoryQualitativeFromNumericScore(result.score) ?? "Onderbouwing nodig";
 
   const badgeColor =
-    result.recommendationType === "perfect" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20" :
+    result.recommendationType === "perfect" ? "bg-care-success-bg text-care-success-text border-care-success-border" :
     result.recommendationType === "good"    ? "border bg-care-info-bg text-care-info-text border-care-info-border" :
                                               "bg-muted text-muted-foreground border-border";
 
@@ -910,16 +910,16 @@ function IntakeProviderPanel({
           <Row label="Bevestigd op" value={placement.confirmedAt ? new Date(placement.confirmedAt).toLocaleDateString("nl-NL") : "—"} />
           <Row label="Bevestigd door" value={placement.confirmedBy ?? "—"} />
           <Row label="Intake status" value={
-            <span className={`font-semibold ${!intake.plannedAt ? "text-amber-500" : "text-emerald-500"}`}>
+            <span className={`font-semibold ${!intake.plannedAt ? "text-care-warning-text" : "text-care-success-text"}`}>
               {!intake.plannedAt ? "Nog niet gepland" : intake.status === "planned" ? "Gepland" : intake.status === "started" ? "Bezig" : "Afgerond"}
             </span>
           } />
         </div>
 
         {isUnresponsive && (
-          <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/30 rounded-lg text-sm mb-4">
-            <AlertTriangle size={14} className="text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-amber-700 dark:text-amber-400">Aanbieder reageert al {intake.providerResponseDays} werkdagen niet.</p>
+          <div className="flex items-start gap-2 p-3 bg-care-warning-bg border border-care-warning-border rounded-lg text-sm mb-4">
+            <AlertTriangle size={14} className="text-care-warning-text mt-0.5 shrink-0" />
+            <p className="text-care-warning-text">Aanbieder reageert al {intake.providerResponseDays} werkdagen niet.</p>
           </div>
         )}
       </div>
@@ -1013,13 +1013,13 @@ function GeblokkerdPanel({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-start gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-sm">
-        <Siren size={16} className="text-red-500 mt-0.5 shrink-0" />
+      <div className="flex items-start gap-3 p-4 bg-care-urgent-bg border border-care-urgent-border rounded-xl text-sm">
+        <Siren size={16} className="text-care-urgent-text mt-0.5 shrink-0" />
         <div>
-          <p className="font-semibold text-red-600 dark:text-red-400">Blokkade</p>
+          <p className="font-semibold text-care-urgent-text">Blokkade</p>
           <p className="text-muted-foreground mt-0.5">{state.blockerReason}</p>
           {casus.waitingDays > 7 && (
-            <p className="text-red-500 font-semibold mt-1 text-xs">
+            <p className="text-care-urgent-text font-semibold mt-1 text-xs">
               {casus.waitingDays} dagen wachttijd overschreden
             </p>
           )}
@@ -1027,7 +1027,7 @@ function GeblokkerdPanel({
       </div>
 
       <div className="panel-surface p-4">
-        <SectionHeader icon={<ShieldAlert size={16} className="text-red-500" />} title="Escalatie" />
+        <SectionHeader icon={<ShieldAlert size={16} className="text-care-urgent-text" />} title="Escalatie" />
         <div className="space-y-3">
           <label className="text-sm font-medium mb-1 block">Notitie</label>
           <Textarea
@@ -1112,9 +1112,9 @@ function IntelligencePanel({
           })}
 
           {isBlocked && (
-            <div className="flex items-center gap-2 mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded-lg">
-              <Siren size={14} className="text-red-500" />
-              <span className="text-sm font-semibold text-red-500">Geblokkeerd</span>
+            <div className="flex items-center gap-2 mt-3 p-2.5 bg-care-urgent-bg border border-care-urgent-border rounded-lg">
+              <Siren size={14} className="text-care-urgent-text" />
+              <span className="text-sm font-semibold text-care-urgent-text">Geblokkeerd</span>
             </div>
           )}
         </div>
@@ -1124,7 +1124,7 @@ function IntelligencePanel({
       <div className="panel-surface p-4">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Signalen {state.signals.length > 0 && (
-            <span className="ml-2 text-xs bg-red-500/10 text-red-500 px-1.5 py-0.5 rounded-full">
+            <span className="ml-2 text-xs bg-care-urgent-bg text-care-urgent-text px-1.5 py-0.5 rounded-full">
               {state.signals.length}
             </span>
           )}
@@ -1159,8 +1159,8 @@ function IntelligencePanel({
 
 function SignalItem({ signal }: { signal: CasusSignal }) {
   const cls = {
-    critical: "bg-red-500/10 border-red-500/30 text-red-500",
-    warning:  "bg-amber-500/10 border-amber-500/30 text-amber-500",
+    critical: "bg-care-urgent-bg border-care-urgent-border text-care-urgent-text",
+    warning:  "bg-care-warning-bg border-care-warning-border text-care-warning-text",
     info:     "bg-blue-500/10 border-blue-500/30 text-blue-500",
   }[signal.severity];
 
@@ -1182,7 +1182,7 @@ function TimelineItem({ event, isLast }: { event: CasusTimelineEvent; isLast: bo
     created:      "bg-primary",
     phase_change: "bg-emerald-500",
     action:       "bg-blue-500",
-    signal:       "bg-amber-500",
+    signal:       "bg-care-warning-solid",
     note:         "bg-muted-foreground",
     system:       "bg-muted-foreground/40",
   }[event.type];

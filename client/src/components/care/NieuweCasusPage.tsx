@@ -19,6 +19,8 @@ type Option = {
 
 type MunicipalityOption = Option & {
   urgencyDocumentRequestUrl?: string;
+  regio?: string;
+  regioLabel?: string;
 };
 
 type SubcategoryOption = Option & {
@@ -91,7 +93,12 @@ type IntakeCreateSuccess = {
   case_id?: string;
   title: string;
   redirect_url: string;
+  source_reference?: string;
 };
+
+// Session-level cache: form options are static metadata (municipalities, categories, etc.)
+// that don't change during a session. Cache them so repeat visits to the form are instant.
+let _intakeFormOptionsCache: IntakeFormPayload | null = null;
 
 type IntakeCreateError = {
   errors?: Record<string, string | string[]>;
@@ -100,8 +107,8 @@ type IntakeCreateError = {
 type WorkflowPhase = "casus" | "matching" | "aanbieder_beoordeling" | "plaatsing" | "intake";
 type VisibilityRole = "gemeente" | "zorgaanbieder" | "coordinatie";
 
-const baseFieldClass = "h-11 w-full rounded-xl border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/50";
-const baseTextareaClass = "w-full rounded-2xl border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:border-primary/50";
+const baseFieldClass = "h-11 w-full rounded-[10px] border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary/50";
+const baseTextareaClass = "w-full rounded-[16px] border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:border-primary/50";
 const compactLabelClass = "mb-1 block text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
 const compactGroupLabelClass = "mb-2 text-[11px] font-medium tracking-[0.04em] text-muted-foreground";
 const wizardFieldGridClass = "grid gap-5 md:grid-cols-2";
@@ -117,6 +124,7 @@ const placementPressureHorizonChoices = [
 interface NieuweCasusPageProps {
   onCancel?: () => void;
   onCreated?: (caseId: string) => void;
+  backLabel?: string;
 }
 
 function FieldError({ message }: { message?: string | string[] }) {
@@ -155,7 +163,7 @@ function SectionHeader({
     <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/25 text-[11px] font-semibold text-foreground">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border/70 bg-muted/25 text-[11px] font-medium text-foreground">
             {step}
           </div>
           <h2 className="min-w-0 care-text-title text-foreground">
@@ -248,11 +256,13 @@ function buildReference(prefix: "CO" | "TMP" | "BR", now = new Date()): string {
 }
 
 const NIEUWE_CASUS_DRAFT_STORAGE_KEY = "careon:nieuwe-casus-draft:v2";
+const DRAFT_TTL_MS = 24 * 60 * 60 * 1000; // discard drafts older than 24 hours
 
 type NieuweCasusDraft = {
   currentStep: 1 | 2 | 3;
   formState: IntakeFormState;
   searchRadiusKm: 10 | 25 | 50;
+  savedAt: number;
 };
 
 function getDraftStorage(): Storage | null {
@@ -283,16 +293,32 @@ function readNieuweCasusDraft(): NieuweCasusDraft | null {
     if (!parsed || typeof parsed !== "object" || !parsed.formState) {
       return null;
     }
+    const savedAt = typeof parsed.savedAt === "number" ? parsed.savedAt : 0;
+    if (Date.now() - savedAt > DRAFT_TTL_MS) {
+      storage.removeItem(NIEUWE_CASUS_DRAFT_STORAGE_KEY);
+      return null;
+    }
     const currentStep = parsed.currentStep === 1 || parsed.currentStep === 2 || parsed.currentStep === 3 ? parsed.currentStep : 1;
     const searchRadiusKm = parsed.searchRadiusKm === 10 || parsed.searchRadiusKm === 25 || parsed.searchRadiusKm === 50 ? parsed.searchRadiusKm : 25;
     return {
       currentStep,
       searchRadiusKm,
       formState: parsed.formState as IntakeFormState,
+      savedAt,
     };
   } catch {
     return null;
   }
+}
+
+function formatDraftAge(savedAt: number): string {
+  const diffMs = Date.now() - savedAt;
+  const diffMin = Math.floor(diffMs / 60_000);
+  if (diffMin < 2) return "zojuist opgeslagen";
+  if (diffMin < 60) return `${diffMin} minuten geleden opgeslagen`;
+  const diffHrs = Math.floor(diffMin / 60);
+  if (diffHrs < 24) return `${diffHrs} uur geleden opgeslagen`;
+  return new Date(savedAt).toLocaleString("nl-NL", { weekday: "long", hour: "2-digit", minute: "2-digit" });
 }
 
 function clearNieuweCasusDraft() {
@@ -375,7 +401,7 @@ function DateField({ label, value, onChange, error, labelAction }: DateFieldProp
             <CalendarDays size={16} className="text-muted-foreground" />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto rounded-2xl border border-border/80 bg-card p-0" align="start">
+        <PopoverContent className="w-auto rounded-[16px] border border-border/80 bg-card p-0" align="start">
           <Calendar
             mode="single"
             selected={selectedDate}
@@ -466,8 +492,8 @@ function MunicipalityCombobox({
             </span>
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] rounded-2xl border border-border/80 bg-card p-0 shadow-xl" align="start">
-          <Command shouldFilter={false} className="rounded-2xl">
+        <PopoverContent className="w-[--radix-popover-trigger-width] rounded-[16px] border border-border/80 bg-card p-0 shadow-xl" align="start">
+          <Command shouldFilter={false} className="rounded-[16px]">
             <CommandInput
               value={query}
               onValueChange={setQuery}
@@ -521,7 +547,7 @@ function NieuweCasusPrivacyGuidance({
   showPrivacyLink?: boolean;
 }) {
   const rootClass = [
-    "flex flex-col gap-3 rounded-2xl border border-border/60 bg-card/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4",
+    "flex flex-col gap-3 rounded-[16px] border border-border/60 bg-card/30 px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between sm:gap-4",
     className,
   ]
     .filter(Boolean)
@@ -548,7 +574,7 @@ function NieuweCasusPrivacyGuidance({
       {showPrivacyLink ? (
         <a
           href={toCareSettingsSection("documenten-privacy")}
-          className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-semibold text-primary underline-offset-4 hover:text-muted-foreground hover:underline sm:self-center"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start text-[12px] font-medium text-primary underline-offset-4 hover:text-muted-foreground hover:underline sm:self-center"
         >
           Meer over privacy en zichtbaarheid
           <ExternalLink size={14} className="opacity-90" aria-hidden />
@@ -579,7 +605,7 @@ function NieuweCasusToelichtingDialog({
           <div className="flex items-center justify-end border-t border-border/60 pt-3">
             <a
               href={toCareSettingsSection("documenten-privacy")}
-              className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-primary underline-offset-4 hover:text-muted-foreground hover:underline"
+              className="inline-flex items-center gap-1.5 text-[12px] font-medium text-primary underline-offset-4 hover:text-muted-foreground hover:underline"
             >
               Meer over privacy en zichtbaarheid
               <ExternalLink size={14} className="opacity-90" aria-hidden />
@@ -591,7 +617,7 @@ function NieuweCasusToelichtingDialog({
   );
 }
 
-export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
+export function NieuweCasusPage({ onCancel, onCreated, backLabel = "Terug naar casussen" }: NieuweCasusPageProps) {
   const [formState, setFormState] = useState<IntakeFormState | null>(null);
   const [options, setOptions] = useState<IntakeFormPayload["options"] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -602,6 +628,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const [showPageGuidanceDialog, setShowPageGuidanceDialog] = useState(false);
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
   const [stepError, setStepError] = useState<string | null>(null);
+  const [draftRestoredAt, setDraftRestoredAt] = useState<number | null>(null);
+  const freshDefaultsRef = useRef<IntakeFormState | null>(null);
   const skipScrollOnFirstStepPaint = useRef(true);
   const stepErrorBannerRef = useRef<HTMLDivElement | null>(null);
 
@@ -644,6 +672,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   const [showRevealPreview, setShowRevealPreview] = useState(false);
   const [showControleDetails, setShowControleDetails] = useState(false);
   const [showSupportNeedsPicker, setShowSupportNeedsPicker] = useState(false);
+  const [grensverschilOverride, setGrensverschilOverride] = useState(false);
+  const [derivedRegioLabel, setDerivedRegioLabel] = useState<string | null>(null);
   const pageGuidanceDialogId = "nieuw-casus-page-guidance-dialog";
   const revealPreviewId = "nieuw-casus-reveal-preview";
   const controleDetailsId = "nieuw-casus-controle-details";
@@ -655,12 +685,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
   ];
 
   const complexityLabelMap: Record<string, string> = {
-    LOW: "Enkelvoudig",
-    MEDIUM: "Meervoudig",
-    HIGH: "Intensief",
-    SIMPLE: "Enkelvoudig",
-    MULTIPLE: "Meervoudig",
-    SEVERE: "Intensief",
+    ENKELVOUDIG: "Enkelvoudig",
+    MEERVOUDIG: "Meervoudig",
+    HOOGCOMPLEX: "Hoogcomplex",
   };
 
   useEffect(() => {
@@ -668,7 +695,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
     const bootstrap = async () => {
       try {
-        const payload = await apiClient.get<IntakeFormPayload>("/care/api/cases/intake-form/");
+        let payload: IntakeFormPayload;
+        if (_intakeFormOptionsCache) {
+          payload = _intakeFormOptionsCache;
+        } else {
+          payload = await apiClient.get<IntakeFormPayload>("/care/api/cases/intake-form/");
+          if (ignore) return;
+          _intakeFormOptionsCache = payload;
+        }
         if (ignore) {
           return;
         }
@@ -756,6 +790,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           max_toelaatbare_wachttijd_dagen: payload.initial_values.max_toelaatbare_wachttijd_dagen || "7",
         };
 
+        freshDefaultsRef.current = { ...withDefaults };
+
         if (draft?.formState) {
           withDefaults.title = draft.formState.title || withDefaults.title;
           withDefaults.start_date = draft.formState.start_date || withDefaults.start_date;
@@ -802,6 +838,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         }
         if (draft?.searchRadiusKm) {
           setSearchRadiusKm(draft.searchRadiusKm);
+        }
+        if (draft?.savedAt) {
+          setDraftRestoredAt(draft.savedAt);
         }
       } catch (error) {
         if (!ignore) {
@@ -858,18 +897,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
     let score = 0;
     const urgency = pressureAssessment.band;
-    const complexity = formState.complexity.toLowerCase();
 
     if (urgency === "critical") {
       score += 4;
     } else if (urgency === "high") {
       score += 3;
     } else if (urgency === "normal") {
-      score += 1;
-    }
-    if (complexity.includes("high")) {
-      score += 3;
-    } else if (complexity.includes("medium")) {
       score += 1;
     }
     if (pressureAssessment.band === "critical") {
@@ -934,7 +967,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       ?? preferredRegionOptions.find((option) => option.value === selectedRegionId)
       ?? null;
   }, [formState?.jeugdhulpregio, formState?.preferred_region, formState?.regio, options]);
-  const selectedJeugdhulpregioLabel = selectedJeugdhulpregioOption?.label ?? formState?.jeugdhulpregio ?? formState?.preferred_region ?? formState?.regio ?? "";
+  const selectedJeugdhulpregioLabel = selectedJeugdhulpregioOption?.label ?? derivedRegioLabel ?? "";
 
   const updateField = <K extends keyof IntakeFormState>(field: K, value: IntakeFormState[K]) => {
     setFormState((current) => current ? { ...current, [field]: value } : current);
@@ -1032,12 +1065,24 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           currentStep,
           searchRadiusKm,
           formState,
+          savedAt: Date.now(),
         } satisfies NieuweCasusDraft),
       );
     } catch {
       // Draft persistence is best-effort.
     }
   }, [currentStep, formState, loading, searchRadiusKm]);
+
+  const handleStartFresh = () => {
+    clearNieuweCasusDraft();
+    if (freshDefaultsRef.current) {
+      setFormState(freshDefaultsRef.current);
+    }
+    setCurrentStep(1);
+    setDraftRestoredAt(null);
+    setFormErrors({});
+    setStepError(null);
+  };
 
   const handleSubmit = async () => {
     if (!formState) {
@@ -1057,7 +1102,6 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       const payload = await apiClient.post<IntakeCreateSuccess>("/care/api/cases/intake-create/", requestBody);
       clearNieuweCasusDraft();
       const createdCaseId = payload.case_id?.trim();
-      // @ts-ignore
       setSuccessMessage(`Casus ${payload.title} is aangemaakt. Let op: voeg deze CareOn referentiecode toe aan het dossier van uw client binnen uw ECD. Referentiecode: ${payload.source_reference || careonReference}. Je wordt doorgestuurd naar het nieuwe coördinatietraject.`);
       const target =
         payload.redirect_url ||
@@ -1102,8 +1146,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     }
 
     if (step === 2) {
-      if (!formState.care_category_main || !formState.complexity || !formState.placement_pressure_horizon) {
-        setStepError("Kies zorgbehoefte, complexiteit en plaatsingsdruk om door te gaan.");
+      if (!formState.care_category_main || !formState.placement_pressure_horizon) {
+        setStepError("Kies zorgbehoefte en plaatsingsdruk om door te gaan.");
         return false;
       }
       if (pressureAssessment && (pressureAssessment.band === "high" || pressureAssessment.band === "critical") && formState.has_urgency_declaration && !urgencyDocument) {
@@ -1119,7 +1163,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     if (step === 3) {
       const hasRegionOptions = (options.jeugdhulpregio?.length ?? 0) > 0;
       if (hasRegionOptions && !formState.jeugdhulpregio && !formState.regio && !formState.preferred_region) {
-        setStepError("Kies minimaal een jeugdhulpregio binnen de randvoorwaarden.");
+        setStepError("Kies minimaal een regio binnen de randvoorwaarden.");
         return false;
       }
     }
@@ -1156,7 +1200,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
   if (loading) {
     return (
-      <div className="panel-surface flex min-h-[320px] items-center justify-center rounded-[28px] border border-border/70 p-4">
+      <div className="panel-surface flex min-h-[320px] items-center justify-center rounded-[20px] border border-border/70 p-4">
         <div className="flex items-center gap-3 text-sm text-muted-foreground">
           <Loader2 size={18} className="animate-spin" />
           Intakeformulier laden...
@@ -1167,7 +1211,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
   if (loadError || !formState || !options) {
     return (
-      <div className="panel-surface rounded-[28px] border border-red-500/20 p-4">
+      <div className="panel-surface rounded-[20px] border border-red-500/20 p-4">
         <div className="flex items-start gap-3 text-care-urgent-solid">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           <div>
@@ -1206,8 +1250,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
     {
       phase: "matching",
       label: "Matching",
-      gemeente: "Leeftijdscategorie, jeugdhulpregio, zorgvraag, urgentie",
-      zorgaanbieder: "Leeftijdscategorie + jeugdhulpregio (geen NAW)",
+      gemeente: "Leeftijdscategorie, regio, zorgvraag, urgentie",
+      zorgaanbieder: "Leeftijdscategorie + regio (geen NAW)",
       coordinatie: "Need-to-know coördinatiesignalen",
     },
     {
@@ -1251,7 +1295,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           className="inline-flex items-center gap-1.5 text-[15px] font-medium leading-none text-primary transition-colors hover:text-muted-foreground"
         >
           <ArrowLeft size={15} className="translate-y-px" />
-          Terug naar casussen
+          {backLabel}
         </button>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
           <div className="flex min-w-0 flex-wrap items-center gap-2.5">
@@ -1286,8 +1330,33 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
         onOpenChange={setShowPageGuidanceDialog}
       />
 
+      {draftRestoredAt !== null && (
+        <div className="flex items-center justify-between gap-3 rounded-[10px] border border-border/60 bg-muted/20 px-4 py-2.5 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Save size={13} className="shrink-0" aria-hidden />
+            <span>Concept {formatDraftAge(draftRestoredAt)}</span>
+          </div>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              type="button"
+              onClick={() => setDraftRestoredAt(null)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sluiten
+            </button>
+            <button
+              type="button"
+              onClick={handleStartFresh}
+              className="text-xs font-medium text-destructive hover:underline"
+            >
+              Nieuw beginnen
+            </button>
+          </div>
+        </div>
+      )}
+
       {formErrors.__all__ && (
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/5 px-4 py-3">
+        <div className="rounded-[16px] border border-care-urgent-border bg-care-urgent-bg px-4 py-3">
           <div className="flex items-start gap-3 text-care-urgent-solid">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <div>
@@ -1299,7 +1368,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       )}
 
       {successMessage && (
-        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+        <div className="rounded-[16px] border border-care-success-border bg-care-success-bg px-4 py-3">
           <div className="flex items-start gap-3 text-care-success-solid">
             <CheckCircle2 size={16} className="mt-0.5 shrink-0" />
             <p className="text-sm">{successMessage}</p>
@@ -1313,19 +1382,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
           tabIndex={-1}
           role="alert"
           aria-live="assertive"
-          className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 shadow-sm outline-none"
+          className="rounded-[16px] border border-care-warning-border bg-care-warning-bg px-4 py-3 shadow-sm outline-none"
         >
           <div className="flex items-start gap-3">
             <AlertTriangle size={16} className="mt-0.5 shrink-0 text-care-warning-solid" />
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-foreground">Je kunt nog niet verder</p>
+              <p className="text-sm font-medium text-foreground">Je kunt nog niet verder</p>
               <p className="mt-1 text-sm text-care-warning-solid">{stepError}</p>
             </div>
           </div>
         </div>
       ) : null}
 
-      <section className="rounded-[22px] border border-border/70 bg-panel/70 p-3 shadow-sm backdrop-blur-sm md:p-4">
+      <section className="rounded-[20px] border border-border/70 bg-panel/70 p-3 shadow-sm backdrop-blur-sm md:p-4">
         <div className="space-y-3">
           <nav className="grid grid-cols-1 gap-2 md:grid-cols-3" aria-label="Wizard stappen">
             {stepMeta.map((step) => {
@@ -1336,7 +1405,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               const stepToneClass = isActive
                 ? "border-primary/35 bg-primary/10 text-foreground ring-1 ring-primary/20"
                 : isCompleted
-                  ? "border-emerald-500/20 bg-emerald-500/8 text-foreground hover:border-emerald-400/30"
+                  ? "border-care-success-border bg-care-success-bg text-foreground hover:border-care-success-border/70"
                   : "border-border/70 bg-card/20 text-muted-foreground hover:border-primary/20 hover:bg-card/30 hover:text-foreground";
 
               return (
@@ -1351,19 +1420,19 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     }
                   }}
                   disabled={!isClickable}
-                className={`flex min-h-[58px] items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors ${stepToneClass}`}
+                className={`flex min-h-[58px] items-center gap-3 rounded-[10px] border px-3 py-2.5 text-left transition-colors ${stepToneClass}`}
                 >
-                  <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold leading-none ${isActive ? "border-primary/20 bg-primary text-primary-foreground" : isCompleted ? "bg-care-success-bg text-care-success-text border-care-success-border" : "border-border/70 bg-background/20 text-foreground"}`}>
+                  <span className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border text-sm font-medium leading-none ${isActive ? "border-primary/20 bg-primary text-primary-foreground" : isCompleted ? "bg-care-success-bg text-care-success-text border-care-success-border" : "border-border/70 bg-background/20 text-foreground"}`}>
                     {isCompleted ? <CheckCircle2 size={15} aria-hidden /> : step.id}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className={`block text-[13px] font-semibold leading-tight ${isActive ? "text-foreground" : isCompleted ? "text-foreground" : "text-inherit"}`}>{step.title}</span>
+                    <span className={`block text-[13px] font-medium leading-tight ${isActive ? "text-foreground" : isCompleted ? "text-foreground" : "text-inherit"}`}>{step.title}</span>
                     {step.hint ? (
                       <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground">{step.hint}</span>
                     ) : null}
                   </span>
                   {isActive ? (
-                    <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-primary">
+                    <span className="shrink-0 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.08em] text-primary">
                       Actief
                     </span>
                   ) : null}
@@ -1375,7 +1444,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
         {currentStep === 1 && (
           <div className="mt-6 space-y-4">
-            <div className="rounded-2xl border border-border/55 bg-card/35 p-5 md:p-6">
+            <div className="rounded-[16px] border border-border/55 bg-card/35 p-5 md:p-6">
               <SectionHeader
                 step="1"
                 title="Geef basisgegevens op"
@@ -1394,7 +1463,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     label="Gemeente (woonplaatsbeginsel) *"
                     value={formState.gemeente}
                     options={options.gemeente}
-                    onChange={(nextValue) => updateField("gemeente", nextValue)}
+                    onChange={(nextValue) => {
+                      updateField("gemeente", nextValue);
+                      const opt = options.gemeente.find((o) => o.value === nextValue);
+                      if (opt?.regio) {
+                        updateJeugdhulpregio(opt.regio);
+                        setDerivedRegioLabel(opt.regioLabel || null);
+                      }
+                    }}
                     placeholder="Zoek gemeente"
                     labelAction={
                       <CareInfoPopover ariaLabel="Waarom deze gemeente?" testId="nieuwe-casus-gemeente-info">
@@ -1435,20 +1511,14 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
                 <div>
                   <div className="mb-1 flex flex-wrap items-center gap-2">
-                    <label className={compactLabelClass}>Jeugdhulpregio *</label>
+                    <label className={compactLabelClass}>Regio</label>
                     <span aria-hidden className="h-8 w-8 shrink-0" />
                   </div>
-                  <select
-                    value={formState.jeugdhulpregio}
-                    onChange={(event) => updateJeugdhulpregio(event.target.value)}
-                    className={baseFieldClass}
-                    aria-label="Jeugdhulpregio *"
-                  >
-                    <option value="">Selecteer jeugdhulpregio</option>
-                    {options.jeugdhulpregio.map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                  </select>
+                  <div className={`${baseFieldClass} flex items-center text-sm`} aria-label="Regio (afgeleid van gemeente)">
+                    <span className={selectedJeugdhulpregioLabel ? "text-foreground" : "text-muted-foreground"}>
+                      {selectedJeugdhulpregioLabel || "Volgt uit gemeente"}
+                    </span>
+                  </div>
                   <FieldError message={formErrors.jeugdhulpregio ?? formErrors.regio} />
                 </div>
               </div>
@@ -1513,34 +1583,12 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               </div>
             </div>
 
-            <div className={wizardFieldGridClass}>
-              <div>
-                <p className={compactGroupLabelClass}>Complexiteit *</p>
-                <select
-                  value={formState.complexity}
-                  onChange={(event) => updateField("complexity", event.target.value)}
-                  className={baseFieldClass}
-                  aria-label="Complexiteit *"
-                >
-                  <option value="">Selecteer complexiteit</option>
-                  {options.complexity.map((option) => {
-                    const label = complexityLabelMap[option.value.toUpperCase()] ?? option.label;
-                    return (
-                      <option key={option.value} value={option.value}>
-                        {label}
-                      </option>
-                    );
-                  })}
-                </select>
-                <FieldError message={formErrors.complexity} />
-              </div>
-            </div>
-            <section className="rounded-[24px] border border-border/70 bg-card/35 p-4 shadow-sm">
+            <section className="rounded-[20px] border border-border/70 bg-card/35 p-4 shadow-sm">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="care-text-heading text-foreground">Plaatsingsdruk &amp; urgentie</h3>
                 </div>
-                <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ${
+                <span className={`inline-flex rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] ${
                   pressureAssessment?.band === "critical"
                     ? "bg-care-urgent-bg text-care-urgent-text border-care-urgent-border"
                     : pressureAssessment?.band === "high"
@@ -1555,7 +1603,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
 
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(0,0.92fr)]">
                 <div className="space-y-4">
-                  <div className="space-y-3 rounded-2xl border border-border/60 bg-card/25 p-4">
+                  <div className="space-y-3 rounded-[16px] border border-border/60 bg-card/25 p-4">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
                         <label className={compactGroupLabelClass}>Hoe lang is de zorgsituatie nog houdbaar? *</label>
@@ -1571,7 +1619,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                               aria-pressed={active}
                               aria-label={`Zorgsituatie nog houdbaar: ${option.label.toLowerCase()}`}
                               onClick={() => updateField("placement_pressure_horizon", option.value)}
-                              className={`rounded-xl border px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
+                              className={`rounded-[10px] border px-3 py-2 text-left text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 ${
                               active
                                 ? "border-primary/40 bg-primary/10 text-foreground shadow-sm"
                                 : "border-border/60 bg-background/40 text-muted-foreground hover:border-border/90 hover:text-foreground"
@@ -1585,10 +1633,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     <FieldError message={formErrors.placement_pressure_horizon} />
                   </div>
 
-                  <div className="space-y-3 rounded-2xl border border-border/60 bg-card/25 p-4">
+                  <div className="space-y-3 rounded-[16px] border border-border/60 bg-card/25 p-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <p className={compactGroupLabelClass}>Risicosignalen</p>
-                      <span className="rounded-full border border-border/60 bg-background/50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+                      <span className="rounded-full border border-border/60 bg-background/50 px-2.5 py-1 text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
                         Triage-indicatoren
                       </span>
                     </div>
@@ -1629,10 +1677,10 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 </div>
 
                 <div className="space-y-3">
-                  <div className="rounded-2xl border border-border/60 bg-card/30 px-4 py-4">
+                  <div className="rounded-[16px] border border-border/60 bg-card/30 px-4 py-4">
                     <p className="care-text-eyebrow text-muted-foreground">Urgentieadvies</p>
                     <div className="mt-2 flex items-center gap-2">
-                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                      <span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-medium ${
                         pressureAssessment?.band === "critical"
                           ? "bg-care-urgent-bg text-care-urgent-text"
                           : pressureAssessment?.band === "high"
@@ -1652,7 +1700,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </p>
                   </div>
 
-                  <div className="rounded-2xl border border-border/60 bg-card/30 px-4 py-4">
+                  <div className="rounded-[16px] border border-border/60 bg-card/30 px-4 py-4">
                     <p className="care-text-eyebrow text-muted-foreground">Matchverwachting</p>
                     <p className="mt-2 text-sm font-medium leading-snug text-foreground">
                       {matchingPreview.label}
@@ -1667,26 +1715,9 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 </div>
               </div>
 
-              <div className="mt-4">
-                <div className="mb-1 flex flex-wrap items-center gap-2">
-                  <label htmlFor="nieuw-casus-placement-pressure-notes" className={compactLabelClass}>Toelichting</label>
-                  <CareInfoPopover ariaLabel="Waarom toelichting plaatsingsdruk?" testId="nieuwe-casus-place-pressure-info">
-                    <p>Gebruik alleen operationele context die nodig is voor triage en matching.</p>
-                    <p>Laat namen, adressen, telefoonnummers, e-mailadressen en BSN weg.</p>
-                  </CareInfoPopover>
-                </div>
-                <textarea
-                  id="nieuw-casus-placement-pressure-notes"
-                  value={formState.placement_pressure_notes}
-                  onChange={(event) => updateField("placement_pressure_notes", event.target.value)}
-                  className={`${baseTextareaClass} min-h-24`}
-                  placeholder="Korte operationele toelichting zonder direct herleidbare persoonsgegevens"
-                />
-                <FieldError message={formErrors.placement_pressure_notes} />
-              </div>
 
               {pressureAssessment?.band && pressureAssessment.band !== "low" ? (
-                <div className="rounded-2xl border border-dashed border-border/60 bg-muted/10 p-4">
+                <div className="rounded-[16px] border border-dashed border-border/60 bg-muted/10 p-4">
                   <div className="space-y-4">
                     <label className="flex items-start gap-3 text-sm text-foreground">
                       <input
@@ -1714,7 +1745,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                       />
                       <span>Client heeft al een urgentieverklaring</span>
                     </label>
-                    <div id="nieuw-casus-urgency-declaration-help" className="rounded-xl border border-border/60 bg-card/30 px-4 py-3 text-sm text-muted-foreground">
+                    <div id="nieuw-casus-urgency-declaration-help" className="rounded-[10px] border border-border/60 bg-card/30 px-4 py-3 text-sm text-muted-foreground">
                       {formState.has_urgency_declaration ? (
                         <div className="space-y-3">
                           <p className="text-foreground">Upload de bestaande urgentieverklaring zodat de casus direct compleet is.</p>
@@ -1730,7 +1761,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                               id="nieuw-casus-urgency-document"
                               type="file"
                               accept=".pdf,image/*"
-                              className={`${baseFieldClass} py-2 file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-foreground`}
+                              className={`${baseFieldClass} py-2 file:mr-3 file:rounded-full file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-primary-foreground`}
                               onChange={(event: ChangeEvent<HTMLInputElement>) => {
                                 const file = event.target.files?.[0] ?? null;
                                 setUrgencyDocument(file);
@@ -1831,7 +1862,28 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
               <FieldError message={formErrors.assessment_summary} />
             </div>
 
-            <div className="rounded-2xl border border-border/60 bg-muted/10 p-4">
+            <div>
+              <div className="mb-1 flex flex-wrap items-center gap-2">
+                <label htmlFor="nieuw-casus-placement-pressure-notes" className={compactLabelClass}>
+                  Aanvullende toelichting
+                </label>
+                <span className="text-[11px] text-muted-foreground/70">(optioneel)</span>
+                <CareInfoPopover ariaLabel="Waarom aanvullende toelichting?" testId="nieuwe-casus-aanvullende-toelichting-info">
+                  <p>Gebruik dit veld alleen voor operationele context die niet in het persoonsbeeld past.</p>
+                  <p>Laat namen, adressen, telefoonnummers, e-mailadressen en BSN weg.</p>
+                </CareInfoPopover>
+              </div>
+              <textarea
+                id="nieuw-casus-placement-pressure-notes"
+                value={formState.placement_pressure_notes}
+                onChange={(event) => updateField("placement_pressure_notes", event.target.value)}
+                className={`${baseTextareaClass} min-h-20`}
+                placeholder="Aanvullende operationele context die niet in het persoonsbeeld past (zonder herleidbare persoonsgegevens)"
+              />
+              <FieldError message={formErrors.placement_pressure_notes} />
+            </div>
+
+            <div className="rounded-[16px] border border-border/60 bg-muted/10 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="care-text-eyebrow text-muted-foreground">Wie ziet wat per fase</p>
@@ -1863,8 +1915,8 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </thead>
                     <tbody>
                       {visibilityRows.map((row) => (
-                        <tr key={row.phase} className="rounded-xl border border-border/50 bg-card/30">
-                          <td className="px-3 py-2 font-semibold text-foreground">{row.label}</td>
+                        <tr key={row.phase} className="rounded-[10px] border border-border/50 bg-card/30">
+                          <td className="px-3 py-2 font-medium text-foreground">{row.label}</td>
                           <td className="px-3 py-2 text-muted-foreground">{row.gemeente}</td>
                           <td className="px-3 py-2 text-muted-foreground">{row.zorgaanbieder}</td>
                           <td className="px-3 py-2 text-muted-foreground">{row.coordinatie}</td>
@@ -1888,35 +1940,68 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
             />
 
             {(options.jeugdhulpregio?.length ?? 0) === 0 && (
-              <div className="rounded-xl border bg-care-warning-bg text-care-warning-text border-care-warning-border px-4 py-3 text-sm">
-                <span className="font-semibold">Geen jeugdhulpregio's geconfigureerd.</span>{" "}
+              <div className="rounded-[10px] border bg-care-warning-bg text-care-warning-text border-care-warning-border px-4 py-3 text-sm">
+                <span className="font-medium">Geen regio's geconfigureerd.</span>{" "}
                 Ga naar <a href="/care/regio's/" className="underline underline-offset-2 hover:text-care-warning-solid">Regio's</a> om er een aan te maken voordat je een casus plaatst. De casus wordt opgeslagen zonder regiokoppeling.
               </div>
             )}
 
             <div className="grid gap-3 xl:grid-cols-[minmax(0,1.9fr)_minmax(350px,1fr)]">
               <div className="space-y-3">
-                <section className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
+                <section className="panel-surface rounded-[20px] border border-border/70 p-4 shadow-sm">
                   <div className="mb-3 flex items-start justify-between gap-3">
-                    <h3 className="care-text-heading text-foreground">Gemeente &amp; Jeugdhulpregio</h3>
+                    <h3 className="care-text-heading text-foreground">Gemeente &amp; Regio</h3>
                   </div>
 
                   <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-end">
                     <div>
-                      <label htmlFor="nieuw-casus-regio" className={compactLabelClass}>Jeugdhulpregio *</label>
-                      <select
-                        id="nieuw-casus-regio"
-                        value={formState.jeugdhulpregio}
-                        onChange={(event) => {
-                          updateJeugdhulpregio(event.target.value);
-                        }}
-                        className={baseFieldClass}
-                      >
-                        <option value="">Selecteer jeugdhulpregio</option>
-                        {options.jeugdhulpregio.map((option) => (
-                          <option key={option.value} value={option.value}>{option.label}</option>
-                        ))}
-                      </select>
+                      <div className="mb-1 flex flex-wrap items-center gap-2">
+                        <label htmlFor="nieuw-casus-regio" className={compactLabelClass}>Regio</label>
+                        {!grensverschilOverride && (
+                          <button
+                            type="button"
+                            onClick={() => setGrensverschilOverride(true)}
+                            className="text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            Grensverschil?
+                          </button>
+                        )}
+                      </div>
+                      {grensverschilOverride ? (
+                        <>
+                          <select
+                            id="nieuw-casus-regio"
+                            value={formState.jeugdhulpregio}
+                            onChange={(event) => { updateJeugdhulpregio(event.target.value); setDerivedRegioLabel(null); }}
+                            className={baseFieldClass}
+                          >
+                            <option value="">Selecteer regio</option>
+                            {options.jeugdhulpregio.map((option) => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setGrensverschilOverride(false);
+                              const opt = options.gemeente.find((o) => o.value === formState.gemeente);
+                              if (opt?.regio) {
+                                updateJeugdhulpregio(opt.regio);
+                                setDerivedRegioLabel(opt.regioLabel || null);
+                              }
+                            }}
+                            className="mt-1 text-[11px] text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                          >
+                            Herstel naar gemeente-regio
+                          </button>
+                        </>
+                      ) : (
+                        <div className={`${baseFieldClass} flex items-center text-sm`} aria-label="Regio (afgeleid van gemeente)">
+                          <span className={selectedJeugdhulpregioLabel ? "text-foreground" : "text-muted-foreground"}>
+                            {selectedJeugdhulpregioLabel || "Volgt uit gemeente"}
+                          </span>
+                        </div>
+                      )}
                       <FieldError message={formErrors.jeugdhulpregio ?? formErrors.regio} />
                     </div>
 
@@ -1938,15 +2023,15 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   </div>
 
                   <div className="mt-4 grid gap-3 md:grid-cols-3">
-                    <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
+                    <div className="min-w-0 rounded-[16px] border border-border/50 bg-card/30 px-3 py-3">
                       <p className="care-text-eyebrow text-muted-foreground">Gemeente (woonplaatsbeginsel)</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedGemeenteLabel || "Wordt afgeleid uit gemeente"}</p>
                     </div>
-                    <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
-                      <p className="care-text-eyebrow text-muted-foreground">Jeugdhulpregio</p>
-                      <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedJeugdhulpregioLabel || "Wordt afgeleid uit jeugdhulpregio"}</p>
+                    <div className="min-w-0 rounded-[16px] border border-border/50 bg-card/30 px-3 py-3">
+                      <p className="care-text-eyebrow text-muted-foreground">Regio</p>
+                      <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">{selectedJeugdhulpregioLabel || "Afgeleid van gemeente"}</p>
                     </div>
-                    <div className="min-w-0 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
+                    <div className="min-w-0 rounded-[16px] border border-border/50 bg-card/30 px-3 py-3">
                       <p className="care-text-eyebrow text-muted-foreground">Herbeoordeling</p>
                       <p className="mt-1 break-words text-sm font-medium leading-snug text-foreground">
                         {formState.gemeente && formState.jeugdhulpregio ? "Alleen bij grensverschil" : "Nog niet bepaald"}
@@ -1955,7 +2040,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   </div>
                 </section>
 
-                <section className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
+                <section className="panel-surface rounded-[20px] border border-border/70 p-4 shadow-sm">
                   <div className="mb-3 flex items-start justify-between gap-3">
                     <h3 className="care-text-heading text-foreground">Ondersteuningsbehoeften</h3>
                     <Button
@@ -2011,7 +2096,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 </section>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <section className="panel-surface h-full rounded-[24px] border border-border/70 p-4 shadow-sm">
+                  <section className="panel-surface h-full rounded-[20px] border border-border/70 p-4 shadow-sm">
                     <div className="flex h-full flex-col">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-care-warning-bg text-care-warning-text border-care-warning-border">
@@ -2019,7 +2104,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         </div>
                         <h3 className="min-w-0 care-text-heading text-foreground">Matchverwachting</h3>
                       </div>
-                      <div className="mt-4 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
+                      <div className="mt-4 rounded-[16px] border border-border/50 bg-card/30 px-3 py-3">
                         <p className="care-text-eyebrow text-muted-foreground">
                           Verwachte uitkomst
                         </p>
@@ -2033,7 +2118,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     </div>
                   </section>
 
-                  <section className="panel-surface h-full rounded-[24px] border border-border/70 p-4 shadow-sm">
+                  <section className="panel-surface h-full rounded-[20px] border border-border/70 p-4 shadow-sm">
                     <div className="flex h-full flex-col">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border bg-care-brand-bg text-care-brand-text border-care-brand-border">
@@ -2041,7 +2126,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                         </div>
                         <h3 className="min-w-0 care-text-heading text-foreground">Privacy &amp; zichtbaarheid</h3>
                       </div>
-                      <div className="mt-4 rounded-2xl border border-border/50 bg-card/30 px-3 py-3">
+                      <div className="mt-4 rounded-[16px] border border-border/50 bg-card/30 px-3 py-3">
                         <div className="flex flex-col gap-2 text-sm text-foreground">
                           <p className="grid min-w-0 grid-cols-[14px_minmax(0,1fr)] items-start gap-2 leading-snug">
                             <Lock size={14} className="text-care-brand-solid" aria-hidden />
@@ -2058,7 +2143,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                 </div>
               </div>
 
-              <aside className="panel-surface rounded-[24px] border border-border/70 p-4 shadow-sm">
+              <aside className="panel-surface rounded-[20px] border border-border/70 p-4 shadow-sm">
                 <div className="mb-3">
                   <h3 className="care-text-heading text-foreground">Samenvatting voor verzending</h3>
                 </div>
@@ -2068,7 +2153,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                     <span className="min-w-0 break-words text-right font-medium text-foreground">{(selectedGemeenteLabel || "-")}</span>
                   </div>
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
-                    <span className="text-muted-foreground">Jeugdhulpregio</span>
+                    <span className="text-muted-foreground">Regio</span>
                     <span className="min-w-0 break-words text-right font-medium text-foreground">{(options.jeugdhulpregio.find((option) => option.value === formState.jeugdhulpregio)?.label ?? formState.jeugdhulpregio) || (options.preferred_region.find((option) => option.value === formState.preferred_region)?.label ?? formState.preferred_region) || "-"}</span>
                   </div>
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
@@ -2078,7 +2163,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
                   <div className="flex min-w-0 items-start justify-between gap-3 py-3 text-sm">
                     <span className="text-muted-foreground">Urgentieadvies</span>
                     <span className="inline-flex min-w-0 items-center justify-end gap-2 text-right font-medium text-foreground">
-                      <span className={`h-2.5 w-2.5 rounded-full ${pressureAssessment?.band === "low" ? "bg-green-400" : pressureAssessment?.band === "normal" ? "bg-sky-400" : pressureAssessment?.band === "high" ? "bg-amber-400" : "bg-red-400"}`} />
+                      <span className={`h-2.5 w-2.5 rounded-full ${pressureAssessment?.band === "low" ? "bg-care-success-solid" : pressureAssessment?.band === "normal" ? "bg-care-info-solid" : pressureAssessment?.band === "high" ? "bg-care-warning-solid" : "bg-care-urgent-solid"}`} />
                       {pressureAssessment?.label ?? "-"}
                     </span>
                   </div>
@@ -2114,7 +2199,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       </section>
 
       {currentStep === 1 && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card/35 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[16px] border border-border/70 bg-card/35 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <Button variant="outline" className="h-11 gap-2 rounded-full px-5 text-[15px] font-medium" onClick={() => onCancel?.()}>
             Annuleren
           </Button>
@@ -2126,7 +2211,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       )}
 
       {currentStep === 2 && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border/70 bg-card/35 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-[16px] border border-border/70 bg-card/35 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <Button variant="outline" className="h-11 gap-2 rounded-full px-5 text-[15px] font-medium" onClick={() => onCancel?.()}>
             <ArrowLeft size={15} />
             Terug
@@ -2152,7 +2237,7 @@ export function NieuweCasusPage({ onCancel, onCreated }: NieuweCasusPageProps) {
       )}
 
       {currentStep === 3 && (
-        <div className="space-y-3 rounded-2xl border border-border/70 bg-card/35 px-4 py-3">
+        <div className="space-y-3 rounded-[16px] border border-border/70 bg-card/35 px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Button variant="outline" className="h-11 gap-2 rounded-full px-5 text-[15px] font-medium" onClick={() => onCancel?.()}>
               <ArrowLeft size={15} />

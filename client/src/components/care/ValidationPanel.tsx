@@ -60,7 +60,7 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
 
       {/* Status Summary */}
       {validations.length === 0 && (
-        <CarePanel className="p-4 border border-emerald-500/40 bg-emerald-500/15">
+        <CarePanel className="p-4 border border-care-success-border bg-care-success-bg">
           <div className="flex items-start gap-3">
             <CheckCircle2 size={20} className="text-care-success-solid flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
@@ -141,9 +141,9 @@ export function ValidationPanel({ validations, suggestions = [] }: ValidationPan
 
       {/* Completion Requirements */}
       {hasErrors && (
-        <div className="p-3 rounded-lg border border-amber-500/40 bg-amber-500/15">
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            <strong className="text-foreground">Let op:</strong> Los alle problemen op voordat je de beoordeling kunt afronden.
+        <div className="p-3 rounded-lg border border-care-warning-border bg-care-warning-bg">
+          <p className="text-xs text-care-warning-text leading-relaxed">
+            <strong className="text-care-warning-text">Let op:</strong> Los alle problemen op voordat je de beoordeling kunt afronden.
           </p>
         </div>
       )}

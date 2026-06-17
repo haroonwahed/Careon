@@ -82,6 +82,13 @@ export interface DecisionTimelineSignals {
   }>;
 }
 
+export interface MissingRequiredField {
+  id: string;
+  label: string;
+  section: string;
+  field_hint?: string;
+}
+
 export interface DecisionEvaluation {
   case_id: number | string | null;
   current_state: string;
@@ -103,6 +110,7 @@ export interface DecisionEvaluation {
   blocked_actions: BlockedAction[];
   decision_context: DecisionEvaluationContext;
   timeline_signals: DecisionTimelineSignals;
+  missing_required_fields?: MissingRequiredField[];
 }
 
 export async function fetchCaseDecisionEvaluation(caseId: string | number): Promise<DecisionEvaluation> {

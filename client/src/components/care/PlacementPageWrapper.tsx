@@ -7,6 +7,7 @@ import { useState } from "react";
 import { PlacementPage } from "./PlacementPage";
 import { PlacementTrackingPage } from "./PlacementTrackingPage";
 import { useProviders } from "../../hooks/useProviders";
+import { useCases } from "../../hooks/useCases";
 
 interface PlacementPageWrapperProps {
   onNavigateToMatching?: () => void;
@@ -16,6 +17,7 @@ interface PlacementPageWrapperProps {
 export function PlacementPageWrapper({ onNavigateToMatching, onNavigateToAanbiederreacties }: PlacementPageWrapperProps) {
   const [selectedCase, setSelectedCase] = useState<string | null>(null);
   const { providers } = useProviders({ q: "" });
+  const { cases } = useCases({ q: "" });
 
   const handleCaseClick = (caseId: string) => {
     setSelectedCase(caseId);
@@ -31,7 +33,11 @@ export function PlacementPageWrapper({ onNavigateToMatching, onNavigateToAanbied
 
   // If case is selected, show the full placement workflow
   if (selectedCase) {
-    const providerId = providers[0]?.id ?? "";
+    const selectedCaseData = cases.find((c) => c.id === selectedCase);
+    const arrangementProviderName = selectedCaseData?.arrangementProvider?.trim() ?? "";
+    const providerId = arrangementProviderName
+      ? (providers.find((p) => p.name === arrangementProviderName)?.id ?? "")
+      : "";
     
     return (
       <PlacementPage

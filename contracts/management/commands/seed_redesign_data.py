@@ -431,7 +431,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.MATCHING,
 				'urgency': CaseIntakeProcess.Urgency.CRISIS,
-				'complexity': CaseIntakeProcess.Complexity.SEVERE,
+				'complexity': CaseIntakeProcess.Complexity.HOOGCOMPLEX,
 				'care_form': CaseIntakeProcess.CareForm.CRISIS,
 				'category': categories[0],
 				'age': 15,
@@ -460,7 +460,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.INTAKE,
 				'urgency': CaseIntakeProcess.Urgency.MEDIUM,
-				'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+				'complexity': CaseIntakeProcess.Complexity.MEERVOUDIG,
 				'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
 				'category': categories[1],
 				'age': 13,
@@ -489,7 +489,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.MATCHING,
 				'urgency': CaseIntakeProcess.Urgency.HIGH,
-				'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+				'complexity': CaseIntakeProcess.Complexity.MEERVOUDIG,
 				'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
 				'category': categories[0],
 				'age': 16,
@@ -529,7 +529,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.DECISION,
 				'urgency': CaseIntakeProcess.Urgency.HIGH,
-				'complexity': CaseIntakeProcess.Complexity.SEVERE,
+				'complexity': CaseIntakeProcess.Complexity.HOOGCOMPLEX,
 				'care_form': CaseIntakeProcess.CareForm.RESIDENTIAL,
 				'category': categories[1],
 				'age': 14,
@@ -565,7 +565,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.DECISION,
 				'urgency': CaseIntakeProcess.Urgency.MEDIUM,
-				'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+				'complexity': CaseIntakeProcess.Complexity.MEERVOUDIG,
 				'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
 				'category': categories[2],
 				'age': 12,
@@ -600,7 +600,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.DECISION,
 				'urgency': CaseIntakeProcess.Urgency.HIGH,
-				'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+				'complexity': CaseIntakeProcess.Complexity.MEERVOUDIG,
 				'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
 				'category': categories[0],
 				'age': 17,
@@ -635,7 +635,7 @@ class Command(BaseCommand):
 				'region': 'Regio Midden Pilot',
 				'status': CaseIntakeProcess.ProcessStatus.ARCHIVED,
 				'urgency': CaseIntakeProcess.Urgency.MEDIUM,
-				'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+				'complexity': CaseIntakeProcess.Complexity.ENKELVOUDIG,
 				'care_form': CaseIntakeProcess.CareForm.OUTPATIENT,
 				'category': categories[1],
 				'age': 11,
@@ -917,12 +917,12 @@ class Command(BaseCommand):
 
 	def _risk_level_for_urgency(self, urgency):
 		mapping = {
-			CaseIntakeProcess.Urgency.LOW: CareCase.RiskLevel.LOW,
-			CaseIntakeProcess.Urgency.MEDIUM: CareCase.RiskLevel.MEDIUM,
-			CaseIntakeProcess.Urgency.HIGH: CareCase.RiskLevel.HIGH,
-			CaseIntakeProcess.Urgency.CRISIS: CareCase.RiskLevel.CRITICAL,
+			CaseIntakeProcess.Urgency.LOW: CareCase.RiskLevel.GEEN_BIJZONDER_RISICO,
+			CaseIntakeProcess.Urgency.MEDIUM: CareCase.RiskLevel.GEEN_BIJZONDER_RISICO,
+			CaseIntakeProcess.Urgency.HIGH: CareCase.RiskLevel.VERHOOGD_RISICO,
+			CaseIntakeProcess.Urgency.CRISIS: CareCase.RiskLevel.ACUUT_RISICO,
 		}
-		return mapping.get(urgency, CareCase.RiskLevel.MEDIUM)
+		return mapping.get(urgency, CareCase.RiskLevel.GEEN_BIJZONDER_RISICO)
 
 	def _ensure_waittimes(self, providers):
 		for index, provider in enumerate(providers, start=1):

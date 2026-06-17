@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   fetchCoordinationDecisionOverview,
   type CoordinationDecisionOverview,
@@ -18,6 +18,7 @@ export function useCoordinationDecisionOverview(): UseCoordinationDecisionOvervi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const hasLoadedRef = useRef(false);
 
   const refetch = useCallback(() => {
     setTick((value) => value + 1);
@@ -25,12 +26,13 @@ export function useCoordinationDecisionOverview(): UseCoordinationDecisionOvervi
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    if (!hasLoadedRef.current) setLoading(true);
     setError(null);
 
     fetchCoordinationDecisionOverview()
       .then((payload) => {
         if (!cancelled) {
+          hasLoadedRef.current = true;
           setData(payload);
         }
       })

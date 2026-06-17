@@ -37,7 +37,7 @@ export interface SpaProvider {
 
 interface UseProvidersOptions {
   q?: string;
-  autoRefreshMs?: number;
+  autoRefreshMs?: number; // default 120 000 ms
 }
 
 interface NetworkSummary {
@@ -61,7 +61,7 @@ interface UseProvidersResult {
 }
 
 export function useProviders(options: UseProvidersOptions = {}): UseProvidersResult {
-  const { q = '', autoRefreshMs = 30_000 } = options;
+  const { q = '', autoRefreshMs = 120_000 } = options;
   const [providers, setProviders] = useState<SpaProvider[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

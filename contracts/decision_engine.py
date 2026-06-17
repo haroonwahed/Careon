@@ -588,6 +588,24 @@ def _required_data_complete(intake: CaseIntakeProcess | None, case_record: CareC
     return all(required_checks)
 
 
+def _get_missing_required_fields(intake: CaseIntakeProcess | None) -> list[dict[str, str]]:
+    if intake is None:
+        return [{"id": "title", "label": "Casusnaam", "section": "casus", "field_hint": "id_title"}]
+
+    missing: list[dict[str, str]] = []
+    if not _clean(intake.title):
+        missing.append({"id": "title", "label": "Casusnaam", "section": "casus", "field_hint": "id_title"})
+    if not intake.start_date:
+        missing.append({"id": "start_date", "label": "Startdatum", "section": "casus", "field_hint": "id_start_date"})
+    if not intake.target_completion_date:
+        missing.append({"id": "target_completion_date", "label": "Streefdatum plaatsing", "section": "casus", "field_hint": "id_target_completion_date"})
+    if not _clean(intake.urgency):
+        missing.append({"id": "urgency", "label": "Urgentieclassificatie", "section": "casus", "field_hint": "id_urgency"})
+    if not _clean(intake.preferred_care_form or intake.zorgvorm_gewenst):
+        missing.append({"id": "preferred_care_form", "label": "Gewenste zorgvorm", "section": "casus", "field_hint": "id_preferred_care_form"})
+    return missing
+
+
 def _serialize_blocker(code: str, severity: str, message: str, blocking_actions: Iterable[str]) -> dict[str, Any]:
     return {
         "code": code,
@@ -1208,6 +1226,11 @@ def _latest_case_log(intake: CaseIntakeProcess | None) -> list[CaseDecisionLog]:
 def _active_placement(intake: CaseIntakeProcess | None) -> PlacementRequest | None:
     if intake is None:
         return None
+    # Use prefetch cache when populated by the coordination overview queryset.
+    cache = getattr(intake, '_prefetched_objects_cache', None)
+    if cache is not None and 'indications' in cache:
+        indications = list(intake.indications.all())
+        return indications[0] if indications else None
     return (
         PlacementRequest.objects.filter(due_diligence_process=intake)
         .select_related("selected_provider", "proposed_provider")
@@ -1229,6 +1252,11 @@ def _infer_matching_outcome(placement: PlacementRequest | None) -> str | None:
 def _latest_match_result(case_record: CareCase | None) -> MatchResultaat | None:
     if case_record is None:
         return None
+    # Use prefetch cache when populated by the coordination overview queryset.
+    cache = getattr(case_record, '_prefetched_objects_cache', None)
+    if cache is not None and 'match_resultaten' in cache:
+        results = list(case_record.match_resultaten.all())
+        return results[0] if results else None
     return (
         MatchResultaat.objects.filter(casus=case_record)
         .select_related("zorgaanbieder", "zorgprofiel")
@@ -2113,8 +2141,9 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
                 PlacementRequest.ProviderResponseStatus.WAITLIST,
             },
         ).order_by("-updated_at", "-created_at")
-        provider_rejection_count = rejection_qs.count()
-        latest_rejection = rejection_qs.first()
+        _rejections = list(rejection_qs[:20])
+        provider_rejection_count = len(_rejections)
+        latest_rejection = _rejections[0] if _rejections else None
         if latest_rejection is not None:
             latest_rejection_reason_code = _clean(getattr(latest_rejection, "provider_response_reason_code", "") or "")
             if latest_rejection.provider_response_reason_code and latest_rejection.provider_response_reason_code != "NONE":
@@ -2325,4 +2354,5 @@ def evaluate_case(case: Any, actor: Any | None = None, actor_role: str | None = 
         "blocked_actions": blocked_actions,
         "decision_context": decision_context,
         "timeline_signals": timeline_signals,
+        "missing_required_fields": _get_missing_required_fields(intake),
     }

@@ -6,7 +6,9 @@ import { cn } from "../ui/utils";
 import {
   CasusWorkspaceStatusBadges,
   FlowPhaseBadge,
+  PriorityBadge,
   type CasusWorkspaceStatusVariant,
+  type PriorityTone,
 } from "./CareDesignPrimitives";
 
 export type { CasusWorkspaceStatusVariant };
@@ -21,6 +23,8 @@ export interface CasusWorkspaceLayoutProps {
   /** Canonical flow progress (always visible, directly below identity). */
   flowProgress?: ReactNode;
   title: string;
+  /** Optional second line below the title — e.g. "Jongere, 17 jaar · Ambulante begeleiding" */
+  titleSubline?: string;
   /** Human label — used when `phaseId` is omitted (legacy callers). */
   phaseLabel: string;
   /** Canonical keten id — when set, shows `FlowPhaseBadge` aligned with lists/boards. */
@@ -42,6 +46,9 @@ export interface CasusWorkspaceLayoutProps {
   municipality?: string;
   urgencyLabel?: string;
   urgencyTone?: "critical" | "warning" | "neutral";
+  /** Priority badge shown in the header badge row (always visible, even for "normaal") */
+  priorityBadgeTone?: PriorityTone;
+  priorityBadgeLabel?: string;
   ownerLabel?: string;
   elapsedLabel?: string;
   blockerLabel?: string;
@@ -58,6 +65,7 @@ export function CasusWorkspaceLayout({
   backLabel = "Terug naar casussen",
   flowProgress,
   title,
+  titleSubline,
   phaseLabel,
   phaseId,
   statusVariant,
@@ -73,6 +81,8 @@ export function CasusWorkspaceLayout({
   municipality,
   urgencyLabel,
   urgencyTone = "neutral",
+  priorityBadgeTone,
+  priorityBadgeLabel,
   ownerLabel,
   elapsedLabel,
   blockerLabel,
@@ -98,13 +108,18 @@ export function CasusWorkspaceLayout({
   }, []);
 
   return (
-    <div className={cn("w-full min-w-0 bg-background text-foreground", contextRail ? "flex gap-0" : undefined)}>
+    <div className={cn("w-full min-w-0 text-foreground", contextRail ? "flex gap-0" : undefined)}>
       <div className={cn("min-w-0 flex-1", contextRail ? "border-r border-border/50" : undefined)}>
       {hasStickyBar && (
         <div
           data-testid="casus-sticky-context-bar"
-          className="sticky top-0 flex items-center gap-3 border-b border-border/60 bg-background/95 py-2 backdrop-blur-sm"
-          style={{ zIndex: "var(--care-z-sticky)" }}
+          className={cn(
+            "sticky top-3 mx-4 transition-all duration-150",
+            heroInView
+              ? "pointer-events-none max-h-0 overflow-hidden opacity-0"
+              : "flex items-center gap-3 rounded-xl border border-primary/25 bg-[var(--surface-elevated)] px-4 py-2.5 opacity-100",
+          )}
+          style={{ zIndex: "var(--care-z-sticky)", boxShadow: heroInView ? "none" : "0 4px 16px rgba(0,0,0,0.22), 0 0 0 1px rgba(var(--color-primary-rgb, 99,102,241),0.08)" }}
         >
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
             {caseIdentityLabel && (
@@ -115,9 +130,9 @@ export function CasusWorkspaceLayout({
                 className={cn(
                   "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
                   urgencyTone === "critical"
-                    ? "bg-[var(--care-badge-red-bg)] text-[var(--care-badge-red-text)]"
+                    ? "bg-care-urgent-bg text-care-urgent-text"
                     : urgencyTone === "warning"
-                      ? "bg-[var(--care-badge-amber-bg)] text-[var(--care-badge-amber-text)]"
+                      ? "bg-care-warning-bg text-care-warning-text"
                       : "bg-muted text-muted-foreground",
                 )}
               >
@@ -137,7 +152,7 @@ export function CasusWorkspaceLayout({
               <span className="hidden text-[12px] text-muted-foreground lg:inline">{elapsedLabel}</span>
             )}
             {blockerLabel && (
-              <span className="flex items-center gap-1 text-[12px] text-[var(--care-badge-red-text)]">
+              <span className="flex items-center gap-1 text-[12px] text-care-urgent-text">
                 <AlertTriangle size={11} aria-hidden />
                 <span className="max-w-[220px] truncate" title={blockerLabel}>{blockerLabel}</span>
               </span>
@@ -158,86 +173,83 @@ export function CasusWorkspaceLayout({
         </div>
       )}
       <div className="space-y-4 pb-8 pt-0">
-        <div className="flex items-center justify-between gap-3 border-b border-border/70 pb-4">
-          <Button
-            variant="ghost"
+        <div className="min-w-0 space-y-2">
+          <button
+            type="button"
             onClick={onBack}
-            className="h-9 gap-2 px-0 text-muted-foreground hover:bg-transparent hover:text-foreground md:h-10"
+            className="inline-flex items-center gap-1.5 text-[15px] font-medium leading-none text-primary transition-colors hover:text-muted-foreground"
           >
-            <ArrowLeft size={16} />
+            <ArrowLeft size={15} className="translate-y-px" />
             {backLabel}
-          </Button>
-          {headerActions ? <div className="flex shrink-0 items-center gap-2">{headerActions}</div> : null}
-        </div>
-
-        <header className="space-y-3 border-b border-border/70 pb-4">
-          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
-            <div className="min-w-0 space-y-2">
-              <h1 className="care-text-title text-foreground">
-                {title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-2">
+          </button>
+          <div className="flex items-start justify-between gap-4">
+            <div className="min-w-0 space-y-1">
+              <h1 className="care-text-title text-foreground">{title}</h1>
+              {titleSubline && (
+                <p className="text-[13px] text-muted-foreground">{titleSubline}</p>
+              )}
+              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                 {phaseId ? (
-                  <span className="inline-flex items-center gap-1.5" title={`Stap: ${phaseLabel}`}>
-                    <span className="care-text-eyebrow text-muted-foreground">Stap</span>
-                    <FlowPhaseBadge phaseId={phaseId} />
-                  </span>
+                  <FlowPhaseBadge phaseId={phaseId} />
                 ) : phaseLabel ? (
-                  <Badge className="border-border/60 bg-background/70 text-[12px] font-medium text-foreground shadow-sm">
-                    Stap: {phaseLabel}
+                  <Badge className="border-border/40 bg-muted/30 text-[11px] font-medium text-muted-foreground shadow-none">
+                    {phaseLabel}
                   </Badge>
                 ) : null}
                 <CasusWorkspaceStatusBadges variant={statusVariant} hint={statusHint} />
-              </div>
-            </div>
-            {updatedAtLabel ? (
-              <div className="flex shrink-0 items-center gap-2 text-[12px] text-muted-foreground">
-                <span>Bijgewerkt: {updatedAtLabel}</span>
-                {onRefresh ? (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => void onRefresh()}
-                    disabled={refreshing}
-                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                    aria-label="Ververs casusgegevens"
-                    title="Ververs casusgegevens"
-                  >
-                    <RefreshCw size={14} className={refreshing ? "animate-spin" : undefined} />
-                  </Button>
-                ) : (
-                  <RefreshCw size={14} />
+                {priorityBadgeTone && (
+                  <PriorityBadge tone={priorityBadgeTone} className="border-border/30 bg-muted/20 text-[11px] opacity-85" />
                 )}
               </div>
-            ) : null}
+            </div>
+            <div className="flex shrink-0 flex-col items-end gap-1.5">
+              {updatedAtLabel ? (
+                <div className="flex items-center gap-1 text-[11px] text-muted-foreground/55">
+                  <span>Bijgewerkt {updatedAtLabel}</span>
+                  {onRefresh ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => void onRefresh()}
+                      disabled={refreshing}
+                      className="h-5 w-5 text-muted-foreground/40 hover:text-foreground"
+                      aria-label="Ververs casusgegevens"
+                      title="Ververs casusgegevens"
+                    >
+                      <RefreshCw size={11} className={refreshing ? "animate-spin" : undefined} />
+                    </Button>
+                  ) : null}
+                </div>
+              ) : null}
+              {headerActions ? <div className="flex items-center gap-2">{headerActions}</div> : null}
+            </div>
           </div>
-        </header>
+        </div>
 
         <section
           data-testid="casus-operational-cluster"
-          className="space-y-4 rounded-[24px] border border-border/60 bg-card/50 p-4 md:p-5"
+          className="rounded-[22px] border border-border/70 bg-panel/70 p-3 shadow-sm backdrop-blur-sm md:p-4"
         >
           {flowProgress ? (
-            <div
-              data-testid="casus-flow-progress"
-              className="rounded-xl bg-background/35 p-3 md:p-3.5"
-            >
+            <div data-testid="casus-flow-progress">
               {flowProgress}
             </div>
           ) : null}
-
           <div
             ref={heroBandRef}
             data-testid="casus-hero-band"
-            className="rounded-xl bg-background/35 p-4 md:p-5"
+            className={cn(
+              "rounded-2xl border border-border/55 bg-card/35 p-5 md:p-6",
+              flowProgress ? "mt-6" : undefined,
+            )}
           >
             {caseHero}
           </div>
         </section>
 
         {decisionPanel ? (
-          <section data-testid="casus-decision-panel" className="rounded-xl border border-border/60 bg-card/40 p-4 md:p-5">
+          <section data-testid="casus-decision-panel" className="rounded-2xl border border-border/55 bg-card/35 p-5 md:p-6">
             {decisionPanel}
           </section>
         ) : null}

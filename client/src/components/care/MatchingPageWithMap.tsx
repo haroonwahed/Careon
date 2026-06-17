@@ -7,17 +7,16 @@ import {
   AlertTriangle,
   ArrowLeft,
   ArrowRight,
-  Check,
-  CheckCircle2,
+  Building2,
   ChevronDown,
+  ChevronRight,
   Clock,
-  Home,
-  Info,
   MapPin,
+  MoreHorizontal,
+  PenLine,
   Scale,
+  Send,
   TrendingUp,
-  UserRound,
-  Users,
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/collapsible";
@@ -52,11 +51,7 @@ import { advisoryFromEngineConfidenceLabel } from "../../lib/matchingAdvisory";
 import {
   GuidanceContextBanner,
   InlineHelpChip,
-  VideoHelpTrigger,
 } from "../guidance";
-
-const MATCH_BRAND = tokens.visual.primaryCta;
-const MATCH_BG = "var(--background)";
 
 function formatMatchingCaseTitle(caseId: string): string {
   /** Pilot / E2E ids map to marketing-style refs for layout parity with design mocks. */
@@ -318,8 +313,6 @@ export function MatchingPageWithMap({
     return <EmptyState title="Casus niet gevonden" copy="Deze casus is niet beschikbaar voor matching in de huidige context." />;
   }
 
-  const bestMatch = rankedMatches[0] ?? null;
-
   const spaCaseRaw = cases.find((c) => c.id === caseId) ?? null;
   const placementPressureLabel = spaCaseRaw?.placementPressureLabel ?? (spaCaseRaw?.urgency === "critical"
     ? "Spoed"
@@ -528,109 +521,94 @@ export function MatchingPageWithMap({
     focusZoneRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
+
   return (
-    <div data-care-page-archetype="workspace" className="flex min-h-screen flex-col text-foreground" style={{ backgroundColor: MATCH_BG }}>
-      <header className="border-b border-border/50 px-4 py-5 md:px-8">
-        <div className="mx-auto flex max-w-[1680px] flex-col gap-5 rounded-[28px] border border-border/60 bg-card/45 px-4 py-4 shadow-sm backdrop-blur-[2px]">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0 space-y-3">
-              <Button
-                variant="link"
-                type="button"
-                className="h-auto gap-2 p-0 text-[13px] font-semibold text-primary"
-                onClick={() => {
-                  if (onNavigateToCase) {
-                    onNavigateToCase(caseId);
-                    return;
-                  }
-                  window.location.assign(toCareCaseDetail(caseId));
-                }}
+    <div data-care-page-archetype="workspace" className="flex min-h-full flex-col text-foreground">
+      {/* ── Header ── */}
+      <header className="border-b border-border/50 px-6 py-4">
+        <div className="mx-auto flex max-w-[1536px] flex-col gap-4">
+          {/* Back + title row */}
+          <div className="min-w-0 space-y-2">
+            <Button
+              variant="link"
+              type="button"
+              className="h-auto gap-2 p-0 text-[13px] font-semibold text-primary"
+              onClick={onBack}
+            >
+              <ArrowLeft size={16} aria-hidden />
+              Terug naar matching
+            </Button>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="care-text-title">Matching voor casus #{caseId}</h1>
+              <span className="rounded-full bg-violet-500/15 px-3 py-1 text-[11px] font-semibold text-violet-400">
+                Matching
+              </span>
+              <span
+                className={cn(
+                  "rounded-full px-3 py-1 text-[11px] font-semibold",
+                  urgencyHighlight
+                    ? "bg-care-urgent-bg text-care-urgent-text"
+                    : "bg-care-success-bg text-care-success-text",
+                )}
               >
-                <ArrowLeft size={16} aria-hidden />
-                Terug naar casus
-              </Button>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="care-text-title">
-                  Matching voor casus {formatMatchingCaseTitle(caseId)}
-                </h1>
-                <span
-                  className="rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-white"
-                  style={{ backgroundColor: MATCH_BRAND }}
-                >
-                  Matching
-                </span>
-              </div>
-              <p className="text-[13px] text-muted-foreground">
-                {formatClientReference(caseId)} · {maskParticipantIdentity(caseData.clientName)} · {caseData.clientAge} jaar · {caseData.region} · Urgentie:{" "}
-                <span className={cn("font-semibold", urgencyHighlight && "text-destructive")}>{urgencyNl}</span>
-              </p>
-              <p className="text-[12px] text-muted-foreground">
-                Identiteit blijft gemaskeerd in matching. Backend-autorisatie bepaalt zichtbaarheid per fase en rol.
-              </p>
-              {incompleteCode === "SUMMARY_INCOMPLETE" ? (
-                <p
-                  className="rounded-lg border bg-care-warning-bg text-care-warning-text border-care-warning-border px-3 py-2 text-[12px]"
-                  role="status"
-                >
-                  Casusoverzicht nog incompleet — live matchscores volgen zodra het casusoverzicht gereed is. Onderstaande rangorde blijft indicatief.
-                </p>
-              ) : null}
-              {liveApiRanked && liveApiRanked.length > 0 ? (
-                <p
-                  className="rounded-lg border border-border/60 bg-card/30 px-3 py-2 text-[12px] text-muted-foreground"
-                  role="status"
-                >
-                  Scores en toelichting komen uit de matching-engine (advies; geen automatische toewijzing).
-                </p>
-              ) : null}
+                {urgencyNl}
+              </span>
+              <span className="rounded-full border border-border/60 px-3 py-1 text-[11px] font-medium text-muted-foreground">
+                Advies
+              </span>
             </div>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" type="button" className="gap-1 border-white/10 bg-card/40">
-                  Acties
-                  <ChevronDown size={14} aria-hidden />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => scrollToFocusZone()}>Ga naar aanbevelingen</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleScenarioExpandRadius()}>Vergroot zoekgebied</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleScenarioShowAlternatives()}>Toon topaanbevelingen</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => resetMapView()}>Kaart resetten</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+
+            <p className="text-[13px] text-muted-foreground">
+              {formatClientReference(caseId)} · {maskParticipantIdentity(caseData.clientName)} · {caseData.clientAge} jaar · {caseData.region} · Urgentie:{" "}
+              <span className={cn("font-semibold", urgencyHighlight && "text-care-urgent-text")}>{urgencyNl}</span>
+            </p>
+
+            {incompleteCode === "SUMMARY_INCOMPLETE" ? (
+              <p
+                className="rounded-lg border bg-care-warning-bg text-care-warning-text border-care-warning-border px-3 py-2 text-[12px]"
+                role="status"
+              >
+                Casusoverzicht nog incompleet — live matchscores volgen zodra het casusoverzicht gereed is. Onderstaande rangorde blijft indicatief.
+              </p>
+            ) : null}
           </div>
 
-          <div className="overflow-x-auto rounded-[22px] border border-border/60 bg-card/35 px-3 py-3.5 shadow-sm">
-            <div className="flex min-w-[760px] items-center gap-0">
+          {/* Inline stepper */}
+          <div className="rounded-xl border border-border/60 bg-card/30 px-5 py-3.5 overflow-x-auto">
+            <div className="flex min-w-[640px] items-center">
               {(
                 [
-                  { Icon: CheckCircle2, label: "Aanmelding", state: "done" as const },
-                  { Icon: Scale, label: "Matching", state: "current" as const },
-                  { Icon: UserRound, label: "Aanbiederreactie", state: "pending" as const },
-                  { Icon: Home, label: "Plaatsing", state: "idle" as const },
-                  { Icon: CheckCircle2, label: "Intake", state: "idle" as const },
+                  { num: 1, label: "Aanmelding", state: "done" as const },
+                  { num: 2, label: "Matching", state: "current" as const },
+                  { num: 3, label: "Aanbiederreactie", state: "idle" as const },
+                  { num: 4, label: "Plaatsing", state: "idle" as const },
+                  { num: 5, label: "Intake", state: "idle" as const },
                 ] as const
               ).map((step, idx, arr) => (
                 <Fragment key={step.label}>
-                  <div className="flex min-w-[100px] flex-1 flex-col items-center gap-1.5 px-1 text-center">
+                  <div className="flex shrink-0 items-center gap-2.5">
                     <div
                       className={cn(
-                        "flex size-10 items-center justify-center rounded-xl border text-muted-foreground",
-                        step.state === "done" && "border-primary/50 bg-primary/15 text-primary",
-                        step.state === "current" && "border-primary/60 bg-primary/20 text-primary shadow-md",
-                        step.state === "pending" && "bg-care-warning-bg text-care-warning-text border-care-warning-border",
-                        step.state === "idle" && "border-white/10 bg-background/50",
+                        "flex size-7 items-center justify-center rounded-full border text-[12px] font-semibold tabular-nums",
+                        step.state === "current"
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border/60 bg-transparent text-muted-foreground",
                       )}
                     >
-                      <step.Icon className="size-5" aria-hidden />
+                      {step.num}
                     </div>
-                    <p className="care-text-eyebrow text-muted-foreground">{step.label}</p>
+                    <span
+                      className={cn(
+                        "whitespace-nowrap text-[13px] font-medium",
+                        step.state === "current" ? "text-foreground" : "text-muted-foreground",
+                      )}
+                    >
+                      {step.label}
+                    </span>
                   </div>
                   {idx < arr.length - 1 ? (
-                    <div className="flex h-8 w-4 shrink-0 items-center self-start pt-4" aria-hidden>
-                      <div className="h-0 w-full border-t border-dotted border-muted-foreground/35" />
-                    </div>
+                    <div className="mx-3 h-px flex-1 bg-border/50" aria-hidden />
                   ) : null}
                 </Fragment>
               ))}
@@ -639,451 +617,274 @@ export function MatchingPageWithMap({
         </div>
       </header>
 
-      <div className="mx-auto flex w-full max-w-[1680px] flex-1 flex-col gap-6 px-4 py-6 lg:flex-row lg:items-start lg:px-8">
+      {/* ── Body ── */}
+      <div className="mx-auto flex w-full max-w-[1536px] flex-1 flex-col gap-6 px-6 py-5 lg:flex-row lg:gap-6 lg:items-start">
+        {/* Left panel */}
         <div className="min-w-0 flex-1 space-y-4">
-            {(submitError || matchSubmitError) && (
-              <BlockingNotice
-                className="mb-4"
-                message={matchSubmitError ?? submitError}
-              />
-            )}
+          {(submitError || matchSubmitError) && (
+            <BlockingNotice className="mb-4" message={matchSubmitError ?? submitError} />
+          )}
 
-            {scenarioMessage && (
-              <div className="mb-4 rounded-2xl border bg-care-info-bg text-care-info-text border-care-info-border px-4 py-3 text-sm">
-                {scenarioMessage}
+          {scenarioMessage && (
+            <div className="mb-4 rounded-2xl border bg-care-info-bg text-care-info-text border-care-info-border px-4 py-3 text-sm">
+              {scenarioMessage}
+            </div>
+          )}
+
+          <GuidanceContextBanner testId="matching-advisory-banner">
+            Matching is adviserend. Gebruik de suggesties als ondersteuning voor beoordeling.
+          </GuidanceContextBanner>
+
+          <div
+            ref={focusZoneRef}
+            className="mt-2 min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 lg:max-h-[min(72vh,calc(100vh-220px))]"
+          >
+            {/* Urgency / capacity banners */}
+            {(urgencyBannerLabel || capacityScarceInRegion) && (
+              <div className="flex flex-wrap gap-2">
+                {urgencyBannerLabel ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-care-urgent-border bg-care-urgent-bg px-2.5 py-1 text-xs font-semibold text-care-urgent-text">
+                    <span className="size-1.5 rounded-full bg-care-urgent-solid" aria-hidden />
+                    {urgencyBannerLabel}
+                  </span>
+                ) : null}
+                {capacityScarceInRegion ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-care-warning-border bg-care-warning-bg px-2.5 py-1 text-xs font-semibold text-care-warning-text">
+                    <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
+                    Capaciteit schaars in regio
+                  </span>
+                ) : null}
               </div>
             )}
 
-            <GuidanceContextBanner testId="matching-advisory-banner">
-              Matching is adviserend. Gebruik de suggesties als ondersteuning voor beoordeling, niet als automatische keuze.
-            </GuidanceContextBanner>
+            {/* Recommended matches panel */}
+            <div className="rounded-[22px] border border-border/60 p-4 md:p-5">
+            {/* Section heading */}
+            <h2 className="text-[15px] font-semibold text-foreground">Aanbevolen matches</h2>
 
-            <div className="flex flex-wrap items-center justify-end gap-2 pb-1">
-              <InlineHelpChip
-                title="Wat betekent passendheid?"
-                triggerLabel="Passendheid"
-                testId="matching-score-help"
-              >
-                <p>
-                  Passendheid toont hoe goed een aanbieder aansluit op de casus. De uiteindelijke keuze blijft een menselijke beslissing.
-                </p>
-              </InlineHelpChip>
-              <VideoHelpTrigger
-                title="Hoe matching werkt"
-                script="CareOn vergelijkt de casus met beschikbare aanbieders op zorgtype, regio, capaciteit en urgentie. De match is een advies met uitleg en afwegingen. De gebruiker bepaalt welke vervolgstap passend is."
-                testId="matching-how-it-works-video"
-              />
+            {/* Match cards */}
+            <div className="mt-4 space-y-3">
+              {rankedMatches.map((item) => {
+                const isSelected = selectedProviderId === item.provider.id;
+                const qualityBadge =
+                  item.index === 0
+                    ? { label: "Beste match", cls: "bg-violet-500/15 text-violet-400" }
+                    : item.index === 1
+                      ? { label: "Goede match", cls: "bg-emerald-500/15 text-emerald-400" }
+                      : { label: "Reserve", cls: "bg-muted/40 text-muted-foreground" };
+                const scoreColor =
+                  (item.matchScore ?? 0) >= 80
+                    ? "text-emerald-500"
+                    : (item.matchScore ?? 0) >= 60
+                      ? "text-emerald-400"
+                      : "text-amber-400";
+                return (
+                  <article
+                    key={item.provider.id}
+                    onClick={() => handleSelectProvider(item.provider.id)}
+                    onMouseEnter={() => setHoveredProviderId(item.provider.id)}
+                    onMouseLeave={() => setHoveredProviderId(null)}
+                    className={cn(
+                      "cursor-pointer rounded-[22px] border p-4 transition-all",
+                      isSelected
+                        ? "border-primary/40 bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border/60 hover:border-border/80",
+                    )}
+                  >
+                    {/* Card main row */}
+                    <div className="flex items-center gap-3">
+                      {/* Radio */}
+                      <input
+                        type="radio"
+                        name="matching-provider"
+                        value={item.provider.id}
+                        checked={isSelected}
+                        onChange={() => handleSelectProvider(item.provider.id)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="size-4 shrink-0 accent-primary"
+                        aria-label={`Selecteer ${item.provider.name}`}
+                      />
+
+                      {/* Logo square */}
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border/30 bg-background/60 text-xs font-bold text-muted-foreground"
+                        aria-hidden
+                      >
+                        {item.provider.name.slice(0, 1)}
+                      </div>
+
+                      {/* Name + tags */}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-semibold text-foreground truncate">{item.provider.name}</span>
+                          <span className={cn("rounded-md px-2 py-0.5 text-[11px] font-semibold", qualityBadge.cls)}>
+                            {qualityBadge.label}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {(item.provider.specializations ?? []).slice(0, 4).map((tag) => (
+                            <span
+                              key={`${item.provider.id}-${tag}`}
+                              className="rounded-full border border-border/30 bg-background/50 px-2.5 py-0.5 text-[11px] text-muted-foreground"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Fit score */}
+                      <div className="flex shrink-0 flex-col items-end">
+                        <span className="text-[11px] text-muted-foreground">Fit score</span>
+                        {(item.matchScore ?? 0) > 0 ? (
+                          <span className={cn("text-[22px] font-bold tabular-nums leading-none", scoreColor)}>
+                            {item.matchScore}%
+                          </span>
+                        ) : (
+                          <span className="text-[22px] font-bold tabular-nums leading-none text-muted-foreground">—</span>
+                        )}
+                      </div>
+
+                      {/* Chevron */}
+                      <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                    </div>
+
+                    {/* Warnings */}
+                    {item.warnings.length > 0 ? (
+                      <div className="mt-3 rounded-lg border border-care-warning-border bg-care-warning-bg px-3 py-2 text-sm">
+                        <p className="text-[11px] font-semibold text-care-warning-text">Let op</p>
+                        <ul className="mt-1 space-y-1 text-muted-foreground">
+                          {item.warnings.map((w) => (
+                            <li key={w} className="flex gap-2">
+                              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-care-warning-text" aria-hidden />
+                              <span>{w}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
+
+                    {/* Selected CTA row */}
+                    {isSelected && (
+                      <div className="border-t border-border/40 mt-4 pt-4 flex flex-wrap items-center gap-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="flex-1 gap-1.5 rounded-lg bg-primary font-semibold text-primary-foreground shadow-sm hover:bg-primary/90"
+                          disabled={isSubmittingMatch || matchSubmitting}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRequestSelection(item);
+                          }}
+                        >
+                          <Send className="size-3.5" aria-hidden />
+                          Stuur naar aanbieder
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="gap-1.5 border border-border/30 bg-transparent"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenWaitlistModal(item);
+                          }}
+                        >
+                          <PenLine className="size-3.5" aria-hidden />
+                          Handmatige override
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="border border-border/30 bg-transparent px-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="size-4" aria-hidden />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleOpenWaitlistModal(item); }}>
+                              Wachtlijst voorbereiden
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleScenarioExpandRadius(); }}>
+                              Vergroot zoekgebied
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+
+                        {item.tradeOffs.length > 0 && (
+                          <div className="w-full mt-2">
+                            <CareTradeoffList
+                              heading="Afwegingen"
+                              items={item.tradeOffs.map((t) => ({
+                                label: t,
+                                tone: item.index === 0 ? "neutral" as const : "negative" as const,
+                              }))}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </article>
+                );
+              })}
             </div>
 
-            <div
-              ref={focusZoneRef}
-              className="mt-4 min-h-0 flex-1 space-y-4 overflow-y-auto pb-8 lg:max-h-[min(72vh,calc(100vh-220px))]"
-            >
-              {(urgencyBannerLabel || capacityScarceInRegion) && (
-                <div className="flex flex-wrap gap-2">
-                  {urgencyBannerLabel ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-destructive/35 bg-destructive/10 px-2.5 py-1 text-xs font-semibold text-destructive">
-                      <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
-                      {urgencyBannerLabel}
-                    </span>
-                  ) : null}
-                  {capacityScarceInRegion ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/35 bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                      <AlertTriangle className="size-3.5 shrink-0" aria-hidden />
-                      Capaciteit schaars in regio
-                    </span>
-                  ) : null}
-                </div>
-              )}
-
-              <div className="flex gap-1 border-b border-border/60">
-                <button
-                  type="button"
-                  className={cn(
-                    "-mb-px inline-flex items-center justify-center border-b-2 px-4 py-2.5 text-sm font-semibold leading-none transition-colors",
-                    listTab === "recommended"
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setListTab("recommended")}
-                >
-                  Aanbevolen matches
-                </button>
-                <button
-                  type="button"
-                  className={cn(
-                    "-mb-px inline-flex items-center justify-center border-b-2 px-4 py-2.5 text-sm font-semibold leading-none transition-colors",
-                    listTab === "all"
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
-                  )}
-                  onClick={() => setListTab("all")}
-                >
-                  Alle aanbieders
-                </button>
-              </div>
-
-              <div className="hidden gap-4 border-b border-border/60 pb-2 care-text-eyebrow text-muted-foreground lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-end lg:px-2">
-                <span className="sr-only">Rang</span>
-                <span>Aanbieder</span>
-                <span className="text-center">Advies</span>
-                <span>Reden van match</span>
-                <span className="text-right">Actie</span>
-              </div>
-
-              <div className="space-y-3">
-                {listTab === "recommended"
-                  ? rankedMatches.map((item) => {
-                      const isSelected = selectedProviderId === item.provider.id;
-                      const rank = item.index + 1;
-                      const reasonLines =
-                        item.strongPoints?.length > 0 ? item.strongPoints : item.focusChecks.map((r) => `${r.label}: ${r.value}`);
-                      return (
-                        <article
-                          key={item.provider.id}
-                          onClick={() => handleSelectProvider(item.provider.id)}
-                          onMouseEnter={() => setHoveredProviderId(item.provider.id)}
-                          onMouseLeave={() => setHoveredProviderId(null)}
-                          className={cn(
-                            "care-hover-card cursor-pointer rounded-[22px] border border-border/60 p-4 transition-all",
-                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-border/80",
-                          )}
-                        >
-                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-center lg:gap-4">
-                            <div className="flex items-center gap-3 lg:block">
-                              <span
-                                className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-white/10 text-sm font-bold tabular-nums text-muted-foreground"
-                                aria-hidden
-                              >
-                                {rank}
-                              </span>
-                              <span className="text-xs font-semibold text-muted-foreground lg:hidden">#{rank}</span>
-                            </div>
-
-                            <div className="min-w-0 space-y-2">
-                              <div className="flex items-start gap-3">
-                                <div
-                                  className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-background/60 text-xs font-bold text-muted-foreground"
-                                  aria-hidden
-                                >
-                                  {item.provider.name.slice(0, 1)}
-                                </div>
-                                <div className="min-w-0 flex-1 space-y-1.5">
-                                  <h3 className="truncate care-text-subheading text-foreground">{item.provider.name}</h3>
-                                  <p className="text-[12px] text-muted-foreground">
-                                    {item.provider.region}{item.distance != null ? ` · ${item.distance.toFixed(1)} km` : ""}
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {(item.provider.specializations ?? []).slice(0, 3).map((tag) => (
-                                      <span
-                                        key={`${item.provider.id}-${tag}`}
-                                        className="rounded-md border border-white/10 bg-background/50 px-2 py-0.5 text-[11px] text-muted-foreground"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col items-center gap-1.5 lg:justify-center">
-                              {(item.matchScore ?? 0) > 0 && (
-                                <CareMatchScore score={item.matchScore} className="text-[13px]" />
-                              )}
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div>
-                                    <MatchingAdvisoryBadge label={item.advisoryLabel} hint={item.advisoryHint} />
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent
-                                  side="left"
-                                  className="border border-border bg-popover px-3 py-2 text-xs text-popover-foreground"
-                                  style={{ maxWidth: tokens.layout.tooltipMaxWidth }}
-                                >
-                                  <p className="font-semibold text-foreground">Factorweging (keten-engine)</p>
-                                  <ul className="mt-2 space-y-1">
-                                    <li>Inhoudelijke fit: {formatEngineFactorScore(item.engineFactors.specialization)}</li>
-                                    <li>Regio/contract: {formatEngineFactorScore(item.engineFactors.region)}</li>
-                                    <li>Capaciteit: {formatEngineFactorScore(item.engineFactors.capacity)}</li>
-                                    <li>Complexiteit: {formatEngineFactorScore(item.engineFactors.complexity)}</li>
-                                  </ul>
-                                  <p className="mt-2 text-muted-foreground">Geen automatische toewijzing — gemeente beslist.</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-
-                            <ul className="space-y-1.5 text-[13px] text-muted-foreground">
-                              {reasonLines.slice(0, 4).map((line) => (
-                                <li key={`${item.provider.id}-${line}`} className="flex gap-2">
-                                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                                  <span className="leading-snug">{line}</span>
-                                </li>
-                              ))}
-                            </ul>
-
-                            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end lg:flex-col xl:flex-row">
-                              <Button
-                                type="button"
-                                size="sm"
-                                className="rounded-lg font-semibold text-white shadow-sm hover:opacity-95"
-                                style={{ backgroundColor: MATCH_BRAND }}
-                                disabled={isSubmittingMatch || matchSubmitting}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRequestSelection(item);
-                                }}
-                              >
-                                Selecteer aanbieder
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="border-white/15 bg-transparent"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectProvider(item.provider.id);
-                                }}
-                              >
-                                Bekijk onderbouwing
-                              </Button>
-                            </div>
-                          </div>
-
-                          {item.warnings.length > 0 ? (
-                            <div className="mt-3 rounded-lg border border-amber-500/20 bg-amber-500/[0.06] px-3 py-2 text-sm">
-                              <p className="care-text-eyebrow text-amber-700 dark:text-amber-400">Let op</p>
-                              <ul className="mt-1 space-y-1 text-muted-foreground">
-                                {item.warnings.map((w) => (
-                                  <li key={w} className="flex gap-2">
-                                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-600" aria-hidden />
-                                    <span>{w}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          ) : null}
-                          {isSelected && item.tradeOffs.length > 0 && (
-                            <div className="mt-3 border-t border-border/40 pt-3">
-                              <CareTradeoffList
-                                heading="Afwegingen"
-                                items={item.tradeOffs.map((t) => ({
-                                  label: t,
-                                  tone: item.index === 0 ? "neutral" as const : "negative" as const,
-                                }))}
-                              />
-                            </div>
-                          )}
-                        </article>
-                      );
-                    })
-                  : allProvidersTable.map((row, idx) => {
-                      const resolved = resolveRankedMatchRow(row.provider.id);
-                      const isSelected = selectedProviderId === row.provider.id;
-                      const rank = idx + 1;
-                      const bullets =
-                        (resolved?.strongPoints?.length && resolved.strongPoints.length > 0)
-                          ? resolved.strongPoints
-                          : [`${row.provider.region} · type ${row.provider.type}`, resolved?.advisoryLabel ?? "Onderbouwing nodig"];
-                      return (
-                        <article
-                          key={`all-${row.provider.id}`}
+            {/* Overflow collapsible */}
+            {overflowList.length > 0 ? (
+              <Collapsible>
+                <CollapsibleTrigger className="flex w-full items-center justify-center gap-2 py-2 text-[13px] font-semibold text-primary hover:underline">
+                  <span>Bekijk meer matches</span>
+                  <ChevronDown className="size-4" aria-hidden />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="space-y-2 pt-2">
+                  <ul className="space-y-2 rounded-xl border border-border/30 bg-background/40 p-3">
+                    {overflowList.map((row) => (
+                      <li
+                        key={row.provider.id}
+                        className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 py-2 text-sm last:border-b-0"
+                      >
+                        <button
+                          type="button"
+                          className="min-w-0 text-left font-medium text-foreground hover:underline"
                           onClick={() => handleSelectProvider(row.provider.id)}
-                          onMouseEnter={() => setHoveredProviderId(row.provider.id)}
-                          onMouseLeave={() => setHoveredProviderId(null)}
-                          className={cn(
-                            "care-hover-card cursor-pointer rounded-[22px] border border-border/60 p-4 transition-all",
-                            isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : "hover:border-border/80",
-                          )}
                         >
-                          <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[2.25rem_minmax(0,1fr)_7.5rem_minmax(0,1fr)_11rem] lg:items-center lg:gap-4">
-                            <span
-                              className="flex size-9 items-center justify-center rounded-lg border border-white/10 text-sm font-bold tabular-nums text-muted-foreground"
-                              aria-hidden
-                            >
-                              {rank}
-                            </span>
-
-                            <div className="min-w-0 space-y-2">
-                              <div className="flex items-start gap-3">
-                                <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-background/60 text-xs font-bold text-muted-foreground">
-                                  {row.provider.name.slice(0, 1)}
-                                </div>
-                                <div className="min-w-0 space-y-1.5">
-                                  <h3 className="truncate care-text-subheading text-foreground">{row.provider.name}</h3>
-                                  <p className="text-[12px] text-muted-foreground">
-                                    {row.provider.region} · {row.provider.type}
-                                  </p>
-                                  <div className="flex flex-wrap gap-1.5">
-                                    {(row.provider.specializations ?? []).slice(0, 3).map((tag) => (
-                                      <span
-                                        key={`${row.provider.id}-${tag}`}
-                                        className="rounded-md border border-white/10 bg-background/50 px-2 py-0.5 text-[11px] text-muted-foreground"
-                                      >
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex justify-center">
-                              <MatchingAdvisoryBadge label={advisoryFromEngineConfidenceLabel(apiMatches.find(m => String(m.zorgaanbieder_id ?? "").trim() === row.provider.id)?.confidence_label || "").label} />
-                            </div>
-
-                            <ul className="space-y-1.5 text-[13px] text-muted-foreground">
-                              {bullets.slice(0, 4).map((line) => (
-                                <li key={line} className="flex gap-2">
-                                  <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
-                                  <span>{line}</span>
-                                </li>
-                              ))}
-                            </ul>
-
-                            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end lg:flex-col xl:flex-row">
-                              <Button
-                                type="button"
-                                size="sm"
-                                className="rounded-lg font-semibold text-white shadow-sm hover:opacity-95"
-                                style={{ backgroundColor: MATCH_BRAND }}
-                                disabled={isSubmittingMatch || matchSubmitting || !resolved}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (resolved) handleRequestSelection(resolved);
-                                }}
-                              >
-                                Selecteer aanbieder
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant="outline"
-                                className="border-white/15 bg-transparent"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleSelectProvider(row.provider.id);
-                                }}
-                              >
-                                Bekijk onderbouwing
-                              </Button>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })}
-              </div>
-
-              {listTab === "recommended" && overflowList.length > 0 ? (
-                <Collapsible>
-                  <CollapsibleTrigger className="flex w-full items-center justify-center gap-2 py-2 text-[13px] font-semibold text-primary hover:underline">
-                    Bekijk meer aanbieders
-                    <ChevronDown className="size-4" aria-hidden />
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="space-y-2 pt-2">
-                    <ul className="space-y-2 rounded-xl border border-white/10 bg-background/40 p-3">
-                      {overflowList.map((row) => (
-                        <li
-                          key={row.provider.id}
-                          className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 py-2 text-sm last:border-b-0"
-                        >
-                          <button
-                            type="button"
-                            className="min-w-0 text-left font-medium text-foreground hover:underline"
-                            onClick={() => handleSelectProvider(row.provider.id)}
-                          >
-                            {row.provider.name}
-                          </button>
-                          <span className="text-muted-foreground">{row.advisoryLabel}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </CollapsibleContent>
-                </Collapsible>
-              ) : null}
-
-              {rankedMatches.length === 0 && listTab === "recommended" ? (
-                <CarePanel className="space-y-3 p-2">
-                  <GuidanceContextBanner testId="matching-no-providers-banner">
-                    Niet alle aanbieders zijn beschikbaar of passend binnen dit arrangement. Controleer zorgtype, regio en capaciteit.
-                  </GuidanceContextBanner>
-                  <EmptyState
-                    title="Geen aanbieders"
-                    copy="Geen geschikte aanbieders binnen de selectie."
-                  />
-                </CarePanel>
-              ) : null}
-
-              <details className="group rounded-xl border border-white/10 bg-card/30">
-                <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p>Kaart & netwerk</p>
-                      <p className="text-[11px] font-normal text-muted-foreground">
-                        {visiblePins.length} opties zichtbaar{showOnlyAvailablePins ? " · alleen beschikbaar" : ""}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          setShowOnlyAvailablePins((state) => !state);
-                        }}
-                        className={cn(
-                          "rounded-lg border px-3 py-2 text-xs font-semibold transition-colors",
-                          showOnlyAvailablePins ? "border-primary/70 bg-primary/10" : "border-white/10 bg-card/80 hover:bg-card",
-                        )}
-                      >
-                        {showOnlyAvailablePins ? "Alle opties" : "Beschikbaar"}
-                      </button>
-                      <ChevronDown className="size-4 shrink-0 text-muted-foreground transition group-open:rotate-180" aria-hidden />
-                    </div>
-                  </div>
-                </summary>
-                <div className="border-t border-white/10 p-3">
-                  <div className="flex flex-wrap gap-2 pb-3">
-                    {visiblePins.slice(0, 6).map((item) => (
-                      <span
-                        key={`map-option-${item.provider.id}`}
-                        className={cn(
-                          "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold",
-                          item.provider.availableSpots > 0 ? "bg-care-success-bg text-care-success-text" : "bg-muted text-muted-foreground",
-                        )}
-                      >
-                        {item.provider.name}
-                      </span>
+                          {row.provider.name}
+                        </button>
+                        <span className="text-muted-foreground">{row.advisoryLabel}</span>
+                      </li>
                     ))}
-                  </div>
-                  <div className="relative h-[min(52vh,520px)] overflow-hidden rounded-[22px] border border-border/60 bg-background/80 shadow-sm">
-                    <ProviderMapSurface
-                      providers={providers}
-                      selectedProviderId={selectedProviderId ?? bestMatch?.provider.id ?? null}
-                      hoveredProviderId={hoveredProviderId}
-                      onSelectProvider={handleSelectProvider}
-                      theme="dark"
-                    />
-                  </div>
-                </div>
-              </details>
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            ) : null}
+
+            {/* Empty state */}
+            {rankedMatches.length === 0 ? (
+              <CarePanel className="space-y-3 p-2">
+                <GuidanceContextBanner testId="matching-no-providers-banner">
+                  Niet alle aanbieders zijn beschikbaar of passend binnen dit arrangement. Controleer zorgtype, regio en capaciteit.
+                </GuidanceContextBanner>
+                <EmptyState
+                  title="Geen aanbieders"
+                  copy="Geen geschikte aanbieders binnen de selectie."
+                />
+              </CarePanel>
+            ) : null}
             </div>
           </div>
+        </div>
 
-        <aside className="flex w-full shrink-0 flex-col gap-4 lg:w-[360px]">
-          <div className="rounded-[22px] border border-border/60 bg-card/45 p-4 shadow-sm">
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className="care-text-subheading text-foreground">Waarom deze match?</h3>
-              <InlineHelpChip
-                title="Waarom deze aanbieder?"
-                triggerLabel="Waarom deze aanbieder?"
-                testId="matching-why-provider-help"
-              >
-                <p>Deze suggestie is gebaseerd op zorgtype, beschikbaarheid, regio en passendheid.</p>
-              </InlineHelpChip>
-            </div>
-            <div className="mt-4 space-y-3">
+        {/* ── Right sidebar ── */}
+        <aside className="flex w-full shrink-0 flex-col gap-3 lg:sticky lg:top-4 lg:self-start lg:w-[340px]">
+          {/* Panel 1 — Waarom deze match */}
+          <div className="rounded-[22px] border border-border/60 bg-card/45 p-3.5 shadow-sm">
+            <h3 className="care-text-subheading text-foreground">Waarom deze match</h3>
+            <div className="mt-2.5 space-y-2">
               {(
                 [
                   { Icon: Scale, text: "Sterke specialisatie-fit met het zorgprofiel" },
@@ -1092,76 +893,56 @@ export function MatchingPageWithMap({
                   { Icon: TrendingUp, text: "Goede eerdere uitkomsten in vergelijkbare trajecten" },
                 ] as const
               ).map((row) => (
-                <div key={row.text} className="flex gap-3 text-[13px] text-muted-foreground">
-                  <row.Icon className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
+                <div key={row.text} className="flex gap-2.5 text-[13px] text-muted-foreground">
+                  <row.Icon className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden />
                   <span className="leading-snug">{row.text}</span>
                 </div>
               ))}
             </div>
-            <Button variant="outline" type="button" className="mt-4 w-full border-white/15 bg-transparent text-[13px]" onClick={() => scrollToFocusZone()}>
-              Volledige uitleg
-            </Button>
           </div>
 
-          <div className="care-hover-card rounded-[22px] border border-border/60 bg-card/40 p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="care-text-subheading text-foreground">Huidige voorkeuren</h3>
-              <Button variant="ghost" size="sm" type="button" className="h-8 text-xs text-primary" onClick={() => scrollToFocusZone()}>
-                Aanpassen
-              </Button>
-            </div>
-            <div className="mt-4 space-y-3">
-              {(
-                [
-                  { label: "Specialisatie", pct: 30 },
-                  { label: "Urgentie", pct: 25 },
-                  { label: "Beschikbaarheid", pct: 20 },
-                  { label: "Locatie", pct: 15 },
-                  { label: "Eerdere resultaten", pct: 10 },
-                ] as const
-              ).map((pref) => (
-                <div key={pref.label}>
-                  <div className="flex justify-between text-[12px] text-muted-foreground">
-                    <span>{pref.label}</span>
-                    <span className="tabular-nums text-foreground">{pref.pct}%</span>
-                  </div>
-                  <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-muted/40">
-                    <div className="h-full rounded-full" style={{ width: `${pref.pct}%`, backgroundColor: MATCH_BRAND }} />
-                  </div>
+          {/* Panel 2 — Voorkeuren */}
+          <div className="rounded-[22px] border border-border/60 bg-card/45 p-3.5 shadow-sm">
+            <h3 className="care-text-subheading text-foreground">Voorkeuren</h3>
+            <dl className="mt-2.5 space-y-1.5">
+              {[
+                { label: "Complexiteit", value: caseData.risk === "high" ? "Hoog" : "Meervoudig" },
+                { label: "Zorgintensiteit", value: caseData.caseType || "Regulier" },
+                { label: "Urgentie", value: urgencyNl },
+                { label: "Regio", value: caseData.region },
+              ].map((row) => (
+                <div key={row.label} className="flex items-baseline justify-between gap-2 text-[13px]">
+                  <dt className="text-muted-foreground">{row.label}</dt>
+                  <dd className="font-medium text-foreground text-right">{row.value}</dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </div>
 
-          <div className="care-hover-card rounded-[22px] border border-border/60 bg-card/40 p-4 shadow-sm">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="care-text-subheading text-foreground">Alternatieven (lagere score)</h3>
-              <span
-                className="rounded-full px-2.5 py-0.5 text-xs font-bold tabular-nums text-white"
-                style={{ backgroundColor: MATCH_BRAND }}
-              >
-                {overflowList.length}
-              </span>
-            </div>
-            <p className="mt-2 text-[12px] text-muted-foreground">
-              Secundaire opties blijven beschikbaar voor vergelijking tijdens gemeente-validatie.
-            </p>
+          {/* Panel 3 — Status & vervolg */}
+          <div className="rounded-[22px] border border-border/60 bg-card/45 p-3.5 shadow-sm">
+            <h3 className="care-text-subheading text-foreground">Status &amp; vervolg</h3>
+            <dl className="mt-2.5 space-y-2">
+              <div>
+                <dt className="text-[11px] text-muted-foreground/70 font-medium">Actiehouder</dt>
+                <dd className="flex items-center gap-2 mt-1">
+                  <Building2 className="size-4 text-muted-foreground" aria-hidden />
+                  <span className="text-[13px] font-medium text-foreground">{spaCaseRaw?.owner || "Gemeente"}</span>
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[11px] text-muted-foreground/70 font-medium">Volgende stap</dt>
+                <dd className="flex items-center gap-2 mt-1">
+                  <ArrowRight className="size-4 text-primary" aria-hidden />
+                  <span className="text-[13px] font-medium text-foreground">Stuur naar aanbieder</span>
+                </dd>
+              </div>
+            </dl>
           </div>
-
-          <Button
-            type="button"
-            className="h-12 w-full gap-2 rounded-xl text-base font-semibold leading-none text-white shadow-md hover:opacity-95"
-            style={{ backgroundColor: MATCH_BRAND }}
-            onClick={() => {
-              setListTab("all");
-              scrollToFocusZone();
-            }}
-          >
-            <Users className="size-5 translate-y-px" aria-hidden />
-            Handmatig toewijzen
-          </Button>
         </aside>
       </div>
+
+      {/* ── Dialogs (unchanged) ── */}
       <>
         <Dialog
           open={selectionConfirmMatch !== null}
@@ -1185,8 +966,8 @@ export function MatchingPageWithMap({
                     <DialogDescription asChild>
                       <div className="space-y-3 text-sm text-muted-foreground">
                         {isOverride && (
-                          <div className="rounded-lg border border-amber-500/30 bg-amber-500/8 px-3 py-2 text-[13px]">
-                            <p className="font-semibold text-amber-700 dark:text-amber-400">Handmatige overschrijving vereist</p>
+                          <div className="rounded-lg border border-care-warning-border bg-care-warning-bg px-3 py-2 text-[13px]">
+                            <p className="font-semibold text-care-warning-text">Handmatige overschrijving vereist</p>
                             <p className="mt-0.5">Je selecteert niet de topbeaanbeveling van de keten-engine. Geef een toelichting — dit wordt vastgelegd in het auditlog.</p>
                           </div>
                         )}
@@ -1204,7 +985,7 @@ export function MatchingPageWithMap({
                         {isOverride && (
                           <div className="space-y-1.5">
                             <label className="block text-[12px] font-semibold text-foreground" htmlFor="override-reason">
-                              Reden van overschrijving <span className="text-[var(--care-badge-red-text)]">*</span>
+                              Reden van overschrijving <span className="text-care-urgent-text">*</span>
                             </label>
                             <Textarea
                               id="override-reason"
@@ -1278,7 +1059,7 @@ export function MatchingPageWithMap({
                 </DialogHeader>
 
                 {waitlistModalError ? (
-                  <div className="rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-destructive">
+                  <div className="rounded-xl border border-care-urgent-border bg-care-urgent-bg px-3 py-2 text-sm text-care-urgent-text">
                     {waitlistModalError}
                   </div>
                 ) : null}

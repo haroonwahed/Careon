@@ -500,6 +500,10 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
     { id: "required_data", label: "Verplichte casusgegevens", fieldId: "guided-required-data", completed: false },
     { id: "summary", label: "Casusoverzicht", fieldId: "guided-summary", completed: false },
   ]);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string | null>>({
+    required_data: null,
+    summary: null,
+  });
   const wasHiddenRef = useRef(false);
 
   const loadDecisionEvaluation = useCallback(async () => {
@@ -1010,6 +1014,50 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
 
   const totalRequired = 2; // required_data + summary
 
+  const validateRequiredData = useCallback(async (): Promise<boolean> => {
+    try {
+      setValidationErrors(prev => ({ ...prev, required_data: null }));
+      // Backend validation: check if required_data_complete
+      if (!decisionEvaluation?.decision_context.required_data_complete) {
+        setValidationErrors(prev => ({
+          ...prev,
+          required_data: "Verplichte gegevens zijn nog niet volledig ingevuld. Controleer alle velden.",
+        }));
+        return false;
+      }
+      toast.success("Verplichte casusgegevens opgeslagen");
+      return true;
+    } catch (error) {
+      setValidationErrors(prev => ({
+        ...prev,
+        required_data: error instanceof Error ? error.message : "Validatie mislukt",
+      }));
+      return false;
+    }
+  }, [decisionEvaluation]);
+
+  const validateSummary = useCallback(async (): Promise<boolean> => {
+    try {
+      setValidationErrors(prev => ({ ...prev, summary: null }));
+      // Backend validation: check if has_summary
+      if (!decisionEvaluation?.decision_context.has_summary) {
+        setValidationErrors(prev => ({
+          ...prev,
+          summary: "Casusoverzicht is nog niet gegenereerd. Wacht even en probeer opnieuw.",
+        }));
+        return false;
+      }
+      toast.success("Casusoverzicht gereed");
+      return true;
+    } catch (error) {
+      setValidationErrors(prev => ({
+        ...prev,
+        summary: error instanceof Error ? error.message : "Validatie mislukt",
+      }));
+      return false;
+    }
+  }, [decisionEvaluation]);
+
   const attentionItems = attentionRollup.map((row) => {
     const severity = row.key.startsWith("blocker") ? "critical" : row.key.startsWith("risk") ? "warning" : "info";
     return {
@@ -1204,6 +1252,8 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
               isComplete={decisionEvaluation?.decision_context.required_data_complete ?? false}
               label="Verplichte casusgegevens"
               onMarkComplete={() => guidedFlow.markStepComplete("required_data")}
+              onValidate={validateRequiredData}
+              validationError={validationErrors.required_data}
             >
               <CaseMissingDataPanel
                 missingFields={missingRequiredFields}
@@ -1220,6 +1270,8 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
               onMarkComplete={() => {
                 guidedFlow.markStepComplete("summary");
               }}
+              onValidate={validateSummary}
+              validationError={validationErrors.summary}
             >
               <CaseDetailEvidenceList
                 rows={[

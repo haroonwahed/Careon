@@ -395,7 +395,7 @@ class ProviderProfile(models.Model):
     # Complexity levels
     handles_simple = models.BooleanField(default=False, verbose_name='Kan: Enkelvoudig')
     handles_multiple = models.BooleanField(default=False, verbose_name='Kan: Meervoudig')
-    handles_severe = models.BooleanField(default=False, verbose_name='Kan: Zwaar')
+    handles_high_complex = models.BooleanField(default=False, verbose_name='Kan: Hoogcomplex')
     
     # Urgency levels
     handles_low_urgency = models.BooleanField(default=False, verbose_name='Kan: Laag')
@@ -549,10 +549,9 @@ class CareCase(models.Model):
         OTHER = 'OTHER', 'Other'
 
     class RiskLevel(models.TextChoices):
-        LOW = 'LOW', 'Laag'
-        MEDIUM = 'MEDIUM', 'Middel'
-        HIGH = 'HIGH', 'Hoog'
-        CRITICAL = 'CRITICAL', 'Kritiek'
+        GEEN_BIJZONDER_RISICO = 'GEEN_BIJZONDER_RISICO', 'Geen bijzonder risico'
+        VERHOOGD_RISICO = 'VERHOOGD_RISICO', 'Verhoogd risico'
+        ACUUT_RISICO = 'ACUUT_RISICO', 'Acuut risico'
 
     class Currency(models.TextChoices):
         EUR = 'EUR', 'EUR (€)'
@@ -587,7 +586,7 @@ class CareCase(models.Model):
     policy_framework = models.CharField(max_length=200, blank=True, help_text='Kader of beleidsgrondslag')
     service_region = models.CharField(max_length=200, blank=True, help_text='Regio of toepassingsgebied')
     language = models.CharField(max_length=50, default='English', blank=True)
-    risk_level = models.CharField(max_length=10, choices=RiskLevel.choices, default=RiskLevel.LOW)
+    risk_level = models.CharField(max_length=25, choices=RiskLevel.choices, default=RiskLevel.GEEN_BIJZONDER_RISICO)
     data_transfer_flag = models.BooleanField(default=False, help_text='Involves cross-border data transfer (EU/US)')
     dpa_attached = models.BooleanField(default=False, help_text='Data Processing Agreement attached')
     scc_attached = models.BooleanField(default=False, help_text='Standard Contractual Clauses attached')
@@ -2036,14 +2035,25 @@ class CaseIntakeProcess(models.Model):
 
     class Urgency(models.TextChoices):
         LOW = 'LOW', 'Laag'
-        MEDIUM = 'MEDIUM', 'Middel'
+        MEDIUM = 'MEDIUM', 'Normaal'
         HIGH = 'HIGH', 'Hoog'
         CRISIS = 'CRISIS', 'Crisis'
 
     class Complexity(models.TextChoices):
-        SIMPLE = 'SIMPLE', 'Enkelvoudig'
-        MULTIPLE = 'MULTIPLE', 'Meervoudig'
-        SEVERE = 'SEVERE', 'Zwaar'
+        ENKELVOUDIG = 'ENKELVOUDIG', 'Enkelvoudig'
+        MEERVOUDIG = 'MEERVOUDIG', 'Meervoudig'
+        HOOGCOMPLEX = 'HOOGCOMPLEX', 'Hoogcomplex'
+
+    class CareIntensity(models.TextChoices):
+        LICHT = 'LICHT', 'Licht'
+        REGULIER = 'REGULIER', 'Regulier'
+        INTENSIEF = 'INTENSIEF', 'Intensief'
+
+    class ClassificationStatus(models.TextChoices):
+        SYSTEM_PROPOSED = 'SYSTEM_PROPOSED', 'Systeemvoorstel'
+        CONFIRMED = 'CONFIRMED', 'Professioneel bevestigd'
+        OVERRIDDEN = 'OVERRIDDEN', 'Professioneel gewijzigd'
+        NEEDS_REVIEW = 'NEEDS_REVIEW', 'Nog te beoordelen'
 
     class CareForm(models.TextChoices):
         LOW_THRESHOLD_CONSULT = 'LOW_THRESHOLD_CONSULT', 'Laagdrempelig consult'
@@ -2162,7 +2172,82 @@ class CaseIntakeProcess(models.Model):
     
     # CARE-SPECIFIC: Matching dimensions
     urgency = models.CharField(max_length=10, choices=Urgency.choices, default=Urgency.MEDIUM, verbose_name='Urgentie')
-    complexity = models.CharField(max_length=20, choices=Complexity.choices, default=Complexity.SIMPLE, verbose_name='Complexiteit')
+    complexity = models.CharField(max_length=15, choices=Complexity.choices, blank=True, default='', verbose_name='Complexiteit')
+    care_intensity = models.CharField(
+        max_length=10,
+        choices=CareIntensity.choices,
+        blank=True,
+        default='',
+        verbose_name='Zorgintensiteit',
+    )
+    proposed_complexity = models.CharField(
+        max_length=15,
+        choices=Complexity.choices,
+        blank=True,
+        default='',
+        verbose_name='Voorgestelde complexiteit',
+    )
+    proposed_care_intensity = models.CharField(
+        max_length=10,
+        choices=CareIntensity.choices,
+        blank=True,
+        default='',
+        verbose_name='Voorgestelde zorgintensiteit',
+    )
+    classification_rationale = models.JSONField(
+        null=True,
+        blank=True,
+        verbose_name='Classificatie-onderbouwing',
+        help_text='Criteria en uitleg van het systeemvoorstel.',
+    )
+    complexity_status = models.CharField(
+        max_length=20,
+        choices=ClassificationStatus.choices,
+        default=ClassificationStatus.SYSTEM_PROPOSED,
+        verbose_name='Status complexiteit',
+    )
+    care_intensity_status = models.CharField(
+        max_length=20,
+        choices=ClassificationStatus.choices,
+        default=ClassificationStatus.SYSTEM_PROPOSED,
+        verbose_name='Status zorgintensiteit',
+    )
+    complexity_confirmed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='confirmed_complexities',
+        verbose_name='Complexiteit bevestigd door',
+    )
+    complexity_confirmed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Complexiteit bevestigd op',
+    )
+    care_intensity_confirmed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='confirmed_care_intensities',
+        verbose_name='Zorgintensiteit bevestigd door',
+    )
+    care_intensity_confirmed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Zorgintensiteit bevestigd op',
+    )
+    complexity_override_reason = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Reden wijziging complexiteit',
+    )
+    care_intensity_override_reason = models.TextField(
+        blank=True,
+        default='',
+        verbose_name='Reden wijziging zorgintensiteit',
+    )
     placement_pressure_horizon = models.CharField(
         max_length=20,
         choices=PlacementPressureHorizon.choices,
@@ -2861,10 +2946,10 @@ class CaseIntakeProcess(models.Model):
             return self.contract
 
         risk_map = {
-            self.Urgency.LOW: CareCase.RiskLevel.LOW,
-            self.Urgency.MEDIUM: CareCase.RiskLevel.MEDIUM,
-            self.Urgency.HIGH: CareCase.RiskLevel.HIGH,
-            self.Urgency.CRISIS: CareCase.RiskLevel.CRITICAL,
+            self.Urgency.LOW: CareCase.RiskLevel.GEEN_BIJZONDER_RISICO,
+            self.Urgency.MEDIUM: CareCase.RiskLevel.GEEN_BIJZONDER_RISICO,
+            self.Urgency.HIGH: CareCase.RiskLevel.VERHOOGD_RISICO,
+            self.Urgency.CRISIS: CareCase.RiskLevel.ACUUT_RISICO,
         }
         contract_type_map = {
             self.CareForm.OUTPATIENT: CareCase.ContractType.MSA,
@@ -2891,7 +2976,7 @@ class CaseIntakeProcess(models.Model):
             content=(self.assessment_summary or self.description or '').strip(),
             status=CareCase.Status.PENDING,
             service_region=region_label,
-            risk_level=risk_map.get(self.urgency, CareCase.RiskLevel.MEDIUM),
+            risk_level=risk_map.get(self.urgency, CareCase.RiskLevel.GEEN_BIJZONDER_RISICO),
             start_date=self.start_date,
             end_date=self.target_completion_date,
             case_phase=CareCase.CasePhase.INTAKE,

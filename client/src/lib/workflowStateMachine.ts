@@ -86,6 +86,7 @@ const roleActions: Record<CanonicalWorkflowRole, Set<CanonicalWorkflowAction>> =
   ]),
   admin: new Set([
     "create_case",
+    "start_intake",
     "complete_wijkteam_intake",
     "complete_zorgvraag_assessment",
     "complete_summary",

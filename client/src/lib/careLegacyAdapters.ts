@@ -4,6 +4,21 @@ import type { Casus, CasusStatus, MatchResult, UrgencyLevel as CasusUrgencyLevel
 import type { SpaCase } from "../hooks/useCases";
 import type { SpaProvider } from "../hooks/useProviders";
 
+const ZORGTYPE_LABELS: Record<string, string> = {
+  OTHER: "Anders (overig)",
+  AMBULANT: "Ambulante begeleiding",
+  DAGBEHANDELING: "Dagbehandeling",
+  VERBLIJF: "Verblijf",
+  PLEEGZORG: "Pleegzorg",
+  GEZINSHUIS: "Gezinshuis",
+  SPECIALISTISCHE_GGZ: "Specialistische GGZ",
+};
+
+function zorgtypeLabel(raw: string | null | undefined): string {
+  if (!raw) return "Onbekend";
+  return ZORGTYPE_LABELS[raw.toUpperCase()] ?? raw;
+}
+
 function mapCaseStatus(status: SpaCase["status"]): CaseStatus {
   switch (status) {
     case "provider_beoordeling":
@@ -57,7 +72,7 @@ export function toLegacyCase(spaCase: SpaCase): Case {
     waitingDays: spaCase.wachttijd,
     lastActivity: spaCase.wachttijd === 0 ? "Vandaag" : `${spaCase.wachttijd} dagen geleden`,
     assignedTo: "Nog niet toegewezen",
-    caseType: spaCase.zorgtype || "Onbekend",
+    caseType: zorgtypeLabel(spaCase.zorgtype),
     signal: spaCase.problems[0]?.label || spaCase.systemInsight || "Geen bijzonderheden",
     recommendedAction: spaCase.recommendedAction || "Volg standaardproces",
   };

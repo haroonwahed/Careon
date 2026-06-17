@@ -16,6 +16,7 @@ from contracts.domain.contracts import ListParams
 from contracts.models import (
     CareCase,
     CaseIntakeProcess,
+    MatchResultaat,
     PlacementRequest,
 )
 from contracts.tenancy import (
@@ -73,6 +74,13 @@ def contracts_api(request):
                 'due_diligence_process__regio',
                 'due_diligence_process__preferred_region',
                 'due_diligence_process__gemeente',
+                'due_diligence_process__herkomst_gemeente',
+                'due_diligence_process__verantwoordelijke_gemeente',
+                'due_diligence_process__verblijfsgemeente',
+                'due_diligence_process__zorgregio',
+                'due_diligence_process__plaatsingsregio',
+                'due_diligence_process__contractregio',
+                'due_diligence_process__escalatie_regio',
                 'created_by',
             ).prefetch_related(
                 Prefetch(
@@ -190,7 +198,22 @@ def case_detail_api(request, contract_id=None, case_id=None):
 
         organization = get_user_organization(request.user)
         case = get_scoped_object_or_404(
-            CareCase.objects.select_related('due_diligence_process').prefetch_related(
+            CareCase.objects.select_related(
+                'due_diligence_process',
+                'due_diligence_process__care_category_main',
+                'due_diligence_process__care_category_sub',
+                'due_diligence_process__regio',
+                'due_diligence_process__preferred_region',
+                'due_diligence_process__gemeente',
+                'due_diligence_process__herkomst_gemeente',
+                'due_diligence_process__verantwoordelijke_gemeente',
+                'due_diligence_process__verblijfsgemeente',
+                'due_diligence_process__zorgregio',
+                'due_diligence_process__plaatsingsregio',
+                'due_diligence_process__contractregio',
+                'due_diligence_process__escalatie_regio',
+                'created_by',
+            ).prefetch_related(
                 Prefetch(
                     'due_diligence_process__indications',
                     queryset=PlacementRequest.objects.order_by('-updated_at'),
@@ -270,7 +293,23 @@ def coordination_decision_overview_api(request):
 
         try:
             cases = scope_queryset_for_organization(
-                CareCase.objects.select_related('due_diligence_process'),
+                CareCase.objects.select_related(
+                    'due_diligence_process',
+                    'due_diligence_process__case_assessment',
+                ).prefetch_related(
+                    Prefetch(
+                        'due_diligence_process__indications',
+                        queryset=PlacementRequest.objects.select_related(
+                            'selected_provider', 'proposed_provider'
+                        ).order_by('-updated_at', '-created_at'),
+                    ),
+                    Prefetch(
+                        'match_resultaten',
+                        queryset=MatchResultaat.objects.select_related(
+                            'zorgaanbieder', 'zorgprofiel'
+                        ).order_by('-created_at'),
+                    ),
+                ),
                 organization,
             ).exclude(
                 Q(lifecycle_stage='ARCHIVED') | Q(due_diligence_process__status=CaseIntakeProcess.ProcessStatus.ARCHIVED)

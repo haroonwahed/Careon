@@ -119,6 +119,24 @@ export interface ApiCase {
   primary_region_label?: string;
   secondary_region_labels?: string[];
   all_region_labels?: string[];
+  // Classification
+  complexity?: string;
+  care_intensity?: string;
+  proposed_complexity?: string;
+  proposed_care_intensity?: string;
+  complexity_status?: string;
+  care_intensity_status?: string;
+  classification_rationale?: {
+    criteria: Array<{ label: string; value: string; signal: string; toelichting: string }>;
+    explanation: string;
+    proposed_at?: string;
+  };
+  complexity_confirmed_by?: string | null;
+  complexity_confirmed_at?: string | null;
+  care_intensity_confirmed_by?: string | null;
+  care_intensity_confirmed_at?: string | null;
+  complexity_override_reason?: string;
+  care_intensity_override_reason?: string;
   // Decision evaluation (detail only)
   decision_evaluation?: Record<string, unknown>;
 }

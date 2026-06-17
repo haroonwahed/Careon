@@ -107,7 +107,7 @@ def providers_api(request):
                 'secondaryRegionLabels': regions_payload['secondary_region_labels'],
                 'allRegionLabels': regions_payload['all_region_labels'],
             })
-        return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(qs))})
+        return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(page_obj.object_list))})
     except Exception:
         return _internal_server_error(request, context='providers_api_failed')
 

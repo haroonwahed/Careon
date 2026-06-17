@@ -1,21 +1,5 @@
-/**
- * ProviderProfilePage - Care Provider Detail View
- * 
- * High-impact decision support page showing provider details,
- * strengths/limitations, and capacity information.
- * 
- * Access points:
- * - From matching page (with selection context)
- * - From providers list (exploration mode)
- * 
- * Purpose:
- * - Build trust and understanding
- * - Support confident decision-making
- * - Reduce uncertainty
- */
-
 import { useState } from "react";
-import { 
+import {
   ArrowLeft,
   MapPin,
   Users,
@@ -35,11 +19,16 @@ import {
 import { Button } from "../ui/button";
 import { Provider } from "../../lib/casesData";
 import { tokens } from "../../design/tokens";
-import { CareAttentionBar, CareInfoPopover, CareMetricBadge, CarePageScaffold } from "./CareDesignPrimitives";
+import { CareInfoPopover } from "./CareDesignPrimitives";
+import {
+  CareCommandShell,
+  CareMetricStrip,
+  CareMetricCard,
+} from "./CareCommandPrimitives";
 import { advisoryQualitativeFromNumericScore } from "../../lib/matchingAdvisory";
 
 // AI Components
-import { 
+import {
   MatchExplanation,
   Samenvatting
 } from "../ai";
@@ -53,7 +42,7 @@ interface ProviderProfilePageProps {
   onBack: () => void;
 }
 
-export function ProviderProfilePage({ 
+export function ProviderProfilePage({
   provider,
   context = "exploration",
   matchScore,
@@ -61,37 +50,32 @@ export function ProviderProfilePage({
   onSelectProvider,
   onBack
 }: ProviderProfilePageProps) {
-  
+
   const [expandedSections, setExpandedSections] = useState<string[]>([
     "zorgaanbod"
   ]);
 
   const toggleSection = (section: string) => {
-    setExpandedSections(prev => 
-      prev.includes(section) 
+    setExpandedSections(prev =>
+      prev.includes(section)
         ? prev.filter(s => s !== section)
         : [...prev, section]
     );
   };
 
-  // Mock capacity status
-  const capacityStatus: "available" | "limited" | "full" = 
-    provider.availableSpots > 3 ? "available" : 
+  const capacityStatus: "available" | "limited" | "full" =
+    provider.availableSpots > 3 ? "available" :
     provider.availableSpots > 0 ? "limited" : "full";
 
-  const estimatedWaitTime = 
+  const estimatedWaitTime =
     capacityStatus === "available" ? "3-5 dagen" :
     capacityStatus === "limited" ? "1-2 weken" :
     "2-4 weken";
 
   const matchingMode = context === "matching" && Boolean(onSelectProvider);
-  const attentionTone: "warning" | "info" | "critical" =
-    capacityStatus === "available" ? "info" : capacityStatus === "limited" ? "warning" : "critical";
 
   return (
-    <CarePageScaffold
-      archetype="network"
-      className="pb-8"
+    <CareCommandShell
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
           {provider.name}
@@ -108,8 +92,8 @@ export function ProviderProfilePage({
             <div className="flex items-center gap-3">
               {caseId && <span className="text-sm text-muted-foreground">Matching voor {caseId}</span>}
               {matchScore != null && advisoryQualitativeFromNumericScore(matchScore) ? (
-                <div className="rounded-lg border border-border/60 bg-muted/20 px-3 py-1.5">
-                  <span className="text-[12px] font-semibold text-foreground">
+                <div className="rounded-[10px] border border-border/60 bg-muted/20 px-3 py-1.5">
+                  <span className="text-[12px] font-medium text-foreground">
                     {advisoryQualitativeFromNumericScore(matchScore)}
                   </span>
                 </div>
@@ -122,63 +106,52 @@ export function ProviderProfilePage({
           </Button>
         </div>
       }
-      dominantAction={
-        <CareAttentionBar
-          tone={attentionTone}
-          message={
-            capacityStatus === "available"
-              ? `Capaciteit beschikbaar: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
-              : capacityStatus === "limited"
-                ? `Beperkte capaciteit: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
-                : `Wachtlijst actief: ${provider.availableSpots} van ${provider.capacity} plekken vrij.`
-          }
-          action={
-            matchingMode ? (
-              <Button className="bg-primary hover:bg-primary/90" onClick={onSelectProvider}>
-                Selecteer aanbieder
-              </Button>
-            ) : (
-              <Button variant="outline" onClick={() => toggleSection("zorgaanbod")}>
-                Bekijk zorgaanbod
-              </Button>
-            )
-          }
-        // @ts-ignore
-        metric={
-          <CareMetricBadge>
-            {provider.availableSpots}/{provider.capacity} plekken · {estimatedWaitTime} wachttijd · score {provider.rating.toFixed(1)}
-          </CareMetricBadge>
-        }
-        />
-      }
     >
+      <CareMetricStrip>
+        <CareMetricCard
+          value={`${provider.availableSpots}/${provider.capacity}`}
+          label="Plekken vrij"
+          tone={capacityStatus === "full" ? "urgent" : capacityStatus === "limited" ? "warning" : "neutral"}
+        />
+        <CareMetricCard
+          value={estimatedWaitTime}
+          label="Verwachte wachttijd"
+          tone="neutral"
+        />
+        <CareMetricCard
+          value={provider.rating.toFixed(1)}
+          label="Beoordeling"
+          tone="neutral"
+        />
+      </CareMetricStrip>
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          
+
           {/* LEFT COLUMN (2/3) */}
           <div className="space-y-2 lg:col-span-2">
-            
+
             {/* PROVIDER HEADER */}
-            <div className="panel-surface p-4">
+            <div className="rounded-[16px] border border-border/55 bg-card/30 p-4">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h1 className="text-3xl font-bold text-foreground mb-2">
+                  <h1 className="text-[26px] font-medium text-foreground mb-2">
                     {provider.name}
                   </h1>
-                  
+
                   <div className="flex flex-wrap items-center gap-3 mb-4">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <MapPin size={14} />
                       <span className="text-sm">{provider.region}</span>
                     </div>
-                    
+
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Building2 size={14} />
                       <span className="text-sm">{provider.type}</span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Star size={14} className="text-green-400 fill-green-400" />
-                      <span className="text-sm font-semibold text-green-400">
+                      <Star size={14} className="text-care-success-text fill-care-success-solid" />
+                      <span className="text-sm font-medium text-care-success-text">
                         {provider.rating.toFixed(1)}
                       </span>
                     </div>
@@ -186,27 +159,27 @@ export function ProviderProfilePage({
 
                   {/* Tags */}
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1 bg-muted/35 text-foreground rounded-full border border-border/70 text-xs font-semibold">
+                    <span className="inline-flex items-center rounded-full border border-border/70 bg-muted/35 px-2.5 py-0.5 text-[12px] font-medium text-foreground">
                       Jeugdzorg
                     </span>
-                    <span className="px-3 py-1 bg-blue-500/10 text-blue-400 rounded-full text-xs font-semibold">
+                    <span className="inline-flex items-center rounded-full border border-care-info-border bg-care-info-bg px-2.5 py-0.5 text-[12px] font-medium text-care-info-text">
                       Specialistisch
                     </span>
-                    <span className="px-3 py-1 bg-green-500/10 text-green-400 rounded-full text-xs font-semibold">
+                    <span className="inline-flex items-center rounded-full border border-care-success-border bg-care-success-bg px-2.5 py-0.5 text-[12px] font-medium text-care-success-text">
                       Trauma behandeling
                     </span>
                   </div>
                 </div>
 
                 {/* Capacity Status Badge */}
-                <div className={`px-4 py-2 rounded-lg border-2 ${
-                  capacityStatus === "available" 
-                    ? "bg-green-500/10 border-green-500/30"
+                <div className={`px-4 py-2 rounded-[10px] border-2 ${
+                  capacityStatus === "available"
+                    ? "bg-care-success-bg border-care-success-border"
                     : capacityStatus === "limited"
-                    ? "bg-amber-500/10 border-amber-500/30"
-                    : "bg-red-500/10 border-red-500/30"
+                    ? "bg-care-warning-bg border-care-warning-border"
+                    : "bg-care-urgent-bg border-care-urgent-border"
                 }`}>
-                  <p className={`text-xs font-semibold uppercase ${
+                  <p className={`text-xs font-medium uppercase ${
                     capacityStatus === "available" ? "text-care-success-solid" :
                     capacityStatus === "limited" ? "text-care-warning-solid" :
                     "text-care-urgent-solid"
@@ -250,12 +223,12 @@ export function ProviderProfilePage({
 
             {/* WHY THIS PROVIDER (DECISION SUPPORT) */}
             {context === "matching" && matchScore != null ? (
-              <div className="panel-surface p-4">
-                <h2 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
+              <div className="rounded-[16px] border border-border/55 bg-card/30 p-4">
+                <h2 className="text-xl font-medium text-foreground mb-4 flex items-center gap-2">
                   <Target size={20} className="text-muted-foreground" />
                   Waarom deze aanbieder?
                 </h2>
-                
+
                 <MatchExplanation
                   advisoryLabel={advisoryQualitativeFromNumericScore(matchScore) ?? "Onderbouwing nodig"}
                   strengths={[
@@ -274,7 +247,7 @@ export function ProviderProfilePage({
             ) : null}
 
             {/* EXPANDABLE SECTIONS */}
-            
+
             {/* Zorgaanbod */}
             <CollapsibleSection
               id="zorgaanbod"
@@ -285,7 +258,7 @@ export function ProviderProfilePage({
             >
               <div className="space-y-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Type zorg
                   </h4>
                   <ul className="space-y-2">
@@ -317,23 +290,23 @@ export function ProviderProfilePage({
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Specialisaties
                   </h4>
                   <div className="flex flex-wrap gap-2">
-                    <span className="px-3 py-1.5 bg-muted/30 rounded-md text-xs text-foreground">
+                    <span className="px-3 py-1.5 bg-muted/30 rounded-full text-xs text-foreground">
                       Trauma & PTSS
                     </span>
-                    <span className="px-3 py-1.5 bg-muted/30 rounded-md text-xs text-foreground">
+                    <span className="px-3 py-1.5 bg-muted/30 rounded-full text-xs text-foreground">
                       Hechtingsproblematiek
                     </span>
-                    <span className="px-3 py-1.5 bg-muted/30 rounded-md text-xs text-foreground">
+                    <span className="px-3 py-1.5 bg-muted/30 rounded-full text-xs text-foreground">
                       Gedragsproblemen
                     </span>
-                    <span className="px-3 py-1.5 bg-muted/30 rounded-md text-xs text-foreground">
+                    <span className="px-3 py-1.5 bg-muted/30 rounded-full text-xs text-foreground">
                       Autisme spectrum
                     </span>
-                    <span className="px-3 py-1.5 bg-muted/30 rounded-md text-xs text-foreground">
+                    <span className="px-3 py-1.5 bg-muted/30 rounded-full text-xs text-foreground">
                       LVB begeleiding
                     </span>
                   </div>
@@ -351,7 +324,7 @@ export function ProviderProfilePage({
             >
               <div className="space-y-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Leeftijdsgroepen
                   </h4>
                   <p className="text-sm text-muted-foreground">
@@ -360,7 +333,7 @@ export function ProviderProfilePage({
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Problematiek
                   </h4>
                   <ul className="space-y-2">
@@ -391,7 +364,7 @@ export function ProviderProfilePage({
             >
               <div className="space-y-2">
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Intake proces
                   </h4>
                   <ol className="space-y-2 list-decimal list-inside">
@@ -411,7 +384,7 @@ export function ProviderProfilePage({
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2">
+                  <h4 className="text-sm font-medium text-foreground mb-2">
                     Behandelaanpak
                   </h4>
                   <p className="text-sm text-muted-foreground mb-2">
@@ -438,10 +411,10 @@ export function ProviderProfilePage({
 
           {/* RIGHT COLUMN (SIDEBAR - 1/3) */}
           <div className="space-y-2">
-            
+
             {/* CAPACITY & AVAILABILITY */}
-            <div className="panel-surface p-4 sticky" style={{ top: tokens.layout.edgeZero }}>
-              <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="rounded-[16px] border border-border/55 bg-card/30 p-4 sticky" style={{ top: tokens.layout.edgeZero }}>
+              <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
                 <Calendar size={16} />
                 Beschikbaarheid
               </h3>
@@ -454,11 +427,11 @@ export function ProviderProfilePage({
                   </p>
                   <div className="flex items-center gap-2">
                     <div className={`w-3 h-3 rounded-full ${
-                      capacityStatus === "available" ? "bg-green-400" :
-                      capacityStatus === "limited" ? "bg-amber-400" :
-                      "bg-red-400"
+                      capacityStatus === "available" ? "bg-care-success-solid" :
+                      capacityStatus === "limited" ? "bg-care-warning-solid" :
+                      "bg-care-urgent-solid"
                     }`} />
-                    <span className="text-sm font-semibold text-foreground">
+                    <span className="text-sm font-medium text-foreground">
                       {provider.availableSpots} van {provider.capacity} plekken vrij
                     </span>
                   </div>
@@ -469,7 +442,7 @@ export function ProviderProfilePage({
                   <p className="text-xs text-muted-foreground mb-1">
                     Geschatte wachttijd
                   </p>
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-sm font-medium text-foreground">
                     {estimatedWaitTime}
                   </p>
                 </div>
@@ -481,7 +454,7 @@ export function ProviderProfilePage({
                   </p>
                   <div className="flex items-center gap-2">
                     <Clock size={14} className="text-care-success-solid" />
-                    <span className="text-sm font-semibold text-care-success-solid">
+                    <span className="text-sm font-medium text-care-success-solid">
                       Binnen {provider.responseTime} uur
                     </span>
                   </div>
@@ -500,7 +473,7 @@ export function ProviderProfilePage({
 
               {/* CTA */}
               {context === "matching" && onSelectProvider && (
-                <Button 
+                <Button
                   className="w-full mt-6 bg-primary hover:bg-primary/90"
                   onClick={onSelectProvider}
                 >
@@ -510,14 +483,14 @@ export function ProviderProfilePage({
             </div>
 
             {/* LOCATION */}
-            <div className="panel-surface p-4">
-              <h3 className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+            <div className="rounded-[16px] border border-border/55 bg-card/30 p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4 flex items-center gap-2">
                 <MapPin size={16} />
                 Locatie
               </h3>
 
               {/* Map Placeholder */}
-              <div className="w-full h-40 bg-muted/20 rounded-lg flex items-center justify-center mb-4">
+              <div className="w-full h-40 bg-muted/20 rounded-[16px] flex items-center justify-center mb-4">
                 <div className="text-center">
                   <MapPin size={32} className="mx-auto mb-2 text-muted-foreground/40" />
                   <p className="text-xs text-muted-foreground">
@@ -551,8 +524,8 @@ export function ProviderProfilePage({
             </div>
 
             {/* CONTACT */}
-            <div className="panel-surface p-4">
-              <h3 className="text-sm font-bold text-foreground mb-4">
+            <div className="rounded-[16px] border border-border/55 bg-card/30 p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
                 Contact & Verwijzing
               </h3>
 
@@ -561,7 +534,7 @@ export function ProviderProfilePage({
                   <p className="text-xs text-muted-foreground mb-1">
                     Contactpersoon
                   </p>
-                  <p className="text-sm font-semibold text-foreground">
+                  <p className="text-sm font-medium text-foreground">
                     Drs. P. Bakker
                   </p>
                   <p className="text-xs text-muted-foreground">
@@ -571,8 +544,8 @@ export function ProviderProfilePage({
 
                 <div className="flex items-center gap-2">
                   <Phone size={14} className="text-muted-foreground" />
-                  <a 
-                    href="tel:0201234567" 
+                  <a
+                    href="tel:0201234567"
                     className="text-sm text-primary hover:underline"
                   >
                     020 - 123 45 67
@@ -581,8 +554,8 @@ export function ProviderProfilePage({
 
                 <div className="flex items-center gap-2">
                   <Mail size={14} className="text-muted-foreground" />
-                  <a 
-                    href="mailto:intake@provider.nl" 
+                  <a
+                    href="mailto:intake@provider.nl"
                     className="text-sm text-primary hover:underline"
                   >
                     intake@provider.nl
@@ -601,21 +574,21 @@ export function ProviderProfilePage({
             </div>
 
             {/* DOCUMENTS */}
-            <div className="panel-surface p-4">
-              <h3 className="text-sm font-bold text-foreground mb-4">
+            <div className="rounded-[16px] border border-border/55 bg-card/30 p-4">
+              <h3 className="text-sm font-medium text-foreground mb-4">
                 Documenten
               </h3>
 
               <div className="space-y-2">
-                <a 
+                <a
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
                   <FileText size={14} className="text-muted-foreground" />
                   <span className="text-sm text-foreground">Zorgaanbod brochure</span>
                 </a>
-                
-                <a 
+
+                <a
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
@@ -623,7 +596,7 @@ export function ProviderProfilePage({
                   <span className="text-sm text-foreground">Intake procedure</span>
                 </a>
 
-                <a 
+                <a
                   href="/care/documents/"
                   className="flex items-center gap-2 p-2 rounded hover:bg-muted/30 transition-colors"
                 >
@@ -642,7 +615,7 @@ export function ProviderProfilePage({
           </Button>
         </div>
       )}
-    </CarePageScaffold>
+    </CareCommandShell>
   );
 }
 
@@ -656,22 +629,22 @@ interface CollapsibleSectionProps {
   children: React.ReactNode;
 }
 
-function CollapsibleSection({ 
-  title, 
-  icon, 
-  expanded, 
-  onToggle, 
-  children 
+function CollapsibleSection({
+  title,
+  icon,
+  expanded,
+  onToggle,
+  children
 }: CollapsibleSectionProps) {
   return (
-    <div className="panel-surface overflow-hidden">
+    <div className="rounded-[16px] border border-border/55 bg-card/30 overflow-hidden">
       <button
         onClick={onToggle}
         className="w-full p-4 flex items-center justify-between hover:bg-muted/20 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className="text-primary">{icon}</div>
-          <h2 className="text-lg font-bold text-foreground">{title}</h2>
+          <h2 className="text-lg font-medium text-foreground">{title}</h2>
         </div>
         {expanded ? (
           <ChevronUp size={20} className="text-muted-foreground" />
@@ -679,7 +652,7 @@ function CollapsibleSection({
           <ChevronDown size={20} className="text-muted-foreground" />
         )}
       </button>
-      
+
       {expanded && (
         <div className="px-6 pb-6 border-t border-border pt-6">
           {children}

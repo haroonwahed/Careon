@@ -16,7 +16,7 @@ export function MapCoordinateLegend({ visibleCount, totalCount, estimatedCount }
         </p>
       </div>
       {estimatedCount > 0 && (
-        <div className="rounded-2xl border border-amber-500/35 bg-card/95 px-4 py-2 shadow-md backdrop-blur-sm">
+        <div className="rounded-2xl border border-care-warning-border bg-card/95 px-4 py-2 shadow-md backdrop-blur-sm">
           <p className="text-[11px] font-medium text-foreground">
             {estimatedCount} geschatte positie{estimatedCount > 1 ? 's' : ''} (plaats/regio)
           </p>

@@ -11,7 +11,8 @@ import { apiClient } from "../../lib/apiClient";
 import { toCareCasussenPlacementAction } from "../../lib/routes";
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { tokens } from "../../design/tokens";
-import { BlockingNotice, CareAttentionBar, CareInfoPopover, CarePageScaffold, PrimaryActionButton, LoadingState, ErrorState, EmptyState, CarePanel } from "./CareDesignPrimitives";
+import { BlockingNotice, CareInfoPopover, PrimaryActionButton, LoadingState, ErrorState, EmptyState, CarePanel } from "./CareDesignPrimitives";
+import { CareCommandShell } from "./CareCommandPrimitives";
 import {
   GuidanceContextBanner,
   InlineHelpChip,
@@ -220,10 +221,7 @@ export function PlacementPage({
   // Success state — calm operational acknowledgement (no celebratory chrome).
   if (isConfirmed) {
     return (
-      <CarePageScaffold
-        archetype="workspace"
-        className="pb-8"
-        titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
+      <CareCommandShell
         title={
           <span className="inline-flex flex-wrap items-center gap-2">
             Plaatsing
@@ -232,20 +230,17 @@ export function PlacementPage({
             </CareInfoPopover>
           </span>
         }
-        dominantAction={
-          <CareAttentionBar
-            tone="info"
-            icon={<CheckCircle2 size={16} />}
-            message={`Plaatsing van ${formatClientReference(caseData.id)} is bevestigd. Intake wordt nu gepland.`}
-            action={<PrimaryActionButton onClick={onBack}>Terug naar plaatsingen</PrimaryActionButton>}
-          />
-        }
+        actions={<PrimaryActionButton onClick={onBack}>Terug naar plaatsingen</PrimaryActionButton>}
       >
+        <div className="flex items-center gap-3 rounded-[16px] border bg-care-info-bg border-care-info-border px-4 py-3 text-sm text-care-info-text">
+          <CheckCircle2 size={16} aria-hidden />
+          <span>{`Plaatsing van ${formatClientReference(caseData.id)} is bevestigd. Intake wordt nu gepland.`}</span>
+        </div>
         <CarePanel className="p-4">
           <div className="flex items-start gap-3">
             <CheckCircle2 size={20} className="mt-0.5 shrink-0 text-care-success-solid" aria-hidden />
             <div className="min-w-0 space-y-1">
-              <h2 className="text-base font-semibold text-foreground">Plaatsing bevestigd</h2>
+              <h2 className="text-base font-medium text-foreground">Plaatsing bevestigd</h2>
               <p className="text-sm text-muted-foreground" style={{ maxWidth: tokens.layout.contentMeasure }}>
                 Casus <span className="font-medium text-foreground">{formatClientReference(caseData.id)}</span> is door
                 {" "}<span className="font-medium text-foreground">{provider.name}</span> geaccepteerd. Intake wordt nu gepland.
@@ -263,15 +258,12 @@ export function PlacementPage({
             </div>
           </div>
         </CarePanel>
-      </CarePageScaffold>
+      </CareCommandShell>
     );
   }
 
   return (
-    <CarePageScaffold
-      archetype="workspace"
-      className="pb-8"
-      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
+    <CareCommandShell
       title={
         <span className="inline-flex flex-wrap items-center gap-2">
           Plaatsing
@@ -282,19 +274,16 @@ export function PlacementPage({
           </CareInfoPopover>
         </span>
       }
-      dominantAction={
-        <CareAttentionBar
-          tone={providerAccepted ? "info" : "warning"}
-          icon={<CheckCircle2 size={16} />}
-          message={providerAccepted ? "Alleen bevestigen als de plaatsing klopt" : "Plaatsing volgt pas na akkoord van de aanbieder"}
-          action={
-            <PrimaryActionButton onClick={handleConfirmClick} disabled={!providerAccepted || !allValid || hasErrors}>
-              Bevestig plaatsing
-            </PrimaryActionButton>
-          }
-        />
+      actions={
+        <PrimaryActionButton onClick={handleConfirmClick} disabled={!providerAccepted || !allValid || hasErrors}>
+          Bevestig plaatsing
+        </PrimaryActionButton>
       }
     >
+      <div className={`flex items-center gap-3 rounded-[16px] border px-4 py-3 text-sm ${providerAccepted ? "bg-care-info-bg border-care-info-border text-care-info-text" : "bg-care-warning-bg border-care-warning-border text-care-warning-text"}`}>
+        <CheckCircle2 size={16} aria-hidden />
+        <span>{providerAccepted ? "Alleen bevestigen als de plaatsing klopt" : "Plaatsing volgt pas na akkoord van de aanbieder"}</span>
+      </div>
       {/* Back Button */}
       <button
         onClick={onBack}
@@ -326,17 +315,17 @@ export function PlacementPage({
       </div>
 
       {/* TOP DECISION HEADER */}
-      <CarePanel className="p-4 border border-border/70 ring-1 ring-primary/25">
+      <CarePanel className="p-4 border border-border/70 ring-1 ring-primary/35">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary" />
-              <span className="text-sm font-semibold text-primary uppercase tracking-wide">
+              <span className="text-sm font-medium text-primary uppercase tracking-wide">
                 {providerAccepted ? "Aanbieder akkoord ontvangen" : "Wacht op beoordeling door aanbieder"}
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold text-foreground mb-2">
+            <h1 className="text-2xl font-medium text-foreground mb-2">
               {formatClientReference(caseData.id)} · {caseData.caseType}
             </h1>
 
@@ -378,8 +367,8 @@ export function PlacementPage({
           {/* Urgency Indicator */}
           <div>
             <span className={`
-              inline-block px-4 py-2 rounded-lg text-sm font-semibold border-2
-              ${caseData.urgency === "high" ? "border-destructive/40 bg-destructive/15 text-destructive" : ""}
+              inline-block px-4 py-2 rounded-[10px] text-sm font-medium border-2
+              ${caseData.urgency === "high" ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text" : ""}
               ${caseData.urgency === "medium" ? "border bg-care-warning-bg text-care-warning-text border-care-warning-border" : ""}
               ${caseData.urgency === "low" ? "border bg-care-success-bg text-care-success-text border-care-success-border" : ""}
             `}>
@@ -396,7 +385,7 @@ export function PlacementPage({
         {/* LEFT PANEL: Case Summary */}
         <div className="col-span-3">
       <CarePanel className="sticky p-4" style={{ top: tokens.layout.edgeZero }}>
-            <h3 className="text-sm font-semibold text-foreground mb-4">
+            <h3 className="text-sm font-medium text-foreground mb-4">
               Casusoverzicht
             </h3>
             
@@ -429,8 +418,8 @@ export function PlacementPage({
               <div className="min-w-0">
                 <p className="text-muted-foreground text-xs mb-1">Urgentie</p>
                 <span className={`
-                  inline-block px-2 py-1 rounded-md text-xs font-semibold
-                  ${caseData.urgency === "high" ? "border-destructive/40 bg-destructive/15 text-destructive" : ""}
+                  inline-block px-2 py-1 rounded-full text-xs font-medium
+                  ${caseData.urgency === "high" ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text" : ""}
                   ${caseData.urgency === "medium" ? "border bg-care-warning-bg text-care-warning-text border-care-warning-border" : ""}
                   ${caseData.urgency === "low" ? "border bg-care-success-bg text-care-success-text border-care-success-border" : ""}
                 `}>
@@ -498,24 +487,24 @@ export function PlacementPage({
             {placementConfirmError && (
               <BlockingNotice message={placementConfirmError} />
             )}
-            <div className="rounded-lg border border-muted-foreground/20 bg-muted/30 p-4">
+            <div className="rounded-[10px] border border-muted-foreground/20 bg-muted/30 p-4">
               <div className="grid gap-4 text-sm sm:grid-cols-2">
                 <div className="min-w-0">
                   <p className="mb-1 text-muted-foreground">Casusreferentie</p>
-                  <p className="min-w-0 break-words font-semibold text-foreground">{formatClientReference(caseData.id)}</p>
+                  <p className="min-w-0 break-words font-medium text-foreground">{formatClientReference(caseData.id)}</p>
                 </div>
                 <div className="min-w-0">
                   <p className="mb-1 text-muted-foreground">Aanbieder</p>
-                  <p className="min-w-0 break-words font-semibold text-foreground">{provider.name}</p>
+                  <p className="min-w-0 break-words font-medium text-foreground">{provider.name}</p>
                 </div>
                 <div className="min-w-0">
                   <p className="mb-1 text-muted-foreground">Urgentie</p>
-                  <p className="font-semibold text-foreground capitalize">{caseData.urgency}</p>
+                  <p className="font-medium text-foreground capitalize">{caseData.urgency}</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-lg border bg-care-info-bg border-care-info-border p-4">
+            <div className="rounded-[10px] border bg-care-info-bg border-care-info-border p-4">
               <p className="text-sm leading-relaxed text-care-info-text">
                 De aanbieder heeft deze match al geaccepteerd. Met deze stap bevestig je
                 dat de casus door gaat naar plaatsing en daarna naar intake. Je volgt de voortgang
@@ -553,6 +542,6 @@ export function PlacementPage({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </CarePageScaffold>
+    </CareCommandShell>
   );
 }

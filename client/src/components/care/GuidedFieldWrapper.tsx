@@ -1,6 +1,6 @@
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { cn } from "../ui/utils";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
 export function GuidedFieldWrapper({
   fieldId,
@@ -11,6 +11,8 @@ export function GuidedFieldWrapper({
   label,
   children,
   onMarkComplete,
+  onValidate,
+  validationError,
 }: {
   fieldId: string;
   stepNumber: number;
@@ -20,7 +22,10 @@ export function GuidedFieldWrapper({
   label: string;
   children: ReactNode;
   onMarkComplete?: () => void;
+  onValidate?: () => Promise<boolean>;
+  validationError?: string | null;
 }) {
+  const [isValidating, setIsValidating] = useState(false);
   return (
     <div
       id={fieldId}
@@ -51,6 +56,14 @@ export function GuidedFieldWrapper({
         {children}
       </div>
 
+      {/* Validation error */}
+      {validationError && (
+        <div className="mt-3 flex gap-2 rounded-lg border border-care-urgent-border bg-care-urgent-bg p-2.5 text-[12px] text-care-urgent-text">
+          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <span>{validationError}</span>
+        </div>
+      )}
+
       {/* Completion info */}
       {isActive && !isComplete && (
         <div className="mt-3 border-t border-border/20 pt-3">
@@ -60,10 +73,31 @@ export function GuidedFieldWrapper({
           {onMarkComplete && (
             <button
               type="button"
-              onClick={onMarkComplete}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 bg-primary/10 text-[12px] font-medium text-primary hover:bg-primary/20 transition-colors"
+              disabled={isValidating}
+              onClick={async () => {
+                if (onValidate) {
+                  setIsValidating(true);
+                  try {
+                    const isValid = await onValidate();
+                    if (isValid) {
+                      onMarkComplete();
+                    }
+                  } finally {
+                    setIsValidating(false);
+                  }
+                } else {
+                  onMarkComplete();
+                }
+              }}
+              className={cn(
+                "mt-2 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium transition-colors",
+                isValidating
+                  ? "bg-muted/20 text-muted-foreground cursor-wait"
+                  : "bg-primary/10 text-primary hover:bg-primary/20"
+              )}
             >
-              Voltooid
+              {isValidating && <Loader2 size={12} className="animate-spin" />}
+              {isValidating ? "Controleren..." : "Voltooid"}
             </button>
           )}
         </div>

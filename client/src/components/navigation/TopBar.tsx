@@ -157,7 +157,7 @@ export function TopBar({
   return (
     <header
       data-testid="care-top-bar"
-      className="sticky top-0 flex items-center justify-between border-b border-border/60 bg-card/45 backdrop-blur-[2px]"
+      className="sticky top-0 flex items-center justify-between border-b border-border/60 bg-card/80 backdrop-blur-md"
       style={{
         zIndex: "var(--care-z-topbar)",
         height: "var(--care-topbar-height)",
@@ -229,8 +229,8 @@ export function TopBar({
               <div className="absolute top-full right-0 mt-2 w-96 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="px-3 py-3 border-b border-border mb-2 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-bold text-foreground">Notifications</p>
-                    <p className="text-xs text-muted-foreground">Recent activity and operational alerts</p>
+                    <p className="text-sm font-bold text-foreground">Meldingen</p>
+                    <p className="text-xs text-muted-foreground">Recente activiteit en operationele alerts</p>
                   </div>
                   <span className="inline-flex min-w-6 h-6 px-2 items-center justify-center rounded-full bg-muted/35 text-foreground text-xs font-semibold">
                     {notificationCount}
@@ -276,7 +276,7 @@ export function TopBar({
                     onClick={() => setNotificationsOpen(false)}
                     className="w-full px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-muted/35 transition-colors"
                   >
-                    Close notifications
+                    Sluit meldingen
                   </button>
                 </div>
               </div>
@@ -288,13 +288,10 @@ export function TopBar({
         <button
           type="button"
           className="relative p-2 rounded-lg hover:bg-muted/30 transition-colors"
-          aria-label="Berichten (7)"
+          aria-label="Berichten"
           title="Berichten"
         >
           <Mail size={20} className="text-muted-foreground" />
-          <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-white shadow-sm shadow-primary/20">
-            7
-          </span>
         </button>
 
         {/* Divider */}
@@ -350,7 +347,7 @@ export function TopBar({
               />
               
               {/* Dropdown */}
-              <div className="absolute top-full right-0 mt-2 w-56 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
+              <div className="absolute top-full right-0 mt-2 w-72 rounded-xl border border-border/80 bg-popover px-2 py-2 text-popover-foreground shadow-2xl backdrop-blur-none z-50">
                 <div className="px-3 py-2 border-b border-border mb-2">
                   <p className="text-sm font-bold text-foreground">
                     {userName}
@@ -359,6 +356,44 @@ export function TopBar({
                     {userRole}
                   </p>
                 </div>
+
+                {showRoleSwitcher && availableContexts.length > 1 && (
+                  <div className="mb-2">
+                    <p className="px-3 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      Wissel van omgeving
+                    </p>
+                    {availableContexts.map((ctx) => {
+                      const isActive = ctx.id === currentContext.id;
+                      const Icon = ctx.type === "zorgaanbieder" ? Building2 : ctx.type === "gemeente" ? MapPin : Shield;
+                      return (
+                        <button
+                          key={ctx.id}
+                          onClick={() => {
+                            handleContextSwitch(ctx.id);
+                            setAccountDropdownOpen(false);
+                          }}
+                          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-left ${
+                            isActive
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-muted/30 text-foreground"
+                          }`}
+                        >
+                          <Icon size={15} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{ctx.name}</p>
+                            {ctx.subtitle && (
+                              <p className="text-[11px] text-muted-foreground truncate">{ctx.subtitle}</p>
+                            )}
+                          </div>
+                          {isActive && (
+                            <span className="shrink-0 text-[10px] font-semibold text-primary">Actief</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                    <div className="h-px bg-border my-2" />
+                  </div>
+                )}
 
                 <div className="space-y-1">
                   <button

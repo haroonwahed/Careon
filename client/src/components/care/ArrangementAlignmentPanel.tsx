@@ -214,7 +214,7 @@ function ArrangementAlignmentCompact({
       data-testid="arrangement-alignment-panel"
       data-variant="compact"
       aria-label="Arrangement-advies"
-      className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
+      className="rounded-xl border border-border/55 bg-card/35 px-4 py-3.5 md:px-5 md:py-4"
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">

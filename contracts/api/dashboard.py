@@ -133,7 +133,7 @@ def _build_region_health_payload(region, region_cases, region_provider_profiles)
     vastgelopen = 0
     for case in actieve_cases:
         days_in_phase = _days_in_current_phase(case)
-        is_urgent = case.risk_level in {CareCase.RiskLevel.HIGH, CareCase.RiskLevel.CRITICAL}
+        is_urgent = case.risk_level in {CareCase.RiskLevel.VERHOOGD_RISICO, CareCase.RiskLevel.ACUUT_RISICO}
 
         if is_urgent and not (case.preferred_provider or '').strip():
             urgente_zonder_match += 1

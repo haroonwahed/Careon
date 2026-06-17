@@ -4,16 +4,16 @@
   --font-size: 16px;
 
   /* CareOn operational infrastructure — light mode */
-  --bg-base: #F4F6FA;
-  --bg-surface: #FFFFFF;
-  --bg-subtle: #EEF1F6;
-  --surface-1: #FFFFFF;
-  --surface-2: #F8FAFC;
-  --surface-3: #EEF1F6;
+  --bg-base: #EEF1F8;
+  --bg-surface: #F8FAFD;
+  --bg-subtle: #E7EDF6;
+  --surface-1: #F8FAFD;
+  --surface-2: #F1F4FA;
+  --surface-3: #E7EDF6;
   --surface-elevated: #FFFFFF;
-  --surface-hover: #EEF1F6;
-  --border-default: #D8DEE8;
-  --border-strong: #C2CAD6;
+  --surface-hover: #E3EAF4;
+  --border-default: #CBD3E6;
+  --border-strong: #B6C1D7;
   --primary: #7C4DFF;
   --primary-hover: #8B7CFF;
   --primary-light: rgba(124, 77, 255, 0.1);
@@ -41,18 +41,18 @@
   --badge-green-text: #2F6B52;
 
   --background: var(--bg-base);
-  --foreground: #141A24;
+  --foreground: #1C2440;
   --card: var(--surface-2);
-  --card-foreground: #141A24;
+  --card-foreground: #1C2440;
   --popover: var(--surface-elevated);
-  --popover-foreground: #141A24;
+  --popover-foreground: #1C2440;
   --primary-foreground: #ffffff;
   --secondary: var(--surface-1);
-  --secondary-foreground: #141A24;
+  --secondary-foreground: #1C2440;
   --muted: var(--bg-subtle);
-  --muted-foreground: #5C6778;
+  --muted-foreground: #5A6B82;
   --accent: var(--bg-subtle);
-  --accent-foreground: #141A24;
+  --accent-foreground: #1C2440;
   --destructive: var(--red-base);
   --destructive-foreground: #ffffff;
   --border: var(--border-default);
@@ -73,110 +73,129 @@
   --chart-4-soft: rgba(217, 164, 65, 0.16);
   --radius: 0.75rem;
 
-  --sidebar: var(--bg-surface);
-  --sidebar-foreground: #141A24;
+  --sidebar: #E2E8F4;
+  --sidebar-foreground: #1C2440;
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--bg-subtle);
-  --sidebar-accent-foreground: #141A24;
+  --sidebar-accent: #D8E1F0;
+  --sidebar-accent-foreground: #1C2440;
   --sidebar-border: var(--border-default);
   --sidebar-ring: var(--ring);
 
-  --glow-primary: rgba(124, 77, 255, 0.06);
-  --glow-primary-soft: rgba(124, 77, 255, 0.04);
-  --kpi-value: #141A24;
+  --glow-primary: rgba(124, 77, 255, 0.045);
+  --glow-primary-soft: rgba(124, 77, 255, 0.025);
+  --kpi-value: #1C2440;
   --delta-positive: var(--green-base);
   --delta-negative: var(--red-base);
-  --grid-line: #E2E8F0;
+  --grid-line: #DCE3F0;
   --theme-transition-duration: 220ms;
 }
 
 .dark {
-  /* Graphite / slate operational shell — purple accent only */
-  --bg-base: #0B1020;
-  --bg-surface: #111827;
-  --bg-subtle: #151B2E;
-  --surface-1: #111827;
-  --surface-2: #151B2E;
-  --surface-3: #1B2236;
-  --surface-elevated: #20283D;
-  --surface-hover: #1B2236;
-  --border-default: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.1);
-  --primary: #7C4DFF;
-  --primary-hover: #8B7CFF;
-  --primary-light: rgba(124, 77, 255, 0.12);
-  --red-base: #C96B6B;
-  --red-light: rgba(201, 107, 107, 0.12);
-  --red-border: rgba(201, 107, 107, 0.32);
-  --yellow-base: #D9A441;
-  --yellow-light: rgba(217, 164, 65, 0.12);
-  --yellow-border: rgba(217, 164, 65, 0.32);
-  --blue-base: #6B9AD4;
-  --blue-light: rgba(107, 154, 212, 0.12);
-  --blue-border: rgba(107, 154, 212, 0.3);
-  --green-base: #3FA37C;
-  --green-light: rgba(63, 163, 124, 0.12);
-  --green-border: rgba(63, 163, 124, 0.32);
+  /* ── Surface hierarchy: 4 clear levels, deep navy to slate ── */
+  --bg-base: #0B1020;         /* L0 app background */
+  --bg-surface: #11182A;      /* L1 main content canvas */
+  --bg-subtle: #171F33;       /* L1 subtle / alternate areas */
+  --surface-1: #11182A;       /* L1 */
+  --surface-2: #171F33;       /* L2 cards & containers */
+  --surface-3: #1D263B;       /* L3 rows & active surfaces */
+  --surface-elevated: #232E46; /* L3+ dialogs & modals */
+  --surface-hover: #232E46;   /* row hover target */
 
+  /* ── Borders — explicit slate, not transparent-white ── */
+  --border-default: #2B354B;
+  --border-strong: #374162;
+
+  /* ── Brand accent ── */
+  --primary: #7C4DFF;
+  --primary-hover: #6F42E8;
+  --primary-light: rgba(124, 77, 255, 0.14);
+
+  /* ── Status primitive colours — muted, informative not alarming ── */
+  --red-base: #E07171;
+  --red-light: rgba(205, 92, 92, 0.08);
+  --red-border: rgba(205, 92, 92, 0.34);
+  --yellow-base: #D5A24E;
+  --yellow-light: rgba(210, 158, 68, 0.08);
+  --yellow-border: rgba(210, 158, 68, 0.32);
+  --blue-base: #6F8FD6;
+  --blue-light: rgba(111, 143, 214, 0.10);
+  --blue-border: rgba(111, 143, 214, 0.28);
+  --green-base: #62B987;
+  --green-light: rgba(98, 185, 135, 0.10);
+  --green-border: rgba(98, 185, 135, 0.28);
+
+  /* ── Semantic surface & text ── */
   --background: var(--bg-base);
-  --foreground: #E8ECF3;
+  --foreground: #F4F6FA;
   --card: var(--surface-2);
-  --card-foreground: #E8ECF3;
+  --card-foreground: #F4F6FA;
   --popover: var(--surface-3);
-  --popover-foreground: #E8ECF3;
+  --popover-foreground: #F4F6FA;
   --primary-foreground: #ffffff;
-  --secondary: var(--surface-1);
-  --secondary-foreground: #E8ECF3;
+  --secondary: #263149;
+  --secondary-foreground: #F2F4F8;
   --muted: var(--surface-1);
-  --muted-foreground: #94A3B8;
+  --muted-foreground: #8792A8;
   --accent: var(--surface-1);
-  --accent-foreground: #E8ECF3;
+  --accent-foreground: #F4F6FA;
   --destructive: var(--red-base);
   --destructive-foreground: #ffffff;
   --border: var(--border-default);
-  --input: rgba(255, 255, 255, 0.08);
+  --input: #2B354B;
   --input-background: var(--surface-2);
-  --switch-background: rgba(255, 255, 255, 0.14);
-  --ring: rgba(124, 77, 255, 0.38);
+  --switch-background: #374162;
+  --ring: rgba(124, 77, 255, 0.35);
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-normal: 400;
+
+  /* ── Charts ── */
   --chart-1: var(--primary);
   --chart-2: var(--blue-base);
   --chart-3: var(--green-base);
   --chart-4: var(--yellow-base);
   --chart-5: var(--red-base);
   --chart-1-soft: rgba(124, 77, 255, 0.14);
-  --chart-2-soft: rgba(107, 154, 212, 0.14);
-  --chart-4-soft: rgba(217, 164, 65, 0.14);
+  --chart-2-soft: rgba(111, 143, 214, 0.14);
+  --chart-4-soft: rgba(210, 158, 68, 0.14);
 
-  --kpi-value: #E8ECF3;
+  --kpi-value: #F4F6FA;
   --delta-positive: var(--green-base);
   --delta-negative: var(--red-base);
   --grid-line: rgba(255, 255, 255, 0.06);
 
-  --sidebar: var(--bg-base);
-  --sidebar-foreground: #E8ECF3;
+  /* ── Sidebar — darker than bg-base to frame the layout ── */
+  --sidebar: #0A0F1B;
+  --sidebar-foreground: #F4F6FA;
   --sidebar-primary: var(--primary);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--surface-2);
-  --sidebar-accent-foreground: #E8ECF3;
-  --sidebar-border: var(--border-default);
+  --sidebar-accent: rgba(124, 77, 255, 0.14);
+  --sidebar-accent-foreground: #F4F6FA;
+  --sidebar-border: #2B354B;
   --sidebar-ring: var(--ring);
 
-  --glow-primary: rgba(124, 77, 255, 0.08);
-  --glow-primary-soft: rgba(124, 77, 255, 0.04);
+  /* ── Glow — reduced, accent-only ── */
+  --glow-primary: rgba(124, 77, 255, 0.05);
+  --glow-primary-soft: rgba(124, 77, 255, 0.025);
 
-  --badge-red-bg: rgba(201, 107, 107, 0.16);
-  --badge-red-text: #E8B4B4;
-  --badge-yellow-bg: rgba(217, 164, 65, 0.16);
+  /* ── Shadows ── */
+  --care-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.18);
+  --care-shadow-section: 0 4px 16px rgba(0, 0, 0, 0.14);
+  --care-shadow-control: 0 2px 6px rgba(0, 0, 0, 0.12);
+  --care-shadow-overlay: rgba(0, 0, 0, 0.50);
+  --care-shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.40);
+
+  /* ── Badge surfaces — subtle tint, not alarming blocks ── */
+  --badge-red-bg: rgba(205, 92, 92, 0.10);
+  --badge-red-text: #EDAAAA;
+  --badge-yellow-bg: rgba(210, 158, 68, 0.10);
   --badge-yellow-text: #E8D4A8;
-  --badge-blue-bg: rgba(107, 154, 212, 0.16);
+  --badge-blue-bg: rgba(111, 143, 214, 0.12);
   --badge-blue-text: #B8D4F0;
   --badge-purple-bg: rgba(124, 77, 255, 0.14);
   --badge-purple-text: #C9BFFF;
-  --badge-green-bg: rgba(63, 163, 124, 0.16);
+  --badge-green-bg: rgba(98, 185, 135, 0.12);
   --badge-green-text: #A8DCC4;
 }
 
@@ -480,6 +499,12 @@ select:not([multiple]):not([size]):disabled {
     border-color: color-mix(in srgb, var(--border-default) 70%, white 30%) !important;
     box-shadow: 0 6px 18px rgba(11, 16, 32, 0.22);
     background-color: color-mix(in srgb, var(--card) 94%, var(--surface-elevated) 6%) !important;
+  }
+
+  html:not(.dark) .care-hover-card:hover {
+    box-shadow: 0 4px 14px rgba(28, 36, 64, 0.11), 0 1px 3px rgba(28, 36, 64, 0.05) !important;
+    border-color: color-mix(in srgb, var(--border-default) 40%, var(--primary) 60%) !important;
+    background-color: color-mix(in srgb, var(--card) 97%, var(--primary) 3%) !important;
   }
 
   .care-hover-card:focus-visible {
@@ -1415,12 +1440,12 @@ select:not([multiple]):not([size]):disabled {
   --care-radius-control: 10px;  /* buttons, inputs, selects, tabs */
   --care-radius-pill: 9999px;   /* badges, avatars, pill-tabs */
 
-  /* Shadows */
-  --care-shadow-card: 0 10px 28px rgba(11, 16, 32, 0.16);
-  --care-shadow-section: 0 6px 20px rgba(11, 16, 32, 0.12);
-  --care-shadow-control: 0 2px 8px rgba(11, 16, 32, 0.08);
-  --care-shadow-overlay: rgba(0, 0, 0, 0.50);
-  --care-shadow-dialog: 0 20px 60px rgba(0, 0, 0, 0.40);
+  /* Shadows — light mode values; dark overrides live in .dark */
+  --care-shadow-card: 0 4px 16px rgba(28, 36, 64, 0.09), 0 1px 3px rgba(28, 36, 64, 0.05);
+  --care-shadow-section: 0 2px 10px rgba(28, 36, 64, 0.07), 0 1px 2px rgba(28, 36, 64, 0.04);
+  --care-shadow-control: 0 1px 4px rgba(28, 36, 64, 0.07);
+  --care-shadow-overlay: rgba(28, 36, 64, 0.30);
+  --care-shadow-dialog: 0 12px 40px rgba(28, 36, 64, 0.18), 0 4px 12px rgba(28, 36, 64, 0.10);
 
   /* CTA tokens */
   --care-cta-primary: var(--primary);

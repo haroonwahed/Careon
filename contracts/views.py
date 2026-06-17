@@ -2170,8 +2170,8 @@ class ClientDetailView(TenantScopedQuerysetMixin, LoginRequiredMixin, DetailView
                 complexity_support.append('Enkelvoudig')
             if profile.handles_multiple:
                 complexity_support.append('Meervoudig')
-            if profile.handles_severe:
-                complexity_support.append('Zwaar')
+            if profile.handles_high_complex:
+                complexity_support.append('Hoogcomplex')
 
             ages = []
             if profile.target_age_0_4:
@@ -7293,6 +7293,11 @@ class CaseIntakeUpdateView(TenantScopedQuerysetMixin, LoginRequiredMixin, Update
             'is_edit': True,
             'page_title': f'Casus bewerken: {self.object.title}',
             'button_text': 'Wijzigingen opslaan',
+            'focus_field': self.request.GET.get('field', ''),
+            'initial_section': self.request.GET.get('section', ''),
+            'guided_flow': self.request.GET.get('guided', ''),
+            'guided_step': self.request.GET.get('step', ''),
+            'guided_total': self.request.GET.get('total', ''),
         })
         return ctx
 

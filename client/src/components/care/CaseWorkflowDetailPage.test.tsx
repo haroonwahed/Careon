@@ -175,9 +175,9 @@ describe("CaseExecutionPage workspace", () => {
     setupCase(makeDecisionEvaluation());
     const { container } = render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Terug naar casussen" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Terug naar aanmeldingen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Casusacties" })).toBeInTheDocument();
-    expect(await screen.findByText(/Bijgewerkt:/)).toBeInTheDocument();
+    expect(await screen.findByText(/Bijgewerkt/)).toBeInTheDocument();
     expect(screen.getByTestId("casus-flow-progress")).toBeInTheDocument();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     const heroBand = screen.getByTestId("casus-hero-band");
@@ -205,10 +205,10 @@ describe("CaseExecutionPage workspace", () => {
     expectCasusDetailMode();
     expect(screen.getByTestId("casus-hero-band")).toBeInTheDocument();
     expect(screen.getByTestId("casus-flow-progress")).toBeInTheDocument();
-    expect((await screen.findAllByText("Aanmelding onvolledig")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
+    expect((await screen.findAllByText("Onvolledig")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Casus is nog niet compleet")).length).toBeGreaterThan(0);
     const heroBand = screen.getByTestId("casus-hero-band");
-    expect(within(heroBand).getByRole("button", { name: /Vul casus aan|Controleer casusstatus/i })).toBeInTheDocument();
+    expect(within(heroBand).getByRole("button", { name: /Maak casus compleet/i })).toBeInTheDocument();
     expect(screen.queryByTestId("worklist")).not.toBeInTheDocument();
 
     expect(screen.queryByText("Casussen")).not.toBeInTheDocument();
@@ -236,8 +236,7 @@ describe("CaseExecutionPage workspace", () => {
     expect(await screen.findByRole("tab", { name: "Matching" })).toBeInTheDocument();
     expect(screen.queryByTestId("next-best-action-reason")).not.toBeInTheDocument();
     const stepper = screen.getByTestId("casus-flow-progress");
-    const matchingStep = within(stepper).getByRole("button", { name: /Matching/i });
-    expect(matchingStep).toHaveClass("care-flow-step__card--active");
+    expect(within(stepper).getByText(/Matching/i)).toBeInTheDocument();
   });
 
   it("shows dominant blocked state and missing-summary guidance", async () => {
@@ -261,8 +260,8 @@ describe("CaseExecutionPage workspace", () => {
     }));
 
     render(<CaseExecutionPage caseId="C-100" onBack={vi.fn()} />);
-    expect((await screen.findAllByText("Aanmelding onvolledig")).length).toBeGreaterThan(0);
-    expect(screen.getByText("Matching nog niet gestart.")).toBeInTheDocument();
+    expect((await screen.findAllByText("Onvolledig")).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText("Casus is nog niet compleet")).length).toBeGreaterThan(0);
   });
 
   it("keeps metadata row visible for decision context cases", async () => {

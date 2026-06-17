@@ -54,7 +54,7 @@ export function CareMetricBadge({ children, title }: { children: ReactNode; titl
   return (
     <span
       title={title ?? "Status — geen actie"}
-      className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/55 px-3 py-1 text-[12px] font-semibold leading-none text-muted-foreground shadow-sm"
+      className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-card/55 px-3 py-1 text-[12px] font-medium leading-none text-muted-foreground shadow-sm"
     >
       <span className="size-1.5 shrink-0 rounded-full bg-muted-foreground/50" aria-hidden />
       {children}
@@ -105,7 +105,7 @@ export function CareInfoPopover({
           contentClassName,
         )}
       >
-        <div className="space-y-2 rounded-xl border border-border/60 bg-muted/15 px-3 py-2 text-[13px] leading-6 text-muted-foreground">
+        <div className="space-y-2 rounded-[10px] border border-border/60 bg-muted/15 px-3 py-2 text-[13px] leading-6 text-muted-foreground">
           {children}
         </div>
       </PopoverContent>
@@ -142,7 +142,7 @@ export function CareDominantStatus({ children, className }: { children: ReactNod
     <span
       data-component="care-dominant-status"
       className={cn(
-        "inline-flex max-w-full items-center rounded-full border border-border/60 bg-card/60 px-2.5 py-1 text-[12px] font-semibold leading-tight text-foreground shadow-sm",
+        "inline-flex max-w-full items-center rounded-full border border-border/60 bg-card/60 px-2.5 py-1 text-[12px] font-medium leading-tight text-foreground shadow-sm",
         className,
       )}
     >
@@ -168,7 +168,7 @@ export function CanonicalPhaseBadge({ phaseId }: { phaseId: string }) {
       data-testid="zorg-os-flow-phase-badge"
       data-component="canonical-phase-badge"
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-bold leading-none tracking-tight",
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium leading-none tracking-tight",
         decisionUiPhaseBadgeShellClass(decisionId),
       )}
       style={{ maxWidth: tokens.layout.phaseBadgeMaxWidth }}
@@ -192,12 +192,12 @@ export function CareContextHint({
   return (
     <div
       data-component="care-context-hint"
-      className="care-hover-card rounded-xl border border-border/70 bg-card/35 px-4 py-3"
+      className="care-hover-card rounded-[16px] border border-border/70 bg-card/35 px-4 py-3"
     >
       <div className="flex items-start gap-3">
         <div className="icon-surface flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border/70">{icon}</div>
         <div className="min-w-0 space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">{title}</p>
+          <p className="text-sm font-medium text-foreground">{title}</p>
           <p className="text-[13px] text-muted-foreground">{copy}</p>
         </div>
       </div>
@@ -222,7 +222,7 @@ export function CareUnifiedHeader({
     <section
       data-testid="care-unified-header"
       className={cn(
-        "space-y-1.5 rounded-[24px] border border-border/60 bg-card/45 px-4 py-4 shadow-sm backdrop-blur-[2px]",
+        "space-y-1.5 rounded-[20px] border border-border/60 bg-card/45 px-4 py-4 shadow-sm backdrop-blur-[2px]",
         CARE_RHYTHM.zoneHeader,
       )}
     >
@@ -232,7 +232,7 @@ export function CareUnifiedHeader({
           <div className="inline-flex min-w-0 flex-wrap items-center gap-1.5">
             <h1
               className={cn(
-                "min-w-0 font-semibold tracking-tight text-foreground",
+                "min-w-0 font-medium tracking-tight text-foreground",
                 titleClassName ?? "text-[30px] sm:text-[34px] lg:text-[36px]",
               )}
             >
@@ -264,12 +264,12 @@ const ATTENTION_SURFACE_CLASSES: Record<
     label: "Neutrale aandacht",
   },
   attention: {
-    shell: "border-l-amber-500/70 border border-amber-500/20 bg-amber-500/10 text-foreground",
+    shell: "border-l-care-warning-solid border border-care-warning-border bg-care-warning-bg text-foreground",
     icon: "border bg-care-warning-bg text-care-warning-text border-care-warning-border",
     label: "Operatieve aandacht",
   },
   critical: {
-    shell: "border-l-red-500/80 border border-red-500/25 bg-red-500/10 text-foreground",
+    shell: "border-l-care-urgent-solid border border-care-urgent-border bg-care-urgent-bg text-foreground",
     icon: "border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
     label: "Kritieke aandacht",
   },
@@ -306,7 +306,7 @@ export function CareAttentionSurface({
       data-density={density}
       className={cn(
         "flex items-start justify-between gap-3 border-l-2 px-4 py-3 md:px-5",
-        compact ? "rounded-xl" : "rounded-[22px]",
+        compact ? "rounded-[10px]" : "rounded-[20px]",
         surface.shell,
         className,
       )}
@@ -377,7 +377,7 @@ export function CareQueueInlineAction({ className, children, ...props }: Compone
       type="button"
       variant="outline"
       size="sm"
-      className={cn("h-8 shrink-0 rounded-lg px-3 text-[12px] font-medium", className)}
+      className={cn("h-8 shrink-0 rounded-[10px] px-3 text-[12px] font-medium", className)}
       {...props}
     >
       {children}
@@ -405,7 +405,7 @@ export function CareFilterTabGroup({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex w-full max-w-full flex-wrap rounded-2xl border border-border/60 bg-muted/35 p-0.5",
+        "inline-flex w-full max-w-full flex-wrap rounded-[16px] border border-border/60 bg-muted/35 p-0.5",
         className,
       )}
       style={{ minHeight: tokens.searchControl.tabHeight, ...style }}
@@ -443,7 +443,7 @@ export function CareFilterTabButton({
           : undefined
       }
       className={cn(
-        "inline-flex h-9 min-w-[4.75rem] flex-1 items-center justify-center rounded-xl px-3 text-[13px] font-medium leading-none transition-colors sm:flex-none sm:px-4",
+        "inline-flex h-9 min-w-[4.75rem] flex-1 items-center justify-center rounded-[10px] px-3 text-[13px] font-medium leading-none transition-colors sm:flex-none sm:px-4",
         selected
           ? brandActive
             ? "shadow-sm ring-1 ring-white/20 [background-color:var(--care-tab-accent)] [border-color:var(--care-tab-accent)] [color:hsl(var(--primary-foreground))]"
@@ -538,7 +538,7 @@ export function CareSearchFiltersBar({
               onClick={onToggleSecondaryFilters}
               aria-expanded={expanded}
               aria-controls={secondaryFiltersId}
-              className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border/45 bg-card/20 px-3 text-[13px] font-medium text-primary transition-colors hover:bg-muted/18 hover:text-foreground"
+              className="inline-flex h-9 items-center gap-1.5 rounded-[10px] border border-border/45 bg-card/20 px-3 text-[13px] font-medium text-primary transition-colors hover:bg-muted/18 hover:text-foreground"
             >
               <Filter size={14} aria-hidden />
               {secondaryFiltersLabel}
@@ -555,7 +555,7 @@ export function CareSearchFiltersBar({
           role="region"
           aria-label={secondaryFiltersLabel}
           className={cn(
-            "rounded-xl px-3 py-2.5",
+            "rounded-[10px] px-3 py-2.5",
             variant === "workspace" ? "care-op-filter-panel" : "border border-border/50 bg-card/30",
           )}
         >
@@ -624,7 +624,7 @@ export const OPERATIONAL_QUEUE_GRID_CLASS = cn(
 /** Shared column header grid for operational queue tables (Casussen, Acties, Matching, …). */
 export const OPERATIONAL_QUEUE_HEADER_GRID_CLASS = cn(
   OPERATIONAL_QUEUE_GRID_CLASS,
-  "border-b border-border/40 px-4 py-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-muted-foreground md:px-5",
+  "border-b border-border/40 px-4 py-2 text-[10.5px] font-medium uppercase tracking-[0.14em] text-muted-foreground md:px-5",
 );
 
 export function CareOperationalQueueHeader({
@@ -676,16 +676,16 @@ export function CareWorkRow({
 }: CareWorkRowProps) {
   const accentClass =
     accentTone === "critical"
-      ? "border-l-red-500/80"
+      ? "border-l-care-urgent-solid"
       : accentTone === "warning"
-        ? "border-l-amber-500/70"
+        ? "border-l-care-warning-solid"
         : "border-l-transparent";
   const isOperational = density === "operational";
   const isCommand = queueVariant === "command";
   const rowMinHeight = isOperational ? tokens.density.compactWorklistRowHeight : tokens.density.worklistRowHeight;
 
   const ctaClass = cn(
-    "h-8 max-w-[11rem] shrink-0 justify-center rounded-lg px-3 text-[12px] font-medium",
+    "h-8 max-w-[11rem] shrink-0 justify-center rounded-[10px] px-3 text-[12px] font-medium",
     isOperational
       ? actionVariant === "primary"
         ? "border-primary/35 text-primary hover:bg-primary/10"
@@ -716,7 +716,7 @@ export function CareWorkRow({
           type="button"
           onClick={onOpen}
           className={cn(
-            "min-w-0 truncate text-left font-semibold leading-tight text-foreground outline-none",
+            "min-w-0 truncate text-left font-medium leading-tight text-foreground outline-none",
             "focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1",
             isOperational ? "text-[12.5px]" : "text-[14px]",
           )}

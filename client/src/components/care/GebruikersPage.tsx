@@ -3,14 +3,17 @@ import { UserPlus, ShieldCheck, Shield, User } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
 import {
-  CareSection,
-  CareSectionHeader,
-  CareSectionBody,
   CareBadge,
   LoadingState,
   ErrorState,
   EmptyState,
 } from "./CareDesignPrimitives";
+import {
+  CareCommandShell,
+  CareMetricStrip,
+  CareMetricCard,
+  CareWorklist,
+} from "./CareCommandPrimitives";
 import { apiClient } from "../../lib/apiClient";
 
 type Role = "OWNER" | "ADMIN" | "MEMBER";
@@ -165,55 +168,63 @@ export function GebruikersPage() {
   const inactiveMembers = members.filter(m => !m.isActive);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-foreground mb-1">Gebruikers</h1>
-        <p className="text-sm text-muted-foreground">Beheer leden, rollen en uitnodigingen van je organisatie.</p>
-      </div>
+    <CareCommandShell
+      title="Gebruikers"
+    >
+      <CareMetricStrip cols={2}>
+        <CareMetricCard
+          value={activeMembers.length}
+          label="Actieve leden"
+          tone="neutral"
+        />
+        <CareMetricCard
+          value={invitations.length}
+          label="Openstaande uitnodigingen"
+          tone={invitations.length > 0 ? "warning" : "neutral"}
+        />
+      </CareMetricStrip>
 
       {/* Invite form */}
-      <CareSection>
-        <CareSectionHeader title="Nieuw lid uitnodigen" />
-        <CareSectionBody>
-          <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3 items-end">
-            <div className="flex-1">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">E-mailadres</label>
-              <input
-                type="email"
-                value={inviteEmail}
-                onChange={e => setInviteEmail(e.target.value)}
-                placeholder="naam@organisatie.nl"
-                required
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-            <div className="w-40">
-              <label className="block text-xs font-medium text-muted-foreground mb-1">Rol</label>
-              <select
-                value={inviteRole}
-                onChange={e => setInviteRole(e.target.value as Role)}
-                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              >
-                <option value="MEMBER">Lid</option>
-                <option value="ADMIN">Beheerder</option>
-                <option value="OWNER">Eigenaar</option>
-              </select>
-            </div>
-            <Button type="submit" disabled={inviting} className="gap-2 shrink-0">
-              <UserPlus className="h-4 w-4" />
-              {inviting ? "Versturen…" : "Uitnodigen"}
-            </Button>
-          </form>
-        </CareSectionBody>
-      </CareSection>
+      <div className="rounded-[16px] border border-border/55 bg-card/30 p-4 space-y-3">
+        <h2 className="text-[13px] font-medium text-foreground">Nieuw lid uitnodigen</h2>
+        <form onSubmit={handleInvite} className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">E-mailadres</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={e => setInviteEmail(e.target.value)}
+              placeholder="naam@organisatie.nl"
+              required
+              className="w-full rounded-[10px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div className="w-40">
+            <label className="block text-xs font-medium text-muted-foreground mb-1">Rol</label>
+            <select
+              value={inviteRole}
+              onChange={e => setInviteRole(e.target.value as Role)}
+              className="w-full rounded-[10px] border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="MEMBER">Lid</option>
+              <option value="ADMIN">Beheerder</option>
+              <option value="OWNER">Eigenaar</option>
+            </select>
+          </div>
+          <Button type="submit" disabled={inviting} className="gap-2 shrink-0">
+            <UserPlus className="h-4 w-4" />
+            {inviting ? "Versturen…" : "Uitnodigen"}
+          </Button>
+        </form>
+      </div>
 
       {/* Active members */}
-      <CareSection>
-        <CareSectionHeader
-          title="Actieve leden"
-          action={<CareBadge tone="emerald">{activeMembers.length}</CareBadge>}
-        />
-        <CareSectionBody>
+      <CareWorklist>
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
+          <h2 className="text-[13px] font-medium text-foreground">Actieve leden</h2>
+          <CareBadge tone="emerald">{activeMembers.length}</CareBadge>
+        </div>
+        <div className="px-4 py-3">
           {activeMembers.length === 0 ? (
             <EmptyState title="Geen actieve leden" copy="Er zijn nog geen actieve leden in deze organisatie." />
           ) : (
@@ -235,7 +246,7 @@ export function GebruikersPage() {
                         value={member.role}
                         onChange={e => handleRoleChange(member, e.target.value as Role)}
                         disabled={busy}
-                        className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
+                        className="rounded-[10px] border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                       >
                         <option value="MEMBER">Lid</option>
                         <option value="ADMIN">Beheerder</option>
@@ -259,17 +270,17 @@ export function GebruikersPage() {
               })}
             </div>
           )}
-        </CareSectionBody>
-      </CareSection>
+        </div>
+      </CareWorklist>
 
       {/* Inactive members */}
       {inactiveMembers.length > 0 && (
-        <CareSection>
-          <CareSectionHeader
-            title="Gedeactiveerde leden"
-            action={<CareBadge tone="muted">{inactiveMembers.length}</CareBadge>}
-          />
-          <CareSectionBody>
+        <CareWorklist>
+          <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
+            <h2 className="text-[13px] font-medium text-foreground">Gedeactiveerde leden</h2>
+            <CareBadge tone="muted">{inactiveMembers.length}</CareBadge>
+          </div>
+          <div className="px-4 py-3">
             <div className="divide-y divide-border">
               {inactiveMembers.map(member => {
                 const busy = actionInFlight === member.id;
@@ -298,17 +309,17 @@ export function GebruikersPage() {
                 );
               })}
             </div>
-          </CareSectionBody>
-        </CareSection>
+          </div>
+        </CareWorklist>
       )}
 
       {/* Pending invitations */}
-      <CareSection>
-        <CareSectionHeader
-          title="Openstaande uitnodigingen"
-          action={invitations.length > 0 ? <CareBadge tone="amber">{invitations.length}</CareBadge> : undefined}
-        />
-        <CareSectionBody>
+      <CareWorklist>
+        <div className="flex items-center justify-between gap-2 border-b border-border/50 px-4 py-3">
+          <h2 className="text-[13px] font-medium text-foreground">Openstaande uitnodigingen</h2>
+          {invitations.length > 0 && <CareBadge tone="amber">{invitations.length}</CareBadge>}
+        </div>
+        <div className="px-4 py-3">
           {invitations.length === 0 ? (
             <EmptyState title="Geen openstaande uitnodigingen" copy="Alle uitnodigingen zijn geaccepteerd of ingetrokken." />
           ) : (
@@ -350,8 +361,8 @@ export function GebruikersPage() {
               })}
             </div>
           )}
-        </CareSectionBody>
-      </CareSection>
-    </div>
+        </div>
+      </CareWorklist>
+    </CareCommandShell>
   );
 }

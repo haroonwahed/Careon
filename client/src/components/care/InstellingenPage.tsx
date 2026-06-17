@@ -155,7 +155,7 @@ export function InstellingenPage() {
   return (
     <div
       data-testid="instellingen-page-root"
-      className="w-full min-w-0 rounded-2xl border border-border/25 bg-gradient-to-b from-card/[0.08] via-background/20 to-background/40 p-4 shadow-md md:p-6"
+      className="w-full min-w-0 rounded-[16px] border border-border/25 bg-card/40 p-4 shadow-md md:p-6"
     >
       <InstellingenSettingsExperience
         activeSection={activeSection}

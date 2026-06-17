@@ -889,7 +889,9 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
         ? "Vul casus aan"
         : isSummaryProcessingLabel(item.primaryActionLabel)
           ? "Samenvatting wordt verwerkt"
-          : "Start matching";
+          : userRole === "zorgaanbieder"
+            ? "In voorbereiding"
+            : "Start matching";
       nextActionRoute = "casussen";
       requiredAction = "complete_summary";
       break;
@@ -901,7 +903,9 @@ export function getCaseDecisionState(item: WorkflowCaseView, userRole: CaseDecis
       break;
     case "matching":
       responsibleParty = "Gemeente";
-      nextActionLabel = item.recommendedProvidersCount > 0 ? "Controleer matchadvies" : "Start matching";
+      nextActionLabel = userRole === "zorgaanbieder"
+        ? "Matching in behandeling"
+        : item.recommendedProvidersCount > 0 ? "Controleer matchadvies" : "Start matching";
       nextActionRoute = "matching";
       secondaryActions = [
         { label: "Detail", route: "casussen" },

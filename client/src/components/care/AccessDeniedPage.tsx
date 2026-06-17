@@ -1,9 +1,9 @@
 import { Button } from "../ui/button";
 import {
-  CarePageScaffold,
   ErrorState,
   PrimaryActionButton,
 } from "./CareDesignPrimitives";
+import { CareCommandShell } from "./CareCommandPrimitives";
 import { SPA_DASHBOARD_URL } from "../../lib/routes";
 
 type AccessDeniedStatus = 403 | 404 | 500;
@@ -56,11 +56,7 @@ export function AccessDeniedPage({ onGoDashboard, onGoCasussen }: AccessDeniedPa
   };
 
   return (
-    <CarePageScaffold
-      archetype="exception"
-      className="pb-8"
-      title={copy.title}
-    >
+    <CareCommandShell title={copy.title}>
       <ErrorState
         title={copy.title}
         copy={
@@ -80,13 +76,13 @@ export function AccessDeniedPage({ onGoDashboard, onGoCasussen }: AccessDeniedPa
               Naar dashboard
             </PrimaryActionButton>
             {onGoCasussen ? (
-              <Button type="button" variant="outline" className="rounded-xl" onClick={onGoCasussen}>
+              <Button type="button" variant="outline" className="rounded-[10px]" onClick={onGoCasussen}>
                 Naar aanvragen
               </Button>
             ) : null}
           </div>
         }
       />
-    </CarePageScaffold>
+    </CareCommandShell>
   );
 }

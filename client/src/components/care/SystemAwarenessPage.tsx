@@ -1,17 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ComponentType, useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Activity,
   AlertCircle,
-  ChevronLeft,
   ChevronRight,
   Clock3,
   FolderOpen,
   Home,
+  Lock,
   Mail,
   MoreHorizontal,
   Phone,
-  RefreshCw,
-  Search,
-  SlidersHorizontal,
+  Plus,
   UserCheck,
   Users,
   X,
@@ -24,6 +23,19 @@ import {
   ErrorState,
   LoadingState,
 } from "./CareDesignPrimitives";
+import {
+  CareCommandShell,
+  CareWorklist,
+  CareWorklistTabs,
+  CareWorklistToolbar,
+  CareWorklistFilterPanel,
+  CareWorklistColumnHeader,
+  CareWorklistBody,
+  CareWorklistRow,
+  CareWorklistRowAction,
+  CareWorklistPagination,
+  ROW_ACTION_CLASSES,
+} from "./CareCommandPrimitives";
 import { useCoordinationDecisionOverview } from "../../hooks/useCoordinationDecisionOverview";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { imperativeLabelForActionCode } from "./nbaImperativeLabels";
@@ -410,6 +422,316 @@ const ACTION_BUTTON_CLASSES: Record<ActionVariant, string> = {
     "border-border/60 text-foreground bg-white dark:bg-muted/10 hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:hover:text-primary shadow-sm",
 };
 
+const PRIORITY_BAND_LABELS: Record<string, string> = {
+  critical: "Kritiek",
+  high: "Hoog",
+  medium: "Middel",
+  low: "Laag",
+};
+
+type KpiCardTone = "urgent" | "warning" | "neutral" | "brand";
+
+const KPI_CARD_TONES: Record<KpiCardTone, { card: string; active: string; icon: string; value: string; label: string }> = {
+  urgent: {
+    card: "border-care-urgent-border bg-care-urgent-bg hover:-translate-y-0.5 hover:shadow-md hover:border-care-urgent-solid/60",
+    active: "border-care-urgent-border bg-care-urgent-bg ring-2 ring-care-urgent-solid/30 shadow-sm",
+    icon: "text-care-urgent-text",
+    value: "text-care-urgent-text",
+    label: "text-care-urgent-text/70",
+  },
+  warning: {
+    card: "border-care-warning-border bg-care-warning-bg hover:-translate-y-0.5 hover:shadow-md hover:border-care-warning-solid/60",
+    active: "border-care-warning-border bg-care-warning-bg ring-2 ring-care-warning-solid/30 shadow-sm",
+    icon: "text-care-warning-text",
+    value: "text-care-warning-text",
+    label: "text-care-warning-text/70",
+  },
+  neutral: {
+    card: "border-border/60 bg-card/40 hover:bg-card/55 hover:-translate-y-0.5 hover:shadow-md hover:border-border/80 dark:bg-card/20 dark:hover:bg-card/30",
+    active: "border-primary/40 bg-primary/5 ring-2 ring-primary/20 shadow-sm dark:bg-primary/10",
+    icon: "text-muted-foreground",
+    value: "text-foreground",
+    label: "text-muted-foreground",
+  },
+  brand: {
+    card: "border-care-brand-border bg-care-brand-bg hover:-translate-y-0.5 hover:shadow-md",
+    active: "border-care-brand-border bg-care-brand-bg ring-2 ring-care-brand-solid/30 shadow-sm",
+    icon: "text-care-brand-text",
+    value: "text-care-brand-text",
+    label: "text-care-brand-text/70",
+  },
+};
+
+function RegiekamerKpiCard({
+  icon: _Icon,
+  value,
+  label,
+  subtitle,
+  tone,
+  isActive = false,
+  onClick,
+}: {
+  icon: ComponentType<{ size?: number; className?: string; "aria-hidden"?: boolean | "true" }>;
+  value: number;
+  label: string;
+  subtitle?: string;
+  tone: KpiCardTone;
+  isActive?: boolean;
+  onClick?: () => void;
+}) {
+  const t = KPI_CARD_TONES[tone];
+  return (
+    <button
+      type="button"
+      aria-pressed={isActive}
+      onClick={onClick}
+      className={cn(
+        "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
+        isActive ? t.active : t.card,
+      )}
+    >
+      <span className={cn("text-[28px] font-bold tabular-nums leading-none", t.value)}>{value}</span>
+      <span className={cn("flex items-center gap-1 text-[12px] font-medium", t.label)}>
+        {label}
+        {isActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
+      </span>
+      {subtitle && (
+        <span className={cn("text-[11px] leading-none opacity-60", t.label)}>{subtitle}</span>
+      )}
+    </button>
+  );
+}
+
+const PHASE_DONUT_COLORS: Record<RegiekamerFlowStepId, { stroke: string; label: string }> = {
+  aanmelding:       { stroke: "#60A5FA", label: "Aanmelding" },
+  matching:         { stroke: "#818CF8", label: "Matching" },
+  aanbiederreactie: { stroke: "#FBBF24", label: "Aanbiederreactie" },
+  plaatsing:        { stroke: "#34D399", label: "Plaatsing" },
+  intake:           { stroke: "#6EE7B7", label: "Intake" },
+};
+
+function PhaseDonutPanel({
+  items,
+  activeTab,
+  onPhaseClick,
+}: {
+  items: CoordinationDecisionOverviewItem[];
+  activeTab: RegiekamerPhaseTab;
+  onPhaseClick: (step: RegiekamerFlowStepId) => void;
+}) {
+  const counts = useMemo(() => ({
+    aanmelding:       items.filter(i => phaseMatchesFlowStep(i, "aanmelding")).length,
+    matching:         items.filter(i => phaseMatchesFlowStep(i, "matching")).length,
+    aanbiederreactie: items.filter(i => phaseMatchesFlowStep(i, "aanbiederreactie")).length,
+    plaatsing:        items.filter(i => phaseMatchesFlowStep(i, "plaatsing")).length,
+    intake:           items.filter(i => phaseMatchesFlowStep(i, "intake")).length,
+  }), [items]);
+  const total = items.length;
+  const R = 38;
+  const CX = 48;
+  const CY = 48;
+  const CIRC = 2 * Math.PI * R;
+  let cumulative = 0;
+  const segments = (Object.keys(counts) as RegiekamerFlowStepId[]).map((step) => {
+    const count = counts[step];
+    const pct = total > 0 ? count / total : 0;
+    const dashLen = pct * CIRC;
+    const offset = -(cumulative * CIRC);
+    cumulative += pct;
+    return { step, count, pct, dashLen, offset };
+  });
+  return (
+    <div
+      className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
+      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+    >
+      <p className="mb-3 text-[12px] font-semibold text-foreground">Faseverdeling</p>
+      <div className="flex items-center gap-4">
+        <svg width="96" height="96" viewBox="0 0 96 96" className="shrink-0">
+          <circle cx={CX} cy={CY} r={R} fill="none" stroke="currentColor" strokeWidth="9" className="text-border/25" />
+          {segments.map(({ step, dashLen, offset }) =>
+            dashLen > 0 && (
+              <circle
+                key={step}
+                cx={CX} cy={CY} r={R}
+                fill="none"
+                stroke={PHASE_DONUT_COLORS[step].stroke}
+                strokeWidth={activeTab === step ? 12 : 9}
+                strokeDasharray={`${dashLen} ${CIRC}`}
+                strokeDashoffset={offset}
+                transform={`rotate(-90 ${CX} ${CY})`}
+                style={{ cursor: "pointer", transition: "stroke-width 0.15s" }}
+                onClick={() => onPhaseClick(step)}
+              />
+            )
+          )}
+          <text x={CX} y={CY - 6} textAnchor="middle" dominantBaseline="auto" fill="currentColor" className="text-foreground" style={{ fontSize: "16px", fontWeight: 700 }}>{total}</text>
+          <text x={CX} y={CY + 9} textAnchor="middle" dominantBaseline="auto" fill="currentColor" className="text-muted-foreground" style={{ fontSize: "9px" }}>totaal</text>
+        </svg>
+        <div className="min-w-0 flex-1 space-y-0.5">
+          {(Object.keys(counts) as RegiekamerFlowStepId[]).map((step) => {
+            const isActive = activeTab === step;
+            return (
+              <button
+                key={step}
+                type="button"
+                onClick={() => onPhaseClick(step)}
+                className={cn(
+                  "flex w-full items-center justify-between gap-2 rounded-lg px-2 py-1 text-left transition-colors",
+                  isActive
+                    ? "bg-muted/50 dark:bg-muted/20"
+                    : "hover:bg-muted/30 dark:hover:bg-muted/10",
+                )}
+              >
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <span
+                    className="size-2 shrink-0 rounded-full transition-transform"
+                    style={{
+                      backgroundColor: PHASE_DONUT_COLORS[step].stroke,
+                      transform: isActive ? "scale(1.4)" : "scale(1)",
+                    }}
+                  />
+                  <span className={cn("truncate text-[11px]", isActive ? "font-medium text-foreground" : "text-muted-foreground")}>
+                    {PHASE_DONUT_COLORS[step].label}
+                  </span>
+                </div>
+                <span className={cn("shrink-0 text-[11px] font-medium", isActive ? "text-foreground" : "text-muted-foreground/70")}>
+                  {counts[step]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DelayReasonsPanel({
+  items,
+  activeReason,
+  onReasonClick,
+}: {
+  items: CoordinationDecisionOverviewItem[];
+  activeReason: string;
+  onReasonClick: (reason: string) => void;
+}) {
+  const reasons = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of items) {
+      const title = item.top_blocker?.title || item.top_alert?.title;
+      if (title) map.set(title, (map.get(title) ?? 0) + 1);
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  }, [items]);
+  const max = reasons[0]?.[1] ?? 1;
+  return (
+    <div
+      className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
+      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+    >
+      <p className="mb-3 text-[12px] font-semibold text-foreground">Vertraging oorzaken</p>
+      {reasons.length === 0 ? (
+        <p className="text-[12px] italic text-muted-foreground/60">Geen actieve blokkades</p>
+      ) : (
+        <div className="space-y-1">
+          {reasons.map(([reason, count]) => {
+            const isActive = activeReason === reason;
+            return (
+              <button
+                key={reason}
+                type="button"
+                onClick={() => onReasonClick(reason)}
+                className={cn(
+                  "w-full rounded-lg px-2 py-1.5 text-left transition-colors",
+                  isActive ? "bg-muted/50 dark:bg-muted/20" : "hover:bg-muted/30 dark:hover:bg-muted/10",
+                )}
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className={cn("max-w-[75%] truncate text-[11px]", isActive ? "font-medium text-foreground" : "text-foreground/80")}>
+                    {reason}
+                  </span>
+                  <span className="shrink-0 text-[11px] font-medium text-muted-foreground">{count}</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted/30">
+                  <div
+                    className={cn("h-full rounded-full transition-all", isActive ? "bg-care-urgent-text/80" : "bg-care-urgent-text/40")}
+                    style={{ width: `${(count / max) * 100}%` }}
+                  />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SlaBreakdownPanel({
+  items,
+  slaFilterActive,
+  onSlaToggle,
+}: {
+  items: CoordinationDecisionOverviewItem[];
+  slaFilterActive: boolean;
+  onSlaToggle: () => void;
+}) {
+  const counts = useMemo(() => {
+    let breached = 0, soon = 0, ok = 0, none = 0;
+    for (const item of items) {
+      const { status } = getSlaCountdown(item);
+      if (status === "breached") breached++;
+      else if (status === "soon") soon++;
+      else if (status === "ok") ok++;
+      else none++;
+    }
+    return { breached, soon, ok, none, total: items.length };
+  }, [items]);
+  const { breached, soon, ok, none, total } = counts;
+  const rows: Array<{ label: string; count: number; bar: string; text: string; clickable: boolean }> = [
+    { label: "Overschreden", count: breached, bar: "bg-care-urgent-text/60",  text: "text-care-urgent-text",  clickable: true },
+    { label: "Bijna",        count: soon,     bar: "bg-care-warning-text/60", text: "text-care-warning-text", clickable: true },
+    { label: "Op tijd",      count: ok,       bar: "bg-care-success-text/60", text: "text-care-success-text", clickable: false },
+    { label: "Geen SLA",     count: none,     bar: "bg-muted-foreground/25",  text: "text-muted-foreground",  clickable: false },
+  ];
+  return (
+    <div
+      className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
+      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+    >
+      <p className="mb-3 text-[12px] font-semibold text-foreground">SLA-status</p>
+      <div className="space-y-1">
+        {rows.map(({ label, count, bar, text, clickable }) => {
+          const isActive = slaFilterActive && clickable;
+          const Tag = clickable ? "button" : "div";
+          return (
+            <Tag
+              key={label}
+              {...(clickable ? { type: "button" as const, onClick: onSlaToggle } : {})}
+              className={cn(
+                "grid w-full grid-cols-[96px_1fr_28px] items-center gap-2 rounded-lg px-2 py-1.5 transition-colors",
+                clickable && (isActive
+                  ? "bg-muted/50 dark:bg-muted/20"
+                  : "hover:bg-muted/30 dark:hover:bg-muted/10 cursor-pointer"),
+              )}
+            >
+              <span className={cn("w-full truncate text-left text-[11px]", isActive ? "font-medium" : "", text)}>{label}</span>
+              <div className="h-2 overflow-hidden rounded-full bg-muted/25">
+                <div
+                  className={cn("h-full rounded-full transition-all", bar, isActive && "opacity-100")}
+                  style={{ width: total > 0 ? `${(count / total) * 100}%` : "0%", opacity: isActive ? 1 : 0.7 }}
+                />
+              </div>
+              <span className={cn("text-right text-[11px] font-medium tabular-nums", isActive ? "text-foreground" : "text-muted-foreground")}>{count}</span>
+            </Tag>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function rowRegionLabel(item: CoordinationDecisionOverviewItem): string {
   return (
     pickItemString(item, [
@@ -445,28 +767,28 @@ function regiekamerFlowStepIcon(stepId: RegiekamerFlowStepId) {
 
 type RegiekamerPhaseTab = "alle" | RegiekamerFlowStepId | "hoog-urgent";
 
-function getPriorityAccentClass(item: CoordinationDecisionOverviewItem): string {
-  if (item.priority_score >= 100 || item.urgency === "critical") return "border-l-care-urgent-solid";
-  if (item.priority_score >= 70 || item.urgency === "high") return "border-l-care-warning-solid";
-  if (item.priority_score >= 30) return "border-l-yellow-300";
-  return "border-l-border/60";
+function getPriorityAccentTone(item: CoordinationDecisionOverviewItem): "urgent" | "warning" | "low" | "neutral" {
+  if (item.priority_score >= 100 || item.urgency === "critical") return "urgent";
+  if (item.priority_score >= 70 || item.urgency === "high") return "warning";
+  if (item.priority_score >= 30) return "low";
+  return "neutral";
 }
 
 function getPhaseStyleInfo(phase: string): { label: string; className: string } {
   const normalized = normalizeApiPhaseId(phase) as string;
   const map: Record<string, { label: string; className: string }> = {
-    casus: { label: "Aanmelding", className: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400" },
-    samenvatting: { label: "Aanmelding", className: "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400" },
-    matching: { label: "Matching", className: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400" },
-    gemeente_validatie: { label: "Matching", className: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400" },
-    wacht_op_validatie: { label: "Matching", className: "bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-400" },
-    aanbieder_beoordeling: { label: "Aanbiederreactie", className: "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400" },
-    plaatsing: { label: "Plaatsing", className: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400" },
-    intake: { label: "Intake", className: "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/50 dark:text-cyan-400" },
+    casus: { label: "Aanmelding", className: "bg-care-info-bg text-care-info-text border-care-info-border" },
+    samenvatting: { label: "Aanmelding", className: "bg-care-info-bg text-care-info-text border-care-info-border" },
+    matching: { label: "Matching", className: "bg-care-brand-bg text-care-brand-text border-care-brand-border" },
+    gemeente_validatie: { label: "Matching", className: "bg-care-brand-bg text-care-brand-text border-care-brand-border" },
+    wacht_op_validatie: { label: "Matching", className: "bg-care-brand-bg text-care-brand-text border-care-brand-border" },
+    aanbieder_beoordeling: { label: "Aanbiederreactie", className: "bg-care-warning-bg text-care-warning-text border-care-warning-border" },
+    plaatsing: { label: "Plaatsing", className: "bg-care-success-bg text-care-success-text border-care-success-border" },
+    intake: { label: "Intake", className: "bg-care-success-bg text-care-success-text border-care-success-border" },
   };
   return map[normalized] ?? {
     label: normalized.charAt(0).toUpperCase() + normalized.slice(1),
-    className: "bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground",
+    className: "bg-muted text-muted-foreground border-border",
   };
 }
 
@@ -477,6 +799,8 @@ function formatOwnerName(fullName: string): string {
   const lastInitial = parts[parts.length - 1]?.[0] ?? "";
   return `${first} ${lastInitial}.`;
 }
+
+const REGIEKAMER_COLS = "minmax(11rem,1.8fr) 8rem 7.5rem minmax(9rem,1.4fr) 8.5rem minmax(7rem,0.9fr) minmax(9rem,1.1fr)";
 
 function RegiekamerWorkRow({
   item,
@@ -493,7 +817,7 @@ function RegiekamerWorkRow({
 }) {
   const rowId = String(item.case_id);
   const phaseInfo = getPhaseStyleInfo(item.phase);
-  const accentClass = getPriorityAccentClass(item);
+  const accentTone = getPriorityAccentTone(item);
   const { label: actionLabel, variant: actionVariant } = rowNextAction(item);
   const blokkadeTitle = item.top_blocker?.title || item.top_alert?.title || null;
   const blokkadeMsg = item.top_blocker?.message || item.top_alert?.message || null;
@@ -501,46 +825,53 @@ function RegiekamerWorkRow({
   const ownerDisplay = formatOwnerName(currentUserName);
 
   return (
-    <div
-      data-care-work-row
-      data-testid="coordination-worklist-item"
-      role="listitem"
-      className={cn(
-        "group relative grid cursor-pointer items-start rounded-lg border border-l-[3px] transition-colors",
-        "min-w-[860px] grid-cols-[minmax(13rem,2fr)_minmax(11rem,1.6fr)_9rem_minmax(8rem,1fr)_minmax(10rem,1.1fr)]",
-        "gap-x-4 px-5 py-4",
-        accentClass,
-        isSelected
-          ? "border-primary/30 bg-primary/5 dark:bg-primary/8"
-          : "border-border/50 bg-white/[0.02] hover:border-border/80 hover:bg-white/[0.04] dark:bg-white/[0.015] dark:hover:bg-white/[0.035]",
-      )}
+    <CareWorklistRow
+      testId="coordination-worklist-item"
+      cols={REGIEKAMER_COLS}
+      accentTone={accentTone}
+      isSelected={isSelected}
+      onRowClick={() => onSelect(rowId)}
     >
-      {/* Stretched primary action — kept a sibling (not parent) of the action button to avoid nested interactives. */}
-      <button
-        type="button"
-        aria-pressed={isSelected}
-        aria-label={`Open casus ${item.case_reference}: ${item.title}`}
-        onClick={() => onSelect(rowId)}
-        className="absolute inset-0 z-0 cursor-pointer rounded-lg border-0 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
-      />
-
-      {/* Casus: fase badge + ref + name */}
+      {/* Casus: ref + name */}
       <div className="min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold shrink-0", phaseInfo.className)}>
-            {phaseInfo.label}
-          </span>
-          <span className="font-mono text-[12px] font-semibold tracking-tight text-muted-foreground">
-            {item.case_reference}
+          <span className="font-mono text-[12px] font-medium tracking-tight text-muted-foreground">
+            Casus {item.case_reference}
           </span>
           {item.urgency_applied && (
-            <span className="inline-flex items-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 shrink-0">
+            <span className="inline-flex items-center rounded-full bg-care-warning-bg px-1.5 py-0.5 text-[10px] font-medium text-care-warning-text shrink-0">
               Urgentie
             </span>
           )}
         </div>
-        <span className="mt-1 block text-[13px] font-semibold leading-snug text-foreground line-clamp-2">
+        <span className="mt-1 block text-[13px] font-medium leading-snug text-foreground line-clamp-2">
           {item.title}
+        </span>
+      </div>
+
+      {/* Fase */}
+      <div className="flex items-start pt-0.5">
+        <span className={cn("inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", phaseInfo.className)}>
+          {phaseInfo.label}
+        </span>
+      </div>
+
+      {/* Prioriteit — score circle + band label */}
+      <div className="flex flex-col items-start gap-0.5 pt-0.5">
+        <div
+          className={cn(
+            "inline-flex size-8 items-center justify-center rounded-full border text-[12px] font-bold tabular-nums",
+            accentTone === "urgent"
+              ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text"
+              : accentTone === "warning"
+                ? "border-care-warning-border bg-care-warning-bg text-care-warning-text"
+                : "border-border/40 bg-muted/40 text-foreground/60",
+          )}
+        >
+          {item.priority_score >= 100 ? "!" : item.priority_score}
+        </div>
+        <span className="text-[10px] text-muted-foreground">
+          {PRIORITY_BAND_LABELS[priorityBand(item.priority_score)] ?? ""}
         </span>
       </div>
 
@@ -549,7 +880,7 @@ function RegiekamerWorkRow({
         {hasBlocker ? (
           <div className="min-w-0">
             {blokkadeTitle && (
-              <span className="inline-flex max-w-full items-center gap-1 rounded-md border border-care-urgent-border bg-care-urgent-bg px-1.5 py-0.5 text-[11px] font-semibold text-care-urgent-text">
+              <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-care-urgent-border bg-care-urgent-bg px-1.5 py-0.5 text-[11px] font-medium text-care-urgent-text">
                 <AlertCircle size={11} className="shrink-0" aria-hidden />
                 <span className="truncate">{blokkadeTitle}</span>
               </span>
@@ -565,7 +896,7 @@ function RegiekamerWorkRow({
 
       {/* Eigenaar */}
       <div className="flex items-start gap-2 pt-0.5">
-        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+        <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-[10px] font-medium text-primary">
           {currentUserName.charAt(0).toUpperCase()}
         </span>
         <span className="text-[12px] leading-snug text-foreground/80 pt-0.5">{ownerDisplay}</span>
@@ -575,12 +906,12 @@ function RegiekamerWorkRow({
       <CareSlaCountdown item={item} />
 
       {/* Volgende actie */}
-      <div className="relative z-10 flex items-start pt-0.5">
+      <CareWorklistRowAction>
         <button
           type="button"
           aria-label={actionLabel}
           className={cn(
-            "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors",
+            "flex items-center gap-1.5 rounded-[10px] border px-3 py-1.5 text-[12px] font-medium transition-colors",
             ACTION_BUTTON_CLASSES[actionVariant],
           )}
           onClick={(e) => { e.stopPropagation(); onCaseClick(rowId); }}
@@ -588,8 +919,8 @@ function RegiekamerWorkRow({
           {actionLabel}
           <ChevronRight size={12} className="shrink-0 opacity-60" aria-hidden />
         </button>
-      </div>
-    </div>
+      </CareWorklistRowAction>
+    </CareWorklistRow>
   );
 }
 
@@ -638,18 +969,18 @@ function CasusdetailsPanel({
     >
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2.5 min-w-0">
-          <span className={cn("shrink-0 inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-semibold", phaseInfo.className)}>
-            {phaseInfo.label}
+          <span className="truncate font-mono text-[13px] font-medium tracking-tight text-foreground">
+            Casus {item.case_reference}
           </span>
-          <span className="truncate font-mono text-[13px] font-semibold tracking-tight text-foreground">
-            {item.case_reference}
+          <span className={cn("shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium", phaseInfo.className)}>
+            {phaseInfo.label}
           </span>
         </div>
         <button
           type="button"
           onClick={onClose}
           aria-label="Paneel sluiten"
-          className="ml-2 shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
+          className="ml-2 shrink-0 rounded-[10px] p-1 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors"
         >
           <X size={16} />
         </button>
@@ -663,22 +994,22 @@ function CasusdetailsPanel({
               {regionDisplay && <p className="mt-0.5 text-[12px] text-muted-foreground">{regionDisplay}</p>}
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
-              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
+              <button type="button" className="rounded-[10px] p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <Phone size={14} />
               </button>
-              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
+              <button type="button" className="rounded-[10px] p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <Mail size={14} />
               </button>
-              <button type="button" className="rounded-md p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
+              <button type="button" className="rounded-[10px] p-1.5 text-muted-foreground hover:bg-muted/30 hover:text-foreground transition-colors">
                 <MoreHorizontal size={14} />
               </button>
             </div>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold", isHoog ? "bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400" : "bg-muted text-muted-foreground dark:bg-muted/40 dark:text-muted-foreground")}>
+            <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-medium", isHoog ? "bg-care-warning-bg text-care-warning-text" : "bg-muted text-muted-foreground")}>
               {isHoog ? "Hoog" : "Normaal"}
             </span>
-            <span className={cn("inline-flex items-center rounded-full bg-muted/40 px-2.5 py-0.5 text-[11px] font-semibold", sla.className)}>
+            <span className={cn("inline-flex items-center rounded-full bg-muted/40 px-2.5 py-0.5 text-[11px] font-medium", sla.className)}>
               {sla.label}
             </span>
           </div>
@@ -688,15 +1019,15 @@ function CasusdetailsPanel({
           <div className="border-b border-border/40 px-5 py-3.5">
             <button
               type="button"
-              className="flex w-full items-start gap-3 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-3.5 py-3 text-left transition-colors hover:bg-red-100/60 dark:hover:bg-red-950/30"
+              className="flex w-full items-start gap-3 rounded-[10px] border border-care-urgent-border bg-care-urgent-bg px-3.5 py-3 text-left transition-colors hover:opacity-90"
               onClick={() => onCaseClick(String(item.case_id))}
             >
-              <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-500" aria-hidden />
+              <AlertCircle size={15} className="mt-0.5 shrink-0 text-care-urgent-text" aria-hidden />
               <div className="min-w-0 flex-1">
-                <p className="text-[13px] font-semibold text-red-800 dark:text-red-400">{blokkadeTitle}</p>
-                {blokkadeMsg && <p className="mt-0.5 line-clamp-2 text-[12px] text-red-600/80 dark:text-red-400/80">{blokkadeMsg}</p>}
+                <p className="text-[13px] font-medium text-care-urgent-text">{blokkadeTitle}</p>
+                {blokkadeMsg && <p className="mt-0.5 line-clamp-2 text-[12px] text-care-urgent-text/80">{blokkadeMsg}</p>}
               </div>
-              <ChevronRight size={14} className="mt-0.5 shrink-0 text-red-400" aria-hidden />
+              <ChevronRight size={14} className="mt-0.5 shrink-0 text-care-urgent-text" aria-hidden />
             </button>
           </div>
         )}
@@ -707,7 +1038,7 @@ function CasusdetailsPanel({
             <div>
               <dt className="text-[11px] text-muted-foreground">Fase</dt>
               <dd className="mt-0.5">
-                <span className={cn("inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold", phaseInfo.className)}>{phaseInfo.label}</span>
+                <span className={cn("inline-flex items-center rounded-full px-1.5 py-0.5 text-[11px] font-medium", phaseInfo.className)}>{phaseInfo.label}</span>
               </dd>
             </div>
             <div>
@@ -727,7 +1058,7 @@ function CasusdetailsPanel({
             <div>
               <dt className="text-[11px] text-muted-foreground">Eigenaar</dt>
               <dd className="mt-0.5 flex items-center gap-1.5">
-                <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+                <span className="inline-flex size-5 items-center justify-center rounded-full bg-primary/15 text-[10px] font-medium text-primary">
                   {currentUserName.charAt(0).toUpperCase()}
                 </span>
                 <span className="text-[13px] text-foreground">{currentUserName}</span>
@@ -763,7 +1094,7 @@ function CasusdetailsPanel({
             >
               {tab.label}
               {tab.count !== undefined && (
-                <span className={cn("rounded-full px-1.5 text-[10px] font-bold", activeDetailTab === tab.id ? "bg-foreground/10 text-foreground" : "bg-muted/40 text-muted-foreground")}>
+                <span className={cn("rounded-full px-1.5 text-[10px] font-medium", activeDetailTab === tab.id ? "bg-foreground/10 text-foreground" : "bg-muted/40 text-muted-foreground")}>
                   {tab.count}
                 </span>
               )}
@@ -784,7 +1115,7 @@ function CasusdetailsPanel({
                   <div className={cn("flex size-[22px] items-center justify-center rounded-full border-2 transition-colors", isActive ? "border-primary bg-primary text-white shadow-sm shadow-primary/30" : isDone ? "border-primary/40 bg-primary/10 text-primary/80" : "border-border/50 bg-white dark:bg-card text-muted-foreground")}>
                     <Icon size={11} className="text-current" />
                   </div>
-                  <span className={cn("max-w-[3.5rem] text-center text-[10px] leading-tight", isActive ? "font-semibold text-primary" : isDone ? "text-primary/60 dark:text-primary/50" : "text-muted-foreground/50")}>
+                  <span className={cn("max-w-[3.5rem] text-center text-[10px] leading-tight", isActive ? "font-medium text-primary" : isDone ? "text-primary/60 dark:text-primary/50" : "text-muted-foreground/50")}>
                     {step.label}
                   </span>
                 </div>
@@ -801,7 +1132,7 @@ function CasusdetailsPanel({
                 <div key={idx} className="flex items-start gap-2.5">
                   <div className="mt-0.5 size-4 shrink-0 rounded border-2 border-border/60 cursor-pointer hover:border-primary transition-colors" />
                   <p className="flex-1 text-[13px] text-foreground">{action.label}</p>
-                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", action.urgent ? "bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400")}>
+                  <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium", action.urgent ? "bg-care-urgent-bg text-care-urgent-text" : "bg-care-warning-bg text-care-warning-text")}>
                     {action.due}
                   </span>
                 </div>
@@ -817,7 +1148,7 @@ function CasusdetailsPanel({
         <Button
           type="button"
           disabled={ctaVariant === "waiting"}
-          className="flex w-full items-center justify-between gap-2 rounded-xl py-2.5 text-[13px] font-semibold"
+          className="flex w-full items-center justify-between gap-2 rounded-[10px] py-2.5 text-[13px] font-medium"
           onClick={() => onCaseClick(String(item.case_id))}
         >
           <span>{ctaLabel}</span>
@@ -854,6 +1185,7 @@ export function SystemAwarenessPage({
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<RegiekamerPhaseTab>("alle");
   const [showFiltersBar, setShowFiltersBar] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -1010,13 +1342,13 @@ export function SystemAwarenessPage({
     subcategoryFilter !== "all";
 
   const coordinationListItems = useMemo(() => {
-    if (filtersActive) {
+    if (filtersActive || showAll) {
       return visibleItems;
     }
     const attention = visibleItems.filter(itemNeedsCoordinationAttention);
     const base = attention.length > 0 ? attention : visibleItems;
     return base.slice(0, REGIEKAMER_COORDINATION_LIST_CAP);
-  }, [visibleItems, filtersActive]);
+  }, [visibleItems, filtersActive, showAll]);
 
   const currentUserDisplayName = me?.fullName?.trim() || me?.username || "Regisseur";
   const phaseTabCounts = useMemo<Record<RegiekamerPhaseTab, number>>(() => ({
@@ -1162,83 +1494,96 @@ export function SystemAwarenessPage({
     setSubcategoryFilter("all");
   };
 
+  const isDirectActieActive = priorityFilter === "critical";
+  const isGeblokkeerddActive = issueFilter === "blockers" && priorityFilter !== "critical";
+  const isTermijnrisicoActive = issueFilter === "SLA";
+
+  const PHASE_TABS: Array<{ id: string; label: string; count: number }> = [
+    { id: "alle", label: "Alle casussen", count: phaseTabCounts.alle },
+    { id: "aanmelding", label: "Aanmelding", count: phaseTabCounts.aanmelding },
+    { id: "matching", label: "Matching", count: phaseTabCounts.matching },
+    { id: "aanbiederreactie", label: "Aanbiederreactie", count: phaseTabCounts.aanbiederreactie },
+    { id: "plaatsing", label: "Plaatsing", count: phaseTabCounts.plaatsing },
+    { id: "intake", label: "Intake", count: phaseTabCounts.intake },
+    { id: "hoog-urgent", label: "Hoog urgent", count: phaseTabCounts["hoog-urgent"] },
+  ];
+
   return (
-    <div className="flex min-h-0 flex-col" data-testid="regiekamer-page">
-      {/* Page header */}
-      <div className="flex items-start justify-between gap-4 pb-5">
-        <div>
-          <h1 className="care-text-title text-foreground">Regiekamer</h1>
-          <p className="mt-0.5 care-text-body text-muted-foreground">Stuur op doorstroom, blokkades en urgente casussen.</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 pt-1 text-[12px] text-muted-foreground">
-          {lastUpdateLabel && <span>{lastUpdateLabel}</span>}
-          <button type="button" onClick={refetch} aria-label="Vernieuwen" className="rounded p-0.5 hover:text-foreground transition-colors">
-            <RefreshCw size={13} />
-          </button>
-        </div>
+    <CareCommandShell
+      testId="regiekamer-page"
+      title="Regiekamer"
+      lastUpdatedLabel={lastUpdateLabel || undefined}
+      onRefresh={refetch}
+      actions={canCreateCase && onCreateCase ? (
+        <Button
+          type="button"
+          className="h-9 min-h-9 rounded-[10px] px-4 text-[13px] font-medium shadow-sm"
+          onClick={onCreateCase}
+        >
+          Nieuwe aanmelding
+          <Plus className="ml-2 size-4 translate-y-px" aria-hidden />
+        </Button>
+      ) : undefined}
+    >
+      {/* 4-column KPI strip */}
+      <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <RegiekamerKpiCard
+          icon={AlertCircle}
+          value={directActieCount}
+          label="Direct actie"
+          subtitle="Kritiek + blokkade"
+          tone="urgent"
+          isActive={isDirectActieActive}
+          onClick={() => (isDirectActieActive ? clearFilters() : applyCriticalDrillFilter())}
+        />
+        <RegiekamerKpiCard
+          icon={Lock}
+          value={blockedCount}
+          label="Geblokkeerd"
+          subtitle="Actieve blokkades"
+          tone="urgent"
+          isActive={isGeblokkeerddActive}
+          onClick={() => (isGeblokkeerddActive ? setIssueFilter("all") : setIssueFilter("blockers"))}
+        />
+        <RegiekamerKpiCard
+          icon={Clock3}
+          value={slaRiskTotal}
+          label="Termijnrisico"
+          subtitle="SLA overschreden"
+          tone="warning"
+          isActive={isTermijnrisicoActive}
+          onClick={() => (isTermijnrisicoActive ? setIssueFilter("all") : setIssueFilter("SLA"))}
+        />
+        <RegiekamerKpiCard
+          icon={Activity}
+          value={activeCasesTotal}
+          label="In beweging"
+          subtitle="Actieve casussen"
+          tone="neutral"
+        />
       </div>
 
-      {/* KPI cards — clickable filters. Active card shows ring + dismiss cue; clicking again clears. */}
-      {(() => {
-        const isDirectActieActive = priorityFilter === "critical";
-        const isGeblokkeerddActive = issueFilter === "blockers" && priorityFilter !== "critical";
-        const isTermijnrisicoActive = issueFilter === "SLA";
-        return (
-          <div className="mb-5 grid grid-cols-3 gap-3">
-            <button
-              type="button"
-              aria-pressed={isDirectActieActive}
-              onClick={() => isDirectActieActive ? clearFilters() : applyCriticalDrillFilter()}
-              className={cn(
-                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
-                isDirectActieActive
-                  ? "border-red-400/70 dark:border-red-500/50 bg-red-100/70 dark:bg-red-950/40 ring-2 ring-red-400/30 dark:ring-red-500/25"
-                  : "border-red-200/60 dark:border-red-900/30 bg-red-50/60 dark:bg-red-950/20 hover:bg-red-100/60 dark:hover:bg-red-950/30",
-              )}
-            >
-              <span className="text-[28px] font-bold tabular-nums leading-none text-red-600 dark:text-red-400">{directActieCount}</span>
-              <span className="flex items-center gap-1 text-[12px] font-medium text-red-700/70 dark:text-red-400/70">
-                Direct actie nodig
-                {isDirectActieActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-pressed={isGeblokkeerddActive}
-              onClick={() => isGeblokkeerddActive ? setIssueFilter("all") : setIssueFilter("blockers")}
-              className={cn(
-                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
-                isGeblokkeerddActive
-                  ? "border-red-400/70 dark:border-red-500/50 bg-red-100/60 dark:bg-red-950/35 ring-2 ring-red-400/30 dark:ring-red-500/25"
-                  : "border-red-200/60 dark:border-red-900/30 bg-red-50/40 dark:bg-red-950/10 hover:bg-red-100/50 dark:hover:bg-red-950/20",
-              )}
-            >
-              <span className="text-[28px] font-bold tabular-nums leading-none text-red-500 dark:text-red-400">{blockedCount}</span>
-              <span className="flex items-center gap-1 text-[12px] font-medium text-red-600/70 dark:text-red-400/70">
-                Geblokkeerd
-                {isGeblokkeerddActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-pressed={isTermijnrisicoActive}
-              onClick={() => isTermijnrisicoActive ? setIssueFilter("all") : setIssueFilter("SLA")}
-              className={cn(
-                "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all",
-                isTermijnrisicoActive
-                  ? "border-amber-400/70 dark:border-amber-500/50 bg-amber-100/70 dark:bg-amber-950/35 ring-2 ring-amber-400/30 dark:ring-amber-500/25"
-                  : "border-amber-200/60 dark:border-amber-900/30 bg-amber-50/50 dark:bg-amber-950/15 hover:bg-amber-100/60 dark:hover:bg-amber-950/25",
-              )}
-            >
-              <span className="text-[28px] font-bold tabular-nums leading-none text-amber-600 dark:text-amber-400">{slaRiskTotal}</span>
-              <span className="flex items-center gap-1 text-[12px] font-medium text-amber-700/70 dark:text-amber-400/70">
-                Termijnrisico
-                {isTermijnrisicoActive && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
-              </span>
-            </button>
-          </div>
-        );
-      })()}
+      {/* 3-column analytics panels */}
+      {!loading && !error && hasActiveData && (
+        <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <PhaseDonutPanel
+            items={allOverviewItems}
+            activeTab={activeTab}
+            onPhaseClick={(step) => { setActiveTab(step); setSelectedCaseId(null); }}
+          />
+          <DelayReasonsPanel
+            items={allOverviewItems}
+            activeReason={searchQuery}
+            onReasonClick={(reason) => setSearchQuery((prev) => (prev === reason ? "" : reason))}
+          />
+          <SlaBreakdownPanel
+            items={allOverviewItems}
+            slaFilterActive={isTermijnrisicoActive}
+            onSlaToggle={() => (isTermijnrisicoActive ? setIssueFilter("all") : setIssueFilter("SLA"))}
+          />
+        </div>
+      )}
+
       {loading && (
         <LoadingState title="Regiekamer synchroniseren…" copy="Operationeel overzicht wordt opgebouwd." />
       )}
@@ -1265,10 +1610,10 @@ export function SystemAwarenessPage({
                 <Button
                   type="button"
                   variant="default"
-                  className="h-9 min-h-9 rounded-lg px-4 text-[13px] font-semibold shadow-sm"
+                  className="h-9 min-h-9 rounded-[10px] px-4 text-[13px] font-medium shadow-sm"
                   onClick={onCreateCase}
                 >
-                  Nieuwe casus
+                  Nieuwe aanmelding
                 </Button>
                 <Button type="button" variant="outline" onClick={() => onAppNavigate("/casussen")}>
                   Open aanvragen
@@ -1278,7 +1623,7 @@ export function SystemAwarenessPage({
               <Button
                 type="button"
                 variant="default"
-                className="h-9 min-h-9 rounded-lg px-4 text-[13px] font-semibold shadow-sm"
+                className="h-9 min-h-9 rounded-[10px] px-4 text-[13px] font-medium shadow-sm"
                 onClick={onCreateCase}
               >
                 Nieuwe casus
@@ -1305,113 +1650,70 @@ export function SystemAwarenessPage({
       )}
 
       {!loading && !error && coordinationListItems.length > 0 && (
-        <div
-          data-testid="coordination-uitvoerlijst"
-          className="overflow-hidden rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)]"
-          style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
-        >
-          {/* Phase tabs */}
-          <div className="flex overflow-x-auto border-b border-border/35 px-2">
-            {(
-              [
-                { id: "alle" as const, label: "Alle casussen" },
-                { id: "aanmelding" as const, label: "Aanmelding" },
-                { id: "matching" as const, label: "Matching" },
-                { id: "aanbiederreactie" as const, label: "Aanbiederreactie" },
-                { id: "plaatsing" as const, label: "Plaatsing" },
-                { id: "intake" as const, label: "Intake" },
-                { id: "hoog-urgent" as const, label: "Hoog urgent" },
-              ] satisfies Array<{ id: RegiekamerPhaseTab; label: string }>
-            ).map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => { setActiveTab(tab.id); setSelectedCaseId(null); }}
-                className={cn(
-                  "flex shrink-0 items-center gap-1.5 border-b-2 px-3.5 py-3 text-[13px] font-medium whitespace-nowrap transition-colors",
-                  activeTab === tab.id
-                    ? "border-foreground text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.label}
-                <span className={cn("rounded-full px-1.5 py-0.5 text-[11px] font-bold tabular-nums", activeTab === tab.id ? "bg-foreground/10 text-foreground" : "bg-muted/40 text-muted-foreground")}>
-                  {phaseTabCounts[tab.id]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Toolbar */}
-          <div className="flex items-center gap-3 border-b border-border/35 px-4 py-2.5">
-            <div className="relative max-w-xs flex-1">
-              <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden />
-              <input
-                type="search"
-                placeholder="Zoek in werkvoorraad..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-8 w-full rounded-lg border border-border/50 bg-transparent pl-8 pr-3 text-[13px] text-foreground placeholder:text-muted-foreground dark:placeholder:text-muted-foreground outline-none focus:border-primary/40 focus:ring-2 focus:ring-primary/10 transition-colors"
-              />
+        <>
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-[14px] font-semibold text-foreground">Urgente casussen</h2>
+              <span className="inline-flex items-center rounded-full bg-care-urgent-bg px-2 py-0.5 text-[11px] font-medium text-care-urgent-text">
+                {coordinationListItems.length}
+              </span>
             </div>
-            <div className="ml-auto flex items-center gap-2">
+            {!filtersActive && !showAll && (data?.items?.length ?? 0) > REGIEKAMER_COORDINATION_LIST_CAP && (
               <button
                 type="button"
-                onClick={() => setShowFiltersBar((v) => !v)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-[12px] font-medium transition-colors",
-                  showFiltersBar || filtersActive
-                    ? "border-primary/40 bg-primary/5 text-primary dark:border-primary/30 dark:bg-primary/10"
-                    : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground",
-                )}
+                className="text-[12px] text-primary transition-colors hover:underline"
+                onClick={() => setShowAll(true)}
               >
-                <SlidersHorizontal size={13} aria-hidden />
-                Filters
-                {filtersActive && <span className="flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">!</span>}
+                Bekijk alle {data?.items?.length} →
               </button>
-            </div>
+            )}
           </div>
+        <CareWorklist testId="coordination-uitvoerlijst">
+          <CareWorklistTabs
+            tabs={PHASE_TABS}
+            activeId={activeTab}
+            onChange={(id) => { setActiveTab(id as RegiekamerPhaseTab); setSelectedCaseId(null); }}
+          />
 
-          {/* Inline filters */}
-          {showFiltersBar && (
-            <div className="border-b border-border/35 bg-muted/40 dark:bg-muted/5 px-4 py-3">
-              <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
-                  Prioriteit
-                  <CareOperationalSelect aria-label="Prioriteit" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}>
-                    {Object.entries(PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                  </CareOperationalSelect>
-                </label>
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
-                  Type
-                  <CareOperationalSelect aria-label="Type" value={issueFilter} onChange={(e) => setIssueFilter(e.target.value as IssueFilter)}>
-                    {Object.entries(ISSUE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                  </CareOperationalSelect>
-                </label>
-                <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
-                  Rol
-                  <CareOperationalSelect aria-label="Rol" value={ownershipFilter} onChange={(e) => setOwnershipFilter(e.target.value as OwnershipFilter)}>
-                    {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-                  </CareOperationalSelect>
-                </label>
-                <Button type="button" variant="ghost" className="self-end text-[12px]" onClick={clearFilters}>Wis filters</Button>
-              </div>
+          <CareWorklistToolbar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoek in werkvoorraad..."
+            filtersActive={filtersActive}
+            showFilters={showFiltersBar}
+            onToggleFilters={() => setShowFiltersBar((v) => !v)}
+          />
+
+          <CareWorklistFilterPanel open={showFiltersBar}>
+            <div className="grid items-end gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
+                Prioriteit
+                <CareOperationalSelect aria-label="Prioriteit" value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value as PriorityFilter)}>
+                  {Object.entries(PRIORITY_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </CareOperationalSelect>
+              </label>
+              <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
+                Type
+                <CareOperationalSelect aria-label="Type" value={issueFilter} onChange={(e) => setIssueFilter(e.target.value as IssueFilter)}>
+                  {Object.entries(ISSUE_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </CareOperationalSelect>
+              </label>
+              <label className="flex min-w-0 flex-col gap-1 text-[11px] text-muted-foreground">
+                Rol
+                <CareOperationalSelect aria-label="Rol" value={ownershipFilter} onChange={(e) => setOwnershipFilter(e.target.value as OwnershipFilter)}>
+                  {Object.entries(OWNERSHIP_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+                </CareOperationalSelect>
+              </label>
+              <Button type="button" variant="ghost" className="self-end text-[12px]" onClick={clearFilters}>Wis filters</Button>
             </div>
-          )}
+          </CareWorklistFilterPanel>
 
-          {/* Table */}
           <div className="overflow-x-auto">
-            <div
-              className="grid min-w-[860px] gap-x-4 border-b border-border/35 px-[calc(1.25rem+3px)] py-2 care-text-eyebrow text-muted-foreground"
-              style={{ gridTemplateColumns: "minmax(13rem,2fr) minmax(11rem,1.6fr) 9rem minmax(8rem,1fr) minmax(10rem,1.1fr)" }}
-            >
-              <span>Casus</span>
-              <span>Blokkade</span>
-              <span>Eigenaar</span>
-              <span>Wachttijd ↓</span>
-              <span>Volgende actie</span>
-            </div>
-            <div role="list" className="flex flex-col gap-1.5 p-3">
+            <CareWorklistColumnHeader
+              columns={["Casus", "Fase", "Prioriteit", "Blokkade / Risico", "Eigenaar", "Wachttijd ↓", "Volgende actie"]}
+              cols={REGIEKAMER_COLS}
+            />
+            <CareWorklistBody>
               {tabFilteredItems.map((item) => (
                 <RegiekamerWorkRow
                   key={item.case_id}
@@ -1427,27 +1729,12 @@ export function SystemAwarenessPage({
                   Geen casussen in dit filter.
                 </div>
               )}
-            </div>
+            </CareWorklistBody>
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-border/35 px-6 py-3">
-            <p className="text-[12px] text-muted-foreground">
-              {tabFilteredItems.length} {tabFilteredItems.length === 1 ? "resultaat" : "resultaten"}
-            </p>
-            <div className="flex items-center gap-1">
-              <button type="button" disabled aria-label="Vorige pagina" className="flex size-7 items-center justify-center rounded-md border border-border/60 text-muted-foreground disabled:opacity-40">
-                <ChevronLeft size={13} aria-hidden />
-              </button>
-              <button type="button" className="flex h-7 min-w-[1.75rem] items-center justify-center rounded-md bg-foreground px-1.5 text-[12px] font-medium text-background">
-                1
-              </button>
-              <button type="button" disabled aria-label="Volgende pagina" className="flex size-7 items-center justify-center rounded-md border border-border/60 text-muted-foreground hover:bg-muted/20 disabled:opacity-40 transition-colors">
-                <ChevronRight size={13} aria-hidden />
-              </button>
-            </div>
-          </div>
-        </div>
+          <CareWorklistPagination count={tabFilteredItems.length} />
+        </CareWorklist>
+        </>
       )}
 
       {/* Right detail panel */}
@@ -1459,6 +1746,6 @@ export function SystemAwarenessPage({
           onCaseClick={onCaseClick}
         />
       )}
-    </div>
+    </CareCommandShell>
   );
 }

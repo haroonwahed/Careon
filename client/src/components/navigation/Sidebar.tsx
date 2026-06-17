@@ -455,7 +455,7 @@ export function Sidebar({
       ref={asideRef}
       data-testid="care-sidebar"
       className={`
-        h-screen bg-card/45 border-r border-border/60 backdrop-blur-[2px]
+        h-screen bg-sidebar border-r border-border
         transition-all duration-300 ease-in-out
         flex flex-col
         ${collapsed ? "w-20" : "w-64"}
@@ -496,7 +496,7 @@ export function Sidebar({
             {/* Section Label */}
             {!collapsed && (
               <div className="mb-2 px-3">
-                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/60">
+                <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
                   {section.label}
                 </span>
               </div>
@@ -523,8 +523,8 @@ export function Sidebar({
                       transition-colors duration-200
                       ${collapsed ? "justify-center" : ""}
                       ${isActive
-                        ? "border-primary/20 bg-primary/8 text-foreground"
-                        : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-card/35 hover:text-foreground"
+                        ? "border-primary/[0.34] bg-primary/[0.14] text-foreground"
+                        : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-foreground/[0.05] hover:text-foreground"
                       }
                     `}
                     title={collapsed ? item.label : undefined}
@@ -551,9 +551,9 @@ export function Sidebar({
                     {!collapsed && badgeValue !== undefined && (
                       <span className={`
                         min-w-6 rounded-full border px-2 py-0.5 text-center text-xs font-semibold
-                        ${isActive 
-                          ? "border-primary/20 bg-primary/12 text-primary"
-                          : "border-border/60 bg-background/35 text-foreground/70"
+                        ${isActive
+                          ? "border-primary/[0.34] bg-primary/[0.14] text-primary"
+                          : "border-border/60 bg-foreground/[0.06] text-foreground/70"
                         }
                       `}>
                         {badgeValue}
@@ -618,8 +618,8 @@ export function Sidebar({
               transition-colors duration-200
               ${collapsed ? "justify-center" : ""}
               ${activeItemId === gemeenteBottomSignalItem.id
-                ? "border-primary/20 bg-primary/8 text-foreground"
-                : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-card/35 hover:text-foreground"
+                ? "border-primary/[0.34] bg-primary/[0.14] text-foreground"
+                : "border-transparent text-muted-foreground hover:border-border/55 hover:bg-foreground/[0.05] hover:text-foreground"
               }
             `}
             title={collapsed ? gemeenteBottomSignalItem.label : undefined}
@@ -639,8 +639,8 @@ export function Sidebar({
               <span className={`
                 min-w-6 rounded-full border px-2 py-0.5 text-center text-xs font-semibold
                 ${activeItemId === gemeenteBottomSignalItem.id
-                  ? "border-primary/20 bg-primary/12 text-primary"
-                  : "border-border/60 bg-background/35 text-foreground/70"
+                  ? "border-primary/[0.34] bg-primary/[0.14] text-primary"
+                  : "border-border/60 bg-foreground/[0.06] text-foreground/70"
                 }
               `}>
                 {badgeOverrides[gemeenteBottomSignalItem.id] ?? gemeenteBottomSignalItem.badge}
@@ -656,7 +656,7 @@ export function Sidebar({
       {/* FOOTER (Optional - User Profile) */}
       <div className="border-t border-border/50 p-3">
         <div className={`
-          flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-border/55 hover:bg-card/35
+          flex items-center gap-3 rounded-xl border border-transparent p-2 transition-colors hover:border-border/55 hover:bg-foreground/[0.05]
           ${collapsed ? "justify-center" : ""}
         `}>
           <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full border border-border/50 bg-background/35">

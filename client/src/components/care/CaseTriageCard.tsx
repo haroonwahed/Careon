@@ -37,22 +37,22 @@ interface CaseTriageCardProps {
   onSelect?: (selected: boolean) => void;
 }
 
-const urgencyConfig: Record<UrgencyLevel, { 
-  bg: string; 
-  border: string; 
-  text: string; 
+const urgencyConfig: Record<UrgencyLevel, {
+  bg: string;
+  border: string;
+  text: string;
   label: string;
 }> = {
   critical: {
-    bg: "bg-destructive/10",
-    border: "border-destructive/40",
-    text: "text-destructive",
+    bg: "bg-care-urgent-bg",
+    border: "border-care-urgent-border",
+    text: "text-care-urgent-text",
     label: "Urgent",
   },
   warning: {
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/40",
-    text: "text-amber-300",
+    bg: "bg-care-warning-bg",
+    border: "border-care-warning-border",
+    text: "text-care-warning-text",
     label: "Aandacht",
   },
   normal: {
@@ -62,9 +62,9 @@ const urgencyConfig: Record<UrgencyLevel, {
     label: "Normaal"
   },
   stable: {
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/40",
-    text: "text-emerald-300",
+    bg: "bg-care-success-bg",
+    border: "border-care-success-border",
+    text: "text-care-success-text",
     label: "Stabiel"
   }
 };
@@ -116,7 +116,7 @@ export function CaseTriageCard({
         rounded-xl border-2 transition-all duration-200
         ${config.border} ${config.bg}
         ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background" : ""}
-        hover:border-opacity-60 hover:shadow-lg
+        hover:border-opacity-60 hover:-translate-y-0.5 hover:shadow-lg
       `}
     >
       {/* Selection Checkbox */}
@@ -152,10 +152,10 @@ export function CaseTriageCard({
           {/* Wait Time Indicator */}
           <div className={`
             flex items-center gap-1.5 px-3 py-1.5 rounded-lg
-            ${wachttijd > 5 ? "border border-destructive/40 bg-destructive/10" : "bg-muted/50"}
+            ${wachttijd > 5 ? "border border-care-urgent-border bg-care-urgent-bg" : "bg-muted/50"}
           `}>
-            <Clock size={14} className={wachttijd > 5 ? "text-destructive" : "text-muted-foreground"} />
-            <span className={`text-sm font-semibold ${wachttijd > 5 ? "text-destructive" : "text-muted-foreground"}`}>
+            <Clock size={14} className={wachttijd > 5 ? "text-care-urgent-text" : "text-muted-foreground"} />
+            <span className={`text-sm font-semibold ${wachttijd > 5 ? "text-care-urgent-text" : "text-muted-foreground"}`}>
               {wachttijd}d
             </span>
           </div>
@@ -181,10 +181,10 @@ export function CaseTriageCard({
               return (
                 <div
                   key={idx}
-                  className="flex items-center gap-1.5 rounded-md border border-destructive/40 bg-destructive/15 px-2.5 py-1"
+                  className="flex items-center gap-1.5 rounded-md border border-care-urgent-border bg-care-urgent-bg px-2.5 py-1"
                 >
-                  <Icon size={12} className="text-destructive flex-shrink-0" />
-                  <span className="text-xs font-medium text-destructive">{problem.label}</span>
+                  <Icon size={12} className="text-care-urgent-text flex-shrink-0" />
+                  <span className="text-xs font-medium text-care-urgent-text">{problem.label}</span>
                 </div>
               );
             })}
@@ -221,7 +221,7 @@ export function CaseTriageCard({
       {/* Urgent Pulse Animation */}
       {urgency === "critical" && (
         <div className="absolute inset-0 rounded-xl pointer-events-none">
-          <div className="absolute inset-0 rounded-xl border-2 border-destructive/50 animate-pulse" />
+          <div className="absolute inset-0 rounded-xl border-2 border-care-urgent-solid animate-pulse" />
         </div>
       )}
     </div>

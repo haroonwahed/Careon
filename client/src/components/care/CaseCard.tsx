@@ -121,7 +121,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
     <CarePanel
       className={`
         relative border-l-4 ${urgencyConfig.borderColor} ${urgencyConfig.bgColor}
-        transition-all duration-200 hover:shadow-lg
+        transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg
         ${isSelected ? "ring-2 ring-primary/40" : ""}
       `}
     >
@@ -187,7 +187,7 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
                 </div>
                 <div className="flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5" />
-                  <span className={wachttijd > 7 ? "text-destructive font-medium" : ""}>
+                  <span className={wachttijd > 7 ? "text-care-urgent-text font-medium" : ""}>
                     {wachttijd} {wachttijd === 1 ? "dag" : "dagen"}
                   </span>
                 </div>
@@ -204,12 +204,12 @@ export function CaseCard({ caseData, isSelected, onSelect, onViewCase, onAction 
         {/* Issues Section */}
         {issues.length > 0 && (
           <div className="mb-4 flex items-start gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+            <AlertTriangle className="w-4 h-4 text-care-urgent-text flex-shrink-0 mt-0.5" />
             <div className="flex flex-wrap gap-2">
               {issues.map((issue, idx) => (
                 <span
                   key={idx}
-                  className="px-2 py-0.5 rounded text-xs font-medium border border-destructive/40 bg-destructive/15 text-destructive"
+                  className="px-2 py-0.5 rounded text-xs font-medium border border-care-urgent-border bg-care-urgent-bg text-care-urgent-text"
                 >
                   {issue}
                 </span>

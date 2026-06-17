@@ -17,17 +17,17 @@ const TONE_STYLES: Record<CareTone, { shell: string; icon: string; note: string 
     note: "text-primary",
   },
   success: {
-    shell: "border-emerald-500/20 bg-emerald-500/6",
+    shell: "border-care-success-border bg-care-success-bg",
     icon: "bg-care-success-bg text-care-success-text",
     note: "text-care-success-solid",
   },
   warning: {
-    shell: "border-amber-500/20 bg-amber-500/6",
+    shell: "border-care-warning-border bg-care-warning-bg",
     icon: "bg-care-warning-bg text-care-warning-text",
     note: "text-care-warning-solid",
   },
   danger: {
-    shell: "border-red-500/20 bg-red-500/6",
+    shell: "border-care-urgent-border bg-care-urgent-bg",
     icon: "bg-care-urgent-bg text-care-urgent-text",
     note: "text-care-urgent-solid",
   },
@@ -150,9 +150,9 @@ export function CareMetricCard({
       onClick={onClick}
       data-testid={testId}
       className={cn(
-        "care-hover-card group relative flex min-h-[120px] flex-col justify-between rounded-xl border p-4 text-left transition-colors duration-200",
+        "care-hover-card group relative flex min-h-[120px] flex-col justify-between rounded-xl border p-4 text-left transition-all duration-200",
         styles.shell,
-        onClick && "cursor-pointer hover:border-border/90",
+        onClick && "cursor-pointer hover:-translate-y-0.5 hover:shadow-md hover:border-border/80",
         active && "ring-2 ring-primary/30",
         className,
       )}

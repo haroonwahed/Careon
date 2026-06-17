@@ -87,7 +87,7 @@ export function CareBadge({
   return (
     <span
       className={cn(
-        "inline-flex w-fit items-center rounded-full border px-2.5 py-0.5 text-[12px] font-semibold",
+        "inline-flex w-fit items-center rounded-full border px-2.5 py-0.5 text-[12px] font-medium",
         className,
       )}
       style={{ backgroundColor: bg, color: text, borderColor: border }}
@@ -108,8 +108,8 @@ export function PriorityBadge({
   className?: string;
 }) {
   const styles: Record<PriorityTone, { dot: string; badge: string }> = {
-    spoed:   { dot: "bg-red-400",   badge: "border-[var(--care-badge-red-bg)]   bg-[var(--care-badge-red-bg)]   text-[var(--care-badge-red-text)]" },
-    hoog:    { dot: "bg-amber-400", badge: "border-[var(--care-badge-amber-bg)] bg-[var(--care-badge-amber-bg)] text-[var(--care-badge-amber-text)]" },
+    spoed:   { dot: "bg-care-urgent-solid",  badge: "border-[var(--care-badge-red-bg)]   bg-[var(--care-badge-red-bg)]   text-[var(--care-badge-red-text)]" },
+    hoog:    { dot: "bg-care-warning-solid", badge: "border-[var(--care-badge-amber-bg)] bg-[var(--care-badge-amber-bg)] text-[var(--care-badge-amber-text)]" },
     normaal: { dot: "bg-muted-foreground/40", badge: "border-border/60 bg-muted/20 text-muted-foreground" },
   };
   const labels: Record<PriorityTone, string> = { spoed: "Spoed", hoog: "Hoog", normaal: "Normaal" };
@@ -117,7 +117,7 @@ export function PriorityBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[11px] font-medium",
         badge,
         className,
       )}
@@ -128,7 +128,7 @@ export function PriorityBadge({
   );
 }
 
-export type CasusWorkspaceStatusVariant = "active" | "blocked" | "progress";
+export type CasusWorkspaceStatusVariant = "active" | "blocked" | "progress" | "onvolledig";
 
 /**
  * Status chips for casus workspace header — maps to operational readiness, not API enum alone.
@@ -142,19 +142,25 @@ export function CasusWorkspaceStatusBadges({
 }) {
   return (
     <>
+      {variant === "onvolledig" && (
+        <Badge className="inline-flex items-center gap-1.5 border bg-care-warning-bg text-care-warning-text border-care-warning-border text-[12px] font-medium">
+          <span className="size-1.5 shrink-0 rounded-full bg-care-warning-solid" aria-hidden />
+          Onvolledig
+        </Badge>
+      )}
       {variant === "blocked" && (
-        <Badge className="border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border text-[12px] font-semibold">Geblokkeerd</Badge>
+        <Badge className="border bg-care-urgent-bg text-care-urgent-text border-care-urgent-border text-[12px] font-medium">Geblokkeerd</Badge>
       )}
       {variant === "active" && (
-        <Badge className="border bg-care-success-bg text-care-success-text border-care-success-border text-[12px] font-semibold">Actief</Badge>
+        <Badge className="border bg-care-success-bg text-care-success-text border-care-success-border text-[12px] font-medium">Actief</Badge>
       )}
       {variant === "progress" && (
-        <Badge className="border bg-care-info-bg text-care-info-text border-care-info-border text-[12px] font-semibold">In behandeling</Badge>
+        <Badge className="border bg-care-info-bg text-care-info-text border-care-info-border text-[12px] font-medium">In behandeling</Badge>
       )}
       {hint && variant === "blocked" ? (
         <Badge
           className={cn(
-            "max-w-[min(100%,20rem)] truncate border text-[12px] font-semibold",
+            "max-w-[min(100%,20rem)] truncate border text-[12px] font-medium",
             /matching/i.test(hint)
               ? "bg-care-warning-bg text-care-warning-text border-care-warning-border"
               : "bg-care-urgent-bg text-care-urgent-text border-care-urgent-border",
@@ -230,7 +236,7 @@ export function PrimaryActionButton({ className, children, ...props }: Component
       variant="default"
       data-component="primary-action"
       className={cn(
-        "h-10 min-h-10 rounded-full px-5 text-[13px] font-semibold shadow-[var(--care-shadow-control)]",
+        "h-10 min-h-10 rounded-full px-5 text-[13px] font-medium shadow-[var(--care-shadow-control)]",
         className,
       )}
       {...props}
@@ -327,7 +333,7 @@ export function CareSection({
   return (
     <section
       data-testid={testId}
-      className={cn("rounded-[22px] p-4 md:p-5", CARE_SECTION_TONE_CLASSES[tone], className)}
+      className={cn("rounded-[20px] p-4 md:p-5", CARE_SECTION_TONE_CLASSES[tone], className)}
       {...props}
     >
       {children}
@@ -401,7 +407,7 @@ export function CareSectionBody({
 
 /** Tonal select for operational filter bars (werklijst headers). */
 export const CARE_OPERATIONAL_SELECT_CLASS =
-  "care-op-select h-10 w-full rounded-xl px-3 text-sm text-foreground";
+  "care-op-select h-10 w-full rounded-[10px] px-3 text-sm text-foreground";
 
 export function CareOperationalSelect({ className, ...props }: ComponentProps<"select">) {
   return <select className={cn(CARE_OPERATIONAL_SELECT_CLASS, className)} {...props} />;
@@ -484,7 +490,7 @@ export function CareAlertCard({
       data-testid={testId}
       className={cn(
         "px-4 py-3 md:px-5",
-        isCompact ? "rounded-[1.5rem]" : "rounded-xl",
+        isCompact ? "rounded-[16px]" : "rounded-[20px]",
         toneClasses.shell,
         className,
       )}
@@ -511,14 +517,14 @@ export function CareAlertCard({
                 ? isCompact
                   ? "flex flex-col gap-0.5 text-[16px] md:text-[17px]"
                   : "flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[22px]"
-                : "text-[17px] font-semibold",
+                : "text-[17px] font-medium",
             )}
           >
             {showMetric ? (
               <span
                 data-testid={testId ? `${testId}-metric` : undefined}
                 className={cn(
-                  "font-semibold leading-none tracking-[-0.03em]",
+                  "font-medium leading-none tracking-[-0.03em]",
                   isCompact ? "text-[16px] md:text-[17px]" : "text-[30px]",
                   toneClasses.metric,
                 )}
@@ -573,7 +579,7 @@ export function CareFlowStepCard({
       data-testid={testId}
       onClick={onClick}
       className={cn(
-        "care-flow-step__card group flex h-full w-full flex-col gap-0.5 rounded-xl px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
+        "care-flow-step__card group flex h-full w-full flex-col gap-0.5 rounded-[10px] px-2.5 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35",
         active && "care-flow-step__card--active",
         completed && !active && "care-flow-step__card--completed",
         isBottleneck && "ring-1 ring-[var(--care-badge-amber-bg)]",
@@ -595,7 +601,7 @@ export function CareFlowStepCard({
         </div>
         {metric != null ? (
           <span className={cn(
-            "shrink-0 text-[16px] font-semibold leading-none tabular-nums",
+            "shrink-0 text-[16px] font-medium leading-none tabular-nums",
             isBottleneck && typeof metric === "number" && metric > 0
               ? "text-[var(--care-badge-amber-text)]"
               : active ? "text-foreground" : "text-muted-foreground",
@@ -748,7 +754,7 @@ export function CareMatchScore({
   const tone = pct >= 70 ? "var(--care-badge-green-text)" : pct >= 45 ? "var(--care-badge-amber-text)" : "var(--care-badge-red-text)";
   return (
     <div className={cn("flex items-baseline gap-2", className)}>
-      <span className="text-[22px] font-bold tabular-nums" style={{ color: tone }}>
+      <span className="text-[22px] font-medium tabular-nums" style={{ color: tone }}>
         {pct}
       </span>
       <span className="text-[12px] text-muted-foreground">/100</span>
@@ -776,7 +782,7 @@ export function CareWorkListCard({
       className={cn(
         CARE_RHYTHM.queueShell,
         // `min-w-0` + horizontal scroll: wide grid rows (e.g. Werkvoorraad min-w-[980px]) stay usable beside rails / narrow main columns.
-        "overflow-x-auto rounded-[22px] border border-border/60 bg-card/45 shadow-sm",
+        "overflow-x-auto rounded-[20px] border border-border/60 bg-card/45 shadow-sm",
         className,
       )}
     >

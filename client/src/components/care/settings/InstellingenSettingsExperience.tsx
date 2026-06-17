@@ -26,7 +26,7 @@ import { Switch } from "../../ui/switch";
 import { cn } from "../../ui/utils";
 import { tokens } from "../../../design/tokens";
 import { CareInfoPopover } from "../CareUnifiedPage";
-import { CareSearchFiltersBar, CareSection, CareSectionBody, CareSectionHeader } from "../CareDesignPrimitives";
+import { CareWorklistToolbar, CareWorklistFilterPanel } from "../CareCommandPrimitives";
 import { SETTINGS_NAV_GROUPS, type SettingsSectionId } from "./instellingenNav";
 import { CARE_TERMS } from "../../../lib/terminology";
 
@@ -118,18 +118,10 @@ export function InstellingenSettingsExperience({
       <SettingsSidebar activeSection={activeSection} onSelect={onSectionChange} />
 
       <div className="min-w-0 flex-1 pb-10">
-        <header className="mb-8 border-b border-border/30 pb-6">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Instellingen</p>
-          <h1 className="mt-1 text-[clamp(1.35rem,2.5vw,1.65rem)] font-semibold tracking-[-0.02em] text-foreground">
-            Operationele coördinatie
-          </h1>
-          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
-            Configureer hoe CareOn besluitvorming ondersteunt: zichtbaarheid, ketenlogica, matching en verantwoording.
-            Wijzigingen zijn bedoeld voor beheerders; elke aanpassing hoort traceerbaar te zijn.
-          </p>
+        <header className="mb-8 border-b border-border/30 pb-5">
           <div
             className={cn(
-              "mt-5 flex flex-wrap items-center gap-3 rounded-xl border px-3 py-2.5 text-[13px] transition-colors",
+              "flex flex-wrap items-center gap-3 rounded-xl border px-3 py-2.5 text-[13px] transition-colors",
               systemStrip.warn
                 ? "border-amber-500/25 bg-amber-500/[0.06] text-amber-100/90"
                 : "border-border/50 bg-card/25 text-muted-foreground",
@@ -139,10 +131,8 @@ export function InstellingenSettingsExperience({
             <span className="min-w-0 flex-1 font-medium text-foreground">{systemStrip.label}</span>
             <span className="tabular-nums text-[12px] text-muted-foreground">{activeToggles} ketenvoorkeuren actief</span>
           </div>
-          <p className="mt-4 rounded-xl border border-border/45 bg-muted/20 px-3 py-2.5 text-[13px] leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Pilot:</span> meldingen, MFA, escalatie, organisatie en regio worden{" "}
-            <span className="font-medium text-foreground">lokaal in deze browser</span> bewaard (zie bevestigingsknoppen per sectie). Schuifregelaars, fictieve integraties en voorbeelduitbreidingen zijn{" "}
-            <span className="font-medium text-foreground">niet gekoppeld aan productie-API’s</span>.
+          <p className="mt-2 text-[12px] text-muted-foreground/60">
+            Pilot — instellingen worden lokaal in deze browser bewaard en zijn niet gekoppeld aan productie-API’s.
           </p>
         </header>
 
@@ -172,12 +162,6 @@ export function InstellingenSettingsExperience({
                 </Button>
               }
             >
-              <p className="mb-5 border-l-2 border-border/80 pl-3 text-[13px] leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">Wat is hier actief:</span> alleen <strong className="font-medium text-foreground">organisatienaam</strong> kun je in dit blok aanpassen; kies <strong className="font-medium text-foreground">Basis voorkeuren vastleggen</strong> om te bevestigen (nu lokaal in deze browser; serveropslag volgt).{" "}
-                <strong className="font-medium text-foreground">Thema</strong> wissel je met het zonnetje in de kopbalk.{" "}
-                <strong className="font-medium text-foreground">Taal</strong> en <strong className="font-medium text-foreground">tijdzone</strong> staan in deze release vast.{" "}
-                Meldingen (digest, kritieke alerts), MFA en escalatie vind je onder <strong className="font-medium text-foreground">Meldingen</strong>, <strong className="font-medium text-foreground">Gebruikers & rollen</strong> en <strong className="font-medium text-foreground">Workflow & coördinatie</strong>.
-              </p>
               <SettingsCluster title="Identiteit in het werkstation">
                 <Field label="Organisatienaam" hint="Zichtbaar voor geautoriseerde gebruikers.">
                   <input
@@ -298,46 +282,38 @@ export function InstellingenSettingsExperience({
                 copy="Provideraccounts hebben geen toegang tot de volledige werkvoorraad. Alleen toegekende aanvragen na gemeentelijke coördinatie — zo blijft de keten auditbaar."
               />
               <SettingsCluster title="Rollenmatrix">
-                <CareSection>
-                  <CareSectionHeader
-                    className="lg:flex-col lg:items-stretch"
-                    title="Werkvoorraad"
-                    meta={(
-                      <div className="w-full min-w-0 space-y-2">
-                        <span className="inline-flex w-fit items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
-                          {filteredGebruikersRolRows.length} rollen zichtbaar
-                        </span>
-                        <CareSearchFiltersBar
-                          className="px-0"
-                          searchValue={gebruikersSearchQuery}
-                          onSearchChange={setGebruikersSearchQuery}
-                          searchPlaceholder="Zoek op rol, scope of risico..."
-                          showSecondaryFilters={showGebruikersFilters}
-                          onToggleSecondaryFilters={() => setShowGebruikersFilters((current) => !current)}
-                          secondaryFiltersLabel="Filters"
-                          secondaryFilters={(
-                            <div className="grid grid-cols-1 gap-3 sm:max-w-xs">
-                              <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground">
-                                Risiconiveau
-                                <select
-                                  value={gebruikersRiskFilter}
-                                  onChange={(event) =>
-                                    setGebruikersRiskFilter(event.target.value as "all" | "hoog" | "middel" | "beperkt zicht")}
-                                  className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
-                                >
-                                  <option value="all">Alle risiconiveaus</option>
-                                  <option value="hoog">Hoog</option>
-                                  <option value="middel">Middel</option>
-                                  <option value="beperkt zicht">Beperkt zicht</option>
-                                </select>
-                              </label>
-                            </div>
-                          )}
-                        />
-                      </div>
-                    )}
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium text-foreground">Werkvoorraad</span>
+                    <span className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[12px] font-semibold text-cyan-200">
+                      {filteredGebruikersRolRows.length} rollen zichtbaar
+                    </span>
+                  </div>
+                  <CareWorklistToolbar
+                    searchValue={gebruikersSearchQuery}
+                    onSearchChange={setGebruikersSearchQuery}
+                    searchPlaceholder="Zoek op rol, scope of risico..."
+                    filtersActive={gebruikersRiskFilter !== "all"}
+                    showFilters={showGebruikersFilters}
+                    onToggleFilters={() => setShowGebruikersFilters((current) => !current)}
                   />
-                  <CareSectionBody className="space-y-2">
+                  <CareWorklistFilterPanel open={showGebruikersFilters}>
+                    <label className="flex min-w-0 flex-col gap-1 text-xs text-muted-foreground" style={{ maxWidth: "20rem" }}>
+                      Risiconiveau
+                      <select
+                        value={gebruikersRiskFilter}
+                        onChange={(event) =>
+                          setGebruikersRiskFilter(event.target.value as "all" | "hoog" | "middel" | "beperkt zicht")}
+                        className="h-10 w-full rounded-xl border border-border/80 bg-background px-3 text-sm text-foreground"
+                      >
+                        <option value="all">Alle risiconiveaus</option>
+                        <option value="hoog">Hoog</option>
+                        <option value="middel">Middel</option>
+                        <option value="beperkt zicht">Beperkt zicht</option>
+                      </select>
+                    </label>
+                  </CareWorklistFilterPanel>
+                  <div className="mt-2 space-y-2">
                     {filteredGebruikersRolRows.map((row) => (
                       <RoleRow key={`${row.role}-${row.risk}`} role={row.role} scope={row.scope} risk={row.risk} />
                     ))}
@@ -346,8 +322,8 @@ export function InstellingenSettingsExperience({
                         Geen rollen gevonden voor de huidige filters.
                       </p>
                     ) : null}
-                  </CareSectionBody>
-                </CareSection>
+                  </div>
+                </div>
               </SettingsCluster>
               <SettingsCluster title="Toegang & sessies">
                 <ToggleRow
@@ -605,7 +581,6 @@ export function InstellingenSettingsExperience({
                 </Button>
               }
             >
-              <p className="mb-6 text-[13px] text-muted-foreground">Operationele accountability timeline</p>
               <div className="space-y-0 border-l border-border/50 pl-4">
                 <AuditTimelineItem
                   time="Vandaag · 09:14"
@@ -803,27 +778,17 @@ function SettingsSection({ title, lede, primaryAction, children }: SettingsSecti
   return (
     <article className="space-y-8">
       <div>
-        <h2
-          id="settings-section-heading"
-          tabIndex={-1}
-          className="text-[22px] font-semibold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          {title}
-        </h2>
+        <div className="flex items-start justify-between gap-4">
+          <h2
+            id="settings-section-heading"
+            tabIndex={-1}
+            className="text-[22px] font-semibold tracking-[-0.02em] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          >
+            {title}
+          </h2>
+          {primaryAction ? <div className="shrink-0 pt-0.5">{primaryAction}</div> : null}
+        </div>
         <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">{lede}</p>
-        {primaryAction ? (
-          <div className="mt-4 flex flex-col gap-3 rounded-2xl border border-border/70 bg-muted/25 px-4 py-4 shadow-sm md:flex-row md:items-center md:justify-between">
-            <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-foreground">
-                Wijzigbare sectie
-              </p>
-              <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">
-                Pas de zichtbare velden hieronder aan en bevestig dit blok wanneer je klaar bent.
-              </p>
-            </div>
-            <div className="shrink-0">{primaryAction}</div>
-          </div>
-        ) : null}
       </div>
       <div className="space-y-6">{children}</div>
     </article>

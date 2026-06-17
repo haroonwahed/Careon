@@ -5,32 +5,35 @@
  * out of the stakeholder-facing UI.
  */
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { TopBar } from "../navigation/TopBar";
 import { Sidebar } from "../navigation/Sidebar";
-import { SystemAwarenessPage } from "../care/SystemAwarenessPage";
-import { RegiosPage } from "../care/RegiosPage";
-import { AssessmentQueuePage } from "../care/AssessmentQueuePage";
-import { AanbiederreactiePage } from "../care/AanbiederreactiePage";
-import { MatchingPageWrapper } from "../care/MatchingPageWrapper";
-import { PlacementPageWrapper } from "../care/PlacementPageWrapper";
-import { IntakeListPage } from "../care/IntakeListPage";
-import { WorkloadPage } from "../care/WorkloadPage";
-import { NieuweCasusPage } from "../care/NieuweCasusPage";
-import { AccessDeniedPage } from "../care/AccessDeniedPage";
-import { ZorgaanbiedersPage } from "../care/ZorgaanbiedersPage";
-import { GemeentenPage } from "../care/GemeentenPage";
-import { CaseExecutionPage } from "../care/CaseExecutionPage";
-import { SignalenPage } from "../care/SignalenPage";
-import { ActiesPage } from "../care/ActiesPage";
-import { DocumentenPage } from "../care/DocumentenPage";
-import { AudittrailPage } from "../care/AudittrailPage";
-import { RapportagesPage } from "../care/RapportagesPage";
-import { InstellingenPage } from "../care/InstellingenPage";
-import { GebruikersPage } from "../care/GebruikersPage";
-import { AanbiederPortaalPage } from "../care/AanbiederPortaalPage";
 import { CareAppFrame } from "../care/CareAppFrame";
+// AanbiederreactiePage kept as eager because buildAanbiederreactieRows is also imported from it
+import { AanbiederreactiePage } from "../care/AanbiederreactiePage";
 import { buildAanbiederreactieRows } from "../care/AanbiederreactiePage";
+
+// Route-level code splitting — each page loads only when first rendered
+const SystemAwarenessPage = lazy(() => import("../care/SystemAwarenessPage").then(m => ({ default: m.SystemAwarenessPage })));
+const RegiosPage = lazy(() => import("../care/RegiosPage").then(m => ({ default: m.RegiosPage })));
+const AssessmentQueuePage = lazy(() => import("../care/AssessmentQueuePage").then(m => ({ default: m.AssessmentQueuePage })));
+const MatchingPageWrapper = lazy(() => import("../care/MatchingPageWrapper").then(m => ({ default: m.MatchingPageWrapper })));
+const PlacementPageWrapper = lazy(() => import("../care/PlacementPageWrapper").then(m => ({ default: m.PlacementPageWrapper })));
+const IntakeListPage = lazy(() => import("../care/IntakeListPage").then(m => ({ default: m.IntakeListPage })));
+const WorkloadPage = lazy(() => import("../care/WorkloadPage").then(m => ({ default: m.WorkloadPage })));
+const NieuweCasusPage = lazy(() => import("../care/NieuweCasusPage").then(m => ({ default: m.NieuweCasusPage })));
+const AccessDeniedPage = lazy(() => import("../care/AccessDeniedPage").then(m => ({ default: m.AccessDeniedPage })));
+const ZorgaanbiedersPage = lazy(() => import("../care/ZorgaanbiedersPage").then(m => ({ default: m.ZorgaanbiedersPage })));
+const GemeentenPage = lazy(() => import("../care/GemeentenPage").then(m => ({ default: m.GemeentenPage })));
+const CaseExecutionPage = lazy(() => import("../care/CaseExecutionPage").then(m => ({ default: m.CaseExecutionPage })));
+const SignalenPage = lazy(() => import("../care/SignalenPage").then(m => ({ default: m.SignalenPage })));
+const ActiesPage = lazy(() => import("../care/ActiesPage").then(m => ({ default: m.ActiesPage })));
+const DocumentenPage = lazy(() => import("../care/DocumentenPage").then(m => ({ default: m.DocumentenPage })));
+const AudittrailPage = lazy(() => import("../care/AudittrailPage").then(m => ({ default: m.AudittrailPage })));
+const RapportagesPage = lazy(() => import("../care/RapportagesPage").then(m => ({ default: m.RapportagesPage })));
+const InstellingenPage = lazy(() => import("../care/InstellingenPage").then(m => ({ default: m.InstellingenPage })));
+const GebruikersPage = lazy(() => import("../care/GebruikersPage").then(m => ({ default: m.GebruikersPage })));
+const AanbiederPortaalPage = lazy(() => import("../care/AanbiederPortaalPage").then(m => ({ default: m.AanbiederPortaalPage })));
 import { tokens } from "../../design/tokens";
 import {
   CARE_PATHS,
@@ -44,9 +47,12 @@ import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useTasks } from "../../hooks/useTasks";
 import { useProviderEvaluations } from "../../hooks/useProviderEvaluations";
+import { useAssessments } from "../../hooks/useAssessments";
+import { useRegions } from "../../hooks/useRegions";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { countOpenCareTasks } from "../../lib/actiesTaskSemantics";
 import { buildWorkflowCases } from "../../lib/workflowUi";
+import { countActionSignals } from "../../lib/buildActionSignals";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 
@@ -326,29 +332,22 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
   const { providers } = useProviders({ q: "" });
   const { tasks: careTasks } = useTasks({ q: "" });
   const { evaluations: providerEvaluations } = useProviderEvaluations();
+  const { assessments } = useAssessments({ q: "" });
+  const { regions } = useRegions({ q: "" });
   /** Sidebar badges must match the same datasets as the pages they point to (e.g. Acties = CareTask list). */
   const queueCounts = useMemo(() => {
     const wf = buildWorkflowCases(cases, providers);
     const aanbiederreacties = buildAanbiederreactieRows(cases, providerEvaluations);
-    if (currentPage === "casussen") {
-      return {
-        casussen: wf.some((casus) => casus.phase !== "afgerond") ? 1 : 0,
-        beoordelingen: aanbiederreacties.length,
-        matching: 0,
-        plaatsingen: 0,
-        acties: 0,
-        signalen: 2,
-      };
-    }
+    const signalen = countActionSignals(wf, assessments, providers, regions);
     return {
-      casussen: wf.some((casus) => casus.phase !== "afgerond") ? 1 : 0,
+      casussen: wf.filter((casus) => casus.phase !== "afgerond").length,
       beoordelingen: aanbiederreacties.length,
       matching: wf.filter((casus) => casus.phase === "matching").length,
       plaatsingen: wf.filter((casus) => casus.phase === "plaatsing").length,
       acties: countOpenCareTasks(careTasks),
-      signalen: wf.filter((casus) => casus.isBlocked || casus.urgency === "critical" || casus.daysInCurrentPhase > 7).length,
+      signalen,
     };
-  }, [cases, providers, careTasks, currentPage, providerEvaluations]);
+  }, [cases, providers, careTasks, providerEvaluations, assessments, regions]);
 
   const sessionProfile = useMemo(() => {
     if (!me) {
@@ -360,7 +359,9 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         ? "Zorgaanbieder"
         : me.workflowRole === "admin"
           ? "Administrator"
-          : "Regisseur";
+          : me.workflowRole === "gemeente"
+            ? "Gemeente"
+            : "Regisseur";
     return {
       displayName,
       roleLabel,
@@ -368,28 +369,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
     };
   }, [me]);
 
-  const screenshotContext = useMemo<Context>(() => {
-    if (currentPage !== "casussen") {
-      return currentContext;
-    }
-    return {
-      id: "admin-system",
-      type: "admin",
-      name: "Haroon Wahed's Regie",
-      subtitle: "Administrator",
-    };
-  }, [currentContext, currentPage]);
-
-  const screenshotProfile = useMemo(() => {
-    if (currentPage !== "casussen") {
-      return sessionProfile;
-    }
-    return {
-      displayName: "Haroon Wahed",
-      roleLabel: "Administrator",
-      initials: "HW",
-    };
-  }, [currentPage, sessionProfile]);
+  const screenshotContext = currentContext;
+  const screenshotProfile = sessionProfile;
 
   /** Gemeente, zorgaanbieder en admin kunnen een nieuwe casus (aanmelding) starten — zelfde API, andere ketenverwachting. */
   const workspaceAllowsNewCasus =
@@ -646,7 +627,11 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
         }
         onNavigate={handleNavigate}
         badgeOverrides={
-          screenshotContext.type === "gemeente" || screenshotContext.type === "admin" ? queueCounts : undefined
+          screenshotContext.type === "zorgaanbieder"
+            ? { beoordelingen: queueCounts.beoordelingen }
+            : screenshotContext.type === "gemeente" || screenshotContext.type === "admin"
+              ? queueCounts
+              : undefined
         }
         profileDisplayName={screenshotProfile.displayName}
         profileSubtitle={screenshotContext.subtitle || screenshotProfile.roleLabel}
@@ -695,7 +680,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
           >
             <CareAppFrame
               className="min-h-full"
-              noVerticalPadding={currentPage === "coordination"}
+              noVerticalPadding={false}
               layoutMaxWidth={
                 currentPage === "coordination"
                   ? tokens.layout.pageMaxWidth
@@ -704,6 +689,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     : undefined
               }
             >
+            <Suspense fallback={<div className="flex flex-1 items-center justify-center"><div className="h-6 w-6 animate-spin rounded-full border-2 border-border border-t-primary" /></div>}>
             {currentPage === "geen-toegang" ? (
               <AccessDeniedPage
                 onGoDashboard={() => {
@@ -898,6 +884,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
 
                 {currentPage === "nieuwe-casus" && (
                   <NieuweCasusPage
+                    backLabel="Terug naar mijn aanvragen"
                     onCancel={() => {
                       goToPage("mijn-casussen");
                     }}
@@ -918,6 +905,7 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                 )}
               </>
             ) : null}
+            </Suspense>
             </CareAppFrame>
           </div>
         </main>

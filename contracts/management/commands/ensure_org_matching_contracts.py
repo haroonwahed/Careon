@@ -143,7 +143,7 @@ class Command(BaseCommand):
                     "offers_crisis": src_pp.offers_crisis,
                     "handles_simple": src_pp.handles_simple,
                     "handles_multiple": src_pp.handles_multiple,
-                    "handles_severe": src_pp.handles_severe,
+                    "handles_high_complex": src_pp.handles_high_complex,
                     "handles_low_urgency": src_pp.handles_low_urgency,
                     "handles_medium_urgency": src_pp.handles_medium_urgency,
                     "handles_high_urgency": src_pp.handles_high_urgency,

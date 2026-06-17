@@ -83,7 +83,18 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   if (!response.ok) {
     const text = await response.text().catch(() => '');
-    throw new ApiRequestError(`API fout ${response.status}: ${text}`, response.status, text);
+    let message = `API fout ${response.status}`;
+    try {
+      const body = JSON.parse(text) as { error?: string };
+      if (typeof body.error === 'string' && body.error) {
+        message = body.error;
+      } else {
+        message = `${message}: ${text}`;
+      }
+    } catch {
+      if (text) message = `${message}: ${text}`;
+    }
+    throw new ApiRequestError(message, response.status, text);
   }
 
   if (response.status === 204) {

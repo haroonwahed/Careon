@@ -311,4 +311,41 @@
         }
     })();
 </script>
+
+{% if focus_field %}
+<style>
+@keyframes care-field-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 58, 237, 0); }
+  40% { box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.35); }
+}
+.care-field-highlight {
+  outline: 2px solid rgb(124, 58, 237) !important;
+  outline-offset: 2px;
+  animation: care-field-pulse 1.2s ease-out;
+}
+</style>
+<script>
+(function() {
+  var fieldId = "{{ focus_field|escapejs }}";
+  function focusField() {
+    var el = document.getElementById(fieldId);
+    if (!el) {
+      var byName = document.querySelector('[name="{{ focus_field|escapejs }}"]');
+      el = byName;
+    }
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus({ preventScroll: true });
+      el.classList.add('care-field-highlight');
+      setTimeout(function() { el.classList.remove('care-field-highlight'); }, 2000);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', focusField);
+  } else {
+    setTimeout(focusField, 100);
+  }
+})();
+</script>
+{% endif %}
 {% endblock %}

@@ -130,6 +130,7 @@ def assessment_decision_api(request, case_id):
     short_description = (payload.get('shortDescription') or '').strip()
     urgency = (payload.get('urgency') or intake.urgency or '').strip()
     complexity = (payload.get('complexity') or intake.complexity or '').strip()
+    care_intensity = (payload.get('care_intensity') or intake.care_intensity or '').strip()
     zorgtype = (payload.get('zorgtype') or intake.zorgvorm_gewenst or intake.preferred_care_form or '').strip()
     constraints = payload.get('constraints') or []
 
@@ -156,6 +157,8 @@ def assessment_decision_api(request, case_id):
         intake.urgency = urgency
     if complexity:
         intake.complexity = complexity
+    if care_intensity:
+        intake.care_intensity = care_intensity
     if zorgtype:
         intake.zorgvorm_gewenst = zorgtype
         intake.preferred_care_form = zorgtype
@@ -240,7 +243,7 @@ def assessment_decision_api(request, case_id):
     try:
         with transaction.atomic():
             intake.workflow_state = new_state
-            intake.save(update_fields=['urgency', 'complexity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'workflow_state', 'updated_at'])
+            intake.save(update_fields=['urgency', 'complexity', 'care_intensity', 'zorgvorm_gewenst', 'preferred_care_form', 'status', 'workflow_state', 'updated_at'])
             case_record.save(update_fields=['case_phase', 'updated_at'])
             assessment.assessed_by = request.user
             assessment.save()

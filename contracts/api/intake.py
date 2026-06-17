@@ -87,16 +87,20 @@ def _serialize_taxonomy_choices(field):
 def _serialize_unique_municipality_choices(field):
     serialized = []
     seen = set()
-    for obj in field.queryset:
+    for obj in field.queryset.prefetch_related('regions'):
         label = (getattr(obj, 'municipality_name', '') or str(field.label_from_instance(obj))).strip()
         dedupe_key = label.casefold()
         if dedupe_key in seen:
             continue
         seen.add(dedupe_key)
+        region = obj.regions.filter(region_type=RegionType.JEUGDREGIO).first()
+        region_label = (getattr(region, 'region_name', '') or str(region)).strip() if region else ''
         serialized.append({
             'value': str(obj.pk),
             'label': label,
             'urgencyDocumentRequestUrl': getattr(obj, 'urgency_document_request_url', '') or '',
+            'regio': str(region.pk) if region else '',
+            'regioLabel': region_label,
         })
     return serialized
 
@@ -162,7 +166,7 @@ def _build_intake_form_payload(form, coordinator_field):
             'regio': str(form.initial.get('regio') or form.initial.get('preferred_region') or form.initial.get('jeugdhulpregio') or ''),
             'jeugdhulpregio': str(form.initial.get('jeugdhulpregio') or form.initial.get('preferred_region') or form.initial.get('regio') or ''),
             'urgency': CaseIntakeProcess.Urgency.MEDIUM,
-            'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+            'complexity': '',
             'placement_pressure_horizon': CaseIntakeProcess.PlacementPressureHorizon.MORE_THAN_TWO_WEEKS,
             'safety_pressure': False,
             'time_sensitive_arrangement': False,
@@ -325,6 +329,31 @@ def intake_create_api(request):
                 action=WorkflowAction.CREATE_CASE,
                 source='intake_create_api',
             )
+
+        # Compute system classification proposal
+        try:
+            from contracts.classification_engine import compute_classification
+            proposal = compute_classification(intake)
+            intake.proposed_complexity = proposal.proposed_complexity
+            intake.proposed_care_intensity = proposal.proposed_care_intensity
+            intake.complexity = proposal.proposed_complexity
+            intake.care_intensity = proposal.proposed_care_intensity
+            intake.classification_rationale = {
+                'criteria': [
+                    {'label': c.label, 'value': c.value, 'signal': c.signal, 'toelichting': c.toelichting}
+                    for c in proposal.criteria
+                ],
+                'explanation': proposal.explanation,
+            }
+            intake.complexity_status = CaseIntakeProcess.ClassificationStatus.SYSTEM_PROPOSED
+            intake.care_intensity_status = CaseIntakeProcess.ClassificationStatus.SYSTEM_PROPOSED
+            intake.save(update_fields=[
+                'proposed_complexity', 'proposed_care_intensity',
+                'complexity', 'care_intensity',
+                'classification_rationale', 'complexity_status', 'care_intensity_status',
+            ])
+        except Exception:
+            logger.exception('classification_engine_failed intake_id=%s', intake.pk)
 
         case_pk = case_record.pk if case_record else intake.pk
         return JsonResponse({

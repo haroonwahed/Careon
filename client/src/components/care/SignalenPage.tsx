@@ -1,45 +1,37 @@
 import { useMemo, useState } from "react";
-import {
-  AlertTriangle,
-  Info,
-  XCircle,
-} from "lucide-react";
+import { AlertTriangle, ChevronRight, Info, XCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
 import {
   CareDominantStatus,
-  CareFilterTabButton,
-  CareFilterTabGroup,
-  CareInfoPopover,
-  CareMetaChip,
-  CareMetricBadge,
-  CarePageScaffold,
-  CarePrimaryList,
-  CareSectionHeader,
-  CareWorkspaceSection,
-  CareSearchFiltersBar,
-  CareOperationalQueueHeader,
-  CareWorkListCard,
-  CARE_RHYTHM,
-  CareWorkRow,
-  CareBadge,
   CareQueueInlineAction,
   EmptyState,
   ErrorState,
   LoadingState,
-  PrimaryActionButton,
 } from "./CareDesignPrimitives";
+import {
+  CareCommandShell,
+  CareMetricStrip,
+  CareMetricCard,
+  CareWorklist,
+  CareWorklistTabs,
+  CareWorklistToolbar,
+  CareWorklistColumnHeader,
+  CareWorklistBody,
+  CareWorklistRow,
+  CareWorklistRowAction,
+  CareWorklistPagination,
+  ROW_ACTION_CLASSES,
+} from "./CareCommandPrimitives";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { useAssessments } from "../../hooks/useAssessments";
 import { useRegions } from "../../hooks/useRegions";
 import { buildWorkflowCases } from "../../lib/workflowUi";
 import type { WorkflowCaseView } from "../../lib/workflowUi";
-import { tokens } from "../../design/tokens";
 
 type SignalSeverity = "critical" | "warning" | "info";
-
-/** Nav targets from signals: workflow URLs plus zorgaanbieders network view. */
+type SignalTab = "all" | "critical" | "warning" | "info";
 type SignalNavigateTarget = WorkflowCaseView["nextBestActionUrl"] | "zorgaanbieders";
 
 interface ActionSignal {
@@ -68,141 +60,50 @@ const PHASE_LABELS: Record<string, string> = {
   afgerond: "afronding",
 };
 
-function severityLabel(severity: SignalSeverity): "kritiek" | "waarschuwing" | "info" {
+const SIGNALEN_COLS = "minmax(12rem,2fr) minmax(12rem,2fr) minmax(8rem,1.2fr) minmax(8rem,1fr)";
+
+function severityLabel(severity: SignalSeverity): string {
   switch (severity) {
-    case "critical":
-      return "kritiek";
-    case "warning":
-      return "waarschuwing";
-    default:
-      return "info";
+    case "critical": return "Kritiek";
+    case "warning": return "Waarschuwing";
+    default: return "Info";
   }
 }
 
-function dominantToneClass(severity: SignalSeverity): string {
+function severityToneClass(severity: SignalSeverity): string {
   switch (severity) {
-    case "critical":
-      return "border-destructive/40 bg-destructive/15 text-destructive";
-    case "warning":
-      return "border-amber-500/35 bg-amber-500/10 text-amber-700 dark:text-amber-200";
-    default:
-      return "border-border/70 bg-muted/25 text-muted-foreground";
+    case "critical": return "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text";
+    case "warning": return "border-care-warning-border bg-care-warning-bg text-care-warning-text";
+    default: return "border-care-info-border bg-care-info-bg text-care-info-text";
   }
 }
 
-/** Statusregel onder de paginatitel — zelfde patroon als casussen (CareMetricBadge onder titel). */
-function signalenPageMetricLabel(
-  loading: boolean,
-  error: string | null,
-  filteredCount: number,
-  totalSignals: number,
-  filteredCriticalCount: number,
-): string {
-  if (loading) return "Laden…";
-  if (error) return "Lijst niet beschikbaar";
-  if (filteredCount === 0 && totalSignals > 0) {
-    return `Geen resultaat · ${totalSignals} actief in totaal`;
-  }
-  if (totalSignals === 0) return "Geen actieve signalen";
-  if (filteredCount === 1) return `1 signaal in deze weergave · ${filteredCriticalCount} kritiek`;
-  return `${filteredCount} signalen in deze weergave · ${filteredCriticalCount} kritiek`;
-}
-
-function SignalSeverityIcon({ severity }: { severity: SignalSeverity }) {
+function SignalIcon({ severity }: { severity: SignalSeverity }) {
   switch (severity) {
-    case "critical":
-      return <XCircle size={16} className="text-care-urgent-solid" />;
-    case "warning":
-      return <AlertTriangle size={16} className="text-care-warning-solid" />;
-    default:
-      return <Info size={16} className="text-care-info-solid" />;
+    case "critical": return <XCircle size={15} className="text-care-urgent-solid shrink-0" />;
+    case "warning": return <AlertTriangle size={15} className="text-care-warning-solid shrink-0" />;
+    default: return <Info size={15} className="text-care-info-solid shrink-0" />;
   }
-}
-
-function SignalWorkRow({
-  signal,
-  onRunAction,
-}: {
-  signal: ActionSignal;
-  onRunAction: (action: ActionSignal["actions"][number]) => void;
-}) {
-  const primary = signal.actions[0];
-  const secondary = signal.actions[1];
-  const accentTone = signal.severity === "critical" ? "critical" : signal.severity === "warning" ? "warning" : "neutral";
-
-  if (!primary) {
-    return null;
-  }
-
-  const openFromRow = () => {
-    onRunAction(primary);
-  };
-
-  return (
-    <CareWorkRow
-      density="operational"
-      testId="signalen-worklist-item"
-      leading={<SignalSeverityIcon severity={signal.severity} />}
-      title={signal.title}
-      context={signal.explanation}
-      status={
-        <CareDominantStatus className={cn("justify-center", dominantToneClass(signal.severity))}>
-          {severityLabel(signal.severity)}
-        </CareDominantStatus>
-      }
-      time={
-        signal.casusReference ? (
-          <CareMetaChip title={signal.casusReference}>
-            <span className="truncate" style={{ maxWidth: tokens.layout.chipMeasureWide }}>Casus: {signal.casusReference}</span>
-          </CareMetaChip>
-        ) : undefined
-      }
-      contextInfo={
-        secondary ? (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7 shrink-0 px-2 text-xs"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRunAction(secondary);
-            }}
-          >
-            {secondary.label}
-          </Button>
-        ) : undefined
-      }
-      actionLabel={primary.label.replace(/\s*→\s*$/u, "").trim() || primary.label}
-      actionVariant={signal.severity === "critical" || signal.severity === "warning" ? "primary" : "ghost"}
-      onOpen={openFromRow}
-      onAction={(event) => {
-        event.stopPropagation();
-        onRunAction(primary);
-      }}
-      accentTone={accentTone}
-    />
-  );
 }
 
 export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSeverity, setSelectedSeverity] = useState<SignalSeverity | "all">("all");
-  const [showSecondaryFilters, setShowSecondaryFilters] = useState(false);
+  const [activeTab, setActiveTab] = useState<SignalTab>("all");
 
   const { cases, loading: casesLoading, error: casesError, refetch: refetchCases } = useCases({ q: "" });
   const { providers, loading: providersLoading, error: providersError, refetch: refetchProviders } = useProviders({ q: "" });
   const { assessments, loading: assessmentsLoading, error: assessmentsError, refetch: refetchAssessments } = useAssessments({ q: "" });
   const { regions, loading: regionsLoading, error: regionsError, refetch: refetchRegions } = useRegions({ q: "" });
 
+  const loading = casesLoading || providersLoading || assessmentsLoading || regionsLoading;
+  const error = casesError ?? providersError ?? assessmentsError ?? regionsError;
+
   const workflowCases = useMemo(() => buildWorkflowCases(cases, providers), [cases, providers]);
 
   const signals = useMemo<ActionSignal[]>(() => {
     const items: ActionSignal[] = [];
     const push = (signal: ActionSignal) => {
-      if (!items.some((existing) => existing.id === signal.id)) {
-        items.push(signal);
-      }
+      if (!items.some((existing) => existing.id === signal.id)) items.push(signal);
     };
 
     workflowCases.forEach((workflowCase) => {
@@ -236,11 +137,7 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
         });
       }
 
-      if (
-        workflowCase.urgency === "critical"
-        && workflowCase.phase === "matching"
-        && (workflowCase.recommendedProvidersCount === 0 || workflowCase.isBlocked)
-      ) {
+      if (workflowCase.urgency === "critical" && workflowCase.phase === "matching" && (workflowCase.recommendedProvidersCount === 0 || workflowCase.isBlocked)) {
         push({
           id: `urgent-no-match-${workflowCase.id}`,
           severity: "critical",
@@ -272,7 +169,7 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     });
 
     assessments
-      .filter((assessment) => assessment.status !== "completed" || !assessment.matchingReady || assessment.missingInfo.length > 0)
+      .filter((a) => a.status !== "completed" || !a.matchingReady || a.missingInfo.length > 0)
       .forEach((assessment) => {
         push({
           id: `incomplete-assessment-${assessment.id}`,
@@ -290,10 +187,8 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
         });
       });
 
-    const capacityPressureCount = providers.filter((provider) => provider.availableSpots <= 0 || provider.waitingListLength >= 10).length;
-    const matchingWithoutOptions = workflowCases.filter(
-      (workflowCase) => workflowCase.phase === "matching" && workflowCase.recommendedProvidersCount === 0,
-    ).length;
+    const capacityPressureCount = providers.filter((p) => p.availableSpots <= 0 || p.waitingListLength >= 10).length;
+    const matchingWithoutOptions = workflowCases.filter((c) => c.phase === "matching" && c.recommendedProvidersCount === 0).length;
 
     if (capacityPressureCount > 0 || matchingWithoutOptions > 0) {
       push({
@@ -311,7 +206,7 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     }
 
     regions
-      .filter((region) => region.status !== "stabiel")
+      .filter((r) => r.status !== "stabiel")
       .slice(0, 8)
       .forEach((region) => {
         push({
@@ -336,8 +231,21 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
       .slice(0, 24);
   }, [assessments, providers, regions, workflowCases]);
 
-  const loading = casesLoading || providersLoading || assessmentsLoading || regionsLoading;
-  const error = casesError ?? providersError ?? assessmentsError ?? regionsError;
+  const criticalCount = signals.filter((s) => s.severity === "critical").length;
+  const warningCount = signals.filter((s) => s.severity === "warning").length;
+  const infoCount = signals.filter((s) => s.severity === "info").length;
+
+  const filteredSignals = useMemo(() => {
+    let list = signals;
+    if (activeTab !== "all") list = list.filter((s) => s.severity === activeTab);
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter((s) =>
+        [s.title, s.explanation, s.casusReference ?? ""].join(" ").toLowerCase().includes(q),
+      );
+    }
+    return list;
+  }, [signals, activeTab, searchQuery]);
 
   const refetch = () => {
     refetchCases();
@@ -346,157 +254,178 @@ export function SignalenPage({ onOpenCase, onNavigateToWorkflow }: SignalenPageP
     refetchRegions();
   };
 
-  const filteredSignals = signals.filter((signal) => {
-    if (selectedSeverity !== "all" && signal.severity !== selectedSeverity) return false;
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return true;
-    const haystack = [signal.title, signal.explanation, signal.casusReference ?? ""].join(" ").toLowerCase();
-    return haystack.includes(query);
-  });
-
-  const filteredCriticalCount = filteredSignals.filter((s) => s.severity === "critical").length;
-
   const runAction = (action: ActionSignal["actions"][number]) => {
-    if (action.kind === "open_case") {
-      onOpenCase?.(action.caseId);
-      return;
-    }
+    if (action.kind === "open_case") { onOpenCase?.(action.caseId); return; }
     onNavigateToWorkflow?.(action.target);
   };
 
-  const criticalCount = signals.filter((s) => s.severity === "critical").length;
-  const warningCount = signals.filter((s) => s.severity === "warning").length;
-  const infoCount = signals.filter((s) => s.severity === "info").length;
-  const dominantActionSeverity: SignalSeverity = criticalCount > 0 ? "critical" : warningCount > 0 ? "warning" : "info";
-  const dominantActionLabel =
-    dominantActionSeverity === "critical"
-      ? "Bekijk kritiek"
-      : dominantActionSeverity === "warning"
-        ? "Bekijk waarschuwingen"
-        : "Bekijk info";
-
-  const toggleSeverityFilter = (key: SignalSeverity | "all") => {
-    if (key === "all") {
-      setSelectedSeverity("all");
-      return;
-    }
-    setSelectedSeverity((current) => (current === key ? "all" : key));
-  };
-
-  const headerActions =
-    !loading && !error && signals.length > 0 ? (
-      <CareQueueInlineAction type="button" onClick={() => toggleSeverityFilter(dominantActionSeverity)}>
-        {dominantActionLabel}
-      </CareQueueInlineAction>
-    ) : undefined;
+  const tabs = [
+    { id: "all" as const, label: "Alles", count: signals.length },
+    { id: "critical" as const, label: "Kritiek", count: criticalCount },
+    { id: "warning" as const, label: "Waarschuwing", count: warningCount },
+    { id: "info" as const, label: "Info", count: infoCount },
+  ];
 
   return (
-    <CarePageScaffold
-      archetype="command"
-      className="pb-8"
+    <CareCommandShell
       title="Signalen"
-      titleClassName="text-[32px] sm:text-[36px] lg:text-[38px]"
-      metric={
-        <span
-          title="Telling voor je huidige tabblad en zoekfilter — geen knop, alleen status."
-          className="inline-flex"
-        >
-          <CareMetricBadge>
-            {signalenPageMetricLabel(loading, error, filteredSignals.length, signals.length, filteredCriticalCount)}
-          </CareMetricBadge>
-        </span>
+      actions={
+        !loading && !error && signals.length > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            className="h-9 rounded-[10px] border-border/70 px-4 text-[13px] font-medium"
+            onClick={() => refetch()}
+          >
+            Ververs
+          </Button>
+        ) : undefined
       }
-      actions={headerActions}
     >
-      <CareWorkspaceSection testId="signalen-uitvoerlijst" bodyBleedX header={(
-        <CareSectionHeader
-          className="lg:flex-col lg:items-stretch"
-          title="Werkvoorraad"
-          meta={(
-            <div className={cn("w-full min-w-0", CARE_RHYTHM.metaStack)}>
-              <CareBadge tone="cyan">{filteredSignals.length} signalen</CareBadge>
-              <CareSearchFiltersBar
-                className="px-0"
-                tabs={
-                  <CareFilterTabGroup aria-label="Ernst signalen">
-                    <CareFilterTabButton selected={selectedSeverity === "all"} onClick={() => toggleSeverityFilter("all")}>
-                      Alles
-                    </CareFilterTabButton>
-                    <CareFilterTabButton
-                      selected={selectedSeverity === "critical"}
-                      onClick={() => toggleSeverityFilter("critical")}
-                    >
-                      Kritiek ({loading ? "—" : criticalCount})
-                    </CareFilterTabButton>
-                    <CareFilterTabButton
-                      selected={selectedSeverity === "warning"}
-                      onClick={() => toggleSeverityFilter("warning")}
-                    >
-                      Waarschuwing ({loading ? "—" : warningCount})
-                    </CareFilterTabButton>
-                    <CareFilterTabButton selected={selectedSeverity === "info"} onClick={() => toggleSeverityFilter("info")}>
-                      Info ({loading ? "—" : infoCount})
-                    </CareFilterTabButton>
-                  </CareFilterTabGroup>
-                }
-                searchValue={searchQuery}
-                onSearchChange={setSearchQuery}
-                searchPlaceholder="Zoek signalen..."
-                showSecondaryFilters={showSecondaryFilters}
-                onToggleSecondaryFilters={() => setShowSecondaryFilters((current) => !current)}
-                secondaryFilters={<p className="text-sm text-muted-foreground">Geen aanvullende filters beschikbaar.</p>}
-              />
-            </div>
-          )}
+      <CareMetricStrip>
+        <CareMetricCard
+          value={criticalCount}
+          label="Kritiek"
+          tone="urgent"
+          isActive={activeTab === "critical"}
+          onClick={() => setActiveTab((t) => (t === "critical" ? "all" : "critical"))}
         />
-      )}>
-          {loading && (
-            <LoadingState title="Signalen laden…" copy="Overzicht wordt opgebouwd." />
-          )}
+        <CareMetricCard
+          value={warningCount}
+          label="Waarschuwing"
+          tone="warning"
+          isActive={activeTab === "warning"}
+          onClick={() => setActiveTab((t) => (t === "warning" ? "all" : "warning"))}
+        />
+        <CareMetricCard
+          value={infoCount}
+          label="Info"
+          tone="neutral"
+          isActive={activeTab === "info"}
+          onClick={() => setActiveTab((t) => (t === "info" ? "all" : "info"))}
+        />
+      </CareMetricStrip>
 
-          {!loading && error && (
-            <ErrorState
-              title="Kon signalen niet laden"
-              copy={error}
-              action={(
-                <Button variant="outline" size="sm" onClick={refetch}>
-                  Opnieuw proberen
-                </Button>
-              )}
-            />
-          )}
+      {loading && <LoadingState title="Signalen laden…" copy="Overzicht wordt opgebouwd." />}
 
-          {!loading && !error && filteredSignals.length > 0 && (
-            <CareWorkListCard
-              testId="signalen-worklist"
-              header={
-                <CareOperationalQueueHeader
-                  labels={["Ernst", "Signaal", "Toelichting", "Casus", "Secundair", "Actie"]}
-                />
-              }
-            >
-              <div className="divide-y divide-border/40">
-                <CarePrimaryList>
-                  {filteredSignals.map((signal) => (
-                    <SignalWorkRow key={signal.id} signal={signal} onRunAction={runAction} />
-                  ))}
-                </CarePrimaryList>
-              </div>
-            </CareWorkListCard>
-          )}
+      {!loading && error && (
+        <ErrorState
+          title="Kon signalen niet laden"
+          copy={error}
+          action={<Button variant="outline" size="sm" onClick={refetch}>Opnieuw proberen</Button>}
+        />
+      )}
 
-          {!loading && !error && filteredSignals.length === 0 && (
+      {!loading && !error && (
+        <CareWorklist testId="signalen-uitvoerlijst">
+          <CareWorklistTabs
+            tabs={tabs}
+            activeId={activeTab}
+            onChange={(id) => setActiveTab(id as SignalTab)}
+          />
+
+          <CareWorklistToolbar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoek signalen..."
+          />
+
+          {filteredSignals.length === 0 ? (
             <EmptyState
               title="Geen actieve signalen op dit moment"
               copy="De workflow loopt stabiel. Je kunt verder met reguliere casusopvolging."
-              action={(
-                <CareQueueInlineAction className="mt-2" onClick={() => onNavigateToWorkflow?.("casussen")}>
-                  Naar casussen
-                </CareQueueInlineAction>
-              )}
+              action={
+                activeTab !== "all" ? (
+                  <CareQueueInlineAction type="button" onClick={() => setActiveTab("all")}>Toon alle signalen</CareQueueInlineAction>
+                ) : (
+                  <CareQueueInlineAction onClick={() => onNavigateToWorkflow?.("casussen")}>
+                    Naar casussen
+                  </CareQueueInlineAction>
+                )
+              }
             />
+          ) : (
+            <div className="overflow-x-auto" data-testid="signalen-worklist">
+              <CareWorklistColumnHeader
+                columns={["Signaal", "Toelichting", "Casus", "Actie"]}
+                cols={SIGNALEN_COLS}
+                minWidth="760px"
+              />
+              <CareWorklistBody>
+                {filteredSignals.map((signal) => {
+                  const primary = signal.actions[0];
+                  const secondary = signal.actions[1];
+                  if (!primary) return null;
+
+                  const accentTone = signal.severity === "critical" ? "urgent" as const : signal.severity === "warning" ? "warning" as const : "neutral" as const;
+                  const actionClass = signal.severity === "critical" || signal.severity === "warning" ? ROW_ACTION_CLASSES.primary : ROW_ACTION_CLASSES.default;
+
+                  return (
+                    <CareWorklistRow
+                      key={signal.id}
+                      cols={SIGNALEN_COLS}
+                      minWidth="760px"
+                      accentTone={accentTone}
+                      testId="signalen-worklist-item"
+                      onRowClick={() => runAction(primary)}
+                    >
+                      {/* Signaal */}
+                      <div className="min-w-0">
+                        <div className="flex items-start gap-1.5">
+                          <SignalIcon severity={signal.severity} />
+                          <span className="block truncate text-[13px] font-medium leading-tight text-foreground">{signal.title}</span>
+                        </div>
+                        <CareDominantStatus className={cn("mt-1", severityToneClass(signal.severity))}>
+                          {severityLabel(signal.severity)}
+                        </CareDominantStatus>
+                      </div>
+
+                      {/* Toelichting */}
+                      <div className="min-w-0">
+                        <p className="line-clamp-2 text-[12px] leading-snug text-muted-foreground/85">{signal.explanation}</p>
+                        {secondary && (
+                          <button
+                            type="button"
+                            className="mt-1 text-[11px] text-muted-foreground underline underline-offset-2 hover:text-foreground relative z-10"
+                            onClick={(e) => { e.stopPropagation(); runAction(secondary); }}
+                          >
+                            {secondary.label}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Casus */}
+                      <div className="min-w-0">
+                        {signal.casusReference ? (
+                          <span className="inline-flex items-center rounded-full border border-border/60 bg-card/55 px-1.5 py-0.5 font-mono text-[11px] text-foreground">
+                            {signal.casusReference}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-muted-foreground/60">—</span>
+                        )}
+                      </div>
+
+                      {/* Actie */}
+                      <CareWorklistRowAction>
+                        <button
+                          type="button"
+                          className={actionClass}
+                          onClick={(e) => { e.stopPropagation(); runAction(primary); }}
+                        >
+                          {primary.label.replace(/\s*→\s*$/u, "").trim() || primary.label}
+                          <ChevronRight size={12} className="shrink-0 opacity-60" aria-hidden />
+                        </button>
+                      </CareWorklistRowAction>
+                    </CareWorklistRow>
+                  );
+                })}
+              </CareWorklistBody>
+            </div>
           )}
-      </CareWorkspaceSection>
-    </CarePageScaffold>
+
+          <CareWorklistPagination count={filteredSignals.length} singular="signaal" plural="signalen" />
+        </CareWorklist>
+      )}
+    </CareCommandShell>
   );
 }

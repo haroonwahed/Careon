@@ -2,6 +2,7 @@ from django.urls import path
 from django.views.generic.base import RedirectView
 from . import views
 from .api import views as api_views
+from .api import classification as classification_api
 from .navigation import SPA_LANDING_URL
 
 app_name = 'careon'
@@ -38,6 +39,7 @@ urlpatterns = [
         name='transition_request_financial_api',
     ),
     path('api/cases/<int:case_id>/intake-action/', api_views.intake_action_api, name='intake_action_api'),
+    path('api/cases/<int:intake_id>/classification/confirm/', classification_api.confirm_classification, name='classification_confirm'),
     path('api/cases/<int:case_id>/placement-detail/', api_views.case_placement_detail_api, name='case_placement_detail_api'),
     path('api/cases/<int:case_id>/decision-evaluation/', api_views.case_decision_evaluation_api, name='case_decision_evaluation_api'),
     path(

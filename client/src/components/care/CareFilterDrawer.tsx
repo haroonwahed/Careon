@@ -74,9 +74,9 @@ function CareFilterChip({
         "inline-flex h-7 items-center rounded-full border px-3 text-[12px] font-medium transition-colors",
         selected
           ? tone === "critical"
-            ? "border-[var(--care-badge-red-bg)] bg-[var(--care-badge-red-bg)] text-[var(--care-badge-red-text)]"
+            ? "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text"
             : tone === "warning"
-              ? "border-[var(--care-badge-amber-bg)] bg-[var(--care-badge-amber-bg)] text-[var(--care-badge-amber-text)]"
+              ? "border-care-warning-border bg-care-warning-bg text-care-warning-text"
               : "border-primary/40 bg-primary/10 text-primary"
           : "border-border/60 bg-background text-muted-foreground hover:border-border hover:text-foreground",
       )}

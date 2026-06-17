@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import {
-  ArrowRight,
   CheckCircle2,
+  ChevronRight,
   Clock3,
   FileQuestion,
   RefreshCw,
@@ -15,23 +15,25 @@ import {
   type ProviderEvaluation,
 } from "../../hooks/useProviderEvaluations";
 import {
-  CareAlertCard,
-  CareFilterTabButton,
-  CareFilterTabGroup,
-  CareMetaChip,
-  CarePageScaffold,
-  CarePrimaryList,
   CareQueueInlineAction,
-  CareSearchFiltersBar,
-  CareSectionHeader,
-  CareWorkListCard,
-  CareWorkRow,
   EmptyState,
   ErrorState,
   LoadingState,
-  OPERATIONAL_QUEUE_HEADER_GRID_CLASS,
-  PrimaryActionButton,
 } from "./CareDesignPrimitives";
+import {
+  CareCommandShell,
+  CareMetricStrip,
+  CareMetricCard,
+  CareWorklist,
+  CareWorklistTabs,
+  CareWorklistToolbar,
+  CareWorklistColumnHeader,
+  CareWorklistBody,
+  CareWorklistRow,
+  CareWorklistRowAction,
+  CareWorklistPagination,
+  ROW_ACTION_CLASSES,
+} from "./CareCommandPrimitives";
 import { CareSlaCountdown } from "./CareSlaCountdown";
 import { SLA_TARGET_HOURS } from "../../lib/careSla";
 
@@ -72,12 +74,12 @@ type AanbiederreactieRow = {
 
 const RESPONSE_FILTERS: Array<{ key: ResponseFilterKey; label: string }> = [
   { key: "all", label: "Alle reacties" },
-  { key: "waiting", label: "Wacht op aanbiederreactie" },
+  { key: "waiting", label: "Wacht op reactie" },
   { key: "approved", label: "Goedgekeurd" },
   { key: "rejected", label: "Afgewezen" },
-  { key: "info_requested", label: "Aanvullende informatie gevraagd" },
+  { key: "info_requested", label: "Informatie gevraagd" },
   { key: "reminder_needed", label: "Herinnering nodig" },
-  { key: "expired", label: "Verlopen reactie" },
+  { key: "expired", label: "Verlopen" },
 ];
 
 const RESPONSE_STATUS_ORDER: Record<ResponseStatusKey, number> = {
@@ -88,6 +90,8 @@ const RESPONSE_STATUS_ORDER: Record<ResponseStatusKey, number> = {
   approved: 4,
   expired: 5,
 };
+
+const AANBIEDER_COLS = "minmax(11rem,1.8fr) minmax(9rem,1.3fr) minmax(10rem,1.5fr) minmax(8rem,1fr) minmax(9rem,1fr)";
 
 function formatRelativeDays(days: number): string {
   if (days <= 0) {
@@ -182,7 +186,7 @@ function responseNextActionLabel(statusKey: ResponseStatusKey): string {
 }
 
 function responseReasonLabel(
-  caseItem: SpaCase,
+  caseItem: SpaCase | undefined,
   evaluation: ProviderEvaluation | undefined,
   statusKey: ResponseStatusKey,
 ): string {
@@ -199,8 +203,8 @@ function responseReasonLabel(
     return infoRequest || providerComment || "Aanvullende informatie gevraagd.";
   }
   if (statusKey === "reminder_needed") {
-    return caseItem.wachttijd >= 3
-      ? `Nog geen reactie na ${caseItem.wachttijd} dagen.`
+    return (caseItem?.wachttijd ?? 0) >= 3
+      ? `Nog geen reactie na ${caseItem?.wachttijd ?? 0} dagen.`
       : "Nog geen reactie ontvangen.";
   }
   if (statusKey === "expired") {
@@ -209,62 +213,8 @@ function responseReasonLabel(
   return providerComment || "Nog geen reactie ontvangen.";
 }
 
-function responseTone(statusKey: ResponseStatusKey): "critical" | "warning" | "info" {
-  switch (statusKey) {
-    case "approved":
-      return "info";
-    case "waiting":
-      return "warning";
-    case "rejected":
-    case "info_requested":
-    case "reminder_needed":
-      return "warning";
-    case "expired":
-      return "critical";
-  }
-}
-
-function responseIcon(statusKey: ResponseStatusKey) {
-  switch (statusKey) {
-    case "approved":
-      return <CheckCircle2 size={18} aria-hidden />;
-    case "rejected":
-      return <XCircle size={18} aria-hidden />;
-    case "info_requested":
-      return <FileQuestion size={18} aria-hidden />;
-    case "reminder_needed":
-    case "waiting":
-      return <Clock3 size={18} aria-hidden />;
-    case "expired":
-      return <RefreshCw size={18} aria-hidden />;
-  }
-}
-
-function normalizeCaseForReason(caseItem: SpaCase | undefined): SpaCase {
-  if (caseItem) {
-    return caseItem;
-  }
-  return {
-    id: "",
-    title: "",
-    owner: "",
-    regio: "",
-    zorgtype: "",
-    wachttijd: 0,
-    status: "provider_beoordeling",
-    urgency: "normal",
-    problems: [],
-    systemInsight: "",
-    recommendedAction: "",
-    urgencyValidated: false,
-    urgencyDocumentPresent: false,
-    urgencyGrantedDate: null,
-    waitlistBucket: 0,
-    intakeStartDate: null,
-    arrangementTypeCode: "",
-    arrangementProvider: "",
-    arrangementEndDate: null,
-  };
+function normalizeCaseForReason(caseItem: SpaCase | undefined): SpaCase | undefined {
+  return caseItem;
 }
 
 export function buildAanbiederreactieRows(
@@ -351,56 +301,35 @@ export function buildAanbiederreactieRows(
   });
 }
 
-function emptyStateSecondaryAction(
-  onNavigateToMatching?: () => void,
-  onNavigateToCasussen?: () => void,
-) {
-  const handler = onNavigateToMatching ?? onNavigateToCasussen;
-  if (!handler) {
-    return undefined;
-  }
-  return (
-    <CareQueueInlineAction type="button" onClick={handler}>
-      {onNavigateToMatching ? "Bekijk matching" : "Bekijk casussen"}
-    </CareQueueInlineAction>
-  );
-}
-
-function responseCardCopy(row: AanbiederreactieRow): string {
-  if (row.statusKey === "approved") {
-    return `${row.providerName} heeft de casus goedgekeurd. Leg de volgende stap vast.`;
-  }
-  if (row.statusKey === "rejected") {
-    return `${row.providerName} heeft de casus afgewezen. Zoek een passend alternatief.`;
-  }
-  if (row.statusKey === "info_requested") {
-    return `${row.providerName} vraagt aanvullende informatie om verder te kunnen.`;
-  }
-  if (row.statusKey === "reminder_needed") {
-    return `${row.providerName} heeft nog niet gereageerd. Verstuur een herinnering of volg op.`;
-  }
-  if (row.statusKey === "expired") {
-    return `${row.providerName} heeft een verlopen of vervangen reactie. Bekijk de toelichting.`;
-  }
-  return `${row.providerName} wacht nog op reactie. Volg de casus op zodat de doorstroom niet stilvalt.`;
-}
-
-function attentionTitleForRows(count: number, statusKey: ResponseStatusKey): string {
-  const noun = count === 1 ? "casus" : "casussen";
+function responseStatusChipClass(statusKey: ResponseStatusKey): string {
   switch (statusKey) {
     case "approved":
-      return `${count} ${noun} ${count === 1 ? "is" : "zijn"} goedgekeurd`;
+      return "border border-care-success-border bg-care-success-bg text-care-success-text";
     case "rejected":
-      return `${count} ${noun} ${count === 1 ? "is" : "zijn"} afgewezen`;
-    case "info_requested":
-      return `${count} ${noun} ${count === 1 ? "vraagt" : "vragen"} aanvullende informatie`;
     case "expired":
-      return `${count} ${noun} ${count === 1 ? "heeft" : "hebben"} een verlopen reactie`;
+      return "border border-care-urgent-border bg-care-urgent-bg text-care-urgent-text";
     case "reminder_needed":
-      return `${count} ${noun} ${count === 1 ? "vraagt" : "vragen"} een herinnering`;
     case "waiting":
+    case "info_requested":
+      return "border border-care-warning-border bg-care-warning-bg text-care-warning-text";
     default:
-      return `${count} ${noun} ${count === 1 ? "wacht" : "wachten"} op aanbiederreactie`;
+      return "border border-border/60 bg-muted/30 text-muted-foreground";
+  }
+}
+
+function responseStatusIcon(statusKey: ResponseStatusKey) {
+  switch (statusKey) {
+    case "approved":
+      return <CheckCircle2 size={11} className="shrink-0" aria-hidden />;
+    case "rejected":
+      return <XCircle size={11} className="shrink-0" aria-hidden />;
+    case "info_requested":
+      return <FileQuestion size={11} className="shrink-0" aria-hidden />;
+    case "reminder_needed":
+    case "waiting":
+      return <Clock3 size={11} className="shrink-0" aria-hidden />;
+    case "expired":
+      return <RefreshCw size={11} className="shrink-0" aria-hidden />;
   }
 }
 
@@ -451,76 +380,48 @@ export function AanbiederreactiePage({
     });
   }, [rows, searchQuery, statusFilter]);
 
-  const topRow = visibleRows[0] ?? null;
   const loading = casesLoading || evaluationsLoading;
-  const headerAction = onNavigateToMatching && visibleRows.length > 0 ? (
-    <Button
-      type="button"
-      variant="outline"
-      className="h-10 rounded-xl border-border/70 bg-background/20 px-4 text-[14px] font-medium text-foreground hover:bg-muted/25"
-      onClick={onNavigateToMatching}
-    >
-      Bekijk matching
-    </Button>
-  ) : null;
 
-  const attentionCard = topRow ? (
-    <CareAlertCard
-      density="compact"
-      tone={responseTone(topRow.statusKey) === "info" ? "info" : "warning"}
-      icon={responseIcon(topRow.statusKey)}
-      metric={null}
-      showMetric={false}
-      title={attentionTitleForRows(visibleRows.length, topRow.statusKey)}
-      description={responseCardCopy(topRow)}
-      primaryAction={(
-        <PrimaryActionButton
-          type="button"
-          className="h-10 rounded-full px-5 text-[13px] font-semibold"
-          onClick={() => onCaseClick(topRow.caseId)}
-        >
-          {topRow.nextActionLabel}
-          <ArrowRight size={16} aria-hidden className="ml-2" />
-        </PrimaryActionButton>
-      )}
-    />
-  ) : undefined;
-
-  const rowCountLabel = `${visibleRows.length} casus${visibleRows.length === 1 ? "" : "sen"}`;
+  const tabs = RESPONSE_FILTERS.map((f) => ({ id: f.key, label: f.label, count: counts[f.key] }));
 
   return (
-    <CarePageScaffold
-      archetype="queue"
-      className="pb-4"
+    <CareCommandShell
       title="Aanbiederreactie"
-      subtitle="Volg goedkeuringen, afwijzingen en informatievragen van aanbieders op."
-      actions={headerAction}
-      workflow={(
-        <CareFilterTabGroup aria-label="Reactiestatus" className="overflow-x-auto">
-          {RESPONSE_FILTERS.map((filter) => (
-            <CareFilterTabButton
-              key={filter.key}
-              selected={statusFilter === filter.key}
-              accentSelected
-              onClick={() => setStatusFilter(filter.key)}
-            >
-              {filter.label} ({counts[filter.key]})
-            </CareFilterTabButton>
-          ))}
-        </CareFilterTabGroup>
-      )}
-      filters={(
-        <CareSearchFiltersBar
-          variant="workspace"
-          className="px-0"
-          searchValue={searchQuery}
-          onSearchChange={setSearchQuery}
-          searchPlaceholder="Zoek casus, aanbieder of regio..."
-          showSecondaryFiltersToggle={false}
-        />
-      )}
-      dominantAction={attentionCard}
+      actions={onNavigateToMatching && visibleRows.length > 0 ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="h-9 rounded-[10px] border-border/70 bg-background/20 px-4 text-[13px] font-medium text-foreground hover:bg-muted/25"
+          onClick={onNavigateToMatching}
+        >
+          Bekijk matching
+        </Button>
+      ) : undefined}
     >
+      <CareMetricStrip>
+        <CareMetricCard
+          value={counts.reminder_needed}
+          label="Herinnering nodig"
+          tone="urgent"
+          isActive={statusFilter === "reminder_needed"}
+          onClick={() => setStatusFilter(statusFilter === "reminder_needed" ? "all" : "reminder_needed")}
+        />
+        <CareMetricCard
+          value={counts.waiting}
+          label="Wacht op reactie"
+          tone="warning"
+          isActive={statusFilter === "waiting"}
+          onClick={() => setStatusFilter(statusFilter === "waiting" ? "all" : "waiting")}
+        />
+        <CareMetricCard
+          value={counts.expired}
+          label="Verlopen"
+          tone="urgent"
+          isActive={statusFilter === "expired"}
+          onClick={() => setStatusFilter(statusFilter === "expired" ? "all" : "expired")}
+        />
+      </CareMetricStrip>
+
       {loading && <LoadingState title="Aanbiederreacties laden…" copy="De opvolgstatus wordt opgehaald." />}
 
       {!loading && error && (
@@ -531,110 +432,115 @@ export function AanbiederreactiePage({
         />
       )}
 
-      {!loading && !error && visibleRows.length === 0 && (
+      {!loading && !error && rows.length === 0 && (
         <EmptyState
           title="Geen openstaande aanbiederreacties"
           copy="Er zijn geen aanvragen die nu een reactie of opvolging van een aanbieder vragen."
-          action={emptyStateSecondaryAction(onNavigateToMatching, _onNavigateToCasussen)}
+          action={onNavigateToMatching ? (
+            <CareQueueInlineAction type="button" onClick={onNavigateToMatching}>Bekijk matching</CareQueueInlineAction>
+          ) : undefined}
         />
       )}
 
-      {!loading && !error && visibleRows.length > 0 && (
-        <div className="space-y-3">
-          <CareSectionHeader
-            title="Werkvoorraad"
-            meta={<CareMetaChip>{rowCountLabel}</CareMetaChip>}
+      {!loading && !error && rows.length > 0 && (
+        <CareWorklist testId="aanbiederreactie-worklist">
+          <CareWorklistTabs
+            tabs={tabs}
+            activeId={statusFilter}
+            onChange={(id) => setStatusFilter(id as ResponseFilterKey)}
           />
-          <CareWorkListCard
-            testId="aanbiederreactie-worklist"
-            header={(
-              <div className={cn(OPERATIONAL_QUEUE_HEADER_GRID_CLASS, "min-w-[56rem]")}>
-                <span>Urgentie</span>
-                <span>Casus</span>
-                <span>Aanbieder</span>
-                <span>Status</span>
-                <span>Laatste activiteit</span>
-                <span>Volgende actie</span>
-              </div>
-            )}
-          >
-            <CarePrimaryList>
-              {visibleRows.map((row) => (
-                <CareWorkRow
-                  key={row.caseId}
-                  testId={`aanbiederreactie-row-${row.caseId}`}
-                  density="operational"
-                  accentTone={row.accentTone}
-                  leading={(
-                    <CareMetaChip className="h-6 px-2 text-[11px] font-semibold text-foreground">
-                      {row.urgencyLabel}
-                    </CareMetaChip>
-                  )}
-                  title={(
+
+          <CareWorklistToolbar
+            searchValue={searchQuery}
+            onSearchChange={setSearchQuery}
+            searchPlaceholder="Zoek casus, aanbieder of regio..."
+          />
+
+          <div className="overflow-x-auto">
+            <CareWorklistColumnHeader
+              columns={["Casus", "Aanbieder", "Status", "Laatste activiteit", "Volgende actie"]}
+              cols={AANBIEDER_COLS}
+              minWidth="840px"
+            />
+            <CareWorklistBody>
+              {visibleRows.length === 0 ? (
+                <div className="px-6 py-8 text-center text-[13px] text-muted-foreground">
+                  Geen reacties in dit filter.
+                </div>
+              ) : visibleRows.map((row) => {
+                const accentTone = row.accentTone === "critical" ? "urgent" as const
+                  : row.accentTone === "warning" ? "warning" as const
+                  : "neutral" as const;
+                return (
+                  <CareWorklistRow
+                    key={row.caseId}
+                    testId={`aanbiederreactie-row-${row.caseId}`}
+                    cols={AANBIEDER_COLS}
+                    minWidth="840px"
+                    accentTone={accentTone}
+                    onRowClick={() => onCaseClick(row.caseId)}
+                  >
+                    {/* Casus */}
                     <div className="min-w-0">
-                      <span className="block truncate text-[12.5px] font-semibold leading-tight text-foreground">
+                      <span className="block truncate text-[13px] font-medium leading-tight text-foreground">
                         {row.caseId}
                       </span>
                       <span className="mt-0.5 block truncate text-[11px] leading-tight text-muted-foreground">
                         {row.caseTitle}
                       </span>
                     </div>
-                  )}
-                  titleAriaLabel={`Open casus ${row.caseId} voor ${row.providerName}`}
-                  context={(
-                    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-                      <CareMetaChip className="max-w-full truncate">{row.providerName}</CareMetaChip>
-                      <CareMetaChip className="max-w-full truncate">{row.region}</CareMetaChip>
+
+                    {/* Aanbieder + Regio */}
+                    <div className="min-w-0 flex flex-col gap-1">
+                      <span className="inline-flex w-fit max-w-full items-center rounded-full border border-border/60 bg-card/35 px-1.5 py-0.5 text-[11px] text-foreground truncate">
+                        {row.providerName}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground truncate">{row.region}</span>
                     </div>
-                  )}
-                  status={(
-                    <div className="space-y-1">
-                      <CareMetaChip className="max-w-full truncate text-[11px] font-semibold text-foreground">
-                        {row.statusLabel}
-                      </CareMetaChip>
-                      <p className="max-w-full text-[11px] leading-snug text-muted-foreground">
-                        {row.reasonLabel}
-                      </p>
-                      {row.slaElapsedHours != null ? (
+
+                    {/* Status + reden + SLA */}
+                    <div className="min-w-0 space-y-1">
+                      <span className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[11px] font-medium", responseStatusChipClass(row.statusKey))}>
+                        {responseStatusIcon(row.statusKey)}
+                        <span className="truncate">{row.statusLabel}</span>
+                      </span>
+                      <p className="text-[11px] leading-snug text-muted-foreground line-clamp-2">{row.reasonLabel}</p>
+                      {row.slaElapsedHours != null && (
                         <CareSlaCountdown
                           elapsedHours={row.slaElapsedHours}
                           targetHours={SLA_TARGET_HOURS.providerResponse}
                         />
-                      ) : null}
+                      )}
                     </div>
-                  )}
-                  owner={(
-                    <div className="space-y-0.5">
-                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        Laatste activiteit
-                      </p>
-                      <p className="text-[11px] leading-snug text-foreground/90">{row.lastActivityLabel}</p>
-                      {row.exactActivityLabel ? (
-                        <p className="text-[10px] leading-snug text-muted-foreground">{row.exactActivityLabel}</p>
-                      ) : null}
+
+                    {/* Laatste activiteit */}
+                    <div className="min-w-0">
+                      <p className="text-[12px] font-medium text-foreground/90">{row.lastActivityLabel}</p>
+                      {row.exactActivityLabel && (
+                        <p className="mt-0.5 text-[10px] leading-snug text-muted-foreground">{row.exactActivityLabel}</p>
+                      )}
                     </div>
-                  )}
-                  nextAction={(
-                    <div className="space-y-0.5">
-                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                        Volgende actie
-                      </p>
-                      <p className="text-[11px] leading-snug text-foreground/90">{row.nextActionLabel}</p>
-                    </div>
-                  )}
-                  actionLabel={row.nextActionLabel}
-                  onOpen={() => onCaseClick(row.caseId)}
-                  onAction={(event) => {
-                    event.stopPropagation();
-                    onCaseClick(row.caseId);
-                  }}
-                  actionVariant="ghost"
-                />
-              ))}
-            </CarePrimaryList>
-          </CareWorkListCard>
-        </div>
+
+                    {/* Volgende actie */}
+                    <CareWorklistRowAction>
+                      <button
+                        type="button"
+                        className={ROW_ACTION_CLASSES.default}
+                        onClick={(e) => { e.stopPropagation(); onCaseClick(row.caseId); }}
+                      >
+                        {row.nextActionLabel}
+                        <ChevronRight size={12} className="shrink-0 opacity-60" aria-hidden />
+                      </button>
+                    </CareWorklistRowAction>
+                  </CareWorklistRow>
+                );
+              })}
+            </CareWorklistBody>
+          </div>
+
+          <CareWorklistPagination count={visibleRows.length} singular="reactie" plural="reacties" />
+        </CareWorklist>
       )}
-    </CarePageScaffold>
+    </CareCommandShell>
   );
 }

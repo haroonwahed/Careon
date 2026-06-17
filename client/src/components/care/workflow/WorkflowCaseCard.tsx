@@ -12,13 +12,13 @@ interface WorkflowCaseCardProps {
 function placementPressureBadgeClasses(band: WorkflowCaseView["placementPressureBand"]) {
   switch (band) {
     case "critical":
-      return "border-red-500/35 bg-red-500/10 text-red-300";
+      return "border-care-urgent-border bg-care-urgent-bg text-care-urgent-text";
     case "high":
-      return "border-amber-500/35 bg-amber-500/10 text-amber-300";
+      return "border-care-warning-border bg-care-warning-bg text-care-warning-text";
     case "normal":
       return "border-blue-500/35 bg-blue-500/10 text-blue-300";
     case "low":
-      return "border-emerald-500/25 bg-emerald-500/10 text-emerald-300";
+      return "border-care-success-border bg-care-success-bg text-care-success-text";
     default:
       return "border-border bg-muted/40 text-muted-foreground";
   }
@@ -28,7 +28,7 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
   return (
     <article
       className={`w-full rounded-2xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${
-        item.isBlocked ? "border-red-500/25 bg-red-500/5" : "border-border bg-card"
+        item.isBlocked ? "border-care-urgent-border bg-care-urgent-bg" : "border-border bg-card"
       }`}
     >
       <button
@@ -82,7 +82,7 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
       <details className="mt-4 rounded-2xl border border-border/80 bg-background/60 px-3 py-3 text-xs leading-5 text-muted-foreground">
         <summary className="cursor-pointer list-none font-medium text-foreground">Meer details</summary>
         <p className="mt-2 text-muted-foreground">{getShortReasonLabel(item.whyInThisStep, 120)}</p>
-        {item.blockReason && <p className="mt-2 text-red-200/85">Blokkade: {getShortReasonLabel(item.blockReason, 80)}</p>}
+        {item.blockReason && <p className="mt-2 text-care-urgent-text">Blokkade: {getShortReasonLabel(item.blockReason, 80)}</p>}
       </details>
 
       {item.decisionBadges.length > 0 && (
@@ -110,11 +110,11 @@ export function WorkflowCaseCard({ item, onOpen }: WorkflowCaseCardProps) {
       )}
 
       {item.blockReason && (
-        <div className="mt-4 flex items-start gap-2 rounded-2xl border border-red-500/25 bg-red-500/8 px-3 py-3 text-xs text-red-100">
-          <AlertTriangle size={14} className="mt-0.5 shrink-0 text-red-300" />
+        <div className="mt-4 flex items-start gap-2 rounded-2xl border border-care-urgent-border bg-care-urgent-bg px-3 py-3 text-xs text-care-urgent-text">
+          <AlertTriangle size={14} className="mt-0.5 shrink-0 text-care-urgent-text" />
           <div>
-            <p className="font-semibold text-red-200">Blokkade</p>
-            <p className="mt-1 text-red-100/85">{item.blockReason}</p>
+            <p className="font-semibold text-care-urgent-text">Blokkade</p>
+            <p className="mt-1 text-care-urgent-text">{item.blockReason}</p>
           </div>
         </div>
       )}

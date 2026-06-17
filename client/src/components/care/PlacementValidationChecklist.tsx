@@ -30,13 +30,13 @@ const statusConfig: Record<ValidationStatus, {
   },
   warning: {
     icon: AlertTriangle,
-    color: "text-care-warning-solid",
-    alertClass: "border-amber-500/30 bg-amber-500/10"
+    color: "text-care-warning-text",
+    alertClass: "border-care-warning-border bg-care-warning-bg"
   },
   error: {
     icon: XCircle,
-    color: "text-destructive",
-    alertClass: "border-destructive/30 bg-destructive/10"
+    color: "text-care-urgent-text",
+    alertClass: "border-care-urgent-border bg-care-urgent-bg"
   }
 };
 
@@ -104,8 +104,8 @@ export function PlacementValidationChecklist({ items }: PlacementValidationCheck
         )}
         {hasErrors && (
           <div className="flex items-center gap-2 text-sm">
-            <XCircle size={16} className="text-destructive" />
-            <span className="font-medium text-destructive">
+            <XCircle size={16} className="text-care-urgent-text" />
+            <span className="font-medium text-care-urgent-text">
               Los eerst blokkerende problemen op
             </span>
           </div>

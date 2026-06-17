@@ -312,7 +312,7 @@ describe("Care accessibility smoke: core pages", () => {
     const choice = document.querySelector('[cmdk-item][data-value="Utrecht"]') as HTMLElement | null;
     expect(choice).not.toBeNull();
     await user.click(choice!);
-    expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(screen.getByLabelText("Regio *")).toHaveDisplayValue("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Volgende stap" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Terug" }).length).toBe(1);

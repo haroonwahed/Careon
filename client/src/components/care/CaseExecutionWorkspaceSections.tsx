@@ -1,16 +1,20 @@
-import type { ReactNode } from "react";
-import { ArrowRight, Lock, Loader2, UserRound } from "lucide-react";
+import { Fragment, type ReactNode } from "react";
+import { ArrowRight, CheckCircle2, ChevronRight, FileWarning, Loader2, UserRound, Lock } from "lucide-react";
 import { Button } from "../ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { cn } from "../ui/utils";
-import { CareFlowBoard, CareFlowStepCard } from "./CareDesignPrimitives";
 import { getShortReasonLabel } from "../../lib/uxCopy";
 
 export type CaseStepperStep = {
   id: string;
   label: string;
   owner: string;
-  subtitle?: string;
 };
 
 export function CaseOperationalStepper({
@@ -21,38 +25,45 @@ export function CaseOperationalStepper({
   activeIndex: number;
 }) {
   return (
-    <CareFlowBoard variant="pipeline" activeStepIndex={activeIndex} stepCount={steps.length}>
-      {steps.map((step, index) => {
+    <nav className="flex min-w-[480px] items-center overflow-x-auto" aria-label="Workflow fasen">
+      {steps.map((step, index, arr) => {
         const isCurrent = index === activeIndex;
         const isCompleted = index < activeIndex;
         return (
-          <CareFlowStepCard
-            key={step.id}
-            icon={
-                <span
-                  className={cn(
-                  "flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-semibold",
-                  isCurrent
-                    ? "bg-primary/90 text-primary-foreground"
-                    : isCompleted
-                      ? "bg-care-success-bg text-care-success-text"
-                      : "bg-muted/50 text-muted-foreground",
-                )}
-              >
-                {index + 1}
+          <Fragment key={step.id}>
+            <div
+              aria-current={isCurrent ? "step" : undefined}
+              className="flex shrink-0 items-center gap-2 px-2"
+            >
+              <span className={cn(
+                "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[12px] font-semibold leading-none",
+                isCurrent && "border-primary/40 bg-primary text-primary-foreground",
+                isCompleted && "border-emerald-500/30 bg-emerald-500/15 text-emerald-500",
+                !isCurrent && !isCompleted && "border-border/50 bg-background/30 text-muted-foreground",
+              )}>
+                {isCompleted ? <CheckCircle2 size={13} aria-hidden /> : index + 1}
               </span>
-            }
-            subtitle={isCurrent ? (step.subtitle ?? "Huidige stap") : undefined}
-            metric={null}
-            title={<span className="text-[12px] leading-tight md:text-[12px]">{step.label}</span>}
-            active={isCurrent}
-            completed={isCompleted}
-          />
+              <span className={cn(
+                "whitespace-nowrap text-[12px] font-medium leading-tight",
+                isCurrent ? "text-foreground" : "text-muted-foreground/70",
+              )}>
+                {step.label}
+              </span>
+            </div>
+            {index < arr.length - 1 && (
+              <div className="mx-1 h-0 min-w-[16px] flex-1 border-t border-dotted border-muted-foreground/25" aria-hidden />
+            )}
+          </Fragment>
         );
       })}
-    </CareFlowBoard>
+    </nav>
   );
 }
+
+export type CasePrimaryChecklistItem = {
+  label: string;
+  onClick?: () => void;
+};
 
 export function CasePrimaryActionPanel({
   statusLabel,
@@ -69,12 +80,14 @@ export function CasePrimaryActionPanel({
   primaryPending,
   disabledReason,
   errorMessage,
+  checklistItems,
+  secondaryActionLabel,
+  onSecondaryAction,
 }: {
   statusLabel: string;
   actionHolderLabel: string;
   waitingOnLabel: string;
   nextStepLabel: string;
-  /** Backend NBA reason — shown whenever present so operators know why. */
   nextActionReason?: string | null;
   statusTitle?: string | null;
   statusDescription?: string | null;
@@ -85,6 +98,9 @@ export function CasePrimaryActionPanel({
   primaryPending?: boolean;
   disabledReason?: string | null;
   errorMessage?: string | null;
+  checklistItems?: CasePrimaryChecklistItem[];
+  secondaryActionLabel?: string | null;
+  onSecondaryAction?: () => void;
 }) {
   const blocked = primaryDisabled;
   const leadTitle = statusTitle ?? (blocked ? "Deze casus is geblokkeerd" : statusLabel);
@@ -95,55 +111,77 @@ export function CasePrimaryActionPanel({
       data-priority="primary"
       data-blocked={Boolean(primaryDisabled && (disabledReason || errorMessage))}
       data-reason-present={Boolean(nextActionReason)}
-      className="grid gap-5 md:grid-cols-[1.15fr_0.82fr_0.82fr] md:items-center"
+      className="grid gap-5 md:grid-cols-[1.5fr_0.85fr] md:items-start"
     >
-      <div className="flex items-start gap-4 md:border-r md:border-border/40 md:pr-5">
+      {/* Left: status + checklist */}
+      <div className="flex items-start gap-4 md:border-r md:border-border/40 md:pr-6">
         <div className={cn(
-          "mt-0.5 flex h-20 w-20 shrink-0 items-center justify-center rounded-full",
-          statusTone === "blocked"
-            ? "bg-destructive/20 text-destructive"
-            : blocked
-              ? "bg-destructive/20 text-destructive"
-              : "bg-primary/12 text-primary",
+          "mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-full",
+          statusTone === "blocked" || blocked
+            ? "bg-destructive/15 text-destructive"
+            : "bg-primary/12 text-primary",
         )}>
-          <Lock size={32} strokeWidth={2.1} aria-hidden />
+          <FileWarning size={20} strokeWidth={2} aria-hidden />
         </div>
-        <div className="min-w-0 space-y-2">
-          <p className="care-text-eyebrow text-muted-foreground">Huidige situatie</p>
-          <p className="text-[18px] font-semibold leading-tight text-foreground md:text-[20px]">{leadTitle}</p>
-          <p className="max-w-[34rem] text-[13px] leading-6 text-muted-foreground md:text-[14px]">
-            {leadDescription}
-          </p>
+        <div className="min-w-0 flex-1 space-y-3">
+          <div>
+            <p className="text-[18px] font-semibold leading-tight text-foreground">{leadTitle}</p>
+            <p className="mt-1 text-[13px] leading-5 text-muted-foreground">{leadDescription}</p>
+          </div>
+          {checklistItems && checklistItems.length > 0 && (
+            <ul className="space-y-1.5">
+              {checklistItems.map((item) => (
+                <li key={item.label}>
+                  <button
+                    type="button"
+                    onClick={item.onClick}
+                    className="flex w-full items-center gap-3 rounded-xl border border-border/40 bg-card/20 px-3 py-2.5 text-left transition-colors hover:bg-card/50"
+                  >
+                    <span className="h-4 w-4 shrink-0 rounded-full border-2 border-muted-foreground/40" aria-hidden />
+                    <span className="flex-1 text-[13px] font-medium text-foreground">{item.label}</span>
+                    <ChevronRight size={14} className="shrink-0 text-muted-foreground/50" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
-      <div className="space-y-1 md:border-r md:border-border/40 md:px-5">
-        <p className="care-text-eyebrow text-muted-foreground">Actiehouder</p>
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-background/60 text-muted-foreground ring-1 ring-border/60">
-            <UserRound size={18} aria-hidden />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[16px] font-semibold leading-tight text-foreground">{actionHolderLabel}</p>
-            <p className="mt-1 text-[12px] leading-tight text-muted-foreground">{waitingOnLabel}</p>
+
+      {/* Right: actiehouder + CTA */}
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-[11px] font-medium leading-none tracking-wide text-muted-foreground/70">Actiehouder</p>
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-background/60 text-muted-foreground ring-1 ring-border/60">
+              <UserRound size={16} aria-hidden />
+            </div>
+            <p className="text-[14px] font-semibold leading-tight text-foreground">{actionHolderLabel}</p>
           </div>
         </div>
-      </div>
-      <div className="space-y-3 md:pl-0 md:text-left">
-        <p className="care-text-eyebrow text-muted-foreground">Volgende actie</p>
-        <p className="text-[14px] font-semibold leading-tight text-foreground">{nextStepLabel}</p>
+
         {primaryCtaLabel ? (
-          <div className="pt-1">
           <Button
             type="button"
             onClick={onPrimaryAction}
             disabled={primaryDisabled}
-            className="h-12 min-h-12 w-full gap-2 rounded-full bg-primary px-5 text-[14px] font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90 sm:w-auto sm:min-w-[232px]"
+            className="h-11 w-full gap-2 rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-lg shadow-primary/20 hover:bg-primary/90"
           >
-            {primaryPending ? <Loader2 size={16} className="animate-spin" aria-hidden /> : null}
+            {primaryPending ? <Loader2 size={15} className="animate-spin" aria-hidden /> : null}
             {primaryCtaLabel}
-            {!primaryPending ? <ArrowRight size={16} aria-hidden /> : null}
+            {!primaryPending ? <ArrowRight size={15} aria-hidden /> : null}
           </Button>
-          </div>
+        ) : null}
+
+        {secondaryActionLabel && onSecondaryAction ? (
+          <button
+            type="button"
+            onClick={onSecondaryAction}
+            className="flex w-full items-center justify-center gap-1 text-[13px] font-medium text-primary hover:underline"
+          >
+            {secondaryActionLabel}
+            <ChevronRight size={13} aria-hidden />
+          </button>
         ) : null}
       </div>
     </div>
@@ -160,17 +198,17 @@ export function CaseKeyFactsCard({ facts }: { facts: CaseFactRow[] }) {
   return (
     <section
       data-testid="case-key-facts"
-      className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
+      className="rounded-2xl border border-border/55 bg-card/35 px-4 py-4 md:px-5 md:py-5"
       aria-label="Kerngegevens casus"
     >
-      <h2 className="mb-3 care-text-eyebrow text-muted-foreground">
+      <h2 className="mb-3 text-[13px] font-semibold text-muted-foreground">
         Kerngegevens
       </h2>
-      <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-2">
+      <dl className="grid gap-x-6 gap-y-2.5 sm:grid-cols-3">
         {facts.map((row) => (
           <div
             key={row.label}
-            className="flex min-w-0 items-baseline justify-between gap-3 border-b border-border/30 pb-2 last:border-0 sm:block sm:border-0 sm:pb-0"
+            className="flex min-w-0 items-baseline justify-between gap-3 border-b border-border/30 pb-2 last:border-0 sm:block sm:border-0 sm:pb-0 sm:last:border-0"
           >
             <dt className="shrink-0 text-[12px] text-muted-foreground">{row.label}</dt>
             <dd
@@ -199,10 +237,10 @@ export function CaseAttentionPointsCard({
   return (
     <section
       data-testid="case-attention-points"
-      className="surface-section rounded-xl px-4 py-3.5 md:px-5 md:py-4"
+      className="rounded-2xl border border-border/55 bg-card/35 px-4 py-4 md:px-5 md:py-5"
       aria-label="Aandachtspunten"
     >
-      <h2 className="mb-3 care-text-eyebrow text-muted-foreground">
+      <h2 className="mb-3 text-[13px] font-semibold text-muted-foreground">
         Aandachtspunten
       </h2>
       {visible.length === 0 ? (
@@ -214,16 +252,16 @@ export function CaseAttentionPointsCard({
               key={item.key}
               className={cn(
                 "flex items-start gap-2 rounded-lg px-2.5 py-2 text-[13px]",
-                item.tone === "critical" && "bg-destructive/8 text-foreground",
-                item.tone === "warning" && "bg-amber-500/8 text-foreground",
+                item.tone === "critical" && "bg-care-urgent-bg text-care-urgent-text",
+                item.tone === "warning" && "bg-care-warning-bg text-care-warning-text",
                 item.tone === "info" && "bg-muted/25 text-foreground",
               )}
             >
               <span
                 className={cn(
                   "mt-1.5 size-1.5 shrink-0 rounded-full",
-                  item.tone === "critical" && "bg-destructive",
-                  item.tone === "warning" && "bg-amber-400",
+                  item.tone === "critical" && "bg-care-urgent-solid",
+                  item.tone === "warning" && "bg-care-warning-solid",
                   item.tone === "info" && "bg-muted-foreground",
                 )}
                 aria-hidden
@@ -256,6 +294,8 @@ export function CaseExecutionDetailTabs({
   validatie,
   historie,
   documenten,
+  caseIncomplete,
+  aanmelding,
 }: {
   activeTab?: string;
   onTabChange?: (value: string) => void;
@@ -265,7 +305,59 @@ export function CaseExecutionDetailTabs({
   validatie: ReactNode;
   historie: ReactNode;
   documenten: ReactNode;
+  /** When true, locks non-aanmelding tabs and shows aanmelding-phase tab set */
+  caseIncomplete?: boolean;
+  /** Content for the Aanmelding tab (only shown when caseIncomplete) */
+  aanmelding?: ReactNode;
 }) {
+  const lockedTriggerClass = "text-[12px] cursor-not-allowed opacity-35 data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-muted-foreground";
+
+  if (caseIncomplete) {
+    return (
+      <TooltipProvider>
+        <Tabs value={activeTab} onValueChange={onTabChange} className="w-full gap-3">
+          <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 bg-muted/30 p-1">
+            <TabsTrigger value="overzicht" className="text-[12px]">Overzicht</TabsTrigger>
+            <TabsTrigger value="aanmelding" className="text-[12px]">Aanmelding</TabsTrigger>
+            <TabsTrigger value="documenten" className="text-[12px]">Documenten</TabsTrigger>
+            <TabsTrigger value="activiteit" className="text-[12px]">Activiteit</TabsTrigger>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="arrangement" disabled className={lockedTriggerClass}>
+                  <Lock size={12} className="mr-1" aria-hidden />
+                  Arrangement
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="matching" disabled className={lockedTriggerClass}>
+                  <Lock size={12} className="mr-1" aria-hidden />
+                  Matching
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <TabsTrigger value="toetsing" disabled className={lockedTriggerClass}>
+                  <Lock size={12} className="mr-1" aria-hidden />
+                  Toetsing
+                </TabsTrigger>
+              </TooltipTrigger>
+              <TooltipContent>Beschikbaar zodra aanmelding compleet is</TooltipContent>
+            </Tooltip>
+          </TabsList>
+          <TabsContent value="overzicht" className="mt-0 space-y-3">{overzicht}</TabsContent>
+          <TabsContent value="aanmelding" className="mt-0 space-y-3">{aanmelding ?? validatie}</TabsContent>
+          <TabsContent value="documenten" className="mt-0 space-y-3">{documenten}</TabsContent>
+          <TabsContent value="activiteit" className="mt-0 space-y-3">{historie}</TabsContent>
+        </Tabs>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full gap-3">
       <TabsList className="h-auto max-w-full flex-wrap justify-start gap-1 bg-muted/30 p-1">
@@ -273,14 +365,14 @@ export function CaseExecutionDetailTabs({
         <TabsTrigger value="arrangement" className="text-[12px]">Arrangement</TabsTrigger>
         <TabsTrigger value="matching" className="text-[12px]">Matching</TabsTrigger>
         <TabsTrigger value="validatie" className="text-[12px]">Toetsing</TabsTrigger>
-        <TabsTrigger value="historie" className="text-[12px]">Historie</TabsTrigger>
+        <TabsTrigger value="activiteit" className="text-[12px]">Activiteit</TabsTrigger>
         <TabsTrigger value="documenten" className="text-[12px]">Documenten</TabsTrigger>
       </TabsList>
       <TabsContent value="overzicht" className="mt-0 space-y-3">{overzicht}</TabsContent>
       <TabsContent value="arrangement" className="mt-0 space-y-3">{arrangement}</TabsContent>
       <TabsContent value="matching" className="mt-0 space-y-3">{matching}</TabsContent>
       <TabsContent value="validatie" className="mt-0 space-y-3">{validatie}</TabsContent>
-      <TabsContent value="historie" className="mt-0 space-y-3">{historie}</TabsContent>
+      <TabsContent value="activiteit" className="mt-0 space-y-3">{historie}</TabsContent>
       <TabsContent value="documenten" className="mt-0 space-y-3">{documenten}</TabsContent>
     </Tabs>
   );
@@ -292,7 +384,7 @@ export function CaseDetailEvidenceList({
   rows: Array<{ label: string; value: string }>;
 }) {
   return (
-    <div className="surface-section rounded-xl px-4 py-3.5 md:px-5">
+    <div className="rounded-2xl border border-border/55 bg-card/35 px-4 py-4 md:px-5">
       <dl className="divide-y divide-border/30">
         {rows.map((row) => (
           <div key={row.label} className="flex min-w-0 items-start justify-between gap-3 py-2 text-[13px]">
@@ -314,7 +406,7 @@ export function CaseTimelineHistoryList({
     return <p className="text-sm text-muted-foreground">Geen recente gebeurtenissen.</p>;
   }
   return (
-    <ul className="surface-section divide-y divide-border/30 rounded-xl px-4 py-1 md:px-5">
+    <ul className="divide-y divide-border/30 rounded-2xl border border-border/55 bg-card/35 px-4 py-1 md:px-5">
       {events.map((event, index) => (
         <li key={`${event.timestamp}-${index}`} className="flex flex-col gap-0.5 py-2.5 text-[13px]">
           <span className="font-medium text-foreground">{event.label}</span>
@@ -332,7 +424,8 @@ export function shortenAttentionLabel(headline: string, body: string): string {
   const raw = body.trim();
   if (!raw) return headline;
   const lower = raw.toLowerCase();
-  if ((lower.includes("casusoverzicht") || lower.includes("aanmelding")) && lower.includes("ontbreekt")) return "Aanmelding ontbreekt";
+  if ((lower.includes("casusoverzicht") || lower.includes("aanmelding")) && lower.includes("ontbreekt")) return "Verplichte casusgegevens ontbreken";
+  if (lower.includes("samenvatting") && lower.includes("ontbreekt")) return "Verplichte casusgegevens ontbreken";
   if (lower.includes("gemeentelijke validatie") || lower.includes("gemeentevalidatie")) {
     return "Toetsing vereist";
   }
