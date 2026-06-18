@@ -1,0 +1,28 @@
+diff --git a/docs/design/CAREON_COMPONENT_INVENTORY.md b/docs/design/CAREON_COMPONENT_INVENTORY.md
+index 8ca5d53..b202a00 100644
+--- a/docs/design/CAREON_COMPONENT_INVENTORY.md
++++ b/docs/design/CAREON_COMPONENT_INVENTORY.md
+@@ -33,13 +33,18 @@ Componenten worden beschreven langs twee **onafhankelijke** dimensies. De bestaa
+ 
+ > Bestaande tabelwaarden blijven geldig en mappen 1-op-1: `KEEP→Keep`, `FIX→Fix`, `MERGE→Merge`, `DELETE→Delete`, `CREATE→Create`. Nieuwe rijen mogen ook `Review` en `Replace` gebruiken. De twee dimensies worden niet samengevoegd tot één kolom.
+ 
+-## Governance: Forbidden parallelle systemen
++## Governance: componenten die consolidatie vereisen
+ 
+-| Component | Governance status | Reden | Approved vervanging | Bron |
+-|---|---|---|---|---|
+-| `CareCommandPrimitives` (`client/src/components/care/CareCommandPrimitives.tsx`) | Forbidden | Parallel/schaduw-designsysteem dat het work-row/queue/metric-systeem dupliceert; geen non-test importers | Queue/rij: `CareWorkRow`, `CareWorkListCard`, `CarePrimaryList`, `CareOperationalQueueHeader`; filters: `CareSearchFiltersBar`; metrics: `CareMetricCard` (alle in `CareDesignPrimitives`) | `CAREON_COMPONENT_DUPLICATION_REPORT.md` |
++| Component | Governance status | Planned action | Reden | Overlap / canonieke status | Bron |
++|---|---|---|---|---|---|
++| `CareCommandPrimitives` (`client/src/components/care/CareCommandPrimitives.tsx`) | Needs consolidation | Review / Merge | Actief in gebruik door **21 productie-importers** (dus niet importer-loos); functionele overlap met `CareDesignPrimitives` (o.a. `CareMetricCard` en work-row/queue-primitieven); de canonieke implementatie is nog niet formeel vastgesteld; direct verbieden zou een brede grandfather-allowlist of productieaanpassingen vereisen | Overlapt `CareDesignPrimitives`; canonieke keuze nog niet vastgesteld — volgt uit een aparte usage- en API-vergelijking | `CAREON_COMPONENT_DUPLICATION_REPORT.md` |
++
++**Voorwaarden tijdens de consolidatieperiode:**
++- Voeg voorlopig **geen nieuwe primitives** toe aan `CareCommandPrimitives`.
++- **Nieuwe consumers zijn ongewenst** tenzij expliciet gemotiveerd.
++- De **definitieve canonieke keuze** (`CareCommandPrimitives` vs `CareDesignPrimitives`) volgt na een aparte, read-only usage- en API-vergelijking; tot dan wordt geen kant als canoniek vastgelegd.
+ 
+-> **PR-C verwijdert of migreert geen componenten.** Deze markering is uitsluitend governance/documentatie. De feitelijke verwijdering of migratie van `CareCommandPrimitives` volgt in een latere, afzonderlijk goedgekeurde uitvoeringsfase (zie `CAREON_DESIGN_DEBT_REGISTER.md`).
++> **Deze correctie verwijdert of migreert geen componenten** en wijzigt geen andere componentclassificaties. Het is uitsluitend governance/documentatie.
+ 
+ ---
+ 

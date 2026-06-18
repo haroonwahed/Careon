@@ -1,0 +1,87 @@
+# CareOn — M0 implementation plan (primitives convergence)
+
+**Status:** Plan — **read-only / awaiting approval**. Nothing implemented. No consumer migration, no A status change, no A removal, no pagination, no page redesign, no router/backend change.
+**Date:** 2026-06-18
+**Companion / authority:** `CAREON_PRIMITIVES_CONVERGENCE_DECISION.md` (decisions D1–D4 + consumer heatmap). M0 = the first, purely-additive step of that document's §5.
+
+---
+
+## 1. Goal & scope
+
+Make `CareDesignPrimitives` (B) able to host the metric capabilities that today only exist in `CareCommandPrimitives` (A), so that later phases (M1+) can migrate consumers. **M0 adds dormant, token-strict, tested primitives only — it changes no existing page and no existing component.**
+
+**In scope (prepare only):**
+1. A token-strict **interactive `CareMetricCard`** (metric-as-filter) — per **D2**.
+2. **`CareMetricStrip`** (metric-grid wrapper).
+3. **Tests** (unit + interaction + a11y).
+4. **Stories**.
+5. **Docs + export** via the `CareDesignPrimitives` barrel; record the Approved interactive-metric pattern.
+6. **Minimal `CareWorkRow` extension — NOT included in M0.** The heatmap shows the row-model need arises only in M3 (worklist pages); per D1 a generic variant is not added speculatively. Revisit during M3 analysis.
+
+**Explicitly out of scope:** pagination (D3); any consumer migration; changing A's governance status; removing A; page redesigns; router or backend changes.
+
+---
+
+## 2. Files
+
+| File | Change type | Purpose |
+|---|---|---|
+| `client/src/components/care/CareMetricCard.tsx` | **NEW** | Token-strict interactive metric card (filter/toggle). Props (proposed): `value`, `label`, `tone: "urgent"\|"warning"\|"neutral"`, `selected?`, `onToggle?` (or `onClick?`), `count?`, `testId?`. A11y: button semantics, `aria-pressed={selected}`, keyboard (Enter/Space), `focus-visible` ring. Styling: `care-text-*` + `--care-*`/Tailwind theme keys only — **no raw `#hex`, `rgba`, or `text-[NNpx]`** (must pass the PR-D diff-scoped token guard). |
+| `client/src/components/care/CareMetricStrip.tsx` | **NEW** | Responsive metric grid wrapper: `cols?: 2\|3\|4`, `children`. Spacing via `CARE_RHYTHM`. Token-strict. |
+| `client/src/components/care/CareDesignPrimitives.tsx` | **EDIT (additive)** | Re-export `CareMetricCard` + `CareMetricStrip` so the barrel stays the single import path. No existing export changed. (Name `CareMetricCard` is currently free in B's barrel — B has only the passive `CareMetricBadge` — so no collision; D2's passive/interactive separation is preserved.) |
+| `client/src/components/care/CareMetricCard.test.tsx` | **NEW** | Unit + interaction + a11y tests (see §4). |
+| `client/src/components/care/CareMetricCard.stories.tsx` | **NEW** | Stories: tones, selected/unselected, with/without count, strip layout. |
+| `client/src/test/careA11ySmoke.primitives.test.tsx` | **EDIT (additive, optional)** | Add the interactive card to the existing a11y smoke set. Optional; the dedicated test file already covers a11y. |
+| `docs/design/CAREON_COMPONENT_INVENTORY.md` | **EDIT (additive)** | Add `CareMetricCard` (interactive) + `CareMetricStrip` as **Approved** entries; note the interactive-metric pattern is Approved (D2). Does **not** change A's status. |
+| `docs/design/CAREON_DESIGN_SYSTEM_V1.md` | **EDIT (additive)** | Record D2 (interactive metric-as-filter Approved; passive vs interactive separation). |
+
+No other files. No `client/src` page imports the new exports in M0.
+
+---
+
+## 3. Risks & mitigations
+
+- **Behavioural parity for later swap (D4):** the new interactive card must reproduce A's semantics (tone set, active/selected, click-to-filter) so M2 swaps are behaviour-preserving. *Mitigation:* derive the prop contract directly from A's `CareMetricCard`; cover the behaviour with tests in M0.
+- **Name coexistence:** both A and B will export `CareMetricCard` during the transition (different import paths). *Mitigation:* the barrel is the canonical path; document clearly; no page changes in M0 so there is no ambiguity at call sites yet.
+- **Token-strictness:** the new code is checked by the PR-D diff-scoped token guard. *Mitigation:* build token-strict from the start (no raw hex/sizes); CI enforces.
+- **Visual difference vs A:** token-strict card will not be pixel-identical to A's raw-sized card. *Per D4 this is acceptable;* a visual baseline is set when the card is first consumed (M2), **not** in M0.
+- **Dormant-code risk:** unused exports could rot. *Mitigation:* tests + stories keep them exercised; M2 begins consuming promptly after M0.
+- **Zero runtime impact:** because no consumer imports the new exports, M0 cannot change any existing page's behaviour or appearance — this is the core safety property.
+
+---
+
+## 4. Tests
+
+- **Interaction:** clicking toggles `selected`; `aria-pressed` reflects state; `onToggle`/`onClick` fired with expected args; keyboard **Enter** and **Space** activate; `count` and `value`/`label` render; each `tone` renders its token classes.
+- **Accessibility:** element is focusable with a visible focus ring; correct button/pressed semantics; included in the primitives a11y smoke (axe).
+- **Token discipline:** the new lines pass the PR-D diff-scoped token guard (no hex/rgba/raw sizes) and `npm run check:careon-design`.
+- **Type/build:** `tsc --noEmit` clean; vitest green; Storybook builds the new stories.
+- **Strip:** `CareMetricStrip` renders N children in the requested column count; responsive class assertions.
+
+---
+
+## 5. Rollback
+
+M0 is **purely additive**: new files + additive barrel re-exports + additive doc entries, with **no consumer depending on the new exports**. Rollback = revert the M0 commit/patch. Because nothing imports the new primitives yet, removal is fully isolated and cannot affect any page. (Delivered, like prior steps, as a reviewable patch on a clean branch — no `.git` operations from the workspace.)
+
+---
+
+## 6. Exit criteria (M0 done)
+
+1. Interactive `CareMetricCard` + `CareMetricStrip` exist under `client/src/components/care/`, **token-strict** (PR-D token guard + `check:careon-design` green on the new lines).
+2. Both are exported via the `CareDesignPrimitives` barrel; the passive vs interactive separation (D2) is intact.
+3. Unit + interaction + a11y tests pass; stories present and building.
+4. `CAREON_COMPONENT_INVENTORY.md` lists both as **Approved**; the interactive-metric pattern is recorded as Approved; **A's status is unchanged** (`Needs consolidation`).
+5. `CAREON_DESIGN_SYSTEM_V1.md` records D2.
+6. **No consumer migrated; A unchanged; no pagination; no `CareWorkRow` change; no router/backend/page-redesign.**
+7. UI Verification + Platform Guardrails green; new exports **dormant** (unused) → zero behavioural/visual impact on existing pages.
+8. Ready state confirmed for M1 (shell-only consumers) and M2 (metric/filter consumers, which depend on this card).
+
+---
+
+## 7. What M0 deliberately leaves for later
+
+- **M1/M2/M3 consumer migrations** (heatmap order) — separate, per-page, behind visual-regression + smoke.
+- **`CareWorkRow` extension** — only if M3 analysis proves a shared need that the named props cannot cover (D1).
+- **Pagination** — only on a real, defined use case (D3).
+- **A status tightening** (`Needs consolidation` → `Deprecated` → `Forbidden`) — only after the decision document's §7 exit criteria are met (all 21 consumers migrated, guard reports zero importers, e2e/visual green, design sign-off).

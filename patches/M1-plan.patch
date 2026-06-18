@@ -1,0 +1,92 @@
+diff --git a/docs/roadmap/CAREON_M1_PLAN.md b/docs/roadmap/CAREON_M1_PLAN.md
+new file mode 100644
+index 0000000..b5f8635
+--- /dev/null
++++ b/docs/roadmap/CAREON_M1_PLAN.md
+@@ -0,0 +1,86 @@
++# CareOn — M1 plan (shell-only consumer migration)
++
++**Status:** Plan — **read-only / awaiting approval**. No code changes, no migration performed.
++**Date:** 2026-06-18
++**Scope:** M1 of the convergence migration (decision doc §5) — **only** the two shell-only consumers of `CareCommandPrimitives` that import nothing but `CareCommandShell`:
++- `client/src/components/care/PlacementPage.tsx`
++- `client/src/components/care/AccessDeniedPage.tsx`
++
++**Out of scope:** all other consumers; any worklist/metric migration; pagination; `CareWorkRow`; A status change/removal; backend/router/API; broad cleanup. M1 does **not** touch `CareCommandPrimitives` itself.
++
++---
++
++## 0. Why these two first
++
++Per the consumer heatmap they import **only** `CareCommandShell` (1 export each) — the smallest blast radius — and exercise the new B path end-to-end before any worklist page. M1 depends on no M0 deliverable (these pages use the page shell, not the metric card), so M1 may proceed independently once approved.
++
++---
++
++## 1. Shared mapping — `CareCommandShell` (A) → `CarePageScaffold` + canonical header (B)
++
++`CareCommandShell({ title, subtitle?, lastUpdatedLabel?, onRefresh?, actions?, children, testId? })` renders: `h1.care-text-title` + optional subtitle + an actions/refresh row, then `children`.
++
++`CarePageScaffold({ archetype, title, subtitle?, titleClassName?, actions?, metric?, children, testId? })` renders the header via `CareUnifiedHeader` (`data-testid="care-page-header"`) then content (`data-testid="care-page-content"`), in the canonical order header → dominant → KPI → filters → content → insights.
++
++| `CareCommandShell` prop | Target in `CarePageScaffold` | Note |
++|---|---|---|
++| `title` (ReactNode) | `title` | Direct 1:1 |
++| `subtitle?` (string) | `subtitle?` | Direct 1:1 |
++| `actions?` | `actions?` | Direct 1:1 |
++| `children` | `children` | Direct 1:1 (lands in `care-page-content`) |
++| `lastUpdatedLabel?` / `onRefresh?` | — (no built-in) | **Neither page uses these** → no parity gap. (If ever needed, render in `actions` or add to the header — out of M1 scope.) |
++| `testId?` | `testId?` | Direct 1:1 |
++| *(new required)* | `archetype` | **Must be chosen per page** — see §4 design input |
++
++A lighter alternative (header only, no scaffold slots) is `CareUnifiedHeader`/`PageHeader` + a plain content `div`. **Recommendation:** use `CarePageScaffold` so both pages declare an archetype and inherit the canonical layout (consistent with the archetype map). Decide per §4.
++
++---
++
++## 2. Page — `PlacementPage.tsx`
++
++- **Current A imports:** `import { CareCommandShell } from "./CareCommandPrimitives";` (line 15). Used **twice** (two render branches, ~lines 224 and 266). Also uses B's `LoadingState`/`ErrorState`/`EmptyState`/`PrimaryActionButton` for other branches (already canonical — untouched).
++- **Usage shape:** `<CareCommandShell title={<JSX>} actions={<PrimaryActionButton…/>}>…children…</CareCommandShell>`. No `onRefresh`/`lastUpdatedLabel`/`subtitle` used.
++- **Target mapping:** replace both `CareCommandShell` blocks with `CarePageScaffold archetype="detail" title={…} actions={…}>…</CarePageScaffold>` (archetype = **Detail Workspace**, per `CAREON_SCREEN_ARCHETYPE_MAP.md`: "Plaatsingsbevestiging | PlacementPage"). Import `CarePageScaffold` from the `CareDesignPrimitives` barrel.
++- **Prop/content/layout differences:** title/actions/children map 1:1. Header markup differs (CareCommandShell `h1` vs CareUnifiedHeader) → minor visual shift in header spacing/typography; scaffold wraps content in `care-page-content` and adds `data-care-page-archetype="detail"`. No content reflow expected because the page already supplies its own body.
++- **Risk of visual/behaviour change:** **Low–Medium.** Behaviour identical (no refresh/interaction in the shell). Visual: header band may shift slightly (token-strict) — acceptable per **D4** (behaviour/info/a11y/responsive parity required; pixel parity not). Two call-sites → migrate both in the same PR.
++- **Existing tests:** `client/src/components/care/PlacementPage.test.tsx` exists (safety net). Placement path also exercised indirectly by golden-path e2e.
++- **Additional tests needed:** update/confirm `PlacementPage.test.tsx` still passes; add an assertion that the page renders the canonical header hook (`data-testid="care-page-header"`) and content (`care-page-content`) instead of the old shell. Keep assertions behaviour-focused (title text, actions present), not markup-brittle.
++- **Visual-regression baseline:** capture before/after Playwright screenshots of `/plaatsingen` placement-confirmation view; update the visual baseline with design sign-off (expected token-strict header shift).
++- **Rollback:** revert the M1 PR (single commit) — restores the `CareCommandShell` import + two blocks; no other file affected.
++
++## 3. Page — `AccessDeniedPage.tsx` (88 lines)
++
++- **Current A imports:** `import { CareCommandShell } from "./CareCommandPrimitives";` (line 6). Used once: `<CareCommandShell title={copy.title}>…children (a content block, incl. an inner title)…</CareCommandShell>`. Only `title` + `children`.
++- **Target mapping:** `<CarePageScaffold archetype="support" title={copy.title}>…</CarePageScaffold>` (archetype = **Support/Evidence**, the natural fit for a peripheral access-denied surface; not yet in the archetype map → see §4).
++- **Prop/content/layout differences:** title/children 1:1; no actions/subtitle/refresh. Trivial.
++- **Risk of visual/behaviour change:** **Low.** Static page, no interaction; only header rendering differs slightly.
++- **Existing tests:** none found (no dedicated test/story).
++- **Additional tests needed:** add a small `AccessDeniedPage.test.tsx` (render → title text present, content present, canonical header hook present). This both covers the migration and closes a coverage gap.
++- **Visual-regression baseline:** capture `/geen-toegang` screenshot; set baseline (first-time).
++- **Rollback:** revert the M1 PR; single file.
++
++---
++
++## 4. Design input required before coding M1
++
++1. **Scaffold vs header-only:** confirm using `CarePageScaffold` (archetype-declaring) over a bare `CareUnifiedHeader`. (Recommended: scaffold.)
++2. **Archetype tokens:** confirm `PlacementPage` → `archetype="detail"` and `AccessDeniedPage` → `archetype="support"` (verify exact `CarePageArchetype` token strings in `CarePageScaffold.tsx`; add `AccessDeniedPage` to `CAREON_SCREEN_ARCHETYPE_MAP.md` as Support in the same PR).
++3. **Visual baseline acceptance:** agree that the token-strict header shift is an accepted baseline update (D4), not a regression.
++
++---
++
++## 5. Cross-cutting
++
++- **Sequence:** `AccessDeniedPage` first (trivial, closes a test gap, lowest risk), then `PlacementPage` (two call-sites, has a unit test). One page per PR, or both in one small PR — recommend **one PR per page** for clean rollback.
++- **Guards interaction:** after migration, neither page imports `CareCommandShell`; once **all** A consumers are gone (much later), the PR-D forbidden-import guard can enforce A as Deprecated. M1 alone does **not** change A's status (still `Needs consolidation`).
++- **No new A imports**, no `CareCommandPrimitives` edits, no other pages touched.
++
++## 6. Exit criteria (per page)
++
++1. The page imports the shell from the `CareDesignPrimitives` barrel (`CarePageScaffold`) and **no longer** imports `CareCommandShell` from `CareCommandPrimitives`.
++2. `tsc --noEmit`, Vitest, `check:careon-design`, diff-scoped token-governance, terminology guard, frontend build, Storybook build (if in CI), UI Verification, Platform Guardrails — all green.
++3. Behaviour/info/a11y/responsive parity verified; visual baseline updated with design sign-off (D4).
++4. Unit test present and green (`PlacementPage.test.tsx` updated; new `AccessDeniedPage.test.tsx`).
++5. Diff limited to the single page file (+ its test, + the archetype-map doc line for AccessDenied); zero other consumers/pages changed; A unchanged.
++
++No code or migration is performed by this document. On approval, M1 is delivered as a reviewable patch (one page per PR), each validated and stopped for local apply + authoritative CI before the next.

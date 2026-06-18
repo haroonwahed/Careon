@@ -1,0 +1,310 @@
+diff --git a/client/src/components/care/CareDesignPrimitives.tsx b/client/src/components/care/CareDesignPrimitives.tsx
+index ba28af5..90df3e8 100644
+--- a/client/src/components/care/CareDesignPrimitives.tsx
++++ b/client/src/components/care/CareDesignPrimitives.tsx
+@@ -61,6 +61,18 @@ export { CareEmptyState as EmptyState } from "./CareSurface";
+ /** Canonical workflow-status badge — maps CasusPhase to coloured chip with icon. */
+ export { CaseStatusBadge as CareStatusBadge } from "./CaseStatusBadge";
+ 
++// Interactive metric-as-filter primitives (decision D2). Passive metrics
++// remain separate: CareKPICard (passive KPI card) and CareMetricBadge (passive badge).
++export {
++  CareInteractiveMetricCard,
++  CareInteractiveMetricStrip,
++} from "./CareInteractiveMetricCard";
++export type {
++  CareInteractiveMetricCardProps,
++  CareInteractiveMetricStripProps,
++  CareInteractiveMetricTone,
++} from "./CareInteractiveMetricCard";
++
+ export type CareBadgeTone = "emerald" | "amber" | "red" | "blue" | "cyan" | "purple" | "muted";
+ 
+ const CARE_BADGE_TONE: Record<CareBadgeTone, { bg: string; text: string; border: string }> = {
+diff --git a/client/src/components/care/CareInteractiveMetricCard.stories.tsx b/client/src/components/care/CareInteractiveMetricCard.stories.tsx
+new file mode 100644
+index 0000000..38aeaad
+--- /dev/null
++++ b/client/src/components/care/CareInteractiveMetricCard.stories.tsx
+@@ -0,0 +1,30 @@
++import type { Meta, StoryObj } from "@storybook/react";
++import { useState } from "react";
++import { CareInteractiveMetricCard, CareInteractiveMetricStrip } from "./CareDesignPrimitives";
++
++const meta: Meta<typeof CareInteractiveMetricCard> = {
++  title: "Care/CareInteractiveMetricCard",
++  component: CareInteractiveMetricCard,
++};
++export default meta;
++type Story = StoryObj<typeof CareInteractiveMetricCard>;
++
++export const Unselected: Story = { args: { value: 12, label: "Open aanvragen", tone: "neutral", pressed: false } };
++export const Selected: Story = { args: { value: 12, label: "Open aanvragen", tone: "neutral", pressed: true } };
++export const Warning: Story = { args: { value: 5, label: "SLA-risico", tone: "warning", pressed: false } };
++export const Urgent: Story = { args: { value: 3, label: "Overschreden", tone: "urgent", pressed: true } };
++export const Disabled: Story = { args: { value: 0, label: "Geen openstaand", tone: "neutral", disabled: true } };
++
++export const Strip: Story = {
++  render: () => {
++    const [active, setActive] = useState<string | null>("open");
++    const toggle = (id: string) => setActive((cur) => (cur === id ? null : id));
++    return (
++      <CareInteractiveMetricStrip cols={3}>
++        <CareInteractiveMetricCard value={12} label="Open" tone="neutral" pressed={active === "open"} onPressedChange={() => toggle("open")} />
++        <CareInteractiveMetricCard value={5} label="SLA-risico" tone="warning" pressed={active === "sla"} onPressedChange={() => toggle("sla")} />
++        <CareInteractiveMetricCard value={3} label="Overschreden" tone="urgent" pressed={active === "od"} onPressedChange={() => toggle("od")} />
++      </CareInteractiveMetricStrip>
++    );
++  },
++};
+diff --git a/client/src/components/care/CareInteractiveMetricCard.test.tsx b/client/src/components/care/CareInteractiveMetricCard.test.tsx
+new file mode 100644
+index 0000000..0fe8b33
+--- /dev/null
++++ b/client/src/components/care/CareInteractiveMetricCard.test.tsx
+@@ -0,0 +1,91 @@
++import { render, screen } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import * as React from "react";
++import { describe, expect, it, vi } from "vitest";
++import { CareInteractiveMetricCard, CareInteractiveMetricStrip } from "./CareDesignPrimitives";
++
++describe("CareInteractiveMetricCard", () => {
++  it("renders value and label (default render)", () => {
++    render(<CareInteractiveMetricCard value={12} label="Open aanvragen" />);
++    const btn = screen.getByRole("button");
++    expect(btn.textContent).toContain("12");
++    expect(btn.textContent).toContain("Open aanvragen");
++  });
++
++  it("reflects unpressed state via aria-pressed", () => {
++    render(<CareInteractiveMetricCard value={1} label="A" pressed={false} />);
++    expect(screen.getByRole("button").getAttribute("aria-pressed")).toBe("false");
++  });
++
++  it("reflects pressed state via aria-pressed", () => {
++    render(<CareInteractiveMetricCard value={1} label="A" pressed />);
++    expect(screen.getByRole("button").getAttribute("aria-pressed")).toBe("true");
++  });
++
++  it("calls onPressedChange with the toggled value on click", async () => {
++    const onPressedChange = vi.fn();
++    render(<CareInteractiveMetricCard value={1} label="A" pressed={false} onPressedChange={onPressedChange} />);
++    await userEvent.click(screen.getByRole("button"));
++    expect(onPressedChange).toHaveBeenCalledTimes(1);
++    expect(onPressedChange).toHaveBeenCalledWith(true);
++  });
++
++  it("activates exactly once on Enter (no double activation)", async () => {
++    const onPressedChange = vi.fn();
++    render(<CareInteractiveMetricCard value={1} label="A" onPressedChange={onPressedChange} />);
++    screen.getByRole("button").focus();
++    await userEvent.keyboard("{Enter}");
++    expect(onPressedChange).toHaveBeenCalledTimes(1);
++  });
++
++  it("activates exactly once on Space (no double activation)", async () => {
++    const onPressedChange = vi.fn();
++    render(<CareInteractiveMetricCard value={1} label="A" onPressedChange={onPressedChange} />);
++    screen.getByRole("button").focus();
++    await userEvent.keyboard(" ");
++    expect(onPressedChange).toHaveBeenCalledTimes(1);
++  });
++
++  it("is focusable", () => {
++    render(<CareInteractiveMetricCard value={1} label="A" />);
++    const btn = screen.getByRole("button");
++    btn.focus();
++    expect(document.activeElement).toBe(btn);
++  });
++
++  it("is disabled and fires zero callbacks when disabled (click + keyboard)", async () => {
++    const onPressedChange = vi.fn();
++    render(<CareInteractiveMetricCard value={1} label="A" disabled onPressedChange={onPressedChange} />);
++    const btn = screen.getByRole("button") as HTMLButtonElement;
++    expect(btn.disabled).toBe(true);
++    await userEvent.click(btn);
++    btn.focus();
++    await userEvent.keyboard("{Enter}");
++    await userEvent.keyboard(" ");
++    expect(onPressedChange).not.toHaveBeenCalled();
++  });
++});
++
++describe("CareInteractiveMetricStrip", () => {
++  it("renders multiple metric children", () => {
++    render(
++      <CareInteractiveMetricStrip cols={3}>
++        <CareInteractiveMetricCard value={1} label="A" />
++        <CareInteractiveMetricCard value={2} label="B" />
++        <CareInteractiveMetricCard value={3} label="C" />
++      </CareInteractiveMetricStrip>,
++    );
++    expect(screen.getAllByRole("button")).toHaveLength(3);
++  });
++
++  it("uses a static, safelistable column class per cols value", () => {
++    const { container, rerender } = render(
++      <CareInteractiveMetricStrip cols={2}><span /></CareInteractiveMetricStrip>,
++    );
++    expect((container.firstChild as HTMLElement).className).toContain("sm:grid-cols-2");
++    rerender(<CareInteractiveMetricStrip cols={3}><span /></CareInteractiveMetricStrip>);
++    expect((container.firstChild as HTMLElement).className).toContain("lg:grid-cols-3");
++    rerender(<CareInteractiveMetricStrip cols={4}><span /></CareInteractiveMetricStrip>);
++    expect((container.firstChild as HTMLElement).className).toContain("lg:grid-cols-4");
++  });
++});
+diff --git a/client/src/components/care/CareInteractiveMetricCard.tsx b/client/src/components/care/CareInteractiveMetricCard.tsx
+new file mode 100644
+index 0000000..071abd2
+--- /dev/null
++++ b/client/src/components/care/CareInteractiveMetricCard.tsx
+@@ -0,0 +1,112 @@
++import type { ReactNode } from "react";
++import { X } from "lucide-react";
++import { cn } from "../ui/utils";
++
++/**
++ * Interactive metric-as-filter card — Approved pattern (decision D2).
++ *
++ * Roles (keep these distinct, do not merge):
++ *  - `CareInteractiveMetricCard` (this file) — INTERACTIVE filter/toggle metric.
++ *  - `CareKPICard` — PASSIVE KPI information card.
++ *  - `CareMetricBadge` — PASSIVE compact metric/status badge.
++ *
++ * Controlled: the parent owns `pressed` and is notified via `onPressedChange`.
++ * No hidden internal filter state. Activation is via the native <button> only
++ * (no custom Enter/Space handler), so Enter and Space each fire exactly one
++ * `onPressedChange`. Token-strict: only --care-* tokens and canonical utilities.
++ */
++export type CareInteractiveMetricTone = "urgent" | "warning" | "neutral";
++
++const TONE: Record<
++  CareInteractiveMetricTone,
++  { idle: string; active: string; value: string; label: string }
++> = {
++  urgent: {
++    idle: "border-care-urgent-border bg-care-urgent-bg hover:-translate-y-0.5 hover:shadow-md hover:border-care-urgent-solid/60",
++    active: "border-care-urgent-border bg-care-urgent-bg ring-2 ring-care-urgent-solid/30 shadow-sm",
++    value: "text-care-urgent-text",
++    label: "text-care-urgent-text/70",
++  },
++  warning: {
++    idle: "border-care-warning-border bg-care-warning-bg hover:-translate-y-0.5 hover:shadow-md hover:border-care-warning-solid/60",
++    active: "border-care-warning-border bg-care-warning-bg ring-2 ring-care-warning-solid/30 shadow-sm",
++    value: "text-care-warning-text",
++    label: "text-care-warning-text/70",
++  },
++  neutral: {
++    idle: "border-border/60 bg-card/40 hover:bg-card/55 hover:-translate-y-0.5 hover:shadow-md hover:border-border/80 dark:bg-card/20 dark:hover:bg-card/30",
++    active: "border-primary/40 bg-primary/5 ring-2 ring-primary/20 shadow-sm dark:bg-primary/10",
++    value: "text-foreground",
++    label: "text-muted-foreground",
++  },
++};
++
++export interface CareInteractiveMetricCardProps {
++  value: number | string;
++  label: string;
++  tone?: CareInteractiveMetricTone;
++  /** Controlled selected state. */
++  pressed?: boolean;
++  /** Fired with the next pressed value on activation (click / Enter / Space). */
++  onPressedChange?: (pressed: boolean) => void;
++  disabled?: boolean;
++  testId?: string;
++}
++
++export function CareInteractiveMetricCard({
++  value,
++  label,
++  tone = "neutral",
++  pressed = false,
++  onPressedChange,
++  disabled = false,
++  testId,
++}: CareInteractiveMetricCardProps) {
++  const t = TONE[tone];
++  return (
++    <button
++      type="button"
++      aria-pressed={pressed}
++      disabled={disabled}
++      data-testid={testId}
++      onClick={() => onPressedChange?.(!pressed)}
++      className={cn(
++        "group relative flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-all duration-200",
++        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35 focus-visible:ring-offset-1 focus-visible:ring-offset-background",
++        "disabled:cursor-not-allowed disabled:opacity-50",
++        pressed ? t.active : t.idle,
++      )}
++    >
++      <span className={cn("care-text-display font-semibold tabular-nums", t.value)}>{value}</span>
++      <span className={cn("care-text-meta flex items-center gap-1", t.label)}>
++        {label}
++        {pressed && !disabled && <X size={11} className="shrink-0 opacity-60" aria-hidden />}
++      </span>
++    </button>
++  );
++}
++
++export interface CareInteractiveMetricStripProps {
++  children: ReactNode;
++  cols?: 2 | 3 | 4;
++  className?: string;
++}
++
++/**
++ * Responsive layout wrapper for a group of interactive metric cards.
++ * Static class map (no dynamic `grid-cols-${cols}`) so Tailwind detects every
++ * variant at build time.
++ */
++const COLUMN_CLASSES = {
++  2: "grid-cols-1 sm:grid-cols-2",
++  3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
++  4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
++} as const;
++
++export function CareInteractiveMetricStrip({
++  children,
++  cols = 3,
++  className,
++}: CareInteractiveMetricStripProps) {
++  return <div className={cn("grid gap-3", COLUMN_CLASSES[cols], className)}>{children}</div>;
++}
+diff --git a/docs/design/CAREON_COMPONENT_INVENTORY.md b/docs/design/CAREON_COMPONENT_INVENTORY.md
+index bb3d137..097f748 100644
+--- a/docs/design/CAREON_COMPONENT_INVENTORY.md
++++ b/docs/design/CAREON_COMPONENT_INVENTORY.md
+@@ -137,6 +137,8 @@
+ | Component | Bestand | Status | Issues | Actie |
+ |---|---|---|---|---|
+ | `CareMetricCard` | `CareDesignPrimitives` | FIX | `tracking-[0.1em]` → `[0.12em]`; `min-h-[120px]` → token | F2 |
++| `CareInteractiveMetricCard` | `CareInteractiveMetricCard` (barrel: `CareDesignPrimitives`) | Create | **Governance: Approved** — interactieve metric-as-filter (D2); controlled `pressed`/`onPressedChange`, `aria-pressed`, keyboard via native button, focus + selected state, token-strikt. Rol: **interactief filtergedrag** (passieve KPI = `CareKPICard`; passieve badge = `CareMetricBadge`). | M0 |
++| `CareInteractiveMetricStrip` | `CareInteractiveMetricCard` (barrel: `CareDesignPrimitives`) | Create | **Governance: Approved** — responsive layout-wrapper voor interactieve metric-cards (D2); statische kolom-classmap. | M0 |
+ 
+ ---
+ 
+diff --git a/docs/design/CAREON_DESIGN_SYSTEM_V1.md b/docs/design/CAREON_DESIGN_SYSTEM_V1.md
+index fccddb4..92a6fa4 100644
+--- a/docs/design/CAREON_DESIGN_SYSTEM_V1.md
++++ b/docs/design/CAREON_DESIGN_SYSTEM_V1.md
+@@ -215,6 +215,18 @@ Maak **uitsluitend** aan wanneer ≥2 bestaande productschermen aantoonbaar hetz
+ 
+ ---
+ 
++## Interactieve metric-governance (D2)
++
++`Metric-card-as-filter` is een **Approved** interactiepatroon. Interactieve en passieve metrics blijven gescheiden:
++
++- **`CareInteractiveMetricCard`** — interactief filter/toggle-gedrag; controlled (`pressed` + `onPressedChange`), `aria-pressed`, keyboard via de native button (Enter/Space, geen custom handler), zichtbare focus- en selected-state, disabled-state; token-strikt.
++- **`CareKPICard`** — passieve KPI-informatie.
++- **`CareMetricBadge`** — passieve compacte badge-informatie.
++
++Beide interactieve primitives worden geëxporteerd via de canonieke barrel `CareDesignPrimitives`. Zie `CAREON_COMPONENT_INVENTORY.md` en `CAREON_PRIMITIVES_CONVERGENCE_DECISION.md`.
++
++---
++
+ ## Deel 3 — Primary Action Governance (CORRECTIE 2)
+ 
+ ### Regel

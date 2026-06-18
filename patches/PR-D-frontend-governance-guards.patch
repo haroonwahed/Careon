@@ -1,0 +1,298 @@
+diff --git a/.github/workflows/ui-verification.yml b/.github/workflows/ui-verification.yml
+index 3fdaa1a..32fd02d 100644
+--- a/.github/workflows/ui-verification.yml
++++ b/.github/workflows/ui-verification.yml
+@@ -14,6 +14,8 @@ jobs:
+     steps:
+       - name: Checkout
+         uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
+ 
+       - name: Set up Python
+         uses: actions/setup-python@v5
+@@ -57,5 +59,15 @@ jobs:
+         run: |
+           grep -rEn "export function (MetricStrip|Worklist|NextBestAction|ProcessTimeline)" client/src/components/design
+ 
++      - name: Forbidden/Deprecated component-import guard
++        run: python scripts/check_forbidden_component_imports.py
++
++      - name: Design-token governance (diff-scoped, new/changed FE lines)
++        env:
++          TOKEN_GOVERNANCE_BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'origin/main' }}
++        run: |
++          git fetch origin main --depth=1 || true
++          python scripts/check_changed_token_governance.py --base "$TOKEN_GOVERNANCE_BASE"
++
+       - name: Run UI verification suite
+         run: ./scripts/verify_ui.sh || echo "UI verification is non-blocking during migration refactor window"
+diff --git a/scripts/check_changed_token_governance.py b/scripts/check_changed_token_governance.py
+new file mode 100644
+index 0000000..b760b9a
+--- /dev/null
++++ b/scripts/check_changed_token_governance.py
+@@ -0,0 +1,118 @@
++#!/usr/bin/env python3
++"""Diff-scoped CareOn design-token governance for NEW/CHANGED frontend code.
++
++Reuses the canonical rule set from scripts/check_careon_design_tokens.py (no
++second rule list). Only ADDED lines (git diff vs a base ref) in
++client/src/**/*.{ts,tsx} are checked, so pre-existing offenders are grandfathered
++automatically. scripts/token_governance_allowlist.json records explicit
++per-(file,line) exceptions. Changes/migrates/deletes no components.
++
++Base resolution order:
++  1. explicit --base argument or TOKEN_GOVERNANCE_BASE env (the workflow passes
++     PR base SHA / event.before / origin/main here);
++  2. origin/main;
++  3. main;
++  4. none resolvable -> in CI: ERROR + exit 1; locally: WARNING + skip (exit 0).
++"""
++from __future__ import annotations
++
++import argparse
++import json
++import os
++import re
++import subprocess
++import sys
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++SCRIPTS = Path(__file__).resolve().parent
++sys.path.insert(0, str(SCRIPTS))
++from check_careon_design_tokens import RULES  # canonical rules, reused
++
++ALLOWLIST = SCRIPTS / "token_governance_allowlist.json"
++FE_PREFIX = "client/src/"
++FE_SUFFIX = (".ts", ".tsx")
++
++
++def _is_ci() -> bool:
++    return os.environ.get("CI", "").lower() == "true" or os.environ.get("GITHUB_ACTIONS", "").lower() == "true"
++
++
++def _ref_exists(ref: str) -> bool:
++    try:
++        subprocess.run(
++            ["git", "rev-parse", "--verify", "--quiet", ref + "^{commit}"],
++            cwd=ROOT, check=True, capture_output=True,
++        )
++        return True
++    except subprocess.CalledProcessError:
++        return False
++
++
++def _resolve_base(candidate: str):
++    for ref in (candidate, "origin/main", "main"):
++        if ref and _ref_exists(ref):
++            return ref
++    return None
++
++
++def _added_lines(base: str):
++    diff = subprocess.run(
++        ["git", "diff", "--unified=0", f"{base}...HEAD", "--", FE_PREFIX],
++        cwd=ROOT, capture_output=True, text=True, check=True,
++    ).stdout
++    cur = None
++    new_no = 0
++    for line in diff.splitlines():
++        if line.startswith("+++ b/"):
++            cur = line[6:]
++        elif line.startswith("@@"):
++            m = re.search(r"\+(\d+)", line)
++            new_no = int(m.group(1)) if m else 0
++        elif line.startswith("+") and not line.startswith("+++"):
++            if cur and cur.startswith(FE_PREFIX) and cur.endswith(FE_SUFFIX):
++                yield cur, new_no, line[1:]
++            new_no += 1
++
++
++def _allowlist() -> set:
++    if not ALLOWLIST.exists():
++        return set()
++    data = json.loads(ALLOWLIST.read_text(encoding="utf-8"))
++    return {(e["file"], e.get("line")) for e in data.get("allowed", [])}
++
++
++def main() -> int:
++    ap = argparse.ArgumentParser()
++    ap.add_argument("--base", default=os.environ.get("TOKEN_GOVERNANCE_BASE", "origin/main"))
++    args = ap.parse_args()
++
++    base = _resolve_base(args.base)
++    if not base:
++        msg = "design-token governance: could not resolve a diff base (tried explicit base, origin/main, main)."
++        if _is_ci():
++            print("ERROR: " + msg + " A base is required in CI; refusing to pass silently.")
++            return 1
++        print("WARNING: " + msg + " Skipping locally (exit 0).")
++        return 0
++
++    allow = _allowlist()
++    violations: list[str] = []
++    for path, line_no, text in _added_lines(base):
++        for rule in RULES:
++            for match in rule.pattern.finditer(text):
++                if (path, line_no) in allow or (path, None) in allow:
++                    continue
++                violations.append(f"{path}:{line_no} [{rule.severity}] {rule.name}: {match.group(0)}")
++    if violations:
++        print(f"FAIL: design-token violations in NEW/changed FE lines (base {base}):")
++        for v in violations:
++            print("  - " + v)
++        print("\nUse --care-* tokens / Tailwind theme keys. Pre-existing code is grandfathered (only added lines are checked).")
++        return 1
++    print(f"PASS: no token violations in added FE lines (base {base}).")
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/scripts/check_forbidden_component_imports.py b/scripts/check_forbidden_component_imports.py
+new file mode 100644
+index 0000000..f455ded
+--- /dev/null
++++ b/scripts/check_forbidden_component_imports.py
+@@ -0,0 +1,119 @@
++#!/usr/bin/env python3
++"""Guard: block NEW imports of components marked Forbidden/Deprecated.
++
++Single source of truth: docs/design/CAREON_COMPONENT_INVENTORY.md (the canonical
++component register). This guard introduces NO second component list — it derives
++the forbidden/deprecated set from that document's governance entries (any line
++that names a `client/src/...tsx?` path and the word "Forbidden" or "Deprecated").
++
++Pre-existing, deliberate importers are grandfathered via
++scripts/forbidden_import_allowlist.json (machine-readable). The guard fails only
++on a NEW (non-allowlisted) production import. Test/spec/story files are not
++scanned. It moves, migrates, or deletes no components.
++"""
++from __future__ import annotations
++
++import json
++import re
++import sys
++from pathlib import Path
++
++ROOT = Path(__file__).resolve().parents[1]
++INVENTORY = ROOT / "docs" / "design" / "CAREON_COMPONENT_INVENTORY.md"
++CLIENT_SRC = ROOT / "client" / "src"
++ALLOWLIST = Path(__file__).resolve().parent / "forbidden_import_allowlist.json"
++
++GOVERNANCE_KEYWORDS = ("Forbidden", "Deprecated")
++PATH_IN_BACKTICKS = re.compile(r"`(client/src/[^`]+?\.tsx?)`")
++IMPORT_SPEC = re.compile(
++    r"""(?:import|export)\b[^'"]*?from\s*['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)"""
++)
++TEST_MARKERS = (".test.", ".spec.", "__tests__/", "/tests/", ".stories.")
++
++
++def forbidden_modules_from_inventory() -> dict:
++    out: dict[str, str] = {}
++    if not INVENTORY.exists():
++        return out
++    for line in INVENTORY.read_text(encoding="utf-8").splitlines():
++        if not any(k in line for k in GOVERNANCE_KEYWORDS):
++            continue
++        for m in PATH_IN_BACKTICKS.finditer(line):
++            path = m.group(1)
++            base = path.rsplit("/", 1)[-1].rsplit(".", 1)[0]
++            out[base] = path
++    return out
++
++
++def _spec_matches(spec: str, base: str, path: str) -> bool:
++    spec_noext = re.sub(r"\.tsx?$", "", spec)
++    if spec_noext == base or spec_noext.endswith("/" + base):
++        return True
++    tail = re.sub(r"\.tsx?$", "", path).split("client/src/", 1)[-1]
++    return spec_noext.endswith(tail)
++
++
++def iter_source_files():
++    if not CLIENT_SRC.exists():
++        return
++    for p in sorted(CLIENT_SRC.rglob("*")):
++        if p.suffix not in (".ts", ".tsx"):
++            continue
++        rel = p.relative_to(ROOT).as_posix()
++        if any(mark in rel for mark in TEST_MARKERS):
++            continue
++        yield p
++
++
++def load_allowlist() -> set:
++    if not ALLOWLIST.exists():
++        return set()
++    data = json.loads(ALLOWLIST.read_text(encoding="utf-8"))
++    return {(e["importer"], e["module"]) for e in data.get("allowed_imports", [])}
++
++
++def main() -> int:
++    if not INVENTORY.exists():
++        print(f"ERROR: canonical component inventory not found at {INVENTORY}.")
++        print("Cannot derive the Forbidden/Deprecated set; refusing to pass silently.")
++        return 1
++    forbidden = forbidden_modules_from_inventory()
++    if not forbidden:
++        print("No Deprecated or Forbidden components are currently registered.")
++        print("Nothing to enforce.")
++        return 0
++    allow = load_allowlist()
++    forbidden_paths = set(forbidden.values())
++    violations: list[str] = []
++    for p in iter_source_files():
++        rel = p.relative_to(ROOT).as_posix()
++        if rel in forbidden_paths:
++            continue
++        text = p.read_text(encoding="utf-8")
++        for m in IMPORT_SPEC.finditer(text):
++            spec = m.group(1) or m.group(2)
++            if not spec:
++                continue
++            for base, path in forbidden.items():
++                if _spec_matches(spec, base, path):
++                    if (rel, base) in allow or (rel, path) in allow:
++                        continue
++                    violations.append(
++                        f"{rel} imports forbidden/deprecated component '{base}' "
++                        f"(spec {spec!r}; inventory {path})"
++                    )
++    if violations:
++        print("FAIL: new imports of Forbidden/Deprecated components (governance in CAREON_COMPONENT_INVENTORY.md):")
++        for v in violations:
++            print("  - " + v)
++        print(
++            "\nImport the approved replacement primitive instead, or — for a deliberate, separately-"
++            "reported exception — add an entry to scripts/forbidden_import_allowlist.json."
++        )
++        return 1
++    print(f"PASS: no new imports of {len(forbidden)} Forbidden/Deprecated component(s).")
++    return 0
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/scripts/forbidden_import_allowlist.json b/scripts/forbidden_import_allowlist.json
+new file mode 100644
+index 0000000..6f0b4b5
+--- /dev/null
++++ b/scripts/forbidden_import_allowlist.json
+@@ -0,0 +1,4 @@
++{
++  "description": "Grandfathered existing PRODUCTION imports of components whose governance status in docs/design/CAREON_COMPONENT_INVENTORY.md is Forbidden or Deprecated. The guard (scripts/check_forbidden_component_imports.py) derives the forbidden set from that canonical inventory; this file only records pre-existing importers to grandfather. Empty = no production importers exist today. Add entries only for a deliberate, separately-reported exception. Format: {\"importer\": \"client/src/...\", \"module\": \"<basename or inventory path>\", \"reason\": \"...\"}.",
++  "allowed_imports": []
++}
+diff --git a/scripts/token_governance_allowlist.json b/scripts/token_governance_allowlist.json
+new file mode 100644
+index 0000000..4e902aa
+--- /dev/null
++++ b/scripts/token_governance_allowlist.json
+@@ -0,0 +1,4 @@
++{
++  "description": "Explicit, machine-readable exceptions for the diff-scoped token governance guard (scripts/check_changed_token_governance.py). Pre-existing offenders are already grandfathered because only ADDED lines are checked; add entries here only for a deliberate, separately-reported exception on a newly added/changed line. Format: {\"file\": \"client/src/...\", \"line\": <int or null>}.",
++  "allowed": []
++}

@@ -1,0 +1,134 @@
+diff --git a/docs/roadmap/CAREON_PHASE1_COMPLETION_REPORT.md b/docs/roadmap/CAREON_PHASE1_COMPLETION_REPORT.md
+new file mode 100644
+index 0000000..4c821cf
+--- /dev/null
++++ b/docs/roadmap/CAREON_PHASE1_COMPLETION_REPORT.md
+@@ -0,0 +1,128 @@
++# CareOn — Phase 1 completion report (standardization phase)
++
++**Date:** 2026-06-18
++**Status:** **CLOSED — Complete.** This report formally closes the standardization phase (governance, verification, guardrails, and the additive M0 metric primitives).
++
++> All authoritative checks for PR-A–PR-D, the PR-C correction, and M0 were confirmed green by the repo owner. Evidence is recorded in §7. No verification remains open.
++>
++> **"Phase 1 Complete" refers to the actually approved and executed scope** (PR-A–PR-D + PR-C correction + M0). Two originally-listed Phase 1 items are formally **deferred**, not silently dropped (see §2a): **PR-E** (reliable Playwright smoke in CI) and **PR-F** (one official local/pre-PR verification command).
++
++---
++
++## 1. Completed audits & architecture decisions
++
++- Repository, architecture, and product-quality audit (backend + runtime + page/component): `CAREON_BACKEND_QUALITY_AUDIT_2026Q2.md`, `CAREON_CURRENT_STATE_ASSESSMENT.md` (runtime evidence), `CAREON_TARGET_ARCHITECTURE.md`.
++- `contracts/views.py` decomposition ADR: `docs/adr/ADR-CONTRACTS-VIEWS-DECOMPOSITION.md`.
++- Standardization roadmap (3 workstreams) + Phase 1 implementation plan.
++- Primitives convergence decision with **D1–D4** formally recorded + 21-consumer heatmap: `CAREON_PRIMITIVES_CONVERGENCE_DECISION.md`.
++- Canonical document-hierarchy decision (see §4).
++
++## 2. Executed PRs / patches
++
++| Item | Content | Authoritative CI |
++|---|---|---|
++| **PR-A** | `workflow_dispatch` on Platform Guardrails + UI Verification | Green |
++| **PR-B** | URL-contract test + dependency-direction guard + machine-readable A3 allowlist | Green |
++| **PR-C** | Component register as SoT (two-dimension status), design-doc hierarchy, PAGE_PATTERNS re-point, DoR/DoD in PR template | Green |
++| **PR-C correction** | `CareCommandPrimitives` reclassified Forbidden → **Needs consolidation** (21 real importers) | Green |
++| **PR-D** | Forbidden/Deprecated import guard (inventory-derived) + diff-scoped, CI-aware token-governance + empty allowlists + UI Verification wiring | Green |
++| **M0** | Interactive `CareInteractiveMetricCard` + `CareInteractiveMetricStrip` (token-strict, controlled, tested, storied) + barrel export + inventory/design-system docs | **Green (Complete)** |
++| Planning docs | convergence decision, M0 plan (owner-committed), M1 plan (read-only, retained) | n/a |
++
++### 2a. Originally-listed Phase 1 items — formally deferred
++
++| Item | Content | Status |
++|---|---|---|
++| **PR-E** | Reliable Playwright smoke in CI | **Deferred to a later verification-infrastructure phase.** Not executed in Phase 1. |
++| **PR-F** | One official local/pre-PR verification command | **Deferred; CI remains the authoritative merge gate.** Not executed in Phase 1. |
++
++These are recorded here so they do not vanish from the Phase 1 ledger; neither is an exit criterion of the closed phase.
++
++## 3. Active CI & governance guards (in force)
++
++- **On-demand CI:** `workflow_dispatch` on Platform Guardrails and UI Verification.
++- **Backend:** URL-contract test (route + cross-module view-export surface); dependency-direction guard (`contracts/api` & `contracts/domain` must not import `contracts.views`) with a minimal, documented **A3** allowlist (the single existing `api/matching.py` violation).
++- **Frontend:** forbidden/deprecated-import guard — derives its set **from the canonical `CAREON_COMPONENT_INVENTORY.md`** (no second list), reports an explicit "nothing to enforce" when empty, hard-fails on missing inventory; diff-scoped design-token governance — reuses the canonical token RULES, checks only added lines, fails in CI when the diff base is missing.
++- **Process:** Definition of Ready + Definition of Done in `.github/pull_request_template.md`; component register designated source of truth.
++
++## 4. Canonical document hierarchy
++
++- `CAREON_DESIGN_SYSTEM_V1.md` — design principles, tokens, mandatory implementation rules.
++- `CAREON_COMPONENT_INVENTORY.md` — canonical component register (Governance status × Planned action).
++- `CAREON_SCREEN_ARCHETYPE_MAP.md` — page archetypes and reference pages.
++- `CAREON_DESIGN_DEBT_REGISTER.md` — known deviations and migration work.
++- `CAREON_UI_CONTRACT.md` — historical/retired. `CAREON_PAGE_PATTERNS.md` — subordinate to the design system + archetype map. Duplication report — supporting analysis.
++
++## 5. `CareCommandPrimitives` status
++
++**Needs consolidation** (Planned action: Review / Merge). Actively used by **21 production consumers**; functional overlap with `CareDesignPrimitives`. **Not** deprecated, **not** forbidden, **not** removed, no consumers migrated.
++
++**The canonical direction is decided** (the read-only comparison is done): `CareDesignPrimitives` is the approved canonical target architecture; `CareCommandPrimitives` is `Needs consolidation`; migration of the 21 consumers is **planned but not started**; `CareCommandPrimitives` becomes `Deprecated` **only after** replacement capabilities exist in `CareDesignPrimitives` **and** all consumers are migrated. The choice is made — only the migration is deferred. Conditions in force (documented in the inventory): no new primitives added to it; no new consumers without explicit motivation.
++
++## 6. `CareDesignPrimitives` status
++
++Canonical target design system (token-strict, tested, a11y-instrumented, single barrel import path). M0 added the interactive metric capability it lacked (`CareInteractiveMetricCard`, `CareInteractiveMetricStrip`) as additive exports (not yet consumed). Passive metrics remain separate (`CareKPICard`, `CareMetricBadge`).
++
++**API note (documented, no code change):** `CareInteractiveMetricCard` is controlled — `pressed` is owned by the parent and `onPressedChange` is **optional** in the type, but **interactive consumers must provide `onPressedChange`** (a clickable card without it goes nowhere). This guidance is recorded in the component JSDoc, the inventory row, and the D2 section of `CAREON_DESIGN_SYSTEM_V1.md`. The API is intentionally left unchanged.
++
++## 7. M0 status & result — Complete
++
++**Completion evidence (authoritative, owner-confirmed):**
++
++| Check | Result |
++|---|---|
++| `git apply --check` | PASS |
++| `git diff --check` | PASS |
++| TypeScript typecheck | PASS |
++| Vitest | PASS |
++| Frontend build | PASS |
++| CareOn design-token check | PASS |
++| diff-scoped token-governance | PASS |
++| terminology guard | PASS |
++| Storybook build | Not applicable — not a CI merge gate (UI Verification runs vitest, typecheck, and the guard scripts, not `build-storybook`); stories ship for design review |
++| UI Verification | PASS |
++| Platform Guardrails | PASS |
++| Existing consumers/pages changed | NO |
++
++M0 delivered: token-strict, controlled `CareInteractiveMetricCard` (`pressed` + optional `onPressedChange`, `aria-pressed`, native-button keyboard activation, focus + selected state, disabled) and `CareInteractiveMetricStrip` (static safelistable column map); unit + interaction + a11y tests; stories; barrel export (explicit, no wildcard); inventory + design-system documentation. Additive only — zero existing consumers or pages changed. **M0 is Complete.**
++
++## 8. Deliberately NOT done this phase
++
++M1–M4 consumer migrations; `contracts/views.py` decomposition; matching consolidation; `models.py` decomposition; pagination; any `CareWorkRow` change; `CareCommandPrimitives` removal/deprecation; consumer migrations; page redesigns; backend/router/API changes; new features.
++
++## 9. Remaining risks & technical debt (carried into future phases)
++
++- **`contracts/views.py`** god-module (~8.2k LOC) + inverted `api/matching.py → contracts.views` dependency (currently allowlisted under A3).
++- **A/B duplication** — `CareCommandPrimitives` (21 consumers) overlaps the canonical `CareDesignPrimitives`. The canonical direction is **decided** (`CareDesignPrimitives`); only the consumer migration is deferred (planned, not started).
++- **`CareCommandPrimitives` has no tests/stories** and carries hardcoded styling (`bg-white`, rgba shadow, `yellow-*`, raw sizes).
++- **`LoginPage.tsx`** off-token (37 inline styles, 27 hex).
++- **`models.py`** (~4.6k LOC) — deferred.
++- **Environment:** committed `db.sqlite3` lags migrations; the working-tree mount denies `rm`/unlink (stale `.git` locks, un-removable stray doc copies) — git hygiene must be done on a real machine.
++
++## 10. Recommended next product/engineering step
++
++The next active step is **determined by product priority**, and any next step must now be executed **within the new governance**: the Definition of Ready/Done, the canonical document hierarchy, the page archetypes, and the component standards established in this phase (incl. the active CI guards).
++
++Available, fully-planned options (none is automatically next; choose by priority):
++
++- **`contracts/views.py` decomposition** — a planned backend option (Phase 0/1: containerized test env + guardrail tests; also resolves the inverted A3 dependency). High leverage, but optional and priority-driven.
++- **Frontend M1** — the two shell-only page migrations (`PlacementPage`, `AccessDeniedPage`); low risk; read-only plan retained.
++- **Matching consolidation** / **`models.py` decomposition** — later, per the roadmap.
++
++The M1 plan (`CAREON_M1_PLAN.md`) is retained **only as a future, read-only plan** and is not an exit criterion of this phase.
++
++---
++
++## Roadmap status
++
++- **Phase 1 governance and guardrails: Complete**
++- **M0: Complete**
++- **M1: Planned, not started**
++- **M2: Planned, not started**
++- **M3: Planned, not started**
++- **M4: Planned, not started**
++- **`contracts/views.py` decomposition: Planned, not started**
++- **matching consolidation: Planned, not started**
++- **`models.py` decomposition: Deferred**
++
++*The standardization phase is formally closed. The next step is selected by product priority and executed within the governance, page archetypes, and component standards established here.*

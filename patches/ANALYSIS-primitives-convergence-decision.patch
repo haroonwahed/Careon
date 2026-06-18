@@ -1,0 +1,150 @@
+diff --git a/docs/design/CAREON_PRIMITIVES_CONVERGENCE_DECISION.md b/docs/design/CAREON_PRIMITIVES_CONVERGENCE_DECISION.md
+new file mode 100644
+index 0000000..cfa01a2
+--- /dev/null
++++ b/docs/design/CAREON_PRIMITIVES_CONVERGENCE_DECISION.md
+@@ -0,0 +1,144 @@
++# CareOn primitives convergence — decision document
++
++**Status:** Analysis / decision input — **read-only**. No code, components, imports, inventory statuses, or tests changed. No migration performed.
++**Date:** 2026-06-18
++**Subject:** `CareCommandPrimitives` (A, `client/src/components/care/CareCommandPrimitives.tsx`) vs `CareDesignPrimitives` (B, barrel: `CareDesignPrimitives.tsx` + re-exports from `CareUnifiedPage.tsx`, `CareSurface.tsx`, `CarePageScaffold.tsx`, `CareAppFrame.tsx`, `CaseStatusBadge.tsx`).
++**Companion:** governance status in `CAREON_COMPONENT_INVENTORY.md` (A = `Needs consolidation`, Review/Merge — unchanged by this document).
++
++---
++
++## 0. Headline findings (correct the earlier assumption)
++
++- **A is actively used, not an orphan:** 21 production pages import it; ~19 use its worklist grid, ~17 its metric strip/card. A supplies the **page shell, worklist grid, interactive KPI-filter card, and pagination** that pages actually render.
++- **B is the quality target:** token-strict (no raw hex/rgba), a11y-instrumented (`role=status/alert`, focus rings), and **test+story covered**; A has **zero tests/stories** and notable hardcoded styling (`bg-white`, an inline `rgba` shadow, `yellow-300/400` row tones, raw `text-[NNpx]` sizes).
++- **No export name is shared** between A and B — every overlap is *functional*, not nominal. This means the two can coexist during migration with **no naming collisions**, and a guard can later forbid A without ambiguity.
++- **The barrel's queue/metric exports are underused** because pages get those from A instead — so B's `CareWorkRow`/queue/metric primitives are the intended-but-not-yet-adopted equivalents.
++
++**Recommended canonical direction:** converge on **B (`CareDesignPrimitives`)**, but only after B *absorbs* A's genuinely-needed capabilities that B currently lacks (interactive metric-as-filter card, metric strip, optionally real pagination, a shell convenience). Then migrate the 21 consumers A→B in phases, and only then tighten A's status to `Deprecated` → `Forbidden`.
++
++---
++
++## 1. Comparison matrix (by category)
++
++| Category | A (CareCommandPrimitives) | B (CareDesignPrimitives) | Canonical recommendation |
++|---|---|---|---|
++| **Page shell / header** | `CareCommandShell` (title+refresh+children; one raw `text-[12px]`) | `AppShell`(CareAppFrame) + `CarePageScaffold` + `PageHeader`/`CareUnifiedHeader` (header has `metric` slot); token-strict | **B**; map `CareCommandShell` → scaffold + unified header |
++| **Work row** | `CareWorklistRow` (generic, caller supplies `cols`; inline grid style; hardcoded yellow/white tones; `role=listitem`) | `CareWorkRow` (opinionated named props: title/context/status/owner/nextAction/density/queueVariant; shared `OPERATIONAL_QUEUE_GRID_*`; `<article>`; focus ring; tested via `data-care-work-row`) | **B** — *needs product decision on opinionated vs generic row (see §4)* |
++| **Queue header / list / card** | `CareWorklistColumnHeader`, `CareWorklistBody`, `CareWorklist` (card; inline rgba shadow, `bg-white`) | `CareOperationalQueueHeader`, `CarePrimaryList`, `CareWorkListCard`/`CareWorkspaceSection` (token rhythm, header slot) | **B** |
++| **Filters / search / tabs** | `CareWorklistToolbar` (hardcoded `bg-white` input), `CareWorklistTabs`, `CareWorklistFilterPanel` | `CareSearchFiltersBar`, `CareFilterTabGroup`/`CareFilterTabButton`, `CareMetaChip` | **B** |
++| **Metric / KPI** | `CareMetricCard` (**interactive filter toggle**, `aria-pressed`, urgent/warning/neutral; raw font sizes), `CareMetricStrip` (grid) | `CareMetricBadge` (**passive** pill), `CareDominantStatus`; sibling `CareKPICard.tsx` | **B, after absorbing A's interactive card + strip** (B has no interactive KPI tile today) |
++| **Pagination** | `CareWorklistPagination` (**currently decorative/non-functional**) | — (none) | **Decide:** implement real `CarePagination` in B *iff* pagination is required, else drop |
++| **Row-action wrapper** | `CareWorklistRowAction` (z-index overlay helper), `ROW_ACTION_CLASSES` | folded into `CareWorkRow` CTA / `CareQueueInlineAction` | **B** |
++| **States (loading/error/empty)** | none | `LoadingState`(deferred, `role=status`), `ErrorState`(`role=alert`), `EmptyState` — most-used B exports (18–19×) | **B** (already canonical) |
++| **Alerts / sections / badges / flow** | none | `CareAlertCard`, `CareSection`/`CarePanel`/`CareWorkspaceSection`, `BlockingNotice`, `CareBadge`/`PriorityBadge`/`CareStatusBadge`/`FlowPhaseBadge`, `CareMatchScore`, `CareFlowBoard` | **B** (already canonical) |
++
++---
++
++## 2. Unique functionality (must be resolved before deprecating A)
++
++**Only in A (B must gain or pages must change):**
++- Interactive **`CareMetricCard`** as a filter toggle (`onClick`, `aria-pressed`, tonal states) — B only has the passive `CareMetricBadge`.
++- **`CareMetricStrip`** metric-grid wrapper — no B equivalent.
++- **`CareWorklistPagination`** — A-only (and non-functional today).
++- **`CareWorklistRowAction`** overlay-click wrapper — folded into B's `CareWorkRow` but the generic pattern is A-only.
++- Generic **slot-driven row** (`CareWorklistRow` + caller `cols`) vs B's opinionated named-prop row.
++
++**Only in B (already canonical, A has nothing):** states, alerts, sections, badges, flow/match primitives, app scaffold/header with metric slot, `CareInfoPopover`, `CareOperationalSelect`, `PrimaryActionButton`, `CARE_RHYTHM`.
++
++**Same-name-different-implementation:** none.
++**Safely mergeable (A → existing B):** shell, worklist row/body/header/card, toolbar/tabs/filterpanel, row-action.
++**Must-keep (capability) but currently A-only:** interactive metric card, metric strip; pagination only if a real need is confirmed.
++
++---
++
++## 3. Recommended canonical primitives (per category)
++
++- App shell/header → **`CarePageScaffold` + `CareUnifiedHeader`/`PageHeader`** (B).
++- Operational queue → **`CareWorkRow` + `CareOperationalQueueHeader` + `CarePrimaryList` + `CareWorkListCard`** (B), using `OPERATIONAL_QUEUE_GRID_*`.
++- Filters/search/tabs → **`CareSearchFiltersBar` + `CareFilterTabGroup/Button`** (B).
++- KPI → **a new token-strict, tested interactive `CareMetricCard` + `CareMetricStrip` promoted into B** (absorbing A's capability; de-hardcode font sizes).
++- States/alerts/badges/sections/flow → **B** (unchanged).
++- Pagination → **product decision** (implement in B or drop).
++
++---
++
++## 4. Product / design decisions — FORMALLY RECORDED (2026-06-18)
++
++Direction: `CareDesignPrimitives` (B) is the target architecture; `CareCommandPrimitives` (A) stays `Needs consolidation`; no consumer migration yet.
++
++### D1 — Canonical row model
++`CareWorkRow` (B) **remains the canonical operational row.** A generic slot-/grid-row variant may be added **only when all** of the following hold: (a) multiple pages demonstrably need the same pattern; (b) the pattern does not reasonably fit the existing named props; (c) the variant is centrally tested and documented. **Free per-page grid composition is not an allowed standard.**
++
++### D2 — Interactive metric cards
++**`Metric-card-as-filter` is an Approved interaction pattern.** Interactive and passive metrics stay **separate**: an interactive `CareMetricCard` for filter/toggle behaviour; a passive metric/KPI component (`CareMetricBadge`/`CareKPICard`) for information only. The interactive variant must have, at minimum: `aria-pressed`; a clear selected state; keyboard operability; a focus state; token-strict styling; tests and stories.
++
++### D3 — Pagination
++**No canonical pagination primitive is added now.** Pagination is built only when a real, active use case exists, defined by: dataset size; page state; a backend- or client-side contract; a UX choice; and testable navigation. A's current **decorative** pagination is **not** adopted as a capability.
++
++### D4 — Migration parity
++**Mandatory:** behavioural parity; information parity; accessibility parity; responsive parity.
++**Not mandatory:** pixel-perfect parity where the target design system deliberately introduces better token, spacing, focus, or theming consistency. (Visual-regression baselines are updated with design sign-off, not treated as regressions.)
++
++---
++
++## 4b. Consumer heatmap — all 21 production consumers of A
++
++Workflow-criticality: **H** = core operational workflow surface, **M** = supporting, **L** = peripheral. Visual sensitivity: how exposed the page is to layout/visual shift on migration. Test coverage: existing automated coverage (A itself has **no** unit/story coverage; values below reflect Playwright e2e / page-level coverage). Phase per §5. Order = recommended sequence within phase (ascending blast radius).
++
++| # | Page (component) | A exports used | Count | Workflow crit. | Visual sens. | Existing tests | Migration risk | Phase | Order |
++|---|---|---|---|---|---|---|---|---|---|
++| 1 | `PlacementPage` | Shell | 1 | M | Low | golden-path (indirect) | **Low** | M1 | 1 |
++| 2 | `AccessDeniedPage` | Shell | 1 | L | Low | none | **Low** | M1 | 2 |
++| 3 | `settings/InstellingenSettingsExperience` | Toolbar, FilterPanel | 2 | M | Low–Med | `instellingen-workspace` e2e | **Low–Med** | M2 | 3 |
++| 4 | `ProviderProfilePage` | Shell, MetricStrip, MetricCard | 3 | M | Med | none | **Med** (needs D2 card) | M2 | 4 |
++| 5 | `RegiosPage` | Shell, MetricStrip, MetricCard, FilterPanel | 4 | M | Med | none | **Med** | M2 | 5 |
++| 6 | `RapportagesPage` | Shell, MetricStrip, MetricCard, Toolbar, FilterPanel | 5 | M | Med | none | **Med** | M2 | 6 |
++| 7 | `DocumentenPage` | Shell, MetricStrip, MetricCard, Toolbar, FilterPanel | 5 | M | Med | none | **Med** | M2 | 7 |
++| 8 | `ZorgaanbiedersPage` | Shell, MetricStrip, MetricCard, Toolbar, FilterPanel | 5 | M | Med | none | **Med** | M2 | 8 |
++| 9 | `AudittrailPage` | Shell, MetricStrip, MetricCard, Toolbar, FilterPanel | 5 | M | Med | none | **Med** | M2 | 9 |
++| 10 | `GebruikersPage` | Shell, MetricStrip, MetricCard, Worklist | 4 | M | Med | none | **Med** (worklist-light) | M3 | 10 |
++| 11 | `GemeentenPage` | Shell, MetricStrip, MetricCard, Worklist, Tabs, Toolbar | 6 | M | Med–High | none | **Med–High** | M3 | 11 |
++| 12 | `AanbiederPortaalPage` | Shell, MetricStrip, MetricCard, Worklist, ColumnHeader, Body, Row, RowAction | 8 | H (provider) | High | `provider-review` (partial) | **High** | M3 | 12 |
++| 13 | `AssessmentQueuePage` | Shell, Worklist, Toolbar, FilterPanel, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 10 | L (orphaned/not wired) | Med | none | **Med** (not in live route tree) | M3 | 13 |
++| 14 | `MatchingQueuePage` | full worklist set | ~13 | L (orphaned/not wired) | Med | none | **Med** (not in live route tree) | M3 | 14 |
++| 15 | `SystemAwarenessPage` (Regiekamer) | Shell, Worklist, Tabs, Toolbar, FilterPanel, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 11 | **H** (golden ref) | **High** | `pilot-smoke`, `staging-shell` e2e | **High** | M3 | 15 |
++| 16 | `IntakeListPage` | Shell, MetricStrip, MetricCard, Worklist, Toolbar, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 11 | H (provider) | High | none | **High** | M3 | 16 |
++| 17 | `WorkloadPage` (Casussen) | Shell, MetricStrip, MetricCard, Worklist, Tabs, Toolbar, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 12 | **H** (golden ref) | **High** | `pilot-smoke`, `staging-shell` e2e | **High** | M3 | 17 |
++| 18 | `AanbiederreactiePage` | Shell, MetricStrip, MetricCard, Worklist, Tabs, Toolbar, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 12 | **H** | **High** | `provider-review-smoke` e2e | **High** | M3 | 18 |
++| 19 | `SignalenPage` | Shell, MetricStrip, MetricCard, Worklist, Tabs, Toolbar, ColumnHeader, Body, Row, RowAction, Pagination, ROW_ACTION_CLASSES | 12 | M | High | none | **High** | M3 | 19 |
++| 20 | `ActiesPage` | full worklist set | ~13 | H | High | none | **High** | M3 | 20 |
++| 21 | `PlacementTrackingPage` | full worklist set | 13 | H | High | none | **High** | M3 | 21 |
++
++**Heatmap reading:** M1 = 2 trivial shell-only pages (safest first proof). M2 = 7 metric/filter pages (need the D2 interactive card before starting). M3 = 12 worklist pages (highest risk); the two **golden-reference** pages (`SystemAwarenessPage`/Regiekamer, `WorkloadPage`/Casussen) and the High-criticality provider pages carry the most layout risk and have the most e2e coverage to lean on; the two **orphaned** queue pages (`AssessmentQueuePage`, `MatchingQueuePage`) are low real-world risk and can be done early within M3 as practice.
++
++## 5. Phased migration proposal (small, reversible; no migration in this document)
++
++- **M0 — Absorb A's unique capabilities into B** (token-strict, tested): interactive `CareMetricCard`, `CareMetricStrip`, (optional) `CarePagination`. No page changes yet. *Exit: B exports cover every A export that has consumers; B tests/stories updated.*
++- **M1 — Shell-only consumers** (lowest risk, 2 files): `PlacementPage`, `AccessDeniedPage` (import only `CareCommandShell`) → B scaffold+header. *Exit: pages render; Playwright shell smoke green.*
++- **M2 — Filter/metric-only consumers** (~6 files): `RapportagesPage`, `DocumentenPage`, `ZorgaanbiedersPage`, `AudittrailPage`, `RegiosPage`, `settings/InstellingenSettingsExperience`, `ProviderProfilePage` → `CareSearchFiltersBar` + B metric card/strip. *Exit: per-page visual diff approved.*
++- **M3 — Full worklist consumers** (~12 files, highest risk): `PlacementTrackingPage`, `ActiesPage`, `MatchingQueuePage`, `WorkloadPage`, `SignalenPage`, `IntakeListPage`, `AanbiederreactiePage`, `SystemAwarenessPage`, `AssessmentQueuePage`, `AanbiederPortaalPage`, `GemeentenPage`, `GebruikersPage` → migrate worklist grid to `CareWorkRow`/queue primitives, **one page per PR**, each with visual-regression + golden-path smoke. *Exit: all pages migrated; A importers = 0.*
++- **M4 — Tighten status:** set A `Deprecated` in the inventory (the PR-D forbidden-import guard then blocks new imports) → after a soak period, `Forbidden` / delete `CareCommandPrimitives.tsx`. *Exit: see §7.*
++
++Migration order within each phase = ascending by number of A exports used (fewest first), so blast radius grows gradually.
++
++---
++
++## 6. Risks
++
++- **No safety net on A's side:** A has zero tests/stories. Migration correctness rests on B's tests + Playwright visual regression + per-page smoke — these must exist/pass before M3.
++- **Broad active surface:** 21 consumers, ~19 on the worklist grid → layout-regression risk if `CareWorkRow`'s opinionated props don't cover every page's columns (drives decision §4.1).
++- **Visual shift:** A's `bg-white`/`yellow`/raw sizes vs B's tokens → light/dark appearance will change; needs design sign-off + baselines.
++- **Behaviour shift:** A's `CareMetricCard` is interactive; a naive swap to B's passive badge would silently drop filtering — M0 must preserve the interaction.
++- **Coordination with backend work:** keep migration PRs separate from the `views.py` decomposition to avoid entangled reviews.
++
++---
++
++## 7. Exit criteria before any component status is tightened (Deprecated/Forbidden)
++
++A's governance status may move from `Needs consolidation` → `Deprecated` only when **all** hold:
++1. B has token-strict, **tested** equivalents for every A export that currently has consumers (incl. interactive metric card + strip + chosen row model + any required pagination).
++2. The canonical row-model and KPI-pattern **product/design decisions (§4) are recorded** (in `DECISIONS.md` / `CAREON_DESIGN_SYSTEM_V1.md`).
++3. **All 21 consumers migrated** off A — verified by the PR-D forbidden-import guard reporting zero importers (or an explicit grep).
++4. Playwright **golden-path + visual-regression green** across migrated pages; design sign-off on visual parity.
++
++Move `Deprecated` → `Forbidden` (or delete the file) only after a soak period with the guard active and no new imports. This document performs **no migration and changes no status**; it is decision input only.

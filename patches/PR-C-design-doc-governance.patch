@@ -1,0 +1,119 @@
+diff --git a/.github/pull_request_template.md b/.github/pull_request_template.md
+index 9f18254..b616fec 100644
+--- a/.github/pull_request_template.md
++++ b/.github/pull_request_template.md
+@@ -99,3 +99,23 @@ If detected:
+ ## Evidence
+ 
+ - Screenshots / logs / links:
++
++
++## Definition of Ready
++
++- [ ] Probleem en betrokken rol/gebruiker zijn benoemd
++- [ ] Betrokken pagina-archetype (`docs/design/CAREON_SCREEN_ARCHETYPE_MAP.md`) of backend-laag is geïdentificeerd
++- [ ] Voor UI: de drie operationele vragen zijn beantwoord (wat heeft aandacht nodig / waarom geblokkeerd / volgende beste actie)
++- [ ] Impact op workflow, tenant-isolatie en permissies is benoemd
++- [ ] Testaanpak is geschetst
++- [ ] Eventuele breaking contract-wijziging (URL, view-naam, API-shape) is gemarkeerd voor productgoedkeuring
++- [ ] Gedeelde componenten komen uit het canonieke register (`docs/design/CAREON_COMPONENT_INVENTORY.md`); geen `Forbidden`/`Deprecated` component gebruikt
++
++## Definition of Done
++
++- [ ] Verplichte CI-workflows groen; lokaal het officiële verificatiecommando uitgevoerd (Phase 1 / PR-F: `make verify` of `scripts/verify.sh`)
++- [ ] Geen wijziging aan URLs, view-namen, template-context-keys of API-response-shapes tenzij expliciet goedgekeurd en geversioneerd
++- [ ] Designprincipes en tokens volgen `docs/design/CAREON_DESIGN_SYSTEM_V1.md`; geen hardcoded kleuren/spacing
++- [ ] Gedeelde UI via de canonieke primitives; geen nieuw concurrerend primitive; `CAREON_COMPONENT_INVENTORY.md` bijgewerkt als een gedeeld component wijzigde
++- [ ] Documentatie in dezelfde PR bijgewerkt (register / debt-register / hiërarchie waar relevant)
++- [ ] Voor workflow-rakende wijzigingen: `tests/test_cross_tenant_isolation` + workflow-gate-tests ongewijzigd en groen
+diff --git a/docs/design/CAREON_COMPONENT_INVENTORY.md b/docs/design/CAREON_COMPONENT_INVENTORY.md
+index bb3d137..8ca5d53 100644
+--- a/docs/design/CAREON_COMPONENT_INVENTORY.md
++++ b/docs/design/CAREON_COMPONENT_INVENTORY.md
+@@ -5,15 +5,41 @@
+ 
+ ---
+ 
+-## Statuslegenda
++> **Canoniek componentregister (source of truth).** Dit document is de canonieke bron voor de status van gedeelde frontend-componenten. Designprincipes, tokens en verplichte regels staan in `CAREON_DESIGN_SYSTEM_V1.md`; pagina-archetypen en referentiepagina's in `CAREON_SCREEN_ARCHETYPE_MAP.md`; bekende afwijkingen en migratiewerk in `CAREON_DESIGN_DEBT_REGISTER.md`.
+ 
++## Statusmodel (twee dimensies)
++
++Componenten worden beschreven langs twee **onafhankelijke** dimensies. De bestaande `Status`-kolom in de tabellen hieronder is de **Planned action**-dimensie. De **Governance status** wordt waar nuttig per component toegevoegd; dit vereist géén volledige migratie van het document.
++
++### Governance status
+ | Status | Betekenis |
+ |---|---|
+-| KEEP | Behouden, mogelijk met fixes |
+-| FIX | Behouden maar heeft gerichte aanpassingen nodig |
+-| DELETE | Verwijderen nadat consumers zijn gemigreerd |
+-| MERGE | Samenvoegen met een ander component |
+-| CREATE | Nieuw aanmaken (alleen na bewijs van ≥2 productschermen) |
++| Approved | Canoniek; gebruiken |
++| Experimental | In gebruik maar geïsoleerd/instabiel; niet uitbreiden zonder review |
++| Needs consolidation | Overlapt een canoniek component; samenvoegen |
++| Deprecated | Vervangen of dood; verwijderen nadat consumers zijn gemigreerd |
++| Forbidden | Parallel/schaduwsysteem; niet importeren of uitbreiden |
++
++### Planned action (bestaande `Status`-kolom)
++| Actie | Betekenis |
++|---|---|
++| Keep | Behouden, mogelijk met fixes |
++| Review | Nog te beoordelen |
++| Fix | Behouden maar heeft gerichte aanpassingen nodig |
++| Merge | Samenvoegen met een ander component |
++| Replace | Vervangen door een canoniek alternatief |
++| Delete | Verwijderen nadat consumers zijn gemigreerd |
++| Create | Nieuw aanmaken (alleen na bewijs van ≥2 productschermen) |
++
++> Bestaande tabelwaarden blijven geldig en mappen 1-op-1: `KEEP→Keep`, `FIX→Fix`, `MERGE→Merge`, `DELETE→Delete`, `CREATE→Create`. Nieuwe rijen mogen ook `Review` en `Replace` gebruiken. De twee dimensies worden niet samengevoegd tot één kolom.
++
++## Governance: Forbidden parallelle systemen
++
++| Component | Governance status | Reden | Approved vervanging | Bron |
++|---|---|---|---|---|
++| `CareCommandPrimitives` (`client/src/components/care/CareCommandPrimitives.tsx`) | Forbidden | Parallel/schaduw-designsysteem dat het work-row/queue/metric-systeem dupliceert; geen non-test importers | Queue/rij: `CareWorkRow`, `CareWorkListCard`, `CarePrimaryList`, `CareOperationalQueueHeader`; filters: `CareSearchFiltersBar`; metrics: `CareMetricCard` (alle in `CareDesignPrimitives`) | `CAREON_COMPONENT_DUPLICATION_REPORT.md` |
++
++> **PR-C verwijdert of migreert geen componenten.** Deze markering is uitsluitend governance/documentatie. De feitelijke verwijdering of migratie van `CareCommandPrimitives` volgt in een latere, afzonderlijk goedgekeurde uitvoeringsfase (zie `CAREON_DESIGN_DEBT_REGISTER.md`).
+ 
+ ---
+ 
+diff --git a/docs/design/CAREON_DESIGN_SYSTEM_V1.md b/docs/design/CAREON_DESIGN_SYSTEM_V1.md
+index fccddb4..8507e6d 100644
+--- a/docs/design/CAREON_DESIGN_SYSTEM_V1.md
++++ b/docs/design/CAREON_DESIGN_SYSTEM_V1.md
+@@ -12,6 +12,21 @@ Dit document is de bindende specificatie voor het CareOn design system. Het verv
+ 
+ ---
+ 
++## Documenthiërarchie (source of truth)
++
++Bij tegenstrijdigheid geldt de volgende canonieke verdeling:
++
++| Domein | Canonieke bron |
++|---|---|
++| Designprincipes, tokens, verplichte implementatieregels | **`CAREON_DESIGN_SYSTEM_V1.md`** (dit document) |
++| Componentregister (status van gedeelde componenten) | `CAREON_COMPONENT_INVENTORY.md` |
++| Pagina-archetypen en referentiepagina's | `CAREON_SCREEN_ARCHETYPE_MAP.md` |
++| Bekende afwijkingen en migratiewerk | `CAREON_DESIGN_DEBT_REGISTER.md` |
++
++Ondersteunend (geen primaire source of truth): `CAREON_COMPONENT_DUPLICATION_REPORT.md` (analyse-input) en `CAREON_PAGE_PATTERNS.md` (ondergeschikt aan dit document en de Screen Archetype Map). `CAREON_UI_CONTRACT.md` is historisch/ingetrokken.
++
++---
++
+ ## Deel 1 — Tokenstructuur
+ 
+ ### Principe: drie lagen, één bron van waarheid
+diff --git a/docs/design/CAREON_PAGE_PATTERNS.md b/docs/design/CAREON_PAGE_PATTERNS.md
+index 4d4bd6b..12516be 100644
+--- a/docs/design/CAREON_PAGE_PATTERNS.md
++++ b/docs/design/CAREON_PAGE_PATTERNS.md
+@@ -1,7 +1,7 @@
+ # CareOn Page Patterns
+ 
+ This document describes the approved page patterns for CareOn UI surfaces.
+-It is subordinate to `CAREON_UI_CONTRACT.md`.
++It is subordinate to the canonical design documents: `CAREON_DESIGN_SYSTEM_V1.md` (design principles, tokens, mandatory rules) and `CAREON_SCREEN_ARCHETYPE_MAP.md` (page archetypes and reference pages). (`CAREON_UI_CONTRACT.md` is retired/superseded.)
+ 
+ ## Approved Patterns
+ 

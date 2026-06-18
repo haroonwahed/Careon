@@ -1,0 +1,216 @@
+diff --git a/tests/dependency_direction_allowlist.json b/tests/dependency_direction_allowlist.json
+new file mode 100644
+index 0000000..ac62d01
+--- /dev/null
++++ b/tests/dependency_direction_allowlist.json
+@@ -0,0 +1,12 @@
++{
++  "roadmap_id": "A3 domain seam extraction",
++  "description": "Grandfathered, to-be-removed inverted dependencies. Modules under contracts/api/ and contracts/domain/ must not import contracts.views. Each entry here is an existing violation that will be removed when domain logic is extracted from contracts.views into contracts/domain/. See docs/adr/ADR-CONTRACTS-VIEWS-DECOMPOSITION.md and docs/roadmap/CAREON_STANDARDIZATION_ROADMAP.md (workstream A, phase A3). Do NOT add new entries without separate review/report.",
++  "allowed_view_imports": [
++    {
++      "module": "contracts/api/matching.py",
++      "imports": ["_assign_provider_to_intake", "_prepare_waitlist_proposal_for_intake"],
++      "reason": "Matching API temporarily sources two domain helpers from contracts.views.",
++      "remove_by": "A3 domain seam extraction"
++    }
++  ]
++}
+diff --git a/tests/test_dependency_direction.py b/tests/test_dependency_direction.py
+new file mode 100644
+index 0000000..3c1feb2
+--- /dev/null
++++ b/tests/test_dependency_direction.py
+@@ -0,0 +1,107 @@
++"""Dependency-direction guard (Phase 1 / PR-B).
++
++Enforces one-way layering: modules under ``contracts/api/`` and
++``contracts/domain/`` must NOT import ``contracts.views``. Existing, known
++violations are grandfathered via ``tests/dependency_direction_allowlist.json``
++(keyed to roadmap id "A3 domain seam extraction"); the guard fails only on a
++NEW violation or a NEW imported symbol from an already-allowlisted module.
++
++Static AST check. Additive and behaviour-neutral: it moves/changes no code.
++"""
++from __future__ import annotations
++
++import ast
++import json
++from pathlib import Path
++
++import pytest
++
++pytestmark = pytest.mark.no_database
++
++REPO_ROOT = Path(__file__).resolve().parent.parent
++GUARDED_DIRS = ("contracts/api", "contracts/domain")
++FORBIDDEN_TARGET = "contracts.views"
++ALLOWLIST_PATH = Path(__file__).resolve().parent / "dependency_direction_allowlist.json"
++
++
++def _module_dotted(path: Path) -> str:
++    rel = path.relative_to(REPO_ROOT).with_suffix("")
++    return ".".join(rel.parts)
++
++
++def _resolve_from_import(node: ast.ImportFrom, current_module: str):
++    if node.level == 0:
++        return node.module
++    parts = current_module.split(".")
++    base = parts[: len(parts) - node.level]
++    if node.module:
++        base = base + node.module.split(".")
++    return ".".join(base)
++
++
++def _view_imports_in_file(path: Path):
++    current = _module_dotted(path)
++    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
++    hits: list[str] = []
++    for node in ast.walk(tree):
++        if isinstance(node, ast.Import):
++            for alias in node.names:
++                if alias.name == FORBIDDEN_TARGET or alias.name.startswith(FORBIDDEN_TARGET + "."):
++                    hits.append("*module*")
++        elif isinstance(node, ast.ImportFrom):
++            resolved = _resolve_from_import(node, current)
++            if resolved == FORBIDDEN_TARGET:
++                hits.extend(alias.name for alias in node.names)
++            elif resolved == "contracts" and any(a.name == "views" for a in node.names):
++                hits.append("*module*")
++    return hits
++
++
++def _iter_guarded_files():
++    for d in GUARDED_DIRS:
++        base = REPO_ROOT / d
++        if not base.exists():
++            continue
++        for p in sorted(base.rglob("*.py")):
++            if "__pycache__" in p.parts:
++                continue
++            yield p
++
++
++def _load_allowlist():
++    data = json.loads(ALLOWLIST_PATH.read_text(encoding="utf-8"))
++    allowed = {e["module"]: set(e.get("imports", [])) for e in data.get("allowed_view_imports", [])}
++    return data, allowed
++
++
++def test_allowlist_is_wellformed():
++    data, allowed = _load_allowlist()
++    assert data.get("roadmap_id") == "A3 domain seam extraction"
++    assert isinstance(allowed, dict)
++
++
++def test_api_and_domain_do_not_import_views():
++    _data, allowed = _load_allowlist()
++    violations: list[str] = []
++    for path in _iter_guarded_files():
++        rel = str(path.relative_to(REPO_ROOT))
++        hits = _view_imports_in_file(path)
++        if not hits:
++            continue
++        allowed_syms = allowed.get(rel)
++        if allowed_syms is None:
++            violations.append(f"{rel} imports {FORBIDDEN_TARGET} {sorted(set(hits))} — not allowlisted")
++        else:
++            extra = set(hits) - allowed_syms
++            if extra:
++                violations.append(
++                    f"{rel} imports NEW {FORBIDDEN_TARGET} symbols {sorted(extra)} "
++                    f"beyond allowlist {sorted(allowed_syms)}"
++                )
++    assert not violations, (
++        "Dependency-direction violations (contracts/api|domain must not import contracts.views):\n"
++        + "\n".join(violations)
++        + "\n\nFix by moving shared logic into contracts/domain (roadmap A3 domain seam extraction), "
++        "or — only for a deliberate, separately-reported exception — extend "
++        "tests/dependency_direction_allowlist.json."
++    )
+diff --git a/tests/test_url_contract.py b/tests/test_url_contract.py
+new file mode 100644
+index 0000000..2257e53
+--- /dev/null
++++ b/tests/test_url_contract.py
+@@ -0,0 +1,79 @@
++"""URL & view-export contract test (Phase 1 / PR-B).
++
++Pins the current routing + cross-module import surface so the later
++``contracts/views`` package transition (``views/legacy.py`` + a thin
++``__init__`` with explicit re-exports) cannot silently drop a route or a
++symbol that other modules/tests import by name.
++
++Additive and behaviour-neutral: it characterises current behaviour only and
++changes no production code.
++"""
++from __future__ import annotations
++
++import pytest
++from django.urls import URLPattern, URLResolver, get_resolver, resolve, reverse
++from django.urls.exceptions import NoReverseMatch
++
++pytestmark = pytest.mark.no_database
++
++# Symbols imported BY NAME from ``contracts.views`` elsewhere in the codebase
++# (contracts/api/matching.py and several tests). Sourced from the backend
++# audit; this list guards the future explicit-re-export surface.
++CROSS_MODULE_VIEW_SYMBOLS = [
++    "_assign_provider_to_intake",
++    "_prepare_waitlist_proposal_for_intake",
++    "_build_matching_suggestions_for_intake",
++    "_provider_profile_match_surface",
++    "sync_case_flow_state",
++    "build_provider_response_monitor",
++    "build_provider_response_overview",
++]
++
++
++def _iter_named(resolver, ns_prefix=""):
++    for entry in resolver.url_patterns:
++        if isinstance(entry, URLResolver):
++            child = f"{ns_prefix}{entry.namespace}:" if entry.namespace else ns_prefix
++            yield from _iter_named(entry, child)
++        elif isinstance(entry, URLPattern) and entry.name:
++            yield f"{ns_prefix}{entry.name}", entry
++
++
++def _named_patterns():
++    return list(_iter_named(get_resolver()))
++
++
++def test_named_routes_discovered():
++    assert _named_patterns(), "no named URL patterns discovered"
++
++
++def test_all_named_routes_have_callable_views():
++    broken = [name for name, pat in _named_patterns() if not callable(getattr(pat, "callback", None))]
++    assert not broken, f"named routes with non-callable view (broken re-export?): {broken}"
++
++
++def test_no_argument_routes_reverse_and_resolve():
++    failures = []
++    for name, pat in _named_patterns():
++        if pat.pattern.regex.groups:  # skip routes that capture arguments
++            continue
++        try:
++            url = reverse(name)
++        except NoReverseMatch as exc:
++            failures.append(f"reverse({name!r}) failed: {exc}")
++            continue
++        try:
++            resolve(url)
++        except Exception as exc:  # noqa: BLE001
++            failures.append(f"resolve({url!r}) for {name!r} failed: {exc}")
++    assert not failures, "URL reverse/resolve contract broken:\n" + "\n".join(failures)
++
++
++@pytest.mark.parametrize("symbol", CROSS_MODULE_VIEW_SYMBOLS)
++def test_cross_module_view_symbol_importable(symbol):
++    import contracts.views as views
++
++    assert hasattr(views, symbol), (
++        f"contracts.views.{symbol} is missing — external importers depend on it; "
++        "preserve it as an explicit re-export when splitting contracts/views."
++    )
