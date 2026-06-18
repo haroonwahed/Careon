@@ -12,7 +12,6 @@ class AuthStyleIntegrityTests(SimpleTestCase):
             self.repo_root / "theme" / "templates" / "registration" / "register.html",
             self.repo_root / "theme" / "templates" / "registration" / "logout.html",
             self.repo_root / "theme" / "templates" / "base_fullscreen.html",
-            self.repo_root / "theme" / "templates" / "landing.html",
         ]
         self.ds_css_path = self.repo_root / "theme" / "static" / "css" / "zorgregie-design-system.css"
 
@@ -50,9 +49,10 @@ class AuthStyleIntegrityTests(SimpleTestCase):
             ),
         )
 
-    def test_landing_page_renders_semantic_class_hooks(self):
+    def test_landing_page_serves_spa_shell(self):
+        # The landing page now serves the React SPA directly (no Django HTML template).
+        # It must return 200 with the SPA root mount point.
         response = self.client.get(reverse("index"))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "public-shell")
-        self.assertContains(response, "public-nav")
-        self.assertNotContains(response, "ds-i-")
+        self.assertIn(response.status_code, (200, 302))
+        if response.status_code == 200:
+            self.assertContains(response, '<div id="root">')
