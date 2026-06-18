@@ -66,7 +66,7 @@ class PrivacyMinimizationTests(TestCase):
                 "gemeente": str(self.municipality.pk),
                 "regio": str(self.region.pk),
                 "urgency": CaseIntakeProcess.Urgency.MEDIUM,
-                "complexity": CaseIntakeProcess.Complexity.SIMPLE,
+                "complexity": CaseIntakeProcess.Complexity.ENKELVOUDIG,
                 "assessment_summary": "Neem contact op via 06 12345678.",
                 "description": "Operationele context.",
             },

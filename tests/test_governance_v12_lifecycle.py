@@ -169,7 +169,7 @@ class GovernanceV12WijkteamTests(TestCase):
             'start_date': str(date.today()),
             'target_completion_date': str(date.today() + timedelta(days=30)),
             'urgency': CaseIntakeProcess.Urgency.MEDIUM,
-            'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+            'complexity': CaseIntakeProcess.Complexity.ENKELVOUDIG,
             'preferred_care_form': CaseIntakeProcess.CareForm.LOW_THRESHOLD_CONSULT,
             'preferred_region_type': RegionType.JEUGDREGIO,
             'jeugdhulpregio': str(self.jeugdregio.pk),

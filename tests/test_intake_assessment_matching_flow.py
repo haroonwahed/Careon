@@ -438,7 +438,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             title='Beslisbare Intake',
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.HIGH,
-            complexity=CaseIntakeProcess.Complexity.MULTIPLE,
+            complexity=CaseIntakeProcess.Complexity.MEERVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             zorgvorm_gewenst=CaseIntakeProcess.CareForm.OUTPATIENT,
             assessment_summary='Korte intake voor beslisscherm.',
@@ -477,7 +477,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             title='Doorstroom Intake',
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
-            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            complexity=CaseIntakeProcess.Complexity.ENKELVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             zorgvorm_gewenst=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date=date.today(),
@@ -493,7 +493,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
                 'zorgtype': CaseIntakeProcess.CareForm.DAY_TREATMENT,
                 'shortDescription': 'Klaar om door te sturen naar matching.',
                 'urgency': CaseIntakeProcess.Urgency.HIGH,
-                'complexity': CaseIntakeProcess.Complexity.MULTIPLE,
+                'complexity': CaseIntakeProcess.Complexity.MEERVOUDIG,
                 'constraints': ['DROPOUT_RISK'],
                 'workflow_summary': {
                     'context': (
@@ -523,7 +523,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(assessment.risk_signals, 'DROPOUT_RISK')
         self.assertEqual(assessment.notes, 'Klaar om door te sturen naar matching.')
         self.assertEqual(intake.urgency, CaseIntakeProcess.Urgency.HIGH)
-        self.assertEqual(intake.complexity, CaseIntakeProcess.Complexity.MULTIPLE)
+        self.assertEqual(intake.complexity, CaseIntakeProcess.Complexity.MEERVOUDIG)
         self.assertEqual(intake.zorgvorm_gewenst, CaseIntakeProcess.CareForm.DAY_TREATMENT)
 
     @patch(
@@ -536,7 +536,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             title='Assessment Audit Rollback Intake',
             status=CaseIntakeProcess.ProcessStatus.MATCHING,
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
-            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            complexity=CaseIntakeProcess.Complexity.ENKELVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
             zorgvorm_gewenst=CaseIntakeProcess.CareForm.OUTPATIENT,
             start_date=date.today(),
@@ -554,7 +554,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
                     'zorgtype': CaseIntakeProcess.CareForm.OUTPATIENT,
                     'shortDescription': 'Test rollback bij audit-fout.',
                     'urgency': CaseIntakeProcess.Urgency.HIGH,
-                    'complexity': CaseIntakeProcess.Complexity.SIMPLE,
+                    'complexity': CaseIntakeProcess.Complexity.ENKELVOUDIG,
                     'workflow_summary': {
                         'context': (
                             'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.'
@@ -892,7 +892,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertTrue(
             Deadline.objects.filter(
                 title='Golden task',
-                case_record_id=intake.pk,
+                due_diligence_process=intake,
             ).exists()
         )
 
@@ -902,7 +902,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertTrue(
             Document.objects.filter(
                 title='Golden document',
-                contract_id=intake.pk,
+                contract_id=intake.contract_id,
             ).exists()
         )
 
@@ -1346,7 +1346,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             contract_type=CareCase.ContractType.OTHER,
             status=CareCase.Status.PENDING,
             service_region='Utrecht',
-            risk_level=CareCase.RiskLevel.MEDIUM,
+            risk_level=CareCase.RiskLevel.VERHOOGD_RISICO,
             case_phase=CareCase.CasePhase.PLAATSING,
             client=provider,
             created_by=self.user,

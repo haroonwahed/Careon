@@ -93,6 +93,7 @@ class RegiekamerDecisionOverviewTests(TestCase):
             intake_status=CaseIntakeProcess.ProcessStatus.INTAKE,
             urgency=CaseIntakeProcess.Urgency.HIGH,
             intake_hours_old=48,
+            missing_required_data=True,
         )
         self.sla_case = self._create_case("SLA breach case", provider=self.provider_a, placement_status=PlacementRequest.Status.IN_REVIEW)
         self.rejection_case = self._create_case("Repeated rejection case", provider=self.provider_a, rejected=True)
@@ -112,6 +113,7 @@ class RegiekamerDecisionOverviewTests(TestCase):
         intake_status: str = CaseIntakeProcess.ProcessStatus.MATCHING,
         urgency: str = CaseIntakeProcess.Urgency.MEDIUM,
         intake_hours_old: int | None = None,
+        missing_required_data: bool = False,
     ) -> CareCase:
         case_record = CareCase.objects.create(
             organization=self.organization,
@@ -124,12 +126,12 @@ class RegiekamerDecisionOverviewTests(TestCase):
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             contract=case_record,
-            title=title,
+            title="" if missing_required_data else title,
             status=CaseIntakeProcess.ProcessStatus.ARCHIVED if archived else intake_status,
             start_date=timezone.localdate() - timedelta(days=10),
             target_completion_date=timezone.localdate() + timedelta(days=7),
             urgency=urgency if not intake_delay else CaseIntakeProcess.Urgency.HIGH,
-            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            complexity=CaseIntakeProcess.Complexity.ENKELVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
         )
 

@@ -70,7 +70,7 @@ class RolePermissionAlignmentTests(TestCase):
             start_date=date.today(),
             target_completion_date=date.today() + timedelta(days=7),
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
-            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            complexity=CaseIntakeProcess.Complexity.ENKELVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
         )
 
@@ -90,7 +90,7 @@ class RolePermissionAlignmentTests(TestCase):
             start_date=date.today(),
             target_completion_date=date.today() + timedelta(days=14),
             urgency=CaseIntakeProcess.Urgency.MEDIUM,
-            complexity=CaseIntakeProcess.Complexity.SIMPLE,
+            complexity=CaseIntakeProcess.Complexity.ENKELVOUDIG,
             preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
         )
 

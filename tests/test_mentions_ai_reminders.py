@@ -78,7 +78,7 @@ class MentionsAiAndReminderTests(TestCase):
             title='Master Services Agreement',
             contract_type=CareCase.ContractType.MSA,
             status=CareCase.Status.ACTIVE,
-            risk_level=CareCase.RiskLevel.HIGH,
+            risk_level=CareCase.RiskLevel.ACUUT_RISICO,
             content='Primary terms and obligations.',
             created_by=self.owner,
             end_date=timezone.localdate() + timedelta(days=7),
@@ -228,7 +228,7 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='member', password='testpass123')
 
         response = self.client.get(
-            reverse('careon:task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('careon:care_task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 403)
@@ -237,7 +237,7 @@ class MentionsAiAndReminderTests(TestCase):
         self.client.login(username='adminuser', password='testpass123')
 
         response = self.client.get(
-            reverse('careon:task_update', kwargs={'pk': self.legal_task.id}),
+            reverse('careon:care_task_update', kwargs={'pk': self.legal_task.id}),
         )
 
         self.assertEqual(response.status_code, 200)

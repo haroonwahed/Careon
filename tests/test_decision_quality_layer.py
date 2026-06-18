@@ -198,15 +198,15 @@ class DecisionContextBuilderTests(TestCase):
         log_case_decision_event(
             case_id=self.case.id,
             event_type=CaseDecisionLog.EventType.MATCH_RECOMMENDED,
-            system_recommendation={'provider_id': 1, 'score': 0.95},
-            provider_id=1,
+            system_recommendation={'provider_id': self.provider.id, 'score': 0.95},
+            provider_id=self.provider.id,
         )
 
         # Log a provider selection
         log_case_decision_event(
             case_id=self.case.id,
             event_type=CaseDecisionLog.EventType.PROVIDER_SELECTED,
-            provider_id=1,
+            provider_id=self.provider.id,
             user_action='provider_selected',
         )
 
