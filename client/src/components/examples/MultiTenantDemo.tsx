@@ -754,8 +754,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     onCancel={() => {
                       goToPage("casussen");
                     }}
-                    onCreated={() => {
-                      goToPage("casussen");
+                    onCreated={(caseId) => {
+                      handleCaseClick(caseId);
                     }}
                   />
                 )}
@@ -907,8 +907,8 @@ export function MultiTenantDemo({ theme, onThemeToggle }: MultiTenantDemoProps) 
                     onCancel={() => {
                       goToPage("mijn-casussen");
                     }}
-                    onCreated={() => {
-                      goToPage("mijn-casussen");
+                    onCreated={(caseId) => {
+                      handleCaseClick(caseId);
                     }}
                   />
                 )}

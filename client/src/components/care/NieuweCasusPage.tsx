@@ -1106,10 +1106,10 @@ export function NieuweCasusPage({ onCancel, onCreated, backLabel = "Terug naar c
       const target =
         payload.redirect_url ||
         (createdCaseId ? toCareCaseDetail(createdCaseId) : `${SPA_DASHBOARD_URL}?page=casussen`);
-      if (createdCaseId) {
-        onCreated?.(createdCaseId);
-      }
-      if (!shouldAvoidBrowserNavigation()) {
+      if (createdCaseId && onCreated) {
+        onCreated(createdCaseId);
+      } else if (!shouldAvoidBrowserNavigation()) {
+        // SPA shell not present (standalone embed or test) — fall back to hard nav.
         window.location.href = target;
       }
     } catch (error) {

@@ -667,6 +667,9 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
   }
 
   if (error || !spaCase) {
+    const isTimeout = error?.includes("te lang") || error?.includes("timeout");
+    const title = isTimeout ? "Verbinding duurt te lang" : !spaCase && !error ? "Casus niet gevonden" : "Casus niet beschikbaar";
+    const detail = error ?? "Deze casus kon niet worden geladen.";
     return (
       <div className="space-y-2">
         <Button variant="ghost" onClick={onBack} className="gap-2">
@@ -674,8 +677,13 @@ export function CaseExecutionPage({ caseId, role = "gemeente", onBack, backLabel
           Terug naar casussen
         </Button>
         <div className="space-y-2 border-b border-border/70 pb-5 text-left">
-          <p className="text-lg font-medium text-foreground">Casus niet beschikbaar</p>
-          <p className="text-sm text-muted-foreground">{error ?? "Deze casus kon niet geladen worden."}</p>
+          <p className="text-lg font-medium text-foreground">{title}</p>
+          <p className="text-sm text-muted-foreground">{detail}</p>
+          {isTimeout && (
+            <Button variant="outline" size="sm" onClick={() => refetch()} className="mt-2">
+              Opnieuw proberen
+            </Button>
+          )}
         </div>
       </div>
     );

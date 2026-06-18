@@ -63,6 +63,7 @@ def providers_api(request):
         ).order_by('name', 'id').select_related('provider_profile').prefetch_related(
             'provider_profile__served_regions__served_municipalities',
             'provider_profile__secondary_served_regions',
+            'wait_time_entries',
         )
         q = request.GET.get('q', '')
         if q:

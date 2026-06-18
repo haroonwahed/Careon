@@ -84,6 +84,7 @@ def contracts_api(request):
                 'due_diligence_process__plaatsingsregio',
                 'due_diligence_process__contractregio',
                 'due_diligence_process__escalatie_regio',
+                'due_diligence_process__case_assessment',
                 'created_by',
             ).prefetch_related(
                 Prefetch(
@@ -215,6 +216,7 @@ def case_detail_api(request, contract_id=None, case_id=None):
                 'due_diligence_process__plaatsingsregio',
                 'due_diligence_process__contractregio',
                 'due_diligence_process__escalatie_regio',
+                'due_diligence_process__case_assessment',
                 'created_by',
             ).prefetch_related(
                 Prefetch(

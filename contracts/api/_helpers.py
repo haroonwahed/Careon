@@ -14,6 +14,7 @@ from contracts.domain.contracts import CareCaseData
 from contracts.models import (
     CareCase,
     CaseIntakeProcess,
+    CaseAssessment,
     PlacementRequest,
     AuditLog,
     Organization,
@@ -230,7 +231,16 @@ def _case_workflow_state(case):
     if persisted_state in _WORKFLOW_STATE_VALUES:
         return persisted_state
     if intake is not None:
-        return derive_workflow_state(intake=intake)
+        # Pass prefetched assessment + latest placement so derive_workflow_state does not
+        # re-query per case (N+1). Ordering matches the list/detail `indications` prefetch
+        # (-updated_at) and derive's own fallback, so the selected rows are identical.
+        try:
+            assessment = intake.case_assessment
+        except CaseAssessment.DoesNotExist:
+            assessment = None
+        placement_rows = list(intake.indications.all())
+        placement = placement_rows[0] if placement_rows else None
+        return derive_workflow_state(intake=intake, assessment=assessment, placement=placement)
     if getattr(case, 'lifecycle_stage', '') == 'ARCHIVED':
         return WorkflowState.ARCHIVED
     return WorkflowState.DRAFT_CASE
