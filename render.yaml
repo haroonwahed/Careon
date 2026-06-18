@@ -3,6 +3,13 @@ services:
     name: careon-web
     runtime: python
     plan: free
+    # Co-locate the app with the database. The Postgres (Supabase) lives in
+    # eu-west-1 (Ireland); Frankfurt is Render's closest EU region. Without this
+    # Render defaults to Oregon (US-West) — every DB query then crosses the
+    # Atlantic (~130ms RTT), and pages that fire ~10+ queries take seconds.
+    # NOTE: Render fixes a service's region at creation; applying this to the
+    # live service requires recreating it in Frankfurt (DB stays in eu-west-1).
+    region: frankfurt
     buildCommand: |
       pip install -r requirements/runtime.txt
       PYTHON_BIN="$(command -v python || command -v python3)"

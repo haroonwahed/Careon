@@ -108,7 +108,13 @@ def providers_api(request):
                 'secondaryRegionLabels': regions_payload['secondary_region_labels'],
                 'allRegionLabels': regions_payload['all_region_labels'],
             })
-        return JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(page_obj.object_list))})
+        response = JsonResponse({'providers': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'workspace_summary': build_provider_workspace_summary(list(page_obj.object_list))})
+        # Provider capacity/region data changes rarely. Let the browser reuse the
+        # response for a short window so navigating between pages (matching,
+        # zorgaanbieders, dashboard) doesn't refetch this heavy payload each time.
+        # `private` keeps it per-user (no shared/CDN caching).
+        response['Cache-Control'] = 'private, max-age=20'
+        return response
     except Exception:
         return _internal_server_error(request, context='providers_api_failed')
 

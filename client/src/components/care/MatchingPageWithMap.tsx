@@ -55,7 +55,6 @@ import { useMatchingCandidates, type MatchingCandidateRow } from "../../hooks/us
 import { toLegacyCase, toLegacyProvider } from "../../lib/careLegacyAdapters";
 import { apiClient } from "../../lib/apiClient";
 import { CARE_PATHS, toCareCaseDetail, toCareCaseEdit } from "../../lib/routes";
-import { ProviderMapSurface } from "./ProviderMapSurface";
 import { tokens } from "../../design/tokens";
 import { cn } from "../ui/utils";
 import { BlockingNotice, CareMatchScore, CarePanel, CareTradeoffList, EmptyState, ErrorState, LoadingState } from "./CareDesignPrimitives";
