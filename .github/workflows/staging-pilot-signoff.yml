@@ -60,7 +60,7 @@ jobs:
           E2E_DEMO_PASSWORD: ${{ secrets.STAGING_E2E_DEMO_PASSWORD }}
         run: |
           set -euo pipefail
-          export BASE_URL="${BASE_URL:-https://careon-web.onrender.com}"
+          export BASE_URL="${BASE_URL:-https://careon-web-630u.onrender.com}"
           export E2E_BASE_URL="${E2E_BASE_URL:-$BASE_URL}"
           export E2E_DEMO_PASSWORD="${E2E_DEMO_PASSWORD:-pilot_demo_pass_123}"
           ./scripts/staging_pilot_signoff.sh
