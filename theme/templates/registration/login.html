@@ -4,7 +4,13 @@
 {% block title %}Inloggen — Carelane{% endblock %}
 
 {% block body %}
+<script>document.documentElement.setAttribute('data-theme','dark');</script>
 <style>
+/* Override global design-system !important heading colors */
+.sa-brand-inner h1.sa-headline,
+.sa-card-wrap h2.sa-card-title {
+  color: #f1f5f9 !important;
+}
 /* ── Reset ──────────────────────────────────────────────── */
 html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
 body {
@@ -25,7 +31,7 @@ body {
   overflow: hidden;
 }
 @media (min-width: 1024px) {
-  .sa-shell { grid-template-columns: 1.15fr 0.85fr; }
+  .sa-shell { grid-template-columns: 1fr 1fr; }
 }
 
 /* ══════════════════════════════════════════════════════════
