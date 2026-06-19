@@ -8,3 +8,5 @@ class ContractsConfig(AppConfig):
     def ready(self):
         # Register signals (User → UserProfile provisioning).
         import contracts.user_profile_provisioning  # noqa: F401
+        # Register WorkflowBus receivers.
+        import contracts.workflow_receivers  # noqa: F401

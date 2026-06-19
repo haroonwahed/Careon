@@ -105,6 +105,12 @@ from .workflow_state_machine import (
     normalize_provider_rejection_states,
     resolve_actor_role,
 )
+from contracts.workflow_bus import (
+    emit_case_phase_changed,
+    emit_placement_response_status_changed,
+    emit_placement_status_changed,
+    emit_assessment_status_changed,
+)
 logger = logging.getLogger(__name__)
 User = get_user_model()
 
@@ -1387,11 +1393,16 @@ def _assign_provider_to_intake(*, request, intake, provider, source):
         placement.selected_provider = provider
         if not placement.care_form:
             placement.care_form = intake.preferred_care_form
+        _old_pl_status = placement.status
         placement.status = PlacementRequest.Status.IN_REVIEW
         allowed, blocker = placement.can_transition_to_status(PlacementRequest.Status.IN_REVIEW)
         if not allowed:
             raise ValidationError(blocker)
         placement.save(update_fields=['proposed_provider', 'selected_provider', 'care_form', 'status', 'updated_at'])
+        emit_placement_status_changed(
+            placement=placement, old_status=_old_pl_status,
+            new_status=PlacementRequest.Status.IN_REVIEW, user=getattr(request, 'user', None),
+        )
 
     if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
         intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
@@ -5440,8 +5451,13 @@ def case_matching_action(request, pk):
             intake.workflow_state = WorkflowState.PROVIDER_REVIEW_PENDING
             intake.save(update_fields=['workflow_state', 'updated_at'])
         if intake.case_record is not None:
+            _old_phase = intake.case_record.case_phase
             intake.case_record.case_phase = CareCase.CasePhase.PROVIDER_BEOORDELING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+            emit_case_phase_changed(
+                case=intake.case_record, old_phase=_old_phase,
+                new_phase=CareCase.CasePhase.PROVIDER_BEOORDELING, user=request.user,
+            )
 
         log_case_decision_event(
             case_id=intake.pk,
@@ -5554,8 +5570,13 @@ def case_matching_action(request, pk):
         intake.save(update_fields=['workflow_state', 'status', 'updated_at'])
 
         if intake.case_record is not None and intake.case_record.case_phase != CareCase.CasePhase.MATCHING:
+            _old_phase = intake.case_record.case_phase
             intake.case_record.case_phase = CareCase.CasePhase.MATCHING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+            emit_case_phase_changed(
+                case=intake.case_record, old_phase=_old_phase,
+                new_phase=CareCase.CasePhase.MATCHING, user=request.user,
+            )
 
         if previous_state == WorkflowState.MATCHING_READY:
             log_transition_event(
@@ -5655,8 +5676,13 @@ def case_provider_response_action(request, pk):
 
     normalized_status, sla, recommendation_context, adaptive_flags = _build_provider_response_governance_context(placement)
     if normalized_status != placement.provider_response_status:
+        _old_prs = placement.provider_response_status
         placement.provider_response_status = normalized_status
         placement.save(update_fields=['provider_response_status', 'updated_at'])
+        emit_placement_response_status_changed(
+            placement=placement, old_response_status=_old_prs,
+            new_response_status=normalized_status, user=request.user,
+        )
 
     provider_id = placement.selected_provider_id or placement.proposed_provider_id
     detect_and_log_sla_transition(
@@ -5682,6 +5708,7 @@ def case_provider_response_action(request, pk):
             messages.error(request, 'Herinnering is alleen toegestaan voor open providerreacties.')
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
+        _old_prs = placement.provider_response_status
         placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
         placement.provider_response_requested_at = now
         placement.provider_response_last_reminder_at = now
@@ -5693,6 +5720,10 @@ def case_provider_response_action(request, pk):
             'provider_response_deadline_at',
             'updated_at',
         ])
+        emit_placement_response_status_changed(
+            placement=placement, old_response_status=_old_prs,
+            new_response_status=PlacementRequest.ProviderResponseStatus.PENDING, user=request.user,
+        )
         log_action(
             request.user,
             AuditLog.Action.UPDATE,
@@ -5731,6 +5762,7 @@ def case_provider_response_action(request, pk):
 
         stamped_note = f"[{now.strftime('%d-%m-%Y %H:%M')}] Aanvullende informatie aangeleverd"
         existing_notes = placement.provider_response_notes or ''
+        _old_prs = placement.provider_response_status
         placement.provider_response_status = PlacementRequest.ProviderResponseStatus.PENDING
         placement.provider_response_requested_at = now
         placement.provider_response_deadline_at = now + timedelta(days=3)
@@ -5742,6 +5774,10 @@ def case_provider_response_action(request, pk):
             'provider_response_notes',
             'updated_at',
         ])
+        emit_placement_response_status_changed(
+            placement=placement, old_response_status=_old_prs,
+            new_response_status=PlacementRequest.ProviderResponseStatus.PENDING, user=request.user,
+        )
         log_action(
             request.user,
             AuditLog.Action.UPDATE,
@@ -5837,18 +5873,33 @@ def case_provider_response_action(request, pk):
 
         existing = placement.decision_notes or ''
         stamped_note = f"[{now.strftime('%d-%m-%Y %H:%M')}] Her-match gestart vanuit providerreactie-orchestratie."
+        _old_pl_status = placement.status
+        _old_prs = placement.provider_response_status
         placement.status = PlacementRequest.Status.REJECTED
         placement.provider_response_status = normalized_status
         placement.decision_notes = f"{existing}\n{stamped_note}".strip()
         placement.save(update_fields=['status', 'provider_response_status', 'decision_notes', 'updated_at'])
+        emit_placement_status_changed(
+            placement=placement, old_status=_old_pl_status,
+            new_status=PlacementRequest.Status.REJECTED, user=request.user,
+        )
+        emit_placement_response_status_changed(
+            placement=placement, old_response_status=_old_prs,
+            new_response_status=normalized_status, user=request.user,
+        )
         if intake.status != CaseIntakeProcess.ProcessStatus.MATCHING:
             intake.status = CaseIntakeProcess.ProcessStatus.MATCHING
         if intake.workflow_state != WorkflowState.MATCHING_READY:
             intake.workflow_state = WorkflowState.MATCHING_READY
         intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
         if intake.case_record is not None:
+            _old_phase = intake.case_record.case_phase
             intake.case_record.case_phase = CareCase.CasePhase.MATCHING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+            emit_case_phase_changed(
+                case=intake.case_record, old_phase=_old_phase,
+                new_phase=CareCase.CasePhase.MATCHING, user=request.user,
+            )
         log_action(
             request.user,
             AuditLog.Action.UPDATE,
@@ -5975,6 +6026,7 @@ def case_outcome_action(request, pk):
             messages.error(request, transition.reason)
             return _redirect_to_safe_next_or_default(request, next_fallback)
 
+        _old_prs = placement.provider_response_status
         placement.provider_response_status = normalized_status
         placement.provider_response_reason_code = reason_code
         placement.provider_response_notes = notes
@@ -5997,6 +6049,10 @@ def case_outcome_action(request, pk):
                 'updated_at',
             ]
         )
+        emit_placement_response_status_changed(
+            placement=placement, old_response_status=_old_prs,
+            new_response_status=normalized_status, user=request.user,
+        )
 
         log_action(
             request.user,
@@ -6016,8 +6072,13 @@ def case_outcome_action(request, pk):
         )
 
         if intake.case_record is not None and normalized_status == PlacementRequest.ProviderResponseStatus.ACCEPTED:
+            _old_phase = intake.case_record.case_phase
             intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
             intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+            emit_case_phase_changed(
+                case=intake.case_record, old_phase=_old_phase,
+                new_phase=CareCase.CasePhase.PLAATSING, user=request.user,
+            )
 
         new_state = target_state
         if intake.workflow_state != new_state:

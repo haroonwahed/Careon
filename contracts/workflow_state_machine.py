@@ -362,3 +362,18 @@ def log_transition_event(
         optional_reason=reason or '',
         strict=True,
     )
+
+    # Fire WorkflowBus signal so receivers can react without coupling to views.
+    try:
+        from contracts.workflow_bus import WorkflowBus
+        WorkflowBus.INTAKE_STATE_CHANGED.send(
+            sender=type(intake),
+            intake=intake,
+            old_state=old_state,
+            new_state=new_state,
+            user=actor_user,
+            action=action,
+            extra={'actor_role': actor_role, 'source': source, 'placement': placement},
+        )
+    except Exception:
+        logger.exception("workflow_bus.signal_failed_in_log_transition_event action=%s", action)
