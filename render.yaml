@@ -37,16 +37,15 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: ALLOWED_HOSTS
-        sync: false
+        value: app.carelane.nl
       - key: CSRF_TRUSTED_ORIGINS
-        sync: false
-      # Public site URL for Django templates (nav links). Set to https://<your-service>.onrender.com
+        value: https://app.carelane.nl
+      # Public site URL for Django templates (nav links).
       - key: SPA_ORIGIN
-        sync: false
-      # Must match Google OAuth authorized redirect URI origin (https://<host>, not :3000).
-      # Now also auto-derives from RENDER_EXTERNAL_URL when unset (see config/settings.py).
+        value: https://app.carelane.nl
+      # Must match Google OAuth authorized redirect URI origin.
       - key: OIDC_PUBLIC_BASE_URL
-        sync: false
+        value: https://app.carelane.nl
       # Google SSO (OIDC). The "Doorgaan met organisatieaccount" button on the
       # login page ONLY appears when SSO is fully configured. These were missing
       # from the blueprint, so a service recreate silently dropped SSO. Declared
