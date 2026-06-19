@@ -37,15 +37,15 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: ALLOWED_HOSTS
-        value: app.carelane.nl
+        value: www.carelane.nl
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://app.carelane.nl
+        value: https://www.carelane.nl
       # Public site URL for Django templates (nav links).
       - key: SPA_ORIGIN
-        value: https://app.carelane.nl
+        value: https://www.carelane.nl
       # Must match Google OAuth authorized redirect URI origin.
       - key: OIDC_PUBLIC_BASE_URL
-        value: https://app.carelane.nl
+        value: https://www.carelane.nl
       # Google SSO (OIDC). The "Doorgaan met organisatieaccount" button on the
       # login page ONLY appears when SSO is fully configured. These were missing
       # from the blueprint, so a service recreate silently dropped SSO. Declared

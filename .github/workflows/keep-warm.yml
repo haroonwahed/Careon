@@ -39,7 +39,7 @@ jobs:
           KEEP_WARM_URL: ${{ vars.KEEP_WARM_URL }}
         run: |
           set -euo pipefail
-          URL="${KEEP_WARM_URL:-https://app.carelane.nl/_health/}"
+          URL="${KEEP_WARM_URL:-https://www.carelane.nl/_health/}"
           echo "Pinging ${URL}"
           # A cold Free instance takes 30–60s to wake, so allow a long timeout
           # and retry transient 5xx/connection errors from Render's edge.

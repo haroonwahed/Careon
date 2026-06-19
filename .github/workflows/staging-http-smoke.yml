@@ -24,6 +24,6 @@ jobs:
           STAGING_BASE_URL: ${{ vars.STAGING_BASE_URL }}
         run: |
           set -euo pipefail
-          export BASE_URL="${STAGING_BASE_URL:-https://app.carelane.nl}"
+          export BASE_URL="${STAGING_BASE_URL:-https://www.carelane.nl}"
           chmod +x scripts/go_live_http_smoke.sh
           ./scripts/go_live_http_smoke.sh
