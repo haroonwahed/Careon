@@ -15,38 +15,38 @@ export function StatusBadge({ status, language, size = "sm" }: StatusBadgeProps)
       case "sold":
         return {
           label: t(language, "published.status.sold"),
-          className: "dark:bg-[rgba(42,240,122,0.30)] bg-green-500/30 text-green-base text-green-300 border dark:border-[#2AF07A] border-green-400",
+          className: "bg-care-success-bg text-care-success-text border border-care-success-border",
           icon: null,
         };
       case "boostActive":
         return {
           label: t(language, "published.status.boostActive"),
-          className: "bg-primary/40 bg-primary/40 text-primary-foreground text-primary-foreground border border-primary border-primary",
+          className: "bg-primary/40 text-primary-foreground border border-primary",
           icon: Zap,
         };
       case "hidden":
         return {
           label: t(language, "published.status.hidden"),
-          className: "bg-muted/35 bg-gray-500/35 text-muted-foreground text-gray-300 border border-border border-gray-400",
+          className: "bg-muted/35 text-muted-foreground border border-border",
           icon: EyeOff,
         };
       case "needsRepost":
         return {
           label: t(language, "published.status.needsRepost"),
-          className: "bg-yellow-light/35 bg-orange-500/35 text-yellow-border text-orange-300 border border-yellow-border border-orange-400",
+          className: "bg-care-warning-bg text-care-warning-text border border-care-warning-border",
           icon: Clock,
         };
       case "lowPhotos":
         return {
           label: t(language, "published.status.lowPhotos"),
-          className: "bg-yellow-light/35 bg-orange-500/35 text-yellow-border text-orange-300 border border-yellow-border border-orange-400",
+          className: "bg-care-warning-bg text-care-warning-text border border-care-warning-border",
           icon: ImageIcon,
         };
       case "active":
       default:
         return {
           label: t(language, "published.status.active"),
-          className: "dark:bg-[rgba(139,92,246,0.25)] bg-primary/25 text-primary-foreground text-primary-foreground border border-primary/50 border-primary/50",
+          className: "bg-primary/25 text-primary-foreground border border-primary/50",
           icon: null,
         };
     }

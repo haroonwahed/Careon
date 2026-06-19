@@ -503,11 +503,11 @@ function RegiekamerKpiCard({
 }
 
 const PHASE_DONUT_COLORS: Record<RegiekamerFlowStepId, { stroke: string; label: string }> = {
-  aanmelding:       { stroke: "#60A5FA", label: "Aanmelding" },
-  matching:         { stroke: "#818CF8", label: "Matching" },
-  aanbiederreactie: { stroke: "#FBBF24", label: "Aanbiederreactie" },
-  plaatsing:        { stroke: "#34D399", label: "Plaatsing" },
-  intake:           { stroke: "#6EE7B7", label: "Intake" },
+  aanmelding:       { stroke: "var(--care-semantic-info-solid)",    label: "Aanmelding" },
+  matching:         { stroke: "var(--care-semantic-brand-solid)",   label: "Matching" },
+  aanbiederreactie: { stroke: "var(--care-semantic-warning-solid)", label: "Aanbiederreactie" },
+  plaatsing:        { stroke: "var(--care-semantic-success-solid)", label: "Plaatsing" },
+  intake:           { stroke: "var(--care-semantic-success-text)",  label: "Intake" },
 };
 
 function PhaseDonutPanel({
@@ -543,7 +543,7 @@ function PhaseDonutPanel({
   return (
     <div
       className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+      style={{ boxShadow: "var(--care-shadow-card)" }}
     >
       <p className="mb-3 text-[12px] font-semibold text-foreground">Faseverdeling</p>
       <div className="flex items-center gap-4">
@@ -555,12 +555,11 @@ function PhaseDonutPanel({
                 key={step}
                 cx={CX} cy={CY} r={R}
                 fill="none"
-                stroke={PHASE_DONUT_COLORS[step].stroke}
                 strokeWidth={activeTab === step ? 12 : 9}
                 strokeDasharray={`${dashLen} ${CIRC}`}
                 strokeDashoffset={offset}
                 transform={`rotate(-90 ${CX} ${CY})`}
-                style={{ cursor: "pointer", transition: "stroke-width 0.15s" }}
+                style={{ stroke: PHASE_DONUT_COLORS[step].stroke, cursor: "pointer", transition: "stroke-width 0.15s" }}
                 onClick={() => onPhaseClick(step)}
               />
             )
@@ -628,7 +627,7 @@ function DelayReasonsPanel({
   return (
     <div
       className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+      style={{ boxShadow: "var(--care-shadow-card)" }}
     >
       <p className="mb-3 text-[12px] font-semibold text-foreground">Vertraging oorzaken</p>
       {reasons.length === 0 ? (
@@ -698,7 +697,7 @@ function SlaBreakdownPanel({
   return (
     <div
       className="rounded-xl border border-border/60 bg-white dark:bg-[var(--surface-elevated)] p-4"
-      style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}
+      style={{ boxShadow: "var(--care-shadow-card)" }}
     >
       <p className="mb-3 text-[12px] font-semibold text-foreground">SLA-status</p>
       <div className="space-y-1">
@@ -965,7 +964,7 @@ function CasusdetailsPanel({
   return (
     <aside
       className="fixed inset-y-0 right-0 z-40 flex w-[380px] flex-col border-l border-border/60 bg-white dark:bg-card"
-      style={{ boxShadow: "-4px 0 24px rgba(0,0,0,0.06)" }}
+      style={{ boxShadow: "var(--care-shadow-overlay)" }}
     >
       <div className="flex items-center justify-between border-b border-border/40 px-5 py-3.5">
         <div className="flex items-center gap-2.5 min-w-0">

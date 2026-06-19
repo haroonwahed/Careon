@@ -25,17 +25,17 @@ export function urgencyToneClasses(level: CareUrgencyTone) {
       };
     case "warning":
       return {
-        borderLeft: "border-l-amber-500",
-        bg: "bg-amber-500/10",
-        text: "text-amber-300",
-        chip: "border-amber-500/40 bg-amber-500/15 text-amber-300",
+        borderLeft: "border-care-warning-border",
+        bg: "bg-care-warning-bg",
+        text: "text-care-warning-text",
+        chip: "border-care-warning-border bg-care-warning-bg text-care-warning-text",
       };
     case "positive":
       return {
-        borderLeft: "border-l-emerald-500",
-        bg: "bg-emerald-500/10",
-        text: "text-emerald-300",
-        chip: "border-emerald-500/40 bg-emerald-500/15 text-emerald-300",
+        borderLeft: "border-care-success-border",
+        bg: "bg-care-success-bg",
+        text: "text-care-success-text",
+        chip: "border-care-success-border bg-care-success-bg text-care-success-text",
       };
     default:
       return {
@@ -50,13 +50,13 @@ export function urgencyToneClasses(level: CareUrgencyTone) {
 export function caseStatusToneClass(status: CareCaseStatusTone): string {
   switch (status) {
     case "aanmelding":
-      return "text-blue-300";
+      return "text-care-info-text";
     case "matching":
-      return "text-amber-300";
+      return "text-care-warning-text";
     case "aanbiederreactie":
-      return "text-fuchsia-300";
+      return "text-care-brand-text";
     case "plaatsing":
-      return "text-emerald-300";
+      return "text-care-success-text";
     default:
       return "text-muted-foreground";
   }
@@ -65,16 +65,15 @@ export function caseStatusToneClass(status: CareCaseStatusTone): string {
 export function workflowStatusChipClasses(status: CareWorkflowStatusTone): string {
   switch (status) {
     case "intake":
-      return "text-blue-300 bg-blue-500/10 border-blue-500/30";
     case "assessment":
-      return "text-blue-300 bg-blue-500/10 border-blue-500/30";
+      return "text-care-info-text bg-care-info-bg border-care-info-border";
     case "matching":
-      return "text-amber-300 bg-amber-500/10 border-amber-500/30";
+      return "text-care-warning-text bg-care-warning-bg border-care-warning-border";
     case "placement":
-      return "text-cyan-300 bg-cyan-500/10 border-cyan-500/30";
+      return "text-care-success-text bg-care-success-bg border-care-success-border";
     case "active":
     case "completed":
-      return "text-emerald-300 bg-emerald-500/10 border-emerald-500/30";
+      return "text-care-success-text bg-care-success-bg border-care-success-border";
     default:
       return "text-destructive bg-destructive/10 border-destructive/30";
   }
@@ -85,9 +84,9 @@ export function urgencyLevelChipClasses(level: CareUrgencyLevelTone): string {
     case "critical":
       return "text-destructive bg-destructive/10 border-destructive/30";
     case "high":
-      return "text-amber-300 bg-amber-500/10 border-amber-500/30";
+      return "text-care-warning-text bg-care-warning-bg border-care-warning-border";
     case "medium":
-      return "text-blue-300 bg-blue-500/10 border-blue-500/30";
+      return "text-care-info-text bg-care-info-bg border-care-info-border";
     default:
       return "text-muted-foreground bg-muted/30 border-border/70";
   }
@@ -105,19 +104,19 @@ export function quickFilterToneClasses(filter: CareQuickFilterTone) {
       };
     case "ready-placement":
       return {
-        color: "text-emerald-300",
-        bg: "bg-emerald-500/10",
-        border: "border-emerald-500/30",
-        activeBg: "bg-emerald-500/15",
-        activeBorder: "border-emerald-500/50",
+        color: "text-care-success-text",
+        bg: "bg-care-success-bg",
+        border: "border-care-success-border",
+        activeBg: "bg-care-success-bg",
+        activeBorder: "border-care-success-border",
       };
     default:
       return {
-        color: "text-amber-300",
-        bg: "bg-amber-500/10",
-        border: "border-amber-500/30",
-        activeBg: "bg-amber-500/15",
-        activeBorder: "border-amber-500/50",
+        color: "text-care-warning-text",
+        bg: "bg-care-warning-bg",
+        border: "border-care-warning-border",
+        activeBg: "bg-care-warning-bg",
+        activeBorder: "border-care-warning-border",
       };
   }
 }
@@ -127,11 +126,11 @@ export function validationToneClasses(level: CareValidationTone) {
     case "error":
       return { text: "text-destructive", shell: "border-destructive/40 bg-destructive/15" };
     case "warning":
-      return { text: "text-amber-300", shell: "border-amber-500/40 bg-amber-500/15" };
+      return { text: "text-care-warning-text", shell: "border-care-warning-border bg-care-warning-bg" };
     case "info":
-      return { text: "text-cyan-300", shell: "border-cyan-500/40 bg-cyan-500/15" };
+      return { text: "text-care-info-text", shell: "border-care-info-border bg-care-info-bg" };
     default:
-      return { text: "text-emerald-300", shell: "border-emerald-500/40 bg-emerald-500/15" };
+      return { text: "text-care-success-text", shell: "border-care-success-border bg-care-success-bg" };
   }
 }
 
@@ -140,13 +139,13 @@ export function phaseToneClass(phase: CasusPhase): string {
     case "aanmelding":
       return "text-primary";
     case "matching":
-      return "text-amber-300";
+      return "text-care-warning-text";
     case "aanbiederreactie":
-      return "text-fuchsia-300";
+      return "text-care-brand-text";
     case "plaatsing":
-      return "text-cyan-300";
+      return "text-care-success-text";
     case "intake":
-      return "text-emerald-300";
+      return "text-care-info-text";
     case "geblokkeerd":
       return "text-destructive";
     default:

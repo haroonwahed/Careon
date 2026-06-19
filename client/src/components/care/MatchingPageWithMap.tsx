@@ -566,7 +566,7 @@ export function MatchingPageWithMap({
                     "rounded-full px-3 py-1 text-[11px] font-semibold",
                     urgencyHighlight
                       ? "bg-care-urgent-bg text-care-urgent-text"
-                      : "bg-amber-500/15 text-amber-300",
+                      : "bg-care-warning-bg text-care-warning-text",
                   )}
                 >
                   {urgencyNl}
@@ -681,16 +681,16 @@ export function MatchingPageWithMap({
                 const isSelected = selectedProviderId === item.provider.id;
                 const qualityBadge =
                   item.index === 0
-                    ? { label: "Beste match", cls: "bg-violet-500/15 text-violet-400" }
+                    ? { label: "Beste match", cls: "bg-care-brand-bg text-care-brand-text" }
                     : item.index === 1
-                      ? { label: "Goede match", cls: "bg-emerald-500/15 text-emerald-400" }
+                      ? { label: "Goede match", cls: "bg-care-success-bg text-care-success-text" }
                       : { label: "Reserve", cls: "bg-muted/40 text-muted-foreground" };
                 const scoreColor =
                   (item.matchScore ?? 0) >= 80
-                    ? "text-emerald-500"
+                    ? "text-care-success-solid"
                     : (item.matchScore ?? 0) >= 60
-                      ? "text-emerald-400"
-                      : "text-amber-400";
+                      ? "text-care-success-text"
+                      : "text-care-warning-text";
                 return (
                   <article
                     key={item.provider.id}
@@ -896,10 +896,10 @@ export function MatchingPageWithMap({
                   <ul className="mt-1.5 divide-y divide-border/40">
                     {(
                       [
-                        { Icon: AlertCircle, tone: "text-amber-400", label: "Uitgesloten door ontbrekende capaciteit", count: 4 },
-                        { Icon: MapPin, tone: "text-sky-400", label: "Buiten de gekozen regio", count: 2 },
-                        { Icon: Users, tone: "text-violet-400", label: "Geen passende specialisatie", count: 1 },
-                        { Icon: Check, tone: "text-emerald-400", label: "Voldoet aan alle criteria", count: 0 },
+                        { Icon: AlertCircle, tone: "text-care-warning-text", label: "Uitgesloten door ontbrekende capaciteit", count: 4 },
+                        { Icon: MapPin, tone: "text-care-info-text", label: "Buiten de gekozen regio", count: 2 },
+                        { Icon: Users, tone: "text-care-brand-text", label: "Geen passende specialisatie", count: 1 },
+                        { Icon: Check, tone: "text-care-success-text", label: "Voldoet aan alle criteria", count: 0 },
                       ] as const
                     ).map((row) => (
                       <li key={row.label} className="flex items-center justify-between gap-3 py-2.5">
@@ -1043,9 +1043,9 @@ export function MatchingPageWithMap({
                 <ul className="mt-3 space-y-2.5">
                   {(
                     [
-                      { Icon: AlertCircle, tone: "text-amber-400", text: "Onvoldoende capaciteit in de regio" },
-                      { Icon: MapPin, tone: "text-sky-400", text: "Gekozen regio beperkt de resultaten" },
-                      { Icon: Users, tone: "text-violet-400", text: "Passende specialisatie niet beschikbaar" },
+                      { Icon: AlertCircle, tone: "text-care-warning-text", text: "Onvoldoende capaciteit in de regio" },
+                      { Icon: MapPin, tone: "text-care-info-text", text: "Gekozen regio beperkt de resultaten" },
+                      { Icon: Users, tone: "text-care-brand-text", text: "Passende specialisatie niet beschikbaar" },
                     ] as const
                   ).map((reason) => (
                     <li key={reason.text} className="flex items-start gap-2.5 text-[13px] text-muted-foreground">

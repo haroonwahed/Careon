@@ -190,7 +190,7 @@ function CheckItem({
         onClick={() => !disabled && onChange(!checked)}
         className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all shrink-0 ${
           checked
-            ? "bg-emerald-500 border-emerald-500"
+            ? "bg-care-success-solid border-care-success-solid"
             : "border-border group-hover:border-border/80"
         }`}
       >
@@ -755,7 +755,7 @@ function ProviderCard({
               <p className="text-[11px] font-semibold leading-snug text-foreground">{advisoryLabel}</p>
               <div className="flex items-center justify-end gap-0.5 mt-1">
                 {[1,2,3,4,5].map(s => (
-                  <Star key={s} size={9} className={s <= Math.round(result.rating) ? "text-amber-400 fill-amber-400" : "text-muted"} />
+                  <Star key={s} size={9} className={s <= Math.round(result.rating) ? "text-care-warning-solid fill-care-warning-solid" : "text-muted"} />
                 ))}
               </div>
             </div>
@@ -822,7 +822,7 @@ function PlaatsingPanel({
 
       {/* Validation checklist */}
       <div className="panel-surface p-4">
-        <SectionHeader icon={<ClipboardCheck size={16} className="text-emerald-500" />} title="Checklist" />
+        <SectionHeader icon={<ClipboardCheck size={16} className="text-care-success-solid" />} title="Checklist" />
         <div className="space-y-3 mb-4">
           <CheckItem
             label="Beoordeling afgerond"
@@ -971,8 +971,8 @@ function AfgerondPanel({ casus }: { casus: Casus }) {
     <div className="space-y-3">
       <div className="panel-surface p-4">
         <div className="flex flex-col items-center py-6 text-center gap-3">
-          <div className="w-14 h-14 rounded-full bg-emerald-500/10 flex items-center justify-center">
-            <CheckCircle2 size={28} className="text-emerald-500" />
+          <div className="w-14 h-14 rounded-full bg-care-success-bg flex items-center justify-center">
+            <CheckCircle2 size={28} className="text-care-success-solid" />
           </div>
           <div>
             <h3 className="font-semibold text-lg">Casus succesvol overgedragen</h3>
@@ -1161,7 +1161,7 @@ function SignalItem({ signal }: { signal: CasusSignal }) {
   const cls = {
     critical: "bg-care-urgent-bg border-care-urgent-border text-care-urgent-text",
     warning:  "bg-care-warning-bg border-care-warning-border text-care-warning-text",
-    info:     "bg-blue-500/10 border-blue-500/30 text-blue-500",
+    info:     "bg-care-info-bg border-care-info-border text-care-info-text",
   }[signal.severity];
 
   const Icon = signal.severity === "critical" ? Siren : signal.severity === "warning" ? AlertTriangle : Info;
@@ -1180,8 +1180,8 @@ function SignalItem({ signal }: { signal: CasusSignal }) {
 function TimelineItem({ event, isLast }: { event: CasusTimelineEvent; isLast: boolean }) {
   const dotCls = {
     created:      "bg-primary",
-    phase_change: "bg-emerald-500",
-    action:       "bg-blue-500",
+    phase_change: "bg-care-success-solid",
+    action:       "bg-care-info-solid",
     signal:       "bg-care-warning-solid",
     note:         "bg-muted-foreground",
     system:       "bg-muted-foreground/40",
