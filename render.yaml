@@ -44,8 +44,25 @@ services:
       - key: SPA_ORIGIN
         sync: false
       # Must match Google OAuth authorized redirect URI origin (https://<host>, not :3000).
+      # Now also auto-derives from RENDER_EXTERNAL_URL when unset (see config/settings.py).
       - key: OIDC_PUBLIC_BASE_URL
         sync: false
+      # Google SSO (OIDC). The "Doorgaan met organisatieaccount" button on the
+      # login page ONLY appears when SSO is fully configured. These were missing
+      # from the blueprint, so a service recreate silently dropped SSO. Declared
+      # here so they surface on every (re)create. Secrets stay unsynced; set
+      # SSO_ENABLED=true and the client id/secret on the service. The discovery
+      # endpoint + scopes are public Google constants, so they carry a value.
+      - key: SSO_ENABLED
+        sync: false
+      - key: OIDC_RP_CLIENT_ID
+        sync: false
+      - key: OIDC_RP_CLIENT_SECRET
+        sync: false
+      - key: OIDC_OP_DISCOVERY_ENDPOINT
+        value: https://accounts.google.com/.well-known/openid-configuration
+      - key: OIDC_RP_SCOPES
+        value: openid email profile
       # Optional map/geocoding (PDOK is default for backend geocoding).
       - key: GOOGLE_GEOCODING_API_KEY
         sync: false
