@@ -1,54 +1,43 @@
 """
-contracts.models package — all model definitions live in _all.py.
+contracts.models package — model definitions split into domain files.
 
 Re-exports everything so that `from contracts.models import X` keeps working
 across the entire codebase without any changes to call sites.
 """
-from contracts.models._all import (  # noqa: F401
-    # Enums / choices
+from contracts.models.core import (  # noqa: F401
     RegionType,
     OutcomeReasonCode,
-    # Helpers
     document_upload_path,
-    # Organization / user
     Organization,
     OrganizationMembership,
     OrganizationInvitation,
     UserProfile,
-    # Care categories
+)
+from contracts.models.categories import (  # noqa: F401
     CareCategoryMain,
     CareCategorySubcategory,
     RiskFactor,
-    # Clients / providers
+)
+from contracts.models.client import (  # noqa: F401
     Client,
     ProviderProfile,
     CareConfiguration,
-    # Core case
+)
+from contracts.models.care_case import (  # noqa: F401
     CareCase,
     Document,
     TrustAccount,
-    # Deadlines
     DeadlineQuerySet,
     DeadlineManager,
     Deadline,
-    # Audit / governance
     AuditLog,
+)
+from contracts.models.governance import (  # noqa: F401
     SystemPolicyConfig,
     Notification,
-    # Assessment
-    CaseAssessment,
-    # Placement
-    PlacementRequestQuerySet,
-    PlacementRequestManager,
-    PlacementRequest,
-    CaseCareEvaluation,
-    ProviderCareTransitionRequest,
-    # Decision log
     GovernanceLogImmutableError,
     CaseDecisionLog,
-    # Timeline
     CaseTimelineEvent,
-    # Tasks / signals
     CareTaskQuerySet,
     CareTaskManager,
     CareTask,
@@ -56,32 +45,45 @@ from contracts.models._all import (  # noqa: F401
     CareSignalQuerySet,
     CareSignalManager,
     CareSignal,
-    # Workflow
+    DecisionQualityReview,
+    DecisionQualityWeeklyReviewMark,
+)
+from contracts.models.assessment import (  # noqa: F401
+    CaseAssessment,
+    PlacementRequestQuerySet,
+    PlacementRequestManager,
+    PlacementRequest,
+    CaseCareEvaluation,
+    ProviderCareTransitionRequest,
+)
+from contracts.models.workflow import (  # noqa: F401
     WorkflowTemplate,
     WorkflowTemplateStep,
     Workflow,
     WorkflowStep,
-    # Intake
+)
+from contracts.models.intake import (  # noqa: F401
     CaseIntakeProcess,
     IntakeTask,
     CaseRiskSignal,
-    # Budget
     Budget,
     BudgetExpense,
-    # Regional config
+)
+from contracts.models.regional import (  # noqa: F401
     MunicipalityConfiguration,
     RegionalConfiguration,
-    # Quality reviews
-    DecisionQualityReview,
-    DecisionQualityWeeklyReviewMark,
-    # Provider registry (Zorg)
+)
+from contracts.models.providers import (  # noqa: F401
     Zorgaanbieder,
     AanbiederVestiging,
     Zorgprofiel,
     CapaciteitRecord,
     ContractRelatie,
     ProviderRegioDekking,
-    # Import / sync
+    PrestatieProfiel,
+    ContactpersoonAanbieder,
+)
+from contracts.models.imports import (  # noqa: F401
     ProviderImportBatch,
     BronImportBatch,
     BronRecordRaw,
@@ -89,9 +91,8 @@ from contracts.models._all import (  # noqa: F401
     ProviderStagingRecord,
     ProviderSyncLog,
     ProviderSyncConflict,
-    PrestatieProfiel,
-    ContactpersoonAanbieder,
     BronMappingIssue,
-    # Matching
+)
+from contracts.models.matching import (  # noqa: F401
     MatchResultaat,
 )
