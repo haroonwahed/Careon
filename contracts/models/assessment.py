@@ -2,6 +2,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
+from contracts.models.core import OutcomeReasonCode
+
 User = get_user_model()
 
 
@@ -264,8 +266,8 @@ class PlacementRequest(models.Model):
     )
     provider_response_reason_code = models.CharField(
         max_length=30,
-        choices='contracts.OutcomeReasonCode'.split(),  # resolved via lazy approach below
-        default='NONE',
+        choices=OutcomeReasonCode.choices,
+        default=OutcomeReasonCode.NONE,
         verbose_name='Redencode reactie aanbieder',
     )
     provider_response_notes = models.TextField(blank=True, verbose_name='Notities reactie aanbieder')
