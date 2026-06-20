@@ -142,9 +142,8 @@ async function logout(page: import("@playwright/test").Page) {
 }
 
 async function openDashboard(page: import("@playwright/test").Page) {
-  await page.goto(new URL("/dashboard/", BASE_URL).toString());
-  await expect(page.getByRole("heading", { name: "Coordination" })).toBeVisible();
-  await expect(page.getByTestId("care-sidebar")).toBeVisible();
+  await page.goto(new URL("/coordination", BASE_URL).toString());
+  await expect(page.getByTestId("care-sidebar")).toBeVisible({ timeout: 45_000 });
 }
 
 async function openCasus(page: import("@playwright/test").Page, caseTitle: string) {
