@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   verify-ui:
@@ -56,6 +57,23 @@ jobs:
       - name: Contract components guard
         run: |
           grep -rEn "export function (MetricStrip|Worklist|NextBestAction|ProcessTimeline)" client/src/components/design
+
+      - name: Forbidden/Deprecated component import guard
+        run: python scripts/check_component_register_imports.py
+
+      - name: Design-token governance (changed files only)
+        # Scan only files changed in this PR/push. Grandfathered offenders (LoginPage,
+        # SystemAwarenessPage) are excluded via FILE_ALLOWLIST in the script so existing
+        # violations do not block PRs. New hex/inline styles in changed files DO fail.
+        run: |
+          BASE="${{ github.event.before }}"
+          [ -z "$BASE" ] && BASE="HEAD~1"
+          CHANGED=$(git diff --name-only "$BASE" HEAD -- 'client/src/**' 2>/dev/null | grep -E '\.(ts|tsx)$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No frontend files changed — token governance skipped."
+          else
+            python scripts/check_carelane_design_tokens.py $CHANGED
+          fi
 
       - name: Run UI verification suite
         run: ./scripts/verify_ui.sh || echo "UI verification is non-blocking during migration refactor window"

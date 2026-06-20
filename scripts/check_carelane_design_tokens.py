@@ -2,6 +2,10 @@
 """Guardrail: detect hardcoded Carelane design-token drift in care UI files.
 
 Scans: client/src/components/care/**/*.ts,tsx
+
+Usage:
+  python scripts/check_carelane_design_tokens.py           # scan all care files
+  python scripts/check_carelane_design_tokens.py f1 f2...  # scan specific files (CI diff mode)
 """
 
 from __future__ import annotations
@@ -29,6 +33,14 @@ class Rule:
 # Each tuple is (relative_file_path, 1-based line_number).
 ALLOWLIST_EXACT: set[Tuple[str, int]] = set()
 
+# File-level grandfather — these files are known offenders from before Phase 1.
+# They are EXCLUDED from the diff-scoped CI scan so existing violations do not
+# block PRs. Remove from this list once the file is refactored onto tokens.
+FILE_ALLOWLIST: set[str] = {
+    'client/src/components/care/LoginPage.tsx',           # 37 style={{}} / 27 hex — priority refactor
+    'client/src/components/care/SystemAwarenessPage.tsx', # 10 inline / 5 hex — SVG phase colors
+}
+
 
 RULES: Sequence[Rule] = (
     # P0: critical token discipline violations
@@ -45,7 +57,14 @@ RULES: Sequence[Rule] = (
 )
 
 
-def iter_target_files() -> Sequence[Path]:
+def iter_target_files(specific: Sequence[str] | None = None) -> Sequence[Path]:
+    if specific:
+        paths = []
+        for s in specific:
+            p = ROOT / s if not s.startswith('/') else Path(s)
+            if p.exists() and p.suffix in FILE_EXTENSIONS:
+                paths.append(p)
+        return sorted(paths)
     if not CARE_DIR.exists():
         return []
     return sorted(
@@ -56,11 +75,14 @@ def iter_target_files() -> Sequence[Path]:
 
 
 def is_allowlisted(relative_path: str, line_no: int) -> bool:
+    if relative_path in FILE_ALLOWLIST:
+        return True
     return (relative_path, line_no) in ALLOWLIST_EXACT
 
 
 def main() -> int:
-    files = iter_target_files()
+    specific_files = sys.argv[1:] if len(sys.argv) > 1 else None
+    files = iter_target_files(specific_files)
     if not files:
         print(f"No files found under {CARE_DIR}")
         return 0

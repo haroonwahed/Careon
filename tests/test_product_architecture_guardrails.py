@@ -77,6 +77,45 @@ class ProductArchitectureGuardrailTests(TestCase):
             self.assertIn('(Redirect)', text)
             self._assert_contains_all(text, needles)
 
+    def test_api_and_domain_do_not_import_views(self):
+        """Phase 1 Item 5 — contracts/api/ and contracts/domain/ must not import contracts.views.
+
+        Known allowlisted violation (TODO A3: move to domain seam):
+          contracts/api/matching.py imports from contracts.views.matching
+        """
+        # Allowlist: (file relative to repo root, imported module fragment)
+        _ALLOWLIST = {
+            ('contracts/api/matching.py', 'contracts.views.matching'),
+        }
+        violations: list[str] = []
+        for layer_dir in ('contracts/api', 'contracts/domain'):
+            layer_path = REPO_ROOT / layer_dir
+            if not layer_path.exists():
+                continue
+            for py_file in sorted(layer_path.rglob('*.py')):
+                rel = str(py_file.relative_to(REPO_ROOT))
+                text = py_file.read_text(encoding='utf-8')
+                for line in text.splitlines():
+                    stripped = line.strip()
+                    if not stripped.startswith(('from contracts.views', 'import contracts.views')):
+                        continue
+                    # Determine the imported module fragment (e.g. 'contracts.views.matching')
+                    if stripped.startswith('from '):
+                        module_fragment = stripped.split()[1]
+                    else:
+                        module_fragment = stripped.split()[1].split('.')[0:3]
+                        module_fragment = '.'.join(module_fragment)
+                    if (rel, module_fragment) in _ALLOWLIST:
+                        continue
+                    violations.append(f'{rel}: {stripped!r}')
+        self.assertEqual(
+            violations,
+            [],
+            msg='contracts/api/ and contracts/domain/ must not import contracts.views '
+            '(except the grandfathered matching.py allowlist — see TODO A3). '
+            'New violations: ' + '; '.join(violations),
+        )
+
     def test_design_next_best_action_and_process_timeline_only_on_case_execution_page(self):
         """AGENTS.md UI mode: design NBA + process timeline only on case detail (`CaseExecutionPage`)."""
         violations: list[str] = []

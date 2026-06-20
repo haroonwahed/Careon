@@ -1,6 +1,6 @@
 # Carelane — engineering & product standards
 
-**Status:** Proposed standard — **read-only**. No code, tests, workflows, or config changed.
+**Status:** Active — adopted as of Phase 1 governance implementation.
 **Date:** 2026-06-17
 **Scope:** Part 6 of the audit brief. Codifies the working standards implied by the current (strong) practices, plus the gaps this audit found. Where a standard names a guardrail or CI step, that is a **proposal to adopt**, not an executed change.
 
@@ -72,11 +72,15 @@ A new page must: (1) declare one of the five **archetypes**; (2) compose only Ap
 
 **Current (keep):** Platform Guardrails (pytest 3.12, compileall, terminology guard, tenant-integrity audit, Postgres deploy-check), pilot-rehearsal, staging smokes, ui-verification, pre-commit.
 
-**Proposed additions (do not execute yet — see roadmap R1/R2):**
-1. `workflow_dispatch` on `platform-guardrails.yml` so a branch run is triggerable on demand (closes the agent verification loop via the GitHub connector).
-2. Playwright + visual-regression + a11y jobs gating on branch.
-3. Backend **layer-direction** test (`domain`/`api` must not import `views`) and **module-size ceiling** test.
-4. Frontend **forbidden-import lint** (block Deprecated/Forbidden component files) and make the **design-token check** CI-blocking.
-5. Containerized dev/test env (`.devcontainer` + `docker compose`) pinning Python 3.12 and the full dependency set, so verification is reproducible on any host (the current sandbox cannot run a trustworthy Python/Playwright baseline — see backend audit §8).
+**Phase 1 additions (implemented):**
+1. ✅ `workflow_dispatch` on `platform-guardrails.yml` and `ui-verification.yml` — branch runs triggerable on demand.
+2. ✅ Backend **layer-direction** test — `contracts/api/` and `contracts/domain/` must not import `contracts.views` (allowlisted: `api/matching.py → views.matching`, TODO A3).
+3. ✅ **URL-contract test** — every named route round-trips via `reverse`/`resolve`; all `carelane_views.*` attrs stay importable (`tests/test_url_contract.py`).
+4. ✅ **Component register** ([`../design/CARELANE_COMPONENT_REGISTER.md`](../design/CARELANE_COMPONENT_REGISTER.md)) is the authoritative source of truth — referenced from PR template (DoR/DoD).
+5. ✅ **Forbidden-import guard** — `scripts/check_component_register_imports.py` + CI step blocks new imports of Deprecated/Forbidden components.
+6. ✅ **Design-token governance** — diff-scoped CI step enforces `--care-*` tokens on changed `client/src` files; existing offenders grandfathered.
+7. ✅ **One canonical verify command** — `make verify` / `scripts/verify.sh`.
+8. Playwright + visual-regression + a11y jobs — in progress (Phase 1 Item 2).
+9. Containerized dev/test env — deferred; see `CARELANE_STANDARDIZATION_ROADMAP.md`.
 
-These standards are sequenced for adoption in [`../roadmap/CARELANE_STANDARDIZATION_ROADMAP.md`](../roadmap/CARELANE_STANDARDIZATION_ROADMAP.md).
+These standards are sequenced in [`../roadmap/CARELANE_STANDARDIZATION_ROADMAP.md`](../roadmap/CARELANE_STANDARDIZATION_ROADMAP.md).

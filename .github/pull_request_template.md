@@ -1,3 +1,16 @@
+## Definition of Ready (DoR)
+
+> Source: [`docs/engineering/CARELANE_ENGINEERING_STANDARDS.md`](../docs/engineering/CARELANE_ENGINEERING_STANDARDS.md) §1
+
+- [ ] Problem and user/role are stated
+- [ ] Affected **archetype** (frontend) or **layer** (backend) is identified
+- [ ] Acceptance criteria defined; if UI: the three operational questions (what needs attention / why blocked / next action) are answered
+- [ ] Workflow, tenant, and permission impact is named
+- [ ] Test approach sketched
+- [ ] Any **breaking contract change** (API key, URL, status semantics) flagged for product approval
+
+---
+
 ## Summary
 
 - What changed:
@@ -95,6 +108,20 @@ If detected:
 - Deploy steps:
 - Rollback steps:
 - Feature flag / kill switch (if any):
+
+## Definition of Done (DoD)
+
+> Source: [`docs/engineering/CARELANE_ENGINEERING_STANDARDS.md`](../docs/engineering/CARELANE_ENGINEERING_STANDARDS.md) §2  
+> Verify with: `make verify` (or `scripts/verify.sh`)
+
+- [ ] `pytest tests/ -q` green; no regressions
+- [ ] `tsc --noEmit` (frontend) + pyright (backend) clean
+- [ ] Terminology guard + tenant-integrity audit pass
+- [ ] No silent change to URLs, view names, context keys, or API response shapes
+- [ ] Frontend: shared UI via barrel only; no new hex where a token exists
+- [ ] If a shared component changed: [`docs/design/CARELANE_COMPONENT_REGISTER.md`](../docs/design/CARELANE_COMPONENT_REGISTER.md) updated in this PR
+- [ ] Docs updated in this PR (ADR / roadmap / register / source-of-truth doc as applicable)
+- [ ] For workflow-touching changes: `test_cross_tenant_isolation` + `test_workflow_foundation_lock` green
 
 ## Evidence
 

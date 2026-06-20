@@ -6,7 +6,7 @@ PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 DJANGO := $(PYTHON) manage.py
 
-.PHONY: dev setup install migrate seed test test-e2e test-e2e-visual lint typecheck build clean
+.PHONY: dev setup install migrate seed test test-e2e test-e2e-visual lint typecheck build clean verify
 
 ## Start both Django + Vite dev servers concurrently
 dev: $(VENV)/bin/activate
@@ -34,6 +34,11 @@ migrate:
 
 seed:
 	DJANGO_SECRET_KEY=$${DJANGO_SECRET_KEY:-dev-not-for-production} $(DJANGO) seed_pilot_universe --reset
+
+## Run the full local verification suite (same gate as CI)
+## See scripts/verify.sh for the canonical sequence.
+verify:
+	@./scripts/verify.sh
 
 ## Run Python tests
 test:
