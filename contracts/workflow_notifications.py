@@ -234,6 +234,43 @@ def notify_placement_confirmed(*, case, old_phase, new_phase, **kwargs) -> int:
     return sent
 
 
+def notify_care_signal_status_changed(*, care_signal, old_status, new_status, **kwargs) -> int:
+    """Notify the organisation when a care signal moves to IN_PROGRESS or RESOLVED."""
+    from contracts.models import CareSignal
+
+    actionable_statuses = {
+        CareSignal.SignalStatus.IN_PROGRESS,
+        CareSignal.SignalStatus.RESOLVED,
+    }
+    if new_status not in actionable_statuses:
+        return 0
+
+    try:
+        intake = care_signal.due_diligence_process
+    except Exception:
+        return 0
+
+    recipients = _org_recipients(intake)
+    if not recipients:
+        return 0
+
+    status_labels = {
+        CareSignal.SignalStatus.IN_PROGRESS: "in opvolging genomen",
+        CareSignal.SignalStatus.RESOLVED: "afgerond",
+    }
+    label = status_labels.get(new_status, new_status)
+    signal_title = getattr(care_signal, 'title', '') or getattr(care_signal, 'get_signal_type_display', lambda: 'Signaal')()
+    case_label = getattr(intake, 'title', 'onbekend') if intake else 'onbekend'
+
+    subject = f"[Carelane] Signaal {label}: '{signal_title}'"
+    body = (
+        f"Het signaal '{signal_title}' voor casus '{case_label}' is {label}.\n\n"
+        f"Bekijk het signaal via Carelane:\n{_base_url()}\n\n"
+        "Met vriendelijke groet,\nCarelane"
+    )
+    return _send(subject=subject, body=body, recipients=recipients)
+
+
 def notify_assessment_approved_for_matching(*, assessment, old_status, new_status, **kwargs) -> int:
     """Notify the organisation coordinator when an assessment is approved for matching."""
     from contracts.models import CaseAssessment

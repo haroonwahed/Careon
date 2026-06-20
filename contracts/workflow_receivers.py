@@ -17,6 +17,7 @@ from django.dispatch import receiver
 from contracts.workflow_bus import WorkflowBus
 from contracts.workflow_notifications import (
     notify_assessment_approved_for_matching,
+    notify_care_signal_status_changed,
     notify_org_provider_response,
     notify_placement_confirmed,
     notify_provider_review_requested,
@@ -124,4 +125,9 @@ def on_care_signal_status_changed(sender, *, care_signal=None, old_status=None, 
         old_status,
         new_status,
         getattr(user, 'pk', 'system'),
+    )
+    notify_care_signal_status_changed(
+        care_signal=care_signal,
+        old_status=old_status,
+        new_status=new_status,
     )

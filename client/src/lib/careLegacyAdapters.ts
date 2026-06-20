@@ -1,4 +1,3 @@
-// @ts-nocheck
 import type { Case, CaseStatus, Provider } from "./careTypes";
 import type { Casus, CasusStatus, MatchResult, UrgencyLevel as CasusUrgencyLevel } from "./phaseEngine";
 import type { SpaCase } from "../hooks/useCases";
@@ -117,9 +116,9 @@ function toCasusStatus(spaStatus: SpaCase["status"]): CasusStatus {
     case "intake":
       return "klaar_voor_matching";
     case "matching":
-      return "matching_bezig";
+      return "in_matching";
     case "provider_beoordeling":
-      return "aanbieder_geselecteerd";
+      return "voorgesteld_aan_aanbieder";
     case "plaatsing":
       return "geaccepteerd_voor_intake";
     case "afgerond":
@@ -160,7 +159,7 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
   const legacy = toLegacyCase(spaCase);
   const matchResults = buildMatchResults(spaCase, providers);
   const status = toCasusStatus(spaCase.status);
-  const selectedProviderId = status === "aanbieder_geselecteerd" || status === "geaccepteerd_voor_intake"
+  const selectedProviderId = status === "voorgesteld_aan_aanbieder" || status === "geaccepteerd_voor_intake"
     ? (matchResults[0]?.providerId ?? null)
     : null;
 
@@ -174,9 +173,9 @@ export function toPhaseCasus(spaCase: SpaCase, providers: SpaProvider[]): Casus 
     complexity: legacy.risk === "high" ? "high" : legacy.risk === "medium" ? "medium" : "low",
     phase: status === "nieuw" || status === "klaar_voor_matching"
       ? "aanmelding"
-      : status === "matching_bezig"
+      : status === "in_matching"
           ? "matching"
-          : status === "aanbieder_geselecteerd"
+          : status === "voorgesteld_aan_aanbieder"
             ? "aanbiederreactie"
             : status === "geaccepteerd_voor_intake"
               ? "intake"

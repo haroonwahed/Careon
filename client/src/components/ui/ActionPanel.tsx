@@ -1,4 +1,4 @@
-// @ts-nocheck
+import type { ReactElement } from "react";
 import { AlertTriangle, ArrowRight, CheckCircle2, Clock } from "lucide-react";
 
 export type ActionPanelSeverity = "critical" | "warning" | "stable";
@@ -23,7 +23,7 @@ interface SeverityGroup {
   title: string;
   rowClass: string;
   badgeClass: string;
-  icon: JSX.Element;
+  icon: ReactElement;
 }
 
 const severityGroups: SeverityGroup[] = [
