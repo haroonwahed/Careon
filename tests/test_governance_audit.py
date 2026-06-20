@@ -128,7 +128,7 @@ class GovernanceAuditTests(TestCase):
             },
         ]
 
-    @patch('contracts.views._build_matching_suggestions_for_intake')
+    @patch('contracts.views.dashboard._build_matching_suggestions_for_intake')
     @override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
     def test_matching_dashboard_creates_match_recommendation_log(self, mock_suggestions):
         mock_suggestions.return_value = self._matching_suggestions()
@@ -147,7 +147,7 @@ class GovernanceAuditTests(TestCase):
         self.assertEqual(log.recommendation_context['source_view'], 'matching_dashboard')
         self.assertEqual(log.adaptive_flags['behavior_influence'], ['Stable response pattern'])
 
-    @patch('contracts.views._build_matching_suggestions_for_intake')
+    @patch('contracts.views.dashboard._build_matching_suggestions_for_intake')
     def test_provider_selection_override_is_logged(self, mock_suggestions):
         mock_suggestions.return_value = self._matching_suggestions()
 

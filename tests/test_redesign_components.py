@@ -38,8 +38,7 @@ class RedesignComponentsTestCase(TestCase):
         response = self.client.get(reverse('index'))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Carelane')
-        self.assertContains(response, 'Regieplatform voor gemeenten en zorgaanbieders')
-        self.assertContains(response, 'public-shell')
+        self.assertContains(response, 'id="root"')
 
     def test_case_list_alias_renders_spa_shell(self):
         provider = ClientModel.objects.create(

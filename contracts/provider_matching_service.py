@@ -535,7 +535,7 @@ class MatchEngine:
 
     @staticmethod
     def _load_candidates(ctx: MatchContext, limit: int):
-        qs = Zorgprofiel.objects.select_related("aanbieder_vestiging__zorgaanbieder", "zorgaanbieder").prefetch_related("prestatieprofiel").filter(actief=True)
+        qs = Zorgprofiel.objects.select_related("aanbieder_vestiging__zorgaanbieder", "zorgaanbieder").prefetch_related("prestatie_profiel").filter(actief=True)
         if ctx.zorgvorm:
             qs = qs.filter(Q(zorgvorm="") | Q(zorgvorm__iexact=ctx.zorgvorm))
         if ctx.leeftijd is not None:
@@ -558,7 +558,7 @@ class MatchEngine:
         coverage = _find_coverage(ctx, zorgaanbieder, vestiging)
 
         try:
-            prestaties = profiel.prestatieprofiel
+            prestaties = profiel.prestatie_profiel
         except PrestatieProfiel.DoesNotExist:
             prestaties = None
 

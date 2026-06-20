@@ -131,7 +131,7 @@ class BeoordelingenOperationalContractIntegrationTests(TestCase):
             "escalation_recommended": True,
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.assessment.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:assessment_list"))
 
         self._assert_spa_shell(response)
@@ -164,7 +164,7 @@ class BeoordelingenOperationalContractIntegrationTests(TestCase):
                 return _FakeDecision(payload_a)
             return _FakeDecision(payload_b)
 
-        with patch("contracts.views.build_operational_decision_for_intake", side_effect=fake_decision):
+        with patch("contracts.views.assessment.build_operational_decision_for_intake", side_effect=fake_decision):
             response = self.client.get(reverse("carelane:assessment_list"))
 
         self._assert_spa_shell(response)
@@ -185,7 +185,7 @@ class BeoordelingenOperationalContractIntegrationTests(TestCase):
             "escalation_recommended": False,
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.assessment.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:assessment_list"))
 
         self._assert_spa_shell(response)
@@ -197,7 +197,7 @@ class BeoordelingenOperationalContractIntegrationTests(TestCase):
             self._create_assessment(f"Assessment Filter {idx}")
 
         with patch(
-            "contracts.views.build_operational_decision_for_intake",
+            "contracts.views.assessment.build_operational_decision_for_intake",
             side_effect=lambda intake_id: _FakeDecision(self._decision_payload(intake_id=intake_id)),
         ):
             response_page1 = self.client.get(

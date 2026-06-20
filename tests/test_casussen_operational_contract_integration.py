@@ -122,7 +122,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             "escalation_recommended": True,
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.intake.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:case_list"))
 
         self._assert_spa_shell(response)
@@ -148,7 +148,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             "escalation_recommended": True,
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.intake.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:case_list"))
 
         self._assert_spa_shell(response)
@@ -174,7 +174,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
                 return _FakeDecision(payload_a)
             return _FakeDecision(payload_b)
 
-        with patch("contracts.views.build_operational_decision_for_intake", side_effect=fake_decision):
+        with patch("contracts.views.intake.build_operational_decision_for_intake", side_effect=fake_decision):
             response = self.client.get(reverse("carelane:case_list"))
 
         self._assert_spa_shell(response)
@@ -197,7 +197,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             "escalation_recommended": False,
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.intake.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:case_list"))
 
         self._assert_spa_shell(response)
@@ -217,7 +217,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             preferred_region=None,
         )
         with patch(
-            "contracts.views.build_operational_decision_for_intake",
+            "contracts.views.intake.build_operational_decision_for_intake",
             side_effect=lambda intake_id: _FakeDecision(self._default_payload(intake_id=intake_id)),
         ):
             response = self.client.get(reverse("carelane:case_list"))
@@ -234,7 +234,7 @@ class CasussenOperationalContractIntegrationTests(TestCase):
             )
 
         with patch(
-            "contracts.views.build_operational_decision_for_intake",
+            "contracts.views.intake.build_operational_decision_for_intake",
             side_effect=lambda intake_id: _FakeDecision(self._default_payload(intake_id=intake_id)),
         ):
             response_page1 = self.client.get(

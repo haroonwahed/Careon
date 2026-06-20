@@ -66,7 +66,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
             .prefetch_related("target_care_categories")
         )
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_nearly_equal_base_fit_can_be_reordered_by_behavior(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(name="Near Equal A")
@@ -83,7 +83,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
         self.assertEqual(results[0]["provider_name"], "Near Equal B")
         self.assertLessEqual(results[0]["match_score"] - results[1]["match_score"], 3.0)
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_large_base_fit_gap_is_not_aggressively_flipped(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(
@@ -153,7 +153,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
         self.assertGreater(modifier, 0.0)
         self.assertLessEqual(modifier, 0.15)
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_behavior_never_excludes_provider_by_itself(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(name="Excluded By Behavior A")
@@ -170,7 +170,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
         self.assertIn("Excluded By Behavior A", names)
         self.assertIn("Excluded By Behavior B", names)
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_matching_explainability_reflects_behavioral_influence_when_present(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(name="Explainability A")
@@ -208,7 +208,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
         self.assertGreaterEqual(modifier, -0.15)
         self.assertLessEqual(modifier, 0.15)
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_mixed_scenario_close_gap_reliable_provider_can_edge_ahead(self, modifier_mock):
         intake = self._make_intake()
         # Near-equal base fit; behavior can decide close calls.
@@ -234,7 +234,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
 
         self.assertEqual(results[0]["provider_name"], "Near Equal Fit Reliable Ops")
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_control_scenario_clearly_better_fit_stays_ahead(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(
@@ -263,7 +263,7 @@ class AdaptiveMatchingBehaviorRegressionTests(TestCase):
 
         self.assertEqual(results[0]["provider_name"], "Control Clearly Better Fit")
 
-    @patch("contracts.views.calculate_provider_behavior_modifier")
+    @patch("contracts.views.matching.calculate_provider_behavior_modifier")
     def test_modifier_range_and_ranking_are_stable_across_repeated_runs(self, modifier_mock):
         intake = self._make_intake()
         provider_a = self._make_profile(name="Stable A")

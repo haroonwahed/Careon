@@ -29,7 +29,7 @@ class PublicAuthFlowTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Carelane')
-        self.assertContains(response, 'public-shell')
+        self.assertContains(response, 'id="root"')
         self.assertNotContains(response, 'Welkom terug')
 
     def test_care_home_redirects_to_spa_landing(self):
@@ -111,7 +111,7 @@ class PublicAuthFlowTests(TestCase):
 
         landing_response = self.client.get(reverse('index'))
         self.assertEqual(landing_response.status_code, 200)
-        self.assertContains(landing_response, 'public-shell')
+        self.assertContains(landing_response, 'id="root"')
 
     def test_protected_care_routes_redirect_anonymous_users_to_login(self):
         for url_name in (
@@ -159,8 +159,8 @@ class PublicAuthFlowTests(TestCase):
             ).exists()
         )
 
-    @patch('contracts.views.logger.exception')
-    @patch('contracts.views.ensure_user_organization', side_effect=RuntimeError('tenant bootstrap failed'))
+    @patch('contracts.views.auth.logger.exception')
+    @patch('contracts.views.auth.ensure_user_organization', side_effect=RuntimeError('tenant bootstrap failed'))
     def test_register_does_not_500_when_tenant_bootstrap_fails(self, _mock_bootstrap, _mock_log_exception):
         register_page = self.client.get(reverse('register'))
         csrf = self._extract_csrf(register_page)

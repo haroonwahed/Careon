@@ -387,7 +387,7 @@ class MatchingExplainabilityUnitTests(TestCase):
         for field in ('provider_id', 'provider_name', 'match_score', 'fit_score', 'reasons', 'tradeoff', 'free_slots', 'avg_wait_days'):
             self.assertIn(field, result, f"Backward-compat field missing: {field}")
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_behavior_modifier_adjusts_close_candidates_as_tie_break(self, modifier_mock):
         intake = self._make_intake()
         profile_a = self._make_profile(name='Aanbieder A')
@@ -408,7 +408,7 @@ class MatchingExplainabilityUnitTests(TestCase):
         self.assertGreater(results[0]['match_score'], results[1]['match_score'])
         self.assertLessEqual(results[0]['match_score'] - results[1]['match_score'], 3.0)
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_behavior_modifier_does_not_overpower_large_fit_gap(self, modifier_mock):
         intake = self._make_intake()
         strong_profile = self._make_profile(
@@ -441,7 +441,7 @@ class MatchingExplainabilityUnitTests(TestCase):
 
         self.assertEqual(results[0]['provider_name'], 'Sterke Fit')
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_fit_score_remains_base_fit_while_match_score_is_adjusted(self, modifier_mock):
         intake = self._make_intake()
         profile_a = self._make_profile(name='Fit A')
@@ -463,7 +463,7 @@ class MatchingExplainabilityUnitTests(TestCase):
             self.assertIsInstance(row['match_score'], (int, float))
         self.assertTrue(any(row['match_score'] != row['fit_score'] for row in results))
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_behavior_consideration_explainability_field_present(self, modifier_mock):
         intake = self._make_intake()
         profile = self._make_profile(name='Explainability Provider')
@@ -481,7 +481,7 @@ class MatchingExplainabilityUnitTests(TestCase):
         self.assertIn('behavior_consideration', results[0]['explanation'])
         self.assertTrue(results[0]['explanation']['behavior_consideration'])
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_behavior_influence_explainability_list_present(self, modifier_mock):
         intake = self._make_intake()
         profile = self._make_profile(name='Behavior Explain Provider')
@@ -500,7 +500,7 @@ class MatchingExplainabilityUnitTests(TestCase):
         self.assertIsInstance(results[0]['explanation']['behavior_influence'], list)
         self.assertGreater(len(results[0]['explanation']['behavior_influence']), 0)
 
-    @patch('contracts.views.calculate_provider_behavior_modifier')
+    @patch('contracts.views.matching.calculate_provider_behavior_modifier')
     def test_close_call_behavior_note_added_when_ranking_influence_applies(self, modifier_mock):
         intake = self._make_intake()
         profile_a = self._make_profile(name='Close Call A')

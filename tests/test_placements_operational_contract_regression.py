@@ -127,7 +127,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             blocker_label="Contract reason: aanbiederreactie buiten reactievenster",
         )
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)) as decision_mock:
+        with patch("contracts.views.placement.build_operational_decision_for_intake", return_value=_FakeDecision(payload)) as decision_mock:
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -168,7 +168,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
                 return _FakeDecision(payload_pending)
             return _FakeDecision(payload_waitlist)
 
-        with patch("contracts.views.build_operational_decision_for_intake", side_effect=fake_decision):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", side_effect=fake_decision):
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -191,7 +191,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             },
         )
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -254,7 +254,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             intake_no_capacity.pk: self._decision_payload(intake_no_capacity.pk, blocker_label="No capacity: geen plek beschikbaar"),
         }
 
-        with patch("contracts.views.build_operational_decision_for_intake", side_effect=lambda intake_id: _FakeDecision(payloads[intake_id])):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", side_effect=lambda intake_id: _FakeDecision(payloads[intake_id])):
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -283,7 +283,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
                 return _FakeDecision(payload_escalated)
             return _FakeDecision(payload_not_escalated)
 
-        with patch("contracts.views.build_operational_decision_for_intake", side_effect=fake_decision):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", side_effect=fake_decision):
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -304,7 +304,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             operational_strip={"severity": "critical", "message": "Contract strip"},
         )
 
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", return_value=_FakeDecision(payload)):
             response = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response.status_code, 200)
@@ -340,7 +340,7 @@ class PlaatsingenOperationalContractRegressionTests(TestCase):
             impact_summary={"text": "Maakt vervolgstap mogelijk", "type": "positive"},
             blocker_label="Partial: informatie ontbreekt",
         )
-        with patch("contracts.views.build_operational_decision_for_intake", return_value=_FakeDecision(partial_payload)):
+        with patch("contracts.views.placement.build_operational_decision_for_intake", return_value=_FakeDecision(partial_payload)):
             response_partial = self.client.get(reverse("carelane:placement_list"))
 
         self.assertEqual(response_partial.status_code, 200)
