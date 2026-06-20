@@ -61,6 +61,9 @@ jobs:
       - name: Build SPA
         run: npm --prefix client run build
 
+      - name: Collect static files
+        run: python manage.py collectstatic --noinput
+
       - name: Install Playwright browsers
         run: npx --prefix client playwright install --with-deps chromium
 
