@@ -133,7 +133,11 @@ async function loginAs(page: import("@playwright/test").Page, username: string, 
 
 async function logout(page: import("@playwright/test").Page) {
   await postForm(page, "/logout/", { next: "/login/" });
-  await page.goto(new URL("/login/", BASE_URL).toString());
+  // SPA may auto-redirect to /login/ after session clear — wait first, goto only if needed
+  const alreadyAtLogin = await page.waitForURL(/\/login\//, { timeout: 5_000 }).then(() => true).catch(() => false);
+  if (!alreadyAtLogin) {
+    await page.goto(new URL("/login/", BASE_URL).toString());
+  }
   await expect(page.getByRole("heading", { name: "Welkom terug" })).toBeVisible();
 }
 
