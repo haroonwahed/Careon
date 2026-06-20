@@ -17,7 +17,7 @@ import {
   Award
 } from "lucide-react";
 import { Button } from "../ui/button";
-import { Provider } from "../../lib/casesData";
+import type { Provider } from "../../lib/careTypes";
 import { tokens } from "../../design/tokens";
 import { CareInfoPopover } from "./CareDesignPrimitives";
 import {

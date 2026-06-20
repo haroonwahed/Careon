@@ -2,7 +2,7 @@
  * @deprecated Use `CareBadge` from CareDesignPrimitives.
  * This component is retained for backwards compatibility only.
  */
-import type { RiskLevel } from "../../lib/casesData";
+import type { RiskLevel } from "../../lib/careTypes";
 import { Shield, ShieldAlert, ShieldCheck } from "lucide-react";
 import { cn } from "../ui/utils";
 

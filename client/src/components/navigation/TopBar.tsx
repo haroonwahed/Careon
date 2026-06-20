@@ -22,7 +22,6 @@ import {
   Mail,
 } from "lucide-react";
 import { Input } from "../ui/input";
-import { NOTIFICATIONS, formatNotificationTimestamp } from "../../lib/notificationsData";
 import { LOGOUT_URL, SPA_LANDING_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
@@ -110,8 +109,6 @@ export function TopBar({
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const recentNotifications = NOTIFICATIONS.slice(0, 5);
-
   const globalSearchShortcut = useMemo(() => {
     if (typeof navigator === "undefined") {
       return "⌘K";
@@ -237,38 +234,16 @@ export function TopBar({
                   </span>
                 </div>
 
-                <div className="max-h-96 overflow-y-auto space-y-1">
-                  {recentNotifications.map((notification) => (
-                    <button
-                      key={notification.id}
-                      onClick={() => setNotificationsOpen(false)}
-                      className="w-full text-left px-3 py-3 rounded-lg hover:bg-muted/30 transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span
-                          className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${
-                            notification.kind === "sale"
-                              ? "bg-emerald-500"
-                              : notification.kind === "message"
-                              ? "bg-sky-500"
-                              : notification.kind === "offer"
-                              ? "bg-amber-500"
-                              : "bg-violet-500"
-                          }`}
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold text-foreground truncate">{notification.title}</p>
-                            <span className="text-xs text-muted-foreground shrink-0">
-                              {formatNotificationTimestamp(notification.timestamp)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{notification.details}</p>
-                          <p className="text-xs text-primary mt-2">{notification.accountName}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
+                <div className="max-h-96 overflow-y-auto">
+                  {notificationCount === 0 ? (
+                    <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                      Geen nieuwe meldingen
+                    </p>
+                  ) : (
+                    <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                      {notificationCount} melding{notificationCount !== 1 ? "en" : ""} — open het dossierpaneel voor details
+                    </p>
+                  )}
                 </div>
 
                 <div className="pt-2 mt-2 border-t border-border">

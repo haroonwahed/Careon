@@ -56,7 +56,7 @@ import {
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
 import { Input } from "../ui/input";
-import type { Provider } from "../../lib/casesData";
+import type { Provider } from "../../lib/careTypes";
 import { useCases } from "../../hooks/useCases";
 import { useProviders } from "../../hooks/useProviders";
 import { toLegacyProvider, toPhaseCasus } from "../../lib/careLegacyAdapters";

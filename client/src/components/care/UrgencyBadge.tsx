@@ -2,7 +2,7 @@
  * @deprecated Use `CareBadge` from CareDesignPrimitives or `PriorityBadge` for operational priority.
  * This component is retained for backwards compatibility only.
  */
-import type { UrgencyLevel } from "../../lib/casesData";
+import type { UrgencyLevel } from "../../lib/careTypes";
 import { AlertCircle, AlertTriangle, Clock, Info } from "lucide-react";
 import { cn } from "../ui/utils";
 

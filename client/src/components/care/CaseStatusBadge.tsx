@@ -1,4 +1,4 @@
-import { CaseStatus } from "../../lib/casesData";
+import { CaseStatus } from "../../lib/careTypes";
 import { 
   FileText, 
   ClipboardList, 
