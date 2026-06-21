@@ -22,7 +22,7 @@
 - [ ] state transitions are append-only
 - [ ] actor, action, timestamp, and reason are recorded
 - [ ] audit logs are queryable for disputes
-- [ ] audit log retention policy is documented
+- [x] audit log retention policy is documented — default 365 days, configurable via AUDIT_LOG_RETENTION_DAYS; pruned with `python manage.py prune_audit_logs --execute`
 
 ## Request / response monitoring
 

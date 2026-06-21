@@ -7,6 +7,10 @@ from typing import Iterator, Optional
 
 _organization_id: ContextVar[Optional[int]] = ContextVar('tenant_organization_id', default=None)
 _bypass: ContextVar[bool] = ContextVar('tenant_scoping_bypass', default=False)
+# Set True only during HTTP request view execution (after org is resolved).
+# Outside requests (management commands, tests, seeds) this stays False so
+# ORM queries fail-open rather than returning empty querysets.
+_in_request: ContextVar[bool] = ContextVar('tenant_in_request', default=False)
 
 
 def get_organization_id() -> Optional[int]:
@@ -21,9 +25,18 @@ def is_bypass_active() -> bool:
     return _bypass.get()
 
 
+def is_in_request() -> bool:
+    return _in_request.get()
+
+
+def set_in_request(value: bool) -> None:
+    _in_request.set(value)
+
+
 def clear() -> None:
     _organization_id.set(None)
     _bypass.set(False)
+    _in_request.set(False)
 
 
 @contextmanager

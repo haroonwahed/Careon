@@ -10,7 +10,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet
 
-from contracts.tenant_context import get_organization_id, is_bypass_active
+from contracts.tenant_context import get_organization_id, is_bypass_active, is_in_request
 
 
 def tenant_db_backstop_enabled() -> bool:
@@ -23,6 +23,14 @@ def apply_tenant_scope(queryset: QuerySet) -> QuerySet:
 
     org_id = get_organization_id()
     if org_id is None:
+        # During an HTTP request the middleware should have set org_id after
+        # resolving the authenticated user's organisation. If it didn't (e.g.
+        # unauthenticated request or user with no org), fail closed so an
+        # unscoped queryset is never returned to a view.
+        # Outside requests (management commands, seeds, test ORM calls) the
+        # flag is False, so we fall through to the normal unscoped queryset.
+        if is_in_request():
+            return queryset.none()
         return queryset
 
     scoped_method = getattr(queryset, 'for_organization', None)

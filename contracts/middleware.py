@@ -16,7 +16,7 @@ from .observability import (
 )
 from .models import AuditLog
 from .models import OrganizationMembership
-from .tenant_context import clear as clear_tenant_context, set_organization_id
+from .tenant_context import clear as clear_tenant_context, set_organization_id, set_in_request
 from .tenancy import ensure_user_organization, get_user_organization
 
 logger = logging.getLogger(__name__)
@@ -181,6 +181,7 @@ class OrganizationMiddleware:
             else:
                 request.organization = None
                 set_organization_id(None)
+            set_in_request(True)
             return self.get_response(request)
         finally:
             clear_tenant_context()

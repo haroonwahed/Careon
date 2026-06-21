@@ -231,7 +231,6 @@ from .dashboard import (  # noqa: F401
 )
 
 from .intake import (  # noqa: F401
-    CaseIntakeListView,
     CaseIntakeDetailView,
     CaseIntakeUpdateView,
 )

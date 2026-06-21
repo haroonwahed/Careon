@@ -102,6 +102,11 @@ services:
         value: production
       - key: SENTRY_RELEASE
         sync: false
+      # Invite-only onboarding: prevents anonymous self-service signup from
+      # auto-provisioning new org tenants. Set to "0" temporarily to onboard
+      # a new gemeente via direct signup, then re-enable.
+      - key: CARELANE_INVITE_ONLY_ONBOARDING
+        value: "1"
 
   # ---------------------------------------------------------------------------
   # Staging service — isolated from production

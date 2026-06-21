@@ -245,11 +245,13 @@ class UIButtonAndFlowIntegrityTests(TestCase):
         self.assertNotIn('href="/care/casussen/new/"', dashboard_html)
         self.assertNotIn('/care/casussen/new/?v=', dashboard_html)
 
+        # /care/casussen/ is now an SPA route — Django redirects to the SPA shell.
         list_response = self.client.get(reverse('carelane:case_list'), follow=True)
         self.assertEqual(list_response.status_code, 200)
         list_html = list_response.content.decode('utf-8')
-        self.assertIn('href="/care/casussen/new/"', list_html)
-        self.assertNotIn('/care/casussen/new/?v=', list_html)
+        self.assertIn('<div id="root"></div>', list_html)
+        self.assertIn('/static/spa/assets/index-', list_html)
+        self.assertNotIn('href="/care/casussen/new/"', list_html)
 
     def test_dashboard_zero_case_primary_action_stays_versioned(self):
         empty_user = User.objects.create_user(
