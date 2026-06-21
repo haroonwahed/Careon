@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from datetime import date
 import os
 
+from contracts.tenant_scoped import TenantScopedManager, apply_tenant_scope
+
 User = get_user_model()
 
 
@@ -108,6 +110,8 @@ class CareCase(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = TenantScopedManager()
+
     class Meta:
         db_table = 'contracts_care_case'
 
@@ -187,6 +191,8 @@ class Document(models.Model):
     is_confidential = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         ordering = ['-created_at']
@@ -277,11 +283,14 @@ class DeadlineQuerySet(models.QuerySet):
 class DeadlineManager(models.Manager):
     """Custom manager for Deadline."""
     def get_queryset(self):
+        return apply_tenant_scope(DeadlineQuerySet(self.model, using=self._db))
+
+    def unscoped(self):
         return DeadlineQuerySet(self.model, using=self._db)
 
     def for_organization(self, organization):
         """Filter deadlines that belong to a specific organization."""
-        return self.get_queryset().for_organization(organization)
+        return self.unscoped().for_organization(organization)
 
 
 class Deadline(models.Model):

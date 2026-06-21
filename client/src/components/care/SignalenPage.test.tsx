@@ -72,7 +72,7 @@ describe("SignalenPage", () => {
     render(<SignalenPage onOpenCase={vi.fn()} onNavigateToWorkflow={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Signalen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk kritiek" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kritiek/i })).toBeInTheDocument();
 
     expect(screen.queryByTestId("signalen-page-uitleg")).not.toBeInTheDocument();
   });

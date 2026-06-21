@@ -22,6 +22,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from contracts import views as carelane_views
 
+from contracts.auth_views import RateLimitedLoginView
 from django.contrib.auth import views as auth_views
 
 urlpatterns = [
@@ -43,7 +44,7 @@ urlpatterns = [
     path('settings/design-mode/', carelane_views.design_mode_settings, name='design_mode_settings'),
     path('register/', carelane_views.SignUpView.as_view(), name='register'),
     path('login', RedirectView.as_view(url='/login/', permanent=True)),
-    path('login/', auth_views.LoginView.as_view(redirect_authenticated_user=True), name='login'),
+    path('login/', RateLimitedLoginView.as_view(redirect_authenticated_user=True), name='login'),
     path('logout', RedirectView.as_view(url='/logout/', permanent=True)),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('password-reset/', auth_views.PasswordResetView.as_view(), name='password_reset'),

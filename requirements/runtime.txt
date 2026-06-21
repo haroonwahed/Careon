@@ -5,5 +5,6 @@ psycopg2-binary==2.9.10
 mozilla-django-oidc==5.0.2
 sentry-sdk[django]==2.59.0
 sqlparse==0.5.4
+redis==5.2.1
 tzdata==2025.2
 whitenoise==6.8.2

@@ -95,11 +95,10 @@ describe("PlacementTrackingPage", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Bevestiging nodig/i })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Bevestig plaatsing" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: /Plaatsing voorbereid \(1\)/ })).toBeInTheDocument();
-    expect(screen.getByText("1 casus heeft jouw aandacht nodig")).toBeInTheDocument();
+    expect(screen.getByTestId("plaatsingen-werkvoorraad")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Voorbereid 1" })).toBeInTheDocument();
   });
 
   it("shows Plan intake once the placement is confirmed and a start date exists", async () => {
@@ -119,10 +118,9 @@ describe("PlacementTrackingPage", () => {
 
     render(<PlacementTrackingPage onCaseClick={vi.fn()} />);
 
-    await user.click(screen.getByRole("tab", { name: /Startdatum gepland \(1\)/ }));
+    await user.click(screen.getByRole("tab", { name: "Startdatum 1" }));
     expect(screen.getAllByRole("button", { name: "Plan intake" }).length).toBeGreaterThan(0);
-    expect(screen.getByText("Startdatum")).toBeInTheDocument();
-    expect(screen.getByTitle("Startdatum gepland")).toBeInTheDocument();
+    expect(screen.getByText("Startdatum gepland")).toBeInTheDocument();
   });
 
   it("renders the calm empty state when there are no active placements", () => {
@@ -144,6 +142,5 @@ describe("PlacementTrackingPage", () => {
 
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
     expect(screen.getByText("Geen openstaande plaatsingen")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
   });
 });

@@ -316,11 +316,42 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+def _build_cache_config():
+    redis_url = os.getenv('REDIS_URL', '').strip()
+    if redis_url:
+        return {
+            'default': {
+                'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+                'LOCATION': redis_url,
+                'OPTIONS': {
+                    'socket_connect_timeout': 5,
+                    'socket_timeout': 5,
+                },
+            }
+        }
+    return {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
     }
-}
+
+
+CACHES = _build_cache_config()
+
+# DB-level tenant isolation backstop (manager default-scope during requests).
+TENANT_DB_BACKSTOP_ENABLED = _bool_env('TENANT_DB_BACKSTOP_ENABLED', default=True)
+
+# Login brute-force protection (requires shared cache in multi-worker production).
+AUTH_LOGIN_RATE_LIMIT_ENABLED = _bool_env('AUTH_LOGIN_RATE_LIMIT_ENABLED', default=True)
+AUTH_LOGIN_MAX_ATTEMPTS = int(os.getenv('AUTH_LOGIN_MAX_ATTEMPTS', '5'))
+AUTH_LOGIN_ATTEMPT_WINDOW_SECONDS = int(os.getenv('AUTH_LOGIN_ATTEMPT_WINDOW_SECONDS', '900'))
+AUTH_LOGIN_LOCKOUT_SECONDS = int(os.getenv('AUTH_LOGIN_LOCKOUT_SECONDS', '900'))
+
+# Audit trail read/export window (days). 0 = no retention filter. Default ~7 years (gemeente compliance).
+CARELANE_AUDIT_LOG_RETENTION_DAYS = int(os.getenv('CARELANE_AUDIT_LOG_RETENTION_DAYS', '2555'))
+
+# When true, signup and auto-org provisioning require a pending OrganizationInvitation.
+CARELANE_INVITE_ONLY_ONBOARDING = _bool_env('CARELANE_INVITE_ONLY_ONBOARDING', default=False)
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'

@@ -110,20 +110,18 @@ describe("MatchingQueuePage", () => {
     render(<MatchingQueuePage onCaseClick={onCaseClick} onNavigateToCasussen={vi.fn()} />);
 
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Aanmelding (0)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Matching (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Aanbiederreactie (0)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Plaatsing (0)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Intake (0)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start matching" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanmelding 0" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Matching 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Aanbiederreactie 0" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Plaatsing 0" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Intake 0" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Bekijk onderbouwing" })).toBeInTheDocument();
 
-    const row = screen.getByText("C-M1").closest("article");
+    const row = screen.getByText("C-M1").closest("[data-care-work-row]");
     expect(row).not.toBeNull();
     const rowEl = row as HTMLElement;
     expect(within(rowEl).getByText("C-M1")).toBeInTheDocument();
     expect(within(rowEl).getByText("Utrecht")).toBeInTheDocument();
-    expect(within(rowEl).getByText("Onderbouwing")).toBeInTheDocument();
-    expect(within(rowEl).getByTitle("Onderbouwing nodig")).toBeInTheDocument();
     expect(within(rowEl).getByRole("button", { name: "Bekijk onderbouwing" })).toBeInTheDocument();
 
     fireEvent.click(within(rowEl).getByRole("button", { name: "Bekijk onderbouwing" }));
@@ -148,7 +146,7 @@ describe("MatchingQueuePage", () => {
 
     render(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
 
-    expect(screen.getByText("Werkvoorraad")).toBeInTheDocument();
+    expect(screen.getByTestId("matching-uitvoerlijst")).toBeInTheDocument();
     expect(screen.getByText("C-M2")).toBeInTheDocument();
   });
 });

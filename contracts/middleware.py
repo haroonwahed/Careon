@@ -16,6 +16,7 @@ from .observability import (
 )
 from .models import AuditLog
 from .models import OrganizationMembership
+from .tenant_context import clear as clear_tenant_context, set_organization_id
 from .tenancy import ensure_user_organization, get_user_organization
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ def _render_spa_shell_response():
     response = HttpResponse(
         (
             '<!DOCTYPE html>'
-            '<html lang="en">'
+            '<html lang="nl">'
             '<head>'
             '<meta charset="UTF-8" />'
             '<meta name="viewport" content="width=device-width, initial-scale=1.0" />'
@@ -150,31 +151,39 @@ class OrganizationMiddleware:
 
     def __call__(self, request):
         user = getattr(request, 'user', None)
-        if user and getattr(user, 'is_authenticated', False):
-            try:
-                request._had_existing_membership = OrganizationMembership.objects.filter(
-                    user=user,
-                    is_active=True,
-                    organization__is_active=True,
-                ).exists()
-                preferred_org_id = request.session.get('active_organization_id')
-                if preferred_org_id:
-                    user._active_organization_id = preferred_org_id
-                organization = get_user_organization(user)
-                if organization is None:
-                    organization = ensure_user_organization(user)
-                request.organization = organization
-                if organization and request.session.get('active_organization_id') != organization.id:
-                    request.session['active_organization_id'] = organization.id
-            except DatabaseError:
-                request._had_existing_membership = False
+        try:
+            if user and getattr(user, 'is_authenticated', False):
                 try:
-                    request.organization = ensure_user_organization(user)
+                    request._had_existing_membership = OrganizationMembership.objects.filter(
+                        user=user,
+                        is_active=True,
+                        organization__is_active=True,
+                    ).exists()
+                    preferred_org_id = request.session.get('active_organization_id')
+                    if preferred_org_id:
+                        user._active_organization_id = preferred_org_id
+                    organization = get_user_organization(user)
+                    if organization is None:
+                        organization = ensure_user_organization(user)
+                    request.organization = organization
+                    if organization and request.session.get('active_organization_id') != organization.id:
+                        request.session['active_organization_id'] = organization.id
+                    set_organization_id(organization.pk if organization else None)
                 except DatabaseError:
-                    request.organization = None
-        else:
-            request.organization = None
-        return self.get_response(request)
+                    request._had_existing_membership = False
+                    try:
+                        request.organization = ensure_user_organization(user)
+                    except DatabaseError:
+                        request.organization = None
+                    set_organization_id(
+                        request.organization.pk if getattr(request, 'organization', None) else None
+                    )
+            else:
+                request.organization = None
+                set_organization_id(None)
+            return self.get_response(request)
+        finally:
+            clear_tenant_context()
 
 
 class SpaShellMigrationMiddleware:

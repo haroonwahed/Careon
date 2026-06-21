@@ -68,13 +68,10 @@ class SpaPilotDossierShellTests(TestCase):
         )
         self.client.login(username="shell_u", password="pass12345!")
 
-    def test_case_list_renders_django_when_middleware_disabled(self):
+    def test_case_list_redirects_to_spa_when_middleware_disabled(self):
         response = self.client.get(reverse("carelane:case_list"))
-        self.assertEqual(response.status_code, 200)
-        body = response.content.decode("utf-8")
-        # base.html may include a hidden #root for hybrid shells; assert real list chrome.
-        self.assertIn("Werkvoorraad", body)
-        self.assertNotIn("SaaS Carelane", body)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response["Location"], "/casussen/")
 
 
 class CaseDetailApiTenancyTests(TestCase):

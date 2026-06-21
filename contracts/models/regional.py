@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 
 from contracts.models.core import RegionType
+from contracts.tenant_scoped import TenantScopedManager
 
 User = get_user_model()
 
@@ -75,6 +76,8 @@ class MunicipalityConfiguration(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_municipality_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         ordering = ['municipality_name']
@@ -165,6 +168,8 @@ class RegionalConfiguration(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_regional_configs')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         ordering = ['region_name']

@@ -9,6 +9,7 @@ from contracts.models.core import RegionType, OutcomeReasonCode, _generate_sourc
 from contracts.models.care_case import CareCase
 from contracts.models.assessment import CaseAssessment, PlacementRequest
 from contracts.models.regional import RegionalConfiguration
+from contracts.tenant_scoped import TenantScopedManager
 
 User = get_user_model()
 
@@ -579,6 +580,8 @@ class CaseIntakeProcess(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         db_table = 'contracts_caseintakeprocess'
@@ -1196,6 +1199,8 @@ class Budget(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         unique_together = ['organization', 'year', 'scope_type', 'scope_name', 'target_group', 'care_type']

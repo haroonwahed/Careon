@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse
 
+from contracts.audit_retention import apply_audit_log_retention, audit_log_retention_days
 from contracts.middleware import log_action
 from contracts.models import (
     AuditLog,
@@ -32,7 +33,9 @@ def _org_audit_queryset(*, organization):
     org_user_ids = list(
         User.objects.filter(organization_memberships__organization=organization).values_list('id', flat=True)
     )
-    return AuditLog.objects.select_related('user').filter(user_id__in=org_user_ids)
+    return apply_audit_log_retention(
+        AuditLog.objects.select_related('user').filter(user_id__in=org_user_ids)
+    )
 
 
 def _case_related_audit_queryset(*, organization, case: CareCase, intake: CaseIntakeProcess | None):
@@ -118,6 +121,7 @@ def build_audit_log_export(*, request, organization, actor_role: str, provider_f
                 for e in entries
             ],
             'rowCount': len(entries),
+            'retentionDays': audit_log_retention_days(),
         })
     return _write_audit_csv(entries, filename_prefix='carelane-audit-log')
 

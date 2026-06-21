@@ -1,4 +1,11 @@
 services:
+  - type: redis
+    name: carelane-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
+
   - type: web
     name: carelane
     runtime: python
@@ -39,6 +46,11 @@ services:
         generateValue: true
       - key: DATABASE_URL
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: carelane-redis
+          property: connectionString
       - key: ALLOWED_HOSTS
         value: www.carelane.nl
       - key: CSRF_TRUSTED_ORIGINS
@@ -76,9 +88,11 @@ services:
         sync: false
       - key: SECURE_SSL_REDIRECT
         value: "true"
-      # Optional. When set, overrides Render WEB_CONCURRENCY for gunicorn --workers (e.g. 2 on free tier).
+      - key: NGINX_MEDIA_ACCEL_REDIRECT
+        value: "false"
+      # Keep at 1 until carelane-redis is provisioned via Blueprint sync; raise only with REDIS_URL live.
       - key: GUNICORN_WORKERS
-        sync: false
+        value: "1"
       # Error monitoring. Set SENTRY_DSN in Render dashboard (never commit the DSN).
       # SENTRY_RELEASE is set automatically by the deploy hook to the git SHA.
       - key: SENTRY_DSN
@@ -129,6 +143,11 @@ services:
       # Must be a separate Supabase project from production.
       - key: DATABASE_URL
         sync: false
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: carelane-redis
+          property: connectionString
       # Set to the Render-assigned *.onrender.com hostname after service creation.
       - key: STAGING_HOST
         sync: false
@@ -154,6 +173,8 @@ services:
         value: staging-noreply@carelane.nl
       - key: SECURE_SSL_REDIRECT
         value: "true"
+      - key: NGINX_MEDIA_ACCEL_REDIRECT
+        value: "false"
       - key: GUNICORN_WORKERS
         sync: false
       # Demo seed — staging only. These must NOT appear on the production service.

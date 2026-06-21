@@ -20,6 +20,7 @@ from ._routing import (  # noqa: F401
     case_flow_list_redirect,
     case_flow_create_redirect,
     redirect_case_intake_create_to_spa,
+    redirect_casussen_list_to_spa,
     case_flow_detail_redirect,
     case_flow_update_redirect,
 )

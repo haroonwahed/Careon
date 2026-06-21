@@ -84,15 +84,62 @@ describe("ZorgaanbiedersPage operatieve aandacht action", () => {
   });
 
   it("labels the banner primary action as Selecteer alternatief when no filters are active", () => {
+    mockUseProviders.mockReturnValue({
+      providers: [],
+      loading: false,
+      error: null,
+      totalCount: 0,
+      networkSummary: null,
+      lastUpdatedAt: Date.now(),
+      refetch: vi.fn(),
+    });
     render(<ZorgaanbiedersPage theme="light" />);
     expect(screen.getByRole("button", { name: "Selecteer alternatief" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Wis filters" })).not.toBeInTheDocument();
   });
 
   it("switches the banner label to Wis filters after Selecteer alternatief applies a capaciteit filter", async () => {
+    mockUseProviders.mockReturnValue({
+      providers: [
+        {
+          id: "p-1",
+          name: "Zorgaanbieder Toegankelijk",
+          city: "Utrecht",
+          status: "active",
+          currentCapacity: 1,
+          maxCapacity: 10,
+          waitingListLength: 1,
+          averageWaitDays: 5,
+          offersOutpatient: true,
+          offersDayTreatment: false,
+          offersResidential: false,
+          offersCrisis: false,
+          serviceArea: "Utrecht",
+          specialFacilities: "Trauma",
+          availableSpots: 1,
+          region: "Utrecht",
+          type: "ambulant",
+          specializations: ["Trauma", "Autisme"],
+          latitude: null,
+          longitude: null,
+          hasCoordinates: false,
+          locationLabel: "Utrecht",
+          regionLabel: "Utrecht",
+          municipalityLabel: "Utrecht",
+          secondaryRegionLabels: [],
+          allRegionLabels: ["Utrecht"],
+        },
+      ],
+      loading: false,
+      error: null,
+      totalCount: 1,
+      networkSummary: null,
+      lastUpdatedAt: Date.now(),
+      refetch: vi.fn(),
+    });
     const user = userEvent.setup();
     render(<ZorgaanbiedersPage theme="light" />);
-    await user.click(screen.getByRole("button", { name: "Selecteer alternatief" }));
+    await user.click(screen.getByRole("button", { name: /Aanbieders zichtbaar/i }));
     expect(screen.getByRole("button", { name: "Wis filters" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Selecteer alternatief" })).not.toBeInTheDocument();
   });

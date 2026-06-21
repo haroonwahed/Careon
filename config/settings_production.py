@@ -30,6 +30,13 @@ if DEFAULT_FROM_EMAIL == 'noreply@carelane.local':
 if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
     raise ImproperlyConfigured('DATABASE_URL must point to PostgreSQL in production.')
 
+_workers = int(os.getenv('GUNICORN_WORKERS', os.getenv('WEB_CONCURRENCY', '1')) or '1')
+if _workers > 1 and not os.getenv('REDIS_URL', '').strip():
+    raise ImproperlyConfigured(
+        'REDIS_URL must be set when running more than one gunicorn worker '
+        '(shared cache required for rate limits and consistent reads).'
+    )
+
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_CONTENT_TYPE_NOSNIFF = True

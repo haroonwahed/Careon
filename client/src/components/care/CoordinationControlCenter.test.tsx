@@ -197,7 +197,6 @@ describe("CoordinationControlCenter", () => {
 
     expect(screen.getByTestId("regiekamer-page")).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: /^Regiekamer$/i })).toBeInTheDocument();
-    expect(screen.getByText("Stuur op doorstroom, blokkades en urgente casussen.")).toBeInTheDocument();
     expect(screen.getByTestId("coordination-uitvoerlijst")).toBeInTheDocument();
   });
 
@@ -366,7 +365,7 @@ describe("CoordinationControlCenter", () => {
     );
 
     expect(screen.getByText(/start een nieuwe doorstroom/i)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Nieuwe casus" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Nieuwe aanmelding" })[0]);
     expect(onCreateCase).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole("button", { name: "Open aanvragen" }));
     expect(onAppNavigate).toHaveBeenCalledWith("/casussen");

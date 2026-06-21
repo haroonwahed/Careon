@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator
 
 from contracts.models.care_case import AuditLog, CareCase
 from contracts.models.client import CareConfiguration
+from contracts.tenant_scoped import apply_tenant_scope
 
 User = get_user_model()
 
@@ -231,6 +232,9 @@ class _CaseTimelineEventQuerySet(models.QuerySet):
 
 class _CaseTimelineEventManager(models.Manager):
     def get_queryset(self):
+        return apply_tenant_scope(_CaseTimelineEventQuerySet(self.model, using=self._db))
+
+    def unscoped(self):
         return _CaseTimelineEventQuerySet(self.model, using=self._db)
 
 
@@ -344,11 +348,14 @@ class CareTaskQuerySet(models.QuerySet):
 class CareTaskManager(models.Manager):
     """Custom manager for CareTask."""
     def get_queryset(self):
+        return apply_tenant_scope(CareTaskQuerySet(self.model, using=self._db))
+
+    def unscoped(self):
         return CareTaskQuerySet(self.model, using=self._db)
 
     def for_organization(self, organization):
         """Filter care tasks that belong to a specific organization."""
-        return self.get_queryset().for_organization(organization)
+        return self.unscoped().for_organization(organization)
 
 
 class CareTask(models.Model):
@@ -424,11 +431,14 @@ class CareSignalQuerySet(models.QuerySet):
 class CareSignalManager(models.Manager):
     """Custom manager for CareSignal."""
     def get_queryset(self):
+        return apply_tenant_scope(CareSignalQuerySet(self.model, using=self._db))
+
+    def unscoped(self):
         return CareSignalQuerySet(self.model, using=self._db)
 
     def for_organization(self, organization):
         """Filter care signals that belong to a specific organization."""
-        return self.get_queryset().for_organization(organization)
+        return self.unscoped().for_organization(organization)
 
 
 class CareSignal(models.Model):

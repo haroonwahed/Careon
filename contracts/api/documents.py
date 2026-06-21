@@ -49,7 +49,11 @@ def _serialize_document_row(d):
 
 
 def _serve_field_file(field_file, filename: str):
-    """Serve a FieldFile via FileResponse (dev) or nginx X-Accel-Redirect (prod)."""
+    """Serve a FieldFile via FileResponse, or nginx X-Accel-Redirect when explicitly configured."""
+    if field_file and field_file.name and field_file.storage.exists(field_file.name):
+        if not getattr(settings, 'NGINX_MEDIA_ACCEL_REDIRECT', False):
+            return FileResponse(field_file.open('rb'), as_attachment=True, filename=filename)
+
     if getattr(settings, 'NGINX_MEDIA_ACCEL_REDIRECT', False):
         from django.http import HttpResponse
         response = HttpResponse()
@@ -57,6 +61,9 @@ def _serve_field_file(field_file, filename: str):
         response['Content-Disposition'] = f'attachment; filename="{filename}"'
         response['Content-Type'] = ''
         return response
+
+    if not field_file or not field_file.name:
+        return JsonResponse({'error': 'Bestand niet gevonden op schijf'}, status=404)
     if not field_file.storage.exists(field_file.name):
         return JsonResponse({'error': 'Bestand niet gevonden op schijf'}, status=404)
     return FileResponse(field_file.open('rb'), as_attachment=True, filename=filename)

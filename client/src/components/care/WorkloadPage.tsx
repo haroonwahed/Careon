@@ -230,7 +230,7 @@ export function WorkloadPage({
       )}
 
       {!loading && !error && workflowCases.length > 0 && (
-        <CareWorklist>
+        <CareWorklist testId="worklist">
           <CareWorklistTabs
             tabs={tabs}
             activeId={selectedStatus}

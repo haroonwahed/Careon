@@ -28,6 +28,16 @@ def redirect_case_intake_create_to_spa(request):
 
 
 @login_required
+def redirect_casussen_list_to_spa(request):
+    """Retire Django CaseIntakeListView — SPA owns the casussen werklijst at /casussen/."""
+    target = '/casussen/'
+    flow = request.GET.get('flow')
+    if flow:
+        target = f'{target}?flow={flow}'
+    return redirect(target)
+
+
+@login_required
 def case_flow_detail_redirect(request, pk):
     """Route legacy intake detail URLs to the canonical case detail page."""
     return redirect('carelane:case_detail', pk=pk)

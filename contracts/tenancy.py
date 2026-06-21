@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.utils.text import slugify
 
 from .models import Organization, OrganizationMembership
+from .onboarding import invite_only_onboarding_enabled
 
 User = get_user_model()
 
@@ -27,6 +28,10 @@ def ensure_user_organization(user: Optional[User]) -> Optional[Organization]:
     except DatabaseError:
         # Do not abort provisioning: fall through to auto-create membership/org when possible.
         pass
+
+    if invite_only_onboarding_enabled():
+        # Unsupervised signup must not mint a new tenant; invite acceptance provisions membership.
+        return None
 
     org_name = f"{user.get_full_name().strip() or user.username}'s Regie"
     existing_organization = Organization.objects.filter(name=org_name).first()

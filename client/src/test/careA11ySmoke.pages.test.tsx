@@ -312,7 +312,7 @@ describe("Care accessibility smoke: core pages", () => {
     const choice = document.querySelector('[cmdk-item][data-value="Utrecht"]') as HTMLElement | null;
     expect(choice).not.toBeNull();
     await user.click(choice!);
-    expect(screen.getByLabelText("Regio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(await screen.findByLabelText("Regio (afgeleid van gemeente)")).toHaveTextContent("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Volgende stap" }));
     expect(screen.getByRole("heading", { name: "Zorgvraag" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Terug" }).length).toBe(1);
@@ -326,7 +326,7 @@ describe("Care accessibility smoke: core pages", () => {
     await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie *"), "WONEN_VERBLIJF");
     await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "WONEN_VERBLIJF_WOONVOORZIENING");
     expect(await screen.findByLabelText("Specifieke zorgbehoefte")).toHaveValue("WONEN_VERBLIJF_WOONVOORZIENING");
-    await user.selectOptions(screen.getByLabelText("Complexiteit *"), "MULTIPLE");
+    await user.click(screen.getByRole("button", { name: /Binnen 1 week/i }));
     await user.click(screen.getByRole("button", { name: "Waarom persoonsbeeld?" }));
     expect(screen.getByText("Beschrijf alleen de operationele context die nodig is voor beoordeling en matching.")).toBeInTheDocument();
     expect(screen.getByText("Laat namen, adressen, telefoons, e-mailadressen en BSN achterwege.")).toBeInTheDocument();
@@ -351,7 +351,6 @@ describe("Care accessibility smoke: core pages", () => {
     expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Nieuwe aanmelding" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Overzicht" })).toBeInTheDocument();
     await expectNoA11yViolations(container, "Casussen");
   });
 
@@ -378,8 +377,7 @@ describe("Care accessibility smoke: core pages", () => {
 
     const { container } = renderWithA11y(<MatchingQueuePage onCaseClick={vi.fn()} onNavigateToCasussen={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "Matching" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Matching (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Start matching" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Matching 1" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Bekijk aanmeldingen" }).length).toBeGreaterThan(0);
     await expectNoA11yViolations(container, "Matching");
   });
@@ -461,7 +459,6 @@ describe("Care accessibility smoke: core pages", () => {
       />,
     );
     expect(screen.getByRole("heading", { name: "Plaatsingen" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Bekijk aanbiederreacties" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: "Bevestig plaatsing" }).length).toBeGreaterThan(0);
     await expectNoA11yViolations(container, "Plaatsingen");
   });

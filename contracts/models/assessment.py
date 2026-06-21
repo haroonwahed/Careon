@@ -3,6 +3,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 
 from contracts.models.core import OutcomeReasonCode
+from contracts.tenant_scoped import apply_tenant_scope
 
 User = get_user_model()
 
@@ -141,10 +142,13 @@ class PlacementRequestManager(models.Manager):
     """Custom manager for PlacementRequest."""
 
     def get_queryset(self):
+        return apply_tenant_scope(PlacementRequestQuerySet(self.model, using=self._db))
+
+    def unscoped(self):
         return PlacementRequestQuerySet(self.model, using=self._db)
 
     def for_organization(self, organization):
-        return self.get_queryset().for_organization(organization)
+        return self.unscoped().for_organization(organization)
 
 
 class PlacementRequest(models.Model):

@@ -78,11 +78,11 @@ Examples:
 
 Record each rollback here.
 
-- Date:
-- Trigger:
-- Decision owner:
-- Rollback target:
-- Outcome:
-- Verification result:
-- Notes:
+- Date: **2026-06-21**
+- Trigger: pilot readiness gate (procedure rehearsal, not production incident)
+- Decision owner: Haroon Wahed
+- Rollback target: Render deploy `9f7aa53` (previous deploy same SHA — click-through still required in window)
+- Outcome: HTTP `/_health/` 200 after wake; deploy history captured
+- Verification result: pass — `reports/rollback_drill/rollback_rehearsal_20260621T094728Z.json`
+- Notes: run `./scripts/run_rollback_rehearsal.sh`; execute one dashboard rollback before external pilot
 

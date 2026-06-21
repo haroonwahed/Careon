@@ -110,9 +110,9 @@ describe("AanbiederreactiePage", () => {
 
     expect(screen.getByRole("heading", { name: "Aanbiederreactie" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Bekijk matching" })).toBeInTheDocument();
-    expect(screen.getByText("1 casus wacht op aanbiederreactie")).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Alle reacties (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Wacht op aanbiederreactie (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Herinnering nodig/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Alle reacties 1" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Wacht op reactie 1" })).toBeInTheDocument();
     expect(screen.getByTestId("aanbiederreactie-worklist")).toBeInTheDocument();
     expect(screen.getByText("CO-2026-C533C8")).toBeInTheDocument();
     expect(screen.getAllByText("Levvel Jeugd & Opvoedhulp").length).toBeGreaterThan(0);

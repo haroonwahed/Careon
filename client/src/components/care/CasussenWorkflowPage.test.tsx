@@ -235,12 +235,9 @@ describe("WorkloadPage", () => {
     expect(screen.getByRole("button", { name: "Nieuwe aanmelding" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Archief 0" })).toBeInTheDocument();
-    expect(screen.getByText("WACHT OP JOUW ACTIE")).toBeInTheDocument();
-    expect(screen.getByText("1 casus heeft jouw aandacht nodig")).toBeInTheDocument();
-    expect(screen.getByText("De casus is onvolledig en kan nog niet door naar matching.")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Maak casus compleet" })).toHaveLength(2);
-    expect(screen.getByRole("button", { name: /Filters/i })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Onvolledig/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Wacht op aanmelder/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Maak casus compleet" })).toHaveLength(1);
     expect(screen.getByText("CO-2026-C533C8")).toBeInTheDocument();
     expect(screen.getByText("Aanvraag 41")).toBeInTheDocument();
     expect(screen.getByText("Rotterdam Rijnmond")).toBeInTheDocument();
@@ -249,11 +246,9 @@ describe("WorkloadPage", () => {
     expect(screen.getByText("5 dagen geleden")).toBeInTheDocument();
     expect(screen.queryByText("Geen casussen.")).not.toBeInTheDocument();
     expect(screen.getByTestId("worklist-pagination-hint")).toHaveTextContent("1–1 van 1 aanmeldingen");
-    expect(screen.getByRole("tab", { name: "Alle aanmeldingen 1" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Onvolledig 1" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Wacht op aanmelder 1" })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: "Klaar voor matching 0" })).toBeInTheDocument();
-    expect(screen.getByRole("tab", { name: "Archief 0" })).toBeInTheDocument();
   });
 
   it("keeps the dominant action aligned with the row action", () => {
@@ -274,7 +269,7 @@ describe("WorkloadPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Wacht op aanmelder 1" }));
 
     expect(screen.getByRole("heading", { name: "Aanmeldingen" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
+    expect(screen.getByTestId("worklist")).toBeInTheDocument();
     expect(screen.queryByText("Geen casussen.")).not.toBeInTheDocument();
   });
 
@@ -285,9 +280,8 @@ describe("WorkloadPage", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Archief 0" }));
 
-    expect(screen.getByRole("heading", { name: "Werkvoorraad" })).toBeInTheDocument();
-    expect(screen.getByText("Geen casussen.")).toBeInTheDocument();
-    expect(screen.getByText("Pas filters aan.")).toBeInTheDocument();
-    expect(screen.queryByTestId("worklist-pagination-hint")).not.toBeInTheDocument();
+    expect(screen.getByTestId("worklist")).toBeInTheDocument();
+    expect(screen.getByText("Geen casussen in dit filter.")).toBeInTheDocument();
+    expect(screen.getByTestId("worklist-pagination-hint")).toHaveTextContent("1–0 van 0 aanmeldingen");
   });
 });

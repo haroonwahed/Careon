@@ -157,11 +157,13 @@ export function CareWorklistTabs({
   onChange: (id: string) => void;
 }) {
   return (
-    <div className="flex overflow-x-auto border-b border-border/35 px-2">
+    <div role="tablist" aria-label="Werkvoorraad filters" className="flex overflow-x-auto border-b border-border/35 px-2">
       {tabs.map((tab) => (
         <button
           key={tab.id}
           type="button"
+          role="tab"
+          aria-selected={activeId === tab.id}
           onClick={() => onChange(tab.id)}
           className={cn(
             "flex shrink-0 items-center gap-1.5 border-b-2 px-3.5 py-3 text-[13px] font-medium whitespace-nowrap transition-colors",
@@ -300,6 +302,7 @@ export function CareWorklistRow({
   accentTone = "neutral",
   isSelected = false,
   onRowClick,
+  rowClickLabel = "Open rij",
   children,
   minWidth = "860px",
   testId,
@@ -308,6 +311,7 @@ export function CareWorklistRow({
   accentTone?: "urgent" | "warning" | "low" | "neutral";
   isSelected?: boolean;
   onRowClick?: () => void;
+  rowClickLabel?: string;
   children: ReactNode;
   minWidth?: string;
   testId?: string;
@@ -316,7 +320,6 @@ export function CareWorklistRow({
     <div
       data-care-work-row
       data-testid={testId}
-      role="listitem"
       className={cn(
         "group relative grid cursor-pointer items-start rounded-lg border border-l-[3px] transition-all duration-150",
         "gap-x-4 px-5 py-4",
@@ -330,6 +333,7 @@ export function CareWorklistRow({
       {onRowClick && (
         <button
           type="button"
+          aria-label={rowClickLabel}
           aria-pressed={isSelected}
           onClick={onRowClick}
           className="absolute inset-0 z-0 cursor-pointer rounded-lg border-0 bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50"
@@ -349,7 +353,7 @@ export function CareWorklistRowAction({ children }: { children: ReactNode }) {
 
 export function CareWorklistBody({ children }: { children: ReactNode }) {
   return (
-    <div role="list" className="flex flex-col gap-1.5 p-3">
+    <div className="flex flex-col gap-1.5 p-3">
       {children}
     </div>
   );

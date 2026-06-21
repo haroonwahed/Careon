@@ -130,12 +130,12 @@ describe("operationalDesignLawsGuard", () => {
     }
   });
 
-  it("LAW 08 — queue surfaces use CareWorkRow for dispatch lists", () => {
+  it("LAW 08 — queue surfaces use CareWorkRow or CareWorklistRow for dispatch lists", () => {
     const violations: string[] = [];
     for (const file of QUEUE_LIST_GUARD_FILES) {
       const source = readCareFile(file);
-      if (!/\bCareWorkRow\b/.test(source)) {
-        violations.push(`${file}: missing CareWorkRow`);
+      if (!/\b(CareWorkRow|CareWorklistRow)\b/.test(source)) {
+        violations.push(`${file}: missing CareWorkRow/CareWorklistRow`);
       }
     }
     expect(violations, violations.join("\n")).toEqual([]);
@@ -166,7 +166,7 @@ describe("operationalDesignLawsGuard", () => {
     expect(rowSource).toContain("OPERATIONAL_QUEUE_GRID_CLASS");
   });
 
-  it("LAW 08 — columnar queues use CareOperationalQueueHeader", () => {
+  it("LAW 08 — columnar queues use CareOperationalQueueHeader or CareWorklistColumnHeader", () => {
     const violations: string[] = [];
     const mustHeader = [
       "WorkloadPage.tsx",
@@ -178,14 +178,14 @@ describe("operationalDesignLawsGuard", () => {
     ];
     for (const file of mustHeader) {
       const source = readCareFile(file);
-      if (!/\bCareOperationalQueueHeader\b/.test(source)) {
+      if (!/\b(CareOperationalQueueHeader|CareWorklistColumnHeader)\b/.test(source)) {
         violations.push(file);
       }
     }
     expect(violations, violations.join("\n")).toEqual([]);
   });
 
-  it("LAW 10 — queue werkvoorraad shells use CareWorkspaceSection rhythm", () => {
+  it("LAW 10 — queue werkvoorraad shells use CareWorkspaceSection or CareWorklist rhythm", () => {
     const mustWorkspace = [
       "WorkloadPage.tsx",
       "ActiesPage.tsx",
@@ -196,8 +196,8 @@ describe("operationalDesignLawsGuard", () => {
     const violations: string[] = [];
     for (const file of mustWorkspace) {
       const source = readCareFile(file);
-      if (!/\bCareWorkspaceSection\b/.test(source)) {
-        violations.push(`${file}: missing CareWorkspaceSection`);
+      if (!/\b(CareWorkspaceSection|CareWorklist)\b/.test(source)) {
+        violations.push(`${file}: missing CareWorkspaceSection/CareWorklist`);
       }
       if (/CareSectionBody className="space-y-3"/.test(source)) {
         violations.push(`${file}: legacy space-y-3 section body`);

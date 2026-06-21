@@ -6,6 +6,9 @@
 
 - [Secrets Inventory](./SECRETS_INVENTORY.md)
 - [Backup / Restore Drill](./BACKUP_RESTORE_DRILL.md)
+- [CSRF Posture](./CSRF_POSTURE.md)
+- [Pilot Support, Rollback & Core-loop Verification](./PILOT_SUPPORT_AND_VERIFICATION.md)
+- [Render Infrastructure Sync](./RENDER_INFRA_SYNC.md)
 - [Observability Checklist](./OBSERVABILITY_CHECKLIST.md)
 - [Rollback Playbook](./ROLLBACK_PLAYBOOK.md)
 - [Release Sign-off v1](../releases/RELEASE_SIGNOFF_V1.md)

@@ -1,5 +1,36 @@
 # Carelane Drill Log
 
+## 2026-06-21: Pilot readiness drills (backup + rollback + core loop)
+
+- Environment: local rehearsal + live Render origin + read-only Supabase counts
+- Scope: pilot checklist items 8–9 ops gate (core loop, rollback procedure, support path)
+
+### Commands
+
+```bash
+./scripts/run_full_pilot_rehearsal.sh
+./scripts/run_backup_restore_drill.sh --verify-live-db
+./scripts/run_rollback_rehearsal.sh
+.venv/bin/python -m pytest tests/test_cross_tenant_isolation.py tests/test_resolve_actor_role_security.py \
+  tests/test_tenant_db_backstop.py tests/test_auth_rate_limit.py tests/test_intake_schedule_api.py \
+  tests/test_document_download_accel_fallback.py tests/test_spa_shell_lang.py -q
+```
+
+### Result
+
+- `run_full_pilot_rehearsal.sh` → **GO** (`timeline_gate.go=true`)
+- backup/restore drill → **pass** (rehearsal SQLite; live Postgres `27` cases / `31` decision logs)
+- rollback rehearsal → **pass** (`/_health/` 200; live SHA `9f7aa53`)
+- security gate pytest → **130 passed**
+- Render Redis → **pending** Blueprint sync (`docs/ops/RENDER_INFRA_SYNC.md`)
+
+### Follow-up
+
+- Sync `render.yaml` on Render (Redis, health check, autoDeploy off)
+- One manual dashboard rollback click during supervised window
+
+---
+
 ## 2026-05-30: Production Rollout Record
 
 - Environment: production rollout / evidence log template

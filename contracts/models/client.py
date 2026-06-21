@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from decimal import Decimal
 from datetime import date
 
+from contracts.tenant_scoped import TenantScopedManager
+
 User = get_user_model()
 
 
@@ -57,6 +59,8 @@ class Client(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_clients')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     def __str__(self):
         return self.name
@@ -182,6 +186,8 @@ class CareConfiguration(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    objects = TenantScopedManager()
+
     class Meta:
         db_table = 'contracts_care_configuration'
 
@@ -190,7 +196,7 @@ class CareConfiguration(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.configuration_id:
-            last = CareConfiguration.objects.order_by('-id').first()
+            last = CareConfiguration.objects.unscoped().order_by('-id').first()
             next_num = (last.id + 1) if last else 1
             self.configuration_id = f'CFG-{next_num:05d}'
         super().save(*args, **kwargs)

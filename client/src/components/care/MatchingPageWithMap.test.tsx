@@ -156,9 +156,10 @@ describe("MatchingPageWithMap", () => {
 
     expect(await screen.findByRole("heading", { name: /Matching voor casus/i })).toBeVisible();
 
-    const selectButtons = screen.getAllByRole("button", { name: /Selecteer aanbieder/i });
-    expect(selectButtons.length).toBeGreaterThanOrEqual(1);
-    await user.click(selectButtons[0]);
+    const selectControls = screen.getAllByRole("radio", { name: /Selecteer Zorggroep/i });
+    expect(selectControls.length).toBeGreaterThanOrEqual(1);
+    await user.click(selectControls[0]);
+    await user.click(screen.getByRole("button", { name: "Stuur naar aanbieder" }));
 
     expect(await screen.findByRole("dialog", { name: /Bevestig keuze/i })).toBeVisible();
     expect(screen.getByText(/te selecteren voor doorleiding/i)).toBeVisible();
@@ -203,7 +204,7 @@ describe("MatchingPageWithMap", () => {
     expect(await screen.findByRole("heading", { name: /Matching voor casus/i })).toBeVisible();
     expect(screen.getAllByText("Zorggroep A").length).toBeGreaterThanOrEqual(1);
     expect(screen.queryByText("Verouderde naam uit API")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Selecteer aanbieder/i }).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByRole("radio", { name: /Selecteer Zorggroep/i }).length).toBeGreaterThanOrEqual(1);
   });
 
   it("shows submit errors as a visible blocker near the matching workspace", async () => {
@@ -281,9 +282,10 @@ describe("MatchingPageWithMap", () => {
 
     await screen.findByRole("heading", { name: /Matching voor casus/i });
 
-    const selectButtons = screen.getAllByRole("button", { name: /Selecteer aanbieder/i });
-    expect(selectButtons.length).toBeGreaterThanOrEqual(2);
-    await user.click(selectButtons[1]);
+    const selectControls = screen.getAllByRole("radio", { name: /Selecteer Zorggroep/i });
+    expect(selectControls.length).toBeGreaterThanOrEqual(2);
+    await user.click(selectControls[1]);
+    await user.click(screen.getByRole("button", { name: "Stuur naar aanbieder" }));
 
     const dialog = await screen.findByRole("dialog", { name: /Afwijking van topaanbeveling/i });
     expect(dialog).toBeVisible();

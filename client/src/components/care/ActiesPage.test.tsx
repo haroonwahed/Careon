@@ -79,19 +79,16 @@ describe("ActiesPage", () => {
     const onCaseClick = vi.fn();
     render(<ActiesPage onCaseClick={onCaseClick} onNavigateToCasussen={vi.fn()} />);
 
-    expect(screen.getByTestId("care-page-scaffold")).toBeInTheDocument();
-    expect(screen.getByText(/1 actie vraagt opvolging/i)).toBeInTheDocument();
-    expect(
-      within(screen.getByTestId("acties-dominant-action")).getByRole("button", { name: "Maak casus compleet" }),
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("acties-uitvoerlijst")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Kritiek/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Maak casus compleet" })).toBeInTheDocument();
 
-    const row = screen.getByText("Casusgegevens invullen").closest("article");
+    const row = screen.getByText("Casusgegevens invullen").closest("[data-care-work-row]");
     expect(row).not.toBeNull();
     const rowEl = row as HTMLElement;
     expect(within(rowEl).getByText("Casusgegevens invullen")).toBeInTheDocument();
     expect(within(rowEl).getByText(/CAS-2026-CASE1/i)).toBeInTheDocument();
-    expect(within(rowEl).getByText(/Taakopvolger: Jane Doe/i)).toBeInTheDocument();
-    expect(within(rowEl).getByText(/Reden: Info nodig/i)).toBeInTheDocument();
+    expect(within(rowEl).getByText(/Jane Doe/i)).toBeInTheDocument();
     expect(within(rowEl).getByRole("button", { name: "Maak casus compleet" })).toBeInTheDocument();
 
     fireEvent.click(within(rowEl).getByRole("button", { name: "Maak casus compleet" }));

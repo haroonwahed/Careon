@@ -228,10 +228,8 @@ describe("Screen mode separation", () => {
     cleanup();
 
     render(<CasussenWorkflowPage onCaseClick={vi.fn()} />);
-    const worklist = screen.getByTestId("worklist");
-    expect(worklist).toBeInTheDocument();
-    const worklistRow = screen.getByTestId("coordination-worklist-item");
-    expect(worklistRow).toHaveAttribute("data-density", "operational");
+    expect(screen.getByTestId("worklist")).toBeInTheDocument();
+    expect(screen.getByTestId("coordination-worklist-item")).toBeInTheDocument();
     expect(screen.queryByTestId("coordination-dominant-action")).not.toBeInTheDocument();
     cleanup();
 

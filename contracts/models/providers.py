@@ -4,6 +4,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 import uuid
 
 from contracts.models.regional import RegionalConfiguration
+from contracts.tenant_scoped import TenantScopedManager
 
 
 class Zorgaanbieder(models.Model):
@@ -391,6 +392,8 @@ class ContractRelatie(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    objects = TenantScopedManager()
 
     class Meta:
         db_table = 'provider_contractrelatie'

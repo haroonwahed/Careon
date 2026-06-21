@@ -201,12 +201,11 @@ class CareCaseIsolationTest(CrossTenantFixtureMixin, TestCase):
     """CareCase records carry organization FK and must stay tenant-scoped."""
 
     def test_list_shows_only_own_org(self):
+        """Legacy Django list retired — canonical werklijst is SPA /casussen/ (redirect)."""
         self.client.login(username='user_b', password='passB1234!')
         response = self.client.get(reverse('carelane:case_list'))
-        self.assertEqual(response.status_code, 200)
-        body = response.content.decode('utf-8')
-        self.assertIn('Intake', body)
-        self.assertNotIn('Alpha NDA', body)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'], '/casussen/')
 
     def test_cases_api_excludes_other_org_contracts(self):
         """API is source of truth for pilot workspace; must not leak other-tenant cases."""

@@ -13,6 +13,13 @@ from django.contrib.auth.decorators import login_required
 from contracts.models import Organization, OrganizationMembership
 from contracts.tenancy import get_user_organization
 from contracts.workflow_state_machine import resolve_actor_role
+from contracts.auth_rate_limit import (
+    check_login_allowed,
+    clear_login_attempts,
+    is_login_locked,
+    lockout_user_message,
+    record_failed_login,
+)
 
 from contracts.api._helpers import _active_organization
 
@@ -34,9 +41,26 @@ def auth_login_api(request):
     password = body.get('password') or ''
     if not username or not password:
         return JsonResponse({'ok': False, 'error': 'Gebruikersnaam en wachtwoord zijn verplicht.'}, status=400)
+
+    if is_login_locked(request, username):
+        _, retry_after = check_login_allowed(request, username)
+        return JsonResponse(
+            {'ok': False, 'error': lockout_user_message(retry_after), 'retry_after': retry_after},
+            status=429,
+        )
+
+    allowed, retry_after = check_login_allowed(request, username)
+    if not allowed:
+        return JsonResponse(
+            {'ok': False, 'error': lockout_user_message(retry_after), 'retry_after': retry_after},
+            status=429,
+        )
+
     user = authenticate(request, username=username, password=password)
     if user is None:
+        record_failed_login(request, username)
         return JsonResponse({'ok': False, 'error': 'De gebruikersnaam of het wachtwoord is onjuist.'}, status=401)
+    clear_login_attempts(request, username)
     auth_login(request, user)
     return JsonResponse({'ok': True, 'next': '/dashboard/'})
 

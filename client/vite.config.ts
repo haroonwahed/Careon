@@ -32,6 +32,15 @@ function devFaviconFallback() {
   };
 }
 
+function enforceSpaDocumentLang() {
+  return {
+    name: 'enforce-spa-document-lang',
+    transformIndexHtml(html: string) {
+      return html.replace(/<html lang="[^"]*"/i, '<html lang="nl"');
+    },
+  };
+}
+
 function manualVendorChunks(id: string) {
   if (!id.includes('node_modules')) return undefined;
 
@@ -48,7 +57,7 @@ function manualVendorChunks(id: string) {
 
     return {
     base: command === 'serve' ? '/' : '/static/spa/',
-    plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback()],
+    plugins: [react(), tailwindcss(), figmaAssetResolver(), devFaviconFallback(), enforceSpaDocumentLang()],
     resolve: {
       extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       alias: {

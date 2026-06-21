@@ -208,7 +208,7 @@ describe("NieuweCasusPage", () => {
     expect(screen.getByText("Vanaf wanneer de client zoekt naar (vervolg)plaatsing.")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Waarom deze gemeente?" }));
     expect(screen.getByText("Kies de gemeente die leidend is voor het woonplaatsbeginsel.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad");
+    expect(screen.getByLabelText("Regio (afgeleid van gemeente)")).toHaveTextContent("Utrecht Stad");
     await user.click(screen.getByRole("button", { name: "Toelichting" }));
     expect(await screen.findByRole("dialog", { name: "Toelichting nieuwe casus" })).toBeInTheDocument();
     const dialog = screen.getByRole("dialog", { name: "Toelichting nieuwe casus" });
@@ -256,7 +256,6 @@ describe("NieuweCasusPage", () => {
 
     await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie *"), "WONEN_VERBLIJF");
     await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "WONEN_VERBLIJF_WOONVOORZIENING");
-    await user.selectOptions(screen.getByLabelText("Complexiteit *"), "SEVERE");
     await user.click(screen.getByRole("button", { name: /Binnen 1 week/i }));
 
     await user.click(screen.getByRole("button", { name: "Volgende" }));
@@ -274,8 +273,6 @@ describe("NieuweCasusPage", () => {
     await chooseMunicipality(user);
     await user.click(screen.getByRole("button", { name: "Volgende stap" }));
 
-    await user.selectOptions(screen.getByLabelText("Complexiteit *"), "SEVERE");
-    expect(screen.getByLabelText("Complexiteit *")).toHaveValue("SEVERE");
     await user.selectOptions(screen.getByLabelText("Zorgbehoefte categorie *"), "WONEN_VERBLIJF");
     await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "WONEN_VERBLIJF_WOONVOORZIENING");
     expect(screen.getByLabelText("Specifieke zorgbehoefte")).toHaveValue("WONEN_VERBLIJF_WOONVOORZIENING");
@@ -341,8 +338,8 @@ describe("NieuweCasusPage", () => {
     render(<NieuweCasusPage />);
 
     expect(await screen.findByRole("heading", { name: "Nieuwe casus" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByLabelText("Jeugdhulpregio *")).toHaveDisplayValue("Utrecht Stad"));
-    expect(screen.getByRole("button", { name: "Gemeente (woonplaatsbeginsel) *" })).toHaveTextContent("Zoek gemeente");
+    expect(await screen.findByLabelText("Regio (afgeleid van gemeente)")).toHaveTextContent("Utrecht Stad");
+    expect(screen.getByRole("button", { name: /Gemeente \(woonplaatsbeginsel\) \*/ })).toHaveTextContent("Zoek gemeente");
   });
 
   it("posts the woonplaatsbeginsel, source reference and urgency document on submit", async () => {
@@ -358,7 +355,7 @@ describe("NieuweCasusPage", () => {
     await user.selectOptions(screen.getByLabelText("Specifieke zorgbehoefte"), "WONEN_VERBLIJF_WOONVOORZIENING");
     await user.type(screen.getByLabelText("Persoonsbeeld *"), "Beschrijf hier het persoonsbeeld.");
     const safetyPressure = await screen.findByRole("checkbox", { name: /Veiligheidsdruk/i });
-    fireEvent.change(safetyPressure, { target: { checked: true } });
+    await user.click(safetyPressure);
     expect((safetyPressure as HTMLInputElement).checked).toBe(true);
     await user.click(screen.getByRole("checkbox", { name: "Client heeft al een urgentieverklaring" }));
     await user.upload(
@@ -399,7 +396,7 @@ describe("NieuweCasusPage", () => {
     await user.click(await screen.findByRole("button", { name: "Volgende stap" }));
     await user.click(screen.getByRole("button", { name: /Binnen 1 week/i }));
     const safetyPressure = await screen.findByRole("checkbox", { name: /Veiligheidsdruk/i });
-    fireEvent.change(safetyPressure, { target: { checked: true } });
+    await user.click(safetyPressure);
     expect((safetyPressure as HTMLInputElement).checked).toBe(true);
     expect(screen.getByRole("link", { name: "Vraag urgentieverklaring aan" })).toHaveAttribute(
       "href",

@@ -162,8 +162,13 @@ class Phase2PilotStabilizationTests(TestCase):
         self.assertContains(dashboard_response, '<div id="root"></div>', html=True)
 
         case_list_response = self.client.get(reverse('carelane:case_list'))
-        self.assertEqual(case_list_response.status_code, 200)
-        self.assertContains(case_list_response, 'Pilot Accept Casus')
+        self.assertEqual(case_list_response.status_code, 302)
+        self.assertEqual(case_list_response['Location'], '/casussen/')
+
+        cases_api_response = self.client.get(reverse('carelane:cases_api'))
+        self.assertEqual(cases_api_response.status_code, 200)
+        case_titles = {row['title'] for row in cases_api_response.json().get('contracts', [])}
+        self.assertIn('Pilot Accept Casus', case_titles)
 
         summary_response = self.client.get(reverse('carelane:assessment_decision_api', kwargs={'case_id': intake.contract_id or intake.pk}))
         self.assertEqual(summary_response.status_code, 200)
@@ -341,12 +346,13 @@ class Phase2PilotStabilizationTests(TestCase):
         self.assertEqual(intake.contract.lifecycle_stage, 'ARCHIVED')
 
         active_list_response = self.client.get(reverse('carelane:case_list'))
-        self.assertEqual(active_list_response.status_code, 200)
-        self.assertNotContains(active_list_response, 'Pilot Archive Casus')
+        self.assertEqual(active_list_response.status_code, 302)
+        self.assertEqual(active_list_response['Location'], '/casussen/')
 
-        archived_list_response = self.client.get(f"{reverse('carelane:case_list')}?show_archived=1")
-        self.assertEqual(archived_list_response.status_code, 200)
-        self.assertContains(archived_list_response, 'Pilot Archive Casus')
+        cases_api_response = self.client.get(reverse('carelane:cases_api'))
+        self.assertEqual(cases_api_response.status_code, 200)
+        titles = {row.get('title') for row in cases_api_response.json().get('contracts', [])}
+        self.assertNotIn('Pilot Archive Casus', titles)
 
         matching_response = self.client.post(
             reverse('carelane:case_matching_action', kwargs={'pk': intake.pk}),

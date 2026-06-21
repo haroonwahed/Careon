@@ -9,6 +9,7 @@ from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 
+from contracts.audit_retention import apply_audit_log_retention, audit_log_retention_days
 from contracts.models import AuditLog, CareCase
 from contracts.tenancy import (
     get_scoped_object_or_404,
@@ -52,6 +53,7 @@ def audit_log_api(request):
                 User.objects.filter(organization_memberships__organization=organization).values_list('id', flat=True)
             )
             qs = qs.filter(user_id__in=org_user_ids)
+        qs = apply_audit_log_retention(qs)
         q = request.GET.get('q', '')
         if q:
             qs = qs.filter(Q(model_name__icontains=q) | Q(object_repr__icontains=q))
@@ -72,7 +74,7 @@ def audit_log_api(request):
                 'userEmail': entry.user.email if entry.user else '',
                 'changes': entry.changes,
             })
-        return JsonResponse({'entries': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages})
+        return JsonResponse({'entries': data, 'total_count': paginator.count, 'page': page, 'total_pages': paginator.num_pages, 'retentionDays': audit_log_retention_days()})
     except Exception:
         return _internal_server_error(request, context='audit_log_api_failed')
 
