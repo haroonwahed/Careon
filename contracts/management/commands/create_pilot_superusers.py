@@ -22,7 +22,7 @@ PILOT_SUPERUSERS = [
 
 
 def _random_password(length: int = 16) -> str:
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+    alphabet = string.ascii_letters + string.digits
     return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
@@ -44,13 +44,6 @@ class Command(BaseCommand):
                 pw = _random_password()
                 user.set_password(pw)
                 user.save(update_fields=["password"])
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Created {spec['email']}  →  temporary password: {pw}"
-                    )
-                )
-                self.stdout.write(
-                    "  Ask them to change it via /admin/password_change/ after first login."
-                )
+                self.stdout.write(self.style.SUCCESS(f"Created {spec['email']}  →  password: {pw}"))
             else:
                 self.stdout.write(f"Skipped {spec['email']} — already exists.")
