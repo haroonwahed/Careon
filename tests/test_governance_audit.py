@@ -30,6 +30,10 @@ from contracts.models import (
     PlacementRequest,
     SystemPolicyConfig,
 )
+import sys
+import contracts.views.dashboard as _dashboard_module_import  # noqa: F401 — side-effect: registers in sys.modules
+_dashboard_module = sys.modules['contracts.views.dashboard']
+from contracts.models.providers import Zorgaanbieder
 
 _MIN_WS = {
     'context': 'Test pilot samenvatting (context) — minimaal verplicht voor matching en validatie.',
@@ -62,12 +66,19 @@ class GovernanceAuditTests(TestCase):
             status=CareProvider.Status.ACTIVE,
             created_by=self.user,
         )
+        za_a = Zorgaanbieder.objects.create(name='Provider A', is_active=True)
+        za_a.client = self.provider_a
+        za_a.save(update_fields=['client'])
+
         self.provider_b = CareProvider.objects.create(
             organization=self.organization,
             name='Provider B',
             status=CareProvider.Status.ACTIVE,
             created_by=self.user,
         )
+        za_b = Zorgaanbieder.objects.create(name='Provider B', is_active=True)
+        za_b.client = self.provider_b
+        za_b.save(update_fields=['client'])
 
         self.intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
@@ -128,7 +139,7 @@ class GovernanceAuditTests(TestCase):
             },
         ]
 
-    @patch('contracts.views.dashboard._build_matching_suggestions_for_intake')
+    @patch.object(_dashboard_module, '_build_matching_suggestions_for_intake')
     @override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
     def test_matching_dashboard_creates_match_recommendation_log(self, mock_suggestions):
         mock_suggestions.return_value = self._matching_suggestions()
@@ -147,7 +158,7 @@ class GovernanceAuditTests(TestCase):
         self.assertEqual(log.recommendation_context['source_view'], 'matching_dashboard')
         self.assertEqual(log.adaptive_flags['behavior_influence'], ['Stable response pattern'])
 
-    @patch('contracts.views.dashboard._build_matching_suggestions_for_intake')
+    @patch.object(_dashboard_module, '_build_matching_suggestions_for_intake')
     def test_provider_selection_override_is_logged(self, mock_suggestions):
         mock_suggestions.return_value = self._matching_suggestions()
 

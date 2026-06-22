@@ -29,7 +29,23 @@ from contracts.models import (
     RegionType,
 )
 from contracts.governance import AuditLoggingError
+from contracts.models.providers import Zorgaanbieder
 from contracts.views import sync_case_flow_state
+
+
+def _make_linked_provider(org, user, name, **kwargs):
+    """Create a Client (provider) linked to a Zorgaanbieder — required by Blocker 1 gate."""
+    provider = CareProvider.objects.create(
+        organization=org,
+        name=name,
+        status=CareProvider.Status.ACTIVE,
+        created_by=user,
+        **kwargs,
+    )
+    za = Zorgaanbieder.objects.create(name=name, is_active=True)
+    za.client = provider
+    za.save(update_fields=['client'])
+    return provider
 
 @contextmanager
 def _quiet_logs_for_expected_client_errors():
@@ -76,12 +92,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertContains(response, '<div id="root"></div>', html=True)
 
     def test_intake_assessment_matching_assignment_flow(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Flow Aanbieder',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Flow Aanbieder')
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,
@@ -154,12 +165,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(intake.status, CaseIntakeProcess.ProcessStatus.DECISION)
 
     def test_matching_assignment_is_blocked_until_assessment_is_ready(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Blocked Flow Aanbieder',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Blocked Flow Aanbieder')
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Blocked Flow Intake',
@@ -792,12 +798,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
             status='ACTIVE',
             created_by=self.user,
         )
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Golden Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Golden Provider')
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,
@@ -982,12 +983,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self._assert_spa_shell(case_detail)
 
     def test_case_matching_tab_assigns_and_logs_history(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Case Match Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Case Match Provider')
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,
@@ -1040,12 +1036,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         )
 
     def test_case_communication_tab_renders_structured_items_and_provider_response(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Communicatie Aanbieder',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Communicatie Aanbieder')
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Case Communicatie Intake',
@@ -1230,12 +1221,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         )
 
     def test_case_matching_reject_logs_rejected_option(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Rejected Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Rejected Provider')
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,
@@ -1285,12 +1271,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         )
 
     def test_case_placement_action_updates_status_and_preserves_notes(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Placement Action Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Placement Action Provider')
         intake = CaseIntakeProcess.objects.create(
             organization=self.organization,
             title='Case Placement Intake',
@@ -1334,12 +1315,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self.assertEqual(log.actor_id, self.user.id)
 
     def test_sync_case_flow_state_keeps_placement_in_review_until_provider_acceptance(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Sync Flow Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Sync Flow Provider')
         case = CareCase.objects.create(
             organization=self.organization,
             title='Sync Flow Case',
@@ -1396,12 +1372,7 @@ class IntakeAssessmentMatchingFlowTests(TestCase):
         self._assert_spa_shell(response)
 
     def test_placement_pages_breadcrumb_to_real_dashboard(self):
-        provider = CareProvider.objects.create(
-            organization=self.organization,
-            name='Placement Breadcrumb Provider',
-            status=CareProvider.Status.ACTIVE,
-            created_by=self.user,
-        )
+        provider = _make_linked_provider(self.organization, self.user, 'Placement Breadcrumb Provider')
         ProviderProfile.objects.create(
             client=provider,
             offers_outpatient=True,

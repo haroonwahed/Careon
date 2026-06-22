@@ -21,6 +21,7 @@ from contracts.models import (
     PlacementRequest,
     UserProfile,
 )
+from contracts.models.providers import Zorgaanbieder
 from contracts.workflow_state_machine import WorkflowState
 
 User = get_user_model()
@@ -70,6 +71,9 @@ class CaseTimelineV1Tests(TestCase):
         )
         self.provider.responsible_coordinator = self.provider_user
         self.provider.save(update_fields=['responsible_coordinator', 'updated_at'])
+        za = Zorgaanbieder.objects.create(name='Provider One', is_active=True)
+        za.client = self.provider
+        za.save(update_fields=['client'])
 
     def _create_matching_ready_case(self):
         intake = CaseIntakeProcess.objects.create(

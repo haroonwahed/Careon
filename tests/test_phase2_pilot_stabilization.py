@@ -24,6 +24,7 @@ from contracts.models import (
     RegionType,
     UserProfile,
 )
+from contracts.models.providers import Zorgaanbieder
 
 
 @override_settings(MIDDLEWARE=_MIDDLEWARE_WITHOUT_SPA_SHELL)
@@ -150,6 +151,10 @@ class Phase2PilotStabilizationTests(TestCase):
             max_capacity=3,
             average_wait_days=7,
         )
+        # Blocker 1: matching gate requires Zorgaanbieder linked to Client
+        za = Zorgaanbieder.objects.create(name=name, is_active=True)
+        za.client = provider
+        za.save(update_fields=['client'])
         return provider
 
     def test_acceptance_path_reaches_placement_and_handoff_routes(self):
