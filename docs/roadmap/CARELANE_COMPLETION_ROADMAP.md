@@ -65,19 +65,17 @@
 
 - **✅ P3-1 · CI-hardening (R9):** `tsconfig` + `tsc --noEmit`-job toegevoegd; tsc 0 errors bereikt (178→0 via gerichte fixes + gecontroleerde suppressie); vitest 226 passed; backend 963 passed.
 - **✅ P3-2 · JSON-document-upload-API:** POST `/api/documents/` accepteert multipart; valideert org, file-grootte, blokkeert zorgaanbieder; retourneert 201. 4 tests.
-- **P3-3 · Intake-planning** (datum/afspraakvelden i.p.v. enkel statusflip). **Omvang:** M — productbesluit nodig.
+- **✅ P3-3 · Intake-planning** geïmplementeerd (migration 0088). Model: `intake_appointment_at`, `intake_appointment_location`, `intake_appointment_notes`, `intake_appointment_conducted_by`. API: `intake_schedule_api` (PATCH). Tests: `test_intake_schedule_api.py`.
 - **✅ P3-4 · Seed-reset org-isolatie (R10):** 6 unscoped Zorgaanbieder-deletes gescoopt via `bron_type=SEEDED`; `TrustAccount` delete gescoopt via `provider__organization`. 1 isolatietest.
-- **P3-5 · Workflow-state-deduplicatie:** `CaseIntakeProcess.workflow_state` vs `CareCase.case_phase` consolideren of een afgeleide-property maken. **Omvang:** L — raakt veel call-sites.
+- **✅ P3-5 · Workflow-state-deduplicatie:** `_WORKFLOW_STATE_TO_CASE_PHASE` mapping + `sync_case_phase_from_workflow_state` in `workflow_state_machine.py`. Sync called after every `workflow_state` write. Twee legacy views gefixed (dashboard.py plaatsing-APPROVED, communication.py rematch). 5 nieuwe testen in `test_case_api_workflow_state.py`. Backfill: `python manage.py sync_case_phases --execute`.
 - **✅ P3-6 · `/gebruikers` gebruikersbeheer** geïmplementeerd 2026-06-15. Backend: 4 API-endpoints (`GET/POST /api/members/`, `PATCH /api/members/<id>/role/`, `POST /api/members/<id>/activation/`, `POST /api/invitations/<id>/action/`). Frontend: `GebruikersPage.tsx` toont actieve leden (met rol-dropdown + deactiveren), gedeactiveerde leden (heractiveren), openstaande uitnodigingen (intrekken/opnieuw sturen) en uitnodigingsformulier.
 
 ---
 
 ## Resterende open items
 - **P2-2** Design-tokens ontdubbelen (M) — intentioneel ontwerp; geen bug
-- **P3-3** Intake-planning (M) — productbesluit nodig
-- **P3-5** Workflow-state-deduplicatie (L) — grote refactor
 
 ## Voltooide items (samenvatting)
 - P0-1 ✅ P1-1 ✅ P1-2 ✅ P1-3 ✅ P1-4 ✅ P1-5 ✅
 - P2-1 ✅ P2-3 ✅ P2-4 ✅ P2-5 ✅ P2-6 ✅ P2-7 ✅ P2-8 ✅ P2-9 ✅
-- P3-1 ✅ P3-2 ✅ P3-4 ✅ P3-6 ✅
+- P3-1 ✅ P3-2 ✅ P3-3 ✅ P3-4 ✅ P3-5 ✅ P3-6 ✅

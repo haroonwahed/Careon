@@ -1,6 +1,8 @@
 """
 Shared private helpers and constants used across API domain sub-modules.
 """
+from __future__ import annotations
+
 import json
 import logging
 import sys

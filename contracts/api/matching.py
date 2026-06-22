@@ -7,11 +7,12 @@ import logging
 from django.http import Http404, JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.core.exceptions import ValidationError
 
 from contracts.governance import AuditLoggingError, log_case_decision_event
+from contracts.notifications import notify_provider_review_requested
 from contracts.throttle import throttle
 from contracts.models import (
     CareCase,
@@ -157,11 +158,16 @@ def matching_candidates_api(request, case_id):
             elif item:
                 trade_offs.append(str(item))
 
+        _za = getattr(row, 'zorgaanbieder', None)
+        _provider_client_id = _za.client_id if _za else None
+
         payload.append({
             'casus_id': intake.pk,
             'zorgprofiel_id': row.zorgprofiel_id,
             'zorgaanbieder_id': row.zorgaanbieder_id,
-            'aanbiederName': row.zorgaanbieder.name if getattr(row, 'zorgaanbieder', None) else '',
+            'provider_client_id': _provider_client_id,
+            'provider_unlinked': _provider_client_id is None,
+            'aanbiederName': _za.name if _za else '',
             'totaalscore': float(row.totaalscore or 0.0),
             'score_inhoudelijke_fit': float(row.score_inhoudelijke_fit or 0.0),
             'score_regio_contract_fit': float(row.score_regio_contract_fit or row.score_contract_regio or 0.0),
@@ -233,19 +239,38 @@ def _matching_action_api_inner(request, case_id):
         assessment = getattr(intake, 'case_assessment', None)
         previous_state = derive_workflow_state(intake=intake, assessment=assessment)
 
+        # Validate that the chosen provider has a linked Zorgaanbieder.
+        # Without this link the placement would reference an unscored, unverified provider.
+        if action in ('confirm_validation', 'send_to_provider', 'assign'):
+            try:
+                _ = provider.zorgaanbieder
+            except ObjectDoesNotExist:
+                return JsonResponse({
+                    'ok': False,
+                    'error': 'Aanbieder is niet gekoppeld aan een bekende zorgaanbieder. Controleer de aanbiedersconfiguratie.',
+                    'code': 'PROVIDER_UNLINKED',
+                }, status=400)
+
         # Detect manual override: provider is not the top-ranked match for this case.
+        # Compare Client PKs (both sides of the link) so the keyspaces match.
         # MatchResultaat.casus is FK to CareCase, not CaseIntakeProcess.
         _case_record = getattr(intake, 'case_record', None)
         top_match = (
             MatchResultaat.objects
             .filter(casus=_case_record, uitgesloten=False)
             .order_by('ranking', '-totaalscore')
+            .select_related('zorgaanbieder')
             .first()
         ) if _case_record is not None else None
+        _top_client_id = (
+            top_match.zorgaanbieder.client_id
+            if top_match is not None and getattr(top_match, 'zorgaanbieder', None)
+            else None
+        )
         is_provider_override = (
             action in ('send_to_provider', 'assign')
-            and top_match is not None
-            and top_match.zorgaanbieder_id != provider.pk
+            and _top_client_id is not None
+            and _top_client_id != provider.pk
         )
 
         actions_need_summary = {'prepare_waitlist_proposal', 'confirm_validation', 'send_to_provider', 'assign'}
@@ -451,7 +476,7 @@ def _matching_action_api_inner(request, case_id):
                 recommendation_context={
                     'actor_role': actor_role,
                     'is_override': is_provider_override,
-                    'recommended_provider_id': top_match.zorgaanbieder_id if top_match else None,
+                    'recommended_provider_id': _top_client_id,
                 },
                 user_action='send_to_provider_override' if is_provider_override else 'send_to_provider',
                 actor_user_id=request.user.id,
@@ -462,6 +487,11 @@ def _matching_action_api_inner(request, case_id):
                 actual_value={'provider_id': provider.pk},
                 optional_reason=override_reason if is_provider_override else '',
                 strict=True,
+            )
+            notify_provider_review_requested(
+                intake=intake,
+                placement=placement,
+                organization=organization,
             )
             return JsonResponse({
                 'ok': True,
@@ -550,7 +580,7 @@ def _matching_action_api_inner(request, case_id):
                 recommendation_context={
                     'actor_role': actor_role,
                     'is_override': is_provider_override,
-                    'recommended_provider_id': top_match.zorgaanbieder_id if top_match else None,
+                    'recommended_provider_id': _top_client_id,
                 },
                 user_action='assign_override' if is_provider_override else 'assign',
                 actor_user_id=request.user.id,
@@ -562,7 +592,11 @@ def _matching_action_api_inner(request, case_id):
                 optional_reason=override_reason if is_provider_override else '',
                 strict=True,
             )
-
+            notify_provider_review_requested(
+                intake=intake,
+                placement=placement,
+                organization=organization,
+            )
             return JsonResponse({
                 'ok': True,
                 'nextPage': 'casussen',

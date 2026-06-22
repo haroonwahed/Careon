@@ -130,11 +130,13 @@ function taxonomyExplainabilityLines(candidate?: MatchingCandidateRow | null): s
 }
 
 function resolveProviderForMatch(match: MatchingCandidateRow, providers: SpaProvider[]): SpaProvider | null {
-  const providerId = String(match.zorgaanbieder_id ?? "").trim();
-  if (!providerId) {
+  // Use the server-provided provider_client_id (the Client pk linked to this Zorgaanbieder).
+  // Falling back to zorgaanbieder_id would compare different keyspaces and produce wrong results.
+  const clientId = String(match.provider_client_id ?? "").trim();
+  if (!clientId) {
     return null;
   }
-  return providers.find((provider) => String(provider.id) === providerId) ?? null;
+  return providers.find((provider) => String(provider.id) === clientId) ?? null;
 }
 
 interface MatchingPageWithMapProps {
@@ -461,7 +463,8 @@ export function MatchingPageWithMap({
       if (Number.isNaN(pid)) {
         throw new Error("Ongeldige aanbieder-id.");
       }
-      const apiRow = apiMatches.find((m) => String(m.zorgaanbieder_id ?? "").trim() === String(pid));
+      // Match on provider_client_id (Client pk) — same keyspace as pid.
+      const apiRow = apiMatches.find((m) => m.provider_client_id != null && m.provider_client_id === pid);
       const validation_context = {
         totaalscore: apiRow?.totaalscore,
         confidenceLabel: match.advisoryLabel,
@@ -491,7 +494,7 @@ export function MatchingPageWithMap({
   const resolveRankedMatchRow = (providerId: string): RankedMatchRow | null => {
     const existing = rankedMatches.find((m) => m.provider.id === providerId);
     if (existing) return existing;
-    const apiRow = apiMatches.find((m) => String(m.zorgaanbieder_id ?? "").trim() === String(providerId));
+    const apiRow = apiMatches.find((m) => m.provider_client_id != null && String(m.provider_client_id) === String(providerId));
     if (!apiRow) return null;
     const provider = legacyProviders.find((p) => String(p.id) === String(providerId));
     if (!provider) return null;

@@ -48,11 +48,17 @@ def audit_log_api(request):
         qs = AuditLog.objects.select_related('user')
         if organization:
             from django.contrib.auth import get_user_model
+            from django.db.models import Q
             User = get_user_model()
             org_user_ids = list(
                 User.objects.filter(organization_memberships__organization=organization).values_list('id', flat=True)
             )
-            qs = qs.filter(user_id__in=org_user_ids)
+            # Prefer the org FK (populated on new writes); fall back to user-membership
+            # for legacy rows written before the FK was added.
+            qs = qs.filter(
+                Q(organization=organization)
+                | Q(organization__isnull=True, user_id__in=org_user_ids)
+            )
         qs = apply_audit_log_retention(qs)
         q = request.GET.get('q', '')
         if q:

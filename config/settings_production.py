@@ -27,6 +27,18 @@ if SECRET_KEY.startswith('django-insecure-'):
     raise ImproperlyConfigured('DJANGO_SECRET_KEY must be set in production.')
 if DEFAULT_FROM_EMAIL == 'noreply@carelane.local':
     raise ImproperlyConfigured('DEFAULT_FROM_EMAIL must be set in production.')
+
+# Email delivery is required in production: provider notifications are sent via SMTP.
+# Set EMAIL_HOST (+ EMAIL_HOST_USER / EMAIL_HOST_PASSWORD) in the Render dashboard.
+_email_host = os.getenv('EMAIL_HOST', '').strip()
+if not _email_host:
+    import warnings
+    warnings.warn(
+        'EMAIL_HOST is not configured. Provider notification emails will not be delivered '
+        'until EMAIL_HOST, EMAIL_HOST_USER, and EMAIL_HOST_PASSWORD are set.',
+        RuntimeWarning,
+        stacklevel=1,
+    )
 if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
     raise ImproperlyConfigured('DATABASE_URL must point to PostgreSQL in production.')
 
@@ -36,6 +48,10 @@ if _workers > 1 and not os.getenv('REDIS_URL', '').strip():
         'REDIS_URL must be set when running more than one gunicorn worker '
         '(shared cache required for rate limits and consistent reads).'
     )
+
+# Persistent media storage. On Render this points at the mounted disk so
+# uploaded files survive redeploys. Falls back to the base setting locally.
+MEDIA_ROOT = os.getenv('MEDIA_ROOT', str(base.MEDIA_ROOT))
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

@@ -13,7 +13,11 @@ from contracts.models import (
     OrganizationMembership,
     PlacementRequest,
 )
-from contracts.workflow_state_machine import WorkflowState
+from contracts.workflow_state_machine import (
+    WorkflowState,
+    _WORKFLOW_STATE_TO_CASE_PHASE,
+    sync_case_phase_from_workflow_state,
+)
 
 
 User = get_user_model()
@@ -209,3 +213,108 @@ class CaseApiWorkflowStateTests(TestCase):
         self.assertEqual(list_case["placement_provider_response_status"], PlacementRequest.ProviderResponseStatus.ACCEPTED)
         self.assertEqual(detail_payload["placement_request_status"], PlacementRequest.Status.APPROVED)
         self.assertEqual(detail_payload["placement_provider_response_status"], PlacementRequest.ProviderResponseStatus.ACCEPTED)
+
+
+class WorkflowStateCasePhaseSyncTests(TestCase):
+    """P3-5: workflow_state is the source of truth; case_phase must always be derivable from it."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="sync_test_user", password="testpass123", email="sync@example.com"
+        )
+        self.organization = Organization.objects.create(name="Sync Test Org", slug="sync-test-org")
+        OrganizationMembership.objects.create(
+            organization=self.organization,
+            user=self.user,
+            role=OrganizationMembership.Role.OWNER,
+            is_active=True,
+        )
+
+    def _make_intake(self, workflow_state: str) -> CaseIntakeProcess:
+        intake = CaseIntakeProcess.objects.create(
+            organization=self.organization,
+            title="Sync test",
+            status=CaseIntakeProcess.ProcessStatus.INTAKE,
+            urgency=CaseIntakeProcess.Urgency.MEDIUM,
+            preferred_care_form=CaseIntakeProcess.CareForm.OUTPATIENT,
+            start_date=date.today(),
+            target_completion_date=date.today() + timedelta(days=7),
+            case_coordinator=self.user,
+            workflow_state=workflow_state,
+        )
+        intake.ensure_case_record(created_by=self.user)
+        return intake
+
+    def test_mapping_covers_all_workflow_states(self):
+        # Every WorkflowState constant must have an entry in the mapping.
+        defined_states = {
+            v for k, v in vars(WorkflowState).items()
+            if not k.startswith('_') and isinstance(v, str)
+        }
+        missing = defined_states - set(_WORKFLOW_STATE_TO_CASE_PHASE.keys())
+        self.assertEqual(
+            missing, set(),
+            msg=f"WorkflowState values not in _WORKFLOW_STATE_TO_CASE_PHASE: {missing}",
+        )
+
+    def test_mapping_targets_are_valid_case_phases(self):
+        valid_phases = {c for c, _ in CareCase.CasePhase.choices}
+        for ws, phase in _WORKFLOW_STATE_TO_CASE_PHASE.items():
+            self.assertIn(phase, valid_phases, msg=f"{ws} maps to unknown phase '{phase}'")
+
+    def test_sync_updates_case_phase_from_workflow_state(self):
+        intake = self._make_intake(WorkflowState.DRAFT_CASE)
+        case = intake.case_record
+
+        # Simulate a workflow state advance.
+        intake.workflow_state = WorkflowState.MATCHING_READY
+        intake.save(update_fields=["workflow_state"])
+        sync_case_phase_from_workflow_state(intake, case=case)
+
+        case.refresh_from_db()
+        self.assertEqual(case.case_phase, CareCase.CasePhase.MATCHING)
+
+    def test_sync_is_idempotent_when_phase_unchanged(self):
+        intake = self._make_intake(WorkflowState.MATCHING_READY)
+        case = intake.case_record
+        case.case_phase = CareCase.CasePhase.MATCHING
+        case.save(update_fields=["case_phase"])
+
+        # Call twice — should not raise, should not duplicate writes.
+        sync_case_phase_from_workflow_state(intake, case=case)
+        sync_case_phase_from_workflow_state(intake, case=case)
+
+        case.refresh_from_db()
+        self.assertEqual(case.case_phase, CareCase.CasePhase.MATCHING)
+
+    def test_each_workflow_state_produces_expected_case_phase(self):
+        expected = {
+            WorkflowState.WIJKTEAM_INTAKE: CareCase.CasePhase.INTAKE,
+            WorkflowState.ZORGVRAAG_BEOORDELING: CareCase.CasePhase.INTAKE,
+            WorkflowState.DRAFT_CASE: CareCase.CasePhase.INTAKE,
+            WorkflowState.SUMMARY_READY: CareCase.CasePhase.INTAKE,
+            WorkflowState.MATCHING_READY: CareCase.CasePhase.MATCHING,
+            WorkflowState.GEMEENTE_VALIDATED: CareCase.CasePhase.MATCHING,
+            WorkflowState.PROVIDER_REVIEW_PENDING: CareCase.CasePhase.PROVIDER_BEOORDELING,
+            WorkflowState.PROVIDER_ACCEPTED: CareCase.CasePhase.PROVIDER_BEOORDELING,
+            WorkflowState.BUDGET_REVIEW_PENDING: CareCase.CasePhase.PROVIDER_BEOORDELING,
+            WorkflowState.PROVIDER_REJECTED: CareCase.CasePhase.PROVIDER_BEOORDELING,
+            WorkflowState.PLACEMENT_CONFIRMED: CareCase.CasePhase.PLAATSING,
+            WorkflowState.INTAKE_STARTED: CareCase.CasePhase.ACTIEF,
+            WorkflowState.ACTIVE_PLACEMENT: CareCase.CasePhase.ACTIEF,
+            WorkflowState.ARCHIVED: CareCase.CasePhase.AFGEROND,
+        }
+        for ws, expected_phase in expected.items():
+            with self.subTest(workflow_state=ws):
+                intake = self._make_intake(ws)
+                case = intake.case_record
+                case.case_phase = CareCase.CasePhase.INTAKE  # reset to known state
+                case.save(update_fields=["case_phase"])
+
+                sync_case_phase_from_workflow_state(intake, case=case)
+
+                case.refresh_from_db()
+                self.assertEqual(
+                    case.case_phase, expected_phase,
+                    msg=f"{ws} should map to {expected_phase}, got {case.case_phase}",
+                )

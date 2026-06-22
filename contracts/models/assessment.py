@@ -321,6 +321,14 @@ class PlacementRequest(models.Model):
         verbose_name='Plaatsingskwaliteit vastgelegd door',
     )
 
+    # Set to True once beschikbare_capaciteit has been decremented on the linked
+    # CapaciteitRecord.  Guards against double-decrement on repeated confirms.
+    capacity_committed = models.BooleanField(
+        default=False,
+        verbose_name='Capaciteit gecommitteerd',
+        help_text='True nadat plaatsingsbevestiging capaciteit heeft afgetrokken.',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

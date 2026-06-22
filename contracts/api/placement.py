@@ -13,6 +13,7 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 
+from contracts.capacity import NO_CAPACITY_CODE, commit_capacity, release_capacity
 from contracts.governance import AuditLoggingError, log_case_decision_event
 from contracts.models import (
     CareCase,
@@ -365,7 +366,10 @@ def _placement_action_api_inner(request, case_id):
             PlacementRequest.objects
             .select_for_update(of=('self',))
             .filter(due_diligence_process=intake)
-            .select_related('selected_provider', 'proposed_provider')
+            .select_related(
+                'selected_provider', 'selected_provider__zorgaanbieder',
+                'proposed_provider', 'proposed_provider__zorgaanbieder',
+            )
             .order_by('-updated_at')
             .first()
         )
@@ -387,6 +391,17 @@ def _placement_action_api_inner(request, case_id):
             allowed, blocker = placement.can_transition_to_status(PlacementRequest.Status.APPROVED)
             if not allowed:
                 return JsonResponse({'ok': False, 'error': blocker or 'Plaatsing kan niet worden bevestigd.'}, status=400)
+
+            cap_ok, cap_code = commit_capacity(placement)
+            if not cap_ok:
+                return JsonResponse(
+                    {
+                        'ok': False,
+                        'error': 'Geen capaciteit beschikbaar bij deze aanbieder.',
+                        'code': NO_CAPACITY_CODE,
+                    },
+                    status=409,
+                )
 
             placement.status = PlacementRequest.Status.APPROVED
             if note:
@@ -427,6 +442,7 @@ def _placement_action_api_inner(request, case_id):
             if placement.provider_response_status not in normalize_provider_rejection_states():
                 return JsonResponse({'ok': False, 'error': 'Rematch kan alleen na aanbiederafwijzing.'}, status=400)
 
+            release_capacity(placement)
             placement.status = PlacementRequest.Status.REJECTED
             placement.save(update_fields=['status', 'updated_at'])
             intake.status = CaseIntakeProcess.ProcessStatus.MATCHING

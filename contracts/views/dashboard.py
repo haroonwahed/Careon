@@ -953,9 +953,10 @@ def case_placement_action(request, pk):
         intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
         sync_case_phase_from_workflow_state(intake, user=request.user)
 
-    if status == PlacementRequest.Status.APPROVED and intake.case_record is not None:
-        intake.case_record.case_phase = CareCase.CasePhase.PLAATSING
-        intake.case_record.save(update_fields=['case_phase', 'updated_at'])
+    if status == PlacementRequest.Status.APPROVED:
+        intake.workflow_state = WorkflowState.PLACEMENT_CONFIRMED
+        intake.save(update_fields=['workflow_state', 'updated_at'])
+        sync_case_phase_from_workflow_state(intake, user=request.user)
 
     placement.save(update_fields=list(dict.fromkeys(update_fields)))
     log_action(

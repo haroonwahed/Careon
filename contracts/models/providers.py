@@ -108,6 +108,17 @@ class Zorgaanbieder(models.Model):
         default=ReviewStatus.PENDING,
     )
 
+    # Link to the Client row used for placement/portal access.
+    # Nullable so existing records are not broken; set during onboarding or backfill.
+    # PROTECT prevents accidental deletion of a Client that a Zorgaanbieder points to.
+    client = models.OneToOneField(
+        'contracts.Client',
+        null=True, blank=True,
+        on_delete=models.PROTECT,
+        related_name='zorgaanbieder',
+        help_text='Client-rij (CORPORATION) die voor plaatsing en provider-portal wordt gebruikt',
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

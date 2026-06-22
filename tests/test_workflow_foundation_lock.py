@@ -20,6 +20,7 @@ from contracts.models import (
     RegionalConfiguration,
     RegionType,
     UserProfile,
+    Zorgaanbieder,
 )
 from contracts.decision_engine import evaluate_case
 from contracts.workflow_state_machine import (
@@ -84,6 +85,12 @@ class WorkflowFoundationLockTests(TestCase):
         )
         self.provider.responsible_coordinator = self.provider_user
         self.provider.save(update_fields=['responsible_coordinator', 'updated_at'])
+
+        # Link self.provider to a Zorgaanbieder so matching_action_api (assign/send)
+        # passes the PROVIDER_UNLINKED gate added for Blocker 1.
+        self.zorgaanbieder = Zorgaanbieder.objects.create(
+            name='Provider One', is_active=True, client=self.provider
+        )
 
     def _create_matching_ready_case(self):
         intake = CaseIntakeProcess.objects.create(

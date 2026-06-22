@@ -54,6 +54,19 @@ import { countOpenCareTasks } from "../../lib/actiesTaskSemantics";
 import { buildWorkflowCases } from "../../lib/workflowUi";
 import { countActionSignals } from "../../lib/buildActionSignals";
 
+function useUnreadNotificationCount(): number {
+  const [count, setCount] = useState(0);
+  useEffect(() => {
+    let cancelled = false;
+    void apiClient
+      .get<{ unreadCount: number }>("/care/api/notifications/")
+      .then((data) => { if (!cancelled) setCount(data.unreadCount ?? 0); })
+      .catch(() => { /* bell shows 0 on error */ });
+    return () => { cancelled = true; };
+  }, []);
+  return count;
+}
+
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
 
 interface Context {
@@ -339,6 +352,7 @@ export function CareAppShell({ theme, onThemeToggle }: CareAppShellProps) {
   const { assessments } = useAssessments({ q: "" });
   const { regions } = useRegions({ q: "" });
   const { summary: dashboardSummary } = useDashboard();
+  const unreadNotificationCount = useUnreadNotificationCount();
   /** Sidebar badges must match the same datasets as the pages they point to (e.g. Acties = CareTask list). */
   const queueCounts = useMemo(() => {
     const wf = buildWorkflowCases(cases, providers);
@@ -663,7 +677,7 @@ export function CareAppShell({ theme, onThemeToggle }: CareAppShellProps) {
           availableContexts={availableContexts}
           onContextSwitch={handleContextSwitch}
           showRoleSwitcher={true}
-          notificationCount={currentPage === "casussen" ? 2 : 0}
+          notificationCount={unreadNotificationCount}
           onNotificationClick={() => {
             goToPage("acties");
           }}

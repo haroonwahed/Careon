@@ -33,6 +33,7 @@ from ..workflow_state_machine import (
     WorkflowAction, WorkflowRole, WorkflowState,
     derive_workflow_state, evaluate_transition, log_transition_event,
     normalize_provider_rejection_states, resolve_actor_role,
+    sync_case_phase_from_workflow_state,
 )
 from ._utils import (
     _coerce_sla_int, _to_bool_filter, _urgency_rank, _resolved_intake_urgency,
@@ -1310,14 +1311,7 @@ def case_provider_response_action(request, pk):
         if intake.workflow_state != WorkflowState.MATCHING_READY:
             intake.workflow_state = WorkflowState.MATCHING_READY
         intake.save(update_fields=['status', 'workflow_state', 'updated_at'])
-        if intake.case_record is not None:
-            _old_phase = intake.case_record.case_phase
-            intake.case_record.case_phase = CareCase.CasePhase.MATCHING
-            intake.case_record.save(update_fields=['case_phase', 'updated_at'])
-            emit_case_phase_changed(
-                case=intake.case_record, old_phase=_old_phase,
-                new_phase=CareCase.CasePhase.MATCHING, user=request.user,
-            )
+        sync_case_phase_from_workflow_state(intake, user=request.user)
         log_action(
             request.user,
             AuditLog.Action.UPDATE,

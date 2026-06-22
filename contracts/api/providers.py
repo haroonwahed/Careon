@@ -4,6 +4,7 @@ Providers API views.
 import json
 import logging
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -60,7 +61,7 @@ def providers_api(request):
         qs = Client.objects.filter(
             organization=organization,
             client_type='CORPORATION',
-        ).order_by('name', 'id').select_related('provider_profile').prefetch_related(
+        ).order_by('name', 'id').select_related('provider_profile', 'zorgaanbieder').prefetch_related(
             'provider_profile__served_regions__served_municipalities',
             'provider_profile__secondary_served_regions',
             'wait_time_entries',
@@ -82,8 +83,13 @@ def providers_api(request):
                     'label': client.city or location['label'],
                 }
             regions_payload = _provider_regions_payload(pp)
+            try:
+                za_id = client.zorgaanbieder.id
+            except ObjectDoesNotExist:
+                za_id = None
             data.append({
                 'id': str(client.id),
+                'zorgaanbieder_id': str(za_id) if za_id is not None else None,
                 'name': client.name,
                 'city': client.city,
                 'status': client.status,

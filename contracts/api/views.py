@@ -14,3 +14,4 @@ from contracts.api.members import *  # noqa: F401, F403
 from contracts.api.documents import *  # noqa: F401, F403
 from contracts.api.dashboard import *  # noqa: F401, F403
 from contracts.api.audit import *  # noqa: F401, F403
+from contracts.api.notifications import *  # noqa: F401, F403

@@ -2,6 +2,8 @@
 Evaluation API views: case evaluations, provider evaluations list, assessments,
 placements, signals, tasks, early lifecycle.
 """
+from __future__ import annotations
+
 import json
 import logging
 from datetime import date

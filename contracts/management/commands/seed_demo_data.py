@@ -512,6 +512,11 @@ class Command(BaseCommand):
                     'bron_laatst_gesynchroniseerd_op': self._anchor_dt(minutes=provider_idx * 5),
                 },
             )
+            # Link Zorgaanbieder → Client so placement and matching APIs share the same
+            # provider identity.  Only update when the link is missing or stale.
+            if zorgaanbieder.client_id != client.pk:
+                zorgaanbieder.client = client
+                zorgaanbieder.save(update_fields=['client'])
 
             vestiging, _ = AanbiederVestiging.objects.update_or_create(
                 zorgaanbieder=zorgaanbieder,

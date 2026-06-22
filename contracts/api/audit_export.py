@@ -30,11 +30,17 @@ User = get_user_model()
 def _org_audit_queryset(*, organization):
     if not organization:
         return AuditLog.objects.none()
+    from django.db.models import Q
     org_user_ids = list(
         User.objects.filter(organization_memberships__organization=organization).values_list('id', flat=True)
     )
+    # Prefer the organization FK (written on all new rows after migration 0092).
+    # Fall back to user-membership lookup for legacy rows written before the FK existed.
     return apply_audit_log_retention(
-        AuditLog.objects.select_related('user').filter(user_id__in=org_user_ids)
+        AuditLog.objects.select_related('user').filter(
+            Q(organization=organization)
+            | Q(organization__isnull=True, user_id__in=org_user_ids)
+        )
     )
 
 

@@ -338,7 +338,7 @@ class SpaShellMigrationMiddleware:
         return response
 
 
-def log_action(user, action, model_name, object_id=None, object_repr='', changes=None, request=None):
+def log_action(user, action, model_name, object_id=None, object_repr='', changes=None, request=None, organization=None):
     ip_address = None
     user_agent = ''
     if request:
@@ -354,7 +354,18 @@ def log_action(user, action, model_name, object_id=None, object_repr='', changes
             elif changes is None:
                 changes = rid
 
+    # Derive organization from the request when not provided explicitly.
+    if organization is None and request is not None:
+        req_user = getattr(request, 'user', None)
+        if req_user is not None and getattr(req_user, 'is_authenticated', False):
+            try:
+                from contracts.tenancy import get_user_organization
+                organization = get_user_organization(req_user)
+            except Exception:
+                pass
+
     AuditLog.objects.create(
+        organization=organization,
         user=user,
         action=action,
         model_name=model_name,

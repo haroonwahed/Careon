@@ -389,6 +389,21 @@ class Deadline(models.Model):
 
 
 class AuditLog(models.Model):
+    """Append-only access audit trail.
+
+    Rows are written once and must never be modified or individually deleted.
+    Bulk deletion via the ORM is still permitted for the scheduled retention
+    prune command (``prune_audit_logs``).
+
+    Pilot limitation: bulk `.update()` via raw SQL bypasses these guards.
+    Enterprise WORM storage is out of scope for this pilot phase.
+    """
+
+    _IMMUTABLE_GUARD = (
+        "AuditLog rows are append-only.  "
+        "Individual save() and delete() are not permitted after creation."
+    )
+
     class Action(models.TextChoices):
         CREATE = 'CREATE', 'Created'
         UPDATE = 'UPDATE', 'Updated'
@@ -400,6 +415,16 @@ class AuditLog(models.Model):
         APPROVE = 'APPROVE', 'Approved'
         REJECT = 'REJECT', 'Rejected'
 
+    # Organization is stored directly so records survive user-departure and
+    # remain visible even when the user FK becomes NULL.
+    organization = models.ForeignKey(
+        'contracts.Organization',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='audit_logs',
+        db_index=True,
+    )
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='audit_logs')
     action = models.CharField(max_length=20, choices=Action.choices)
     model_name = models.CharField(max_length=100)
@@ -412,6 +437,16 @@ class AuditLog(models.Model):
 
     class Meta:
         ordering = ['-timestamp']
+
+    def save(self, *args, **kwargs):
+        if self.pk is not None:
+            from contracts.models.governance import GovernanceLogImmutableError
+            raise GovernanceLogImmutableError(self._IMMUTABLE_GUARD)
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):  # type: ignore[override]
+        from contracts.models.governance import GovernanceLogImmutableError
+        raise GovernanceLogImmutableError(self._IMMUTABLE_GUARD)
 
     def __str__(self):
         return f'{self.user} {self.get_action_display()} {self.model_name} #{self.object_id}'

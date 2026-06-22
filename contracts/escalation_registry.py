@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import FrozenSet
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class EscalationDefinition:
     """Registry entry: stable identifier + calm Dutch copy + owning lane."""
 

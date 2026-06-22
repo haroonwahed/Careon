@@ -9,6 +9,10 @@ export interface MatchingCandidateRow {
   casus_id: number;
   zorgprofiel_id: number | null;
   zorgaanbieder_id: number | null;
+  /** Client pk of the Zorgaanbieder's linked Client row — use this as provider_id when posting. */
+  provider_client_id: number | null;
+  /** True when the matched Zorgaanbieder has no linked Client — cannot be sent to provider. */
+  provider_unlinked: boolean;
   aanbiederName?: string;
   totaalscore: number;
   score_inhoudelijke_fit: number;

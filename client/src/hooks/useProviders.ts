@@ -6,6 +6,8 @@ import { apiClient } from '../lib/apiClient';
 
 export interface SpaProvider {
   id: string;
+  /** Zorgaanbieder pk this Client is linked to — null when unlinked, absent on legacy API responses. */
+  zorgaanbieder_id?: string | null;
   name: string;
   city: string;
   status: string;
@@ -85,7 +87,7 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
 
     apiClient.get('/care/api/providers/', params)
       .then((data: { providers: Array<{
-        id: string; name: string; city: string; status: string;
+        id: string; zorgaanbieder_id?: string | null; name: string; city: string; status: string;
         currentCapacity: number; maxCapacity: number; waitingListLength: number;
         averageWaitDays: number; offersOutpatient: boolean; offersDayTreatment: boolean;
         offersResidential: boolean; offersCrisis: boolean; serviceArea: string;
@@ -106,6 +108,7 @@ export function useProviders(options: UseProvidersOptions = {}): UseProvidersRes
         if (data.workspace_summary) setNetworkSummary(data.workspace_summary);
         setProviders((data.providers ?? []).map(p => ({
           ...p,
+          zorgaanbieder_id: p.zorgaanbieder_id ?? null,
           availableSpots: p.currentCapacity,
           region: p.regionLabel || p.city,
           type: [

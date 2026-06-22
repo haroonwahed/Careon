@@ -21,6 +21,10 @@ services:
     # NOTE: Render fixes a service's region at creation; applying this to the
     # live service requires recreating it in Frankfurt (DB stays in eu-west-1).
     region: frankfurt
+    disk:
+      name: carelane-media
+      mountPath: /opt/render/project/storage
+      sizeGB: 1
     buildCommand: |
       pip install -r requirements/runtime.txt
       PYTHON_BIN="$(command -v python || command -v python3)"
@@ -87,13 +91,31 @@ services:
         sync: false
       - key: DEFAULT_FROM_EMAIL
         sync: false
+      # SMTP credentials for provider notification emails.
+      # Set these in the Render dashboard under Environment → Secret Files.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "true"
       - key: SECURE_SSL_REDIRECT
         value: "true"
       - key: NGINX_MEDIA_ACCEL_REDIRECT
         value: "false"
-      # Keep at 1 until carelane-redis is provisioned via Blueprint sync; raise only with REDIS_URL live.
+      # Persistent media root — maps to the Render Disk mountPath above.
+      # Django's FileSystemStorage writes uploads here; they survive redeploys.
+      - key: MEDIA_ROOT
+        value: /opt/render/project/storage/media
+      # 2 workers: safe because REDIS_URL is wired from carelane-redis in this
+      # Blueprint (shared cache required for rate limits). The settings_production
+      # guard raises ImproperlyConfigured if Redis is absent at startup.
       - key: GUNICORN_WORKERS
-        value: "1"
+        value: "2"
       # Error monitoring. Set SENTRY_DSN in Render dashboard (never commit the DSN).
       # SENTRY_RELEASE is set automatically by the deploy hook to the git SHA.
       - key: SENTRY_DSN
@@ -178,6 +200,17 @@ services:
         value: openid email profile
       - key: DEFAULT_FROM_EMAIL
         value: staging-noreply@carelane.nl
+      # SMTP for staging — set via dashboard if email testing is needed on staging.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "true"
       - key: SECURE_SSL_REDIRECT
         value: "true"
       - key: NGINX_MEDIA_ACCEL_REDIRECT
