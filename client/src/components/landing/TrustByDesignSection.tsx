@@ -52,7 +52,7 @@ export function TrustByDesignSection() {
       aria-labelledby="trust-heading"
     >
       <div className="cl-container">
-        <div className="grid gap-12 lg:grid-cols-[40%_24%_36%] lg:items-center">
+        <div className="grid gap-12 lg:grid-cols-[40%_60%] lg:items-center">
 
           {/* LEFT: heading + description */}
           <div>
@@ -76,53 +76,6 @@ export function TrustByDesignSection() {
               Carelane verwerkt persoonsgegevens conform de AVG. Toegang wordt
               per rol en context bepaald — niet op organisatieniveau.
             </p>
-          </div>
-
-          {/* CENTER: protection layers SVG diagram */}
-          <div
-            className="hidden lg:flex items-center justify-center"
-            aria-hidden="true"
-          >
-            <svg viewBox="0 0 200 240" style={{ width: 200, height: 240 }}>
-              {/* Outer ring */}
-              <ellipse cx="100" cy="120" rx="90" ry="108"
-                fill="none" stroke="rgba(155,130,255,0.12)" strokeWidth="1.5" strokeDasharray="4 6" />
-              {/* Middle ring */}
-              <ellipse cx="100" cy="120" rx="65" ry="80"
-                fill="none" stroke="rgba(155,130,255,0.18)" strokeWidth="1.8" strokeDasharray="3 5" />
-              {/* Inner ring */}
-              <ellipse cx="100" cy="120" rx="40" ry="50"
-                fill="rgba(155,130,255,0.06)" stroke="rgba(155,130,255,0.30)" strokeWidth="2" />
-              {/* Outer glow behind center circle */}
-              <circle cx="100" cy="120" r="34" fill="rgba(155,130,255,0.06)" />
-              {/* Center node */}
-              <circle cx="100" cy="120" r="22"
-                fill="rgba(155,130,255,0.22)" stroke="rgba(155,130,255,0.45)" strokeWidth="1.5" />
-              {/* Center lock icon simplified */}
-              <rect x="91" y="115" width="18" height="14" rx="2" fill="rgba(155,130,255,0.90)" />
-              <path d="M94 115 v-4 a6 6 0 0 1 12 0 v4" stroke="rgba(155,130,255,0.90)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-              {/* Pillar dots on outer ring */}
-              {[
-                { angle: -90, color: "rgba(139,92,246,0.85)" },
-                { angle: -18, color: "rgba(20,184,166,0.85)" },
-                { angle: 54, color: "rgba(59,130,246,0.85)" },
-                { angle: 126, color: "rgba(34,197,94,0.85)" },
-                { angle: 198, color: "rgba(245,158,11,0.85)" },
-              ].map(({ angle, color }, i) => {
-                const rad = (angle * Math.PI) / 180;
-                const x = 100 + 90 * Math.cos(rad);
-                const y = 120 + 108 * Math.sin(rad);
-                return (
-                  <g key={i}>
-                    <line
-                      x1="100" y1="120" x2={x} y2={y}
-                      stroke={color} strokeWidth="1" opacity="0.45"
-                    />
-                    <circle cx={x} cy={y} r="6" fill={color} opacity="0.85" />
-                  </g>
-                );
-              })}
-            </svg>
           </div>
 
           {/* RIGHT: compact pillar list */}

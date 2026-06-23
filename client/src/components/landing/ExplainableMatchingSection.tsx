@@ -111,33 +111,19 @@ export function ExplainableMatchingSection() {
       style={{ paddingTop: "4rem", paddingBottom: "4rem" }}
     >
       <div className="cl-container">
-        <div className="mb-10 max-w-2xl" style={{ overflow: "visible" }}>
-          <p className="cl-eyebrow">Verklaarbare matching</p>
-          <h2 id="matching-heading" className="cl-heading" style={{ overflow: "visible" }}>
-            De juiste match. Uitlegbaar en onderbouwd.
-          </h2>
-          <p className="cl-lead">
-            Carelane adviseert op basis van zorgbehoefte, expertise, beschikbaarheid, regio en
-            beperkingen. De professional houdt de regie.
-          </p>
-          <div className="mt-5">
-            <a
-              href="#werkwijze"
-              className="inline-flex items-center gap-1.5 rounded-[var(--cl-radius-md)] border px-4 py-2 text-sm font-medium transition-colors duration-150"
-              style={{
-                borderColor: "var(--cl-teal)",
-                color: "var(--cl-teal)",
-                background: "transparent",
-              }}
-            >
-              Bekijk hoe matching werkt →
-            </a>
-          </div>
-        </div>
+        <div className="grid gap-10 lg:grid-cols-[500px_1fr]" id="matching-heading">
+          {/* Left: heading, description, providers */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <p className="cl-eyebrow">Verklaarbare matching</p>
+              <h2 className="cl-heading">De juiste match. Uitlegbaar en onderbouwd.</h2>
+              <p className="cl-lead mt-3">
+                Carelane adviseert op basis van zorgbehoefte, expertise, beschikbaarheid, regio en beperkingen. De professional houdt de regie.
+              </p>
+            </div>
 
-        <div className="grid gap-5 lg:grid-cols-[1fr_340px]">
-          {/* Provider cards */}
-          <div className="space-y-3" role="list" aria-label="Aanbiederopties">
+            {/* Provider cards - smaller */}
+            <div className="space-y-2" role="list" aria-label="Aanbiederopties">
             {providers.map((p) => (
               <button
                 key={p.id}
@@ -145,7 +131,7 @@ export function ExplainableMatchingSection() {
                 onClick={() => setSelected(p.id)}
                 role="listitem"
                 aria-pressed={selected === p.id}
-                className="group w-full text-left rounded-[var(--cl-radius-lg)] border p-4 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cl-violet-bright)]"
+                className="group w-full text-left rounded-[var(--cl-radius-lg)] border p-3 transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--cl-violet-bright)]"
                 style={{
                   background: p.recommended
                     ? "rgba(46,200,166,.07)"
@@ -246,64 +232,11 @@ export function ExplainableMatchingSection() {
                 )}
               </button>
             ))}
+            </div>
           </div>
 
-          {/* Why-match panel */}
-          <div
-            className="rounded-[var(--cl-radius-lg)] border p-5 space-y-4 lg:sticky lg:top-24 h-fit"
-            style={{
-              background: "var(--cl-surface-1)",
-              borderColor: "var(--cl-border-subtle)",
-              boxShadow: "var(--cl-shadow-card)",
-            }}
-          >
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-[var(--cl-text)]">Waarom deze match?</p>
-              <span
-                className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest"
-                style={{
-                  background: activeProvider.scoreBg,
-                  borderColor: activeProvider.scoreBorder,
-                  color: activeProvider.scoreColor,
-                }}
-              >
-                {activeProvider.name.split(" ")[0]}
-              </span>
-            </div>
-
-            <p className="text-sm leading-relaxed text-[var(--cl-text-secondary)]">
-              {activeProvider.whyMatch}
-            </p>
-
-            <div
-              className="rounded-[var(--cl-radius-md)] border p-3"
-              style={{ background: "var(--cl-surface-2)", borderColor: "var(--cl-border-subtle)" }}
-            >
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--cl-text-muted)] mb-1.5">
-                Afweging
-              </p>
-              <p className="text-xs leading-relaxed text-[var(--cl-text-secondary)]">
-                {activeProvider.tradeOff}
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              {[
-                { label: "Ervaring", value: activeProvider.experience },
-                { label: "Beperking", value: activeProvider.constraints },
-              ].map((item) => (
-                <div key={item.label} className="flex gap-2 text-xs">
-                  <span className="w-16 shrink-0 text-[var(--cl-text-muted)]">{item.label}</span>
-                  <span className="text-[var(--cl-text-secondary)]">{item.value}</span>
-                </div>
-              ))}
-            </div>
-
-            <p className="text-[10px] text-[var(--cl-text-muted)] border-t pt-3" style={{ borderColor: "var(--cl-border-subtle)" }}>
-              Matching is adviserend. De professional neemt de eindbeslissing. Handmatige afwijking
-              wordt geregistreerd en is altijd herleidbaar.
-            </p>
-          </div>
+          {/* Right: empty for now, visual balance */}
+          <div />
         </div>
       </div>
     </section>

@@ -1,40 +1,8 @@
 /**
  * Results in Practice section.
- * Left: 4 qualitative outcome items with icons.
  * Right: evidence-oriented outcome panel (NO fake quotes, NO fictional municipalities).
  */
-import { ArrowRight, CheckCircle2, Clock, TrendingDown, Users2 } from "lucide-react";
-
-const outcomes = [
-  {
-    icon: Clock,
-    color: "var(--cl-teal)",
-    bg: "rgba(46,200,166,0.10)",
-    title: "Minder vertraging tussen fasen",
-    desc: "Vertragingen worden zichtbaar vóórdat ze een probleem worden.",
-  },
-  {
-    icon: CheckCircle2,
-    color: "var(--cl-blue)",
-    bg: "rgba(62,168,255,0.10)",
-    title: "Helderder eigenaarschap",
-    desc: "Iedere stap heeft een benoemde verantwoordelijke en een concrete vervolgactie.",
-  },
-  {
-    icon: Users2,
-    color: "var(--cl-violet-bright)",
-    bg: "rgba(155,130,255,0.10)",
-    title: "Minder incomplete overdrachten",
-    desc: "Benodigde gegevens zijn geborgd vóór elke overdracht in de keten.",
-  },
-  {
-    icon: TrendingDown,
-    color: "var(--cl-amber)",
-    bg: "rgba(245,165,36,0.10)",
-    title: "Betere capaciteitsinzicht",
-    desc: "Beschikbaarheid van aanbieders is inzichtelijk op het moment dat het nodig is.",
-  },
-];
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 
 const evidencePoints = [
   "Snellere operationele beslissingen",
@@ -89,28 +57,6 @@ export function ResultsSection() {
                   <p style={{ color: "var(--cl-text-muted)", fontSize: 11 }}>Helder, verantwoord, op tijd</p>
                 </div>
               </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {outcomes.map(({ icon: Icon, color, bg, title, desc }) => (
-                <div key={title} className="flex gap-3">
-                  <div
-                    className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
-                    style={{ background: bg }}
-                    aria-hidden="true"
-                  >
-                    <Icon size={16} style={{ color }} />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold" style={{ color: "var(--cl-text)" }}>
-                      {title}
-                    </p>
-                    <p className="mt-0.5 text-xs leading-relaxed" style={{ color: "var(--cl-text-secondary)" }}>
-                      {desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
