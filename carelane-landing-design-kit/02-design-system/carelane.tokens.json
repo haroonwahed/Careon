@@ -1,0 +1,197 @@
+{
+  "$schema": "https://design-tokens.github.io/community-group/format/",
+  "name": "Carelane Landing",
+  "version": "2.0.0",
+  "color": {
+    "background": {
+      "canvas": {
+        "$value": "#060B17",
+        "$type": "color"
+      },
+      "deep": {
+        "$value": "#081122",
+        "$type": "color"
+      },
+      "surface1": {
+        "$value": "#0D172A",
+        "$type": "color"
+      },
+      "surface2": {
+        "$value": "#111E34",
+        "$type": "color"
+      },
+      "surface3": {
+        "$value": "#17243A",
+        "$type": "color"
+      }
+    },
+    "text": {
+      "primary": {
+        "$value": "#F6F8FC",
+        "$type": "color"
+      },
+      "secondary": {
+        "$value": "#C4CCDA",
+        "$type": "color"
+      },
+      "muted": {
+        "$value": "#8F9AAF",
+        "$type": "color"
+      },
+      "inverse": {
+        "$value": "#07101E",
+        "$type": "color"
+      }
+    },
+    "brand": {
+      "violet": {
+        "$value": "#7C5CFF",
+        "$type": "color"
+      },
+      "violetBright": {
+        "$value": "#9B82FF",
+        "$type": "color"
+      },
+      "violetDeep": {
+        "$value": "#5B3EE6",
+        "$type": "color"
+      },
+      "blue": {
+        "$value": "#3EA8FF",
+        "$type": "color"
+      },
+      "teal": {
+        "$value": "#2EC8A6",
+        "$type": "color"
+      },
+      "amber": {
+        "$value": "#F5A524",
+        "$type": "color"
+      },
+      "red": {
+        "$value": "#EF5B62",
+        "$type": "color"
+      }
+    },
+    "border": {
+      "subtle": {
+        "$value": "rgba(171,188,218,0.14)",
+        "$type": "color"
+      },
+      "default": {
+        "$value": "rgba(171,188,218,0.22)",
+        "$type": "color"
+      },
+      "strong": {
+        "$value": "rgba(155,130,255,0.44)",
+        "$type": "color"
+      }
+    }
+  },
+  "space": {
+    "1": {
+      "$value": "4px",
+      "$type": "dimension"
+    },
+    "2": {
+      "$value": "8px",
+      "$type": "dimension"
+    },
+    "3": {
+      "$value": "12px",
+      "$type": "dimension"
+    },
+    "4": {
+      "$value": "16px",
+      "$type": "dimension"
+    },
+    "5": {
+      "$value": "24px",
+      "$type": "dimension"
+    },
+    "6": {
+      "$value": "32px",
+      "$type": "dimension"
+    },
+    "7": {
+      "$value": "48px",
+      "$type": "dimension"
+    },
+    "8": {
+      "$value": "64px",
+      "$type": "dimension"
+    },
+    "9": {
+      "$value": "96px",
+      "$type": "dimension"
+    },
+    "10": {
+      "$value": "128px",
+      "$type": "dimension"
+    }
+  },
+  "radius": {
+    "sm": {
+      "$value": "8px",
+      "$type": "dimension"
+    },
+    "md": {
+      "$value": "12px",
+      "$type": "dimension"
+    },
+    "lg": {
+      "$value": "18px",
+      "$type": "dimension"
+    },
+    "xl": {
+      "$value": "24px",
+      "$type": "dimension"
+    },
+    "pill": {
+      "$value": "999px",
+      "$type": "dimension"
+    }
+  },
+  "shadow": {
+    "card": {
+      "$value": "0 12px 40px rgba(0,0,0,.28)",
+      "$type": "shadow"
+    },
+    "elevated": {
+      "$value": "0 24px 80px rgba(0,0,0,.42)",
+      "$type": "shadow"
+    },
+    "violetGlow": {
+      "$value": "0 0 48px rgba(124,92,255,.20)",
+      "$type": "shadow"
+    }
+  },
+  "layout": {
+    "containerMax": {
+      "$value": "1280px",
+      "$type": "dimension"
+    },
+    "readingMax": {
+      "$value": "680px",
+      "$type": "dimension"
+    },
+    "headerHeight": {
+      "$value": "72px",
+      "$type": "dimension"
+    }
+  },
+  "motion": {
+    "fast": {
+      "$value": "140ms",
+      "$type": "duration"
+    },
+    "base": {
+      "$value": "220ms",
+      "$type": "duration"
+    },
+    "slow": {
+      "$value": "420ms",
+      "$type": "duration"
+    }
+  }
+}

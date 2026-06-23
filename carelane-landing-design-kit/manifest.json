@@ -1,0 +1,162 @@
+[
+  {
+    "path": "00-start-here/README.md",
+    "sizeBytes": 1302,
+    "sha256": "fb7e5a9804589345c9ef6dc2307a9253fcadc3ec2e1ec150bc78fd0cac6efa86"
+  },
+  {
+    "path": "01-agent-handoff/IMPLEMENTATION_ORDER.md",
+    "sizeBytes": 361,
+    "sha256": "56f83e703fc5014f620f22feafbf174e26f37121a80ed5f3e6ab41fed8485602"
+  },
+  {
+    "path": "01-agent-handoff/MASTER_AGENT_PROMPT.md",
+    "sizeBytes": 2697,
+    "sha256": "631603d40d8a5dd10e63912af7a84b8d19c9f438032acec249131095a8642e0d"
+  },
+  {
+    "path": "02-design-system/DESIGN_SYSTEM.md",
+    "sizeBytes": 2060,
+    "sha256": "30e01b6c78dc942a139bcb4122c51d9c36d49c0f12e0eac767469c645dc73029"
+  },
+  {
+    "path": "02-design-system/carelane-landing.css",
+    "sizeBytes": 3426,
+    "sha256": "b6cbf9d148ee143f9c09d391b945b6741629a36ebcdce9ac3806012210dac702"
+  },
+  {
+    "path": "02-design-system/carelane.tokens.json",
+    "sizeBytes": 3704,
+    "sha256": "36a4b61965cde80c6bd388ba7c1c40b3621269f0baa31122c2588c20f89fbc3c"
+  },
+  {
+    "path": "03-page-specification/LANDING_PAGE_SPEC.md",
+    "sizeBytes": 4407,
+    "sha256": "d7df096950ad17269c8d9330bb5ad86dc7f27bec78041854178eaf3d2e7c1c19"
+  },
+  {
+    "path": "03-page-specification/SECTION_INVENTORY.json",
+    "sizeBytes": 1078,
+    "sha256": "21600eb4c167b8a7f4f69d902bf134773247b521c13e278da9891e3dabc08583"
+  },
+  {
+    "path": "04-content/COPY_RULES.md",
+    "sizeBytes": 965,
+    "sha256": "aee8a5aa002597ad2673ea8ee6c3cd175836b0da744bff48b771ac083ae0cae4"
+  },
+  {
+    "path": "04-content/landing-content.nl.json",
+    "sizeBytes": 3027,
+    "sha256": "4358c2f85209f4976ef4a8edea0f4d82833502c635b6eee7dd859d179c59f0cd"
+  },
+  {
+    "path": "05-implementation/ANIMATION_GUIDE.md",
+    "sizeBytes": 640,
+    "sha256": "d7bc768b75b3c175253b884e076b8a132dfb3a854393e061d4de4e04f1e219ae"
+  },
+  {
+    "path": "05-implementation/COMPONENT_MAP.md",
+    "sizeBytes": 1754,
+    "sha256": "55766103fe1e3b1c4ded89d8aa801896cb470bc2eece5199db1c2a6424e022af"
+  },
+  {
+    "path": "05-implementation/RESPONSIVE_BEHAVIOUR.md",
+    "sizeBytes": 1392,
+    "sha256": "e123c6abc7d3e7dbbaa026d147239581ff5da489c37147e0c42900cf17e2a5ef"
+  },
+  {
+    "path": "06-quality-assurance/ACCEPTANCE_CHECKLIST.md",
+    "sizeBytes": 2335,
+    "sha256": "9c16e52c524dc7ce235f081cf8e9e48d219aa9881fef779e6dfb0d0f2e6e1b53"
+  },
+  {
+    "path": "06-quality-assurance/VISUAL_REVIEW.md",
+    "sizeBytes": 607,
+    "sha256": "7d8ef3edd75febdec7540e0c26788b42fa2ad0b645feaa36ed27f91d1b3dfcca"
+  },
+  {
+    "path": "07-reference-images/full/01-carelane-brand-ui-system.png",
+    "sizeBytes": 1666048,
+    "sha256": "1cf7fe577c10df6d54cd13fcf3362985aae66512c73cfe55d0fb8112ee7d6a96"
+  },
+  {
+    "path": "07-reference-images/full/02-carelane-landing-section-system.png",
+    "sizeBytes": 1798264,
+    "sha256": "155b4fcbee2b7334d4390ff6303186d29a68e52120fdd4647c95652f69836f92"
+  },
+  {
+    "path": "07-reference-images/full/03-carelane-responsive-handoff.png",
+    "sizeBytes": 1758893,
+    "sha256": "25ed75f0dc2b0a5b770c201333a8dc10e8f20f5d178931e07483c9db4fc5647b"
+  },
+  {
+    "path": "07-reference-images/full/04-original-section-composition.png",
+    "sizeBytes": 2800843,
+    "sha256": "87a833d985f12b43609df9262d4079c3405bb8ae32d26981add8d83446df7691"
+  },
+  {
+    "path": "07-reference-images/full/05-preferred-hero-and-bridge-reference.png",
+    "sizeBytes": 1766681,
+    "sha256": "bcb6e2964689f822bf5b8b99ff042885fa5073b4b3593e3a2a5692e74173bcae"
+  },
+  {
+    "path": "07-reference-images/sections/01-hero-reference.png",
+    "sizeBytes": 675360,
+    "sha256": "016c3448ac8ddc5e52d95ee05647a0d46ae1b57a4a5b1ac1fd141487631497d4"
+  },
+  {
+    "path": "07-reference-images/sections/02-care-journey-route-reference.png",
+    "sizeBytes": 660509,
+    "sha256": "10ea44b875155f157359d4d63acc987979d4590936ead10f3a790f960131716d"
+  },
+  {
+    "path": "07-reference-images/sections/03-regiekamer-intelligence-reference.png",
+    "sizeBytes": 493356,
+    "sha256": "abf856f60cc21206c1986510f6b3e5806d95acd137ea1c4de78d3bcbcc6baf55"
+  },
+  {
+    "path": "07-reference-images/sections/04-one-case-network-reference.png",
+    "sizeBytes": 591545,
+    "sha256": "640335d50911971181081273912720caa17d09167106719871332601662c276e"
+  },
+  {
+    "path": "07-reference-images/sections/05-explainable-matching-reference.png",
+    "sizeBytes": 475778,
+    "sha256": "68fde43c9a025727dad0a093085b7e65f73b059daa818f562e080639446b5dc0"
+  },
+  {
+    "path": "07-reference-images/sections/06-trust-by-design-reference.png",
+    "sizeBytes": 502585,
+    "sha256": "8771f75ce6ef24ac133c3945a8bd121b6b6ba64140dd1029c3f2e8942e6b42b4"
+  },
+  {
+    "path": "07-reference-images/sections/07-results-in-practice-reference.png",
+    "sizeBytes": 476536,
+    "sha256": "c0bc5674f3b896d80133d56c3ee1f26594e11913ba6c0a04db15ebf084129ce9"
+  },
+  {
+    "path": "07-reference-images/sections/08-audience-roles-reference.png",
+    "sizeBytes": 328857,
+    "sha256": "70d980dc169b3cc68e9e65b06bd7744e19a2c97cfdbb4960431bea93abdc46a0"
+  },
+  {
+    "path": "07-reference-images/sections/09-final-cta-reference.png",
+    "sizeBytes": 596483,
+    "sha256": "e1ee3f84589311eb00e06fd0236635b1a9041d8840eaee17c8a8e575cb83e72e"
+  },
+  {
+    "path": "07-reference-images/sections/10-footer-bridge-reference.png",
+    "sizeBytes": 983591,
+    "sha256": "08f99671dc7969bcc3fdc6d071d5521924d54939a653c1769ca7006413daff6d"
+  },
+  {
+    "path": "08-source-of-truth/CareOn_Product_Design_Constitution_v1_2.docx",
+    "sizeBytes": 39847,
+    "sha256": "49bd7c5f83c291547f829f8d2f9c453839daf635832f453e15f3abd701685b78"
+  },
+  {
+    "path": "08-source-of-truth/CareOn_Technical_Foundation_v1_2.docx",
+    "sizeBytes": 38277,
+    "sha256": "feeb0fc87a86d03a1b51752bd3cefa8429d5091d16fe9bf9cf04d678c5f0c685"
+  }
+]

@@ -14,8 +14,9 @@ const phases = [
     border: "rgba(62,168,255,.22)",
     step: "01",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M10 2a6 6 0 1 1 0 12A6 6 0 0 1 10 2Zm0 13c-3.5 0-6.5 1.34-6.5 3v1h13v-1c0-1.66-3-3-6.5-3Z" fill="currentColor"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="8" r="4" fill="currentColor" opacity="0.9"/>
+        <path d="M4 20c0-3.31 3.58-6 8-6s8 2.69 8 6v2H4v-2Z" fill="currentColor" opacity="0.85"/>
       </svg>
     ),
   },
@@ -29,10 +30,10 @@ const phases = [
     border: "rgba(155,130,255,.26)",
     step: "02",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <circle cx="6" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
-        <circle cx="14" cy="10" r="3.5" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M9.5 10h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="8" cy="12" r="3.5" fill="currentColor" opacity="0.85"/>
+        <circle cx="16" cy="12" r="3.5" fill="currentColor" opacity="0.85"/>
+        <path d="M11 12h2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.7"/>
       </svg>
     ),
   },
@@ -46,9 +47,9 @@ const phases = [
     border: "rgba(245,165,36,.22)",
     step: "03",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M3 4h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="m2 5 8 6 8-6" stroke="currentColor" strokeWidth="1.5"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="2" y="4" width="20" height="14" rx="1" fill="currentColor" opacity="0.1" stroke="currentColor" strokeWidth="1.5"/>
+        <path d="M2 6l10 7 10-7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" opacity="0.9"/>
       </svg>
     ),
   },
@@ -62,8 +63,9 @@ const phases = [
     border: "rgba(46,200,166,.22)",
     step: "04",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M5 10.5 8.5 14 15 7" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.15"/>
+        <path d="M7 12.5l3 3 7-8" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" opacity="0.95"/>
       </svg>
     ),
   },
@@ -77,9 +79,11 @@ const phases = [
     border: "rgba(46,200,166,.22)",
     step: "05",
     icon: (
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-        <path d="M7 2v4M13 2v4M3 9h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.6" opacity="0.9"/>
+        <path d="M8 2v5M16 2v5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.85"/>
+        <path d="M3 10h18" stroke="currentColor" strokeWidth="1.6" opacity="0.7"/>
+        <circle cx="12" cy="16" r="2.5" fill="currentColor" opacity="0.8"/>
       </svg>
     ),
   },
@@ -104,13 +108,8 @@ export function CareJourneySection() {
           </p>
         </div>
 
-        {/* Desktop: connected horizontal route */}
+        {/* Desktop: horizontal phase route */}
         <div className="hidden lg:block">
-          {/* Connection line */}
-          <div className="relative mb-0">
-            <div className="absolute left-[10%] right-[10%] top-[52px] bg-gradient-to-r from-[var(--cl-blue)] via-[var(--cl-violet)] via-[var(--cl-amber)] to-[var(--cl-teal)] opacity-65" style={{ height: "4px" }} aria-hidden="true" />
-          </div>
-
           <ol className="relative grid grid-cols-5 gap-4" aria-label="Zorgketen fasen">
             {phases.map((phase, i) => (
               <li key={phase.name} className="group relative flex flex-col">

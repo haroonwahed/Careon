@@ -1,0 +1,83 @@
+{
+  "brand": "Carelane",
+  "navigation": {
+    "links": [
+      "Platform",
+      "Voor wie",
+      "Werkwijze",
+      "Veiligheid",
+      "Over Carelane"
+    ],
+    "login": "Inloggen",
+    "primaryCta": "Demo aanvragen"
+  },
+  "hero": {
+    "eyebrow": "Operationele regie voor zorgcoördinatie",
+    "title": "Betere beslissingen in schaarse zorg.",
+    "description": "Carelane verbindt gemeenten, zorgaanbieders en coördinatoren in één helder proces. Zo wordt zichtbaar wat vastloopt, wie aan zet is en welke stap een casus verder brengt.",
+    "primaryCta": "Plan een demo",
+    "secondaryCta": "Bekijk hoe het werkt",
+    "benefits": [
+      {
+        "title": "Minder vertraging",
+        "text": "Zie direct waar een casus vastloopt en wat nodig is."
+      },
+      {
+        "title": "Duidelijk eigenaarschap",
+        "text": "Iedere stap heeft een verantwoordelijke en een concrete vervolgactie."
+      },
+      {
+        "title": "Vertrouwd samenwerken",
+        "text": "Beslissingen zijn uitlegbaar, controleerbaar en passend bij de rol."
+      }
+    ]
+  },
+  "journey": {
+    "eyebrow": "Eén zorgketen, één route",
+    "title": "Van aanmelding tot intake.",
+    "description": "Iedere casus volgt dezelfde herkenbare route, met ruimte voor professionele afwegingen en heldere verantwoordelijkheid.",
+    "phases": [
+      {
+        "name": "Aanmelding",
+        "text": "De zorgvraag wordt aangemaakt, gecontroleerd en compleet gemaakt."
+      },
+      {
+        "name": "Matching",
+        "text": "Carelane vergelijkt passende aanbieders en maakt afwegingen zichtbaar."
+      },
+      {
+        "name": "Aanbiederreactie",
+        "text": "De aanbieder accepteert, wijst af of vraagt aanvullende informatie."
+      },
+      {
+        "name": "Plaatsing",
+        "text": "De plaatsing wordt bevestigd en zorgvuldig voorbereid."
+      },
+      {
+        "name": "Intake",
+        "text": "De intake wordt gepland en de overdracht wordt afgerond."
+      }
+    ]
+  },
+  "regiekamer": {
+    "eyebrow": "Regiekamer",
+    "title": "Zicht op het geheel. Grip op wat nu nodig is.",
+    "description": "Carelane brengt knelpunten, eigenaarschap, wachttijd en de volgende beste actie samen in één operationeel beeld."
+  },
+  "matching": {
+    "eyebrow": "Verklaarbare matching",
+    "title": "De juiste match. Uitlegbaar en onderbouwd.",
+    "description": "Carelane adviseert op basis van zorgbehoefte, expertise, beschikbaarheid, regio en beperkingen. De professional houdt de regie."
+  },
+  "trust": {
+    "eyebrow": "Trust by design",
+    "title": "Vertrouwen is geen feature. Het is de basis.",
+    "description": "Toegang, processtappen en besluiten zijn gecontroleerd, traceerbaar en afgestemd op de rol van de gebruiker."
+  },
+  "finalCta": {
+    "title": "Breng regie terug in de zorgketen.",
+    "description": "Ontdek hoe Carelane uw organisatie helpt om sneller, beter en met meer vertrouwen beslissingen te nemen.",
+    "primaryCta": "Plan een demo",
+    "secondaryCta": "Bekijk de werkwijze"
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "sections": [
+    {
+      "id": "navigation",
+      "order": 1,
+      "dominantCta": "Demo aanvragen"
+    },
+    {
+      "id": "hero",
+      "order": 2,
+      "dominantCta": "Plan een demo"
+    },
+    {
+      "id": "care-journey",
+      "order": 3,
+      "dominantCta": "Bekijk de route"
+    },
+    {
+      "id": "regiekamer",
+      "order": 4,
+      "dominantCta": "Bekijk de Regiekamer"
+    },
+    {
+      "id": "network",
+      "order": 5,
+      "dominantCta": "Bekijk hoe samenwerken werkt"
+    },
+    {
+      "id": "matching",
+      "order": 6,
+      "dominantCta": "Bekijk matchredenen"
+    },
+    {
+      "id": "trust",
+      "order": 7,
+      "dominantCta": "Bekijk veiligheid"
+    },
+    {
+      "id": "results",
+      "order": 8,
+      "dominantCta": "Bekijk resultaten"
+    },
+    {
+      "id": "audiences",
+      "order": 9,
+      "dominantCta": "Ontdek Carelane voor uw rol"
+    },
+    {
+      "id": "final-cta",
+      "order": 10,
+      "dominantCta": "Plan een demo"
+    },
+    {
+      "id": "footer",
+      "order": 11,
+      "dominantCta": null
+    }
+  ]
+}
