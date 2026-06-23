@@ -181,72 +181,85 @@ export function CareNetworkSection() {
                 aria-hidden="true"
                 style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}
               >
-                {/* Subtle orbit ring (outer) */}
+                {/* Orbit ring glow effect — subtle radial gradient */}
+                <defs>
+                  <radialGradient id="orbitGlow" cx="50%" cy="50%" r="60%">
+                    <stop offset="0%" stopColor="rgba(155,130,255,0)" />
+                    <stop offset="70%" stopColor="rgba(155,130,255,0.06)" />
+                    <stop offset="100%" stopColor="rgba(155,130,255,0)" />
+                  </radialGradient>
+                </defs>
+                <circle
+                  cx="240" cy="240" r="150"
+                  fill="url(#orbitGlow)"
+                  opacity="0.6"
+                />
+
+                {/* Premium orbit ring (outer) */}
                 <circle
                   cx="240" cy="240" r="148"
                   fill="none"
-                  stroke="rgba(155,130,255,.06)"
-                  strokeWidth="1"
-                  strokeDasharray="3 10"
+                  stroke="rgba(155,130,255,.12)"
+                  strokeWidth="1.2"
+                  strokeDasharray="4 8"
                 />
 
-                {/* Second subtle orbit ring (inner) */}
+                {/* Second orbit ring (inner) */}
                 <circle
                   cx="240" cy="240" r="105"
                   fill="none"
-                  stroke="rgba(155,130,255,.04)"
+                  stroke="rgba(155,130,255,.08)"
                   strokeWidth="1"
-                  strokeDasharray="2 8"
+                  strokeDasharray="3 6"
                 />
 
-                {/* Curved paths with gradient + glow */}
-                <defs>
-                  {nodes.map((n) => (
-                    <linearGradient
-                      key={`grad-${n.id}`}
-                      id={`grad-${n.id}`}
-                      x1={CENTER.x} y1={CENTER.y}
-                      x2={n.cx} y2={n.cy}
-                      gradientUnits="userSpaceOnUse"
-                    >
-                      <stop offset="0%" stopColor="rgba(155,130,255,0.55)" />
-                      <stop offset="100%" stopColor={
-                        n.id === "gemeente" ? "rgba(62,168,255,0.55)"
-                        : n.id === "aanbieder" ? "rgba(155,130,255,0.55)"
-                        : n.id === "coordinator" ? "rgba(245,165,36,0.55)"
-                        : "rgba(46,200,166,0.55)"
-                      } />
-                    </linearGradient>
-                  ))}
-                </defs>
+                {/* Connection path gradients — richer and more saturated */}
+                {nodes.map((n) => (
+                  <linearGradient
+                    key={`grad-${n.id}`}
+                    id={`grad-${n.id}`}
+                    x1={CENTER.x} y1={CENTER.y}
+                    x2={n.cx} y2={n.cy}
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="rgba(155,130,255,0.70)" />
+                    <stop offset="100%" stopColor={
+                      n.id === "gemeente" ? "rgba(62,168,255,0.70)"
+                      : n.id === "aanbieder" ? "rgba(155,130,255,0.70)"
+                      : n.id === "coordinator" ? "rgba(245,165,36,0.70)"
+                      : "rgba(46,200,166,0.70)"
+                    } />
+                  </linearGradient>
+                ))}
 
                 {nodes.map((n) => {
                   const midpt = labelPoint(n.cx, n.cy);
                   return (
                     <g key={n.id}>
-                      {/* Glow line (wider, blurred via opacity) */}
+                      {/* Outer glow line */}
                       <path
                         d={buildCurvedPath(n.cx, n.cy)}
                         fill="none"
                         stroke={`url(#grad-${n.id})`}
-                        strokeWidth="6"
-                        opacity="0.20"
+                        strokeWidth="7"
+                        opacity="0.15"
                       />
-                      {/* Main line */}
+                      {/* Main connection line */}
                       <path
                         d={buildCurvedPath(n.cx, n.cy)}
                         fill="none"
                         stroke={`url(#grad-${n.id})`}
-                        strokeWidth="2"
-                        strokeDasharray="5 4"
-                        opacity="0.85"
+                        strokeWidth="2.2"
+                        strokeDasharray="6 5"
+                        opacity="0.90"
+                        strokeLinecap="round"
                       />
-                      {/* Connection label */}
+                      {/* Connection label — enhanced contrast */}
                       <text
                         x={midpt.x}
                         y={midpt.y - 5}
                         textAnchor="middle"
-                        style={{ fontSize: 9, fill: "rgba(143,154,175,0.80)", fontFamily: "inherit" }}
+                        style={{ fontSize: 9, fill: "rgba(195,180,255,0.95)", fontFamily: "inherit", fontWeight: 500 }}
                       >
                         {n.connLabel}
                       </text>
@@ -255,7 +268,7 @@ export function CareNetworkSection() {
                 })}
               </svg>
 
-              {/* Center node */}
+              {/* Center node — premium glow treatment */}
               <div
                 aria-hidden="true"
                 style={{
@@ -266,14 +279,14 @@ export function CareNetworkSection() {
                   width: 136,
                   height: 136,
                   borderRadius: "50%",
-                  background: "radial-gradient(circle at 40% 35%, rgba(155,130,255,.28), rgba(91,62,230,.08))",
-                  border: "2px solid rgba(155,130,255,.35)",
+                  background: "radial-gradient(circle at 40% 35%, rgba(155,130,255,.35), rgba(91,62,230,.10))",
+                  border: "2.5px solid rgba(155,130,255,.45)",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: 4,
-                  boxShadow: "0 0 0 1px rgba(155,130,255,.25), 0 0 48px rgba(155,130,255,.28), 0 0 96px rgba(155,130,255,.12), 0 16px 48px rgba(0,0,0,0.4)",
+                  boxShadow: "0 0 0 1px rgba(155,130,255,.35), 0 0 32px rgba(155,130,255,.35), 0 0 64px rgba(155,130,255,.18), 0 0 120px rgba(155,130,255,.10), 0 20px 60px rgba(0,0,0,0.45)",
                 }}
               >
                 <svg width="52" height="52" viewBox="0 0 44 44" aria-hidden="true" fill="none">
