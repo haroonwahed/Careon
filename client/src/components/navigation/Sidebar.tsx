@@ -29,7 +29,7 @@ import {
   MapPinned,
   CheckCircle,
 } from "lucide-react";
-import { CarelaneMark } from "../landing/CarelaneLogo";
+import { CarelaneLogo } from "../logos/CarelaneLogo";
 import { CARE_PATHS, SPA_DASHBOARD_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
@@ -462,25 +462,26 @@ export function Sidebar({
       `}
     >
       {/* LOGO / HEADER */}
-      <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/25 bg-primary/12 text-primary">
-              <CarelaneMark size={20} strokeWidth={2.1} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Carelane</h1>
-              <p className="text-xs text-muted-foreground">Zorg OS</p>
-            </div>
-          </div>
-        )}
-        
+      <div className={`flex h-16 border-b border-border/50 px-4 ${collapsed ? "flex-col items-center justify-center gap-1.5" : "items-center justify-between"}`}>
+        <a
+          href={SPA_DASHBOARD_URL}
+          aria-label="Carelane home"
+          className="flex items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          <CarelaneLogo
+            variant={collapsed ? "mark" : "horizontal"}
+            theme="dark"
+            size={collapsed ? "sm" : "md"}
+            ariaLabel=""
+          />
+        </a>
+
         <button
           onClick={() => setCollapsed(!collapsed)}
-          className="rounded-xl border border-border/60 bg-background/35 p-2 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
+          className={`rounded-lg border border-border/60 bg-background/35 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground ${collapsed ? "p-1" : "p-2"}`}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 

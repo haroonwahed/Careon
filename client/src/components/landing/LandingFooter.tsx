@@ -3,7 +3,7 @@
  * Real navigation groups. No invented social accounts or inactive links.
  * Copyright and legal links.
  */
-import { CarelaneMark } from "../landing/CarelaneLogo";
+import { CarelaneLogo } from "../logos/CarelaneLogo";
 import { LOGIN_URL } from "../../lib/routes";
 
 const DEMO_EMAIL = "contact@carelane.nl";
@@ -61,14 +61,10 @@ export function LandingFooter() {
         <div className="sm:col-span-2 lg:col-span-1 space-y-4">
           <a
             href="/"
-            className="inline-flex items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
-            aria-label="Carelane – terug naar homepage"
+            className="inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
+            aria-label="Carelane home"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: "rgba(155,130,255,0.12)", border: "1px solid rgba(155,130,255,0.22)" }}>
-              <CarelaneMark size={18} style={{ color: "var(--cl-violet-bright)" }} />
-            </div>
-            <span className="text-base font-semibold text-[var(--cl-text)]">Carelane</span>
+            <CarelaneLogo variant="horizontal" theme="dark" size="md" ariaLabel="" />
           </a>
           <p className="max-w-xs text-sm leading-relaxed text-[var(--cl-text-muted)]">
             Operationele regie voor zorgcoördinatie. Carelane verbindt gemeenten, zorgaanbieders en

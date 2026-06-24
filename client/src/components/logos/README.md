@@ -1,168 +1,111 @@
 # Carelane Logo System
 
-The Carelane logo system comprises 6 variants optimized for different contexts and backgrounds.
+The approved Carelane logo is the **CL Guided Junction** mark: an open outer **C**, an
+internal **L** forming a guided route, and a circular **endpoint** (decision/handoff
+point), in a violet → indigo → blue gradient, with the `Carelane` wordmark.
 
-## Logo Variants
+Everything is drawn from **one geometry source** — [`markGeometry.ts`](./markGeometry.ts) —
+so the mark never changes shape between the in-app component, the static SVG files, the
+favicon, and the PWA icons.
 
-### 1. Dark Primary Horizontal (`dark-primary-horizontal`)
-- **Composition**: Gradient CL mark + white Carelane wordmark + white tagline
-- **Background**: Dark navy
-- **Use Cases**: 
-  - Landing page hero artwork
-  - Marketing banners
-  - Pitch decks
-  - Social headers
-  - Brand presentations
-- **Example**: `<DarkPrimaryLogo width={300} />`
-
-### 2. Light Primary Horizontal (`light-primary-horizontal`)
-- **Composition**: Dark navy CL mark + dark navy wordmark + dark navy tagline
-- **Background**: White
-- **Use Cases**:
-  - Documents and PDFs
-  - Proposals
-  - Email signatures (when space permits)
-  - White landing-page sections
-  - Printable materials
-- **Example**: `<LightPrimaryLogo width={300} />`
-
-### 3. App Icon (`app-icon`)
-- **Composition**: Gradient CL symbol in rounded dark container
-- **Background**: Dark (integrated)
-- **Dimensions**: Square/1:1 aspect ratio
-- **Use Cases**:
-  - App icon
-  - PWA manifest
-  - Mobile shortcut
-  - Login card artwork
-  - Large product favicon
-  - Social avatar fallback
-- **Example**: `<AppIconLogo width={128} />`
-
-### 4. Monochrome White Horizontal (`monochrome-white-horizontal`)
-- **Composition**: White CL mark + white wordmark + white tagline
-- **Background**: None (for dark backgrounds)
-- **Use Cases**:
-  - Dark backgrounds (when gradients are unsuitable)
-  - Footer overlays
-  - Accessibility fallback
-  - Presentation overlays
-  - One-color print
-  - Legal/compliance material
-- **Example**: `<MonochromeWhiteLogo width={200} />`
-
-### 5. Compact Dark Horizontal (`compact-dark-horizontal`)
-- **Composition**: Gradient CL mark + white Carelane wordmark (NO tagline)
-- **Background**: Dark navy (integrated)
-- **Use Cases**: 
-  - Desktop navbar/app navigation
-  - Sidebar header
-  - Login page header
-  - Dashboard shell
-  - Landing-page navigation
-  - Footer (space-limited)
-  - **Main application logo** — use by default in product UI
-- **Example**: `<CompactDarkLogo width={200} />`
-
-### 6. Standalone Gradient CL Mark (`gradient-mark-on-white`)
-- **Composition**: Isolated gradient CL symbol on light background
-- **Background**: White (integrated)
-- **Dimensions**: Square/1:1 aspect ratio
-- **Use Cases**:
-  - Favicon source
-  - Document cover decoration
-  - Small brand stamps
-  - Empty states
-  - Presentation section dividers
-  - Profile/organization avatar fallback
-  - Light-mode favicon
-- **Example**: `<GradientMarkLogo width={64} />`
-
-## Component API
-
-### Main Component: `CarelaneLogoImage`
+## Component: `CarelaneLogo`
 
 ```tsx
-import { CarelaneLogoImage } from "@/components/logos/CarelaneLogos";
+import { CarelaneLogo } from "@/components/logos/CarelaneLogo";
 
-// By use case
-<CarelaneLogoImage variant="navbar" width={40} />
-
-// By specific variant
-<CarelaneLogoImage variant="dark-primary-horizontal" width={300} />
-
-// With additional props
-<CarelaneLogoImage 
-  variant="compact-dark-horizontal" 
-  width={200}
-  className="my-logo"
-  loading="lazy"
-/>
-```
-
-### Convenience Components
-
-Each variant has a dedicated export for cleaner imports:
-
-```tsx
-import {
-  DarkPrimaryLogo,           // Hero, marketing
-  LightPrimaryLogo,          // Documents, PDFs
-  AppIconLogo,               // App icon, favicon
-  MonochromeWhiteLogo,       // Dark backgrounds, footer
-  CompactDarkLogo,           // Navbar, sidebar, login (default app logo)
-  GradientMarkLogo,          // Favicons, stamps, avatars
-} from "@/components/logos/CarelaneLogos";
-
-<CompactDarkLogo width={200} />
+<CarelaneLogo />                                 // dark horizontal, no tagline (default)
+<CarelaneLogo variant="mark" size="sm" />        // standalone gradient mark
+<CarelaneLogo theme="light" />                   // navy mark + navy wordmark
+<CarelaneLogo tagline size="lg" />               // marketing lockup with tagline
+<CarelaneLogo theme="monochrome-white" />        // flat white (image-heavy footers)
 ```
 
 ### Props
 
-All logo components accept standard `<img>` props:
+| Prop        | Type                                                             | Default        | Notes |
+|-------------|------------------------------------------------------------------|----------------|-------|
+| `variant`   | `"horizontal" \| "mark"`                                         | `"horizontal"` | Full lockup or mark only |
+| `theme`     | `"dark" \| "light" \| "monochrome-white" \| "monochrome-navy"`   | `"dark"`       | See colour table |
+| `tagline`   | `boolean`                                                        | `false`        | `CARE. COORDINATED. FORWARD.` — marketing only |
+| `size`      | `"sm" \| "md" \| "lg" \| number`                                 | `"md"`         | Mark height: sm=20, md=28, lg=40, or custom px |
+| `className` | `string`                                                         | —              | Wrapper class |
+| `ariaLabel` | `string`                                                         | `"Carelane"`   | Pass `""` to render decorative (e.g. inside a labelled `<a>`) |
 
-```tsx
-interface CarelaneLogoProps extends ImgHTMLAttributes<HTMLImageElement> {
-  // Logo variant or use case
-  variant?: LogoVariant | LogoUseCase;
-  
-  // Optional sizing
-  width?: number | string;
-  height?: number | string;
-  
-  // Any standard img props
-  className?: string;
-  loading?: "lazy" | "eager";
-  // ... etc
-}
+### Theme colour matrix
+
+| Theme              | Mark             | Wordmark | Use on |
+|--------------------|------------------|----------|--------|
+| `dark`             | gradient         | white    | dark surfaces (default) |
+| `light`            | navy             | navy     | white / light surfaces |
+| `monochrome-white` | white            | white    | image-heavy dark footers, one-colour |
+| `monochrome-navy`  | navy             | navy     | one-colour navy print |
+
+The gradient is only applied on dark surfaces. On light surfaces use navy
+(`theme="light"`) so contrast is correct.
+
+## Static assets (`/public`)
+
+Generated by [`client/scripts/generate-logo-assets.mts`](../../../scripts/generate-logo-assets.mts)
+from the same geometry. **Do not hand-edit** — regenerate instead:
+
+```bash
+cd client && node --experimental-strip-types scripts/generate-logo-assets.mts
 ```
 
-## Implementation Checklist
+(Requires a transient `npm install --no-save sharp`; `node_modules` is gitignored.)
 
-- [x] Logo system component created with 6 variants
-- [x] Logo assets copied to `/client/public/logos/`
-- [x] Component exports for each variant
-- [x] Usage documentation (this README)
-- [ ] Landing page hero section: implement `DarkPrimaryLogo`
-- [ ] Login page: implement `CompactDarkLogo` or `AppIconLogo`
-- [ ] Dashboard/app shell: implement `CompactDarkLogo` (default)
-- [ ] Document export: implement `LightPrimaryLogo`
-- [ ] Footer: consider `MonochromeWhiteLogo` for dark background
-- [ ] Favicon: generate from `AppIconLogo` or `GradientMarkLogo`
-- [ ] PWA manifest: reference `AppIconLogo` for app-icon
-- [ ] Email signatures: provide `LightPrimaryLogo` or `CompactDarkLogo` templates
+### Lockups — `public/logos/`
+| File | Mark | Wordmark | Tagline | For |
+|------|------|----------|---------|-----|
+| `carelane-logo-dark.svg`         | gradient | white | — | dark marketing / email |
+| `carelane-logo-light.svg`        | navy     | navy  | — | documents / light surfaces |
+| `carelane-logo-dark-tagline.svg` | gradient | white | ✓ | dark hero / marketing |
+| `carelane-logo-light-tagline.svg`| navy     | navy  | ✓ | light documents / marketing |
+| `carelane-mark-gradient.svg`     | gradient | —     | — | standalone mark |
+| `carelane-mark-white.svg`        | white    | —     | — | monochrome white |
+| `carelane-mark-navy.svg`         | navy     | —     | — | monochrome navy |
 
-## Notes
+### Favicon / PWA — `public/`
+| File | Size | Purpose |
+|------|------|---------|
+| `favicon.svg`              | vector  | primary favicon (modern browsers) |
+| `favicon-32.png`           | 32×32   | favicon fallback |
+| `favicon-16.png`           | 16×16   | favicon fallback |
+| `icon-192.png`             | 192×192 | PWA (any) |
+| `icon-512.png`             | 512×512 | PWA (any) |
+| `icon-maskable-512.png`    | 512×512 | PWA (maskable, safe-zone padded) |
+| `apple-touch-icon.png`     | 180×180 | iOS home screen |
 
-- **Navbar/Sidebar**: Currently uses `CarelaneMark` SVG component (vector, compact, space-efficient). This is appropriate for tight space constraints. Future updates to use `CompactDarkLogo` image can be done if design changes.
-  
-- **Aspect Ratios**: 
-  - All horizontal logos maintain their original aspect ratio
-  - App icon and gradient mark are 1:1 (square)
-  - Width and height can be specified; the other scales automatically
-  
-- **Color Inheritance**: The `CarelaneMark` SVG uses `currentColor` for styling; logo images are pre-styled and should not need color adjustment.
+App icons use the Carelane deep navy (`#060B17`) background with ≥16% internal padding.
 
-- **Accessibility**: All logo images have `alt="Carelane"`. Wrap in links or labels as needed for context.
+## Usage by location (in-app)
 
-- **Performance**: Logo PNGs are optimized. Use `loading="lazy"` for off-screen logos.
+| Location              | Component call |
+|-----------------------|----------------|
+| Landing navbar        | `<CarelaneLogo variant="horizontal" theme="dark" size="md" ariaLabel="" />` (inside labelled `<a>`) |
+| Landing footer        | same as navbar |
+| App sidebar (expanded)| `<CarelaneLogo variant="horizontal" theme="dark" size="md" />` |
+| App sidebar (collapsed)| `<CarelaneLogo variant="mark" theme="dark" size="sm" />` |
+| Login page            | `<CarelaneLogo variant="horizontal" theme="dark" size="lg" />` |
+
+## Minimum sizes & clear space
+
+- Horizontal lockup: min digital width **112px**; navbar ~132px; marketing 180–280px.
+- Standalone mark: min UI size **20px**; navigation 28–32px.
+- Tagline lockup: min width **220px**; never in compact navigation.
+- Keep clear space around the logo ≥ the diameter of the endpoint circle.
+
+## Accessibility
+
+- Linked logos: the `<a>` carries the accessible name (`aria-label="Carelane home"`),
+  and the logo is passed `ariaLabel=""` so it does not double-announce.
+- Standalone decorative marks: `ariaLabel=""` (renders `aria-hidden`).
+- The logo never provides the page's `<h1>`.
+- The mark is not animated continuously; any marketing reveal must respect reduced motion.
+
+## Geometry — do not redesign
+
+The mark is fixed: open C, internal L, ring endpoint, rounded caps, consistent stroke,
+no shield / cross / sparkle / orbit, no rotation, no baked shadow or glow. Glow is a
+CSS-only concern for large marketing surfaces. To change presentation, adjust
+`markGeometry.ts` and regenerate — never fork the SVG by hand.

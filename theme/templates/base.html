@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Carelane{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect fill='%232563EB' width='100' height='100'/><path fill='white' d='M40 55l15 15 30-30' stroke='white' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='6' y1='6' x2='42' y2='42' gradientUnits='userSpaceOnUse'><stop offset='0' stop-color='%23B06CFF'/><stop offset='0.38' stop-color='%236D5CFF'/><stop offset='0.78' stop-color='%232D8CFF'/><stop offset='1' stop-color='%2338A8FF'/></linearGradient></defs><g fill='none' stroke='url(%23g)' stroke-linecap='round' stroke-linejoin='round'><path d='M 32 9.28 A 17 17 0 1 0 32 38.72' stroke-width='4.4'/><path d='M 20.5 12.5 L 20.5 30 L 32 30' stroke-width='4.4'/><circle cx='34.7' cy='30' r='2.7' stroke-width='1.8'/></g></svg>">
     {% load static %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,13 +21,22 @@
     <div class="min-h-screen bg-background text-foreground">
         <header class="border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur">
             <div class="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
-                <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="brand-link">
-                    <div class="brand-mark-grid" aria-hidden="true">
-                        <span class="brand-dot brand-dot-pink"></span>
-                        <span class="brand-dot brand-dot-blue"></span>
-                        <span class="brand-dot brand-dot-cyan"></span>
-                        <span class="brand-dot brand-dot-mint"></span>
-                    </div>
+                <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="brand-link" aria-label="Carelane home">
+                    <svg width="30" height="30" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+                        <defs>
+                            <linearGradient id="brand-cl" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                                <stop offset="0%" stop-color="#B06CFF"/>
+                                <stop offset="38%" stop-color="#6D5CFF"/>
+                                <stop offset="78%" stop-color="#2D8CFF"/>
+                                <stop offset="100%" stop-color="#38A8FF"/>
+                            </linearGradient>
+                        </defs>
+                        <g fill="none" stroke="url(#brand-cl)" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M 32 9.28 A 17 17 0 1 0 32 38.72" stroke-width="4.4"/>
+                            <path d="M 20.5 12.5 L 20.5 30 L 32 30" stroke-width="4.4"/>
+                            <circle cx="34.7" cy="30" r="2.7" stroke-width="1.8"/>
+                        </g>
+                    </svg>
                     <div>
                         <span class="brand-title">Carelane</span>
                         <span class="brand-sub">Zorgregie</span>

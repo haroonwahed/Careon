@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Menu, X } from "lucide-react";
 import { LOGIN_URL } from "../../lib/routes";
-import { CarelaneMark } from "./CarelaneLogo";
+import { CarelaneLogo } from "../logos/CarelaneLogo";
 
 const DEMO_EMAIL = "contact@carelane.nl";
 
@@ -63,16 +63,10 @@ export function LandingNav() {
           {/* Logo */}
           <a
             href="/"
-            className="flex items-center gap-3 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
-            aria-label="Carelane – naar homepage"
+            className="flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
+            aria-label="Carelane home"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-              style={{ background: "rgba(155,130,255,0.12)", border: "1px solid rgba(155,130,255,0.22)" }}>
-              <CarelaneMark size={18} style={{ color: "var(--cl-violet-bright)" }} />
-            </div>
-            <span className="text-base font-semibold tracking-tight text-[var(--cl-text)]">
-              Carelane
-            </span>
+            <CarelaneLogo variant="horizontal" theme="dark" size="md" ariaLabel="" />
           </a>
 
           {/* Desktop nav */}
