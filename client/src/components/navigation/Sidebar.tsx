@@ -466,11 +466,11 @@ export function Sidebar({
         <a
           href={SPA_DASHBOARD_URL}
           aria-label="Carelane home"
-          className="flex items-center rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+          className="flex items-center rounded-lg text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           <CarelaneLogo
             variant={collapsed ? "mark" : "horizontal"}
-            theme="dark"
+            theme="adaptive"
             size={collapsed ? "sm" : "md"}
             ariaLabel=""
           />

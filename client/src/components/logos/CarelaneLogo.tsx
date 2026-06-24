@@ -33,7 +33,13 @@ import {
 } from "./markGeometry";
 
 export type CarelaneLogoVariant = "horizontal" | "mark";
-export type CarelaneLogoTheme = "dark" | "light" | "monochrome-white" | "monochrome-navy";
+export type CarelaneLogoTheme =
+  | "dark"
+  | "light"
+  | "monochrome-white"
+  | "monochrome-navy"
+  /** Gradient mark + wordmark in `currentColor` — for surfaces that switch light/dark. */
+  | "adaptive";
 export type CarelaneLogoSize = "sm" | "md" | "lg";
 
 export interface CarelaneLogoProps {
@@ -60,6 +66,10 @@ function resolveMarkHeight(size: CarelaneLogoSize | number): number {
 /** Per-theme colour resolution. `gradient` means use the violet→blue gradient. */
 function resolveColors(theme: CarelaneLogoTheme): { mark: "gradient" | string; word: string; tag: string } {
   switch (theme) {
+    case "adaptive":
+      // Wordmark/tagline inherit the surrounding text colour so the lockup stays
+      // legible whether the surface is light or dark; mark keeps the gradient.
+      return { mark: "gradient", word: "currentColor", tag: "currentColor" };
     case "light":
       return { mark: COLOR_NAVY, word: COLOR_NAVY, tag: "rgba(6,11,23,0.62)" };
     case "monochrome-white":
