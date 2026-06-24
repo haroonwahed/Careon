@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { apiClient } from '../../lib/apiClient';
+import { CompactDarkLogo, AppIconLogo } from '../logos/CarelaneLogos';
 
 interface LoginResult {
   ok: boolean;
@@ -55,7 +56,7 @@ export function LoginPage() {
       {/* Left brand panel */}
       <aside style={{ display: 'none' }} className="sa-brand-lg">
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 20, position: 'relative', zIndex: 1 }}>
-          <Logo />
+          <CompactDarkLogo width={200} />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6366f1', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ display: 'inline-block', width: 16, height: 2, background: '#6366f1', borderRadius: 2 }} />
@@ -71,11 +72,8 @@ export function LoginPage() {
       {/* Right form panel */}
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 32px', background: '#070b12', height: '100%', overflowY: 'auto' }}>
         {/* Mobile logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 9, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-            <CarelaneIcon size={18} />
-          </div>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#f1f5f9', letterSpacing: '-0.02em' }}>Carelane</span>
+        <div style={{ marginBottom: 40 }}>
+          <AppIconLogo width={44} />
         </div>
 
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -180,30 +178,6 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
   boxSizing: 'border-box',
 };
-
-function CarelaneIcon({ size = 22 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M 15.7 6.3 A 8 8 0 1 0 15.7 17.7" stroke="#a5b4fc" strokeWidth="2.3" strokeLinecap="round" />
-      <path d="M 13.2 8.8 A 4.5 4.5 0 1 0 13.2 15.2" stroke="#a5b4fc" strokeWidth="1.1" strokeLinecap="round" opacity="0.35" />
-      <circle cx="20.5" cy="12" r="2" fill="#a5b4fc" />
-    </svg>
-  );
-}
-
-function Logo() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, borderRadius: 12, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)' }}>
-        <CarelaneIcon size={22} />
-      </div>
-      <div>
-        <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.02em', color: '#f1f5f9' }}>Carelane</div>
-        <div style={{ fontSize: 12, color: '#64748b', marginTop: 1 }}>Regieplatform</div>
-      </div>
-    </div>
-  );
-}
 
 function EyeIcon() {
   return (

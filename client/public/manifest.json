@@ -1,0 +1,55 @@
+{
+  "name": "Carelane",
+  "short_name": "Carelane",
+  "description": "Operationele regie voor zorgcoördinatie — Carelane verbindt gemeenten, zorgaanbieders en coördinatoren.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#060b17",
+  "theme_color": "#060b17",
+  "icons": [
+    {
+      "src": "/logos/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/app-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["healthcare", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Inloggen",
+      "short_name": "Login",
+      "description": "Meld je aan bij Carelane",
+      "url": "/care/login/",
+      "icons": [
+        {
+          "src": "/logos/app-icon.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Open Carelane dashboard",
+      "url": "/dashboard/",
+      "icons": [
+        {
+          "src": "/logos/app-icon.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

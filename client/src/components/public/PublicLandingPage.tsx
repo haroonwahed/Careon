@@ -28,6 +28,7 @@ import { AudienceSection } from "../landing/AudienceSection";
 import { FinalCtaSection } from "../landing/FinalCtaSection";
 import { LandingFooter } from "../landing/LandingFooter";
 import { CarelaneHeroOrchestrationVisual } from "../landing/CarelaneHeroOrchestrationVisual";
+import { DarkPrimaryLogo } from "../logos/CarelaneLogos";
 import { LOGIN_URL } from "../../lib/routes";
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -101,6 +102,11 @@ export function PublicLandingPage({ onThemeToggle: _onThemeToggle }: PublicLandi
             className="cl-container relative z-10 flex flex-col justify-center"
             style={{ paddingTop: "clamp(1.5rem, 3vw, 2.5rem)", paddingBottom: "clamp(2rem, 4vw, 4rem)" }}
           >
+            {/* Brand logo above hero */}
+            <div className="mb-8 flex justify-start lg:mb-10">
+              <DarkPrimaryLogo width={280} />
+            </div>
+
             <div className="grid gap-10 lg:grid-cols-[minmax(0,.9fr)_minmax(0,1.1fr)] lg:items-center">
               {/* Left: copy */}
               <div className="max-w-[560px] space-y-6">
