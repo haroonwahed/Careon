@@ -28,8 +28,8 @@ import {
   FileCheck,
   MapPinned,
   CheckCircle,
-  Shield,
 } from "lucide-react";
+import { CompactDarkLogo } from "../logos/CarelaneLogos";
 import { CARE_PATHS, SPA_DASHBOARD_URL } from "../../lib/routes";
 
 type RoleType = "gemeente" | "zorgaanbieder" | "admin";
@@ -464,15 +464,7 @@ export function Sidebar({
       {/* LOGO / HEADER */}
       <div className="flex h-16 items-center justify-between border-b border-border/50 px-4">
         {!collapsed && (
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-primary/25 bg-primary/12 text-primary">
-              <Shield size={20} strokeWidth={2.1} />
-            </div>
-            <div>
-              <h1 className="text-lg font-bold text-foreground">Carelane</h1>
-              <p className="text-xs text-muted-foreground">Zorg OS</p>
-            </div>
-          </div>
+          <CompactDarkLogo width={160} />
         )}
         
         <button

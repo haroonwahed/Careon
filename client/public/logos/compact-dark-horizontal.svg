@@ -1,0 +1,21 @@
+<svg viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- Dark background -->
+  <rect width="320" height="80" fill="#060b17"/>
+
+  <!-- Gradient CL mark -->
+  <defs>
+    <linearGradient id="clGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#9b82ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5b3ee6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Mark: Vertical line -->
+  <line x1="20" y1="16" x2="20" y2="64" stroke="url(#clGradient)" stroke-width="3.6" stroke-linecap="round"/>
+
+  <!-- Mark: Horizontal crossbar -->
+  <line x1="8" y1="36" x2="32" y2="36" stroke="url(#clGradient)" stroke-width="3.6" stroke-linecap="round"/>
+
+  <!-- White wordmark -->
+  <text x="48" y="55" font-family="system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="28" font-weight="700" letter-spacing="-0.02em" fill="#ffffff">Carelane</text>
+</svg>
