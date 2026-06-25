@@ -4,10 +4,10 @@ Professional email signature templates using the Carelane logo system.
 
 ## Logo Guidelines for Email
 
-- **Preferred**: `carelane-logo-dark.svg` for dark or neutral email backgrounds
-- **Alternative**: `carelane-logo-light.svg` for white / light email backgrounds
+- **Preferred**: `carelane-logo-navy-transparent.png` / `carelane-logo-gradient-white-transparent.png` for dark or neutral email backgrounds
+- **Alternative**: `carelane-logo-navy-transparent.png` for white / light email backgrounds
 - **Size**: 180–240px width for email signatures (SVG scales crisply)
-- **Background**: image-heavy dark backgrounds work best with `carelane-mark-white.svg`
+- **Background**: image-heavy dark backgrounds work best with `carelane-logo-white-transparent.png`
 
 ## HTML Email Signature Template
 
@@ -19,7 +19,7 @@ Use this template for email client signatures:
   <tr>
     <td style="padding-bottom: 16px;">
       <img 
-        src="https://carelane.nl/logos/carelane-logo-dark.svg" 
+        src="https://carelane.nl/brand/logos/png/carelane-logo-gradient-white-transparent.png" 
         alt="Carelane" 
         width="200" 
         height="auto" 
@@ -75,7 +75,7 @@ For dark email templates (uncommon but supported):
   <tr>
     <td style="padding-bottom: 16px;">
       <img 
-        src="https://carelane.nl/logos/carelane-mark-white.svg" 
+        src="https://carelane.nl/brand/logos/png/carelane-logo-white-transparent.png" 
         alt="Carelane" 
         width="200" 
         height="auto" 
@@ -146,7 +146,7 @@ Vertrouwelijk en beveiligd | AVG-bewust | Gebouwd voor de zorg
 
 If configuring organization-wide email templates:
 
-1. **Use `carelane-logo-dark.svg`** (recommended) or `carelane-logo-light.svg`
+1. **Use `carelane-logo-navy-transparent.png` / `carelane-logo-gradient-white-transparent.png`** (recommended) or `carelane-logo-navy-transparent.png`
 2. **Host logos** on CDN or organization server
 3. **Test rendering** in major email clients (Gmail, Outlook, Apple Mail)
 4. **Provide plain text fallback** for plain text email clients
@@ -156,12 +156,12 @@ If configuring organization-wide email templates:
 Use these URLs in your email templates (once deployed):
 
 ```
-https://carelane.nl/logos/carelane-logo-dark.svg
-https://carelane.nl/logos/carelane-logo-light.svg
-https://carelane.nl/logos/carelane-logo-dark-tagline.svg
-https://carelane.nl/logos/carelane-mark-white.svg
-https://carelane.nl/icon-512.png
-https://carelane.nl/favicon.svg
+https://carelane.nl/brand/logos/png/carelane-logo-gradient-white-transparent.png
+https://carelane.nl/brand/logos/png/carelane-logo-navy-transparent.png
+https://carelane.nl/brand/logos/png/carelane-logo-primary-dark-bg.png
+https://carelane.nl/brand/logos/png/carelane-logo-white-transparent.png
+https://carelane.nl/brand/icons/carelane-app-icon-512.png
+https://carelane.nl/brand/icons/favicon.ico
 ```
 
 ## Best Practices
@@ -173,10 +173,10 @@ https://carelane.nl/favicon.svg
 - Include `width` and `height` attributes
 - Test in multiple email clients before deployment
 - Keep signature height under 200px for mobile
-- Use `carelane-logo-dark.svg` on neutral/dark, `carelane-logo-light.svg` on white
+- Use `carelane-logo-navy-transparent.png` / `carelane-logo-gradient-white-transparent.png` on neutral/dark, `carelane-logo-navy-transparent.png` on white
 
 ❌ **Don't:**
-- Use the tagline lockup in emails (too tall — `carelane-logo-dark-tagline.svg` is marketing-only)
+- Use the tagline lockup in emails (too tall — `carelane-logo-primary-dark-bg.png` is marketing-only)
 - Embed large raster images (use < 50KB total signature size)
 - Use animations or interactive elements
 - Link the logo to external tracking pixels

@@ -120,7 +120,7 @@
   --surface-hover: #E3EAF4;
   --border-default: #CBD3E6;
   --border-strong: #B6C1D7;
-  --primary: #7C4DFF;
+  --primary: #9B4DFF; /* carelane-purple-500 (brand) */
   --primary-hover: #8B7CFF;
   --primary-light: rgba(124, 77, 255, 0.1);
   --red-base: #C96B6B;
@@ -179,6 +179,9 @@
   --chart-4-soft: rgba(217, 164, 65, 0.16);
   --radius: 0.75rem;
 
+  /* Brand primary gradient (CTAs, active workflow step, progress). */
+  --gradient-primary: var(--carelane-gradient-primary);
+
   --sidebar: #E2E8F4;
   --sidebar-foreground: #1C2440;
   --sidebar-primary: var(--primary);
@@ -213,7 +216,7 @@
   --border-strong: #374162;
 
   /* ── Brand accent ── */
-  --primary: #7C4DFF;
+  --primary: #9B4DFF; /* carelane-purple-500 (brand) */
   --primary-hover: #6F42E8;
   --primary-light: rgba(124, 77, 255, 0.14);
 

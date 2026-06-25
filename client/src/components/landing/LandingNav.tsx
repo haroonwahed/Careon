@@ -66,7 +66,7 @@ export function LandingNav() {
             className="flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
             aria-label="Carelane home"
           >
-            <CarelaneLogo variant="horizontal" theme="dark" size="md" ariaLabel="" />
+            <CarelaneLogo compact decorative className="w-[168px]" />
           </a>
 
           {/* Desktop nav */}

@@ -468,12 +468,11 @@ export function Sidebar({
           aria-label="Carelane home"
           className="flex items-center rounded-lg text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
-          <CarelaneLogo
-            variant={collapsed ? "mark" : "horizontal"}
-            theme="adaptive"
-            size={collapsed ? "sm" : "md"}
-            ariaLabel=""
-          />
+          {collapsed ? (
+            <CarelaneLogo mark decorative className="w-[40px]" />
+          ) : (
+            <CarelaneLogo theme="auto" decorative className="w-[182px]" />
+          )}
         </a>
 
         <button

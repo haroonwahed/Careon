@@ -1,0 +1,20 @@
+{
+  "recommended": {
+    "darkSurfaceLogo": "logos/png/carelane-logo-gradient-white-transparent.png",
+    "lightSurfaceLogo": "logos/png/carelane-logo-navy-transparent.png",
+    "compactLogo": "logos/png/carelane-logo-compact-transparent.png",
+    "monochromeLogo": "logos/png/carelane-logo-white-transparent.png",
+    "brandMark": "marks/carelane-mark-gradient-transparent.png",
+    "appIcon512": "icons/carelane-app-icon-512.png",
+    "appleTouchIcon": "icons/carelane-app-icon-180.png",
+    "favicon": "icons/favicon.ico",
+    "cssTokens": "tokens/brand-tokens.css"
+  },
+  "rules": [
+    "Use transparent assets inside the application.",
+    "Never distort, recolor, redraw or add CSS effects to the logos.",
+    "Use compact logo in constrained navigation.",
+    "Use square icon for favicon, PWA and mobile app surfaces.",
+    "Keep the untouched originals in /source as the canonical reference."
+  ]
+}

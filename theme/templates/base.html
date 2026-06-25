@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Carelane{% endblock %}</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'><defs><linearGradient id='g' x1='6' y1='6' x2='42' y2='42' gradientUnits='userSpaceOnUse'><stop offset='0' stop-color='%23B06CFF'/><stop offset='0.38' stop-color='%236D5CFF'/><stop offset='0.78' stop-color='%232D8CFF'/><stop offset='1' stop-color='%2338A8FF'/></linearGradient></defs><g fill='none' stroke='url(%23g)' stroke-linecap='round' stroke-linejoin='round'><path d='M 32 9.28 A 17 17 0 1 0 32 38.72' stroke-width='4.4'/><path d='M 20.5 12.5 L 20.5 30 L 32 30' stroke-width='4.4'/><circle cx='34.7' cy='30' r='2.7' stroke-width='1.8'/></g></svg>">
+    {% load static %}
+    <link rel="icon" href="{% static 'spa/brand/icons/favicon.ico' %}" sizes="any">
+    <link rel="apple-touch-icon" sizes="180x180" href="{% static 'spa/brand/icons/carelane-app-icon-180.png' %}">
     {% load static %}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,6 +16,8 @@
     <link href="{% static 'css/zorgregie-design-system.css' %}" rel="stylesheet">
     <style>
         #root { display: none; }
+        [data-theme="dark"] .brand-logo-light { display: none !important; }
+        [data-theme="dark"] .brand-logo-dark { display: block !important; }
     </style>
 </head>
 <body class="app-shell-body">
@@ -22,25 +26,8 @@
         <header class="border-b border-border/60 bg-background/95 px-6 py-4 backdrop-blur">
             <div class="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
                 <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="brand-link" aria-label="Carelane home">
-                    <svg width="30" height="30" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
-                        <defs>
-                            <linearGradient id="brand-cl" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-                                <stop offset="0%" stop-color="#B06CFF"/>
-                                <stop offset="38%" stop-color="#6D5CFF"/>
-                                <stop offset="78%" stop-color="#2D8CFF"/>
-                                <stop offset="100%" stop-color="#38A8FF"/>
-                            </linearGradient>
-                        </defs>
-                        <g fill="none" stroke="url(#brand-cl)" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M 32 9.28 A 17 17 0 1 0 32 38.72" stroke-width="4.4"/>
-                            <path d="M 20.5 12.5 L 20.5 30 L 32 30" stroke-width="4.4"/>
-                            <circle cx="34.7" cy="30" r="2.7" stroke-width="1.8"/>
-                        </g>
-                    </svg>
-                    <div>
-                        <span class="brand-title">Carelane</span>
-                        <span class="brand-sub">Zorgregie</span>
-                    </div>
+                    <img class="brand-logo-light" src="{% static 'spa/brand/logos/png/carelane-logo-navy-transparent.png' %}" alt="Carelane" draggable="false" style="height:30px;width:auto;object-fit:contain;display:block;">
+                    <img class="brand-logo-dark" src="{% static 'spa/brand/logos/png/carelane-logo-gradient-white-transparent.png' %}" alt="" aria-hidden="true" draggable="false" style="height:30px;width:auto;object-fit:contain;display:none;">
                 </a>
                 <div class="flex items-center gap-3">
                     <a href="{{ SPA_ORIGIN|default:'http://127.0.0.1:3000' }}/dashboard/" class="btn btn-primary">

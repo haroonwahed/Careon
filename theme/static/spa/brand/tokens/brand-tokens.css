@@ -1,0 +1,14 @@
+:root {
+  --carelane-navy-950:#010A25;
+  --carelane-navy-900:#071130;
+  --carelane-navy-800:#101B46;
+  --carelane-blue-500:#168CFF;
+  --carelane-blue-600:#1769FF;
+  --carelane-purple-500:#9B4DFF;
+  --carelane-purple-400:#B35CFF;
+  --carelane-white:#FFFFFF;
+  --carelane-slate-100:#EEF2F8;
+  --carelane-slate-400:#94A3B8;
+  --carelane-slate-700:#334155;
+  --carelane-gradient-primary:linear-gradient(135deg,#B35CFF 0%,#6B55FF 48%,#168CFF 100%);
+}

@@ -56,7 +56,7 @@ export function LoginPage() {
       {/* Left brand panel */}
       <aside style={{ display: 'none' }} className="sa-brand-lg">
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 20, position: 'relative', zIndex: 1 }}>
-          <CarelaneLogo variant="horizontal" theme="dark" size="lg" ariaLabel="Carelane" />
+          <CarelaneLogo theme="dark" className="w-[280px]" />
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#6366f1', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ display: 'inline-block', width: 16, height: 2, background: '#6366f1', borderRadius: 2 }} />
@@ -73,7 +73,7 @@ export function LoginPage() {
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 32px', background: '#070b12', height: '100%', overflowY: 'auto' }}>
         {/* Brand mark above form */}
         <div style={{ marginBottom: 40 }}>
-          <CarelaneLogo variant="horizontal" theme="dark" size="md" ariaLabel="Carelane" />
+          <CarelaneLogo compact className="w-[210px]" />
         </div>
 
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>

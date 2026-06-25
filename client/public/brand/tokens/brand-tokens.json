@@ -1,0 +1,20 @@
+{
+  "brand": {
+    "name": "Carelane",
+    "tagline": "Care. Coordinated. Forward.",
+    "colors": {
+      "navy950": "#010A25",
+      "navy900": "#071130",
+      "navy800": "#101B46",
+      "blue500": "#168CFF",
+      "blue600": "#1769FF",
+      "purple500": "#9B4DFF",
+      "purple400": "#B35CFF",
+      "white": "#FFFFFF",
+      "slate100": "#EEF2F8",
+      "slate400": "#94A3B8",
+      "slate700": "#334155"
+    },
+    "gradient": "linear-gradient(135deg,#B35CFF 0%,#6B55FF 48%,#168CFF 100%)"
+  }
+}
