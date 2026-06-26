@@ -64,7 +64,7 @@ export function LandingFooter() {
             className="inline-flex items-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--cl-violet-bright)] rounded-xl"
             aria-label="Carelane home"
           >
-            <CarelaneLogo compact decorative className="w-[190px]" />
+            <CarelaneLogo compact decorative className="w-[200px]" />
           </a>
           <p className="max-w-xs text-sm leading-relaxed text-[var(--cl-text-muted)]">
             Operationele regie voor zorgcoördinatie. Carelane verbindt gemeenten, zorgaanbieders en

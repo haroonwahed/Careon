@@ -73,7 +73,7 @@ export function LoginPage() {
       <main style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 32px', background: '#070b12', height: '100%', overflowY: 'auto' }}>
         {/* Brand mark above form */}
         <div style={{ marginBottom: 40 }}>
-          <CarelaneLogo compact className="w-[210px]" />
+          <CarelaneLogo compact className="w-[220px]" />
         </div>
 
         <div style={{ width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 16 }}>

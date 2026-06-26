@@ -471,7 +471,7 @@ export function Sidebar({
           {collapsed ? (
             <CarelaneLogo mark decorative className="w-[40px]" />
           ) : (
-            <CarelaneLogo theme="auto" decorative className="w-[182px]" />
+            <CarelaneLogo theme="auto" decorative className="w-[190px]" />
           )}
         </a>
 
