@@ -107,7 +107,10 @@ def filter_care_cases_for_provider_actor(queryset, user, organization):
     ).filter(
         Q(proposed_provider_id__in=ids) | Q(selected_provider_id__in=ids)
     )
-    return queryset.filter(Exists(placement_qs))
+    # Do NOT filter the org-scoped input queryset: cases belong to the gemeente's
+    # org, not the provider's active org. Start from all CareCases and let the
+    # PlacementRequest be the sole authorization gate.
+    return CareCase.objects.filter(Exists(placement_qs))
 
 
 def visible_provider_scoped_care_cases(user, organization):
