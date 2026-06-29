@@ -462,27 +462,57 @@ export function Sidebar({
       `}
     >
       {/* LOGO / HEADER */}
-      <div className={`flex h-16 border-b border-border/50 px-4 ${collapsed ? "flex-col items-center justify-center gap-1.5" : "items-center justify-between"}`}>
+      <div className={`flex h-16 border-b border-border/50 ${collapsed ? "flex-col items-center justify-center gap-2 px-4" : "items-center justify-between px-6"}`}>
         <a
           href={SPA_DASHBOARD_URL}
           aria-label="Carelane home"
           className="flex items-center rounded-lg text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
         >
           {collapsed ? (
-            <CarelaneLogo mark decorative className="w-[40px]" />
+            // Collapsed: gradient C-mark only, left-aligned with the nav icons.
+            <CarelaneLogo mark decorative className="w-[34px]" />
           ) : (
-            <CarelaneLogo theme="auto" decorative className="w-[190px]" />
+            // Expanded: gradient mark + wordmark (no tagline) — the app's brand carrier.
+            <span className="flex items-center gap-2.5">
+              <CarelaneLogo mark decorative className="w-[38px]" />
+              <span
+                style={{
+                  fontFamily: "'Plus Jakarta Sans', Inter, ui-sans-serif, system-ui, sans-serif",
+                  fontWeight: 700,
+                  fontSize: 22,
+                  letterSpacing: "-0.02em",
+                  lineHeight: 1,
+                  color: "currentColor",
+                }}
+              >
+                Carelane
+              </span>
+            </span>
           )}
         </a>
 
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className={`rounded-lg border border-border/60 bg-background/35 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground ${collapsed ? "p-1" : "p-2"}`}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={18} />}
-        </button>
+        {!collapsed && (
+          <button
+            onClick={() => setCollapsed(true)}
+            className="rounded-lg border border-border/60 bg-background/35 p-2 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
+            aria-label="Collapse sidebar"
+          >
+            <ChevronLeft size={18} />
+          </button>
+        )}
       </div>
+
+      {collapsed && (
+        <div className="flex justify-center px-4 pb-1 pt-1">
+          <button
+            onClick={() => setCollapsed(false)}
+            className="rounded-lg border border-border/60 bg-background/35 p-1 text-muted-foreground transition-colors hover:bg-muted/20 hover:text-foreground"
+            aria-label="Expand sidebar"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       {/* NAVIGATION */}
       <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Hoofdnavigatie">
