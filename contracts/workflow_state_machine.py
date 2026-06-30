@@ -397,7 +397,7 @@ _WORKFLOW_STATE_TO_CASE_PHASE: dict[str, str] = {
     WorkflowState.MATCHING_READY: 'matching',
     WorkflowState.GEMEENTE_VALIDATED: 'matching',
     WorkflowState.PROVIDER_REVIEW_PENDING: 'provider_beoordeling',
-    WorkflowState.PROVIDER_ACCEPTED: 'provider_beoordeling',
+    WorkflowState.PROVIDER_ACCEPTED: 'plaatsing',   # accepted → municipality confirms placement
     WorkflowState.BUDGET_REVIEW_PENDING: 'provider_beoordeling',
     WorkflowState.PROVIDER_REJECTED: 'provider_beoordeling',
     WorkflowState.PLACEMENT_CONFIRMED: 'plaatsing',
